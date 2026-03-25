@@ -51,12 +51,72 @@ class HomeCardService
             return null;
         }
 
+        // Build appointment data with documents
+        $appointmentData = null;
+        if ($nextAppointment) {
+            $appointmentData = [
+                ...$nextAppointment->only('id', 'office_name', 'scheduled_at'),
+                'notes' => $nextAppointment->notes,
+                'is_tomorrow' => Carbon::parse($nextAppointment->scheduled_at)->isTomorrow(),
+                'time' => Carbon::parse($nextAppointment->scheduled_at)->format('H:i'),
+            ];
+        }
+
+        // Build urgent task data with documents
+        $urgentTaskData = null;
+        if ($urgentTasks->isNotEmpty()) {
+            $task = $urgentTasks->first()->task;
+            $urgentTaskData = [
+                ...$task->only('id', 'title', 'urgency', 'deadline_days'),
+                'documents_required' => $task->documents_required ?? [],
+            ];
+        }
+
+        // Build timeline rows (next departure, tonight's event, weather)
+        $timelineRows = [];
+
+        // Next departure (mock until VRS integration)
+        $timelineRows[] = [
+            'emoji' => '🚇',
+            'title' => 'Line 9 in 4 min · No delays',
+            'subtitle' => 'Venloer Str./Gürtel → Neumarkt',
+            'value' => '4',
+            'unit' => 'min',
+        ];
+
+        // Tonight's event
+        $tonightEvent = Event::query()
+            ->whereDate('starts_at', today())
+            ->where('starts_at', '>', now())
+            ->orderBy('starts_at')
+            ->first();
+
+        if ($tonightEvent) {
+            $timelineRows[] = [
+                'emoji' => $tonightEvent->emoji ?? '📅',
+                'title' => $tonightEvent->title,
+                'subtitle' => $tonightEvent->location_name.' · '.($tonightEvent->attendees_count ?? 0).' going',
+                'value' => Carbon::parse($tonightEvent->starts_at)->format('H'),
+                'unit' => ':'.Carbon::parse($tonightEvent->starts_at)->format('i'),
+            ];
+        }
+
+        // Weather context (placeholder until Bright Sky integration)
+        $timelineRows[] = [
+            'emoji' => '🌤️',
+            'title' => 'Dry until evening — good day to bike',
+            'subtitle' => '14°C · Wind 12 km/h',
+            'value' => '14',
+            'unit' => '°C',
+        ];
+
         return [
             'type' => 'blue_highlight',
             'data' => [
-                'urgent_task' => $urgentTasks->first()?->task?->only('id', 'title', 'urgency', 'deadline_days'),
-                'appointment' => $nextAppointment?->only('id', 'office_name', 'scheduled_at'),
-                'headline' => $this->getDayHeadline(),
+                'urgent_task' => $urgentTaskData,
+                'appointment' => $appointmentData,
+                'headline' => $this->getWeatherHeadline(),
+                'timeline_rows' => $timelineRows,
             ],
             'priority' => 100,
         ];
@@ -173,10 +233,9 @@ class HomeCardService
         ];
     }
 
-    protected function getDayHeadline(): string
+    protected function getWeatherHeadline(): string
     {
-        $dayName = now()->format('l');
-
-        return "Today — {$dayName}";
+        // Placeholder until Bright Sky integration
+        return "Dry until 18:00 —\ngood day to bike.";
     }
 }
