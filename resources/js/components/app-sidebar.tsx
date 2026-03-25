@@ -1,16 +1,8 @@
-import { Link } from '@inertiajs/react';
-import AppLogo from '@/components/app-logo';
+import { Link, usePage } from '@inertiajs/react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import type { NavGroup } from '@/types';
 
@@ -42,26 +34,45 @@ const navGroups: NavGroup[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props;
+    const user = auth?.user as { name?: string } | undefined;
+    const getInitials = useInitials();
+
     return (
         <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+            {/* Logo — padding: 4px 8px 20px, gap: 11px */}
+            <SidebarHeader className="px-4 pt-6 pb-0">
+                <Link
+                    href={dashboard()}
+                    prefetch
+                    className="flex items-center gap-[11px] px-2 pb-5"
+                >
+                    <AppLogoIcon />
+                    <span className="whitespace-nowrap font-display text-[22px] font-medium tracking-tight text-[#18170F]">
+                        Expadu
+                    </span>
+                </Link>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="px-0">
                 <NavMain groups={navGroups} />
             </SidebarContent>
 
-            <SidebarFooter>
-                <NavUser />
+            {/* User — border-top, gap: 10px, padding: 10px 12px */}
+            <SidebarFooter className="px-4 pb-6">
+                <Link
+                    href="/profile"
+                    prefetch
+                    className="flex items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 pt-4 mt-2 transition-colors hover:bg-[#EFEDE7]"
+                >
+                    <div className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1A4CD4] to-[#6366F1] text-sm font-semibold text-white">
+                        {getInitials(user?.name ?? '')}
+                    </div>
+                    <div className="overflow-hidden">
+                        <div className="truncate text-sm font-semibold whitespace-nowrap">{user?.name ?? 'User'}</div>
+                        <div className="truncate text-[11px] whitespace-nowrap text-[#AAA89F]">Cologne · Expat</div>
+                    </div>
+                </Link>
             </SidebarFooter>
         </Sidebar>
     );
