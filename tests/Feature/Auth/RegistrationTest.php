@@ -12,7 +12,7 @@ test('registration screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('new users can register', function () {
+test('new users can register and are redirected', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -21,5 +21,6 @@ test('new users can register', function () {
     ]);
 
     $this->assertAuthenticated();
+    // Fortify redirects to dashboard, then onboarding middleware redirects to onboarding
     $response->assertRedirect(route('dashboard', absolute: false));
 });

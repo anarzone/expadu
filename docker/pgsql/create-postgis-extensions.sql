@@ -1,0 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+\connect testing;
+
+CREATE EXTENSION IF NOT EXISTS postgis;

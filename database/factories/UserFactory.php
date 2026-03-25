@@ -57,4 +57,34 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
         ]);
     }
+
+    /**
+     * Indicate that the user has completed onboarding.
+     */
+    public function onboarded(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'city' => fake()->randomElement(['cologne', 'berlin', 'munich', 'hamburg', 'frankfurt']),
+            'situation' => fake()->randomElement(['non_eu_employee', 'eu_employee', 'student', 'freelancer']),
+            'arrival_date' => fake()->dateTimeBetween('-2 years', 'now'),
+            'german_level' => fake()->randomElement(['none', 'a1', 'a2', 'b1', 'b2']),
+            'speaks' => fake()->randomElements(['english', 'turkish', 'arabic', 'spanish', 'french', 'russian'], rand(1, 3)),
+            'onboarded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the user has not completed onboarding.
+     */
+    public function notOnboarded(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'city' => null,
+            'situation' => null,
+            'arrival_date' => null,
+            'german_level' => null,
+            'speaks' => null,
+            'onboarded_at' => null,
+        ]);
+    }
 }

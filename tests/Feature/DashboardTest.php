@@ -7,10 +7,30 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
+test('authenticated onboarded users can visit the dashboard', function () {
+    $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
     $response->assertOk();
+});
+
+test('authenticated non-onboarded users are redirected to onboarding', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->get(route('dashboard'));
+    $response->assertRedirect(route('onboarding'));
+});
+
+test('dashboard returns home feed cards', function () {
+    $user = User::factory()->onboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->get(route('dashboard'));
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('dashboard')
+        ->has('cards')
+    );
 });

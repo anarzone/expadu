@@ -8,15 +8,22 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+    /* Typography */
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Geist', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+    --font-display: 'Fraunces', ui-serif, Georgia, serif;
+    --font-mono: 'Geist Mono', ui-monospace, monospace;
 
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
+    /* Border radius */
+    --radius: 12px;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --radius-xl: 20px;
 
+    /* Map shadcn variables to Expadu tokens */
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
@@ -59,77 +66,144 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Expadu-specific tokens */
+    --color-surface-2: var(--surface-2);
+    --color-success: var(--success);
+    --color-success-soft: var(--success-soft);
+    --color-warn: var(--warn);
+    --color-warn-soft: var(--warn-soft);
+    --color-danger: var(--danger);
+    --color-danger-soft: var(--danger-soft);
+    --color-accent-soft: var(--accent-soft);
+    --color-accent-hover: var(--accent-hover);
 }
 
+/* ─── Light Theme (Expadu) ─── */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    /* Core surfaces */
+    --background: #F6F5F1;
+    --foreground: #18170F;
+    --card: #FFFFFF;
+    --card-foreground: #18170F;
+    --popover: #FFFFFF;
+    --popover-foreground: #18170F;
+
+    /* Primary = Expadu accent blue */
+    --primary: #1A4CD4;
+    --primary-foreground: #FFFFFF;
+
+    /* Secondary = surface-2 */
+    --secondary: #EFEDE7;
+    --secondary-foreground: #18170F;
+
+    /* Muted */
+    --muted: #EFEDE7;
+    --muted-foreground: #6B6860;
+
+    /* Accent (shadcn) = surface-2 for hover states */
+    --accent: #EFEDE7;
+    --accent-foreground: #18170F;
+
+    /* Destructive */
+    --destructive: #C4271A;
+    --destructive-foreground: #FFFFFF;
+
+    /* Borders & inputs */
+    --border: #E2DFD6;
+    --input: #E2DFD6;
+    --ring: #1A4CD4;
+
+    /* Chart colors */
+    --chart-1: #1A4CD4;
+    --chart-2: #0A7C52;
+    --chart-3: #C47D0E;
+    --chart-4: #7C3AED;
+    --chart-5: #C4271A;
+
+    /* Sidebar */
+    --sidebar: #F6F5F1;
+    --sidebar-foreground: #18170F;
+    --sidebar-primary: #1A4CD4;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #EBF0FD;
+    --sidebar-accent-foreground: #1A4CD4;
+    --sidebar-border: #E2DFD6;
+    --sidebar-ring: #1A4CD4;
+
+    /* Expadu-specific */
+    --surface-2: #EFEDE7;
+    --success: #0A7C52;
+    --success-soft: #EDFAF4;
+    --warn: #C47D0E;
+    --warn-soft: #FEF9EC;
+    --danger: #C4271A;
+    --danger-soft: #FDECEA;
+    --accent-soft: #EBF0FD;
+    --accent-hover: #1541B8;
+
+    /* Text hierarchy */
+    --text-1: #18170F;
+    --text-2: #6B6860;
+    --text-3: #AAA89F;
 }
 
+/* ─── Dark Theme (Expadu) ─── */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --background: #18170F;
+    --foreground: #F6F5F1;
+    --card: #1E1D15;
+    --card-foreground: #F6F5F1;
+    --popover: #1E1D15;
+    --popover-foreground: #F6F5F1;
+
+    --primary: #5B8AF5;
+    --primary-foreground: #18170F;
+
+    --secondary: #2A2920;
+    --secondary-foreground: #F6F5F1;
+
+    --muted: #2A2920;
+    --muted-foreground: #AAA89F;
+
+    --accent: #2A2920;
+    --accent-foreground: #F6F5F1;
+
+    --destructive: #E5534B;
+    --destructive-foreground: #FFFFFF;
+
+    --border: #3A3930;
+    --input: #3A3930;
+    --ring: #5B8AF5;
+
+    --chart-1: #5B8AF5;
+    --chart-2: #34D399;
+    --chart-3: #FBBF24;
+    --chart-4: #A78BFA;
+    --chart-5: #F87171;
+
+    --sidebar: #1E1D15;
+    --sidebar-foreground: #F6F5F1;
+    --sidebar-primary: #5B8AF5;
+    --sidebar-primary-foreground: #18170F;
+    --sidebar-accent: #2A2920;
+    --sidebar-accent-foreground: #5B8AF5;
+    --sidebar-border: #3A3930;
+    --sidebar-ring: #5B8AF5;
+
+    --surface-2: #2A2920;
+    --success: #34D399;
+    --success-soft: #1A2E26;
+    --warn: #FBBF24;
+    --warn-soft: #2E2810;
+    --danger: #F87171;
+    --danger-soft: #2E1A1A;
+    --accent-soft: #1A2440;
+    --accent-hover: #7BA3F7;
+
+    --text-1: #F6F5F1;
+    --text-2: #AAA89F;
+    --text-3: #6B6860;
 }
 
 @layer base {

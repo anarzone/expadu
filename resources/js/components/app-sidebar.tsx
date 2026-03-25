@@ -1,7 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -14,26 +12,38 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
+import type { NavGroup } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const navGroups: NavGroup[] = [
     {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
+        label: 'Main',
+        items: [
+            { title: 'Home', href: '/dashboard', emoji: '🏠' },
+            { title: 'Explore', href: '/explore', emoji: '🗺️' },
+            { title: 'Transit', href: '/transit', emoji: '🚇' },
+            { title: 'Events', href: '/events', emoji: '📅' },
+        ],
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        label: 'Community',
+        items: [
+            { title: 'Language Exchange', href: '/language-exchange', emoji: '🗣️' },
+            { title: 'Chat', href: '/chat', emoji: '💬' },
+        ],
+    },
+    {
+        label: 'City',
+        items: [
+            { title: 'Neighborhoods', href: '/neighborhoods', emoji: '🏘️' },
+            { title: 'Services', href: '/services', emoji: '🏥' },
+        ],
+    },
+    {
+        label: 'Settle',
+        items: [
+            { title: 'Bureaucracy', href: '/bureaucracy', emoji: '🏛️', badge: 3, badgeVariant: 'warn' },
+            { title: 'Just Arrived', href: '/just-arrived', emoji: '📦' },
+        ],
     },
 ];
 
@@ -53,11 +63,10 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain groups={navGroups} />
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

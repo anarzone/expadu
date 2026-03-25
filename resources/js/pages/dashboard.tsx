@@ -1,36 +1,37 @@
-import { Head } from '@inertiajs/react';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Head, usePage } from '@inertiajs/react';
+import { CardRenderer } from '@/components/cards/card-renderer';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
-import type { BreadcrumbItem } from '@/types';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-    },
-];
+import type { HomeCard } from '@/types/home-feed';
 
 export default function Dashboard() {
+    const { cards } = usePage<{ cards: HomeCard[] }>().props;
+    const { auth } = usePage().props;
+    const user = auth?.user as { name?: string } | undefined;
+
+    const greeting = getGreeting(user?.name);
+
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
+        <AppLayout>
+            <Head title="Home" />
+            <div className="mx-auto w-full max-w-[680px]">
+                <div className="border-b border-border px-6 py-4">
+                    <h1 className="font-display text-xl font-medium">{greeting}</h1>
+                    <span className="font-mono text-xs text-muted-foreground">
+                        {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
+                    </span>
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                </div>
+
+                <CardRenderer cards={cards} />
             </div>
         </AppLayout>
     );
+}
+
+function getGreeting(name?: string): string {
+    const hour = new Date().getHours();
+    const display = name ? `, ${name}` : '';
+
+    if (hour < 12) return `Good morning${display} ☀️`;
+    if (hour < 18) return `Good afternoon${display} 👋`;
+    return `Good evening${display} 🌙`;
 }
