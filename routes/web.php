@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\AlertController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\RoutineController;
+use App\Http\Controllers\SpotController;
+use App\Http\Controllers\TransitController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -15,17 +20,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('dashboard', HomeFeedController::class)->name('dashboard');
 
-    // Placeholder pages — will be replaced with controllers in later phases
-    Route::inertia('explore', 'explore')->name('explore');
-    Route::inertia('transit', 'transit')->name('transit');
-    Route::inertia('events', 'events')->name('events');
+    // Transit
+    Route::get('transit', [TransitController::class, 'index'])->name('transit');
+    Route::post('routines', [RoutineController::class, 'store'])->name('routines.store');
+    Route::put('routines/{routine}', [RoutineController::class, 'update'])->name('routines.update');
+    Route::delete('routines/{routine}', [RoutineController::class, 'destroy'])->name('routines.destroy');
+
+    // Explore / Spots
+    Route::get('explore', [SpotController::class, 'index'])->name('explore');
+    Route::get('explore/{spot}', [SpotController::class, 'show'])->name('spots.show');
+    Route::post('explore/{spot}/checkin', [SpotController::class, 'checkin'])->name('spots.checkin');
+    Route::post('explore/{spot}/checkout', [SpotController::class, 'checkout'])->name('spots.checkout');
+
+    // Events
+    Route::get('events', [EventController::class, 'index'])->name('events');
+    Route::get('events/saved', [EventController::class, 'saved'])->name('events.saved');
+    Route::get('events/{event}', [EventController::class, 'show'])->name('events.show');
+    Route::post('events/{event}/join', [EventController::class, 'join'])->name('events.join');
+    Route::delete('events/{event}/join', [EventController::class, 'leave'])->name('events.leave');
+
+    // Alerts
+    Route::get('alerts', [AlertController::class, 'index'])->name('alerts');
+    Route::post('alerts/{alert}/read', [AlertController::class, 'markRead'])->name('alerts.read');
+    Route::post('alerts/read-all', [AlertController::class, 'markAllRead'])->name('alerts.read-all');
+
+    // Placeholder pages
     Route::inertia('language-exchange', 'language-exchange')->name('language-exchange');
     Route::inertia('chat', 'chat')->name('chat');
     Route::inertia('neighborhoods', 'neighborhoods')->name('neighborhoods');
     Route::inertia('services', 'services')->name('services');
     Route::inertia('bureaucracy', 'bureaucracy')->name('bureaucracy');
     Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');
-    Route::inertia('alerts', 'alerts')->name('alerts');
     Route::inertia('profile', 'profile')->name('profile');
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Event;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -132,17 +133,24 @@ class HomeCardService
     }
 
     /**
-     * Placeholder — will be populated with real events in Phase 2.
-     *
      * @return array{type: string, data: array<string, mixed>, priority: int}
      */
     protected function buildThisWeek(): array
     {
+        $events = Event::query()
+            ->where('starts_at', '>', now())
+            ->where('starts_at', '<', now()->addDays(7))
+            ->orderBy('starts_at')
+            ->limit(3)
+            ->get(['id', 'title', 'emoji', 'category', 'starts_at', 'location_name', 'is_free', 'price'])
+            ->map(fn ($e) => $e->toArray())
+            ->all();
+
         return [
             'type' => 'this_week',
             'data' => [
-                'events' => [],
-                'placeholder' => true,
+                'events' => $events,
+                'placeholder' => empty($events),
             ],
             'priority' => 30,
         ];

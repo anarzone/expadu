@@ -106,6 +106,12 @@ class User extends Authenticatable
         return $this->hasMany(Alert::class);
     }
 
+    /** @return HasMany<Routine, $this> */
+    public function routines(): HasMany
+    {
+        return $this->hasMany(Routine::class);
+    }
+
     /** @return HasMany<UserEvent, $this> */
     public function behaviorEvents(): HasMany
     {
