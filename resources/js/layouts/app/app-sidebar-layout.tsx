@@ -10,6 +10,7 @@ import type { AppLayoutProps } from '@/types';
 export default function AppSidebarLayout({
     children,
     breadcrumbs = [],
+    rightPanel,
 }: AppLayoutProps) {
     return (
         <AppShell variant="sidebar">
@@ -23,7 +24,13 @@ export default function AppSidebarLayout({
                         {children}
                     </div>
                     {/* Right panel — desktop only (>1024px) */}
-                    <RightPanel />
+                    {rightPanel !== undefined ? (
+                        <aside className="hidden w-[300px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
+                            {rightPanel}
+                        </aside>
+                    ) : (
+                        <RightPanel />
+                    )}
                 </div>
             </AppContent>
             <MobileDock />

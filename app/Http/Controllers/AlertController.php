@@ -20,9 +20,17 @@ class AlertController extends Controller
             }
         }
 
+        $userAlerts = $request->user()->alerts();
+
         return Inertia::render('alerts', [
             'alerts' => $query->paginate(30),
-            'unreadCount' => $request->user()->alerts()->whereNull('read_at')->count(),
+            'unreadCount' => (clone $userAlerts)->whereNull('read_at')->count(),
+            'counts' => [
+                'unread' => (clone $userAlerts)->whereNull('read_at')->count(),
+                'system' => (clone $userAlerts)->where('type', 'system')->count(),
+                'social' => (clone $userAlerts)->where('type', 'social')->count(),
+                'reminder' => (clone $userAlerts)->where('type', 'reminder')->count(),
+            ],
             'tab' => $request->query('tab', 'all'),
         ]);
     }

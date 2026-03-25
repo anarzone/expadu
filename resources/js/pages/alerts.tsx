@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { AlertRow } from '@/components/alerts/alert-row';
+import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
 import AppLayout from '@/layouts/app-layout';
 
 type AlertData = {
@@ -41,9 +42,10 @@ function groupAlerts(alerts: AlertData[]): Record<string, AlertData[]> {
 }
 
 export default function Alerts() {
-    const { alerts, unreadCount, tab: activeTab } = usePage<{
+    const { alerts, unreadCount, counts, tab: activeTab } = usePage<{
         alerts: { data: AlertData[] };
         unreadCount: number;
+        counts: { unread: number; system: number; social: number; reminder: number };
         tab: string;
     }>().props;
 
@@ -67,7 +69,7 @@ export default function Alerts() {
     const groupOrder = ['Just now', 'Today', 'Yesterday', 'Earlier'];
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}>
+        <AppLayout breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]} rightPanel={<AlertsRightPanel counts={counts} />}>
             <Head title="Alerts" />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* Sticky header */}
