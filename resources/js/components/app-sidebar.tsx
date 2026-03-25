@@ -48,7 +48,7 @@ export function AppSidebar() {
                     className="flex items-center gap-[11px] px-2 pb-5"
                 >
                     <AppLogoIcon />
-                    <span className="whitespace-nowrap font-display text-[22px] font-medium tracking-tight text-[#18170F]">
+                    <span className="whitespace-nowrap font-display text-[22px] font-medium tracking-tight text-[#18170F] dark:text-[#F6F5F1]">
                         Expadu
                     </span>
                 </Link>
@@ -63,7 +63,7 @@ export function AppSidebar() {
                 <Link
                     href="/profile"
                     prefetch
-                    className="flex items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 pt-4 mt-2 transition-colors hover:bg-[#EFEDE7]"
+                    className="flex items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 pt-4 mt-2 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                 >
                     <div className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1A4CD4] to-[#6366F1] text-sm font-semibold text-white">
                         {getInitials(user?.name ?? '')}

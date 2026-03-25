@@ -10,7 +10,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
             {groups.map((group) => (
                 <div key={group.label}>
                     {/* Group label — 10px, 700, uppercase, #AAA89F, padding 14px 8px 5px */}
-                    <div className="whitespace-nowrap overflow-hidden px-2 pt-3.5 pb-[5px] text-[10px] font-bold uppercase tracking-[0.09em] text-[#AAA89F]">
+                    <div className="whitespace-nowrap overflow-hidden px-2 pt-3.5 pb-[5px] text-[10px] font-bold uppercase tracking-[0.09em] text-[#AAA89F] dark:text-[#6B6860]">
                         {group.label}
                     </div>
 
@@ -24,8 +24,8 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                 prefetch
                                 className={`mb-px flex items-center gap-[13px] overflow-hidden whitespace-nowrap rounded-[9px] px-3 py-2.5 transition-all duration-150 ${
                                     active
-                                        ? 'bg-[#EBF0FD] text-[#1A4CD4]'
-                                        : 'text-[#6B6860] hover:bg-[#EFEDE7] hover:text-[#18170F]'
+                                        ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A2440] dark:text-[#5B8AF5]'
+                                        : 'text-[#6B6860] hover:bg-[#EFEDE7] hover:text-[#18170F] dark:text-[#AAA89F] dark:hover:bg-[#2A2920] dark:hover:text-[#F6F5F1]'
                                 }`}
                             >
                                 {/* Icon — 18px, 22px wide */}
