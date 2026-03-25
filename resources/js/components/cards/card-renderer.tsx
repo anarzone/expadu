@@ -1,10 +1,12 @@
 import { BlueHighlightCard } from '@/components/cards/blue-highlight-card';
+import { DisruptionBanner } from '@/components/cards/disruption-banner';
 import { FeedSection } from '@/components/cards/feed-section';
 import { PlacesChips } from '@/components/cards/places-chips';
 import { ProgressCard } from '@/components/cards/progress-card';
 import { QuickAccessGrid } from '@/components/cards/quick-access-grid';
 import type {
     BlueHighlightData,
+    DisruptionBannerData,
     HomeCard,
     QuickAccessData,
     SettlementProgressData,
@@ -20,6 +22,12 @@ export function CardRenderer({ cards }: { cards: HomeCard[] }) {
                         return (
                             <FeedSection key={index}>
                                 <BlueHighlightCard data={card.data as unknown as BlueHighlightData} />
+                            </FeedSection>
+                        );
+                    case 'disruption_banner':
+                        return (
+                            <FeedSection key={index}>
+                                <DisruptionBanner data={card.data as unknown as DisruptionBannerData} />
                             </FeedSection>
                         );
                     case 'settlement_progress':

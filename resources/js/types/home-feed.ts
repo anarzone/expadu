@@ -26,3 +26,10 @@ export type YourPlacesData = {
 export type QuickAccessData = {
     items: { emoji: string; label: string; href: string; subtitle: string }[];
 };
+
+export type DisruptionBannerData = {
+    title: string;
+    description: string;
+    severity: string;
+    lines: string[];
+};

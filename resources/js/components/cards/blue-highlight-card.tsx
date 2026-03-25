@@ -3,7 +3,7 @@ import type { BlueHighlightData } from '@/types/home-feed';
 
 export function BlueHighlightCard({ data }: { data: BlueHighlightData }) {
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-primary p-5 text-white">
+        <div className="relative overflow-hidden rounded-2xl bg-[#1A4CD4] p-5 text-white">
             {/* Decorative circle */}
             <div className="absolute -top-[50px] -right-[50px] size-[180px] rounded-full bg-white/5" />
 

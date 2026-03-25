@@ -17,6 +17,7 @@ class HomeCardService
     {
         $cards = array_filter([
             $this->buildBlueHighlight($user),
+            $this->buildDisruptionBanner(),
             $this->buildSettlementProgress($user),
             $this->buildYourPlaces($user),
             $this->buildQuickAccess($user),
@@ -119,6 +120,35 @@ class HomeCardService
                 'timeline_rows' => $timelineRows,
             ],
             'priority' => 100,
+        ];
+    }
+
+    /**
+     * Active disruptions that affect the user's area. Mock data until VRS integration.
+     *
+     * @return array{type: string, data: array<string, mixed>, priority: int}|null
+     */
+    protected function buildDisruptionBanner(): ?array
+    {
+        // Mock disruption — will be replaced with real VRS data
+        $disruptions = app(TransitService::class)->getDisruptions();
+
+        if (empty($disruptions)) {
+            return null;
+        }
+
+        // Show the most severe disruption
+        $top = $disruptions[0];
+
+        return [
+            'type' => 'disruption_banner',
+            'data' => [
+                'title' => $top['title'],
+                'description' => $top['description'],
+                'severity' => $top['severity'],
+                'lines' => $top['lines'],
+            ],
+            'priority' => 99,
         ];
     }
 
