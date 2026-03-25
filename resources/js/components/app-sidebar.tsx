@@ -20,26 +20,20 @@ const navGroups: NavGroup[] = [
         items: [
             { title: 'Home', href: '/dashboard', emoji: '🏠' },
             { title: 'Explore', href: '/explore', emoji: '🗺️' },
-            { title: 'Transit', href: '/transit', emoji: '🚇' },
-            { title: 'Events', href: '/events', emoji: '📅' },
-        ],
-    },
-    {
-        label: 'Community',
-        items: [
-            { title: 'Language Exchange', href: '/language-exchange', emoji: '🗣️' },
-            { title: 'Chat', href: '/chat', emoji: '💬' },
+            { title: 'Alerts', href: '/alerts', emoji: '🔔', badge: 5 },
         ],
     },
     {
         label: 'City',
         items: [
+            { title: 'Events', href: '/events', emoji: '📅' },
+            { title: 'Language Exchange', href: '/language-exchange', emoji: '🗣️' },
             { title: 'Neighborhoods', href: '/neighborhoods', emoji: '🏘️' },
             { title: 'Services', href: '/services', emoji: '🏥' },
         ],
     },
     {
-        label: 'Settle',
+        label: 'Personal',
         items: [
             { title: 'Bureaucracy', href: '/bureaucracy', emoji: '🏛️', badge: 3, badgeVariant: 'warn' },
             { title: 'Just Arrived', href: '/just-arrived', emoji: '📦' },

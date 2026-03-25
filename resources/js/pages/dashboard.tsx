@@ -14,8 +14,8 @@ export default function Dashboard() {
         <AppLayout>
             <Head title="Home" />
             <div className="mx-auto w-full max-w-[680px]">
-                <div className="border-b border-border px-6 py-4">
-                    <h1 className="font-display text-xl font-medium">{greeting}</h1>
+                <div className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/[0.92] px-6 py-4 backdrop-blur-2xl">
+                    <span className="font-display text-xl font-medium tracking-tight">{greeting}</span>
                     <span className="font-mono text-xs text-muted-foreground">
                         {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()}
                     </span>

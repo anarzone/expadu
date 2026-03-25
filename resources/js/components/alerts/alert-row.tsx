@@ -1,14 +1,35 @@
 import { Link, router } from '@inertiajs/react';
 
 type AlertData = {
-    id: number; type: string; title: string; body: string | null;
-    deep_link: string | null; read_at: string | null; created_at: string;
+    id: number;
+    type: string;
+    title: string;
+    body: string | null;
+    deep_link: string | null;
+    read_at: string | null;
+    created_at: string;
 };
 
-const typeConfig: Record<string, { emoji: string; bg: string; badge: string }> = {
-    system: { emoji: '🚇', bg: 'bg-warn-soft', badge: 'bg-warn-soft text-warn' },
-    social: { emoji: '🗣️', bg: 'bg-accent-soft', badge: 'bg-accent-soft text-primary' },
-    reminder: { emoji: '📅', bg: 'bg-success-soft', badge: 'bg-success-soft text-success' },
+// Per-type visual config matching the prototype exactly
+const typeConfigs: Record<string, { emoji: string; bg: string; tag: string; tagBg: string; tagColor: string; cta: string; ctaBg: string; ctaColor: string }[]> = {
+    system: [
+        { emoji: '🚇', bg: 'bg-danger-soft', tag: 'Transit', tagBg: 'bg-danger-soft', tagColor: 'text-danger', cta: 'See alternatives', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🏛️', bg: 'bg-success-soft', tag: 'Bürgeramt', tagBg: 'bg-success-soft', tagColor: 'text-success', cta: 'Book now', ctaBg: 'bg-success', ctaColor: 'text-white' },
+        { emoji: '🌊', bg: 'bg-accent-soft', tag: 'Rhine', tagBg: 'bg-accent-soft', tagColor: 'text-[#1A4CD4]', cta: 'View Rhine level', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🌦️', bg: 'bg-surface-2', tag: 'Weather', tagBg: 'bg-surface-2', tagColor: 'text-muted-foreground', cta: 'Plan my journey', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🚇', bg: 'bg-warn-soft', tag: 'Transit', tagBg: 'bg-warn-soft', tagColor: 'text-warn', cta: 'Check live status', ctaBg: 'bg-warn-soft', ctaColor: 'text-warn' },
+    ],
+    social: [
+        { emoji: '🇬🇧', bg: 'bg-accent-soft', tag: 'Language', tagBg: 'bg-accent-soft', tagColor: 'text-[#1A4CD4]', cta: 'Send message', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
+        { emoji: '🗣️', bg: 'bg-purple-100 dark:bg-purple-900', tag: 'Language', tagBg: 'bg-purple-100 dark:bg-purple-900', tagColor: 'text-purple-700 dark:text-purple-300', cta: 'View profile', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🎉', bg: 'bg-success-soft', tag: 'Event', tagBg: 'bg-success-soft', tagColor: 'text-success', cta: 'View event', ctaBg: 'bg-success-soft', ctaColor: 'text-success' },
+        { emoji: '💬', bg: 'bg-surface-2', tag: 'Community', tagBg: 'bg-surface-2', tagColor: 'text-muted-foreground', cta: 'See on map', ctaBg: 'bg-surface-2', ctaColor: 'text-muted-foreground' },
+    ],
+    reminder: [
+        { emoji: '📅', bg: 'bg-warn-soft', tag: 'Event', tagBg: 'bg-warn-soft', tagColor: 'text-warn', cta: 'Get directions', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
+        { emoji: '🏛️', bg: 'bg-danger-soft', tag: 'Bureaucracy', tagBg: 'bg-danger-soft', tagColor: 'text-danger', cta: 'Open N26 now', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
+        { emoji: '📬', bg: 'bg-surface-2', tag: 'Tax ID', tagBg: 'bg-surface-2', tagColor: 'text-muted-foreground', cta: 'Request a copy', ctaBg: 'bg-surface-2', ctaColor: 'text-muted-foreground' },
+    ],
 };
 
 function timeAgo(dateStr: string): string {
@@ -17,45 +38,89 @@ function timeAgo(dateStr: string): string {
     if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins} min ago`;
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+    if (days === 1) {
+        return 'Yesterday ' + new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+    return `${days} days ago`;
 }
 
-export function AlertRow({ alert }: { alert: AlertData }) {
-    const config = typeConfig[alert.type] || typeConfig.system;
+export function AlertRow({ alert, indexInType }: { alert: AlertData; indexInType: number }) {
     const isUnread = !alert.read_at;
+    const configs = typeConfigs[alert.type] ?? typeConfigs.system;
+    const config = configs[indexInType % configs.length];
 
-    function handleClick() {
+    function markRead(e?: React.MouseEvent) {
+        e?.stopPropagation();
         if (isUnread) {
             router.post(`/alerts/${alert.id}/read`, {}, { preserveScroll: true });
         }
     }
 
+    function handleCtaClick(e: React.MouseEvent) {
+        e.stopPropagation();
+        markRead();
+        if (alert.deep_link) {
+            router.visit(alert.deep_link);
+        }
+    }
+
     const content = (
         <div
-            onClick={handleClick}
-            className={`flex items-start gap-3 border-b border-border px-4 py-3.5 transition-colors hover:bg-secondary/50 ${isUnread ? 'bg-accent-soft/30' : ''}`}
+            onClick={markRead}
+            className={`relative flex items-start gap-[13px] border-b border-border px-6 py-3.5 transition-colors hover:bg-secondary/50 ${
+                isUnread ? 'bg-[rgba(26,76,212,0.03)]' : ''
+            }`}
         >
-            <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl text-lg ${config.bg}`}>
+            {/* Unread left bar */}
+            {isUnread && <div className="absolute top-0 bottom-0 left-0 w-[3px] bg-[#1A4CD4]" />}
+
+            {/* Icon bubble — 42x42 circle */}
+            <div className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-lg ${config.bg}`}>
                 {config.emoji}
             </div>
+
+            {/* Body */}
             <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                    <span className="text-sm font-semibold">{alert.title}</span>
-                    {isUnread && <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />}
+                <div className={`text-sm leading-[1.3] ${isUnread ? 'font-bold' : 'font-semibold'}`}>
+                    {alert.title}
                 </div>
-                {alert.body && <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{alert.body}</div>}
-                <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground">{timeAgo(alert.created_at)}</span>
-                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold capitalize ${config.badge}`}>{alert.type}</span>
+                {alert.body && (
+                    <div className="mt-0.5 text-[13px] leading-[1.5] text-muted-foreground">
+                        {alert.body}
+                    </div>
+                )}
+                <div className="mt-[5px] flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                        {timeAgo(alert.created_at)}
+                    </span>
+                    <span className={`rounded-full px-[7px] py-px text-[10px] font-bold uppercase tracking-[0.04em] ${config.tagBg} ${config.tagColor}`}>
+                        {config.tag}
+                    </span>
                 </div>
+            </div>
+
+            {/* Action column */}
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+                {isUnread && <div className="size-2 shrink-0 rounded-full bg-[#1A4CD4]" />}
+                <button
+                    onClick={handleCtaClick}
+                    className={`whitespace-nowrap rounded-lg px-[11px] py-[5px] text-[11px] font-bold ${config.ctaBg} ${config.ctaColor}`}
+                >
+                    {config.cta}
+                </button>
             </div>
         </div>
     );
 
     if (alert.deep_link) {
-        return <Link href={alert.deep_link} onClick={handleClick} className="block">{content}</Link>;
+        return (
+            <Link href={alert.deep_link} onClick={markRead} className="block">
+                {content}
+            </Link>
+        );
     }
+
     return content;
 }
