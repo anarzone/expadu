@@ -4955,7 +4955,7 @@ function renderSpots() {
   if (list) {
     list.innerHTML = filtered.map((s,i) => `
       <div class="spot-card-list ${selectedSpot?.id===s.id?'selected':''}"
-           style="animation-delay:${i*0.04}"
+           style="animation-delay:${i*0.04}s"
            onclick="selectSpot(${s.id})">
         <div class="scl-top">
           <span class="scl-emo">${s.emoji}</span>
