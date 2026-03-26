@@ -102,12 +102,15 @@ class HomeCardService
             ];
         }
 
-        // Weather context (placeholder until Bright Sky integration)
+        // Weather context — real data from Bright Sky
+        $weather = app(WeatherService::class)->getCurrentWeather();
+        $forecast = app(WeatherService::class)->getForecast();
+        $rainNote = $forecast['rain_starts'] ? "Rain from {$forecast['rain_starts']}" : 'No rain today';
         $timelineRows[] = [
-            'emoji' => '🌤️',
-            'title' => 'Dry until evening — good day to bike',
-            'subtitle' => '14°C · Wind 12 km/h',
-            'value' => '14',
+            'emoji' => $weather['emoji'],
+            'title' => "{$weather['condition']} — {$forecast['bike_score']}",
+            'subtitle' => "{$weather['temperature']}°C · Wind {$weather['wind_speed']} km/h · {$rainNote}",
+            'value' => (string) $weather['temperature'],
             'unit' => '°C',
         ];
 
@@ -265,7 +268,12 @@ class HomeCardService
 
     protected function getWeatherHeadline(): string
     {
-        // Placeholder until Bright Sky integration
-        return "Dry until 18:00 —\ngood day to bike.";
+        $forecast = app(WeatherService::class)->getForecast();
+
+        if ($forecast['rain_starts']) {
+            return "Dry until {$forecast['rain_starts']} —\ngood day to bike.";
+        }
+
+        return "Clear skies today —\nperfect day to bike.";
     }
 }

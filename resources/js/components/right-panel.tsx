@@ -1,7 +1,25 @@
+import { usePage } from '@inertiajs/react';
+
+type WeatherData = {
+    temperature: number;
+    emoji: string;
+    condition: string;
+    wind_speed: number;
+    humidity: number;
+    precipitation: number;
+};
+
+type ForecastData = {
+    rain_starts: string | null;
+    bike_score: string;
+};
+
 export function RightPanel() {
+    const { weather, forecast } = usePage<{ weather?: WeatherData; forecast?: ForecastData }>().props;
+
     return (
         <aside className="hidden w-[300px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
-            <WeatherWidget />
+            <WeatherWidget weather={weather} forecast={forecast} />
             <RhineWidget />
             <DisruptionsWidget />
             <TodayEventsWidget />
@@ -12,7 +30,17 @@ export function RightPanel() {
     );
 }
 
-function WeatherWidget() {
+function WeatherWidget({ weather, forecast }: { weather?: WeatherData; forecast?: ForecastData }) {
+    const temp = weather?.temperature ?? 11;
+    const emoji = weather?.emoji ?? '⛅';
+    const condition = weather?.condition ?? 'Partly cloudy';
+    const wind = weather?.wind_speed ?? 14;
+    const humidity = weather?.humidity ?? 68;
+    const rainStarts = forecast?.rain_starts;
+    const bikeScore = forecast?.bike_score ?? 'Good';
+    const rainLabel = rainStarts ?? 'None today';
+    const rainVariant: 'good' | 'caution' = rainStarts ? 'caution' : 'good';
+
     return (
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -25,18 +53,20 @@ function WeatherWidget() {
             <div className="flex items-start justify-between px-4 py-4">
                 <div>
                     <div className="font-display text-[44px] font-light leading-none tracking-tight">
-                        11<sup className="text-lg align-super">°</sup>
+                        {temp}<sup className="text-lg align-super">°</sup>
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">Partly cloudy</div>
-                    <div className="text-[11px] text-muted-foreground">Rain from 18:00</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{condition}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                        {rainStarts ? `Rain from ${rainStarts}` : 'No rain expected'}
+                    </div>
                 </div>
-                <div className="text-[44px] opacity-85">⛅</div>
+                <div className="text-[44px] opacity-85">{emoji}</div>
             </div>
             <div className="border-t border-border">
-                <WeatherRow emoji="🌬️" label="Wind" value="14 km/h" variant="good" />
-                <WeatherRow emoji="💧" label="Humidity" value="68%" />
-                <WeatherRow emoji="🚲" label="Bike score" value="Good until 17:45" variant="good" />
-                <WeatherRow emoji="🌧️" label="Rain arrives" value="18:00" variant="caution" />
+                <WeatherRow emoji="🌬️" label="Wind" value={`${wind} km/h`} variant={wind > 25 ? 'caution' : 'good'} />
+                <WeatherRow emoji="💧" label="Humidity" value={`${humidity}%`} />
+                <WeatherRow emoji="🚲" label="Bike score" value={bikeScore} variant="good" />
+                <WeatherRow emoji="🌧️" label="Rain arrives" value={rainLabel} variant={rainVariant} />
             </div>
         </div>
     );

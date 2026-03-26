@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,6 +44,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'isOnboarded' => $request->user()?->isOnboarded() ?? false,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'weather' => fn () => app(WeatherService::class)->getCurrentWeather(),
+            'forecast' => fn () => app(WeatherService::class)->getForecast(),
         ];
     }
 }
