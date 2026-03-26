@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /*
@@ -14,7 +16,23 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        Http::fake([
+            'api.brightsky.dev/*' => Http::response([
+                'weather' => [
+                    'temperature' => 15.0,
+                    'wind_speed_10' => 12.0,
+                    'wind_direction_10' => 220,
+                    'relative_humidity' => 65,
+                    'precipitation_10' => 0.0,
+                    'icon' => 'partly-cloudy-day',
+                    'condition' => 'dry',
+                ],
+            ]),
+            'photon.komoot.io/*' => Http::response(['features' => []]),
+        ]);
+    })
     ->in('Feature');
 
 /*
