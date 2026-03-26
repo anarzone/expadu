@@ -1,9 +1,27 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ExploreFilterBar } from '@/components/explore/filter-bar';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import AppLayout from '@/layouts/app-layout';
+
+const MapViewLazy = lazy(() => import('@/components/explore/map-view').then((m) => ({ default: m.MapView })));
+
+// Hardcoded coordinates for seeded spots (until PostGIS lat/lng exposed via API)
+const SPOT_COORDS: Record<number, [number, number]> = {
+    1: [50.9478, 6.9183],  // Café Schmitz
+    2: [50.9467, 6.9417],  // Startplatz
+    3: [50.9339, 6.9479],  // StadtBibliothek
+    4: [50.9411, 6.9228],  // Wohnzimmer
+    5: [50.9452, 6.9211],  // COWOKI
+    6: [50.9280, 6.9286],  // Uni-Bibliothek
+    7: [50.9414, 6.9736],  // Rheinpark
+    8: [50.9241, 6.9442],  // Café Sehnsucht
+    9: [50.9471, 6.9399],  // Design Offices
+    10: [50.9218, 6.9499], // Volksgarten
+    11: [50.9308, 6.9407], // Heilandt
+    12: [50.9340, 6.9478], // Zentralbibliothek
+};
 
 type SpotData = {
     id: number;
@@ -116,21 +134,30 @@ export default function Explore() {
                         </div>
                     </div>
 
-                    {/* Map placeholder */}
-                    <div className="flex h-full flex-col items-center justify-center text-center">
-                        <span className="mb-3 text-5xl">🗺️</span>
-                        <div className="text-base font-semibold text-[#6B6860]">Map View</div>
-                        <div className="mt-1.5 text-sm text-[#AAA89F]">MapLibre integration coming soon</div>
-                    </div>
-
-                    {/* Map controls */}
-                    <div className="absolute right-4 bottom-4 flex flex-col gap-1 max-md:bottom-[48%]">
-                        {['+', '−', '📍', '🗂'].map((icon) => (
-                            <div key={icon} className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-[#E2DFD6] bg-white text-sm shadow-sm hover:bg-[#EFEDE7]">
-                                {icon}
-                            </div>
-                        ))}
-                    </div>
+                    {/* MapLibre map */}
+                    <Suspense fallback={
+                        <div className="flex h-full flex-col items-center justify-center text-center">
+                            <span className="mb-3 text-5xl">🗺️</span>
+                            <div className="text-sm text-[#AAA89F]">Loading map…</div>
+                        </div>
+                    }>
+                        {typeof window !== 'undefined' && (
+                            <MapViewLazy
+                                spots={filteredSpots.map((s) => ({
+                                    id: s.id,
+                                    name: s.name,
+                                    category: s.category,
+                                    lat: SPOT_COORDS[s.id]?.[0] ?? 50.9375,
+                                    lng: SPOT_COORDS[s.id]?.[1] ?? 6.9603,
+                                }))}
+                                selectedId={selectedSpot?.id ?? null}
+                                onSelectSpot={(id) => {
+                                    const spot = spots.data.find((s) => s.id === id);
+                                    if (spot) selectSpot(spot);
+                                }}
+                            />
+                        )}
+                    </Suspense>
 
                     {/* ═══ MOBILE: Draggable bottom sheet list ═══ */}
                     <MobileListSheet spots={filteredSpots} selectedId={selectedSpot?.id ?? null} onSelect={selectSpot} />
