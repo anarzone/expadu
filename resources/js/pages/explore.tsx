@@ -5,6 +5,14 @@ import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import AppLayout from '@/layouts/app-layout';
 
+type GeoResult = {
+    name: string;
+    street: string | null;
+    city: string | null;
+    lat: number;
+    lng: number;
+};
+
 const MapViewLazy = lazy(() => import('@/components/explore/map-view').then((m) => ({ default: m.MapView })));
 
 // Hardcoded coordinates for seeded spots (until PostGIS lat/lng exposed via API)
@@ -46,6 +54,10 @@ export default function Explore() {
     const [search, setSearch] = useState('');
     const [listOpen, setListOpen] = useState(false);
 
+    // Geocoding suggestions for explore search
+    const [geoSuggestions, setGeoSuggestions] = useState<GeoResult[]>([]);
+    const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     function filterByCategory(cat: string) {
         setCategory(cat);
         router.get('/explore', cat ? { category: cat } : {}, { preserveState: true, preserveScroll: true });
@@ -56,6 +68,32 @@ export default function Explore() {
         const q = search.toLowerCase();
         return s.name.toLowerCase().includes(q) || s.address?.toLowerCase().includes(q);
     });
+
+    // When search has results, clear geo suggestions. When no results, fetch geocode.
+    useEffect(() => {
+        if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
+
+        if (!search.trim() || search.trim().length < 2 || filteredSpots.length > 0) {
+            setGeoSuggestions([]);
+            return;
+        }
+
+        geoTimerRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/geocode?q=${encodeURIComponent(search.trim())}`);
+                if (res.ok) {
+                    const data: GeoResult[] = await res.json();
+                    setGeoSuggestions(data);
+                }
+            } catch {
+                setGeoSuggestions([]);
+            }
+        }, 400);
+
+        return () => {
+            if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
+        };
+    }, [search, filteredSpots.length]);
 
     function selectSpot(spot: SpotData) {
         setSelectedSpot(spot);
@@ -89,6 +127,31 @@ export default function Explore() {
 
                     {/* Scrollable spot list */}
                     <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
+                        {/* Geocoding suggestions when no local results match */}
+                        {filteredSpots.length === 0 && geoSuggestions.length > 0 && (
+                            <div className="mb-3">
+                                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
+                                    Search nearby
+                                </div>
+                                {geoSuggestions.map((g, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                        onClick={() => {
+                                            setSearch([g.name, g.city].filter(Boolean).join(', '));
+                                        }}
+                                    >
+                                        <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{g.name}</div>
+                                            <div className="text-xs text-[#6B6860]">
+                                                {[g.street, g.city].filter(Boolean).join(', ')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         {filteredSpots.length === 0 ? (
                             <div className="py-12 text-center text-sm text-[#AAA89F]">No spots found.</div>
                         ) : (

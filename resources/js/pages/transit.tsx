@@ -1,10 +1,35 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DepartureBoard, type BoardData } from '@/components/transit/departure-board';
 import { RouteCard, type RouteCardData } from '@/components/transit/route-card';
 import { RoutineCard, type RoutineCardData } from '@/components/transit/routine-card';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
+
+type WeatherData = {
+    temperature: number;
+    icon: string;
+    emoji: string;
+    condition: string;
+    wind_speed: number;
+    wind_direction: number;
+    humidity: number;
+    precipitation: number;
+};
+
+type ForecastData = {
+    rain_starts: string | null;
+    bike_score: string;
+    hourly: Array<Record<string, unknown>>;
+};
+
+type GeoResult = {
+    name: string;
+    street: string | null;
+    city: string | null;
+    lat: number;
+    lng: number;
+};
 
 // ============================================================
 // Hardcoded data from prototype
@@ -236,6 +261,74 @@ const ALL_STOPS: StopData[] = [
 // ============================================================
 
 export default function Transit() {
+    // Shared weather props from Inertia middleware
+    const { weather, forecast } = usePage<{
+        weather: WeatherData;
+        forecast: ForecastData;
+    }>().props;
+
+    const temp = weather?.temperature ?? 18;
+    const weatherEmoji = weather?.emoji ?? '⛅';
+    const weatherCondition = weather?.condition ?? 'Partly cloudy';
+    const rainStarts = forecast?.rain_starts ?? null;
+    const bikeScore = forecast?.bike_score ?? 'Good';
+
+    // Build dynamic commute hero text
+    const commuteWeatherText = rainStarts
+        ? `dry until ${rainStarts}, lane clear`
+        : `${weatherCondition.toLowerCase()}, lane clear`;
+
+    // Build leave-by weather warning
+    const leaveByWarning = rainStarts
+        ? `Rain arrives at ${rainStarts} — plan return journey early.`
+        : `${weatherCondition} all day — enjoy the ride.`;
+
+    // Geocoding autocomplete state
+    const [geoResults, setGeoResults] = useState<GeoResult[]>([]);
+    const [geoLoading, setGeoLoading] = useState(false);
+    const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const toInputRef = useRef<HTMLInputElement>(null);
+    const [geoDropdownOpen, setGeoDropdownOpen] = useState(false);
+
+    const searchGeocode = useCallback((query: string) => {
+        if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
+        if (query.trim().length < 2) {
+            setGeoResults([]);
+            setGeoDropdownOpen(false);
+            return;
+        }
+        setGeoLoading(true);
+        geoTimerRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`);
+                if (res.ok) {
+                    const data: GeoResult[] = await res.json();
+                    setGeoResults(data);
+                    setGeoDropdownOpen(data.length > 0);
+                }
+            } catch {
+                setGeoResults([]);
+            } finally {
+                setGeoLoading(false);
+            }
+        }, 300);
+    }, []);
+
+    // Clean up timer on unmount
+    useEffect(() => {
+        return () => {
+            if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
+        };
+    }, []);
+
+    // Patch route cards with real weather data
+    const liveRoutes = ROUTES.map((r) => {
+        if (r.id === 'bike') {
+            return { ...r, detail: `No disruptions · Safe cycle lane · ${temp}°C` };
+        }
+        return r;
+    });
+
     // UI state
     const [fromValue, setFromValue] = useState('Ehrenfeld, Cologne');
     const [toValue, setToValue] = useState('');
@@ -360,7 +453,7 @@ export default function Transit() {
                         <div className="mb-[13px] flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Smart Commute</span>
                             <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F' }}>
-                                Sun 22 Mar · 09:14
+                                {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
                         <div
@@ -382,12 +475,12 @@ export default function Transit() {
                                 Recommended route · Ehrenfeld → Work
                             </div>
                             <div className="relative z-[1]" style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 400, lineHeight: 1.2, marginBottom: 18 }}>
-                                🚲 <strong>Bike today</strong> — dry until 18:00, lane clear
+                                🚲 <strong>Bike today</strong> — {commuteWeatherText}
                             </div>
 
                             {/* Route cards */}
                             <div className="relative z-[1] flex flex-col gap-2">
-                                {ROUTES.map((r) => (
+                                {liveRoutes.map((r) => (
                                     <RouteCard key={r.id} route={r} onClick={() => setRouteDetailKey(r.id)} />
                                 ))}
                             </div>
@@ -403,7 +496,7 @@ export default function Transit() {
                             >
                                 <span style={{ fontSize: 18, flexShrink: 0 }}>⏰</span>
                                 <div style={{ fontSize: 13, lineHeight: 1.4, flex: 1 }}>
-                                    Leave by <strong>08:38</strong> to arrive at work on time. Rain arrives at 18:00 — plan return journey early.
+                                    Leave by <strong>08:38</strong> to arrive at work on time. {leaveByWarning}
                                 </div>
                                 <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 18, fontWeight: 500, flexShrink: 0 }}>
                                     08:38
@@ -441,23 +534,86 @@ export default function Transit() {
                             </div>
                             {/* To + swap */}
                             <div className="flex items-center gap-[10px]">
-                                <div
-                                    className="flex flex-1 cursor-text items-center gap-[10px] transition-all focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                                    style={{
-                                        background: '#FFFFFF',
-                                        border: '1px solid #E2DFD6',
-                                        borderRadius: 9,
-                                        padding: '11px 14px',
-                                    }}
-                                >
-                                    <span style={{ fontSize: 15, color: '#AAA89F', flexShrink: 0 }}>🏁</span>
-                                    <input
-                                        className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
-                                        style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
-                                        placeholder="To — destination"
-                                        value={toValue}
-                                        onChange={(e) => setToValue(e.target.value)}
-                                    />
+                                <div className="relative flex-1">
+                                    <div
+                                        className="flex cursor-text items-center gap-[10px] transition-all focus-within:shadow-[0_0_0_3px_#EBF0FD]"
+                                        style={{
+                                            background: '#FFFFFF',
+                                            border: '1px solid #E2DFD6',
+                                            borderRadius: 9,
+                                            padding: '11px 14px',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: 15, color: '#AAA89F', flexShrink: 0 }}>🏁</span>
+                                        <input
+                                            ref={toInputRef}
+                                            className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
+                                            style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
+                                            placeholder="To — destination"
+                                            value={toValue}
+                                            onChange={(e) => {
+                                                setToValue(e.target.value);
+                                                searchGeocode(e.target.value);
+                                            }}
+                                            onFocus={() => { if (geoResults.length > 0) setGeoDropdownOpen(true); }}
+                                            onBlur={() => { setTimeout(() => setGeoDropdownOpen(false), 200); }}
+                                            autoComplete="off"
+                                        />
+                                        {geoLoading && (
+                                            <div
+                                                style={{
+                                                    width: 14,
+                                                    height: 14,
+                                                    border: '2px solid #E2DFD6',
+                                                    borderTopColor: '#1A4CD4',
+                                                    borderRadius: '50%',
+                                                    animation: 'spin .7s linear infinite',
+                                                    flexShrink: 0,
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                    {/* Geocoding dropdown */}
+                                    {geoDropdownOpen && geoResults.length > 0 && (
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                top: '100%',
+                                                left: 0,
+                                                right: 0,
+                                                marginTop: 4,
+                                                background: 'white',
+                                                border: '1px solid #E2DFD6',
+                                                borderRadius: 9,
+                                                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                                                zIndex: 60,
+                                                overflow: 'hidden',
+                                            }}
+                                        >
+                                            {geoResults.map((result, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        const label = [result.name, result.street, result.city].filter(Boolean).join(', ');
+                                                        setToValue(label);
+                                                        setGeoDropdownOpen(false);
+                                                        setGeoResults([]);
+                                                    }}
+                                                    className="cursor-pointer transition-colors hover:bg-[#EFEDE7]"
+                                                    style={{
+                                                        padding: '10px 14px',
+                                                        borderBottom: idx < geoResults.length - 1 ? '1px solid #F0EDE7' : 'none',
+                                                    }}
+                                                >
+                                                    <div style={{ fontSize: 14, fontWeight: 500, color: '#18170F' }}>{result.name}</div>
+                                                    <div style={{ fontSize: 12, color: '#6B6860', marginTop: 1 }}>
+                                                        {[result.street, result.city].filter(Boolean).join(', ')}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={swapDestinations}

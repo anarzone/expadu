@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import type { OfficeData } from '@/pages/bureaucracy';
 
-export function OfficeCard({ office }: { office: OfficeData }) {
-    const [monitoring, setMonitoring] = useState(office.monitoring);
+export function OfficeCard({ office, onToggleMonitor }: { office: OfficeData; onToggleMonitor?: () => void }) {
+    const monitoring = office.monitoring;
 
     return (
         <div
@@ -20,7 +19,7 @@ export function OfficeCard({ office }: { office: OfficeData }) {
                 <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{office.name}</div>
                     <div style={{ fontSize: 12, color: '#6B6860' }}>
-                        📍 {office.address} · {office.distance}
+                        📍 {office.address}{office.distance ? ` · ${office.distance}` : ''}
                     </div>
                 </div>
                 <div style={{ flexShrink: 0 }}>
@@ -47,7 +46,7 @@ export function OfficeCard({ office }: { office: OfficeData }) {
             {/* Alert toggle */}
             <div style={{ marginBottom: 10 }}>
                 <div
-                    onClick={() => setMonitoring(!monitoring)}
+                    onClick={() => onToggleMonitor?.()}
                     style={{
                         display: 'flex',
                         alignItems: 'center',

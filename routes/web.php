@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\OnboardingController;
@@ -64,7 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('chat', 'chat')->name('chat');
     Route::inertia('neighborhoods', 'neighborhoods')->name('neighborhoods');
     Route::inertia('services', 'services')->name('services');
-    Route::inertia('bureaucracy', 'bureaucracy')->name('bureaucracy');
+    Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
     Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');
     Route::inertia('profile', 'profile')->name('profile');
 });

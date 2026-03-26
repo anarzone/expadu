@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useRef, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { DocumentCard } from '@/components/bureaucracy/document-card';
@@ -45,6 +45,7 @@ export type DocData = {
 };
 
 export type OfficeData = {
+    id: string;
     name: string;
     address: string;
     status: string;
@@ -247,36 +248,73 @@ const SEED_DOCS: DocData[] = [
     },
 ];
 
-const SEED_OFFICES: OfficeData[] = [
-    {
-        name: 'Bürgeramt Deutz', address: 'Kalker Hauptstr. 247–273, 51103 Köln',
-        status: 'available', nextSlot: 'Tomorrow 09:15', distance: '2.3 km',
-        monitoring: true, color: '#0A7C52', colorS: '#D4F0E6', statusLabel: 'Slots available',
-        bookingUrl: 'https://termine.stadt-koeln.de/m/buergeramt/',
-        mapsUrl: 'https://www.google.com/maps/dir/?api=1&destination=Kalker+Hauptstr.+247,+51103+K%C3%B6ln',
-    },
-    {
-        name: 'Bürgeramt Innenstadt', address: 'Laurenzplatz 4, 50667 Köln',
-        status: 'busy', nextSlot: '3 weeks away', distance: '3.1 km',
-        monitoring: true, color: '#C47D0E', colorS: '#FDF0D4', statusLabel: 'Fully booked',
-        bookingUrl: 'https://termine.stadt-koeln.de/m/buergeramt/',
-        mapsUrl: 'https://www.google.com/maps/dir/?api=1&destination=Laurenzplatz+4,+50667+K%C3%B6ln',
-    },
-    {
-        name: 'Bürgeramt Ehrenfeld', address: 'Venloer Str. 10, 50672 Köln',
-        status: 'available', nextSlot: 'Wed 14 March 11:30', distance: '0.6 km',
-        monitoring: true, color: '#0A7C52', colorS: '#D4F0E6', statusLabel: '1 slot available',
-        bookingUrl: 'https://termine.stadt-koeln.de/m/buergeramt/',
-        mapsUrl: 'https://www.google.com/maps/dir/?api=1&destination=Venloer+Str.+10,+50672+K%C3%B6ln',
-    },
-    {
-        name: 'Bürgeramt Mülheim', address: 'Wiener Platz 2a, 51065 Köln',
-        status: 'busy', nextSlot: 'In 2 weeks', distance: '4.8 km',
-        monitoring: false, color: '#C47D0E', colorS: '#FDF0D4', statusLabel: 'Mostly booked',
-        bookingUrl: 'https://termine.stadt-koeln.de/m/buergeramt/',
-        mapsUrl: 'https://www.google.com/maps/dir/?api=1&destination=Wiener+Platz+2a,+51065+K%C3%B6ln',
-    },
-];
+// Slot data from the backend (BuergeramtService)
+type SlotData = {
+    name: string;
+    address: string;
+    status: string;
+    next_slot: string | null;
+    slots_today: number;
+};
+
+/**
+ * Convert backend slot data + monitors into OfficeData for the UI.
+ */
+function slotsToOffices(
+    slots: Record<string, SlotData>,
+    monitors: string[],
+): OfficeData[] {
+    return Object.entries(slots).map(([key, slot]) => {
+        const isAvailable = slot.status === 'available';
+        const isMostlyBooked = slot.status === 'mostly_booked';
+
+        let nextSlot = 'No slots';
+        if (slot.next_slot) {
+            const d = new Date(slot.next_slot);
+            const now = new Date();
+            const diffDays = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays === 0) {
+                nextSlot = `Today ${d.toLocaleTimeString('en-DE', { hour: '2-digit', minute: '2-digit' })}`;
+            } else if (diffDays === 1) {
+                nextSlot = `Tomorrow ${d.toLocaleTimeString('en-DE', { hour: '2-digit', minute: '2-digit' })}`;
+            } else if (diffDays <= 7) {
+                nextSlot = d.toLocaleDateString('en-DE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            } else {
+                nextSlot = `In ${Math.ceil(diffDays / 7)} weeks`;
+            }
+        }
+
+        let statusLabel = 'Fully booked';
+        let color = '#C4271A';
+        let colorS = '#FDE8E6';
+        if (isAvailable) {
+            statusLabel = slot.slots_today === 1 ? '1 slot available' : `${slot.slots_today} slots available`;
+            color = '#0A7C52';
+            colorS = '#D4F0E6';
+        } else if (isMostlyBooked) {
+            statusLabel = 'Mostly booked';
+            color = '#C47D0E';
+            colorS = '#FDF0D4';
+        }
+
+        const encodedAddress = encodeURIComponent(`${slot.address}, Köln`);
+
+        return {
+            id: key,
+            name: slot.name.replace('Buergeramt', 'Bürgeramt'),
+            address: `${slot.address}, Köln`,
+            status: slot.status,
+            nextSlot,
+            distance: '',
+            monitoring: monitors.includes(key),
+            color,
+            colorS,
+            statusLabel,
+            bookingUrl: 'https://termine-online.stadt-koeln.de/index.php?company=stadtkoeln',
+            mapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`,
+        };
+    });
+}
 
 const EXAMPLE_TEXTS: Record<string, string> = {
     finanzamt: `Sehr geehrte Damen und Herren,
@@ -394,6 +432,14 @@ const FILTERS = [
 // ============================================================
 
 export default function Bureaucracy() {
+    const { slots, monitors } = usePage<{
+        slots: Record<string, SlotData>;
+        monitors: string[];
+    }>().props;
+
+    const offices = useMemo(() => slotsToOffices(slots ?? {}, monitors ?? []), [slots, monitors]);
+    const monitoringCount = offices.filter((o) => o.monitoring).length;
+
     const [tasks, setTasks] = useState<TaskData[]>(SEED_TASKS);
     const [activeTab, setActiveTab] = useState('checklist');
     const [taskFilter, setTaskFilter] = useState('all');
@@ -769,7 +815,7 @@ export default function Bureaucracy() {
                                     }}
                                 />
                                 <div>
-                                    <div style={{ fontSize: 14, fontWeight: 600 }}>Monitoring 4 offices · Checking every 15 min</div>
+                                    <div style={{ fontSize: 14, fontWeight: 600 }}>Monitoring {monitoringCount} {monitoringCount === 1 ? 'office' : 'offices'} · Checking every 15 min</div>
                                     <div style={{ fontSize: 12, opacity: 0.75, marginTop: 3 }}>Last checked: just now</div>
                                 </div>
                             </div>
@@ -829,8 +875,10 @@ export default function Bureaucracy() {
                         </div>
 
                         {/* Office cards */}
-                        {SEED_OFFICES.map((office, i) => (
-                            <OfficeCard key={i} office={office} />
+                        {offices.map((office) => (
+                            <OfficeCard key={office.id} office={office} onToggleMonitor={() => {
+                                router.post('/slots/toggle', { office_id: office.id }, { preserveScroll: true });
+                            }} />
                         ))}
                     </div>
                 )}
