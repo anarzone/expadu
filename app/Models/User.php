@@ -13,13 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 #[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'onboarded_at', 'avatar_path'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * @return array<string, string>
@@ -116,5 +117,11 @@ class User extends Authenticatable
     public function behaviorEvents(): HasMany
     {
         return $this->hasMany(UserEvent::class);
+    }
+
+    /** @return HasMany<SlotMonitor, $this> */
+    public function slotMonitors(): HasMany
+    {
+        return $this->hasMany(SlotMonitor::class);
     }
 }

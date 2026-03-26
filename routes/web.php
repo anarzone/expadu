@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RoutineController;
+use App\Http\Controllers\SlotMonitorController;
 use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TransitController;
 use Illuminate\Support\Facades\Route;
@@ -49,6 +51,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('alerts', [AlertController::class, 'index'])->name('alerts');
     Route::post('alerts/{alert}/read', [AlertController::class, 'markRead'])->name('alerts.read');
     Route::post('alerts/read-all', [AlertController::class, 'markAllRead'])->name('alerts.read-all');
+
+    // Push subscriptions
+    Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+
+    // Slot monitoring
+    Route::post('slots/toggle', [SlotMonitorController::class, 'toggle'])->name('slots.toggle');
 
     // Placeholder pages
     Route::inertia('language-exchange', 'language-exchange')->name('language-exchange');

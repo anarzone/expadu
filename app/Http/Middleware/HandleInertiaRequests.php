@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'isOnboarded' => $request->user()?->isOnboarded() ?? false,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'vapidPublicKey' => config('webpush.vapid.public_key'),
             'weather' => fn () => app(WeatherService::class)->getCurrentWeather(),
             'forecast' => fn () => app(WeatherService::class)->getForecast(),
         ];
