@@ -5,6 +5,7 @@ export type AppLayoutProps = {
     children: ReactNode;
     breadcrumbs?: BreadcrumbItem[];
     rightPanel?: ReactNode;
+    fullWidth?: boolean;
 };
 
 export type AppVariant = 'header' | 'sidebar';

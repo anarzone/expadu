@@ -16,7 +16,7 @@ export function MobileDock() {
 
     return (
         <>
-            <nav className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 gap-0.5 rounded-full border border-border bg-white/96 p-[7px_10px] shadow-lg backdrop-blur-2xl dark:bg-card/96 md:hidden">
+            <nav className="fixed bottom-6 left-1/2 z-[9001] flex -translate-x-1/2 gap-0.5 rounded-full border border-border bg-white/96 p-[7px_10px] shadow-lg backdrop-blur-2xl dark:bg-card/96 md:hidden">
                 {dockItems.map((item) => {
                     const active = isCurrentUrl(item.href);
                     return (

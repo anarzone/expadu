@@ -1,4 +1,5 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
@@ -33,14 +34,24 @@ const navGroups: NavGroup[] = [
     },
 ];
 
+const dropdownItems = [
+    { label: 'Profile', emoji: '👤', href: '/profile' },
+    { label: 'Appearance', emoji: '🎨', href: '/settings/appearance' },
+];
+
 export function AppSidebar() {
     const { auth } = usePage().props;
     const user = auth?.user as { name?: string } | undefined;
     const getInitials = useInitials();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    function handleLogout() {
+        router.post('/logout');
+    }
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
-            {/* Logo — padding: 4px 8px 20px, gap: 11px */}
+        <Sidebar collapsible="icon" variant="sidebar">
+            {/* Logo */}
             <SidebarHeader className="px-4 pt-6 pb-0">
                 <Link
                     href={dashboard()}
@@ -48,7 +59,7 @@ export function AppSidebar() {
                     className="flex items-center gap-[11px] px-2 pb-5"
                 >
                     <AppLogoIcon />
-                    <span className="whitespace-nowrap font-display text-[22px] font-medium tracking-tight text-[#18170F] dark:text-[#F6F5F1]">
+                    <span data-sidebar-text className="whitespace-nowrap font-display text-[22px] font-medium tracking-tight text-[#18170F] dark:text-[#F6F5F1]">
                         Expadu
                     </span>
                 </Link>
@@ -58,21 +69,49 @@ export function AppSidebar() {
                 <NavMain groups={navGroups} />
             </SidebarContent>
 
-            {/* User — border-top, gap: 10px, padding: 10px 12px */}
-            <SidebarFooter className="px-4 pb-6">
-                <Link
-                    href="/profile"
-                    prefetch
-                    className="flex items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 pt-4 mt-2 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+            {/* User chip with dropdown */}
+            <SidebarFooter className="relative px-4 pb-4">
+                <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="mt-2 flex w-full items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 py-2.5 pt-4 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                 >
                     <div className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1A4CD4] to-[#6366F1] text-sm font-semibold text-white">
                         {getInitials(user?.name ?? '')}
                     </div>
-                    <div className="overflow-hidden">
+                    <div data-sidebar-text className="overflow-hidden">
                         <div className="truncate text-sm font-semibold whitespace-nowrap">{user?.name ?? 'User'}</div>
                         <div className="truncate text-[11px] whitespace-nowrap text-[#AAA89F]">Cologne · Expat</div>
                     </div>
-                </Link>
+                </button>
+
+                {/* Dropdown menu */}
+                {dropdownOpen && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                        <div className="absolute bottom-full left-4 right-4 z-50 mb-2 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-lg dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                            {dropdownItems.map((item) => (
+                                <Link
+                                    key={item.label}
+                                    href={item.href}
+                                    prefetch
+                                    onClick={() => setDropdownOpen(false)}
+                                    className="flex items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7] dark:text-[#F6F5F1] dark:hover:bg-[#2A2920]"
+                                >
+                                    <span className="w-[18px] text-center text-sm">{item.emoji}</span>
+                                    {item.label}
+                                </Link>
+                            ))}
+                            <div className="border-t border-[#E2DFD6] dark:border-[#3A3930]" />
+                            <button
+                                onClick={handleLogout}
+                                className="flex w-full items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#C4271A] transition-colors hover:bg-[#FDECEA] dark:hover:bg-[#2E1A1A]"
+                            >
+                                <span className="w-[18px] text-center text-sm">🚪</span>
+                                Log out
+                            </button>
+                        </div>
+                    </>
+                )}
             </SidebarFooter>
         </Sidebar>
     );

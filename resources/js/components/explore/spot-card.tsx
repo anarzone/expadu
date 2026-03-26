@@ -1,5 +1,3 @@
-import { Link } from '@inertiajs/react';
-
 type SpotData = {
     id: number;
     name: string;
@@ -13,29 +11,91 @@ type SpotData = {
 };
 
 const categoryEmoji: Record<string, string> = { cafe: '☕', coworking: '🏢', library: '📚', park: '🌳' };
-const noiseLabel: Record<string, string> = { quiet: 'Quiet', moderate: 'Moderate', loud: 'Loud' };
 
-export function SpotCard({ spot }: { spot: SpotData }) {
-    const crowdPercent = Math.min(spot.active_checkins_count * 15, 100);
+function attrChip(type: string): { label: string; cls: string } | null {
+    const map: Record<string, { label: string; cls: string }> = {
+        wifi: { label: '📶 WiFi', cls: 'bg-[#EBF0FD] text-[#1A4CD4]' },
+        quiet: { label: '🤫 Quiet', cls: 'bg-[#EDFAF4] text-[#0A7C52]' },
+        plugs: { label: '🔌 Plugs', cls: 'bg-[#FEF9EC] text-[#C47D0E]' },
+        cowork: { label: '🏢 Cowork', cls: 'bg-[#EFEDE7] text-[#6B6860]' },
+        free: { label: '🆓 Free', cls: 'bg-[#EDE9FE] text-[#7C3AED]' },
+    };
+    return map[type] || null;
+}
+
+function getAttrs(spot: SpotData): string[] {
+    const attrs: string[] = [];
+    if (spot.wifi_speed) attrs.push('wifi');
+    if (spot.noise_level === 'quiet') attrs.push('quiet');
+    if (spot.category === 'coworking') attrs.push('cowork');
+    if (spot.time_limit_mins === null && spot.category === 'library') attrs.push('free');
+    return attrs;
+}
+
+export function SpotCard({ spot, selected, onSelect, onNavigate }: {
+    spot: SpotData;
+    selected: boolean;
+    onSelect: () => void;
+    onNavigate?: () => void;
+}) {
+    const attrs = getAttrs(spot);
+    const area = spot.address?.split(',')[1]?.trim() || spot.address || '';
+
     return (
-        <Link href={`/explore/${spot.id}`} prefetch className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 transition-all hover:translate-x-0.5 hover:border-primary/25">
-            <span className="text-2xl">{categoryEmoji[spot.category] || '📍'}</span>
-            <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold">{spot.name}</div>
-                <div className="text-xs text-muted-foreground">{spot.address}</div>
-                <div className="mt-1 flex flex-wrap gap-1">
-                    {spot.wifi_speed && <span className="rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-medium text-primary">WiFi {spot.wifi_speed}</span>}
-                    {spot.noise_level && <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{noiseLabel[spot.noise_level] || spot.noise_level}</span>}
-                    {spot.time_limit_mins && <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{spot.time_limit_mins} min</span>}
+        <div
+            onClick={onSelect}
+            className={`mb-2.5 cursor-pointer rounded-[14px] border p-4 transition-all ${
+                selected
+                    ? 'border-[#1A4CD4] bg-white shadow-[0_0_0_2px_#EBF0FD] dark:bg-[#1E1D15]'
+                    : 'border-[#E2DFD6] bg-white hover:border-[rgba(26,76,212,0.3)] hover:shadow-md dark:border-[#3A3930] dark:bg-[#1E1D15]'
+            }`}
+        >
+            {/* Top: emoji 28px, name/area, distance mono */}
+            <div className="mb-2.5 flex items-start gap-3">
+                <span className="shrink-0 text-[28px] leading-none">{categoryEmoji[spot.category] || '📍'}</span>
+                <div className="min-w-0 flex-1">
+                    <div className="mb-0.5 text-[15px] font-semibold">{spot.name}</div>
+                    <div className="text-xs text-[#6B6860]">{area}</div>
+                </div>
+                <span className="shrink-0 font-mono text-xs text-[#AAA89F]">0.3 km</span>
+            </div>
+
+            {/* Attrs: chips with gap 6px */}
+            <div className="mb-2.5 flex flex-wrap gap-1.5">
+                {attrs.map((a) => {
+                    const chip = attrChip(a);
+                    if (!chip) return null;
+                    return (
+                        <span key={a} className={`flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium ${chip.cls}`}>
+                            {chip.label}
+                        </span>
+                    );
+                })}
+            </div>
+
+            {/* Bottom: status left, actions right */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-medium">
+                    <span className="inline-block size-[7px] rounded-full bg-[#0A7C52]" />
+                    <span className="text-[#0A7C52]">Open</span>
+                    <span className="text-[#AAA89F]">07:00–22:00</span>
+                    <span className="text-[11px] text-[#AAA89F]">· 👥 {spot.active_checkins_count} here</span>
+                </div>
+                <div className="flex gap-1.5">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onNavigate?.(); }}
+                        className="rounded-full border border-[#E2DFD6] bg-[#EFEDE7] px-[11px] py-[5px] text-[11px] font-semibold text-[#6B6860] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4]"
+                    >
+                        Navigate ↗
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                        className="rounded-full border border-[#1A4CD4] bg-[#1A4CD4] px-[11px] py-[5px] text-[11px] font-semibold text-white transition-all hover:bg-[#1541B8]"
+                    >
+                        Details
+                    </button>
                 </div>
             </div>
-            <div className="shrink-0 text-right">
-                {spot.rating && <div className="text-xs font-medium">⭐ {spot.rating.toFixed(1)}</div>}
-                <div className="mt-1 h-1.5 w-10 overflow-hidden rounded-full bg-secondary">
-                    <div className={`h-full rounded-full ${crowdPercent > 70 ? 'bg-warn' : crowdPercent > 40 ? 'bg-yellow-400' : 'bg-success'}`} style={{ width: `${crowdPercent}%` }} />
-                </div>
-                <div className="mt-0.5 text-[9px] text-muted-foreground">{crowdPercent}% full</div>
-            </div>
-        </Link>
+        </div>
     );
 }

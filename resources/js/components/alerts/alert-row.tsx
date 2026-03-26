@@ -14,7 +14,7 @@ type AlertData = {
 const typeConfigs: Record<string, { emoji: string; bg: string; tag: string; tagBg: string; tagColor: string; cta: string; ctaBg: string; ctaColor: string }[]> = {
     system: [
         { emoji: '🚇', bg: 'bg-danger-soft', tag: 'Transit', tagBg: 'bg-danger-soft', tagColor: 'text-danger', cta: 'See alternatives', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
-        { emoji: '🏛️', bg: 'bg-success-soft', tag: 'Bürgeramt', tagBg: 'bg-success-soft', tagColor: 'text-success', cta: 'Book now', ctaBg: 'bg-success', ctaColor: 'text-white' },
+        { emoji: '🏛️', bg: 'bg-success-soft', tag: 'Bürgeramt', tagBg: 'bg-success-soft', tagColor: 'text-success', cta: 'Book now', ctaBg: 'bg-[#0A7C52]', ctaColor: 'text-white' },
         { emoji: '🌊', bg: 'bg-accent-soft', tag: 'Rhine', tagBg: 'bg-accent-soft', tagColor: 'text-[#1A4CD4]', cta: 'View Rhine level', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
         { emoji: '🌦️', bg: 'bg-surface-2', tag: 'Weather', tagBg: 'bg-surface-2', tagColor: 'text-muted-foreground', cta: 'Plan my journey', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
         { emoji: '🚇', bg: 'bg-warn-soft', tag: 'Transit', tagBg: 'bg-warn-soft', tagColor: 'text-warn', cta: 'Check live status', ctaBg: 'bg-warn-soft', ctaColor: 'text-warn' },

@@ -11,27 +11,34 @@ export default function AppSidebarLayout({
     children,
     breadcrumbs = [],
     rightPanel,
+    fullWidth,
 }: AppLayoutProps) {
     return (
         <AppShell variant="sidebar">
             <AppSidebar />
             <AppContent variant="sidebar" className="overflow-x-hidden">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
-                <MobileTopBar />
-                <div className="flex min-h-0 flex-1">
-                    {/* Centre content */}
-                    <div className="min-w-0 flex-1 border-border pt-14 pb-28 md:border-r md:pt-0 md:pb-0 lg:max-w-[680px]">
+                {!fullWidth && <MobileTopBar />}
+                {fullWidth ? (
+                    <div className="flex-1 overflow-hidden">
                         {children}
                     </div>
-                    {/* Right panel — desktop only (>1024px) */}
-                    {rightPanel !== undefined ? (
-                        <aside className="hidden w-[300px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
-                            {rightPanel}
-                        </aside>
-                    ) : (
-                        <RightPanel />
-                    )}
-                </div>
+                ) : (
+                    /* Prototype layout: justify-content:center, centre 600px fixed, right 300px fixed.
+                       On mobile: centre fills full width, no right panel, top padding for mobile bar. */
+                    <div className="flex min-h-0 flex-1 justify-center">
+                        <div className="w-full shrink-0 border-[#E2DFD6] pt-14 pb-28 md:w-[600px] md:border-r md:pt-0 md:pb-0 dark:border-[#3A3930]">
+                            {children}
+                        </div>
+                        {rightPanel !== undefined ? (
+                            <aside className="hidden w-[300px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
+                                {rightPanel}
+                            </aside>
+                        ) : (
+                            <RightPanel />
+                        )}
+                    </div>
+                )}
             </AppContent>
             <MobileDock />
         </AppShell>

@@ -215,3 +215,46 @@
         @apply bg-background text-foreground;
     }
 }
+
+/*
+ * Sidebar icon-rail: prototype behavior.
+ * Single sticky nav — no spacer/fixed desync.
+ * Collapsed: hover expands with shadow. Text fades.
+ */
+
+/* Hover expand when collapsed (via button) */
+.group.peer[data-state="collapsed"]:hover > nav[data-sidebar="sidebar"] {
+    width: var(--sidebar-width) !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,.08);
+    z-index: 200;
+}
+
+/* Text hidden when collapsed, visible on hover */
+.group.peer[data-state="collapsed"]:not(:hover) [data-sidebar-text] {
+    opacity: 0;
+    transition: opacity .1s;
+}
+.group.peer[data-state="collapsed"]:hover [data-sidebar-text] {
+    opacity: 1;
+    transition: opacity .15s .08s;
+}
+
+/* Auto-collapse below 1280px — same behavior regardless of data-state */
+@media (max-width: 1280px) {
+    .group.peer[data-state="expanded"] > nav[data-sidebar="sidebar"] {
+        width: var(--sidebar-width-icon) !important;
+    }
+    .group.peer[data-state="expanded"]:hover > nav[data-sidebar="sidebar"] {
+        width: var(--sidebar-width) !important;
+        box-shadow: 4px 0 32px rgba(0,0,0,.08);
+        z-index: 200;
+    }
+    .group.peer[data-state="expanded"]:not(:hover) [data-sidebar-text] {
+        opacity: 0;
+        transition: opacity .1s;
+    }
+    .group.peer[data-state="expanded"]:hover [data-sidebar-text] {
+        opacity: 1;
+        transition: opacity .15s .08s;
+    }
+}
