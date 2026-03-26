@@ -487,28 +487,27 @@ export default function LanguageExchange() {
             rightPanel={<LanguageRightPanel onOpenPartner={openPartner} />}
         >
             <Head title="Language Exchange" />
-            <div className="mx-auto w-full max-w-[680px]">
+            <div className="w-full">
                 {/* ── Sticky header: title + pill tabs ── */}
                 <div
-                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{ background: 'rgba(246,245,241,.94)', backdropFilter: 'blur(16px)' }}
+                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] px-3 pt-4 pb-3.5"
+                    style={{ background: 'rgba(246,245,241,.92)', backdropFilter: 'blur(16px)' }}
                 >
                     <span
-                        className="shrink-0"
-                        style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}
+                        className="hidden shrink-0 md:block"
+                        style={{ fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 500, letterSpacing: '-0.01em' }}
                     >
                         Language Exchange
                     </span>
-                    <div className="flex gap-1 rounded-full p-[3px]" style={{ background: '#EFEDE7' }}>
+                    <div className="flex shrink-0 gap-1 rounded-full p-[3px]" style={{ background: '#EFEDE7' }}>
                         {TABS.map((t) => (
                             <button
                                 key={t.id}
                                 onClick={() => setActiveTab(t.id)}
-                                className="cursor-pointer rounded-full border-none px-3.5 py-1.5 transition-all"
+                                className="shrink-0 cursor-pointer whitespace-nowrap rounded-full border-none px-[14px] py-[6px] transition-all"
                                 style={{
                                     fontSize: 12,
                                     fontWeight: 600,
-                                    fontFamily: "'Geist', sans-serif",
                                     color: activeTab === t.id ? '#18170F' : '#6B6860',
                                     background: activeTab === t.id ? 'white' : 'transparent',
                                     boxShadow: activeTab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
