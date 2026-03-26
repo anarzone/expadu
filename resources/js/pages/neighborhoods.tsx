@@ -526,12 +526,13 @@ export default function Neighborhoods() {
                                     <div style={{ fontSize: 14, fontWeight: 600, color: '#6B6860' }}>No neighborhoods found</div>
                                 </div>
                             ) : (
-                                filtered.map((n) => (
+                                filtered.map((n, i) => (
                                     <NeighborhoodCard
                                         key={n.id}
                                         neighborhood={n}
                                         onSave={() => toggleSave(n.id)}
                                         onClick={() => openDetail(n.id)}
+                                        index={i}
                                     />
                                 ))
                             )}

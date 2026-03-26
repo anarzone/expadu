@@ -12,6 +12,7 @@ export function EventCard({
     onRsvp,
     onSave,
     onClick,
+    index = 0,
 }: {
     event: EventData;
     going: boolean;
@@ -19,6 +20,7 @@ export function EventCard({
     onRsvp: (e: MouseEvent) => void;
     onSave: (e: MouseEvent) => void;
     onClick: () => void;
+    index?: number;
 }) {
     const attendStr = formatAttending(event.attending);
 
@@ -30,10 +32,11 @@ export function EventCard({
     return (
         <div
             onClick={onClick}
-            className="group mb-2.5 cursor-pointer overflow-hidden bg-white transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
+            className="animate-fade-up group mb-2.5 cursor-pointer overflow-hidden bg-white transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
             style={{
                 border: borderStyle,
                 borderRadius: 14,
+                animationDelay: `${index * 0.04}s`,
             }}
             onMouseEnter={(e) => {
                 (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(26,76,212,.25)';

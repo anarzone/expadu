@@ -45,21 +45,24 @@ export function NeighborhoodCard({
     neighborhood,
     onSave,
     onClick,
+    index = 0,
 }: {
     neighborhood: NeighborhoodData;
     onSave: () => void;
     onClick: () => void;
+    index?: number;
 }) {
     const n = neighborhood;
 
     return (
         <div
             onClick={onClick}
-            className="cursor-pointer overflow-hidden rounded-[14px] transition-all hover:-translate-y-px hover:border-[rgba(26,76,212,0.25)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
+            className="animate-fade-up cursor-pointer overflow-hidden rounded-[14px] transition-all hover:-translate-y-px hover:border-[rgba(26,76,212,0.25)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
             style={{
                 background: 'white',
                 border: n.current ? '1.5px solid #1A4CD4' : '1px solid #E2DFD6',
                 marginBottom: 12,
+                animationDelay: `${index * 0.04}s`,
             }}
         >
             {/* Header */}

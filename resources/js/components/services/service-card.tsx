@@ -23,19 +23,19 @@ export type ServiceData = {
 export function ServiceCard({
     service,
     onClick,
-    style,
+    index = 0,
 }: {
     service: ServiceData;
     onClick: () => void;
-    style?: React.CSSProperties;
+    index?: number;
 }) {
     const stars = '★'.repeat(Math.round(service.rating)) + '☆'.repeat(5 - Math.round(service.rating));
 
     return (
         <div
             onClick={onClick}
-            className="mb-2.5 cursor-pointer rounded-[14px] border border-[#E2DFD6] bg-white p-4 transition-all hover:border-[rgba(26,76,212,0.25)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
-            style={style}
+            className="animate-fade-up mb-2.5 cursor-pointer rounded-[14px] border border-[#E2DFD6] bg-white p-4 transition-all hover:border-[rgba(26,76,212,0.25)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
+            style={{ animationDelay: `${index * 0.04}s` }}
         >
             {/* Top row: avatar, info, rating */}
             <div className="mb-2.5 flex items-start gap-[13px]">

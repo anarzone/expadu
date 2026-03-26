@@ -1,48 +1,83 @@
-import { router } from '@inertiajs/react';
+export type RoutineCardData = {
+    id: string;
+    emoji: string;
+    name: string;
+    subtitle: string;
+    badge: string;
+    badgeBg: string;
+    badgeColor: string;
+    days: boolean[]; // [M, T, W, T, F, S, S]
+    leaveBy: string;
+};
 
-const dayLabels = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const dayDisplay = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export function RoutineCard({ routine }: { routine: { id: number; name: string; emoji: string | null; from_stop: string; to_stop: string; days: string[]; departure_time: string; is_active: boolean } }) {
-    function toggleActive() {
-        router.put(`/routines/${routine.id}`, { is_active: !routine.is_active }, { preserveScroll: true });
-    }
-
-    function deleteRoutine() {
-        router.delete(`/routines/${routine.id}`, { preserveScroll: true });
-    }
-
+export function RoutineCard({ routine, onClick }: { routine: RoutineCardData; onClick?: () => void }) {
     return (
-        <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="text-lg">{routine.emoji || '🚇'}</span>
-                    <span className="text-sm font-semibold">{routine.name}</span>
+        <div
+            onClick={onClick}
+            className="cursor-pointer transition-all"
+            style={{
+                background: '#FFFFFF',
+                border: '1px solid #E2DFD6',
+                borderRadius: 14,
+                padding: 16,
+                marginBottom: 10,
+            }}
+        >
+            {/* Top row */}
+            <div className="mb-3 flex items-center gap-3">
+                <span style={{ fontSize: 24, flexShrink: 0 }}>{routine.emoji}</span>
+                <div className="min-w-0 flex-1">
+                    <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{routine.name}</div>
+                    <div style={{ fontSize: 12, color: '#6B6860' }}>{routine.subtitle}</div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${routine.is_active ? 'bg-success-soft text-success' : 'bg-secondary text-muted-foreground'}`}>
-                        {routine.is_active ? 'Active' : 'Paused'}
-                    </span>
-                    <button onClick={deleteRoutine} className="text-xs text-muted-foreground hover:text-destructive">&#x2715;</button>
+                <span
+                    className="shrink-0"
+                    style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '4px 10px',
+                        borderRadius: 20,
+                        background: routine.badgeBg,
+                        color: routine.badgeColor,
+                    }}
+                >
+                    {routine.badge}
+                </span>
+            </div>
+
+            {/* Bottom row: day indicators + leave time */}
+            <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                    {routine.days.map((active, i) => (
+                        <div
+                            key={i}
+                            className="flex items-center justify-center"
+                            style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                fontSize: 10,
+                                fontWeight: 700,
+                                background: active ? '#EBF0FD' : '#EFEDE7',
+                                color: active ? '#1A4CD4' : '#AAA89F',
+                            }}
+                        >
+                            {DAY_LABELS[i]}
+                        </div>
+                    ))}
                 </div>
-            </div>
-            <div className="mb-2 text-xs text-muted-foreground">
-                {routine.from_stop} &rarr; {routine.to_stop} &middot; {routine.departure_time}
-            </div>
-            <div className="flex items-center gap-1">
-                {dayLabels.map((day, i) => (
-                    <span
-                        key={day}
-                        className={`flex size-7 items-center justify-center rounded-full text-[10px] font-bold ${
-                            routine.days.includes(day) ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground'
-                        }`}
-                    >
-                        {dayDisplay[i]}
-                    </span>
-                ))}
-                <button onClick={toggleActive} className="ml-auto text-xs font-medium text-primary">
-                    {routine.is_active ? 'Pause' : 'Resume'}
-                </button>
+                <div
+                    className="ml-auto"
+                    style={{
+                        fontSize: 12,
+                        color: '#6B6860',
+                        fontFamily: "'Geist Mono', monospace",
+                    }}
+                >
+                    {routine.leaveBy}
+                </div>
             </div>
         </div>
     );

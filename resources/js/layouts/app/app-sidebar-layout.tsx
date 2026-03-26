@@ -27,7 +27,7 @@ export default function AppSidebarLayout({
                     /* Prototype layout: justify-content:center, centre 600px fixed, right 300px fixed.
                        On mobile: centre fills full width, no right panel, top padding for mobile bar. */
                     <div className="flex min-h-0 flex-1 justify-center">
-                        <div className="w-full shrink-0 border-[#E2DFD6] pt-14 pb-28 md:w-[600px] md:border-r md:pt-0 md:pb-0 dark:border-[#3A3930]">
+                        <div className="w-full shrink-0 overflow-hidden border-[#E2DFD6] pt-14 pb-28 md:w-[600px] md:border-r md:pt-0 md:pb-0 dark:border-[#3A3930]">
                             {children}
                         </div>
                         {rightPanel !== undefined ? (

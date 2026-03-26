@@ -141,21 +141,24 @@ export default function Services() {
             rightPanel={<ServicesRightPanel />}
         >
             <Head title="Services" />
-            <div className="mx-auto w-full max-w-[680px]">
-                {/* Sticky header */}
+            <div className="w-full">
+                {/* Sticky header — title only */}
                 <div
                     className="sticky top-0 z-50 border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{ background: 'rgba(246,245,241,.94)', backdropFilter: 'blur(16px)' }}
+                    style={{ background: 'rgba(246,245,241,.92)', backdropFilter: 'blur(16px)' }}
                 >
                     <span
-                        className="mb-3 block"
                         style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}
                     >
                         Services
                     </span>
+                </div>
+
+                {/* All content in one px-6 wrapper for consistent width */}
+                <div className="px-6">
                     {/* Search bar */}
                     <div
-                        className="flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]"
+                        className="mt-3.5 mb-3 flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]"
                     >
                         <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
                         <input
@@ -172,33 +175,31 @@ export default function Services() {
                             </button>
                         )}
                     </div>
-                </div>
 
-                {/* Category tabs */}
-                <div
-                    className="flex overflow-x-auto border-b border-[#E2DFD6] bg-white"
-                    style={{ scrollbarWidth: 'none' }}
-                >
-                    {CATEGORIES.map((c) => (
-                        <button
-                            key={c.id}
-                            onClick={() => setActiveCat(c.id)}
-                            className="flex shrink-0 cursor-pointer flex-col items-center gap-1 border-b-2 bg-transparent px-4 py-3 transition-all hover:bg-[#EFEDE7]"
-                            style={{
-                                borderBottomColor: activeCat === c.id ? '#1A4CD4' : 'transparent',
-                                color: activeCat === c.id ? '#1A4CD4' : 'inherit',
-                                border: 'none',
-                                borderBottom: `2px solid ${activeCat === c.id ? '#1A4CD4' : 'transparent'}`,
-                            }}
-                        >
-                            <span style={{ fontSize: 20 }}>{c.ico}</span>
-                            <span style={{ fontSize: 11, fontWeight: 600 }}>{c.label}</span>
-                        </button>
-                    ))}
-                </div>
+                    {/* Category tabs */}
+                    <div
+                        className="mb-4 flex overflow-x-auto border-b border-[#E2DFD6] bg-white dark:bg-[#1E1D15]"
+                        style={{ scrollbarWidth: 'none' }}
+                    >
+                        {CATEGORIES.map((c) => (
+                            <button
+                                key={c.id}
+                                onClick={() => setActiveCat(c.id)}
+                                className="flex shrink-0 cursor-pointer flex-col items-center gap-1 bg-transparent px-4 py-3 transition-all hover:bg-[#EFEDE7]"
+                                style={{
+                                    border: 'none',
+                                    borderBottom: `2px solid ${activeCat === c.id ? '#1A4CD4' : 'transparent'}`,
+                                    color: activeCat === c.id ? '#1A4CD4' : '#6B6860',
+                                }}
+                            >
+                                <span style={{ fontSize: 20 }}>{c.ico}</span>
+                                <span style={{ fontSize: 11, fontWeight: 600 }}>{c.label}</span>
+                            </button>
+                        ))}
+                    </div>
 
-                {/* Services feed */}
-                <div className="px-6 py-4">
+                    {/* Services feed */}
+                    <div className="py-0">
                     {filtered.length === 0 ? (
                         <div className="py-12 text-center" style={{ color: '#AAA89F' }}>
                             <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
@@ -211,10 +212,11 @@ export default function Services() {
                                 key={s.id}
                                 service={s}
                                 onClick={() => setSelectedService(s)}
-                                style={{ animationDelay: `${i * 0.05}s` }}
+                                index={i}
                             />
                         ))
                     )}
+                    </div>
                 </div>
             </div>
 

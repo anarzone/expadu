@@ -452,7 +452,7 @@ export default function Events() {
                                                 <div className="h-px flex-1 bg-[#E2DFD6]" />
                                             </div>
 
-                                            {evs.map((ev) => (
+                                            {evs.map((ev, i) => (
                                                 <EventCard
                                                     key={ev.id}
                                                     event={ev}
@@ -461,6 +461,7 @@ export default function Events() {
                                                     onRsvp={() => toggleRsvp(ev.id)}
                                                     onSave={() => toggleSave(ev.id)}
                                                     onClick={() => openEvent(ev.id)}
+                                                    index={i}
                                                 />
                                             ))}
                                         </div>

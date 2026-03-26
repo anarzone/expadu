@@ -216,6 +216,15 @@
     }
 }
 
+/* Card entrance animation — prototype fadeUp */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+    animation: fadeUp .3s ease both;
+}
+
 /*
  * Sidebar icon-rail: prototype behavior.
  * Single sticky nav — no spacer/fixed desync.
