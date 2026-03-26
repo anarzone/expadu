@@ -11,24 +11,25 @@ type AlertData = {
 };
 
 // Per-type visual config matching the prototype exactly
+// Hardcoded hex colors matching prototype exactly — token classes don't resolve through variable chain
 const typeConfigs: Record<string, { emoji: string; bg: string; tag: string; tagBg: string; tagColor: string; cta: string; ctaBg: string; ctaColor: string }[]> = {
     system: [
-        { emoji: '🚇', bg: 'bg-danger-soft', tag: 'Transit', tagBg: 'bg-danger-soft', tagColor: 'text-danger', cta: 'See alternatives', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
-        { emoji: '🏛️', bg: 'bg-success-soft', tag: 'Bürgeramt', tagBg: 'bg-success-soft', tagColor: 'text-success', cta: 'Book now', ctaBg: 'bg-success', ctaColor: 'text-white' },
-        { emoji: '🌊', bg: 'bg-accent-soft', tag: 'Rhine', tagBg: 'bg-accent-soft', tagColor: 'text-[#1A4CD4]', cta: 'View Rhine level', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
-        { emoji: '🌦️', bg: 'bg-surface-2', tag: 'Weather', tagBg: 'bg-surface-2', tagColor: 'text-muted-foreground', cta: 'Plan my journey', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
-        { emoji: '🚇', bg: 'bg-warn-soft', tag: 'Transit', tagBg: 'bg-warn-soft', tagColor: 'text-warn', cta: 'Check live status', ctaBg: 'bg-warn-soft', ctaColor: 'text-warn' },
+        { emoji: '🚇', bg: 'bg-[#FDECEA]', tag: 'Transit', tagBg: 'bg-[#FDECEA]', tagColor: 'text-[#C4271A]', cta: 'See alternatives', ctaBg: 'bg-[#EBF0FD]', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🏛️', bg: 'bg-[#EDFAF4]', tag: 'Bürgeramt', tagBg: 'bg-[#EDFAF4]', tagColor: 'text-[#0A7C52]', cta: 'Book now', ctaBg: 'bg-[#0A7C52]', ctaColor: 'text-white' },
+        { emoji: '🌊', bg: 'bg-[#EBF0FD]', tag: 'Rhine', tagBg: 'bg-[#EBF0FD]', tagColor: 'text-[#1A4CD4]', cta: 'View Rhine level', ctaBg: 'bg-[#EBF0FD]', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🌦️', bg: 'bg-[#EFEDE7]', tag: 'Weather', tagBg: 'bg-[#EFEDE7]', tagColor: 'text-[#6B6860]', cta: 'Plan my journey', ctaBg: 'bg-[#EBF0FD]', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🚇', bg: 'bg-[#FEF9EC]', tag: 'Transit', tagBg: 'bg-[#FEF9EC]', tagColor: 'text-[#C47D0E]', cta: 'Check live status', ctaBg: 'bg-[#FEF9EC]', ctaColor: 'text-[#C47D0E]' },
     ],
     social: [
-        { emoji: '🇬🇧', bg: 'bg-accent-soft', tag: 'Language', tagBg: 'bg-accent-soft', tagColor: 'text-[#1A4CD4]', cta: 'Send message', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
-        { emoji: '🗣️', bg: 'bg-purple-100 dark:bg-purple-900', tag: 'Language', tagBg: 'bg-purple-100 dark:bg-purple-900', tagColor: 'text-purple-700 dark:text-purple-300', cta: 'View profile', ctaBg: 'bg-accent-soft', ctaColor: 'text-[#1A4CD4]' },
-        { emoji: '🎉', bg: 'bg-success-soft', tag: 'Event', tagBg: 'bg-success-soft', tagColor: 'text-success', cta: 'View event', ctaBg: 'bg-success-soft', ctaColor: 'text-success' },
-        { emoji: '💬', bg: 'bg-surface-2', tag: 'Community', tagBg: 'bg-surface-2', tagColor: 'text-muted-foreground', cta: 'See on map', ctaBg: 'bg-surface-2', ctaColor: 'text-muted-foreground' },
+        { emoji: '🇬🇧', bg: 'bg-[#EBF0FD]', tag: 'Language', tagBg: 'bg-[#EBF0FD]', tagColor: 'text-[#1A4CD4]', cta: 'Send message', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
+        { emoji: '🗣️', bg: 'bg-[#EDE9FE]', tag: 'Language', tagBg: 'bg-[#EDE9FE]', tagColor: 'text-[#7C3AED]', cta: 'View profile', ctaBg: 'bg-[#EBF0FD]', ctaColor: 'text-[#1A4CD4]' },
+        { emoji: '🎉', bg: 'bg-[#EDFAF4]', tag: 'Event', tagBg: 'bg-[#EDFAF4]', tagColor: 'text-[#0A7C52]', cta: 'View event', ctaBg: 'bg-[#EDFAF4]', ctaColor: 'text-[#0A7C52]' },
+        { emoji: '💬', bg: 'bg-[#EFEDE7]', tag: 'Community', tagBg: 'bg-[#EFEDE7]', tagColor: 'text-[#6B6860]', cta: 'See on map', ctaBg: 'bg-[#EFEDE7]', ctaColor: 'text-[#6B6860]' },
     ],
     reminder: [
-        { emoji: '📅', bg: 'bg-warn-soft', tag: 'Event', tagBg: 'bg-warn-soft', tagColor: 'text-warn', cta: 'Get directions', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
-        { emoji: '🏛️', bg: 'bg-danger-soft', tag: 'Bureaucracy', tagBg: 'bg-danger-soft', tagColor: 'text-danger', cta: 'Open N26 now', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
-        { emoji: '📬', bg: 'bg-surface-2', tag: 'Tax ID', tagBg: 'bg-surface-2', tagColor: 'text-muted-foreground', cta: 'Request a copy', ctaBg: 'bg-surface-2', ctaColor: 'text-muted-foreground' },
+        { emoji: '📅', bg: 'bg-[#FEF9EC]', tag: 'Event', tagBg: 'bg-[#FEF9EC]', tagColor: 'text-[#C47D0E]', cta: 'Get directions', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
+        { emoji: '🏛️', bg: 'bg-[#FDECEA]', tag: 'Bureaucracy', tagBg: 'bg-[#FDECEA]', tagColor: 'text-[#C4271A]', cta: 'Open N26 now', ctaBg: 'bg-[#1A4CD4]', ctaColor: 'text-white' },
+        { emoji: '📬', bg: 'bg-[#EFEDE7]', tag: 'Tax ID', tagBg: 'bg-[#EFEDE7]', tagColor: 'text-[#6B6860]', cta: 'Request a copy', ctaBg: 'bg-[#EFEDE7]', ctaColor: 'text-[#6B6860]' },
     ],
 };
 
