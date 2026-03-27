@@ -8,9 +8,6 @@ use Illuminate\Http\Request;
 
 class UserPlaceController extends Controller
 {
-    /**
-     * Store a new user place.
-     */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -29,9 +26,25 @@ class UserPlaceController extends Controller
         return back();
     }
 
-    /**
-     * Delete a user place.
-     */
+    public function update(Request $request, UserPlace $userPlace): RedirectResponse
+    {
+        if ($userPlace->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'emoji' => ['sometimes', 'string', 'max:10'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
+        ]);
+
+        $userPlace->update($validated);
+
+        return back();
+    }
+
     public function destroy(Request $request, UserPlace $userPlace): RedirectResponse
     {
         if ($userPlace->user_id !== $request->user()->id) {

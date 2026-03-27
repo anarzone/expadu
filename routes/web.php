@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // User places CRUD
     Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');
+    Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->name('user-places.update');
     Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->name('user-places.destroy');
 
     // Placeholder pages

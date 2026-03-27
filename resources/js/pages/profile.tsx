@@ -20,7 +20,7 @@ const ACTIVITY: Activity[] = [
 
 const DEFAULT_INTERESTS = ['Tech', 'Travel', 'Coffee', 'Language exchange', 'Running'];
 
-type Place = { id: number; emoji: string; name: string; addr: string };
+type Place = { id: number; emoji: string; name: string; addr: string; lat?: number | null; lng?: number | null };
 
 type UserPlaceData = {
     id: number;
@@ -136,6 +136,8 @@ export default function Profile() {
         emoji: p.emoji || '📍',
         name: p.name,
         addr: p.address || '',
+        lat: p.lat ?? null,
+        lng: p.lng ?? null,
     }));
     const [localPlaces, setLocalPlaces] = useState<Place[]>([]);
 
@@ -264,6 +266,8 @@ export default function Profile() {
             setPlaceAddr(place.addr);
             setPlaceEmoji(place.emoji);
             setEditingPlaceId(place.id);
+            setPlaceLat(place.lat ?? null);
+            setPlaceLng(place.lng ?? null);
         } else {
             setPlaceName('');
             setPlaceAddr('');
@@ -278,9 +282,22 @@ export default function Profile() {
     function savePlace() {
         if (!placeName.trim()) { showToast('Please enter a place name'); return; }
         if (editingPlaceId) {
-            // Optimistic local update for edit (no backend endpoint for update yet)
-            setPlaces((prev) => prev.map((p) => p.id === editingPlaceId ? { ...p, emoji: placeEmoji, name: placeName.trim(), addr: placeAddr.trim() } : p));
-            showToast('✓ ' + placeName.trim() + ' updated');
+            // Update via backend
+            router.put(`/user-places/${editingPlaceId}`, {
+                emoji: placeEmoji,
+                name: placeName.trim(),
+                address: placeAddr.trim() || null,
+                lat: placeLat,
+                lng: placeLng,
+            }, {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => showToast('✓ ' + placeName.trim() + ' updated'),
+                onError: (errors) => {
+                    const firstError = Object.values(errors)[0];
+                    showToast('Error: ' + (typeof firstError === 'string' ? firstError : 'Could not update'));
+                },
+            });
         } else {
             // Create via backend
             router.post('/user-places', {
