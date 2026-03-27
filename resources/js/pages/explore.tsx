@@ -318,9 +318,9 @@ export default function Explore() {
                     </div>
                 </div>
 
-                {/* ═══ DETAIL PANEL ═══ Desktop/tablet only — slides in next to list like Google Maps */}
+                {/* ═══ DETAIL PANEL ═══ Desktop/tablet — overlays on top of map, next to list */}
                 {selectedSpot && (
-                    <div className="flex w-[420px] shrink-0 flex-col border-r border-[#E2DFD6] bg-white max-md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                    <div className="absolute inset-y-0 left-[420px] z-[70] flex w-[420px] flex-col border-r border-[#E2DFD6] bg-white shadow-[4px_0_24px_rgba(0,0,0,0.08)] max-md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
                         {/* Header: Work Spot label + name + close */}
                         <div className="flex shrink-0 items-center justify-between border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
                             <div className="min-w-0 flex-1">
