@@ -32,7 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:20,1')
         ->name('api.stops');
     Route::get('api/spots', SpotSearchController::class)
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:120,1')
         ->name('api.spots');
     Route::post('api/track', TrackEventController::class)
         ->middleware('throttle:60,1')

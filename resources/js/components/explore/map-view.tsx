@@ -150,8 +150,16 @@ export const MapView = forwardRef<MapViewHandle, {
         });
 
         // Emit bounds on pan/zoom so parent can fetch viewport spots
+        // Skip when movement is from spot selection (programmatic flyTo)
         let boundsTimer: ReturnType<typeof setTimeout> | null = null;
+        let skipNextBoundsChange = false;
+        (map as any)._skipBounds = (skip: boolean) => { skipNextBoundsChange = skip; };
+
         map.on('moveend', () => {
+            if (skipNextBoundsChange) {
+                skipNextBoundsChange = false;
+                return;
+            }
             if (boundsTimer) clearTimeout(boundsTimer);
             boundsTimer = setTimeout(() => {
                 const bounds = map.getBounds();
@@ -161,7 +169,7 @@ export const MapView = forwardRef<MapViewHandle, {
                     ne_lat: bounds.getNorth(),
                     ne_lng: bounds.getEast(),
                 });
-            }, 300); // debounce 300ms
+            }, 500); // debounce 500ms to reduce API calls
         });
 
         mapRef.current = map;
@@ -211,10 +219,11 @@ export const MapView = forwardRef<MapViewHandle, {
             markersRef.current.push(marker);
         });
 
-        // Pan to selected spot — keep current zoom level
+        // Pan to selected spot — keep current zoom, don't trigger bounds refetch
         if (selectedId) {
             const selected = spots.find((s) => s.id === selectedId);
             if (selected) {
+                (map as any)._skipBounds?.(true);
                 map.flyTo({ center: [selected.lng, selected.lat], duration: 600 });
             }
         }
