@@ -321,15 +321,17 @@ export default function Explore() {
                 {/* ═══ DETAIL PANEL ═══ Desktop/tablet only — slides in next to list like Google Maps */}
                 {selectedSpot && (
                     <div className="flex w-[420px] shrink-0 flex-col border-r border-[#E2DFD6] bg-white max-md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                        {/* Header with close button */}
-                        <div className="flex shrink-0 items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 dark:border-[#3A3930]">
+                        {/* Header: Work Spot label + name + close */}
+                        <div className="flex shrink-0 items-center justify-between border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
+                            <div className="min-w-0 flex-1">
+                                <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Work Spot</div>
+                            </div>
                             <button
                                 onClick={() => setSelectedSpot(null)}
-                                className="flex size-8 items-center justify-center rounded-full bg-[#EFEDE7] text-base font-bold text-[#6B6860] transition-colors hover:bg-[#E2DFD6]"
+                                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#EFEDE7] text-[13px] text-[#6B6860] transition-colors hover:bg-[#E2DFD6]"
                             >
                                 ✕
                             </button>
-                            <span className="min-w-0 flex-1 truncate text-sm font-semibold">{selectedSpot.name}</span>
                         </div>
                         {/* Detail content */}
                         <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} inline />

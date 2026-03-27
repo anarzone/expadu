@@ -67,16 +67,18 @@ export function SpotDetailSheet({ spot, onClose, inline = false }: { spot: SpotD
 
     const content = (
         <>
-            {/* Header row: label + close */}
-            <div className="mb-0 flex items-center justify-between px-1 pb-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Work Spot</span>
-                <button
-                    onClick={onClose}
-                    className="flex size-7 items-center justify-center rounded-full bg-[#EFEDE7] text-[13px] text-[#6B6860]"
-                >
-                    ✕
-                </button>
-            </div>
+            {/* Header row: label + close — only in bottom sheet mode */}
+            {!inline && (
+                <div className="mb-0 flex items-center justify-between px-1 pb-3">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Work Spot</span>
+                    <button
+                        onClick={onClose}
+                        className="flex size-7 items-center justify-center rounded-full bg-[#EFEDE7] text-[13px] text-[#6B6860]"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             {/* Hero: emoji 40px, name (Fraunces 22px), area, open badge */}
             <div className="mb-4 flex items-start gap-3.5">
