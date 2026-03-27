@@ -244,12 +244,12 @@ export default function Profile() {
                 onError: (errors) => {
                     const firstError = Object.values(errors)[0];
                     showToast('Error: ' + (typeof firstError === 'string' ? firstError : 'Could not save'));
-                    // Revert local state on error
                     switch (field) {
                         case 'name': setProfileName(user?.name ?? ''); break;
                         case 'email': setProfileEmail(user?.email ?? ''); break;
                     }
                 },
+                onFinish: restoreHash,
             });
         } else {
             showToast('✓ ' + field.charAt(0).toUpperCase() + field.slice(1) + ' updated');
@@ -280,6 +280,13 @@ export default function Profile() {
         setShowPlaceForm(true);
     }
 
+    // Restore URL hash after Inertia navigation strips it
+    function restoreHash() {
+        if (typeof window !== 'undefined' && activeTab) {
+            window.history.replaceState(null, '', `#${activeTab}`);
+        }
+    }
+
     function savePlace() {
         if (!placeName.trim()) { showToast('Please enter a place name'); return; }
         if (editingPlaceId) {
@@ -298,6 +305,7 @@ export default function Profile() {
                     const firstError = Object.values(errors)[0];
                     showToast('Error: ' + (typeof firstError === 'string' ? firstError : 'Could not update'));
                 },
+                onFinish: restoreHash,
             });
         } else {
             // Create via backend
@@ -315,6 +323,7 @@ export default function Profile() {
                     const firstError = Object.values(errors)[0];
                     showToast('Error: ' + (typeof firstError === 'string' ? firstError : 'Could not save'));
                 },
+                onFinish: restoreHash,
             });
         }
         setShowPlaceForm(false);
@@ -403,6 +412,7 @@ export default function Profile() {
             preserveState: true,
             onSuccess: () => showToast('Place removed'),
             onError: () => showToast('Error: Could not remove place'),
+            onFinish: restoreHash,
         });
     }
 
