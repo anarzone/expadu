@@ -211,11 +211,11 @@ export const MapView = forwardRef<MapViewHandle, {
             markersRef.current.push(marker);
         });
 
-        // Fly to selected spot
+        // Pan to selected spot — keep current zoom level
         if (selectedId) {
             const selected = spots.find((s) => s.id === selectedId);
             if (selected) {
-                map.flyTo({ center: [selected.lng, selected.lat], zoom: 15, duration: 800 });
+                map.flyTo({ center: [selected.lng, selected.lat], duration: 600 });
             }
         }
     }, [spots, selectedId, onSelectSpot]);
