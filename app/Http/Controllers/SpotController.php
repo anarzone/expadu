@@ -50,7 +50,8 @@ class SpotController extends Controller
             };
         }
 
-        $spots = $query->withCount('activeCheckins')->paginate(50);
+        // Initial load: 20 nearest. Map fetches more via GET /api/spots as user pans
+        $spots = $query->withCount('activeCheckins')->paginate(20);
 
         return Inertia::render('explore', [
             'spots' => $spots,

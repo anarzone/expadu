@@ -33,13 +33,16 @@ const categoryEmoji: Record<string, string> = {
     park: '🌳',
 };
 
+export type MapBounds = { sw_lat: number; sw_lng: number; ne_lat: number; ne_lng: number };
+
 export const MapView = forwardRef<MapViewHandle, {
     spots: SpotPin[];
     personalPlaces?: PersonalPlace[];
     selectedId: number | null;
     onSelectSpot: (id: number) => void;
     onMapTap?: (lat: number, lng: number) => void;
-}>(function MapView({ spots, personalPlaces = [], selectedId, onSelectSpot, onMapTap }, ref) {
+    onBoundsChange?: (bounds: MapBounds) => void;
+}>(function MapView({ spots, personalPlaces = [], selectedId, onSelectSpot, onMapTap, onBoundsChange }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
     const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -48,10 +51,12 @@ export const MapView = forwardRef<MapViewHandle, {
     const userMarkerRef = useRef<maplibregl.Marker | null>(null);
     const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
 
-    // Keep onMapTap callback fresh via ref to avoid recreating the map
+    // Keep callbacks fresh via refs to avoid recreating the map
     const onMapTapRef = useRef(onMapTap);
+    const onBoundsChangeRef = useRef(onBoundsChange);
     useEffect(() => {
         onMapTapRef.current = onMapTap;
+        onBoundsChangeRef.current = onBoundsChange;
     }, [onMapTap]);
 
     useImperativeHandle(ref, () => ({
@@ -137,12 +142,26 @@ export const MapView = forwardRef<MapViewHandle, {
             geolocate.trigger();
         });
 
-        // Tap-to-discover: click on empty map area (uses ref for fresh callback)
+        // Tap-to-discover: click on empty map area
         map.on('click', (e) => {
             const target = e.originalEvent.target as HTMLElement;
             if (target.closest('.maplibregl-marker')) return;
-
             onMapTapRef.current?.(e.lngLat.lat, e.lngLat.lng);
+        });
+
+        // Emit bounds on pan/zoom so parent can fetch viewport spots
+        let boundsTimer: ReturnType<typeof setTimeout> | null = null;
+        map.on('moveend', () => {
+            if (boundsTimer) clearTimeout(boundsTimer);
+            boundsTimer = setTimeout(() => {
+                const bounds = map.getBounds();
+                onBoundsChangeRef.current?.({
+                    sw_lat: bounds.getSouth(),
+                    sw_lng: bounds.getWest(),
+                    ne_lat: bounds.getNorth(),
+                    ne_lng: bounds.getEast(),
+                });
+            }, 300); // debounce 300ms
         });
 
         mapRef.current = map;

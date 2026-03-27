@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ExploreFilterBar } from '@/components/explore/filter-bar';
-import type { MapViewHandle } from '@/components/explore/map-view';
+import type { MapBounds, MapViewHandle } from '@/components/explore/map-view';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import { useTracker } from '@/hooks/use-tracker';
@@ -58,6 +58,30 @@ export default function Explore() {
     const [listOpen, setListOpen] = useState(false);
     const mapRef = useRef<MapViewHandle>(null);
 
+    // Viewport-based spots — fetched from /api/spots as the map moves
+    const [mapSpots, setMapSpots] = useState<SpotData[]>([]);
+    const handleBoundsChange = useCallback((bounds: MapBounds) => {
+        const params = new URLSearchParams({
+            sw_lat: String(bounds.sw_lat),
+            sw_lng: String(bounds.sw_lng),
+            ne_lat: String(bounds.ne_lat),
+            ne_lng: String(bounds.ne_lng),
+            limit: '100',
+        });
+        if (category) params.set('category', category);
+        fetch(`/api/spots?${params}`)
+            .then((r) => r.ok ? r.json() : [])
+            .then((data) => setMapSpots(data))
+            .catch(() => {});
+    }, [category]);
+
+    // Combine initial server spots + map viewport spots (deduplicated)
+    const allSpots = (() => {
+        const seen = new Set(spots.data.map((s) => s.id));
+        const extra = mapSpots.filter((s) => !seen.has(s.id));
+        return [...spots.data, ...extra];
+    })();
+
     // Geocoding suggestions for explore search
     const [geoSuggestions, setGeoSuggestions] = useState<GeoResult[]>([]);
     const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,7 +102,7 @@ export default function Explore() {
         router.get('/explore', params, { preserveState: true, preserveScroll: true });
     }
 
-    const filteredSpots = spots.data.filter((s) => {
+    const filteredSpots = allSpots.filter((s) => {
         if (!search) return true;
         const q = search.toLowerCase();
         return s.name.toLowerCase().includes(q) || s.address?.toLowerCase().includes(q);
@@ -308,10 +332,11 @@ export default function Explore() {
                                 personalPlaces={personalPlaces ?? []}
                                 selectedId={selectedSpot?.id ?? null}
                                 onSelectSpot={(id) => {
-                                    const spot = spots.data.find((s) => s.id === id);
+                                    const spot = allSpots.find((s) => s.id === id);
                                     if (spot) selectSpot(spot);
                                 }}
                                 onMapTap={handleMapTap}
+                                onBoundsChange={handleBoundsChange}
                             />
                         )}
                     </Suspense>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\BureaucracyController;
@@ -30,6 +31,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('api/stops', StopSearchController::class)
         ->middleware('throttle:20,1')
         ->name('api.stops');
+    Route::get('api/spots', SpotSearchController::class)
+        ->middleware('throttle:30,1')
+        ->name('api.spots');
     Route::post('api/track', TrackEventController::class)
         ->middleware('throttle:60,1')
         ->name('api.track');
