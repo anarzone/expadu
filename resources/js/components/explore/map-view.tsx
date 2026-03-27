@@ -111,16 +111,26 @@ export const MapView = forwardRef<MapViewHandle, {
         map.addControl(geolocate, 'bottom-right');
         geolocateRef.current = geolocate;
 
-        // Toggle marker labels based on zoom — hide text when zoomed out, show when zoomed in
-        // IMPORTANT: never set transform on marker elements — it conflicts with MapLibre positioning
-        function updateMarkerLabels() {
+        // Resize markers on zoom — change font-size and padding, NOT transform
+        function updateMarkerSize() {
             const zoom = map.getZoom();
+            // Zoom 10: tiny (emoji only), 13: normal, 16+: large
             const showLabels = zoom >= 13;
-            document.querySelectorAll('.spot-label').forEach((el) => {
-                (el as HTMLElement).style.display = showLabels ? '' : 'none';
+            const fontSize = zoom >= 14 ? 12 : zoom >= 12 ? 11 : 10;
+            const emojiSize = zoom >= 14 ? 14 : zoom >= 12 ? 12 : 10;
+            const pad = zoom >= 14 ? '4px 8px' : zoom >= 12 ? '3px 6px' : '2px 4px';
+
+            document.querySelectorAll('.spot-marker-pill').forEach((el) => {
+                const htmlEl = el as HTMLElement;
+                htmlEl.style.fontSize = fontSize + 'px';
+                htmlEl.style.padding = pad;
+                const emojiEl = htmlEl.querySelector('.spot-emoji') as HTMLElement;
+                if (emojiEl) emojiEl.style.fontSize = emojiSize + 'px';
+                const label = htmlEl.querySelector('.spot-label') as HTMLElement;
+                if (label) label.style.display = showLabels ? '' : 'none';
             });
         }
-        map.on('zoomend', updateMarkerLabels);
+        map.on('zoomend', updateMarkerSize);
 
         // Auto-trigger geolocation on map load
         map.on('load', () => {
@@ -169,7 +179,7 @@ export const MapView = forwardRef<MapViewHandle, {
                 transition: background 0.2s;
                 transform: ${isSelected ? 'scale(1.1)' : 'scale(1)'};
             `;
-            el.innerHTML = `<span style="font-size:14px">${emoji}</span><span class="spot-label" style="max-width:80px;overflow:hidden;text-overflow:ellipsis">${spot.name}</span>`;
+            el.innerHTML = `<span class="spot-emoji" style="font-size:14px">${emoji}</span><span class="spot-label" style="max-width:80px;overflow:hidden;text-overflow:ellipsis">${spot.name}</span>`;
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 onSelectSpot(spot.id);

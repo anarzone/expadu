@@ -31,30 +31,61 @@ class ImportOsmSpots extends Command
 
         $this->info('Querying Overpass API for Cologne spots...');
 
-        $query = <<<'OVERPASS'
-[out:json][timeout:60];
-area["name"="Köln"]->.cologne;
-(
-  node["amenity"="cafe"](area.cologne);
-  node["amenity"="coworking_space"](area.cologne);
-  node["office"="coworking"](area.cologne);
-  node["amenity"="library"](area.cologne);
-);
-out body;
-OVERPASS;
+        // Fetch each category separately to avoid timeouts
+        $bbox = '50.92,6.92,50.96,6.97'; // Cologne inner city
+        $queries = [
+            'cafe' => "[out:json][timeout:25];node[\"amenity\"=\"cafe\"]({$bbox});out body;",
+            'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$bbox});node[\"office\"=\"coworking\"]({$bbox}););out body;",
+            'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$bbox});out body;",
+        ];
+
+        $allElements = [];
+        foreach ($queries as $category => $query) {
+            $this->info("  Fetching {$category}...");
+            try {
+                $response = Http::timeout(30)
+                    ->get('https://overpass-api.de/api/interpreter', ['data' => $query]);
+
+                if ($response->successful()) {
+                    $elements = $response->json('elements', []);
+                    foreach ($elements as &$el) {
+                        $el['_category'] = $category;
+                    }
+                    $allElements = array_merge($allElements, $elements);
+                    $this->info('    Found '.count($elements)." {$category} spots");
+                } else {
+                    $this->warn("    {$category} query failed: status {$response->status()}");
+                }
+                sleep(2); // Rate limit courtesy
+            } catch (\Exception $e) {
+                $this->warn("    {$category} query error: {$e->getMessage()}");
+            }
+        }
+
+        if (empty($allElements)) {
+            $this->error('No spots found from Overpass API.');
+
+            return self::FAILURE;
+        }
+
+        $this->info('Total: '.count($allElements).' spots from Overpass');
 
         try {
-            $response = Http::timeout(90)
-                ->asForm()
-                ->post('https://overpass-api.de/api/interpreter', [
-                    'data' => $query,
-                ]);
+            // Fake response structure for existing code below
+            $response = new class($allElements)
+            {
+                public function __construct(private array $elements) {}
 
-            if (! $response->successful()) {
-                $this->error("Overpass API returned status {$response->status()}");
+                public function json(string $key = '', $default = null)
+                {
+                    return $key === 'elements' ? $this->elements : $default;
+                }
 
-                return self::FAILURE;
-            }
+                public function successful(): bool
+                {
+                    return true;
+                }
+            };
         } catch (\Exception $e) {
             $this->error("Overpass API request failed: {$e->getMessage()}");
 
