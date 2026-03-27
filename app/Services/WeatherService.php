@@ -14,7 +14,7 @@ class WeatherService
      */
     public function getCurrentWeather(float $lat = 50.9375, float $lng = 6.9603): array
     {
-        return Cache::remember("weather_current_{$lat}_{$lng}", 900, function () use ($lat, $lng) {
+        return Cache::remember("weather_current_{$lat}_{$lng}", 300, function () use ($lat, $lng) {
             try {
                 $response = Http::timeout(5)->retry(2, 500)
                     ->get('https://api.brightsky.dev/current_weather', [
@@ -51,7 +51,7 @@ class WeatherService
      */
     public function getForecast(float $lat = 50.9375, float $lng = 6.9603): array
     {
-        return Cache::remember("weather_forecast_{$lat}_{$lng}", 900, function () use ($lat, $lng) {
+        return Cache::remember("weather_forecast_{$lat}_{$lng}", 300, function () use ($lat, $lng) {
             try {
                 $today = now()->format('Y-m-d');
                 $response = Http::timeout(5)->retry(2, 500)

@@ -145,7 +145,7 @@ class HomeCardService
             'data' => [
                 'urgent_task' => $urgentTaskData,
                 'appointment' => $appointmentData,
-                'headline' => $this->getWeatherHeadline(),
+                'headline' => $this->buildWeatherHeadline($weather, $forecast),
                 'timeline_rows' => $timelineRows,
             ],
             'priority' => 100,
@@ -307,11 +307,8 @@ class HomeCardService
         ];
     }
 
-    protected function getWeatherHeadline(): string
+    protected function buildWeatherHeadline(array $weather, array $forecast): string
     {
-        $weather = app(WeatherService::class)->getCurrentWeather();
-        $forecast = app(WeatherService::class)->getForecast();
-
         $condition = $weather['condition'] ?? 'Clear sky';
 
         if ($forecast['rain_starts']) {
