@@ -30,8 +30,9 @@ class WeatherService
                         'icon' => $w['icon'] ?? 'cloudy',
                         'emoji' => $this->iconToEmoji($w['icon'] ?? 'cloudy'),
                         'condition' => $this->iconToCondition($w['icon'] ?? 'cloudy'),
-                        'wind_speed' => round($w['wind_speed_10'] ?? $w['wind_speed'] ?? 0),
-                        'wind_direction' => $w['wind_direction_10'] ?? $w['wind_direction'] ?? 0,
+                        'wind_speed' => round($w['wind_speed'] ?? $w['wind_speed_10'] ?? 0),
+                        'wind_gust' => round($w['wind_gust_10'] ?? $w['wind_speed_10'] ?? 0),
+                        'wind_direction' => $w['wind_direction'] ?? $w['wind_direction_10'] ?? 0,
                         'humidity' => round($w['relative_humidity'] ?? 0),
                         'precipitation' => $w['precipitation_10'] ?? 0,
                     ];
@@ -164,13 +165,14 @@ class WeatherService
     protected function fallbackWeather(): array
     {
         return [
-            'temperature' => 11,
-            'icon' => 'partly-cloudy-day',
-            'emoji' => '⛅',
-            'condition' => 'Partly cloudy',
-            'wind_speed' => 14,
-            'wind_direction' => 220,
-            'humidity' => 68,
+            'temperature' => 0,
+            'icon' => 'cloudy',
+            'emoji' => '☁️',
+            'condition' => 'Weather unavailable',
+            'wind_speed' => 0,
+            'wind_gust' => 0,
+            'wind_direction' => 0,
+            'humidity' => 0,
             'precipitation' => 0,
         ];
     }

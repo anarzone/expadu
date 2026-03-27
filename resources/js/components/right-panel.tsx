@@ -5,6 +5,7 @@ type WeatherData = {
     emoji: string;
     condition: string;
     wind_speed: number;
+    wind_gust?: number;
     humidity: number;
     precipitation: number;
 };
@@ -40,8 +41,9 @@ function WeatherWidget({ weather, forecast }: { weather?: WeatherData; forecast?
     const temp = weather?.temperature ?? 11;
     const emoji = weather?.emoji ?? '⛅';
     const condition = weather?.condition ?? 'Partly cloudy';
-    const wind = weather?.wind_speed ?? 14;
-    const humidity = weather?.humidity ?? 68;
+    const wind = weather?.wind_speed ?? 0;
+    const gust = weather?.wind_gust ?? 0;
+    const humidity = weather?.humidity ?? 0;
     const rainStarts = forecast?.rain_starts;
     const bikeScore = forecast?.bike_score ?? 'Good';
     const rainLabel = rainStarts ?? 'None today';
@@ -69,7 +71,7 @@ function WeatherWidget({ weather, forecast }: { weather?: WeatherData; forecast?
                 <div className="text-[44px] opacity-85">{emoji}</div>
             </div>
             <div className="border-t border-border">
-                <WeatherRow emoji="🌬️" label="Wind" value={`${wind} km/h`} variant={wind > 25 ? 'caution' : 'good'} />
+                <WeatherRow emoji="🌬️" label="Wind" value={`${wind} km/h${gust && gust > wind ? ` (gusts ${gust})` : ''}`} variant={wind > 25 ? 'caution' : 'good'} />
                 <WeatherRow emoji="💧" label="Humidity" value={`${humidity}%`} />
                 <WeatherRow emoji="🚲" label="Bike score" value={bikeScore} variant="good" />
                 <WeatherRow emoji="🌧️" label="Rain arrives" value={rainLabel} variant={rainVariant} />
