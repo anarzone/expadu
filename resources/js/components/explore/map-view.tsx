@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -10,6 +10,12 @@ type SpotPin = {
     lng: number;
 };
 
+export type MapViewHandle = {
+    flyTo: (lat: number, lng: number, zoom?: number) => void;
+    addSearchPin: (lat: number, lng: number, label: string) => void;
+    clearSearchPin: () => void;
+};
+
 const categoryEmoji: Record<string, string> = {
     cafe: '☕',
     coworking: '🏢',
@@ -17,18 +23,46 @@ const categoryEmoji: Record<string, string> = {
     park: '🌳',
 };
 
-export function MapView({
-    spots,
-    selectedId,
-    onSelectSpot,
-}: {
+export const MapView = forwardRef<MapViewHandle, {
     spots: SpotPin[];
     selectedId: number | null;
     onSelectSpot: (id: number) => void;
-}) {
+}>(function MapView({ spots, selectedId, onSelectSpot }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
     const markersRef = useRef<maplibregl.Marker[]>([]);
+    const searchPinRef = useRef<maplibregl.Marker | null>(null);
+
+    // Expose flyTo / search pin to parent
+    useImperativeHandle(ref, () => ({
+        flyTo(lat: number, lng: number, zoom = 15) {
+            mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 1200 });
+        },
+        addSearchPin(lat: number, lng: number, label: string) {
+            searchPinRef.current?.remove();
+            const map = mapRef.current;
+            if (!map) return;
+
+            const el = document.createElement('div');
+            el.style.cssText = `
+                display: flex; align-items: center; gap: 4px;
+                padding: 6px 12px; border-radius: 20px;
+                font-size: 13px; font-weight: 600; color: white;
+                background: #C4271A;
+                box-shadow: 0 2px 12px rgba(196,39,26,0.4);
+                white-space: nowrap;
+            `;
+            el.innerHTML = `<span style="font-size:14px">📍</span><span>${label}</span>`;
+
+            searchPinRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                .setLngLat([lng, lat])
+                .addTo(map);
+        },
+        clearSearchPin() {
+            searchPinRef.current?.remove();
+            searchPinRef.current = null;
+        },
+    }));
 
     // Initialize map
     useEffect(() => {
@@ -37,7 +71,7 @@ export function MapView({
         const map = new maplibregl.Map({
             container: containerRef.current,
             style: 'https://tiles.openfreemap.org/styles/liberty',
-            center: [6.9603, 50.9375], // Cologne
+            center: [6.9603, 50.9375],
             zoom: 13,
             attributionControl: false,
         });
@@ -64,7 +98,6 @@ export function MapView({
         const map = mapRef.current;
         if (!map) return;
 
-        // Remove old markers
         markersRef.current.forEach((m) => m.remove());
         markersRef.current = [];
 
@@ -74,7 +107,6 @@ export function MapView({
             const emoji = categoryEmoji[spot.category] || '📍';
             const isSelected = spot.id === selectedId;
 
-            // Create marker element
             const el = document.createElement('div');
             el.style.cssText = `
                 display: flex; align-items: center; gap: 4px;
@@ -98,9 +130,15 @@ export function MapView({
 
             markersRef.current.push(marker);
         });
+
+        // Fly to selected spot
+        if (selectedId) {
+            const selected = spots.find((s) => s.id === selectedId);
+            if (selected) {
+                map.flyTo({ center: [selected.lng, selected.lat], zoom: 15, duration: 800 });
+            }
+        }
     }, [spots, selectedId, onSelectSpot]);
 
-    return (
-        <div ref={containerRef} className="size-full" />
-    );
-}
+    return <div ref={containerRef} className="size-full" />;
+});

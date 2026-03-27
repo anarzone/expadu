@@ -19,6 +19,7 @@ const navGroups: NavGroup[] = [
     {
         label: 'City',
         items: [
+            { title: 'Transit', href: '/transit', emoji: '🚇' },
             { title: 'Events', href: '/events', emoji: '📅' },
             { title: 'Language Exchange', href: '/language-exchange', emoji: '🗣️' },
             { title: 'Neighborhoods', href: '/neighborhoods', emoji: '🏘️' },

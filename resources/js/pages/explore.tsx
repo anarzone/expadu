@@ -1,6 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ExploreFilterBar } from '@/components/explore/filter-bar';
+import type { MapViewHandle } from '@/components/explore/map-view';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import AppLayout from '@/layouts/app-layout';
@@ -13,7 +14,7 @@ type GeoResult = {
     lng: number;
 };
 
-const MapViewLazy = lazy(() => import('@/components/explore/map-view').then((m) => ({ default: m.MapView })));
+const MapViewLazy = lazy(() => import('@/components/explore/map-view').then((m) => ({ default: m.MapView as any })));
 
 // Hardcoded coordinates for seeded spots (until PostGIS lat/lng exposed via API)
 const SPOT_COORDS: Record<number, [number, number]> = {
@@ -53,6 +54,7 @@ export default function Explore() {
     const [selectedSpot, setSelectedSpot] = useState<SpotData | null>(null);
     const [search, setSearch] = useState('');
     const [listOpen, setListOpen] = useState(false);
+    const mapRef = useRef<MapViewHandle>(null);
 
     // Geocoding suggestions for explore search
     const [geoSuggestions, setGeoSuggestions] = useState<GeoResult[]>([]);
@@ -75,6 +77,7 @@ export default function Explore() {
 
         if (!search.trim() || search.trim().length < 2 || filteredSpots.length > 0) {
             setGeoSuggestions([]);
+            mapRef.current?.clearSearchPin();
             return;
         }
 
@@ -139,6 +142,8 @@ export default function Explore() {
                                         className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                         onClick={() => {
                                             setSearch([g.name, g.city].filter(Boolean).join(', '));
+                                            mapRef.current?.flyTo(g.lat, g.lng, 16);
+                                            mapRef.current?.addSearchPin(g.lat, g.lng, g.name);
                                         }}
                                     >
                                         <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
@@ -206,6 +211,7 @@ export default function Explore() {
                     }>
                         {typeof window !== 'undefined' && (
                             <MapViewLazy
+                                ref={mapRef}
                                 spots={filteredSpots.map((s) => ({
                                     id: s.id,
                                     name: s.name,
