@@ -14,6 +14,7 @@ export type MapViewHandle = {
     flyTo: (lat: number, lng: number, zoom?: number) => void;
     addSearchPin: (lat: number, lng: number, label: string) => void;
     clearSearchPin: () => void;
+    locateUser: () => void;
 };
 
 const categoryEmoji: Record<string, string> = {
@@ -32,8 +33,9 @@ export const MapView = forwardRef<MapViewHandle, {
     const mapRef = useRef<maplibregl.Map | null>(null);
     const markersRef = useRef<maplibregl.Marker[]>([]);
     const searchPinRef = useRef<maplibregl.Marker | null>(null);
+    const userMarkerRef = useRef<maplibregl.Marker | null>(null);
+    const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
 
-    // Expose flyTo / search pin to parent
     useImperativeHandle(ref, () => ({
         flyTo(lat: number, lng: number, zoom = 15) {
             mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 1200 });
@@ -50,17 +52,22 @@ export const MapView = forwardRef<MapViewHandle, {
                 font-size: 13px; font-weight: 600; color: white;
                 background: #C4271A;
                 box-shadow: 0 2px 12px rgba(196,39,26,0.4);
-                white-space: nowrap;
+                white-space: nowrap; cursor: pointer;
             `;
             el.innerHTML = `<span style="font-size:14px">📍</span><span>${label}</span>`;
 
             searchPinRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
                 .setLngLat([lng, lat])
                 .addTo(map);
+
+            map.flyTo({ center: [lng, lat], zoom: 16, duration: 1200 });
         },
         clearSearchPin() {
             searchPinRef.current?.remove();
             searchPinRef.current = null;
+        },
+        locateUser() {
+            geolocateRef.current?.trigger();
         },
     }));
 
@@ -77,13 +84,19 @@ export const MapView = forwardRef<MapViewHandle, {
         });
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-        map.addControl(
-            new maplibregl.GeolocateControl({
-                positionOptions: { enableHighAccuracy: true },
-                trackUserLocation: false,
-            }),
-            'bottom-right',
-        );
+
+        const geolocate = new maplibregl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: true,
+            showUserHeading: true,
+        });
+        map.addControl(geolocate, 'bottom-right');
+        geolocateRef.current = geolocate;
+
+        // Auto-trigger geolocation on map load
+        map.on('load', () => {
+            geolocate.trigger();
+        });
 
         mapRef.current = map;
 
