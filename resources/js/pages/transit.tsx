@@ -1,11 +1,16 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { DepartureBoard, type BoardData } from '@/components/transit/departure-board';
 import { GeocodeInput } from '@/components/transit/geocode-input';
 import { RouteCard, type RouteCardData } from '@/components/transit/route-card';
 import { RoutineCard, type RoutineCardData } from '@/components/transit/routine-card';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
+
+const RoutePreviewMapLazy = lazy(() =>
+    import('@/components/transit/route-preview-map').then((m) => ({ default: m.RoutePreviewMap })),
+);
 
 type WeatherData = {
     temperature: number;
@@ -647,15 +652,38 @@ export default function Transit() {
                                                 </div>
                                             ))}
 
-                                            {/* Open in Maps button */}
-                                            <div className="mt-1 flex gap-2">
+                                            {/* Route preview map */}
+                                            <div className="mt-3">
+                                                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
+                                                    Route preview
+                                                </div>
+                                                <Suspense
+                                                    fallback={
+                                                        <div
+                                                            className="flex items-center justify-center rounded-xl border border-[#E2DFD6] bg-[#EFEDE7]"
+                                                            style={{ height: 200 }}
+                                                        >
+                                                            <span className="text-sm text-[#AAA89F]">Loading map...</span>
+                                                        </div>
+                                                    }
+                                                >
+                                                    <RoutePreviewMapLazy
+                                                        origin={FROM}
+                                                        destination={{ lat: journeyDest.lat, lng: journeyDest.lng }}
+                                                        mode={bikeMins <= transitMins ? 'bike' : 'transit'}
+                                                    />
+                                                </Suspense>
+                                            </div>
+
+                                            {/* Navigation buttons */}
+                                            <div className="mt-3 flex gap-2">
                                                 <a
                                                     href={`https://www.google.com/maps/dir/?api=1&origin=${FROM.lat},${FROM.lng}&destination=${journeyDest.lat},${journeyDest.lng}&travelmode=transit`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
                                                 >
-                                                    🗺️ Open in Google Maps
+                                                    🗺️ Start navigation
                                                 </a>
                                                 <a
                                                     href={`https://maps.apple.com/?saddr=${FROM.lat},${FROM.lng}&daddr=${journeyDest.lat},${journeyDest.lng}&dirflg=r`}
@@ -663,13 +691,13 @@ export default function Transit() {
                                                     rel="noopener noreferrer"
                                                     className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
                                                 >
-                                                    🍎 Apple Maps
+                                                    🍎 Open in Apple Maps
                                                 </a>
                                             </div>
 
                                             <button
                                                 onClick={() => { setJourneyDest(null); setToValue(''); }}
-                                                className="mt-1 text-center text-xs font-medium text-[#AAA89F] transition-colors hover:text-[#6B6860]"
+                                                className="mt-2 text-center text-xs font-medium text-[#AAA89F] transition-colors hover:text-[#6B6860]"
                                             >
                                                 Clear destination
                                             </button>

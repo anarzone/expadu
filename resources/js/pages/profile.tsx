@@ -1,7 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
 import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
 import AppLayout from '@/layouts/app-layout';
+import type { Auth } from '@/types';
 
 // ============================================================
 // Types & Data
@@ -21,11 +22,20 @@ const DEFAULT_INTERESTS = ['Tech', 'Travel', 'Coffee', 'Language exchange', 'Run
 
 type Place = { id: number; emoji: string; name: string; addr: string };
 
-const INITIAL_PLACES: Place[] = [
-    { id: 1, emoji: '🏠', name: 'Home', addr: 'Ehrenfeld' },
-    { id: 2, emoji: '💼', name: 'Work', addr: 'Mediapark, 22 min' },
-    { id: 3, emoji: '📚', name: 'Course', addr: 'Uni Köln, 35 min' },
-    { id: 4, emoji: '⭐', name: 'Café Schmitz', addr: 'Ehrenfeld, 0.3 km' },
+type UserPlaceData = {
+    id: number;
+    emoji: string | null;
+    name: string;
+    address: string | null;
+    lat: number | null;
+    lng: number | null;
+};
+
+const FALLBACK_PLACES: Place[] = [
+    { id: -1, emoji: '🏠', name: 'Home', addr: 'Ehrenfeld' },
+    { id: -2, emoji: '💼', name: 'Work', addr: 'Mediapark, 22 min' },
+    { id: -3, emoji: '📚', name: 'Course', addr: 'Uni Köln, 35 min' },
+    { id: -4, emoji: '⭐', name: 'Cafe Schmitz', addr: 'Ehrenfeld, 0.3 km' },
 ];
 
 const PLACE_ICONS = [
@@ -49,15 +59,66 @@ const PROFILE_TABS = [
 // Page Component
 // ============================================================
 
+// Maps for enum display values
+const SITUATION_LABELS: Record<string, string> = {
+    non_eu_employee: 'Non-EU employee',
+    eu_employee: 'EU employee',
+    student: 'Student',
+    freelancer: 'Freelancer',
+    family_reunification: 'Family reunification',
+    digital_nomad: 'Digital nomad',
+    other: 'Other',
+};
+
+const SITUATION_VALUES: Record<string, string> = {
+    'Non-EU employee': 'non_eu_employee',
+    'EU employee': 'eu_employee',
+    Student: 'student',
+    Freelancer: 'freelancer',
+    'Family reunification': 'family_reunification',
+    'Digital nomad': 'digital_nomad',
+    Other: 'other',
+};
+
+const GERMAN_LABELS: Record<string, string> = {
+    none: 'None yet',
+    a1: 'A1 — Beginner',
+    a2: 'A2 — Elementary',
+    b1: 'B1 — Intermediate',
+    b2: 'B2 — Upper-intermediate',
+    c1: 'C1 — Advanced',
+    c2: 'C2 — Fluent',
+};
+
+const GERMAN_VALUES: Record<string, string> = {
+    'None yet': 'none',
+    'A1 — Beginner': 'a1',
+    'A2 — Elementary': 'a2',
+    'B1 — Intermediate': 'b1',
+    'B2 — Upper-intermediate': 'b2',
+    'C1 — Advanced': 'c1',
+    'C2 — Fluent': 'c2',
+};
+
 export default function Profile() {
+    const { auth, userPlaces } = usePage<{
+        auth: Auth;
+        userPlaces?: UserPlaceData[];
+    }>().props;
+    const user = auth.user;
+
     const [activeTab, setActiveTab] = useState('overview');
 
-    // Profile fields
-    const [profileName, setProfileName] = useState('Anar');
-    const [profileEmail, setProfileEmail] = useState('anar@example.com');
-    const [profileCity, setProfileCity] = useState('Cologne, Germany');
-    const [profileSituation, setProfileSituation] = useState('Non-EU employee');
-    const [profileGerman, setProfileGerman] = useState('A2 — Elementary');
+    // Profile fields — seeded from backend user
+    const [profileName, setProfileName] = useState(user.name || 'Anar');
+    const [profileEmail, setProfileEmail] = useState(user.email || 'anar@example.com');
+    const [profileCity, setProfileCity] = useState((user.city as string) || 'Cologne, Germany');
+    const [profileSituation, setProfileSituation] = useState(
+        SITUATION_LABELS[(user.situation as string) ?? ''] || 'Non-EU employee',
+    );
+    const [profileGerman, setProfileGerman] = useState(
+        GERMAN_LABELS[(user.german_level as string) ?? ''] || 'A2 — Elementary',
+    );
     const [profileOrigin, setProfileOrigin] = useState('Azerbaijan');
 
     // Inline edit state
@@ -69,14 +130,19 @@ export default function Profile() {
     const [showInterestInput, setShowInterestInput] = useState(false);
     const [newInterest, setNewInterest] = useState('');
 
-    // Places
-    const [places, setPlaces] = useState<Place[]>(INITIAL_PLACES);
+    // Places — from backend or fallback
+    const backendPlaces: Place[] = (userPlaces ?? []).map((p) => ({
+        id: p.id,
+        emoji: p.emoji || '📍',
+        name: p.name,
+        addr: p.address || '',
+    }));
+    const [places, setPlaces] = useState<Place[]>(backendPlaces.length > 0 ? backendPlaces : FALLBACK_PLACES);
     const [showPlaceForm, setShowPlaceForm] = useState(false);
     const [placeName, setPlaceName] = useState('');
     const [placeAddr, setPlaceAddr] = useState('');
     const [placeEmoji, setPlaceEmoji] = useState('🏠');
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
-    const [nextPlaceId, setNextPlaceId] = useState(5);
 
     // Notification toggles
     const [toggles, setToggles] = useState<Record<string, boolean>>({
@@ -126,6 +192,8 @@ export default function Profile() {
     function saveEdit(field: string) {
         const val = editValue.trim();
         if (!val) return;
+
+        // Update local state immediately
         switch (field) {
             case 'name': setProfileName(val); break;
             case 'email': setProfileEmail(val); break;
@@ -135,7 +203,30 @@ export default function Profile() {
             case 'origin': setProfileOrigin(val); break;
         }
         setEditingField(null);
-        showToast('✓ ' + field.charAt(0).toUpperCase() + field.slice(1) + ' updated');
+
+        // Build patch data for backend-supported fields
+        const patchData: Record<string, string> = {};
+        switch (field) {
+            case 'name': patchData.name = val; break;
+            case 'email': patchData.email = val; break;
+            case 'city': patchData.city = val; break;
+            case 'situation': patchData.situation = SITUATION_VALUES[val] || val; break;
+            case 'german': patchData.german_level = GERMAN_VALUES[val] || val; break;
+        }
+
+        if (Object.keys(patchData).length > 0) {
+            router.patch('/settings/profile', patchData, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => showToast('✓ ' + field.charAt(0).toUpperCase() + field.slice(1) + ' updated'),
+                onError: (errors) => {
+                    const firstError = Object.values(errors)[0];
+                    showToast('Error: ' + (typeof firstError === 'string' ? firstError : 'Could not save'));
+                },
+            });
+        } else {
+            showToast('✓ ' + field.charAt(0).toUpperCase() + field.slice(1) + ' updated');
+        }
     }
 
     function cancelEdit() {
@@ -161,19 +252,43 @@ export default function Profile() {
     function savePlace() {
         if (!placeName.trim()) { showToast('Please enter a place name'); return; }
         if (editingPlaceId) {
+            // Optimistic local update for edit (no backend endpoint for update yet)
             setPlaces((prev) => prev.map((p) => p.id === editingPlaceId ? { ...p, emoji: placeEmoji, name: placeName.trim(), addr: placeAddr.trim() } : p));
             showToast('✓ ' + placeName.trim() + ' updated');
         } else {
-            setPlaces((prev) => [...prev, { id: nextPlaceId, emoji: placeEmoji, name: placeName.trim(), addr: placeAddr.trim() }]);
-            setNextPlaceId((n) => n + 1);
-            showToast('✓ ' + placeName.trim() + ' added to your places');
+            // Create via backend
+            router.post('/user-places', {
+                emoji: placeEmoji,
+                name: placeName.trim(),
+                address: placeAddr.trim() || null,
+            }, {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => showToast('✓ ' + placeName.trim() + ' added to your places'),
+                onError: (errors) => {
+                    const firstError = Object.values(errors)[0];
+                    showToast('Error: ' + (typeof firstError === 'string' ? firstError : 'Could not save'));
+                },
+            });
         }
         setShowPlaceForm(false);
     }
 
     function deletePlace(id: number) {
-        setPlaces((prev) => prev.filter((p) => p.id !== id));
-        showToast('Place removed');
+        // Negative IDs are fallback/mock data — just remove locally
+        if (id < 0) {
+            setPlaces((prev) => prev.filter((p) => p.id !== id));
+            showToast('Place removed');
+            return;
+        }
+
+        // Delete via backend
+        router.delete(`/user-places/${id}`, {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => showToast('Place removed'),
+            onError: () => showToast('Error: Could not remove place'),
+        });
     }
 
     const switchTab = useCallback((tab: string) => setActiveTab(tab), []);

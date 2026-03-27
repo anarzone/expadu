@@ -42,6 +42,8 @@ type SpotData = {
     time_limit_mins: number | null;
     rating: number | null;
     active_checkins_count: number;
+    lat?: number;
+    lng?: number;
 };
 
 export default function Explore() {
@@ -99,7 +101,12 @@ export default function Explore() {
     }, [search, filteredSpots.length]);
 
     function selectSpot(spot: SpotData) {
-        setSelectedSpot(spot);
+        const coords = SPOT_COORDS[spot.id];
+        setSelectedSpot({
+            ...spot,
+            lat: coords?.[0] ?? 50.9375,
+            lng: coords?.[1] ?? 6.9603,
+        });
     }
 
     return (

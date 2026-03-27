@@ -6,11 +6,13 @@ use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\SlotMonitorController;
 use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TransitController;
+use App\Http\Controllers\UserPlaceController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -60,6 +62,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Slot monitoring
     Route::post('slots/toggle', [SlotMonitorController::class, 'toggle'])->name('slots.toggle');
 
+    // User places CRUD
+    Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');
+    Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->name('user-places.destroy');
+
     // Placeholder pages
     Route::inertia('language-exchange', 'language-exchange')->name('language-exchange');
     Route::inertia('chat', 'chat')->name('chat');
@@ -67,7 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('services', 'services')->name('services');
     Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
     Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');
-    Route::inertia('profile', 'profile')->name('profile');
+    Route::get('profile', ProfilePageController::class)->name('profile');
 });
 
 require __DIR__.'/settings.php';

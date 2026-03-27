@@ -2,6 +2,8 @@
 
 namespace App\Concerns;
 
+use App\Enums\GermanLevel;
+use App\Enums\Situation;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +19,9 @@ trait ProfileValidationRules
         return [
             'name' => $this->nameRules(),
             'email' => $this->emailRules($userId),
+            'city' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'situation' => ['sometimes', 'nullable', Rule::enum(Situation::class)],
+            'german_level' => ['sometimes', 'nullable', Rule::enum(GermanLevel::class)],
         ];
     }
 

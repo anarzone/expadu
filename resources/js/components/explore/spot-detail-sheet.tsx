@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { useState } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 
 type SpotData = {
@@ -11,6 +12,8 @@ type SpotData = {
     time_limit_mins: number | null;
     rating: number | null;
     active_checkins_count: number;
+    lat?: number;
+    lng?: number;
 };
 
 const categoryEmoji: Record<string, string> = { cafe: '☕', coworking: '🏢', library: '📚', park: '🌳' };
@@ -35,6 +38,8 @@ const mockReviews: Record<number, { name: string; flag: string; stars: string; t
 };
 
 export function SpotDetailSheet({ spot, onClose }: { spot: SpotData | null; onClose: () => void }) {
+    const [navMenuOpen, setNavMenuOpen] = useState(false);
+
     if (!spot) return null;
 
     const emoji = categoryEmoji[spot.category] || '📍';
@@ -132,9 +137,48 @@ export function SpotDetailSheet({ spot, onClose }: { spot: SpotData | null; onCl
                 >
                     👥 Check in here
                 </button>
-                <button className="flex flex-1 items-center justify-center gap-[7px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]">
-                    Navigate ↗
-                </button>
+                <div className="relative flex-1">
+                    <button
+                        onClick={() => setNavMenuOpen(!navMenuOpen)}
+                        className="flex w-full items-center justify-center gap-[7px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
+                    >
+                        Navigate ↗
+                    </button>
+                    {navMenuOpen && (
+                        <div
+                            className="absolute bottom-[calc(100%+6px)] left-0 z-50 w-[200px] overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+                        >
+                            <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat ?? 50.9375},${spot.lng ?? 6.9603}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2.5 px-3.5 py-3 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7]"
+                                onClick={() => setNavMenuOpen(false)}
+                            >
+                                🗺️ Google Maps
+                            </a>
+                            <a
+                                href={`https://maps.apple.com/?daddr=${spot.lat ?? 50.9375},${spot.lng ?? 6.9603}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2.5 border-t border-[#E2DFD6] px-3.5 py-3 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7]"
+                                onClick={() => setNavMenuOpen(false)}
+                            >
+                                🍎 Apple Maps
+                            </a>
+                            <button
+                                onClick={() => {
+                                    const coords = `${spot.lat ?? 50.9375}, ${spot.lng ?? 6.9603}`;
+                                    navigator.clipboard.writeText(coords);
+                                    setNavMenuOpen(false);
+                                }}
+                                className="flex w-full items-center gap-2.5 border-t border-[#E2DFD6] bg-transparent px-3.5 py-3 text-left text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7]"
+                            >
+                                📋 Copy coordinates
+                            </button>
+                        </div>
+                    )}
+                </div>
                 <button className="flex flex-1 items-center justify-center gap-[7px] rounded-[9px] border border-[#EBF0FD] bg-transparent px-3 py-3 text-sm font-semibold text-[#1A4CD4] transition-colors hover:bg-[#EBF0FD]">
                     ♡ Save
                 </button>
