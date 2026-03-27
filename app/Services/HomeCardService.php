@@ -16,14 +16,17 @@ class HomeCardService
      */
     public function buildFeed(User $user): array
     {
+        $home = $user->places()->orderBy('sort_order')->first();
+        $homeStopName = $home?->name ?? 'Ehrenfeld';
+
         $cards = array_filter([
-            $this->buildBlueHighlight($user),
+            $this->buildBlueHighlight($user, $homeStopName),
             $this->buildDisruptionBanner(),
             $this->buildSettlementProgress($user),
             $this->buildYourPlaces($user),
             $this->buildQuickAccess($user),
             $this->buildThisWeek(),
-            $this->buildLiveDepartures(),
+            $this->buildLiveDepartures($homeStopName),
         ]);
 
         usort($cards, fn (array $a, array $b) => $b['priority'] <=> $a['priority']);
@@ -34,7 +37,7 @@ class HomeCardService
     /**
      * @return array{type: string, data: array<string, mixed>, priority: int}|null
      */
-    protected function buildBlueHighlight(User $user): ?array
+    protected function buildBlueHighlight(User $user, string $homeStopName = 'Ehrenfeld'): ?array
     {
         $urgentTasks = $user->userTasks()
             ->whereNull('completed_at')
@@ -77,14 +80,32 @@ class HomeCardService
         // Build timeline rows (next departure, tonight's event, weather)
         $timelineRows = [];
 
-        // Next departure (mock until VRS integration)
-        $timelineRows[] = [
-            'emoji' => '🚇',
-            'title' => 'Line 9 in 4 min · No delays',
-            'subtitle' => 'Venloer Str./Gürtel → Neumarkt',
-            'value' => '4',
-            'unit' => 'min',
-        ];
+        // Next departure from user's home stop via GTFS
+        $gtfsService = App::make(GtfsDepartureService::class);
+        $deptResult = $gtfsService->getDepartures($homeStopName, 3);
+        $nextDep = collect($deptResult['departures'] ?? [])
+            ->filter(fn (array $d) => ! empty($d['departures']))
+            ->first();
+
+        if ($nextDep) {
+            $mins = $nextDep['departures'][0];
+            $delayNote = $mins <= 1 ? 'Now' : "in {$mins} min";
+            $timelineRows[] = [
+                'emoji' => '🚇',
+                'title' => "Line {$nextDep['line']} {$delayNote} · No delays",
+                'subtitle' => ($deptResult['stop_name'] ?? $homeStopName).' → '.$nextDep['direction'],
+                'value' => (string) $mins,
+                'unit' => 'min',
+            ];
+        } else {
+            $timelineRows[] = [
+                'emoji' => '🚇',
+                'title' => 'No upcoming departures',
+                'subtitle' => $homeStopName,
+                'value' => '—',
+                'unit' => '',
+            ];
+        }
 
         // Tonight's event
         $tonightEvent = Event::query()
@@ -128,32 +149,16 @@ class HomeCardService
     }
 
     /**
-     * Active disruptions that affect the user's area. Mock data until VRS integration.
+     * Active disruptions — requires VRS real-time API.
+     * Returns null until VRS access is approved.
      *
      * @return array{type: string, data: array<string, mixed>, priority: int}|null
      */
     protected function buildDisruptionBanner(): ?array
     {
-        // Mock disruption — will be replaced with real VRS data
-        $disruptions = app(TransitService::class)->getDisruptions();
-
-        if (empty($disruptions)) {
-            return null;
-        }
-
-        // Show the most severe disruption
-        $top = $disruptions[0];
-
-        return [
-            'type' => 'disruption_banner',
-            'data' => [
-                'title' => $top['title'],
-                'description' => $top['description'],
-                'severity' => $top['severity'],
-                'lines' => $top['lines'],
-            ],
-            'priority' => 99,
-        ];
+        // VRS real-time disruptions not yet available
+        // Will be enabled when api@vrs.de provides GTFS-RT access
+        return null;
     }
 
     /**
@@ -255,10 +260,10 @@ class HomeCardService
      *
      * @return array{type: string, data: array<string, mixed>, priority: int}
      */
-    protected function buildLiveDepartures(): array
+    protected function buildLiveDepartures(string $homeStopName = 'Ehrenfeld'): array
     {
         $gtfsService = App::make(GtfsDepartureService::class);
-        $result = $gtfsService->getDepartures('Ehrenfeld', 6);
+        $result = $gtfsService->getDepartures($homeStopName, 6);
 
         $departures = collect($result['departures'] ?? [])
             ->take(3)
@@ -289,7 +294,7 @@ class HomeCardService
             'data' => [
                 'departures' => $departures,
                 'source' => $result['source'] ?? 'mock',
-                'stop_name' => $result['stop_name'] ?? 'Ehrenfeld',
+                'stop_name' => $result['stop_name'] ?? $homeStopName,
                 'placeholder' => false,
             ],
             'priority' => 30,

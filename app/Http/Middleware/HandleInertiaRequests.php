@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Event;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -47,6 +48,31 @@ class HandleInertiaRequests extends Middleware
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'weather' => fn () => app(WeatherService::class)->getCurrentWeather(),
             'forecast' => fn () => app(WeatherService::class)->getForecast(),
+            'userLocation' => function () use ($request) {
+                $user = $request->user();
+                if (! $user) {
+                    return null;
+                }
+                $home = $user->places()->orderBy('sort_order')->first();
+
+                return $home ? [
+                    'name' => $home->name,
+                    'address' => $home->address,
+                    'lat' => (float) $home->lat,
+                    'lng' => (float) $home->lng,
+                ] : ['name' => 'Ehrenfeld', 'address' => 'Cologne', 'lat' => 50.9478, 'lng' => 6.9183];
+            },
+            'todayEvents' => fn () => Event::query()
+                ->whereDate('starts_at', today())
+                ->where('starts_at', '>', now())
+                ->orderBy('starts_at')
+                ->limit(3)
+                ->get(['id', 'title', 'emoji', 'starts_at', 'location_name', 'is_free'])
+                ->map(fn ($e) => [
+                    'time' => $e->starts_at->format('H:i'),
+                    'title' => ($e->emoji ?? '📅').' '.$e->title.' · '.$e->location_name,
+                    'badge' => $e->is_free ? 'Open' : 'Paid',
+                ]),
         ];
     }
 }

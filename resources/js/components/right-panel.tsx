@@ -14,15 +14,21 @@ type ForecastData = {
     bike_score: string;
 };
 
+type TodayEvent = {
+    time: string;
+    title: string;
+    badge: string;
+};
+
 export function RightPanel() {
-    const { weather, forecast } = usePage<{ weather?: WeatherData; forecast?: ForecastData }>().props;
+    const { weather, forecast, todayEvents } = usePage<{ weather?: WeatherData; forecast?: ForecastData; todayEvents?: TodayEvent[] }>().props;
 
     return (
         <aside className="hidden w-[300px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
             <WeatherWidget weather={weather} forecast={forecast} />
             <RhineWidget />
             <DisruptionsWidget />
-            <TodayEventsWidget />
+            <TodayEventsWidget events={todayEvents} />
             <div className="pt-4 text-center text-[11px] text-muted-foreground">
                 Updated <span>just now</span>
             </div>
@@ -90,22 +96,17 @@ function RhineWidget() {
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
                 <span className="text-[13px] font-bold">Rhine Level</span>
-                <div className="flex items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
-                    <span className="inline-block size-[5px] animate-pulse rounded-full bg-success" />
-                    Live
-                </div>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    Coming soon
+                </span>
             </div>
             <div className="flex items-center justify-between px-4 py-3.5">
                 <div className="flex items-center gap-2.5">
                     <span className="text-xl">🌊</span>
                     <div>
-                        <div className="text-[13px] font-semibold">Cologne Gauge</div>
-                        <div className="text-[11px] text-muted-foreground">Rheinufer paths open</div>
+                        <div className="text-[13px] font-semibold text-muted-foreground">Cologne Gauge</div>
+                        <div className="text-[11px] text-muted-foreground">Real-time data with VRS API</div>
                     </div>
-                </div>
-                <div className="text-right">
-                    <div className="font-mono text-lg font-medium">3.42</div>
-                    <div className="text-[10px] text-muted-foreground">metres</div>
                 </div>
             </div>
         </div>
@@ -113,58 +114,51 @@ function RhineWidget() {
 }
 
 function DisruptionsWidget() {
-    const disruptions = [
-        { emoji: '🚋', title: 'Line 1 — +8 min delay', subtitle: 'Match crowd near Müngersdorf', severity: 'Delay', color: 'bg-warn-soft text-warn' },
-        { emoji: '🚧', title: 'Venloer Str. partial closure', subtitle: 'Market stalls · Until 20:00', severity: 'Minor', color: 'bg-success-soft text-success' },
-        { emoji: '✅', title: 'All other lines on time', subtitle: 'Lines 3, 4, 7, 9, 12, 16, 18', severity: 'Clear', color: 'bg-success-soft text-success' },
-    ];
-
     return (
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
                 <span className="text-[13px] font-bold">Live Disruptions</span>
-                <div className="flex items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
-                    <span className="inline-block size-[5px] animate-pulse rounded-full bg-success" />
-                    KVB
-                </div>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    Awaiting VRS API
+                </span>
             </div>
-            {disruptions.map((d, i) => (
-                <div key={i} className="flex items-center gap-2.5 border-b border-border px-4 py-3 last:border-b-0">
-                    <span className="shrink-0 text-base">{d.emoji}</span>
-                    <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold">{d.title}</div>
-                        <div className="text-[11px] text-muted-foreground">{d.subtitle}</div>
-                    </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${d.color}`}>
-                        {d.severity}
-                    </span>
-                </div>
-            ))}
+            <div className="px-4 py-4 text-center text-xs text-muted-foreground">
+                Real-time disruption alerts will appear here once VRS API access is approved.
+            </div>
         </div>
     );
 }
 
-function TodayEventsWidget() {
-    const events = [
-        { time: '19:00', title: 'Language Exchange · Café Schmitz', badge: 'Open', color: 'bg-success-soft text-success' },
-        { time: '20:00', title: 'FC Köln vs. Dortmund', badge: 'Busy', color: 'bg-danger-soft text-danger' },
-        { time: 'All day', title: 'Frühlingsmarkt · Neumarkt', badge: 'Busy', color: 'bg-warn-soft text-warn' },
-    ];
+function TodayEventsWidget({ events }: { events?: TodayEvent[] }) {
+    const badgeColor = (badge: string) => {
+        switch (badge) {
+            case 'Open':
+                return 'bg-success-soft text-success';
+            case 'Paid':
+                return 'bg-warn-soft text-warn';
+            default:
+                return 'bg-success-soft text-success';
+        }
+    };
 
     return (
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
             <div className="border-b border-border px-4 py-3">
                 <span className="text-[13px] font-bold">Today in Cologne</span>
             </div>
-            {events.map((e, i) => (
-                <div key={i} className="flex items-center gap-2.5 border-b border-border px-4 py-3 last:border-b-0">
-                    <span className="w-10 shrink-0 font-mono text-xs font-semibold text-muted-foreground">{e.time}</span>
-                    <span className="min-w-0 flex-1 truncate text-xs font-medium">{e.title}</span>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${e.color}`}>
-                        {e.badge}
-                    </span>
-                </div>
-            ))}
+            {!events || events.length === 0 ? (
+                <div className="px-4 py-4 text-center text-xs text-muted-foreground">No events today</div>
+            ) : (
+                events.map((e, i) => (
+                    <div key={i} className="flex items-center gap-2.5 border-b border-border px-4 py-3 last:border-b-0">
+                        <span className="w-10 shrink-0 font-mono text-xs font-semibold text-muted-foreground">{e.time}</span>
+                        <span className="min-w-0 flex-1 truncate text-xs font-medium">{e.title}</span>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${badgeColor(e.badge)}`}>
+                            {e.badge}
+                        </span>
+                    </div>
+                ))
+            )}
         </div>
     );
 }

@@ -133,30 +133,32 @@ function sourceLabel(source: string): string {
     }
 }
 
-const ROUTINES: RoutineCardData[] = [
-    {
-        id: 'work',
-        emoji: '💼',
-        name: 'Ehrenfeld → Work (Mediapark)',
-        subtitle: 'Arrive by 09:00 · Preferred: Bike or Line 9',
-        badge: 'Active',
-        badgeBg: '#D4F0E6',
-        badgeColor: '#0A7C52',
-        days: [true, true, true, true, true, false, false],
-        leaveBy: 'Leave by 08:38 · Alert 20 min before',
-    },
-    {
-        id: 'course',
-        emoji: '📚',
-        name: 'Ehrenfeld → Language Course',
-        subtitle: 'Arrive by 18:30 · Preferred: Tram',
-        badge: 'Paused',
-        badgeBg: '#EFEDE7',
-        badgeColor: '#6B6860',
-        days: [false, true, false, true, false, false, false],
-        leaveBy: 'Leave by 17:52 · Alert 15 min before',
-    },
-];
+function buildRoutines(locationName: string): RoutineCardData[] {
+    return [
+        {
+            id: 'work',
+            emoji: '💼',
+            name: `${locationName} → Work (Mediapark)`,
+            subtitle: 'Arrive by 09:00 · Preferred: Bike or Line 9',
+            badge: 'Active',
+            badgeBg: '#D4F0E6',
+            badgeColor: '#0A7C52',
+            days: [true, true, true, true, true, false, false],
+            leaveBy: 'Leave by 08:38 · Alert 20 min before',
+        },
+        {
+            id: 'course',
+            emoji: '📚',
+            name: `${locationName} → Language Course`,
+            subtitle: 'Arrive by 18:30 · Preferred: Tram',
+            badge: 'Paused',
+            badgeBg: '#EFEDE7',
+            badgeColor: '#6B6860',
+            days: [false, true, false, true, false, false, false],
+            leaveBy: 'Leave by 17:52 · Alert 15 min before',
+        },
+    ];
+}
 
 const DEST_CHIPS = [
     { emoji: '💼', label: 'Work', value: 'Work · Mediapark' },
@@ -249,13 +251,19 @@ const ROUTE_DETAILS: Record<string, RouteDetailData> = {
 
 export default function Transit() {
     // Shared weather props from Inertia middleware + GTFS data
-    const { weather, forecast, userPlaces, gtfsDepartures, currentStop } = usePage<{
+    const { weather, forecast, userPlaces, gtfsDepartures, currentStop, userLocation } = usePage<{
         weather: WeatherData;
         forecast: ForecastData;
         userPlaces?: { id: number; emoji: string | null; name: string; address: string | null; lat: number | null; lng: number | null }[];
         gtfsDepartures: GtfsDeparturesData;
         currentStop: string;
+        userLocation?: { name: string; address: string; lat: number; lng: number } | null;
     }>().props;
+
+    const homeName = userLocation?.name ?? 'Ehrenfeld';
+    const homeAddress = userLocation?.address ?? 'Cologne';
+    const homeLat = userLocation?.lat ?? 50.9478;
+    const homeLng = userLocation?.lng ?? 6.9183;
 
     // Split GTFS departures into KVB (tram/bus) and DB (rail/subway) boards
     const kvbDepartures = (gtfsDepartures?.departures ?? []).filter(
@@ -264,8 +272,8 @@ export default function Transit() {
     const dbDepartures = (gtfsDepartures?.departures ?? []).filter(
         (d) => d.type === 'rail' || d.type === 'subway',
     );
-    const kvbBoard = gtfsToBoardData(kvbDepartures, gtfsDepartures?.stop_name ?? currentStop ?? 'Ehrenfeld', '📍');
-    const dbBoard = gtfsToBoardData(dbDepartures, (gtfsDepartures?.stop_name ?? currentStop ?? 'Ehrenfeld') + ' Bf', '🚂');
+    const kvbBoard = gtfsToBoardData(kvbDepartures, gtfsDepartures?.stop_name ?? currentStop ?? homeName, '📍');
+    const dbBoard = gtfsToBoardData(dbDepartures, (gtfsDepartures?.stop_name ?? currentStop ?? homeName) + ' Bf', '🚂');
     const dataSource = gtfsDepartures?.source ?? 'mock';
 
     // Stop search state for API-based picker
@@ -302,6 +310,9 @@ export default function Transit() {
 
     // (Geocoding is now handled inside GeocodeInput component)
 
+    // Build routines with user's home location
+    const routines = buildRoutines(homeName);
+
     // Patch route cards with real weather data
     const liveRoutes = ROUTES.map((r) => {
         if (r.id === 'bike') {
@@ -311,17 +322,17 @@ export default function Transit() {
     });
 
     // UI state
-    const [fromValue, setFromValue] = useState('Ehrenfeld, Cologne');
+    const [fromValue, setFromValue] = useState(`${homeName}, ${homeAddress}`);
     const [toValue, setToValue] = useState('');
-    const [journeyOrigin, setJourneyOrigin] = useState<{ lat: number; lng: number }>({ lat: 50.9478, lng: 6.9183 });
+    const [journeyOrigin, setJourneyOrigin] = useState<{ lat: number; lng: number }>({ lat: homeLat, lng: homeLng });
     const [journeyDest, setJourneyDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
     const [activeInput, setActiveInput] = useState<'from' | 'to'>('to'); // which input the chips apply to
     const [showMore, setShowMore] = useState(false);
     const [dismissedDisruptions, setDismissedDisruptions] = useState<number[]>([]);
     const [routinePromptVisible, setRoutinePromptVisible] = useState(true);
     const [routinePromptSaved, setRoutinePromptSaved] = useState(false);
-    const [activeStop, setActiveStop] = useState(currentStop ?? 'Ehrenfeld');
-    const [activeStopName, setActiveStopName] = useState(gtfsDepartures?.stop_name ?? currentStop ?? 'Ehrenfeld');
+    const [activeStop, setActiveStop] = useState(currentStop ?? homeName);
+    const [activeStopName, setActiveStopName] = useState(gtfsDepartures?.stop_name ?? currentStop ?? homeName);
 
     // Bottom sheets
     const [routeDetailKey, setRouteDetailKey] = useState<string | null>(null);
@@ -330,7 +341,7 @@ export default function Transit() {
     const [stopSearch, setStopSearch] = useState('');
 
     // Add routine form
-    const [rFrom, setRFrom] = useState('Home · Ehrenfeld');
+    const [rFrom, setRFrom] = useState(`Home · ${homeName}`);
     const [rTo, setRTo] = useState('');
     const [rArrival, setRArrival] = useState('09:00');
     const [rDays, setRDays] = useState([true, true, true, true, true, false, false]);
@@ -520,7 +531,7 @@ export default function Transit() {
                             />
 
                             <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', opacity: 0.6, marginBottom: 6 }}>
-                                Recommended route · Ehrenfeld → Work
+                                Recommended route · {homeName} → Work
                             </div>
                             <div className="relative z-[1]" style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 400, lineHeight: 1.2, marginBottom: 18 }}>
                                 🚲 <strong>Bike today</strong> — {commuteWeatherText}
@@ -730,79 +741,25 @@ export default function Transit() {
                         )}
                     </div>
 
-                    {/* ═══ 3. Live Disruptions ═══ */}
-                    {dismissedDisruptions.length < 2 && (
-                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
-                            <div className="mb-[13px] flex items-baseline justify-between">
-                                <span style={{ fontSize: 16, fontWeight: 600 }}>Live Disruptions</span>
-                                <span
-                                    className="cursor-pointer"
-                                    style={{ fontSize: 13, color: '#1A4CD4', fontWeight: 500 }}
-                                    onClick={() => setDismissedDisruptions([0, 1])}
-                                >
-                                    Dismiss all
-                                </span>
-                            </div>
-
-                            {/* Warning strip */}
-                            {!dismissedDisruptions.includes(0) && (
-                                <div
-                                    className="mb-[10px] flex items-start gap-[10px]"
-                                    style={{
-                                        background: '#FDF0D4',
-                                        border: '1px solid rgba(196,125,14,.2)',
-                                        borderRadius: 9,
-                                        padding: '12px 14px',
-                                    }}
-                                >
-                                    <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>⚠️</span>
-                                    <div className="flex-1">
-                                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>Line 1 — +8 min delay near Müngersdorf</div>
-                                        <div style={{ fontSize: 12, color: '#7C4A00', lineHeight: 1.4 }}>
-                                            FC Köln match crowd. Expect delays until 22:00. Use Line 9 as alternative.
-                                        </div>
-                                    </div>
-                                    <span
-                                        className="shrink-0 cursor-pointer transition-colors hover:text-[#18170F]"
-                                        style={{ fontSize: 14, color: '#AAA89F' }}
-                                        onClick={() => dismissDisruption(0)}
-                                    >
-                                        ✕
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Danger strip */}
-                            {!dismissedDisruptions.includes(1) && (
-                                <div
-                                    className="flex items-start gap-[10px]"
-                                    style={{
-                                        background: '#FDE8E6',
-                                        border: '1px solid rgba(196,39,26,.15)',
-                                        borderRadius: 9,
-                                        padding: '12px 14px',
-                                    }}
-                                >
-                                    <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>🚧</span>
-                                    <div className="flex-1">
-                                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2, color: '#C4271A' }}>
-                                            Venloer Str. partial road closure
-                                        </div>
-                                        <div style={{ fontSize: 12, color: '#7C2018', lineHeight: 1.4 }}>
-                                            Market stalls blocking bike lane until 20:00. Use Subbelrather Str. instead.
-                                        </div>
-                                    </div>
-                                    <span
-                                        className="shrink-0 cursor-pointer transition-colors hover:text-[#18170F]"
-                                        style={{ fontSize: 14, color: '#AAA89F' }}
-                                        onClick={() => dismissDisruption(1)}
-                                    >
-                                        ✕
-                                    </span>
-                                </div>
-                            )}
+                    {/* ═══ 3. Live Disruptions — awaiting VRS API ═══ */}
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                        <div className="mb-[13px] flex items-baseline justify-between">
+                            <span style={{ fontSize: 16, fontWeight: 600 }}>Live Disruptions</span>
+                            <span className="rounded-full bg-[#EFEDE7] px-2 py-0.5 text-[10px] font-semibold text-[#AAA89F]">
+                                Awaiting VRS API
+                            </span>
                         </div>
-                    )}
+                        <div
+                            className="flex items-center gap-3 text-center"
+                            style={{ background: '#EFEDE7', borderRadius: 9, padding: '16px' }}
+                        >
+                            <span style={{ fontSize: 20 }}>✅</span>
+                            <div className="flex-1 text-left">
+                                <div style={{ fontSize: 13, fontWeight: 600, color: '#18170F' }}>No disruption data yet</div>
+                                <div style={{ fontSize: 12, color: '#6B6860' }}>Real-time alerts will appear here once VRS API access is approved.</div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* ═══ 4. Departure Boards ═══ */}
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
@@ -901,7 +858,7 @@ export default function Transit() {
                                         <>
                                             <div style={{ fontSize: 14, fontWeight: 600, color: '#1A4CD4', marginBottom: 4 }}>Routine detected</div>
                                             <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5 }}>
-                                                You travel from Ehrenfeld to Mediapark on weekday mornings. Save this so Anker can alert you automatically.
+                                                You travel from {homeName} to Mediapark on weekday mornings. Save this so Anker can alert you automatically.
                                             </div>
                                             <div className="mt-3 flex gap-2">
                                                 <button
@@ -926,7 +883,7 @@ export default function Transit() {
                         )}
 
                         {/* Routine cards */}
-                        {ROUTINES.map((r) => (
+                        {routines.map((r) => (
                             <RoutineCard key={r.id} routine={r} />
                         ))}
                     </div>
