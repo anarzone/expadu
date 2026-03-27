@@ -1,6 +1,7 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DepartureBoard, type BoardData } from '@/components/transit/departure-board';
+import { GeocodeInput } from '@/components/transit/geocode-input';
 import { RouteCard, type RouteCardData } from '@/components/transit/route-card';
 import { RoutineCard, type RoutineCardData } from '@/components/transit/routine-card';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
@@ -262,10 +263,22 @@ const ALL_STOPS: StopData[] = [
 
 export default function Transit() {
     // Shared weather props from Inertia middleware
-    const { weather, forecast } = usePage<{
+    const { weather, forecast, userPlaces } = usePage<{
         weather: WeatherData;
         forecast: ForecastData;
+        userPlaces?: { id: number; emoji: string | null; name: string; address: string | null; lat: number | null; lng: number | null }[];
     }>().props;
+
+    // Build destination chips from user places + defaults
+    const placeChips = (userPlaces ?? [])
+        .filter((p) => p.lat && p.lng)
+        .map((p) => ({
+            emoji: p.emoji || '📍',
+            label: p.name,
+            value: `${p.name}${p.address ? ' · ' + p.address : ''}`,
+            lat: p.lat!,
+            lng: p.lng!,
+        }));
 
     const temp = weather?.temperature ?? 18;
     const weatherEmoji = weather?.emoji ?? '⛅';
@@ -283,43 +296,7 @@ export default function Transit() {
         ? `Rain arrives at ${rainStarts} — plan return journey early.`
         : `${weatherCondition} all day — enjoy the ride.`;
 
-    // Geocoding autocomplete state
-    const [geoResults, setGeoResults] = useState<GeoResult[]>([]);
-    const [geoLoading, setGeoLoading] = useState(false);
-    const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const toInputRef = useRef<HTMLInputElement>(null);
-    const [geoDropdownOpen, setGeoDropdownOpen] = useState(false);
-
-    const searchGeocode = useCallback((query: string) => {
-        if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
-        if (query.trim().length < 2) {
-            setGeoResults([]);
-            setGeoDropdownOpen(false);
-            return;
-        }
-        setGeoLoading(true);
-        geoTimerRef.current = setTimeout(async () => {
-            try {
-                const res = await fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`);
-                if (res.ok) {
-                    const data: GeoResult[] = await res.json();
-                    setGeoResults(data);
-                    setGeoDropdownOpen(data.length > 0);
-                }
-            } catch {
-                setGeoResults([]);
-            } finally {
-                setGeoLoading(false);
-            }
-        }, 300);
-    }, []);
-
-    // Clean up timer on unmount
-    useEffect(() => {
-        return () => {
-            if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
-        };
-    }, []);
+    // (Geocoding is now handled inside GeocodeInput component)
 
     // Patch route cards with real weather data
     const liveRoutes = ROUTES.map((r) => {
@@ -332,6 +309,7 @@ export default function Transit() {
     // UI state
     const [fromValue, setFromValue] = useState('Ehrenfeld, Cologne');
     const [toValue, setToValue] = useState('');
+    const [journeyOrigin, setJourneyOrigin] = useState<{ lat: number; lng: number }>({ lat: 50.9478, lng: 6.9183 }); // Ehrenfeld default
     const [journeyDest, setJourneyDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
     const [showMore, setShowMore] = useState(false);
     const [dismissedDisruptions, setDismissedDisruptions] = useState<number[]>([]);
@@ -360,22 +338,41 @@ export default function Transit() {
         const f = fromValue;
         setFromValue(toValue);
         setToValue(f);
+        if (journeyDest) {
+            const oldOrigin = { ...journeyOrigin };
+            setJourneyOrigin({ lat: journeyDest.lat, lng: journeyDest.lng });
+            setJourneyDest({ ...journeyDest, lat: oldOrigin.lat, lng: oldOrigin.lng });
+        }
     }
 
-    // Known destination coordinates for quick chips
-    const CHIP_COORDS: Record<string, { lat: number; lng: number }> = {
-        'Work · Mediapark': { lat: 50.9467, lng: 6.9417 },
-        'Course · Uni Köln': { lat: 50.9280, lng: 6.9286 },
-        'Cologne Hbf': { lat: 50.9433, lng: 6.9589 },
-        'Neumarkt': { lat: 50.9357, lng: 6.9498 },
-        'Kölner Dom': { lat: 50.9413, lng: 6.9583 },
-    };
+    // Build chip lookup for coordinates — user places + hardcoded defaults
+    const allChips = [
+        ...placeChips,
+        ...DEST_CHIPS.map((c) => {
+            const coords: Record<string, { lat: number; lng: number }> = {
+                'Cologne Hbf': { lat: 50.9433, lng: 6.9589 },
+                'Neumarkt': { lat: 50.9357, lng: 6.9498 },
+                'Kölner Dom': { lat: 50.9413, lng: 6.9583 },
+            };
+            return { ...c, lat: coords[c.value]?.lat ?? 50.9375, lng: coords[c.value]?.lng ?? 6.9603 };
+        }),
+    ];
 
-    function setDest(val: string) {
+    // Deduplicate by label
+    const seenLabels = new Set<string>();
+    const uniqueChips = allChips.filter((c) => {
+        if (seenLabels.has(c.label)) return false;
+        seenLabels.add(c.label);
+        return true;
+    });
+
+    function setDest(val: string, lat?: number, lng?: number) {
         setToValue(val);
-        const coords = CHIP_COORDS[val];
-        if (coords) {
-            setJourneyDest({ lat: coords.lat, lng: coords.lng, name: val.split(' · ')[0] });
+        const chip = uniqueChips.find((c) => c.value === val);
+        const destLat = lat ?? chip?.lat;
+        const destLng = lng ?? chip?.lng;
+        if (destLat && destLng) {
+            setJourneyDest({ lat: destLat, lng: destLng, name: val.split(' · ')[0] });
         }
     }
 
@@ -525,122 +522,35 @@ export default function Transit() {
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Plan a Journey</span>
                         </div>
                         <div className="mb-3 flex flex-col gap-2">
-                            {/* From */}
+                            {/* From — with geocoding */}
                             <div className="flex items-center gap-[10px]">
-                                <div
-                                    className="flex flex-1 cursor-text items-center gap-[10px] transition-all focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                                    style={{
-                                        background: '#FFFFFF',
-                                        border: '1px solid #E2DFD6',
-                                        borderRadius: 9,
-                                        padding: '11px 14px',
+                                <GeocodeInput
+                                    icon="📍"
+                                    placeholder="From — your current location"
+                                    value={fromValue}
+                                    onChange={setFromValue}
+                                    onSelect={(r) => {
+                                        setFromValue(r.label);
+                                        setJourneyOrigin({ lat: r.lat, lng: r.lng });
                                     }}
-                                >
-                                    <span style={{ fontSize: 15, color: '#AAA89F', flexShrink: 0 }}>📍</span>
-                                    <input
-                                        className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
-                                        style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
-                                        placeholder="From — your current location"
-                                        value={fromValue}
-                                        onChange={(e) => setFromValue(e.target.value)}
-                                    />
-                                </div>
+                                />
                             </div>
-                            {/* To + swap */}
+                            {/* To — with geocoding + swap */}
                             <div className="flex items-center gap-[10px]">
-                                <div className="relative flex-1">
-                                    <div
-                                        className="flex cursor-text items-center gap-[10px] transition-all focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                                        style={{
-                                            background: '#FFFFFF',
-                                            border: '1px solid #E2DFD6',
-                                            borderRadius: 9,
-                                            padding: '11px 14px',
-                                        }}
-                                    >
-                                        <span style={{ fontSize: 15, color: '#AAA89F', flexShrink: 0 }}>🏁</span>
-                                        <input
-                                            ref={toInputRef}
-                                            className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
-                                            style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
-                                            placeholder="To — destination"
-                                            value={toValue}
-                                            onChange={(e) => {
-                                                setToValue(e.target.value);
-                                                searchGeocode(e.target.value);
-                                            }}
-                                            onFocus={() => { if (geoResults.length > 0) setGeoDropdownOpen(true); }}
-                                            onBlur={() => { setTimeout(() => setGeoDropdownOpen(false), 200); }}
-                                            autoComplete="off"
-                                        />
-                                        {geoLoading && (
-                                            <div
-                                                style={{
-                                                    width: 14,
-                                                    height: 14,
-                                                    border: '2px solid #E2DFD6',
-                                                    borderTopColor: '#1A4CD4',
-                                                    borderRadius: '50%',
-                                                    animation: 'spin .7s linear infinite',
-                                                    flexShrink: 0,
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-                                    {/* Geocoding dropdown */}
-                                    {geoDropdownOpen && geoResults.length > 0 && (
-                                        <div
-                                            style={{
-                                                position: 'absolute',
-                                                top: '100%',
-                                                left: 0,
-                                                right: 0,
-                                                marginTop: 4,
-                                                background: 'white',
-                                                border: '1px solid #E2DFD6',
-                                                borderRadius: 9,
-                                                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-                                                zIndex: 60,
-                                                overflow: 'hidden',
-                                            }}
-                                        >
-                                            {geoResults.map((result, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    onMouseDown={(e) => {
-                                                        e.preventDefault();
-                                                        const label = [result.name, result.street, result.city].filter(Boolean).join(', ');
-                                                        setToValue(label);
-                                                        setJourneyDest({ lat: result.lat, lng: result.lng, name: result.name });
-                                                        setGeoDropdownOpen(false);
-                                                        setGeoResults([]);
-                                                    }}
-                                                    className="cursor-pointer transition-colors hover:bg-[#EFEDE7]"
-                                                    style={{
-                                                        padding: '10px 14px',
-                                                        borderBottom: idx < geoResults.length - 1 ? '1px solid #F0EDE7' : 'none',
-                                                    }}
-                                                >
-                                                    <div style={{ fontSize: 14, fontWeight: 500, color: '#18170F' }}>{result.name}</div>
-                                                    <div style={{ fontSize: 12, color: '#6B6860', marginTop: 1 }}>
-                                                        {[result.street, result.city].filter(Boolean).join(', ')}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <GeocodeInput
+                                    icon="🏁"
+                                    placeholder="To — destination"
+                                    value={toValue}
+                                    onChange={setToValue}
+                                    onSelect={(r) => {
+                                        setToValue(r.label);
+                                        setJourneyDest({ lat: r.lat, lng: r.lng, name: r.name });
+                                    }}
+                                />
                                 <button
                                     onClick={swapDestinations}
                                     className="flex shrink-0 cursor-pointer items-center justify-center transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD]"
-                                    style={{
-                                        width: 36,
-                                        height: 36,
-                                        background: '#FFFFFF',
-                                        border: '1px solid #E2DFD6',
-                                        borderRadius: 9,
-                                        fontSize: 16,
-                                    }}
+                                    style={{ width: 36, height: 36, background: '#FFFFFF', border: '1px solid #E2DFD6', borderRadius: 9, fontSize: 16 }}
                                     title="Swap origin/destination"
                                 >
                                     ⇅
@@ -649,10 +559,10 @@ export default function Transit() {
                         </div>
                         {/* Destination chips */}
                         <div className="flex flex-wrap gap-[7px]">
-                            {DEST_CHIPS.map((c) => (
+                            {uniqueChips.map((c) => (
                                 <button
                                     key={c.label}
-                                    onClick={() => setDest(c.value)}
+                                    onClick={() => setDest(c.value, c.lat, c.lng)}
                                     className="inline-flex cursor-pointer items-center gap-[5px] whitespace-nowrap transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4]"
                                     style={{
                                         padding: '6px 12px',
@@ -678,7 +588,7 @@ export default function Transit() {
 
                                 {/* Estimated routes based on straight-line distance */}
                                 {(() => {
-                                    const FROM = { lat: 50.9478, lng: 6.9183 }; // Ehrenfeld
+                                    const FROM = journeyOrigin;
                                     const R = 6371;
                                     const dLat = ((journeyDest.lat - FROM.lat) * Math.PI) / 180;
                                     const dLng = ((journeyDest.lng - FROM.lng) * Math.PI) / 180;

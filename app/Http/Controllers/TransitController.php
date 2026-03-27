@@ -19,6 +19,9 @@ class TransitController extends Controller
             'disruptions' => $transitService->getDisruptions(),
             'routines' => $request->user()->routines ?? collect(),
             'currentStop' => $stop,
+            'userPlaces' => $request->user()->places()
+                ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')
+                ->get(),
         ]);
     }
 }
