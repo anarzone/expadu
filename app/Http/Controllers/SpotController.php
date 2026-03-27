@@ -23,21 +23,41 @@ class SpotController extends Controller
             $query->where('noise_level', $noise);
         }
 
-        $sort = $request->query('sort', 'rating');
-        $query = match ($sort) {
-            'rating' => $query->orderByDesc('rating'),
-            'crowd' => $query->withCount(['activeCheckins'])->orderBy('active_checkins_count'),
-            default => $query->orderByDesc('rating'),
-        };
+        // Sort by distance to user's location — from query params or user's home place
+        $userLat = $request->query('lat');
+        $userLng = $request->query('lng');
 
-        $spots = $query->withCount('activeCheckins')->paginate(20);
+        if (! $userLat || ! $userLng) {
+            $home = $request->user()->places()->orderBy('sort_order')->first();
+            if ($home?->lat && $home?->lng) {
+                $userLat = $home->lat;
+                $userLng = $home->lng;
+            }
+        }
+
+        if ($userLat && $userLng) {
+            // Sort by approximate distance (Manhattan distance — fast, good enough for city scale)
+            $query->whereNotNull('lat')
+                ->whereNotNull('lng')
+                ->selectRaw('*, (ABS(lat - ?) + ABS(lng - ?)) as distance', [(float) $userLat, (float) $userLng])
+                ->orderBy('distance');
+        } else {
+            $sort = $request->query('sort', 'rating');
+            $query = match ($sort) {
+                'rating' => $query->orderByDesc('rating'),
+                'crowd' => $query->withCount(['activeCheckins'])->orderBy('active_checkins_count'),
+                default => $query->orderByDesc('rating'),
+            };
+        }
+
+        $spots = $query->withCount('activeCheckins')->paginate(50);
 
         return Inertia::render('explore', [
             'spots' => $spots,
             'filters' => [
                 'category' => $request->query('category'),
                 'noise_level' => $request->query('noise_level'),
-                'sort' => $sort,
+                'sort' => $request->query('sort', $userLat ? 'distance' : 'rating'),
             ],
             'personalPlaces' => $request->user()->places()
                 ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')
@@ -51,7 +71,7 @@ class SpotController extends Controller
 
         return Inertia::render('explore', [
             'spot' => $spot,
-            'spots' => Spot::withCount('activeCheckins')->orderByDesc('rating')->paginate(20),
+            'spots' => Spot::withCount('activeCheckins')->orderByDesc('rating')->paginate(50),
             'filters' => [],
             'personalPlaces' => request()->user()->places()
                 ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')

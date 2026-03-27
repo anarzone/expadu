@@ -111,6 +111,17 @@ export const MapView = forwardRef<MapViewHandle, {
         map.addControl(geolocate, 'bottom-right');
         geolocateRef.current = geolocate;
 
+        // Toggle marker labels based on zoom — hide text when zoomed out, show when zoomed in
+        // IMPORTANT: never set transform on marker elements — it conflicts with MapLibre positioning
+        function updateMarkerLabels() {
+            const zoom = map.getZoom();
+            const showLabels = zoom >= 13;
+            document.querySelectorAll('.spot-label').forEach((el) => {
+                (el as HTMLElement).style.display = showLabels ? '' : 'none';
+            });
+        }
+        map.on('zoomend', updateMarkerLabels);
+
         // Auto-trigger geolocation on map load
         map.on('load', () => {
             geolocate.trigger();
@@ -147,7 +158,7 @@ export const MapView = forwardRef<MapViewHandle, {
             const isSelected = spot.id === selectedId;
 
             const el = document.createElement('div');
-            el.className = 'maplibregl-marker';
+            el.className = 'maplibregl-marker spot-marker-pill';
             el.style.cssText = `
                 display: flex; align-items: center; gap: 4px;
                 padding: 4px 8px; border-radius: 20px;
@@ -155,10 +166,10 @@ export const MapView = forwardRef<MapViewHandle, {
                 background: ${isSelected ? '#1A4CD4' : 'rgba(24,23,15,0.8)'};
                 box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                 cursor: pointer; white-space: nowrap;
-                transition: background 0.2s, transform 0.2s;
+                transition: background 0.2s;
                 transform: ${isSelected ? 'scale(1.1)' : 'scale(1)'};
             `;
-            el.innerHTML = `<span style="font-size:14px">${emoji}</span><span style="max-width:80px;overflow:hidden;text-overflow:ellipsis">${spot.name}</span>`;
+            el.innerHTML = `<span style="font-size:14px">${emoji}</span><span class="spot-label" style="max-width:80px;overflow:hidden;text-overflow:ellipsis">${spot.name}</span>`;
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 onSelectSpot(spot.id);

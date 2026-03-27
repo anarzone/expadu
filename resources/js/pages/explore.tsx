@@ -44,10 +44,11 @@ type SpotData = {
 const PLACE_EMOJIS = ['⭐', '🏠', '💼', '📚', '☕', '🏋️', '🛒', '🏥', '🎵', '🍕', '🌳', '🚉', '❤️', '📍', '🎯', '🔖'];
 
 export default function Explore() {
-    const { spots, filters, personalPlaces } = usePage<{
+    const { spots, filters, personalPlaces, userLocation } = usePage<{
         spots: { data: SpotData[] };
         filters: { category?: string | null };
         personalPlaces: PersonalPlace[];
+        userLocation?: { lat: number; lng: number } | null;
     }>().props;
 
     const { track } = useTracker();
@@ -70,7 +71,11 @@ export default function Explore() {
 
     function filterByCategory(cat: string) {
         setCategory(cat);
-        router.get('/explore', cat ? { category: cat } : {}, { preserveState: true, preserveScroll: true });
+        const params: Record<string, string> = {};
+        if (cat) params.category = cat;
+        if (userLocation?.lat) params.lat = String(userLocation.lat);
+        if (userLocation?.lng) params.lng = String(userLocation.lng);
+        router.get('/explore', params, { preserveState: true, preserveScroll: true });
     }
 
     const filteredSpots = spots.data.filter((s) => {
