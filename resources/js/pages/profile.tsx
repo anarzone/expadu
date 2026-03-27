@@ -130,14 +130,22 @@ export default function Profile() {
     const [showInterestInput, setShowInterestInput] = useState(false);
     const [newInterest, setNewInterest] = useState('');
 
-    // Places — from backend or fallback
+    // Places — always derived from backend props (re-syncs after Inertia navigations)
     const backendPlaces: Place[] = (userPlaces ?? []).map((p) => ({
         id: p.id,
         emoji: p.emoji || '📍',
         name: p.name,
         addr: p.address || '',
     }));
-    const [places, setPlaces] = useState<Place[]>(backendPlaces.length > 0 ? backendPlaces : FALLBACK_PLACES);
+    const [localPlaces, setLocalPlaces] = useState<Place[]>([]);
+
+    // Merge backend places + any local-only places (fallback data with negative IDs)
+    const places = backendPlaces.length > 0 ? [...backendPlaces, ...localPlaces] : (localPlaces.length > 0 ? localPlaces : FALLBACK_PLACES);
+
+    // Wrapper to keep setPlaces API compatible — only affects local-only places
+    function setPlaces(updater: Place[] | ((prev: Place[]) => Place[])) {
+        setLocalPlaces(typeof updater === 'function' ? updater : () => updater);
+    }
     const [showPlaceForm, setShowPlaceForm] = useState(false);
     const [placeName, setPlaceName] = useState('');
     const [placeAddr, setPlaceAddr] = useState('');
