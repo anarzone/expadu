@@ -25,14 +25,44 @@ class WeatherService
                 if ($response->successful()) {
                     $w = $response->json('weather');
 
+                    // Also fetch hourly forecast for accurate wind speed
+                    // (current_weather only has 10-min measurement averages which are too high)
+                    $hourlyWind = null;
+                    $hourlyGust = null;
+                    try {
+                        $today = now()->format('Y-m-d');
+                        $hourlyRes = Http::timeout(3)->get('https://api.brightsky.dev/weather', [
+                            'lat' => $lat, 'lon' => $lng, 'date' => $today, 'last_date' => $today,
+                        ]);
+                        if ($hourlyRes->successful()) {
+                            $hours = $hourlyRes->json('weather', []);
+                            // Find closest hour to now
+                            $nowHour = now()->hour;
+                            $currentHour = null;
+                            foreach ($hours as $h) {
+                                $hHour = (int) date('G', strtotime($h['timestamp']));
+                                if ($hHour <= $nowHour) {
+                                    $currentHour = $h; // keep updating to get the latest before now
+                                }
+                            }
+                            $currentHour = $currentHour ?? end($hours) ?: null;
+                            if ($currentHour) {
+                                $hourlyWind = $currentHour['wind_speed'] ?? null;
+                                $hourlyGust = $currentHour['wind_gust_speed'] ?? null;
+                            }
+                        }
+                    } catch (\Exception) {
+                        // Ignore — fall back to current_weather values
+                    }
+
                     return [
                         'temperature' => round($w['temperature'] ?? 0),
                         'icon' => $w['icon'] ?? 'cloudy',
                         'emoji' => $this->iconToEmoji($w['icon'] ?? 'cloudy'),
                         'condition' => $this->iconToCondition($w['icon'] ?? 'cloudy'),
-                        'wind_speed' => round($w['wind_speed'] ?? $w['wind_speed_10'] ?? 0),
-                        'wind_gust' => round($w['wind_gust_10'] ?? $w['wind_speed_10'] ?? 0),
-                        'wind_direction' => $w['wind_direction'] ?? $w['wind_direction_10'] ?? 0,
+                        'wind_speed' => round($hourlyWind ?? $w['wind_speed_60'] ?? $w['wind_speed_10'] ?? 0),
+                        'wind_gust' => round($hourlyGust ?? $w['wind_gust_speed_10'] ?? 0),
+                        'wind_direction' => $w['wind_direction_10'] ?? 0,
                         'humidity' => round($w['relative_humidity'] ?? 0),
                         'precipitation' => $w['precipitation_10'] ?? 0,
                     ];
