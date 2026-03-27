@@ -4,6 +4,7 @@ import { EventCard } from '@/components/events/event-card';
 import { EventDetailContent } from '@/components/events/event-detail-content';
 import { EventsHero } from '@/components/events/events-hero';
 import { EventsRightPanel } from '@/components/events/events-right-panel';
+import { useTabState } from '@/hooks/use-tab-state';
 import { useTracker } from '@/hooks/use-tracker';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
