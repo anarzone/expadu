@@ -10,10 +10,41 @@ use Illuminate\Support\Facades\DB;
 class GtfsDepartureService
 {
     /**
+     * Get departures for the nearest stop to given coordinates.
+     * Uses PostGIS-free distance calculation (Haversine approximation).
+     *
+     * @return array{stop_name: string, source: string, departures: array}
+     */
+    public function getDeparturesNearby(float $lat, float $lng, int $limit = 10): array
+    {
+        if (! $this->hasGtfsData()) {
+            return $this->fallbackDepartures('Nearby');
+        }
+
+        $cacheKey = "gtfs_departures_nearby_{$lat}_{$lng}_{$limit}";
+
+        return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
+            // Find nearest stop using simple distance formula (good enough for city scale)
+            $nearestStop = GtfsStop::where('location_type', 0)
+                ->whereNotNull('stop_lat')
+                ->whereNotNull('stop_lng')
+                ->selectRaw('*, (ABS(stop_lat - ?) + ABS(stop_lng - ?)) as dist', [$lat, $lng])
+                ->orderBy('dist')
+                ->first();
+
+            if (! $nearestStop) {
+                return $this->fallbackDepartures('Nearby');
+            }
+
+            return $this->getDepartures($nearestStop->stop_name, $limit);
+        });
+    }
+
+    /**
      * Get upcoming departures for a stop name from GTFS static data.
      * Falls back to mock data if GTFS tables are empty.
      *
-     * @return array{stop_name: string, departures: array}
+     * @return array{stop_name: string, source: string, departures: array}
      */
     public function getDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
     {
@@ -143,14 +174,8 @@ class GtfsDepartureService
     {
         return [
             'stop_name' => $stopName,
-            'source' => 'mock',
-            'departures' => [
-                ['line' => '9', 'direction' => 'Königsforst', 'color' => '#1A4CD4', 'type' => 'tram', 'departures' => [3, 13, 23]],
-                ['line' => '7', 'direction' => 'Frechen', 'color' => '#0A7C52', 'type' => 'tram', 'departures' => [7, 17, 27]],
-                ['line' => '1', 'direction' => 'Bensberg', 'color' => '#E8914A', 'type' => 'tram', 'departures' => [11, 21, 31]],
-                ['line' => 'S12', 'direction' => 'Düren', 'color' => '#C4271A', 'type' => 'rail', 'departures' => [5, 35, 65]],
-                ['line' => 'RE1', 'direction' => 'Aachen Hbf', 'color' => '#7C3AED', 'type' => 'rail', 'departures' => [18, 48, 78]],
-            ],
+            'source' => 'unavailable',
+            'departures' => [],
         ];
     }
 }

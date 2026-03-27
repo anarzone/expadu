@@ -17,16 +17,18 @@ class HomeCardService
     public function buildFeed(User $user): array
     {
         $home = $user->places()->orderBy('sort_order')->first();
-        $homeStopName = $home?->name ?? 'Ehrenfeld';
+        $homeLat = $home?->lat ? (float) $home->lat : null;
+        $homeLng = $home?->lng ? (float) $home->lng : null;
+        $homeStopName = $home?->address ?? $home?->name ?? 'Ehrenfeld';
 
         $cards = array_filter([
-            $this->buildBlueHighlight($user, $homeStopName),
+            $this->buildBlueHighlight($user, $homeStopName, $homeLat, $homeLng),
             $this->buildDisruptionBanner(),
             $this->buildSettlementProgress($user),
             $this->buildYourPlaces($user),
             $this->buildQuickAccess($user),
             $this->buildThisWeek(),
-            $this->buildLiveDepartures($homeStopName),
+            $this->buildLiveDepartures($homeStopName, $homeLat, $homeLng),
         ]);
 
         usort($cards, fn (array $a, array $b) => $b['priority'] <=> $a['priority']);
@@ -37,7 +39,7 @@ class HomeCardService
     /**
      * @return array{type: string, data: array<string, mixed>, priority: int}|null
      */
-    protected function buildBlueHighlight(User $user, string $homeStopName = 'Ehrenfeld'): ?array
+    protected function buildBlueHighlight(User $user, string $homeStopName = '', ?float $homeLat = null, ?float $homeLng = null): ?array
     {
         $urgentTasks = $user->userTasks()
             ->whereNull('completed_at')
@@ -80,9 +82,11 @@ class HomeCardService
         // Build timeline rows (next departure, tonight's event, weather)
         $timelineRows = [];
 
-        // Next departure from user's home stop via GTFS
+        // Next departure from user's nearest stop via GTFS
         $gtfsService = App::make(GtfsDepartureService::class);
-        $deptResult = $gtfsService->getDepartures($homeStopName, 3);
+        $deptResult = ($homeLat && $homeLng)
+            ? $gtfsService->getDeparturesNearby($homeLat, $homeLng, 3)
+            : $gtfsService->getDepartures($homeStopName, 3);
         $nextDep = collect($deptResult['departures'] ?? [])
             ->filter(fn (array $d) => ! empty($d['departures']))
             ->first();
@@ -260,10 +264,12 @@ class HomeCardService
      *
      * @return array{type: string, data: array<string, mixed>, priority: int}
      */
-    protected function buildLiveDepartures(string $homeStopName = 'Ehrenfeld'): array
+    protected function buildLiveDepartures(string $homeStopName = '', ?float $homeLat = null, ?float $homeLng = null): array
     {
         $gtfsService = App::make(GtfsDepartureService::class);
-        $result = $gtfsService->getDepartures($homeStopName, 6);
+        $result = ($homeLat && $homeLng)
+            ? $gtfsService->getDeparturesNearby($homeLat, $homeLng, 6)
+            : $gtfsService->getDepartures($homeStopName, 6);
 
         $departures = collect($result['departures'] ?? [])
             ->take(3)
@@ -303,12 +309,15 @@ class HomeCardService
 
     protected function getWeatherHeadline(): string
     {
+        $weather = app(WeatherService::class)->getCurrentWeather();
         $forecast = app(WeatherService::class)->getForecast();
 
+        $condition = $weather['condition'] ?? 'Clear sky';
+
         if ($forecast['rain_starts']) {
-            return "Dry until {$forecast['rain_starts']} —\ngood day to bike.";
+            return "{$condition} until {$forecast['rain_starts']} —\ngood day to bike.";
         }
 
-        return "Clear skies today —\nperfect day to bike.";
+        return "{$condition} today —\n{$forecast['bike_score']}.";
     }
 }

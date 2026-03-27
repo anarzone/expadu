@@ -55,12 +55,16 @@ class HandleInertiaRequests extends Middleware
                 }
                 $home = $user->places()->orderBy('sort_order')->first();
 
-                return $home ? [
+                if (! $home) {
+                    return null; // No home location set — frontend should prompt user or use live GPS
+                }
+
+                return [
                     'name' => $home->name,
                     'address' => $home->address,
-                    'lat' => (float) $home->lat,
-                    'lng' => (float) $home->lng,
-                ] : ['name' => 'Ehrenfeld', 'address' => 'Cologne', 'lat' => 50.9478, 'lng' => 6.9183];
+                    'lat' => $home->lat ? (float) $home->lat : null,
+                    'lng' => $home->lng ? (float) $home->lng : null,
+                ];
             },
             'todayEvents' => fn () => Event::query()
                 ->whereDate('starts_at', today())
