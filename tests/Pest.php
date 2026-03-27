@@ -19,15 +19,21 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function () {
         Http::fake([
-            'api.brightsky.dev/*' => Http::response([
-                'weather' => [
-                    'temperature' => 15.0,
-                    'wind_speed_10' => 12.0,
-                    'wind_direction_10' => 220,
-                    'relative_humidity' => 65,
-                    'precipitation_10' => 0.0,
-                    'icon' => 'partly-cloudy-day',
-                    'condition' => 'dry',
+            'api.open-meteo.com/*' => Http::response([
+                'current' => [
+                    'temperature_2m' => 15.0,
+                    'wind_speed_10m' => 5.0,
+                    'wind_gusts_10m' => 12.0,
+                    'wind_direction_10m' => 220,
+                    'relative_humidity_2m' => 65,
+                    'precipitation' => 0.0,
+                    'weather_code' => 2,
+                ],
+                'hourly' => [
+                    'time' => [],
+                    'precipitation' => [],
+                    'temperature_2m' => [],
+                    'wind_speed_10m' => [],
                 ],
             ]),
             'photon.komoot.io/*' => Http::response(['features' => []]),
