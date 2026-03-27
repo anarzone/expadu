@@ -265,58 +265,73 @@ export default function Explore() {
                     max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-[80] max-lg:shadow-[4px_0_32px_rgba(0,0,0,0.1)] max-lg:transition-transform max-lg:duration-300
                     ${listOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'}
                 `}>
-                    {/* Header: title, search, filters */}
-                    <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
-                        <div className="mb-3 flex items-center justify-between">
-                            <span className="font-display text-xl font-medium tracking-tight">Explore Cologne</span>
-                            <span className="font-mono text-xs text-[#AAA89F]">{filteredSpots.length} spots</span>
+                    {/* Header — show back button when viewing detail */}
+                    {selectedSpot ? (
+                        <div className="flex shrink-0 items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 dark:border-[#3A3930]">
+                            <button
+                                onClick={() => setSelectedSpot(null)}
+                                className="flex size-8 items-center justify-center rounded-full bg-[#EFEDE7] text-sm text-[#6B6860] transition-colors hover:bg-[#E2DFD6]"
+                            >
+                                ‹
+                            </button>
+                            <span className="text-sm font-semibold">{selectedSpot.name}</span>
                         </div>
-                        <SearchBar search={search} setSearch={setSearch} />
-                        <ExploreFilterBar active={category} onChange={filterByCategory} />
-                    </div>
+                    ) : (
+                        <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
+                            <div className="mb-3 flex items-center justify-between">
+                                <span className="font-display text-xl font-medium tracking-tight">Explore Cologne</span>
+                                <span className="font-mono text-xs text-[#AAA89F]">{filteredSpots.length} spots</span>
+                            </div>
+                            <SearchBar search={search} setSearch={setSearch} />
+                            <ExploreFilterBar active={category} onChange={filterByCategory} />
+                        </div>
+                    )}
 
-                    {/* Scrollable spot list */}
-                    <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
-                        {/* Geocoding suggestions when no local results match */}
-                        {filteredSpots.length === 0 && geoSuggestions.length > 0 && (
-                            <div className="mb-3">
-                                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
-                                    Search nearby
-                                </div>
-                                {geoSuggestions.map((g, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                        onClick={() => {
-                                            setSearch([g.name, g.city].filter(Boolean).join(', '));
-                                            mapRef.current?.flyTo(g.lat, g.lng, 16);
-                                            mapRef.current?.addSearchPin(g.lat, g.lng, g.name);
-                                        }}
-                                    >
-                                        <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{g.name}</div>
-                                            <div className="text-xs text-[#6B6860]">
-                                                {[g.street, g.city].filter(Boolean).join(', ')}
+                    {/* Desktop/tablet: inline detail panel OR spot list */}
+                    {selectedSpot ? (
+                        <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} inline />
+                    ) : (
+                        <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
+                            {filteredSpots.length === 0 && geoSuggestions.length > 0 && (
+                                <div className="mb-3">
+                                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
+                                        Search nearby
+                                    </div>
+                                    {geoSuggestions.map((g, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                            onClick={() => {
+                                                setSearch([g.name, g.city].filter(Boolean).join(', '));
+                                                mapRef.current?.flyTo(g.lat, g.lng, 16);
+                                                mapRef.current?.addSearchPin(g.lat, g.lng, g.name);
+                                            }}
+                                        >
+                                            <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{g.name}</div>
+                                                <div className="text-xs text-[#6B6860]">
+                                                    {[g.street, g.city].filter(Boolean).join(', ')}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {filteredSpots.length === 0 ? (
-                            <div className="py-12 text-center text-sm text-[#AAA89F]">No spots found.</div>
-                        ) : (
-                            filteredSpots.map((s) => (
-                                <SpotCard
-                                    key={s.id}
-                                    spot={s}
-                                    selected={selectedSpot?.id === s.id}
-                                    onSelect={() => selectSpot(s)}
-                                />
-                            ))
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                            {filteredSpots.length === 0 ? (
+                                <div className="py-12 text-center text-sm text-[#AAA89F]">No spots found.</div>
+                            ) : (
+                                filteredSpots.map((s) => (
+                                    <SpotCard
+                                        key={s.id}
+                                        spot={s}
+                                        selected={selectedSpot?.id === s.id}
+                                        onSelect={() => selectSpot(s)}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* ═══ MAP PANEL ═══ flex:1, always visible */}
@@ -475,8 +490,10 @@ export default function Explore() {
                 )}
             </div>
 
-            {/* Spot detail bottom sheet — all breakpoints */}
-            <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} />
+            {/* Spot detail bottom sheet — mobile only */}
+            <div className="md:hidden">
+                <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} />
+            </div>
         </AppLayout>
     );
 }

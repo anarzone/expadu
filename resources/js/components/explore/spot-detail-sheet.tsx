@@ -38,7 +38,7 @@ const mockReviews: Record<number, { name: string; flag: string; stars: string; t
     ],
 };
 
-export function SpotDetailSheet({ spot, onClose }: { spot: SpotData | null; onClose: () => void }) {
+export function SpotDetailSheet({ spot, onClose, inline = false }: { spot: SpotData | null; onClose: () => void; inline?: boolean }) {
     const { track } = useTracker();
     const [navMenuOpen, setNavMenuOpen] = useState(false);
 
@@ -65,8 +65,8 @@ export function SpotDetailSheet({ spot, onClose }: { spot: SpotData | null; onCl
         onClose();
     }
 
-    return (
-        <BottomSheet open={!!spot} onClose={onClose}>
+    const content = (
+        <>
             {/* Header row: label + close */}
             <div className="mb-0 flex items-center justify-between px-1 pb-3">
                 <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Work Spot</span>
@@ -202,6 +202,16 @@ export function SpotDetailSheet({ spot, onClose }: { spot: SpotData | null; onCl
                     <div className="text-[13px] leading-relaxed text-[#6B6860]">{r.text}</div>
                 </div>
             ))}
+        </>
+    );
+
+    if (inline) {
+        return <div className="flex-1 overflow-y-auto px-5 py-4" style={{ scrollbarWidth: 'thin' }}>{content}</div>;
+    }
+
+    return (
+        <BottomSheet open={!!spot} onClose={onClose}>
+            {content}
         </BottomSheet>
     );
 }
