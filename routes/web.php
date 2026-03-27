@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
@@ -21,10 +22,13 @@ Route::inertia('/', 'welcome', [
 ])->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Geocoding API
+    // APIs
     Route::get('api/geocode', GeocodeController::class)
         ->middleware('throttle:10,1')
         ->name('api.geocode');
+    Route::get('api/stops', StopSearchController::class)
+        ->middleware('throttle:20,1')
+        ->name('api.stops');
 
     Route::inertia('onboarding', 'onboarding')->name('onboarding');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
