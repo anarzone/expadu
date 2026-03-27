@@ -52,7 +52,7 @@ export default function Explore() {
     }>().props;
 
     const { track } = useTracker();
-    const [category, setCategory] = useState(filters.category || '');
+    const [category, setCategory] = useState(filters.category ?? '');
     const [selectedSpot, setSelectedSpot] = useState<SpotData | null>(null);
     const [search, setSearch] = useState('');
     const [listOpen, setListOpen] = useState(false);
