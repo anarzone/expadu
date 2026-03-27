@@ -26,7 +26,7 @@ export function RightPanel() {
     const { weather, forecast, todayEvents } = usePage<{ weather?: WeatherData; forecast?: ForecastData; todayEvents?: TodayEvent[] }>().props;
 
     return (
-        <aside className="hidden w-[300px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
+        <aside className="hidden w-[390px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
             <WeatherWidget weather={weather} forecast={forecast} />
             <RhineWidget />
             <DisruptionsWidget />
