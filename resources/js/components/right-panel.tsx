@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 
 type WeatherData = {
     temperature: number;
+    feels_like?: number;
     emoji: string;
     condition: string;
     wind_speed: number;
@@ -38,7 +39,8 @@ export function RightPanel() {
 }
 
 function WeatherWidget({ weather, forecast }: { weather?: WeatherData; forecast?: ForecastData }) {
-    const temp = weather?.temperature ?? 11;
+    const temp = weather?.temperature ?? 0;
+    const feelsLike = weather?.feels_like ?? temp;
     const emoji = weather?.emoji ?? '⛅';
     const condition = weather?.condition ?? 'Partly cloudy';
     const wind = weather?.wind_speed ?? 0;
@@ -71,6 +73,9 @@ function WeatherWidget({ weather, forecast }: { weather?: WeatherData; forecast?
                 <div className="text-[44px] opacity-85">{emoji}</div>
             </div>
             <div className="border-t border-border">
+                {feelsLike !== temp && (
+                    <WeatherRow emoji="🌡️" label="Feels like" value={`${feelsLike}°`} variant={feelsLike < 0 ? 'caution' : 'good'} />
+                )}
                 <WeatherRow emoji="🌬️" label="Wind" value={`${wind} km/h${gust && gust > wind ? ` (gusts ${gust})` : ''}`} variant={wind > 25 ? 'caution' : 'good'} />
                 <WeatherRow emoji="💧" label="Humidity" value={`${humidity}%`} />
                 <WeatherRow emoji="🚲" label="Bike score" value={bikeScore} variant="good" />

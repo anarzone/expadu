@@ -21,11 +21,12 @@ class WeatherService
 
         return [
             'temperature' => (int) floor($current['temperature_2m'] ?? 0),
+            'feels_like' => (int) floor($current['apparent_temperature'] ?? $current['temperature_2m'] ?? 0),
             'icon' => $this->wmoToIcon($weatherCode),
             'emoji' => $this->wmoToEmoji($weatherCode),
             'condition' => $this->wmoToCondition($weatherCode),
             'wind_speed' => (int) floor($current['wind_speed_10m'] ?? 0),
-            'wind_gust' => (int) round($current['wind_gusts_10m'] ?? 0),
+            'wind_gust' => (int) floor($current['wind_gusts_10m'] ?? 0),
             'wind_direction' => $current['wind_direction_10m'] ?? 0,
             'humidity' => round($current['relative_humidity_2m'] ?? 0),
             'precipitation' => $current['precipitation'] ?? 0,
@@ -77,7 +78,7 @@ class WeatherService
                     ->get('https://api.open-meteo.com/v1/dwd-icon', [
                         'latitude' => $lat,
                         'longitude' => $lng,
-                        'current' => 'temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+                        'current' => 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
                         'hourly' => 'precipitation,temperature_2m,wind_speed_10m',
                         'timezone' => 'Europe/Berlin',
                         'forecast_days' => 1,
