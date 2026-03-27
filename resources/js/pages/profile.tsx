@@ -141,6 +141,9 @@ export default function Profile() {
     const [showPlaceForm, setShowPlaceForm] = useState(false);
     const [placeName, setPlaceName] = useState('');
     const [placeAddr, setPlaceAddr] = useState('');
+    const [placeLat, setPlaceLat] = useState<number | null>(null);
+    const [placeLng, setPlaceLng] = useState<number | null>(null);
+    const [locating, setLocating] = useState(false);
     const [placeEmoji, setPlaceEmoji] = useState('🏠');
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
 
@@ -245,6 +248,8 @@ export default function Profile() {
             setPlaceAddr('');
             setPlaceEmoji('🏠');
             setEditingPlaceId(null);
+            setPlaceLat(null);
+            setPlaceLng(null);
         }
         setShowPlaceForm(true);
     }
@@ -261,6 +266,8 @@ export default function Profile() {
                 emoji: placeEmoji,
                 name: placeName.trim(),
                 address: placeAddr.trim() || null,
+                lat: placeLat,
+                lng: placeLng,
             }, {
                 preserveScroll: true,
                 preserveState: false,
@@ -273,6 +280,75 @@ export default function Profile() {
         }
         setShowPlaceForm(false);
     }
+
+    // Use browser geolocation → reverse geocode with Photon
+    function useMyLocation() {
+        if (!navigator.geolocation) {
+            showToast('Geolocation not supported by your browser');
+            return;
+        }
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                setPlaceLat(lat);
+                setPlaceLng(lng);
+                // Reverse geocode via Photon
+                try {
+                    const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&limit=1&lang=en`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const feature = data.features?.[0];
+                        if (feature) {
+                            const p = feature.properties;
+                            const addr = [p.street, p.housenumber].filter(Boolean).join(' ');
+                            const area = [addr, p.district || p.suburb || p.locality, p.city].filter(Boolean).join(', ');
+                            setPlaceAddr(area || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                        } else {
+                            setPlaceAddr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                        }
+                    }
+                } catch {
+                    setPlaceAddr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                }
+                setLocating(false);
+                showToast('📍 Location detected');
+            },
+            (err) => {
+                setLocating(false);
+                showToast(err.code === 1 ? 'Location permission denied' : 'Could not get your location');
+            },
+            { enableHighAccuracy: true, timeout: 10000 },
+        );
+    }
+
+    // Search address via Photon and get coordinates
+    const [addrSuggestions, setAddrSuggestions] = useState<{ name: string; address: string; lat: number; lng: number }[]>([]);
+    const addrTimerRef = useCallback(() => {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        return {
+            search(query: string) {
+                if (timer) clearTimeout(timer);
+                if (query.trim().length < 3) { setAddrSuggestions([]); return; }
+                timer = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            setAddrSuggestions(data.map((r: any) => ({
+                                name: r.name,
+                                address: [r.street, r.city].filter(Boolean).join(', '),
+                                lat: r.lat,
+                                lng: r.lng,
+                            })));
+                        }
+                    } catch { setAddrSuggestions([]); }
+                }, 300);
+            },
+            clear() { if (timer) clearTimeout(timer); setAddrSuggestions([]); },
+        };
+    }, [])();
 
     function deletePlace(id: number) {
         // Negative IDs are fallback/mock data — just remove locally
@@ -775,13 +851,60 @@ export default function Profile() {
                                             style={{ fontFamily: "'Geist', sans-serif" }}
                                         />
                                     </div>
-                                    <input
-                                        value={placeAddr}
-                                        onChange={(e) => setPlaceAddr(e.target.value)}
-                                        placeholder="Address or area (e.g. Ehrenfeld)"
-                                        className="mb-2.5 w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none"
-                                        style={{ fontFamily: "'Geist', sans-serif", boxSizing: 'border-box' }}
-                                    />
+                                    <div className="relative mb-2.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="relative flex-1">
+                                                <input
+                                                    value={placeAddr}
+                                                    onChange={(e) => {
+                                                        setPlaceAddr(e.target.value);
+                                                        addrTimerRef.search(e.target.value);
+                                                    }}
+                                                    onBlur={() => setTimeout(() => addrTimerRef.clear(), 200)}
+                                                    placeholder="Address or area (e.g. Ehrenfeld)"
+                                                    className="w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none"
+                                                    style={{ fontFamily: "'Geist', sans-serif" }}
+                                                />
+                                                {/* Address autocomplete dropdown */}
+                                                {addrSuggestions.length > 0 && (
+                                                    <div className="absolute top-full left-0 right-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+                                                        {addrSuggestions.map((s, i) => (
+                                                            <div
+                                                                key={i}
+                                                                onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    setPlaceAddr([s.name, s.address].filter(Boolean).join(', '));
+                                                                    setPlaceLat(s.lat);
+                                                                    setPlaceLng(s.lng);
+                                                                    addrTimerRef.clear();
+                                                                }}
+                                                                className="cursor-pointer px-3 py-2.5 transition-colors hover:bg-[#EFEDE7]"
+                                                                style={{ borderBottom: i < addrSuggestions.length - 1 ? '1px solid #F0EDE7' : 'none' }}
+                                                            >
+                                                                <div className="text-sm font-medium text-[#18170F]">{s.name}</div>
+                                                                <div className="text-xs text-[#6B6860]">{s.address}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* Use my location button */}
+                                            <button
+                                                type="button"
+                                                onClick={useMyLocation}
+                                                disabled={locating}
+                                                className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] disabled:opacity-50"
+                                                style={{ width: 40, height: 40 }}
+                                                title="Use my current location"
+                                            >
+                                                {locating ? (
+                                                    <div style={{ width: 14, height: 14, border: '2px solid #E2DFD6', borderTopColor: '#1A4CD4', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+                                                ) : (
+                                                    <span style={{ fontSize: 18 }}>📍</span>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={savePlace}
