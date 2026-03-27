@@ -15,23 +15,16 @@ type GeoResult = {
     lng: number;
 };
 
-const MapViewLazy = lazy(() => import('@/components/explore/map-view').then((m) => ({ default: m.MapView as any })));
-
-// Hardcoded coordinates for seeded spots (until PostGIS lat/lng exposed via API)
-const SPOT_COORDS: Record<number, [number, number]> = {
-    1: [50.9478, 6.9183],  // Café Schmitz
-    2: [50.9467, 6.9417],  // Startplatz
-    3: [50.9339, 6.9479],  // StadtBibliothek
-    4: [50.9411, 6.9228],  // Wohnzimmer
-    5: [50.9452, 6.9211],  // COWOKI
-    6: [50.9280, 6.9286],  // Uni-Bibliothek
-    7: [50.9414, 6.9736],  // Rheinpark
-    8: [50.9241, 6.9442],  // Café Sehnsucht
-    9: [50.9471, 6.9399],  // Design Offices
-    10: [50.9218, 6.9499], // Volksgarten
-    11: [50.9308, 6.9407], // Heilandt
-    12: [50.9340, 6.9478], // Zentralbibliothek
+type PersonalPlace = {
+    id: number;
+    emoji: string;
+    name: string;
+    address: string | null;
+    lat: number | null;
+    lng: number | null;
 };
+
+const MapViewLazy = lazy(() => import('@/components/explore/map-view').then((m) => ({ default: m.MapView as any })));
 
 type SpotData = {
     id: number;
@@ -47,10 +40,14 @@ type SpotData = {
     lng?: number;
 };
 
+// Common emojis for the place picker
+const PLACE_EMOJIS = ['⭐', '🏠', '💼', '📚', '☕', '🏋️', '🛒', '🏥', '🎵', '🍕', '🌳', '🚉', '❤️', '📍', '🎯', '🔖'];
+
 export default function Explore() {
-    const { spots, filters } = usePage<{
+    const { spots, filters, personalPlaces } = usePage<{
         spots: { data: SpotData[] };
         filters: { category?: string | null };
+        personalPlaces: PersonalPlace[];
     }>().props;
 
     const { track } = useTracker();
@@ -63,6 +60,13 @@ export default function Explore() {
     // Geocoding suggestions for explore search
     const [geoSuggestions, setGeoSuggestions] = useState<GeoResult[]>([]);
     const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Tap-to-discover state
+    const [tapPoint, setTapPoint] = useState<{ lat: number; lng: number; address: string } | null>(null);
+    const [showPlaceForm, setShowPlaceForm] = useState(false);
+    const [placeEmoji, setPlaceEmoji] = useState('⭐');
+    const [placeName, setPlaceName] = useState('');
+    const [savingPlace, setSavingPlace] = useState(false);
 
     function filterByCategory(cat: string) {
         setCategory(cat);
@@ -104,11 +108,78 @@ export default function Explore() {
 
     function selectSpot(spot: SpotData) {
         track('spot_viewed', { spot_id: spot.id, spot_name: spot.name });
-        const coords = SPOT_COORDS[spot.id];
         setSelectedSpot({
             ...spot,
-            lat: coords?.[0] ?? 50.9375,
-            lng: coords?.[1] ?? 6.9603,
+            lat: spot.lat ?? 50.9375,
+            lng: spot.lng ?? 6.9603,
+        });
+    }
+
+    // Tap-to-discover: reverse geocode the tapped point
+    const handleMapTap = useCallback(async (lat: number, lng: number) => {
+        // Close any existing tap point or place form
+        setShowPlaceForm(false);
+
+        try {
+            const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&limit=1&lang=en`);
+            if (res.ok) {
+                const data = await res.json();
+                const feature = data?.features?.[0];
+                const props = feature?.properties;
+
+                let address = 'Unknown location';
+                if (props) {
+                    const parts: string[] = [];
+                    if (props.street) {
+                        parts.push(props.housenumber ? `${props.street} ${props.housenumber}` : props.street);
+                    } else if (props.name) {
+                        parts.push(props.name);
+                    }
+                    if (props.city || props.locality) {
+                        parts.push(props.city || props.locality);
+                    }
+                    if (parts.length > 0) {
+                        address = parts.join(', ');
+                    }
+                }
+
+                setTapPoint({ lat, lng, address });
+            } else {
+                setTapPoint({ lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
+            }
+        } catch {
+            setTapPoint({ lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
+        }
+    }, []);
+
+    function openPlaceForm() {
+        if (!tapPoint) return;
+        setPlaceEmoji('⭐');
+        setPlaceName('');
+        setShowPlaceForm(true);
+    }
+
+    function savePlace() {
+        if (!tapPoint || savingPlace) return;
+        setSavingPlace(true);
+
+        router.post('/user-places', {
+            emoji: placeEmoji,
+            name: placeName || tapPoint.address,
+            address: tapPoint.address,
+            lat: tapPoint.lat,
+            lng: tapPoint.lng,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                setTapPoint(null);
+                setShowPlaceForm(false);
+                setSavingPlace(false);
+            },
+            onError: () => {
+                setSavingPlace(false);
+            },
         });
     }
 
@@ -226,17 +297,106 @@ export default function Explore() {
                                     id: s.id,
                                     name: s.name,
                                     category: s.category,
-                                    lat: SPOT_COORDS[s.id]?.[0] ?? 50.9375,
-                                    lng: SPOT_COORDS[s.id]?.[1] ?? 6.9603,
+                                    lat: s.lat ?? 50.9375,
+                                    lng: s.lng ?? 6.9603,
                                 }))}
+                                personalPlaces={personalPlaces ?? []}
                                 selectedId={selectedSpot?.id ?? null}
                                 onSelectSpot={(id) => {
                                     const spot = spots.data.find((s) => s.id === id);
                                     if (spot) selectSpot(spot);
                                 }}
+                                onMapTap={handleMapTap}
                             />
                         )}
                     </Suspense>
+
+                    {/* ═══ TAP-TO-DISCOVER TOAST ═══ */}
+                    {tapPoint && !showPlaceForm && (
+                        <div className="absolute right-4 bottom-[200px] left-4 z-[90] mx-auto max-w-[400px] md:bottom-8">
+                            <div className="flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97]">
+                                <span className="shrink-0 text-lg">📍</span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{tapPoint.address}</div>
+                                </div>
+                                <button
+                                    onClick={openPlaceForm}
+                                    className="shrink-0 rounded-[8px] bg-[#F5C518] px-3 py-1.5 text-[12px] font-bold text-[#78600A] transition-all hover:bg-[#E6B800]"
+                                >
+                                    Save as place
+                                </button>
+                                <button
+                                    onClick={() => setTapPoint(null)}
+                                    className="shrink-0 text-[13px] text-[#AAA89F] hover:text-[#6B6860]"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═══ SAVE PLACE FORM ═══ */}
+                    {tapPoint && showPlaceForm && (
+                        <div className="absolute right-4 bottom-[200px] left-4 z-[90] mx-auto max-w-[400px] md:bottom-8">
+                            <div className="rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97]">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">Save Place</span>
+                                    <button
+                                        onClick={() => { setShowPlaceForm(false); setTapPoint(null); }}
+                                        className="text-[13px] text-[#AAA89F] hover:text-[#6B6860]"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                {/* Emoji picker */}
+                                <div className="mb-3">
+                                    <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Emoji</div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {PLACE_EMOJIS.map((emoji) => (
+                                            <button
+                                                key={emoji}
+                                                onClick={() => setPlaceEmoji(emoji)}
+                                                className={`flex h-8 w-8 items-center justify-center rounded-[8px] text-base transition-all ${
+                                                    placeEmoji === emoji
+                                                        ? 'bg-[#F5C518] shadow-[0_0_0_2px_#E6B800]'
+                                                        : 'bg-[#EFEDE7] hover:bg-[#E2DFD6] dark:bg-[#2A2920]'
+                                                }`}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Name field */}
+                                <div className="mb-3">
+                                    <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Name</div>
+                                    <input
+                                        type="text"
+                                        placeholder={tapPoint.address}
+                                        value={placeName}
+                                        onChange={(e) => setPlaceName(e.target.value)}
+                                        className="w-full rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-2 text-sm text-[#18170F] outline-none transition-all placeholder:text-[#AAA89F] focus:border-[#1A4CD4] focus:bg-white focus:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F6F5F1]"
+                                    />
+                                </div>
+
+                                {/* Address display */}
+                                <div className="mb-3 text-xs text-[#6B6860]">
+                                    📍 {tapPoint.address}
+                                </div>
+
+                                {/* Save button */}
+                                <button
+                                    onClick={savePlace}
+                                    disabled={savingPlace}
+                                    className="w-full rounded-[9px] bg-[#F5C518] py-2.5 text-[13px] font-bold text-[#78600A] transition-all hover:bg-[#E6B800] disabled:opacity-50"
+                                >
+                                    {savingPlace ? 'Saving...' : 'Save Place'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ═══ MOBILE: Draggable bottom sheet list ═══ */}
                     <MobileListSheet spots={filteredSpots} selectedId={selectedSpot?.id ?? null} onSelect={selectSpot} />

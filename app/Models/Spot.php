@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'category', 'description', 'address', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating'])]
+#[Fillable(['name', 'category', 'description', 'address', 'lat', 'lng', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating'])]
 class Spot extends Model
 {
     /** @use HasFactory<SpotFactory> */
@@ -26,6 +26,8 @@ class Spot extends Model
             'noise_level' => NoiseLevel::class,
             'opening_hours' => 'array',
             'rating' => 'float',
+            'lat' => 'float',
+            'lng' => 'float',
         ];
     }
 

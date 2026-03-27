@@ -3,6 +3,7 @@
 use App\Models\Spot;
 use App\Models\SpotCheckin;
 use App\Models\User;
+use App\Models\UserPlace;
 
 test('explore page renders with spots', function () {
     $user = User::factory()->onboarded()->create();
@@ -15,6 +16,20 @@ test('explore page renders with spots', function () {
     $response->assertInertia(fn ($page) => $page
         ->component('explore')
         ->has('spots.data', 3)
+    );
+});
+
+test('explore page includes personal places', function () {
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->count(2)->create(['user_id' => $user->id]);
+    $this->actingAs($user);
+
+    $response = $this->get(route('explore'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('explore')
+        ->has('personalPlaces', 2)
     );
 });
 

@@ -10,6 +10,15 @@ type SpotPin = {
     lng: number;
 };
 
+type PersonalPlace = {
+    id: number;
+    emoji: string;
+    name: string;
+    address: string | null;
+    lat: number | null;
+    lng: number | null;
+};
+
 export type MapViewHandle = {
     flyTo: (lat: number, lng: number, zoom?: number) => void;
     addSearchPin: (lat: number, lng: number, label: string) => void;
@@ -26,15 +35,24 @@ const categoryEmoji: Record<string, string> = {
 
 export const MapView = forwardRef<MapViewHandle, {
     spots: SpotPin[];
+    personalPlaces?: PersonalPlace[];
     selectedId: number | null;
     onSelectSpot: (id: number) => void;
-}>(function MapView({ spots, selectedId, onSelectSpot }, ref) {
+    onMapTap?: (lat: number, lng: number) => void;
+}>(function MapView({ spots, personalPlaces = [], selectedId, onSelectSpot, onMapTap }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
     const markersRef = useRef<maplibregl.Marker[]>([]);
+    const placeMarkersRef = useRef<maplibregl.Marker[]>([]);
     const searchPinRef = useRef<maplibregl.Marker | null>(null);
     const userMarkerRef = useRef<maplibregl.Marker | null>(null);
     const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
+
+    // Keep onMapTap callback fresh via ref to avoid recreating the map
+    const onMapTapRef = useRef(onMapTap);
+    useEffect(() => {
+        onMapTapRef.current = onMapTap;
+    }, [onMapTap]);
 
     useImperativeHandle(ref, () => ({
         flyTo(lat: number, lng: number, zoom = 15) {
@@ -98,6 +116,14 @@ export const MapView = forwardRef<MapViewHandle, {
             geolocate.trigger();
         });
 
+        // Tap-to-discover: click on empty map area (uses ref for fresh callback)
+        map.on('click', (e) => {
+            const target = e.originalEvent.target as HTMLElement;
+            if (target.closest('.maplibregl-marker')) return;
+
+            onMapTapRef.current?.(e.lngLat.lat, e.lngLat.lng);
+        });
+
         mapRef.current = map;
 
         return () => {
@@ -106,7 +132,7 @@ export const MapView = forwardRef<MapViewHandle, {
         };
     }, []);
 
-    // Update markers when spots change
+    // Update spot markers when spots change
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
@@ -121,6 +147,7 @@ export const MapView = forwardRef<MapViewHandle, {
             const isSelected = spot.id === selectedId;
 
             const el = document.createElement('div');
+            el.className = 'maplibregl-marker';
             el.style.cssText = `
                 display: flex; align-items: center; gap: 4px;
                 padding: 4px 8px; border-radius: 20px;
@@ -152,6 +179,70 @@ export const MapView = forwardRef<MapViewHandle, {
             }
         }
     }, [spots, selectedId, onSelectSpot]);
+
+    // Update personal place markers
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        placeMarkersRef.current.forEach((m) => m.remove());
+        placeMarkersRef.current = [];
+
+        personalPlaces.forEach((place) => {
+            if (!place.lat || !place.lng) return;
+
+            const el = document.createElement('div');
+            el.className = 'maplibregl-marker';
+            el.style.cssText = `
+                display: flex; align-items: center; gap: 4px;
+                padding: 5px 10px; border-radius: 20px;
+                font-size: 12px; font-weight: 600; color: #78600A;
+                background: #FFF3C4;
+                border: 2px solid #F5C518;
+                box-shadow: 0 2px 8px rgba(245,197,24,0.35);
+                cursor: pointer; white-space: nowrap;
+            `;
+            el.innerHTML = `<span style="font-size:14px">${place.emoji || '⭐'}</span><span style="max-width:80px;overflow:hidden;text-overflow:ellipsis">${place.name}</span>`;
+
+            // Popup on click
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Remove any existing personal place popup
+                document.querySelectorAll('.personal-place-popup').forEach((p) => p.remove());
+
+                const popup = document.createElement('div');
+                popup.className = 'personal-place-popup';
+                popup.style.cssText = `
+                    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+                    background: white; border: 1px solid #E2DFD6; border-radius: 10px;
+                    padding: 10px 14px; min-width: 160px; max-width: 220px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 100;
+                    font-family: system-ui, -apple-system, sans-serif;
+                `;
+                popup.innerHTML = `
+                    <div style="font-size:13px;font-weight:600;color:#18170F;margin-bottom:2px">${place.emoji || '⭐'} ${place.name}</div>
+                    ${place.address ? `<div style="font-size:11px;color:#6B6860">${place.address}</div>` : ''}
+                `;
+                el.style.position = 'relative';
+                el.appendChild(popup);
+
+                // Close popup on outside click
+                const closePopup = (evt: MouseEvent) => {
+                    if (!popup.contains(evt.target as Node)) {
+                        popup.remove();
+                        document.removeEventListener('click', closePopup);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closePopup), 0);
+            });
+
+            const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                .setLngLat([place.lng, place.lat])
+                .addTo(map);
+
+            placeMarkersRef.current.push(marker);
+        });
+    }, [personalPlaces]);
 
     return <div ref={containerRef} className="size-full" />;
 });

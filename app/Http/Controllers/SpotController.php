@@ -39,6 +39,9 @@ class SpotController extends Controller
                 'noise_level' => $request->query('noise_level'),
                 'sort' => $sort,
             ],
+            'personalPlaces' => $request->user()->places()
+                ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')
+                ->get(),
         ]);
     }
 
@@ -50,6 +53,9 @@ class SpotController extends Controller
             'spot' => $spot,
             'spots' => Spot::withCount('activeCheckins')->orderByDesc('rating')->paginate(20),
             'filters' => [],
+            'personalPlaces' => request()->user()->places()
+                ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')
+                ->get(),
         ]);
     }
 
