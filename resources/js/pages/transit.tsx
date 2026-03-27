@@ -1,5 +1,5 @@
-import { Head, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
 import { DepartureBoard, type BoardData } from '@/components/transit/departure-board';
 import { GeocodeInput } from '@/components/transit/geocode-input';
@@ -71,64 +71,67 @@ const ROUTES: RouteCardData[] = [
     },
 ];
 
-const KVB_BOARD: BoardData = {
-    stop: 'Venloer Str./Gürtel',
-    icon: '📍',
-    services: [
-        {
-            line: '9', direction: 'Neumarkt → Hauptbahnhof', via: 'via Friesenplatz',
-            color: 'white', bg: '#1A4CD4', delay: 0, cancelled: false, extra: false,
-            departures: [4, 12, 20], routeKey: 'line9', savedDest: true,
-        },
-        {
-            line: '7', direction: 'Frechen → Porz Bf', via: 'via Neumarkt · Dom/Hbf',
-            color: 'white', bg: '#0A7C52', delay: 0, cancelled: false, extra: false,
-            departures: [7, 17, 27], routeKey: 'line7', savedDest: false,
-        },
-        {
-            line: '1', direction: 'Bensberg → Weiden', via: 'via Neumarkt · Müngersdorf',
-            color: 'white', bg: '#E8914A', delay: 8, cancelled: false, extra: false,
-            departures: [16, 24, 32], routeKey: 'line1', savedDest: false,
-        },
-        {
-            line: '3', direction: 'Menzel Str. → Thielenbruch', via: 'via Neumarkt',
-            color: 'white', bg: '#7C3AED', delay: 0, cancelled: false, extra: false,
-            departures: [9, 19, 29], routeKey: null, savedDest: false, hidden: true,
-        },
-        {
-            line: '4', direction: 'Bocklemünd → Schlebusch', via: 'via Rudolfplatz',
-            color: 'white', bg: '#C4271A', delay: 0, cancelled: false, extra: false,
-            departures: [13, 23, 33], routeKey: null, savedDest: false, hidden: true,
-        },
-        {
-            line: '12', direction: 'Merkenich → Zündorf', via: 'via Neumarkt · Deutz',
-            color: 'white', bg: '#0A7C52', delay: 0, cancelled: true, extra: false,
-            departures: [], routeKey: null, savedDest: false, hidden: true,
-        },
-    ],
+// GTFS departure type from backend
+type GtfsDeparture = {
+    line: string;
+    direction: string;
+    color: string;
+    type: 'tram' | 'bus' | 'rail' | 'subway' | 'transit';
+    departures: number[];
 };
 
-const DB_BOARD: BoardData = {
-    stop: 'Köln Ehrenfeld Bf',
-    icon: '🚂',
-    services: [
-        {
-            line: 'S12', direction: 'Köln Hbf → Düren', via: 'via Köln Messe/Deutz',
-            color: 'white', bg: '#C4271A', delay: 0, cancelled: false, extra: false,
-            departures: [3, 33, 63], routeKey: 's12', savedDest: false,
-        },
-        {
-            line: 'RE1', direction: 'Köln Hbf → Aachen Hbf', via: 'Express — no stops',
-            color: 'white', bg: '#7C3AED', delay: 0, cancelled: false, extra: false,
-            departures: [18, 48, 78], routeKey: null, savedDest: false,
-        },
-        {
-            line: 'S11', direction: 'Köln Hbf → Düsseldorf Hbf', via: 'via Köln-Nippes',
-            color: 'white', bg: '#C4271A', delay: 3, cancelled: false, extra: false,
-            departures: [22, 52, 82], routeKey: null, savedDest: false, hidden: true,
-        },
-    ],
+type GtfsDeparturesData = {
+    stop_name: string;
+    source: 'mock' | 'gtfs_static' | 'gtfs_rt';
+    departures: GtfsDeparture[];
 };
+
+// API stop search result
+type StopSearchResult = {
+    stop_id: string;
+    name: string;
+    lat: number;
+    lng: number;
+};
+
+/** Convert GTFS departures into BoardData for the DepartureBoard component */
+function gtfsToBoardData(
+    departures: GtfsDeparture[],
+    stopName: string,
+    icon: string,
+): BoardData {
+    return {
+        stop: stopName,
+        icon,
+        services: departures.map((d, i) => ({
+            line: d.line,
+            direction: d.direction,
+            via: '',
+            color: 'white',
+            bg: d.color,
+            delay: 0,
+            cancelled: false,
+            extra: false,
+            departures: d.departures,
+            routeKey: null,
+            savedDest: false,
+            hidden: i >= 3, // show first 3, hide rest behind "show more"
+        })),
+    };
+}
+
+/** Human-readable source label */
+function sourceLabel(source: string): string {
+    switch (source) {
+        case 'gtfs_static':
+            return 'Static timetable';
+        case 'gtfs_rt':
+            return 'Live';
+        case 'mock':
+        default:
+            return 'Scheduled times';
+    }
+}
 
 const ROUTINES: RoutineCardData[] = [
     {
@@ -239,40 +242,36 @@ const ROUTE_DETAILS: Record<string, RouteDetailData> = {
     },
 };
 
-// Stop picker data
-type StopData = {
-    id: string;
-    name: string;
-    dist: string;
-    icon: string;
-    lines: { n: string; c: string }[];
-    group: 'nearby' | 'popular';
-};
-
-const ALL_STOPS: StopData[] = [
-    { id: 'venloer', name: 'Venloer Str./Gürtel', dist: '0.1 km', icon: '🚋', lines: [{ n: '1', c: '#E8914A' }, { n: '7', c: '#0A7C52' }, { n: '9', c: '#1A4CD4' }], group: 'nearby' },
-    { id: 'ehrenfeld_bf', name: 'Köln Ehrenfeld Bf', dist: '0.4 km', icon: '🚂', lines: [{ n: 'S12', c: '#C4271A' }, { n: 'RE1', c: '#7C3AED' }], group: 'nearby' },
-    { id: 'neptunplatz', name: 'Neptunplatz', dist: '0.6 km', icon: '🚋', lines: [{ n: '3', c: '#1A4CD4' }, { n: '4', c: '#E8914A' }], group: 'nearby' },
-    { id: 'ehrenfeldgurtel', name: 'Ehrenfeldgürtel', dist: '0.7 km', icon: '🚋', lines: [{ n: '9', c: '#1A4CD4' }], group: 'nearby' },
-    { id: 'subbelrather', name: 'Subbelrather Str.', dist: '0.9 km', icon: '🚋', lines: [{ n: '3', c: '#1A4CD4' }, { n: '4', c: '#E8914A' }], group: 'nearby' },
-    { id: 'neumarkt', name: 'Neumarkt', dist: '2.1 km', icon: '🚋', lines: [{ n: '1', c: '#E8914A' }, { n: '7', c: '#0A7C52' }, { n: '9', c: '#1A4CD4' }, { n: '18', c: '#7C3AED' }], group: 'popular' },
-    { id: 'hbf', name: 'Köln Hauptbahnhof', dist: '3.4 km', icon: '🚂', lines: [{ n: 'S6', c: '#C4271A' }, { n: 'S11', c: '#C4271A' }, { n: 'S12', c: '#C4271A' }, { n: 'RE1', c: '#7C3AED' }], group: 'popular' },
-    { id: 'friesenplatz', name: 'Friesenplatz', dist: '1.8 km', icon: '🚋', lines: [{ n: '1', c: '#E8914A' }, { n: '7', c: '#0A7C52' }, { n: '9', c: '#1A4CD4' }], group: 'popular' },
-    { id: 'rudolfplatz', name: 'Rudolfplatz', dist: '2.0 km', icon: '🚋', lines: [{ n: '1', c: '#E8914A' }, { n: '7', c: '#0A7C52' }, { n: '9', c: '#1A4CD4' }], group: 'popular' },
-    { id: 'dom_hbf', name: 'Dom/Hbf', dist: '3.2 km', icon: '🚋', lines: [{ n: '5', c: '#E8914A' }, { n: '16', c: '#0A7C52' }, { n: '18', c: '#7C3AED' }], group: 'popular' },
-];
 
 // ============================================================
 // Page component
 // ============================================================
 
 export default function Transit() {
-    // Shared weather props from Inertia middleware
-    const { weather, forecast, userPlaces } = usePage<{
+    // Shared weather props from Inertia middleware + GTFS data
+    const { weather, forecast, userPlaces, gtfsDepartures, currentStop } = usePage<{
         weather: WeatherData;
         forecast: ForecastData;
         userPlaces?: { id: number; emoji: string | null; name: string; address: string | null; lat: number | null; lng: number | null }[];
+        gtfsDepartures: GtfsDeparturesData;
+        currentStop: string;
     }>().props;
+
+    // Split GTFS departures into KVB (tram/bus) and DB (rail/subway) boards
+    const kvbDepartures = (gtfsDepartures?.departures ?? []).filter(
+        (d) => d.type === 'tram' || d.type === 'bus',
+    );
+    const dbDepartures = (gtfsDepartures?.departures ?? []).filter(
+        (d) => d.type === 'rail' || d.type === 'subway',
+    );
+    const kvbBoard = gtfsToBoardData(kvbDepartures, gtfsDepartures?.stop_name ?? currentStop ?? 'Ehrenfeld', '📍');
+    const dbBoard = gtfsToBoardData(dbDepartures, (gtfsDepartures?.stop_name ?? currentStop ?? 'Ehrenfeld') + ' Bf', '🚂');
+    const dataSource = gtfsDepartures?.source ?? 'mock';
+
+    // Stop search state for API-based picker
+    const [stopSearchResults, setStopSearchResults] = useState<StopSearchResult[]>([]);
+    const [stopSearchLoading, setStopSearchLoading] = useState(false);
+    const stopSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Build destination chips from user places + defaults
     const placeChips = (userPlaces ?? [])
@@ -321,8 +320,8 @@ export default function Transit() {
     const [dismissedDisruptions, setDismissedDisruptions] = useState<number[]>([]);
     const [routinePromptVisible, setRoutinePromptVisible] = useState(true);
     const [routinePromptSaved, setRoutinePromptSaved] = useState(false);
-    const [activeStop, setActiveStop] = useState('venloer');
-    const [activeStopName, setActiveStopName] = useState('Ehrenfeld');
+    const [activeStop, setActiveStop] = useState(currentStop ?? 'Ehrenfeld');
+    const [activeStopName, setActiveStopName] = useState(gtfsDepartures?.stop_name ?? currentStop ?? 'Ehrenfeld');
 
     // Bottom sheets
     const [routeDetailKey, setRouteDetailKey] = useState<string | null>(null);
@@ -406,10 +405,9 @@ export default function Transit() {
         setStopSearch('');
     }
 
-    function selectStop(id: string, name: string) {
-        setActiveStop(id);
-        setActiveStopName(name.split('/')[0].trim());
+    function selectStop(name: string) {
         setStopPickerOpen(false);
+        router.get('/transit', { stop: name }, { preserveScroll: true });
     }
 
     function swapRoutineRoute() {
@@ -429,12 +427,29 @@ export default function Transit() {
         setRTo('');
     }
 
-    // Filter stops for picker
-    const filteredStops = stopSearch.trim()
-        ? ALL_STOPS.filter((s) => s.name.toLowerCase().includes(stopSearch.toLowerCase().trim()))
-        : ALL_STOPS;
-    const nearbyStops = filteredStops.filter((s) => s.group === 'nearby');
-    const popularStops = filteredStops.filter((s) => s.group === 'popular');
+    // Debounced stop search via API
+    function handleStopSearch(query: string) {
+        setStopSearch(query);
+        if (stopSearchTimer.current) clearTimeout(stopSearchTimer.current);
+        if (!query.trim() || query.trim().length < 2) {
+            setStopSearchResults([]);
+            setStopSearchLoading(false);
+            return;
+        }
+        setStopSearchLoading(true);
+        stopSearchTimer.current = setTimeout(() => {
+            fetch(`/api/stops?q=${encodeURIComponent(query.trim())}`)
+                .then((res) => res.json())
+                .then((data: StopSearchResult[]) => {
+                    setStopSearchResults(data);
+                    setStopSearchLoading(false);
+                })
+                .catch(() => {
+                    setStopSearchResults([]);
+                    setStopSearchLoading(false);
+                });
+        }, 300);
+    }
 
     return (
         <AppLayout breadcrumbs={[{ title: 'Transit', href: '/transit' }]}>
@@ -457,18 +472,25 @@ export default function Transit() {
                         style={{
                             fontSize: 11,
                             fontWeight: 600,
-                            color: '#0A7C52',
-                            background: '#D4F0E6',
+                            color: dataSource === 'gtfs_rt' ? '#0A7C52' : dataSource === 'gtfs_static' ? '#1A4CD4' : '#6B6860',
+                            background: dataSource === 'gtfs_rt' ? '#D4F0E6' : dataSource === 'gtfs_static' ? '#EBF0FD' : '#EFEDE7',
                             padding: '3px 9px',
                             borderRadius: 20,
                             whiteSpace: 'nowrap',
                         }}
                     >
                         <span
-                            className="animate-pulse"
-                            style={{ width: 5, height: 5, borderRadius: '50%', background: '#0A7C52', display: 'inline-block', flexShrink: 0 }}
+                            className={dataSource === 'gtfs_rt' ? 'animate-pulse' : ''}
+                            style={{
+                                width: 5,
+                                height: 5,
+                                borderRadius: '50%',
+                                background: dataSource === 'gtfs_rt' ? '#0A7C52' : dataSource === 'gtfs_static' ? '#1A4CD4' : '#AAA89F',
+                                display: 'inline-block',
+                                flexShrink: 0,
+                            }}
                         />
-                        Live KVB · DB
+                        {sourceLabel(dataSource)} · KVB · DB
                     </div>
                 </div>
 
@@ -788,18 +810,44 @@ export default function Transit() {
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Departures · <span>{activeStopName}</span>
                             </span>
-                            <span className="cursor-pointer" style={{ fontSize: 13, color: '#1A4CD4', fontWeight: 500 }} onClick={openStopPicker}>
-                                Change stop
-                            </span>
+                            <div className="flex items-center gap-3">
+                                <span
+                                    style={{
+                                        fontSize: 10,
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.06em',
+                                        color: dataSource === 'gtfs_static' ? '#1A4CD4' : dataSource === 'gtfs_rt' ? '#0A7C52' : '#AAA89F',
+                                        background: dataSource === 'gtfs_static' ? '#EBF0FD' : dataSource === 'gtfs_rt' ? '#D4F0E6' : '#EFEDE7',
+                                        padding: '2px 8px',
+                                        borderRadius: 20,
+                                    }}
+                                >
+                                    {sourceLabel(dataSource)}
+                                </span>
+                                <span className="cursor-pointer" style={{ fontSize: 13, color: '#1A4CD4', fontWeight: 500 }} onClick={openStopPicker}>
+                                    Change stop
+                                </span>
+                            </div>
                         </div>
 
-                        {/* KVB Board */}
-                        <div className="mb-[14px]">
-                            <DepartureBoard data={KVB_BOARD} showMore={showMore} onOpenRoute={setRouteDetailKey} />
-                        </div>
+                        {/* KVB Board (tram/bus) */}
+                        {kvbBoard.services.length > 0 && (
+                            <div className="mb-[14px]">
+                                <DepartureBoard data={kvbBoard} showMore={showMore} onOpenRoute={setRouteDetailKey} />
+                            </div>
+                        )}
 
-                        {/* DB Board */}
-                        <DepartureBoard data={DB_BOARD} showMore={showMore} onOpenRoute={setRouteDetailKey} />
+                        {/* DB Board (rail/subway) */}
+                        {dbBoard.services.length > 0 && (
+                            <DepartureBoard data={dbBoard} showMore={showMore} onOpenRoute={setRouteDetailKey} />
+                        )}
+
+                        {kvbBoard.services.length === 0 && dbBoard.services.length === 0 && (
+                            <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F]">
+                                No departures found for this stop
+                            </div>
+                        )}
 
                         {/* Show more toggle */}
                         <div className="mt-3 text-center">
@@ -906,48 +954,65 @@ export default function Transit() {
                     <input
                         className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
                         style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
-                        placeholder="Search stops near you…"
+                        placeholder="Search stops (e.g. Neumarkt, Ehrenfeld)…"
                         value={stopSearch}
-                        onChange={(e) => setStopSearch(e.target.value)}
+                        onChange={(e) => handleStopSearch(e.target.value)}
                         autoComplete="off"
                     />
                     {stopSearch && (
-                        <span className="shrink-0 cursor-pointer" style={{ fontSize: 13, color: '#AAA89F' }} onClick={() => setStopSearch('')}>
+                        <span className="shrink-0 cursor-pointer" style={{ fontSize: 13, color: '#AAA89F' }} onClick={() => { setStopSearch(''); setStopSearchResults([]); }}>
                             ✕
                         </span>
                     )}
                 </div>
 
-                {!stopSearch.trim() && nearbyStops.length > 0 && (
+                {!stopSearch.trim() && (
+                    <div className="py-6 text-center" style={{ color: '#AAA89F', fontSize: 13 }}>
+                        Type at least 2 characters to search for stops
+                    </div>
+                )}
+
+                {stopSearch.trim() && stopSearchLoading && (
+                    <div className="py-6 text-center" style={{ color: '#AAA89F', fontSize: 13 }}>
+                        Searching...
+                    </div>
+                )}
+
+                {stopSearch.trim() && !stopSearchLoading && stopSearchResults.length > 0 && (
                     <>
                         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F', padding: '8px 0 4px' }}>
-                            📍 Nearby stops
+                            🔍 Results
                         </div>
-                        {nearbyStops.map((s) => (
-                            <StopRow key={s.id} stop={s} active={activeStop === s.id} onSelect={() => selectStop(s.id, s.name)} />
+                        {stopSearchResults.map((s) => (
+                            <div
+                                key={s.stop_id}
+                                onClick={() => selectStop(s.name)}
+                                className="flex cursor-pointer items-center gap-3 transition-colors hover:bg-[#EFEDE7]"
+                                style={{
+                                    padding: '12px 4px',
+                                    borderBottom: '1px solid #E2DFD6',
+                                    background: activeStop === s.name ? '#EBF0FD' : 'transparent',
+                                }}
+                            >
+                                <span style={{ fontSize: 20, flexShrink: 0, width: 28, textAlign: 'center' }}>🚏</span>
+                                <div className="flex-1">
+                                    <div style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</div>
+                                </div>
+                                <span
+                                    className="shrink-0"
+                                    style={{ fontSize: 16, color: '#1A4CD4', opacity: activeStop === s.name ? 1 : 0 }}
+                                >
+                                    ✓
+                                </span>
+                            </div>
                         ))}
                     </>
                 )}
-                {!stopSearch.trim() && popularStops.length > 0 && (
-                    <>
-                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F', padding: '12px 0 4px' }}>
-                            ⭐ Popular in Cologne
-                        </div>
-                        {popularStops.map((s) => (
-                            <StopRow key={s.id} stop={s} active={activeStop === s.id} onSelect={() => selectStop(s.id, s.name)} />
-                        ))}
-                    </>
-                )}
-                {stopSearch.trim() && (
-                    filteredStops.length > 0 ? (
-                        filteredStops.map((s) => (
-                            <StopRow key={s.id} stop={s} active={activeStop === s.id} onSelect={() => selectStop(s.id, s.name)} />
-                        ))
-                    ) : (
-                        <div className="py-8 text-center" style={{ color: '#AAA89F', fontSize: 14 }}>
-                            No stops found for "{stopSearch}"
-                        </div>
-                    )
+
+                {stopSearch.trim() && !stopSearchLoading && stopSearchResults.length === 0 && stopSearch.trim().length >= 2 && (
+                    <div className="py-8 text-center" style={{ color: '#AAA89F', fontSize: 14 }}>
+                        No stops found for &ldquo;{stopSearch}&rdquo;
+                    </div>
                 )}
             </BottomSheet>
 
@@ -1274,50 +1339,3 @@ function RouteDetailContent({ route: r }: { route: RouteDetailData }) {
     );
 }
 
-// ============================================================
-// Stop row sub-component
-// ============================================================
-
-function StopRow({ stop, active, onSelect }: { stop: StopData; active: boolean; onSelect: () => void }) {
-    return (
-        <div
-            onClick={onSelect}
-            className="flex cursor-pointer items-center gap-3 transition-colors hover:bg-[#EFEDE7]"
-            style={{
-                padding: '12px 4px',
-                borderBottom: '1px solid #E2DFD6',
-                background: active ? '#EBF0FD' : 'transparent',
-            }}
-        >
-            <span style={{ fontSize: 20, flexShrink: 0, width: 28, textAlign: 'center' }}>{stop.icon}</span>
-            <div className="flex-1">
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{stop.name}</div>
-                <div style={{ fontSize: 12, color: '#6B6860' }}>{stop.dist} away</div>
-                <div className="mt-[5px] flex flex-wrap gap-1">
-                    {stop.lines.map((l) => (
-                        <span
-                            key={l.n}
-                            style={{
-                                padding: '1px 6px',
-                                borderRadius: 20,
-                                fontSize: 10,
-                                fontWeight: 700,
-                                fontFamily: "'Geist Mono', monospace",
-                                background: l.c,
-                                color: 'white',
-                            }}
-                        >
-                            {l.n}
-                        </span>
-                    ))}
-                </div>
-            </div>
-            <span
-                className="shrink-0"
-                style={{ fontSize: 16, color: '#1A4CD4', opacity: active ? 1 : 0 }}
-            >
-                ✓
-            </span>
-        </div>
-    );
-}

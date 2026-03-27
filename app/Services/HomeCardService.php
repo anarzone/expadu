@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Event;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\App;
 
 class HomeCardService
 {
@@ -250,17 +251,46 @@ class HomeCardService
     }
 
     /**
-     * Placeholder — will be populated with real transit data in Phase 2.
+     * Live departure data from GTFS.
      *
      * @return array{type: string, data: array<string, mixed>, priority: int}
      */
     protected function buildLiveDepartures(): array
     {
+        $gtfsService = App::make(GtfsDepartureService::class);
+        $result = $gtfsService->getDepartures('Ehrenfeld', 6);
+
+        $departures = collect($result['departures'] ?? [])
+            ->take(3)
+            ->map(fn (array $dep) => [
+                'line' => $dep['line'],
+                'direction' => $dep['direction'],
+                'color' => $dep['color'],
+                'minutes' => $dep['departures'][0] ?? null,
+            ])
+            ->filter(fn (array $dep) => $dep['minutes'] !== null)
+            ->values()
+            ->all();
+
+        if (empty($departures)) {
+            return [
+                'type' => 'live_departures',
+                'data' => [
+                    'departures' => [],
+                    'source' => $result['source'] ?? 'mock',
+                    'placeholder' => true,
+                ],
+                'priority' => 30,
+            ];
+        }
+
         return [
             'type' => 'live_departures',
             'data' => [
-                'departures' => [],
-                'placeholder' => true,
+                'departures' => $departures,
+                'source' => $result['source'] ?? 'mock',
+                'stop_name' => $result['stop_name'] ?? 'Ehrenfeld',
+                'placeholder' => false,
             ],
             'priority' => 30,
         ];
