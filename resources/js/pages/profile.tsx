@@ -207,17 +207,25 @@ export default function Profile() {
         }
         setEditingField(null);
 
-        // Build patch data for backend-supported fields
-        const patchData: Record<string, string> = {};
-        switch (field) {
-            case 'name': patchData.name = val; break;
-            case 'email': patchData.email = val; break;
-            case 'city': patchData.city = val; break;
-            case 'situation': patchData.situation = SITUATION_VALUES[val] || val; break;
-            case 'german': patchData.german_level = GERMAN_VALUES[val] || val; break;
-        }
+        // Always send all required fields + the changed field
+        // The backend requires name + email on every PATCH
+        const currentName = field === 'name' ? val : profileName;
+        const currentEmail = field === 'email' ? val : profileEmail;
+        const currentCity = field === 'city' ? val : profileCity;
+        const currentSituation = field === 'situation' ? (SITUATION_VALUES[val] || val) : (SITUATION_VALUES[profileSituation] || profileSituation);
+        const currentGerman = field === 'german' ? (GERMAN_VALUES[val] || val) : (GERMAN_VALUES[profileGerman] || profileGerman);
 
-        if (Object.keys(patchData).length > 0) {
+        const patchData: Record<string, string | null> = {
+            name: currentName,
+            email: currentEmail,
+            city: currentCity || null,
+            situation: currentSituation || null,
+            german_level: currentGerman || null,
+        };
+
+        // Only send to backend for supported fields
+        const backendFields = ['name', 'email', 'city', 'situation', 'german'];
+        if (backendFields.includes(field)) {
             router.patch('/settings/profile', patchData, {
                 preserveScroll: true,
                 preserveState: true,
@@ -225,6 +233,11 @@ export default function Profile() {
                 onError: (errors) => {
                     const firstError = Object.values(errors)[0];
                     showToast('Error: ' + (typeof firstError === 'string' ? firstError : 'Could not save'));
+                    // Revert local state on error
+                    switch (field) {
+                        case 'name': setProfileName(user?.name ?? ''); break;
+                        case 'email': setProfileEmail(user?.email ?? ''); break;
+                    }
                 },
             });
         } else {
