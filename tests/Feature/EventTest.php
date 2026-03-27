@@ -13,7 +13,7 @@ test('events page renders with upcoming events', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('events')
-        ->has('events.data', 3)
+        ->has('dbEvents.data', 3)
     );
 });
 
@@ -25,7 +25,7 @@ test('events can be filtered by category', function () {
 
     $response = $this->get(route('events', ['category' => 'language']));
 
-    $response->assertInertia(fn ($page) => $page->has('events.data', 1));
+    $response->assertInertia(fn ($page) => $page->has('dbEvents.data', 1));
 });
 
 test('user can join an event', function () {
@@ -58,5 +58,5 @@ test('saved events page shows joined events', function () {
     $response = $this->get(route('events.saved'));
 
     $response->assertOk();
-    $response->assertInertia(fn ($page) => $page->has('events.data', 1));
+    $response->assertInertia(fn ($page) => $page->has('dbEvents.data', 1));
 });

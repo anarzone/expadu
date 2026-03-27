@@ -28,7 +28,15 @@ class BuergeramtService
         'nippes' => ['name' => 'Buergeramt Nippes', 'address' => 'Neusser Str. 450', 'id' => 'nippes'],
         'porz' => ['name' => 'Buergeramt Porz', 'address' => 'Friedrich-Ebert-Ufer 64-70', 'id' => 'porz'],
         'rodenkirchen' => ['name' => 'Buergeramt Rodenkirchen', 'address' => 'Hauptstr. 85', 'id' => 'rodenkirchen'],
-        'innenstadt' => ['name' => 'Buergeramt Innenstadt', 'address' => 'Laurenzplatz 1-3', 'id' => 'innenstadt'],
+        'innenstadt' => ['name' => 'Bürgeramt Innenstadt', 'address' => 'Laurenzplatz 1-3', 'id' => 'innenstadt'],
+        // Foreigners Office
+        'auslaenderbehoerde' => ['name' => 'Ausländerbehörde Köln', 'address' => 'Dillenburger Str. 1, Kalk', 'id' => 'auslaenderbehoerde'],
+        // Tax offices
+        'finanzamt_altstadt' => ['name' => 'Finanzamt Köln-Altstadt', 'address' => 'Am Weidenbach 2-4', 'id' => 'finanzamt_altstadt'],
+        'finanzamt_nord' => ['name' => 'Finanzamt Köln-Nord', 'address' => 'Innere Kanalstr. 214', 'id' => 'finanzamt_nord'],
+        'finanzamt_sued' => ['name' => 'Finanzamt Köln-Süd', 'address' => 'Euskirchener Str. 6', 'id' => 'finanzamt_sued'],
+        // Vehicle registration
+        'kfz' => ['name' => 'KFZ-Zulassungsstelle Köln', 'address' => 'Max-Glomsda-Str. 4, Poll', 'id' => 'kfz'],
     ];
 
     /**

@@ -10,8 +10,21 @@ use Inertia\Response;
 
 class EventController extends Controller
 {
+    /**
+     * Category → color mapping for event cards.
+     */
+    private const CATEGORY_COLORS = [
+        'language' => '#1A4CD4',
+        'social' => '#0A7C52',
+        'culture' => '#C4271A',
+        'music' => '#7C3AED',
+        'food' => '#C47D0E',
+        'sports' => '#0A7C52',
+    ];
+
     public function index(Request $request): Response
     {
+        $userId = $request->user()->id;
         $query = Event::query()->where('starts_at', '>', now())->orderBy('starts_at');
 
         if ($category = $request->query('category')) {
@@ -22,10 +35,16 @@ class EventController extends Controller
             $query->where('is_free', true);
         }
 
-        $events = $query->withCount('attendees')->paginate(20);
+        $events = $query
+            ->with('organiser:id,name')
+            ->withCount('attendees')
+            ->paginate(30);
+
+        // Format events with enriched data for the frontend
+        $formattedEvents = $events->through(fn (Event $e) => $this->formatEvent($e, $userId));
 
         return Inertia::render('events', [
-            'events' => $events,
+            'dbEvents' => $formattedEvents,
             'filters' => [
                 'category' => $request->query('category'),
                 'free' => $request->query('free'),
@@ -39,8 +58,13 @@ class EventController extends Controller
         $event->load('organiser:id,name');
 
         return Inertia::render('events', [
-            'event' => $event,
-            'events' => Event::where('starts_at', '>', now())->orderBy('starts_at')->withCount('attendees')->paginate(20),
+            'event' => $this->formatEvent($event, request()->user()->id),
+            'dbEvents' => Event::where('starts_at', '>', now())
+                ->orderBy('starts_at')
+                ->with('organiser:id,name')
+                ->withCount('attendees')
+                ->paginate(30)
+                ->through(fn (Event $e) => $this->formatEvent($e, request()->user()->id)),
             'filters' => [],
         ]);
     }
@@ -63,16 +87,76 @@ class EventController extends Controller
 
     public function saved(Request $request): Response
     {
+        $userId = $request->user()->id;
         $events = $request->user()->attendingEvents()
             ->where('starts_at', '>', now())
             ->orderBy('starts_at')
+            ->with('organiser:id,name')
             ->withCount('attendees')
-            ->paginate(20);
+            ->paginate(30);
 
         return Inertia::render('events', [
-            'events' => $events,
+            'dbEvents' => $events->through(fn (Event $e) => $this->formatEvent($e, $userId)),
             'filters' => [],
             'tab' => 'saved',
         ]);
+    }
+
+    /**
+     * Format an Event model into the rich shape the frontend expects.
+     */
+    private function formatEvent(Event $e, int $userId): array
+    {
+        $startsAt = $e->starts_at;
+        $color = self::CATEGORY_COLORS[$e->category] ?? '#6B6860';
+
+        return [
+            'id' => $e->id,
+            'title' => $e->title,
+            'emoji' => $e->emoji,
+            'category' => $e->category,
+            'description' => $e->description,
+            'date' => $startsAt->format('d'),
+            'month' => $startsAt->format('M'),
+            'day' => $startsAt->format('D'),
+            'fullDate' => $startsAt->toDateString(),
+            'time' => $startsAt->format('H:i'),
+            'duration' => $e->ends_at ? $startsAt->diffForHumans($e->ends_at, true) : null,
+            'venue' => $e->location_name,
+            'area' => $e->address ? explode(',', $e->address)[1] ?? '' : '',
+            'address' => $e->address,
+            'price' => $e->is_free ? 'Free' : ($e->price ? '€'.number_format($e->price, 0) : 'Free'),
+            'color' => $color,
+            'barColor' => $color,
+            'is_free' => $e->is_free,
+            'attending' => $e->attendees_count ?? 0,
+            'max' => $e->max_attendees,
+            'going' => $e->attendees()->where('user_id', $userId)->exists(),
+            'organiser' => $e->organiser?->name ?? 'Expadu',
+            'tags' => $this->buildTags($e->category, $color),
+            'attendees' => ['🇬🇧', '🇩🇪', '🇹🇷', '🇫🇷'], // TODO: real attendee flags from user profiles
+            'englishFriendly' => true,
+            'featured' => false,
+            'karneval' => false,
+            'saved' => false, // TODO: implement saved/bookmarked events
+            'link' => null,
+        ];
+    }
+
+    /**
+     * @return array<int, array{l: string, bg: string, c: string}>
+     */
+    private function buildTags(?string $category, string $color): array
+    {
+        $tagMap = [
+            'language' => [['l' => 'Language', 'bg' => '#EBF0FD', 'c' => '#1A4CD4']],
+            'social' => [['l' => 'Social', 'bg' => '#EDFAF4', 'c' => '#0A7C52']],
+            'culture' => [['l' => 'Culture', 'bg' => '#FDF0D4', 'c' => '#C47D0E']],
+            'music' => [['l' => 'Music', 'bg' => '#EDE9FE', 'c' => '#7C3AED']],
+            'food' => [['l' => 'Food', 'bg' => '#FDF0D4', 'c' => '#C47D0E']],
+            'sports' => [['l' => 'Sports', 'bg' => '#EDFAF4', 'c' => '#0A7C52']],
+        ];
+
+        return $tagMap[$category] ?? [['l' => ucfirst($category ?? 'Event'), 'bg' => '#EFEDE7', 'c' => '#6B6860']];
     }
 }

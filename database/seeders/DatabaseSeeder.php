@@ -18,6 +18,14 @@ class DatabaseSeeder extends Seeder
             TaskSeeder::class,
         ]);
 
+        // System user for auto-generated content
+        User::factory()->onboarded()->create([
+            'name' => 'Expadu',
+            'email' => 'system@expadu.com',
+            'city' => 'cologne',
+            'situation' => 'other',
+        ]);
+
         $user = User::factory()->onboarded()->create([
             'name' => 'Anar',
             'email' => 'test@example.com',

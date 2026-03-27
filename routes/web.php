@@ -14,6 +14,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\SlotMonitorController;
 use App\Http\Controllers\SpotController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TransitController;
 use App\Http\Controllers\UserPlaceController;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('neighborhoods', 'neighborhoods')->name('neighborhoods');
     Route::inertia('services', 'services')->name('services');
     Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+    Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
     Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');
     Route::get('profile', ProfilePageController::class)->name('profile');
 });
