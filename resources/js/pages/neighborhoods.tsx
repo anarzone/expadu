@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+import { useTabState } from '@/hooks/use-tab-state';
 import { NeighborhoodCard } from '@/components/neighborhoods/neighborhood-card';
 import { NeighborhoodsRightPanel } from '@/components/neighborhoods/neighborhoods-right-panel';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
@@ -314,7 +315,7 @@ const TABS = [
 
 export default function Neighborhoods() {
     const [neighborhoods, setNeighborhoods] = useState<NeighborhoodData[]>(SEED_NEIGHBORHOODS);
-    const [activeTab, setActiveTab] = useState('explore');
+    const [activeTab, setActiveTab] = useTabState('explore');
     const [activeFilter, setActiveFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [sheetOpen, setSheetOpen] = useState(false);

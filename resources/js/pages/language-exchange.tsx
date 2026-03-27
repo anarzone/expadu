@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useMemo, useState, type MouseEvent } from 'react';
+import { useTabState } from '@/hooks/use-tab-state';
 import { LanguageHero } from '@/components/language/language-hero';
 import { LanguageRightPanel } from '@/components/language/language-right-panel';
 import { PartnerCard } from '@/components/language/partner-card';
@@ -284,7 +285,7 @@ export default function LanguageExchange() {
     const [meetups, setMeetups] = useState<MeetupData[]>(SEED_MEETUPS);
 
     // UI state
-    const [activeTab, setActiveTab] = useState('partners');
+    const [activeTab, setActiveTab] = useTabState('partners');
     const [activeFilter, setActiveFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [selectedPartner, setSelectedPartner] = useState<PartnerData | null>(null);

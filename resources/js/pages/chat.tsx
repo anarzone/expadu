@@ -1,5 +1,6 @@
 import { ChatRightPanel } from '@/components/chat/chat-right-panel';
 import AppLayout from '@/layouts/app-layout';
+import { useTabState } from '@/hooks/use-tab-state';
 import { Head } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -111,7 +112,7 @@ export default function Chat() {
     const [conversations, setConversations] = useState<Conversation[]>(() =>
         initialConversations.map((c) => ({ ...c, msgs: [...c.msgs] })),
     );
-    const [activeTab, setActiveTab] = useState('all');
+    const [activeTab, setActiveTab] = useTabState('all');
     const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [inputValue, setInputValue] = useState('');

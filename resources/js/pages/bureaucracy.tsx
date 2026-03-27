@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useRef, useState } from 'react';
+import { useTabState } from '@/hooks/use-tab-state';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { DocumentCard } from '@/components/bureaucracy/document-card';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
@@ -441,7 +442,7 @@ export default function Bureaucracy() {
     const monitoringCount = offices.filter((o) => o.monitoring).length;
 
     const [tasks, setTasks] = useState<TaskData[]>(SEED_TASKS);
-    const [activeTab, setActiveTab] = useState('checklist');
+    const [activeTab, setActiveTab] = useTabState('checklist');
     const [taskFilter, setTaskFilter] = useState('all');
     const [expandedTask, setExpandedTask] = useState<number | null>(null);
     const [expandedDoc, setExpandedDoc] = useState<string | null>(null);

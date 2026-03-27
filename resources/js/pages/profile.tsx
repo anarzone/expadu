@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
+import { useTabState } from '@/hooks/use-tab-state';
 import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth } from '@/types';
@@ -107,7 +108,7 @@ export default function Profile() {
     }>().props;
     const user = auth.user;
 
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useTabState('overview');
 
     // Profile fields — seeded from backend user
     const [profileName, setProfileName] = useState(user.name || 'Anar');

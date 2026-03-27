@@ -225,7 +225,7 @@ export default function Events() {
     const [events, setEvents] = useState<EventData[]>(SEED_EVENTS);
 
     // UI state
-    const [activeTab, setActiveTab] = useState('upcoming');
+    const [activeTab, setActiveTab] = useTabState('upcoming');
     const [activeFilter, setActiveFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
