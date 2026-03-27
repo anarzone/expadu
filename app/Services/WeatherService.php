@@ -20,12 +20,12 @@ class WeatherService
         $weatherCode = $current['weather_code'] ?? 3;
 
         return [
-            'temperature' => round($current['temperature_2m'] ?? 0),
+            'temperature' => (int) floor($current['temperature_2m'] ?? 0),
             'icon' => $this->wmoToIcon($weatherCode),
             'emoji' => $this->wmoToEmoji($weatherCode),
             'condition' => $this->wmoToCondition($weatherCode),
-            'wind_speed' => round($current['wind_speed_10m'] ?? 0),
-            'wind_gust' => round($current['wind_gusts_10m'] ?? 0),
+            'wind_speed' => (int) floor($current['wind_speed_10m'] ?? 0),
+            'wind_gust' => (int) round($current['wind_gusts_10m'] ?? 0),
             'wind_direction' => $current['wind_direction_10m'] ?? 0,
             'humidity' => round($current['relative_humidity_2m'] ?? 0),
             'precipitation' => $current['precipitation'] ?? 0,
