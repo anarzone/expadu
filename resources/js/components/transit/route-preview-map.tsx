@@ -29,7 +29,7 @@ export function RoutePreviewMap({ origin, destination, mode }: RoutePreviewMapPr
 
             const map = new maplibregl.Map({
                 container: containerRef.current,
-                style: 'https://tiles.openfreemap.org/styles/liberty',
+                style: 'https://tiles.openfreemap.org/styles/bright',
                 center: [
                     (origin.lng + destination.lng) / 2,
                     (origin.lat + destination.lat) / 2,

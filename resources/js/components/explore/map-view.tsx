@@ -70,7 +70,7 @@ export const MapView = forwardRef<MapViewHandle, {
 
         const map = new maplibregl.Map({
             container: containerRef.current,
-            style: 'https://tiles.openfreemap.org/styles/liberty',
+            style: 'https://tiles.openfreemap.org/styles/bright',
             center: [6.9603, 50.9375],
             zoom: 13,
             attributionControl: false,

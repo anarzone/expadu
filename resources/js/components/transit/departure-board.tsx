@@ -72,7 +72,7 @@ export function DepartureBoard({
                 <div className="flex gap-[5px]">
                     {pills.map((s) => (
                         <span
-                            key={s.line}
+                            key={`${s.line}_${s.direction}`}
                             style={{
                                 padding: '2px 8px',
                                 borderRadius: 20,
@@ -91,7 +91,7 @@ export function DepartureBoard({
 
             {/* Rows */}
             {sorted.map((s) => (
-                <ServiceRow key={s.line} service={s} onOpenRoute={onOpenRoute} />
+                <ServiceRow key={`${s.line}_${s.direction}`} service={s} onOpenRoute={onOpenRoute} />
             ))}
         </div>
     );
