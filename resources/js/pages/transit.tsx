@@ -332,6 +332,7 @@ export default function Transit() {
     // UI state
     const [fromValue, setFromValue] = useState('Ehrenfeld, Cologne');
     const [toValue, setToValue] = useState('');
+    const [journeyDest, setJourneyDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
     const [showMore, setShowMore] = useState(false);
     const [dismissedDisruptions, setDismissedDisruptions] = useState<number[]>([]);
     const [routinePromptVisible, setRoutinePromptVisible] = useState(true);
@@ -361,8 +362,21 @@ export default function Transit() {
         setToValue(f);
     }
 
+    // Known destination coordinates for quick chips
+    const CHIP_COORDS: Record<string, { lat: number; lng: number }> = {
+        'Work · Mediapark': { lat: 50.9467, lng: 6.9417 },
+        'Course · Uni Köln': { lat: 50.9280, lng: 6.9286 },
+        'Cologne Hbf': { lat: 50.9433, lng: 6.9589 },
+        'Neumarkt': { lat: 50.9357, lng: 6.9498 },
+        'Kölner Dom': { lat: 50.9413, lng: 6.9583 },
+    };
+
     function setDest(val: string) {
         setToValue(val);
+        const coords = CHIP_COORDS[val];
+        if (coords) {
+            setJourneyDest({ lat: coords.lat, lng: coords.lng, name: val.split(' · ')[0] });
+        }
     }
 
     function dismissDisruption(idx: number) {
@@ -597,6 +611,7 @@ export default function Transit() {
                                                         e.preventDefault();
                                                         const label = [result.name, result.street, result.city].filter(Boolean).join(', ');
                                                         setToValue(label);
+                                                        setJourneyDest({ lat: result.lat, lng: result.lng, name: result.name });
                                                         setGeoDropdownOpen(false);
                                                         setGeoResults([]);
                                                     }}
@@ -653,6 +668,91 @@ export default function Transit() {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Journey results — shown when destination is selected */}
+                        {journeyDest && (
+                            <div className="animate-fade-up mt-4">
+                                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
+                                    Route options to {journeyDest.name}
+                                </div>
+
+                                {/* Estimated routes based on straight-line distance */}
+                                {(() => {
+                                    const FROM = { lat: 50.9478, lng: 6.9183 }; // Ehrenfeld
+                                    const R = 6371;
+                                    const dLat = ((journeyDest.lat - FROM.lat) * Math.PI) / 180;
+                                    const dLng = ((journeyDest.lng - FROM.lng) * Math.PI) / 180;
+                                    const a = Math.sin(dLat/2)**2 + Math.cos(FROM.lat*Math.PI/180)*Math.cos(journeyDest.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+                                    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                                    const bikeMins = Math.round((dist / 15) * 60);
+                                    const transitMins = Math.round((dist / 20) * 60 + 5);
+                                    const walkMins = Math.round((dist / 5) * 60);
+
+                                    const routes = [
+                                        { emoji: '🚲', name: `Bike — ${dist.toFixed(1)} km`, detail: weather ? `${weather.condition} · ${weather.temperature}°C` : 'Check weather', time: bikeMins, status: 'ok' as const, best: bikeMins <= transitMins },
+                                        { emoji: '🚇', name: 'Transit (KVB)', detail: 'Estimated · Real times with VRS API', time: transitMins, status: 'ok' as const, best: transitMins < bikeMins },
+                                        { emoji: '🚶', name: `Walk — ${dist.toFixed(1)} km`, detail: 'Scenic route along the streets', time: walkMins, status: 'ok' as const, best: false },
+                                    ];
+
+                                    return (
+                                        <div className="flex flex-col gap-2">
+                                            {routes.map((r, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex cursor-pointer items-center gap-3 rounded-[9px] border border-[#E2DFD6] bg-white p-3 transition-all hover:border-[#1A4CD4] hover:shadow-sm"
+                                                >
+                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#EFEDE7] text-lg">
+                                                        {r.emoji}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 text-[14px] font-semibold">
+                                                            {r.name}
+                                                            {r.best && (
+                                                                <span className="rounded-full bg-[#FEF9EC] px-[6px] py-px text-[9px] font-bold uppercase text-[#C47D0E]">
+                                                                    ⭐ Best
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-[#6B6860]">{r.detail}</div>
+                                                    </div>
+                                                    <div className="shrink-0 text-right">
+                                                        <div className="font-mono text-lg font-medium">{r.time}</div>
+                                                        <div className="text-[10px] text-[#AAA89F]">min</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {/* Open in Maps button */}
+                                            <div className="mt-1 flex gap-2">
+                                                <a
+                                                    href={`https://www.google.com/maps/dir/?api=1&origin=${FROM.lat},${FROM.lng}&destination=${journeyDest.lat},${journeyDest.lng}&travelmode=transit`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
+                                                >
+                                                    🗺️ Open in Google Maps
+                                                </a>
+                                                <a
+                                                    href={`https://maps.apple.com/?saddr=${FROM.lat},${FROM.lng}&daddr=${journeyDest.lat},${journeyDest.lng}&dirflg=r`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
+                                                >
+                                                    🍎 Apple Maps
+                                                </a>
+                                            </div>
+
+                                            <button
+                                                onClick={() => { setJourneyDest(null); setToValue(''); }}
+                                                className="mt-1 text-center text-xs font-medium text-[#AAA89F] transition-colors hover:text-[#6B6860]"
+                                            >
+                                                Clear destination
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
                     </div>
 
                     {/* ═══ 3. Live Disruptions ═══ */}
