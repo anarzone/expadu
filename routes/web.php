@@ -3,6 +3,7 @@
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\StopSearchController;
+use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
@@ -29,6 +30,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('api/stops', StopSearchController::class)
         ->middleware('throttle:20,1')
         ->name('api.stops');
+    Route::post('api/track', TrackEventController::class)
+        ->middleware('throttle:60,1')
+        ->name('api.track');
 
     Route::inertia('onboarding', 'onboarding')->name('onboarding');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');

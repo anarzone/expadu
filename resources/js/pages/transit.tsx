@@ -1,10 +1,11 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
 import { DepartureBoard, type BoardData } from '@/components/transit/departure-board';
 import { GeocodeInput } from '@/components/transit/geocode-input';
 import { RouteCard, type RouteCardData } from '@/components/transit/route-card';
 import { RoutineCard, type RoutineCardData } from '@/components/transit/routine-card';
+import { useTracker } from '@/hooks/use-tracker';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
 
@@ -260,10 +261,15 @@ export default function Transit() {
         userLocation?: { name: string; address: string; lat: number; lng: number } | null;
     }>().props;
 
+    const { track } = useTracker();
     const homeName = userLocation?.name ?? 'Ehrenfeld';
     const homeAddress = userLocation?.address ?? 'Cologne';
     const homeLat = userLocation?.lat ?? 50.9478;
     const homeLng = userLocation?.lng ?? 6.9183;
+
+    useEffect(() => {
+        track('departure_viewed', { stop_name: gtfsDepartures?.stop_name ?? currentStop ?? homeName });
+    }, []);
 
     // Split GTFS departures into KVB (tram/bus) and DB (rail/subway) boards
     const kvbDepartures = (gtfsDepartures?.departures ?? []).filter(
@@ -396,6 +402,7 @@ export default function Transit() {
         } else {
             setToValue(val);
             if (coordLat && coordLng) {
+                track('journey_planned', { from: fromValue, to: name });
                 setJourneyDest({ lat: coordLat, lng: coordLng, name });
             }
         }
@@ -594,6 +601,7 @@ export default function Transit() {
                                     onFocus={() => setActiveInput('to')}
                                     onSelect={(r) => {
                                         setToValue(r.label);
+                                        track('journey_planned', { from: fromValue, to: r.name });
                                         setJourneyDest({ lat: r.lat, lng: r.lng, name: r.name });
                                     }}
                                 />

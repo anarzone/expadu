@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
@@ -5,6 +6,7 @@ import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { MobileDock } from '@/components/mobile-dock';
 import { MobileTopBar } from '@/components/mobile-top-bar';
 import { RightPanel } from '@/components/right-panel';
+import { useTracker } from '@/hooks/use-tracker';
 import type { AppLayoutProps } from '@/types';
 
 export default function AppSidebarLayout({
@@ -13,6 +15,12 @@ export default function AppSidebarLayout({
     rightPanel,
     fullWidth,
 }: AppLayoutProps) {
+    const { track } = useTracker();
+
+    useEffect(() => {
+        track('page_viewed', { page: window.location.pathname });
+    }, []);
+
     return (
         <AppShell variant="sidebar">
             <AppSidebar />

@@ -1,4 +1,5 @@
 import { Link, router } from '@inertiajs/react';
+import { useTracker } from '@/hooks/use-tracker';
 
 type AlertData = {
     id: number;
@@ -47,6 +48,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function AlertRow({ alert, indexInType }: { alert: AlertData; indexInType: number }) {
+    const { track } = useTracker();
     const isUnread = !alert.read_at;
     const configs = typeConfigs[alert.type] ?? typeConfigs.system;
     const config = configs[indexInType % configs.length];
@@ -54,6 +56,7 @@ export function AlertRow({ alert, indexInType }: { alert: AlertData; indexInType
     function markRead(e?: React.MouseEvent) {
         e?.stopPropagation();
         if (isUnread) {
+            track('alert_read', { alert_id: alert.id });
             router.post(`/alerts/${alert.id}/read`, {}, { preserveScroll: true });
         }
     }

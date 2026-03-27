@@ -5,6 +5,7 @@ import { LanguageHero } from '@/components/language/language-hero';
 import { LanguageRightPanel } from '@/components/language/language-right-panel';
 import { PartnerCard } from '@/components/language/partner-card';
 import { PartnerDetailContent } from '@/components/language/partner-detail-content';
+import { useTracker } from '@/hooks/use-tracker';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
 
@@ -280,6 +281,8 @@ const TABS = [
 // ============================================================
 
 export default function LanguageExchange() {
+    const { track } = useTracker();
+
     // Data state
     const [partners, setPartners] = useState<PartnerData[]>(SEED_PARTNERS);
     const [meetups, setMeetups] = useState<MeetupData[]>(SEED_MEETUPS);
@@ -461,6 +464,7 @@ export default function LanguageExchange() {
 
     function confirmRequest() {
         if (!selectedPartner) return;
+        track('partner_connect', { partner_id: selectedPartner.id });
         setPartners((prev) =>
             prev.map((p) => (p.id === selectedPartner.id ? { ...p, isNew: false, requested: true } : p)),
         );

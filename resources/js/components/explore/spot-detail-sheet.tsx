@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import { useTracker } from '@/hooks/use-tracker';
 
 type SpotData = {
     id: number;
@@ -38,6 +39,7 @@ const mockReviews: Record<number, { name: string; flag: string; stars: string; t
 };
 
 export function SpotDetailSheet({ spot, onClose }: { spot: SpotData | null; onClose: () => void }) {
+    const { track } = useTracker();
     const [navMenuOpen, setNavMenuOpen] = useState(false);
 
     if (!spot) return null;
@@ -58,6 +60,7 @@ export function SpotDetailSheet({ spot, onClose }: { spot: SpotData | null; onCl
     ];
 
     function handleCheckin() {
+        track('spot_checkin', { spot_id: spot.id });
         router.post(`/explore/${spot.id}/checkin`, {}, { preserveScroll: true });
         onClose();
     }

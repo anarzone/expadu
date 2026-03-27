@@ -4,6 +4,7 @@ import { EventCard } from '@/components/events/event-card';
 import { EventDetailContent } from '@/components/events/event-detail-content';
 import { EventsHero } from '@/components/events/events-hero';
 import { EventsRightPanel } from '@/components/events/events-right-panel';
+import { useTracker } from '@/hooks/use-tracker';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
 
@@ -221,6 +222,8 @@ const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 // ============================================================
 
 export default function Events() {
+    const { track } = useTracker();
+
     // Use hardcoded data (the backend can supplement, but for now prototype data drives UI)
     const [events, setEvents] = useState<EventData[]>(SEED_EVENTS);
 
@@ -293,6 +296,10 @@ export default function Events() {
 
     // ── Handlers ──
     function toggleRsvp(id: number) {
+        const ev = events.find((e) => e.id === id);
+        if (ev && !ev.going) {
+            track('event_rsvp', { event_id: id, event_title: ev.title });
+        }
         setEvents((prev) =>
             prev.map((e) => {
                 if (e.id !== id) return e;
@@ -301,7 +308,6 @@ export default function Events() {
             }),
         );
         // Also call backend
-        const ev = events.find((e) => e.id === id);
         if (ev) {
             if (ev.going) {
                 router.delete(`/events/${id}/join`, { preserveScroll: true, preserveState: true });
@@ -312,6 +318,10 @@ export default function Events() {
     }
 
     function toggleSave(id: number) {
+        const ev = events.find((e) => e.id === id);
+        if (ev && !ev.saved) {
+            track('event_saved', { event_id: id });
+        }
         setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)));
     }
 

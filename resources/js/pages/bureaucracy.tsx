@@ -5,6 +5,7 @@ import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-righ
 import { DocumentCard } from '@/components/bureaucracy/document-card';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
 import { TaskCard } from '@/components/bureaucracy/task-card';
+import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
@@ -433,6 +434,7 @@ const FILTERS = [
 // ============================================================
 
 export default function Bureaucracy() {
+    const { track } = useTracker();
     const { slots, monitors } = usePage<{
         slots: Record<string, SlotData>;
         monitors: string[];
@@ -478,6 +480,10 @@ export default function Bureaucracy() {
 
     // Handlers
     function toggleTaskDone(id: number) {
+        const task = tasks.find((t) => t.id === id);
+        if (task && !task.done) {
+            track('task_completed', { task_id: id });
+        }
         setTasks((prev) =>
             prev.map((t) => {
                 if (t.id !== id) return t;

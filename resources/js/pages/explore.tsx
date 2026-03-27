@@ -4,6 +4,7 @@ import { ExploreFilterBar } from '@/components/explore/filter-bar';
 import type { MapViewHandle } from '@/components/explore/map-view';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
+import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
 type GeoResult = {
@@ -52,6 +53,7 @@ export default function Explore() {
         filters: { category?: string | null };
     }>().props;
 
+    const { track } = useTracker();
     const [category, setCategory] = useState(filters.category || '');
     const [selectedSpot, setSelectedSpot] = useState<SpotData | null>(null);
     const [search, setSearch] = useState('');
@@ -101,6 +103,7 @@ export default function Explore() {
     }, [search, filteredSpots.length]);
 
     function selectSpot(spot: SpotData) {
+        track('spot_viewed', { spot_id: spot.id, spot_name: spot.name });
         const coords = SPOT_COORDS[spot.id];
         setSelectedSpot({
             ...spot,
