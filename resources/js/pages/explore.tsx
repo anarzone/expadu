@@ -69,18 +69,30 @@ export default function Explore() {
             limit: '100',
         });
         if (category) params.set('category', category);
-        fetch(`/api/spots?${params}`)
+        fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
             .then((r) => r.ok ? r.json() : [])
-            .then((data) => setMapSpots(data))
+            .then((data: any[]) => {
+                // Map API response to SpotData shape
+                setMapSpots(data.map((s) => ({
+                    id: s.id,
+                    name: s.name,
+                    category: s.category,
+                    address: s.address,
+                    wifi_speed: s.wifi_speed,
+                    noise_level: s.noise_level,
+                    time_limit_mins: s.time_limit_mins,
+                    rating: s.rating,
+                    active_checkins_count: s.active_checkins_count ?? 0,
+                    lat: s.lat,
+                    lng: s.lng,
+                })));
+            })
             .catch(() => {});
     }, [category]);
 
-    // Combine initial server spots + map viewport spots (deduplicated)
-    const allSpots = (() => {
-        const seen = new Set(spots.data.map((s) => s.id));
-        const extra = mapSpots.filter((s) => !seen.has(s.id));
-        return [...spots.data, ...extra];
-    })();
+    // When viewport spots are loaded, use them as the primary list (they match what's visible on map)
+    // Fall back to initial server spots before first map move
+    const allSpots = mapSpots.length > 0 ? mapSpots : spots.data;
 
     // Geocoding suggestions for explore search
     const [geoSuggestions, setGeoSuggestions] = useState<GeoResult[]>([]);
