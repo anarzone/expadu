@@ -43,8 +43,8 @@ class ImportOsmSpots extends Command
         foreach ($queries as $category => $query) {
             $this->info("  Fetching {$category}...");
             try {
-                $response = Http::timeout(30)
-                    ->get('https://overpass-api.de/api/interpreter', ['data' => $query]);
+                $response = Http::timeout(90)
+                    ->get('https://overpass.kumi.systems/api/interpreter', ['data' => $query]);
 
                 if ($response->successful()) {
                     $elements = $response->json('elements', []);
@@ -92,9 +92,7 @@ class ImportOsmSpots extends Command
             return self::FAILURE;
         }
 
-        /** @var array{elements: array<int, array{id: int, lat: float, lon: float, tags?: array<string, string>}>} $data */
-        $data = $response->json();
-        $elements = $data['elements'] ?? [];
+        $elements = $response->json('elements', []);
 
         $this->info('  Received '.count($elements).' elements from Overpass');
 
