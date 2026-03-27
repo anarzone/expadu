@@ -292,7 +292,7 @@ export default function Profile() {
                 lng: placeLng,
             }, {
                 preserveScroll: true,
-                preserveState: false,
+                preserveState: true,
                 onSuccess: () => showToast('✓ ' + placeName.trim() + ' updated'),
                 onError: (errors) => {
                     const firstError = Object.values(errors)[0];
@@ -309,7 +309,7 @@ export default function Profile() {
                 lng: placeLng,
             }, {
                 preserveScroll: true,
-                preserveState: false,
+                preserveState: true,
                 onSuccess: () => showToast('✓ ' + placeName.trim() + ' added to your places'),
                 onError: (errors) => {
                     const firstError = Object.values(errors)[0];
@@ -400,7 +400,7 @@ export default function Profile() {
         // Delete via backend
         router.delete(`/user-places/${id}`, {
             preserveScroll: true,
-            preserveState: false,
+            preserveState: true,
             onSuccess: () => showToast('Place removed'),
             onError: () => showToast('Error: Could not remove place'),
         });
