@@ -61,6 +61,7 @@ export default function Explore() {
     // Viewport-based spots — fetched from /api/spots as the map moves
     const [mapSpots, setMapSpots] = useState<SpotData[]>([]);
     const handleBoundsChange = useCallback((bounds: MapBounds) => {
+        lastBoundsRef.current = bounds;
         const params = new URLSearchParams({
             sw_lat: String(bounds.sw_lat),
             sw_lng: String(bounds.sw_lng),
@@ -105,13 +106,37 @@ export default function Explore() {
     const [placeName, setPlaceName] = useState('');
     const [savingPlace, setSavingPlace] = useState(false);
 
+    // Store last known bounds so we can re-fetch on category change
+    const lastBoundsRef = useRef<MapBounds | null>(null);
+
     function filterByCategory(cat: string) {
         setCategory(cat);
-        const params: Record<string, string> = {};
-        if (cat) params.category = cat;
-        if (userLocation?.lat) params.lat = String(userLocation.lat);
-        if (userLocation?.lng) params.lng = String(userLocation.lng);
-        router.get('/explore', params, { preserveState: true, preserveScroll: true });
+        setMapSpots([]); // clear stale viewport spots
+
+        // Re-fetch with new category for current viewport
+        if (lastBoundsRef.current) {
+            const bounds = lastBoundsRef.current;
+            const params = new URLSearchParams({
+                sw_lat: String(bounds.sw_lat),
+                sw_lng: String(bounds.sw_lng),
+                ne_lat: String(bounds.ne_lat),
+                ne_lng: String(bounds.ne_lng),
+                limit: '100',
+            });
+            if (cat) params.set('category', cat);
+            fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
+                .then((r) => r.ok ? r.json() : [])
+                .then((data: any[]) => {
+                    setMapSpots(data.map((s) => ({
+                        id: s.id, name: s.name, category: s.category, address: s.address,
+                        wifi_speed: s.wifi_speed, noise_level: s.noise_level,
+                        time_limit_mins: s.time_limit_mins, rating: s.rating,
+                        active_checkins_count: s.active_checkins_count ?? 0,
+                        lat: s.lat, lng: s.lng,
+                    })));
+                })
+                .catch(() => {});
+        }
     }
 
     const filteredSpots = allSpots.filter((s) => {
