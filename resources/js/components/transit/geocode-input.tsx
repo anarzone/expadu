@@ -14,12 +14,14 @@ export function GeocodeInput({
     value,
     onChange,
     onSelect,
+    onFocus: onFocusProp,
 }: {
     icon: string;
     placeholder: string;
     value: string;
     onChange: (val: string) => void;
     onSelect: (result: { lat: number; lng: number; name: string; label: string }) => void;
+    onFocus?: () => void;
 }) {
     const [results, setResults] = useState<GeoResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -67,7 +69,7 @@ export function GeocodeInput({
                     placeholder={placeholder}
                     value={value}
                     onChange={(e) => { onChange(e.target.value); search(e.target.value); }}
-                    onFocus={() => { if (results.length > 0) setDropdownOpen(true); }}
+                    onFocus={() => { onFocusProp?.(); if (results.length > 0) setDropdownOpen(true); }}
                     onBlur={() => { setTimeout(() => setDropdownOpen(false), 200); }}
                     autoComplete="off"
                 />

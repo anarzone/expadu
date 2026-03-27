@@ -309,8 +309,9 @@ export default function Transit() {
     // UI state
     const [fromValue, setFromValue] = useState('Ehrenfeld, Cologne');
     const [toValue, setToValue] = useState('');
-    const [journeyOrigin, setJourneyOrigin] = useState<{ lat: number; lng: number }>({ lat: 50.9478, lng: 6.9183 }); // Ehrenfeld default
+    const [journeyOrigin, setJourneyOrigin] = useState<{ lat: number; lng: number }>({ lat: 50.9478, lng: 6.9183 });
     const [journeyDest, setJourneyDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
+    const [activeInput, setActiveInput] = useState<'from' | 'to'>('to'); // which input the chips apply to
     const [showMore, setShowMore] = useState(false);
     const [dismissedDisruptions, setDismissedDisruptions] = useState<number[]>([]);
     const [routinePromptVisible, setRoutinePromptVisible] = useState(true);
@@ -367,12 +368,21 @@ export default function Transit() {
     });
 
     function setDest(val: string, lat?: number, lng?: number) {
-        setToValue(val);
         const chip = uniqueChips.find((c) => c.value === val);
-        const destLat = lat ?? chip?.lat;
-        const destLng = lng ?? chip?.lng;
-        if (destLat && destLng) {
-            setJourneyDest({ lat: destLat, lng: destLng, name: val.split(' · ')[0] });
+        const coordLat = lat ?? chip?.lat;
+        const coordLng = lng ?? chip?.lng;
+        const name = val.split(' · ')[0];
+
+        if (activeInput === 'from') {
+            setFromValue(val);
+            if (coordLat && coordLng) {
+                setJourneyOrigin({ lat: coordLat, lng: coordLng });
+            }
+        } else {
+            setToValue(val);
+            if (coordLat && coordLng) {
+                setJourneyDest({ lat: coordLat, lng: coordLng, name });
+            }
         }
     }
 
@@ -529,6 +539,7 @@ export default function Transit() {
                                     placeholder="From — your current location"
                                     value={fromValue}
                                     onChange={setFromValue}
+                                    onFocus={() => setActiveInput('from')}
                                     onSelect={(r) => {
                                         setFromValue(r.label);
                                         setJourneyOrigin({ lat: r.lat, lng: r.lng });
@@ -542,6 +553,7 @@ export default function Transit() {
                                     placeholder="To — destination"
                                     value={toValue}
                                     onChange={setToValue}
+                                    onFocus={() => setActiveInput('to')}
                                     onSelect={(r) => {
                                         setToValue(r.label);
                                         setJourneyDest({ lat: r.lat, lng: r.lng, name: r.name });
@@ -557,7 +569,10 @@ export default function Transit() {
                                 </button>
                             </div>
                         </div>
-                        {/* Destination chips */}
+                        {/* Quick place chips — applies to whichever input is focused */}
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#AAA89F]">
+                            Tap to set {activeInput === 'from' ? 'origin' : 'destination'}
+                        </div>
                         <div className="flex flex-wrap gap-[7px]">
                             {uniqueChips.map((c) => (
                                 <button
