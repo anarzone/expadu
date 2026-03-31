@@ -1,0 +1,69 @@
+# Companion services for Expadu — deployed once on the server.
+# The app container (from GHCR) connects to these via the shared 'expadu' network.
+#
+# Usage:
+#   docker compose -f docker/prod/services.yml up -d
+#   docker compose -f docker/prod/services.yml down
+
+services:
+  pgsql:
+    image: postgis/postgis:16-3.4
+    container_name: expadu-pgsql
+    environment:
+      PGPASSWORD: '${DB_PASSWORD:-expadu_prod_2026}'
+      POSTGRES_DB: '${DB_DATABASE:-expadu}'
+      POSTGRES_USER: '${DB_USERNAME:-expadu}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-expadu_prod_2026}'
+    volumes:
+      - pgsql-data:/var/lib/postgresql/data
+      - ../../docker/pgsql/create-postgis-extensions.sql:/docker-entrypoint-initdb.d/20-create-postgis-extensions.sql
+    networks:
+      - expadu
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE:-expadu}', '-U', '${DB_USERNAME:-expadu}']
+      interval: 10s
+      retries: 3
+      timeout: 5s
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: expadu-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - expadu
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      retries: 3
+      timeout: 5s
+    restart: unless-stopped
+
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    container_name: expadu-valhalla
+    volumes:
+      - valhalla-data:/custom_files
+    environment:
+      - use_tiles_ignore_pbf=True
+      - force_rebuild=False
+      - serve_tiles=True
+      - build_elevation=False
+      - build_admins=False
+    networks:
+      - expadu
+    restart: unless-stopped
+
+networks:
+  expadu:
+    name: expadu
+    driver: bridge
+
+volumes:
+  pgsql-data:
+    driver: local
+  redis-data:
+    driver: local
+  valhalla-data:
+    driver: local
