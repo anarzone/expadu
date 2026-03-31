@@ -82,6 +82,7 @@ COPY docker/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create required directories and set permissions
 RUN mkdir -p \
+        /var/log/supervisor \
         storage/logs \
         storage/framework/cache \
         storage/framework/sessions \
