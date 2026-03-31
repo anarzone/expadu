@@ -21,7 +21,7 @@ const ACTIVITY: Activity[] = [
 
 const DEFAULT_INTERESTS = ['Tech', 'Travel', 'Coffee', 'Language exchange', 'Running'];
 
-type Place = { id: number; emoji: string; name: string; addr: string; lat?: number | null; lng?: number | null };
+type Place = { id: number; emoji: string; name: string; addr: string; lat?: number | null; lng?: number | null; arrive_by?: string | null; category?: string };
 
 type UserPlaceData = {
     id: number;
@@ -101,10 +101,16 @@ const GERMAN_VALUES: Record<string, string> = {
     'C2 — Fluent': 'c2',
 };
 
+type EventSummary = { id: number; title: string; emoji: string | null; date: string; time: string; venue: string | null };
+type ProfileStats = { events_joined: number; tasks_completed: number; tasks_total: number; days_in_germany: number | null };
+
 export default function Profile() {
-    const { auth, userPlaces } = usePage<{
+    const { auth, userPlaces, goingEvents, pastEvents, stats } = usePage<{
         auth: Auth;
         userPlaces?: UserPlaceData[];
+        goingEvents?: EventSummary[];
+        pastEvents?: EventSummary[];
+        stats?: ProfileStats;
     }>().props;
     const user = auth.user;
 
@@ -132,13 +138,15 @@ export default function Profile() {
     const [newInterest, setNewInterest] = useState('');
 
     // Places — always derived from backend props (re-syncs after Inertia navigations)
-    const backendPlaces: Place[] = (userPlaces ?? []).map((p) => ({
+    const backendPlaces: Place[] = (userPlaces ?? []).map((p: UserPlaceData & { category?: string; arrive_by?: string }) => ({
         id: p.id,
         emoji: p.emoji || '📍',
         name: p.name,
         addr: p.address || '',
         lat: p.lat ?? null,
         lng: p.lng ?? null,
+        arrive_by: p.arrive_by ?? null,
+        category: p.category ?? 'custom',
     }));
     const [localPlaces, setLocalPlaces] = useState<Place[]>([]);
 
@@ -154,6 +162,9 @@ export default function Profile() {
     const [placeAddr, setPlaceAddr] = useState('');
     const [placeLat, setPlaceLat] = useState<number | null>(null);
     const [placeLng, setPlaceLng] = useState<number | null>(null);
+    const [placeArriveBy, setPlaceArriveBy] = useState('');
+    const [placeDayMode, setPlaceDayMode] = useState<string>('all');
+    const [placeActiveDays, setPlaceActiveDays] = useState<string[]>([]);
     const [locating, setLocating] = useState(false);
     const [placeEmoji, setPlaceEmoji] = useState('🏠');
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
@@ -269,6 +280,9 @@ export default function Profile() {
             setEditingPlaceId(place.id);
             setPlaceLat(place.lat ?? null);
             setPlaceLng(place.lng ?? null);
+            setPlaceArriveBy(place.arrive_by?.slice(0, 5) ?? '');
+            setPlaceDayMode((place as any).day_mode ?? 'all');
+            setPlaceActiveDays((place as any).active_days ?? []);
         } else {
             setPlaceName('');
             setPlaceAddr('');
@@ -276,6 +290,9 @@ export default function Profile() {
             setEditingPlaceId(null);
             setPlaceLat(null);
             setPlaceLng(null);
+            setPlaceArriveBy('');
+            setPlaceDayMode('all');
+            setPlaceActiveDays([]);
         }
         setShowPlaceForm(true);
     }
@@ -297,6 +314,9 @@ export default function Profile() {
                 address: placeAddr.trim() || null,
                 lat: placeLat,
                 lng: placeLng,
+                arrive_by: placeArriveBy || null,
+                day_mode: placeDayMode,
+                active_days: placeDayMode === 'custom' ? placeActiveDays : null,
             }, {
                 preserveScroll: true,
                 preserveState: true,
@@ -315,6 +335,9 @@ export default function Profile() {
                 address: placeAddr.trim() || null,
                 lat: placeLat,
                 lng: placeLng,
+                arrive_by: placeArriveBy || null,
+                day_mode: placeDayMode,
+                active_days: placeDayMode === 'custom' ? placeActiveDays : null,
             }, {
                 preserveScroll: true,
                 preserveState: true,
@@ -481,10 +504,10 @@ export default function Profile() {
                     {/* Stats */}
                     <div className="relative z-[1] flex w-full" style={{ borderTop: '1px solid rgba(255,255,255,.15)' }}>
                         {[
-                            { num: '14', lbl: 'Events' },
-                            { num: '3', lbl: 'Partners' },
-                            { num: '8', lbl: 'Meetups' },
-                            { num: 'A2', lbl: 'German' },
+                            { num: String(stats?.events_joined ?? 0), lbl: 'Events' },
+                            { num: String(stats?.tasks_completed ?? 0), lbl: 'Tasks' },
+                            { num: stats?.days_in_germany != null ? String(stats.days_in_germany) : '—', lbl: 'Days' },
+                            { num: (user.german_level as string)?.toUpperCase() ?? '—', lbl: 'German' },
                         ].map((stat, i, arr) => (
                             <div
                                 key={stat.lbl}
@@ -658,17 +681,28 @@ export default function Profile() {
                 {activeTab === 'events' && (
                     <>
                         <FeedSection>
-                            <SectionHeader title="Going" badge="2 upcoming" />
-                            <CompactCard barColor="#0A7C52" title="International Expat Mixer" sub="Sat 22 Mar · 18:00 · Startplatz, Mediapark" badge="✓ Going" badgeBg="#D4F0E6" badgeColor="#0A7C52" />
-                            <CompactCard barColor="#0891B2" title="Beginners German Practice" sub="Mon 24 Mar · 10:00 · StadtBibliothek" badge="✓ Going" badgeBg="#D4F0E6" badgeColor="#0A7C52" />
-                        </FeedSection>
-                        <FeedSection>
-                            <SectionHeader title="Saved events" badge="1 saved" />
-                            <CompactCard barColor="#1A4CD4" title="Language Evening at Café Schmitz" sub="Every week · 19:00 · Ehrenfeld" badge="♥ Saved" badgeBg="#EFEDE7" badgeColor="#6B6860" />
+                            <SectionHeader title="Going" badge={`${(goingEvents ?? []).length} upcoming`} />
+                            {(goingEvents ?? []).length > 0 ? (
+                                (goingEvents ?? []).map((ev) => (
+                                    <CompactCard key={ev.id} barColor="#0A7C52" title={ev.title} sub={`${ev.date} · ${ev.time}${ev.venue ? ` · ${ev.venue}` : ''}`} badge="✓ Going" badgeBg="#D4F0E6" badgeColor="#0A7C52" />
+                                ))
+                            ) : (
+                                <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F]">
+                                    No upcoming events. Browse the <a href="/events" className="text-[#1A4CD4] underline">Events</a> page to find something.
+                                </div>
+                            )}
                         </FeedSection>
                         <FeedSection>
                             <SectionHeader title="Past events" />
-                            <CompactCard barColor="#E2DFD6" title="Cologne Brewery Tour" titleColor="#6B6860" sub="Sun 9 Mar · Brauhaus Sion" badge="Attended" badgeBg="#EFEDE7" badgeColor="#AAA89F" />
+                            {(pastEvents ?? []).length > 0 ? (
+                                (pastEvents ?? []).map((ev) => (
+                                    <CompactCard key={ev.id} barColor="#E2DFD6" title={ev.title} titleColor="#6B6860" sub={`${ev.date}${ev.venue ? ` · ${ev.venue}` : ''}`} badge="Attended" badgeBg="#EFEDE7" badgeColor="#AAA89F" />
+                                ))
+                            ) : (
+                                <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F]">
+                                    No past events yet
+                                </div>
+                            )}
                         </FeedSection>
                     </>
                 )}
@@ -852,13 +886,15 @@ export default function Profile() {
                                     >
                                         Edit
                                     </button>
-                                    <button
-                                        onClick={() => deletePlace(p.id)}
-                                        className="cursor-pointer rounded-[9px] border border-[#FDE8E6] bg-[#FDE8E6] px-2.5 py-1 transition-all hover:bg-[#F9CCC8]"
-                                        style={{ fontFamily: "'Geist', sans-serif", fontSize: 11, fontWeight: 600, color: '#C4271A' }}
-                                    >
-                                        ✕
-                                    </button>
+                                    {p.category !== 'home' && p.category !== 'work' && (
+                                        <button
+                                            onClick={() => deletePlace(p.id)}
+                                            className="cursor-pointer rounded-[9px] border border-[#FDE8E6] bg-[#FDE8E6] px-2.5 py-1 transition-all hover:bg-[#F9CCC8]"
+                                            style={{ fontFamily: "'Geist', sans-serif", fontSize: 11, fontWeight: 600, color: '#C4271A' }}
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                             {showPlaceForm && (
@@ -953,6 +989,70 @@ export default function Profile() {
                                                 )}
                                             </button>
                                         </div>
+                                    </div>
+                                    {/* Arrive by time (optional) */}
+                                    <div className="mb-2.5 flex items-center gap-2">
+                                        <span style={{ fontSize: 12, color: '#6B6860', whiteSpace: 'nowrap' }}>Arrive by</span>
+                                        <input
+                                            type="time"
+                                            value={placeArriveBy}
+                                            onChange={(e) => setPlaceArriveBy(e.target.value)}
+                                            className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none"
+                                            style={{ fontFamily: "'Geist Mono', monospace", color: placeArriveBy ? '#1A4CD4' : '#AAA89F' }}
+                                            placeholder="--:--"
+                                        />
+                                        <span style={{ fontSize: 11, color: '#AAA89F' }}>For smart commute</span>
+                                    </div>
+                                    {/* Active days */}
+                                    <div className="mb-2.5">
+                                        <div className="mb-1.5 flex gap-1.5">
+                                            {[
+                                                { id: 'all', label: 'Every day' },
+                                                { id: 'weekdays', label: 'Weekdays' },
+                                                { id: 'weekends', label: 'Weekends' },
+                                                { id: 'custom', label: 'Custom' },
+                                            ].map((m) => (
+                                                <button
+                                                    key={m.id}
+                                                    type="button"
+                                                    onClick={() => setPlaceDayMode(m.id)}
+                                                    className="cursor-pointer rounded-full border px-2.5 py-[4px] transition-all"
+                                                    style={{
+                                                        fontSize: 11,
+                                                        fontWeight: 600,
+                                                        background: placeDayMode === m.id ? '#1A4CD4' : 'white',
+                                                        color: placeDayMode === m.id ? 'white' : '#6B6860',
+                                                        borderColor: placeDayMode === m.id ? '#1A4CD4' : '#E2DFD6',
+                                                    }}
+                                                >
+                                                    {m.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {placeDayMode === 'custom' && (
+                                            <div className="flex gap-1">
+                                                {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((d) => (
+                                                    <button
+                                                        key={d}
+                                                        type="button"
+                                                        onClick={() => setPlaceActiveDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d])}
+                                                        className="flex cursor-pointer items-center justify-center transition-all"
+                                                        style={{
+                                                            width: 32,
+                                                            height: 32,
+                                                            borderRadius: '50%',
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            background: placeActiveDays.includes(d) ? '#EBF0FD' : '#EFEDE7',
+                                                            color: placeActiveDays.includes(d) ? '#1A4CD4' : '#AAA89F',
+                                                            border: placeActiveDays.includes(d) ? '2px solid #1A4CD4' : '2px solid transparent',
+                                                        }}
+                                                    >
+                                                        {d.charAt(0).toUpperCase() + d.slice(1, 2)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-2">
                                         <button

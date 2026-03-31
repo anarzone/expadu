@@ -37,8 +37,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Seed user places
-        UserPlace::create(['user_id' => $user->id, 'emoji' => '🏠', 'name' => 'Home', 'address' => 'Ehrenfeld', 'lat' => 50.9478, 'lng' => 6.9183, 'sort_order' => 0]);
-        UserPlace::create(['user_id' => $user->id, 'emoji' => '💼', 'name' => 'Work', 'address' => 'Mediapark', 'lat' => 50.9467, 'lng' => 6.9417, 'sort_order' => 1]);
+        UserPlace::create(['user_id' => $user->id, 'emoji' => '🏠', 'name' => 'Home', 'address' => 'Ehrenfeld', 'lat' => 50.9478, 'lng' => 6.9183, 'sort_order' => 0, 'category' => 'home', 'day_mode' => 'all']);
+        UserPlace::create(['user_id' => $user->id, 'emoji' => '💼', 'name' => 'Work', 'address' => 'Mediapark', 'lat' => 50.9467, 'lng' => 6.9417, 'sort_order' => 1, 'arrive_by' => '09:00', 'category' => 'work', 'day_mode' => 'weekdays']);
         UserPlace::create(['user_id' => $user->id, 'emoji' => '📚', 'name' => 'Course', 'address' => 'Uni Köln', 'lat' => 50.9280, 'lng' => 6.9286, 'sort_order' => 2]);
         UserPlace::create(['user_id' => $user->id, 'emoji' => '⭐', 'name' => 'Café Schmitz', 'address' => 'Ehrenfeld · 0.3 km', 'lat' => 50.9478, 'lng' => 6.9195, 'sort_order' => 3]);
 

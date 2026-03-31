@@ -110,35 +110,43 @@ class EventController extends Controller
         $startsAt = $e->starts_at;
         $color = self::CATEGORY_COLORS[$e->category] ?? '#6B6860';
 
+        $area = '';
+        if ($e->address) {
+            $parts = explode(',', $e->address);
+            $area = trim($parts[1] ?? $parts[0] ?? '');
+        }
+
         return [
             'id' => $e->id,
             'title' => $e->title,
             'emoji' => $e->emoji,
             'category' => $e->category,
-            'description' => $e->description,
+            'desc' => $e->description ?? '',
             'date' => $startsAt->format('d'),
             'month' => $startsAt->format('M'),
             'day' => $startsAt->format('D'),
             'fullDate' => $startsAt->toDateString(),
             'time' => $startsAt->format('H:i'),
             'duration' => $e->ends_at ? $startsAt->diffForHumans($e->ends_at, true) : null,
-            'venue' => $e->location_name,
-            'area' => $e->address ? explode(',', $e->address)[1] ?? '' : '',
+            'venue' => $e->location_name ?? '',
+            'area' => $area,
+            'distance' => '',
             'address' => $e->address,
             'price' => $e->is_free ? 'Free' : ($e->price ? '€'.number_format($e->price, 0) : 'Free'),
             'color' => $color,
             'barColor' => $color,
-            'is_free' => $e->is_free,
+            'categories' => [$e->category],
+            'free' => (bool) $e->is_free,
             'attending' => $e->attendees_count ?? 0,
             'max' => $e->max_attendees,
             'going' => $e->attendees()->where('user_id', $userId)->exists(),
+            'saved' => false,
             'organiser' => $e->organiser?->name ?? 'Expadu',
             'tags' => $this->buildTags($e->category, $color),
-            'attendees' => ['🇬🇧', '🇩🇪', '🇹🇷', '🇫🇷'], // TODO: real attendee flags from user profiles
+            'attendees' => ['🇬🇧', '🇩🇪', '🇹🇷', '🇫🇷'],
             'englishFriendly' => true,
             'featured' => false,
             'karneval' => false,
-            'saved' => false, // TODO: implement saved/bookmarked events
             'link' => null,
         ];
     }

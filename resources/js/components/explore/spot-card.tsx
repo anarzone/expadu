@@ -8,20 +8,13 @@ type SpotData = {
     time_limit_mins: number | null;
     rating: number | null;
     active_checkins_count: number;
+    distance_km?: number;
 };
 
 const categoryEmoji: Record<string, string> = { cafe: '☕', coworking: '🏢', library: '📚', park: '🌳' };
 
-function attrChip(type: string): { label: string; cls: string } | null {
-    const map: Record<string, { label: string; cls: string }> = {
-        wifi: { label: '📶 WiFi', cls: 'bg-[#EBF0FD] text-[#1A4CD4]' },
-        quiet: { label: '🤫 Quiet', cls: 'bg-[#EDFAF4] text-[#0A7C52]' },
-        plugs: { label: '🔌 Plugs', cls: 'bg-[#FEF9EC] text-[#C47D0E]' },
-        cowork: { label: '🏢 Cowork', cls: 'bg-[#EFEDE7] text-[#6B6860]' },
-        free: { label: '🆓 Free', cls: 'bg-[#EDE9FE] text-[#7C3AED]' },
-    };
-    return map[type] || null;
-}
+import { getTag, type TagDef } from '@/constants/tags';
+import { ICON_STROKE } from '@/constants/icons';
 
 function getAttrs(spot: SpotData): string[] {
     const attrs: string[] = [];
@@ -57,17 +50,19 @@ export function SpotCard({ spot, selected, onSelect, onNavigate }: {
                     <div className="mb-0.5 text-[15px] font-semibold">{spot.name}</div>
                     <div className="text-xs text-[#6B6860]">{area}</div>
                 </div>
-                <span className="shrink-0 font-mono text-xs text-[#AAA89F]">0.3 km</span>
+                <span className="shrink-0 font-mono text-xs text-[#AAA89F]">{spot.distance_km != null ? `${Math.round(spot.distance_km * 10) / 10} km` : ''}</span>
             </div>
 
             {/* Attrs: chips with gap 6px */}
             <div className="mb-2.5 flex flex-wrap gap-1.5">
                 {attrs.map((a) => {
-                    const chip = attrChip(a);
-                    if (!chip) return null;
+                    const tag = getTag(a);
+                    if (!tag) return null;
+                    const TagIcon = tag.icon;
                     return (
-                        <span key={a} className={`flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium ${chip.cls}`}>
-                            {chip.label}
+                        <span key={a} className={`flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium ${tag.cls}`}>
+                            <TagIcon size={12} stroke={ICON_STROKE} />
+                            {tag.label}
                         </span>
                     );
                 })}

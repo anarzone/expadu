@@ -40,6 +40,21 @@ services:
                 - ping
             retries: 3
             timeout: 5s
+    valhalla:
+        image: 'ghcr.io/gis-ops/docker-valhalla/valhalla:latest'
+        ports:
+            - '${FORWARD_VALHALLA_PORT:-8002}:8002'
+        volumes:
+            - 'valhalla-data:/custom_files'
+        environment:
+            - use_tiles_ignore_pbf=True
+            - force_rebuild=False
+            - serve_tiles=True
+            - build_elevation=False
+            - build_admins=False
+        networks:
+            - sail
+        restart: unless-stopped
 networks:
     sail:
         driver: bridge
@@ -47,4 +62,6 @@ volumes:
     sail-pgsql:
         driver: local
     sail-redis:
+        driver: local
+    valhalla-data:
         driver: local

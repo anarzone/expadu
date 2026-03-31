@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
+use Carbon\Carbon;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,5 +44,21 @@ class Task extends Model
     public function userTasks(): HasMany
     {
         return $this->hasMany(UserTask::class);
+    }
+
+    /**
+     * Compute the absolute deadline for a given user.
+     */
+    public function computeDeadlineFor(User $user): ?Carbon
+    {
+        if (! $this->deadline_days || $this->deadline_type === DeadlineType::None) {
+            return null;
+        }
+
+        if ($this->deadline_type === DeadlineType::DaysSinceArrival && $user->arrival_date) {
+            return Carbon::parse($user->arrival_date)->addDays($this->deadline_days);
+        }
+
+        return null;
     }
 }

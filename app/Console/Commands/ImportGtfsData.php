@@ -65,6 +65,29 @@ class ImportGtfsData extends Command
                 'stop_sequence' => 'stop_sequence',
             ],
         ],
+        'calendar.txt' => [
+            'table' => 'gtfs_calendar',
+            'columns' => [
+                'service_id' => 'service_id',
+                'monday' => 'monday',
+                'tuesday' => 'tuesday',
+                'wednesday' => 'wednesday',
+                'thursday' => 'thursday',
+                'friday' => 'friday',
+                'saturday' => 'saturday',
+                'sunday' => 'sunday',
+                'start_date' => 'start_date',
+                'end_date' => 'end_date',
+            ],
+        ],
+        'calendar_dates.txt' => [
+            'table' => 'gtfs_calendar_dates',
+            'columns' => [
+                'service_id' => 'service_id',
+                'date' => 'date',
+                'exception_type' => 'exception_type',
+            ],
+        ],
     ];
 
     public function handle(): int
@@ -188,11 +211,20 @@ class ImportGtfsData extends Command
             ->each(function (LazyCollection $chunk) use ($table, $csvColumns, $dbColumns, $bar, &$inserted) {
                 $rows = [];
 
+                // GTFS date columns that need YYYYMMDD → YYYY-MM-DD conversion
+                static $dateColumns = ['start_date', 'end_date', 'date'];
+
                 foreach ($chunk as $record) {
                     $row = [];
                     foreach ($csvColumns as $i => $csvCol) {
                         $value = $record[$csvCol] ?? null;
-                        $row[$dbColumns[$i]] = $value !== '' ? $value : null;
+                        $dbCol = $dbColumns[$i];
+
+                        if ($value !== '' && $value !== null && in_array($dbCol, $dateColumns, true) && strlen($value) === 8) {
+                            $value = substr($value, 0, 4).'-'.substr($value, 4, 2).'-'.substr($value, 6, 2);
+                        }
+
+                        $row[$dbCol] = $value !== '' ? $value : null;
                     }
                     $rows[] = $row;
                 }

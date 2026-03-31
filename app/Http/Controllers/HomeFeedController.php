@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\HomeCardService;
+use App\Services\RecommendationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class HomeFeedController extends Controller
 {
-    public function __invoke(Request $request, HomeCardService $cardService): Response
+    public function __invoke(Request $request, RecommendationService $recommendationService): Response
     {
+        $user = $request->user();
+
         return Inertia::render('dashboard', [
-            'cards' => $cardService->buildFeed($request->user()),
+            'feed' => $recommendationService->buildDashboardFeed($user),
+            'commuteRecommendation' => $recommendationService->getCommuteRecommendation($user),
         ]);
     }
 }

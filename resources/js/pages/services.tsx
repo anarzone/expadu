@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ServiceCard, type ServiceData } from '@/components/services/service-card';
 import { ServicesRightPanel } from '@/components/services/services-right-panel';
@@ -6,124 +6,91 @@ import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
-// Categories
+// Types + categories
 // ============================================================
+
+type DbService = {
+    id: number;
+    name: string;
+    cat: string;
+    emoji: string;
+    type: string;
+    desc: string | null;
+    address: string | null;
+    distance: string | null;
+    phone: string | null;
+    website: string | null;
+    languages: string[];
+    insurance: string[];
+    hours: { raw: string } | null;
+    verified: boolean;
+    acceptingNew: boolean;
+    rating: number | null;
+    reviews: number;
+};
+
+const AVATAR_COLORS: Record<string, string> = {
+    doctor: '#EBF0FD', dental: '#FDF0D4', mental: '#EDE9FE', bank: '#D4F0E6',
+    tax: '#FDF0D4', legal: '#EDE9FE', insure: '#D4F0E6', pharmacy: '#FDE8E6',
+};
+
+function dbToServiceData(s: DbService): ServiceData {
+    return {
+        id: s.id,
+        cat: s.cat,
+        name: s.name,
+        type: `${s.type}${s.address ? ' · ' + s.address.split(',')[0] : ''}`,
+        emoji: s.emoji || '📍',
+        avatarBg: AVATAR_COLORS[s.cat] ?? '#EFEDE7',
+        rating: s.rating ?? 0,
+        reviews: s.reviews,
+        verified: s.verified,
+        languages: s.languages ?? [],
+        address: s.address ?? '',
+        distance: s.distance ?? '',
+        phone: s.phone,
+        acceptingNew: s.acceptingNew,
+        insurance: s.insurance ?? [],
+        desc: s.desc ?? '',
+        hours: s.hours?.raw ?? '',
+        website: s.website ?? '',
+        tips: [],
+    };
+}
 
 const CATEGORIES = [
     { id: 'all', ico: '✨', label: 'All' },
     { id: 'doctor', ico: '🩺', label: 'Doctors' },
     { id: 'dental', ico: '🦷', label: 'Dentists' },
-    { id: 'mental', ico: '🧠', label: 'Therapists' },
+    { id: 'pharmacy', ico: '💊', label: 'Pharmacies' },
     { id: 'bank', ico: '🏦', label: 'Banks' },
     { id: 'tax', ico: '📋', label: 'Tax advisors' },
     { id: 'legal', ico: '⚖️', label: 'Lawyers' },
-    { id: 'insure', ico: '🛡️', label: 'Insurance' },
 ];
 
-// ============================================================
-// Hardcoded prototype data
-// ============================================================
-
-const SERVICES: ServiceData[] = [
-    {
-        id: 1, cat: 'doctor', name: 'Dr. Julia Müller', type: 'General Practitioner · Ehrenfeld', emoji: '🩺', avatarBg: '#EBF0FD',
-        rating: 4.9, reviews: 127, verified: true, languages: ['English', 'German', 'French'],
-        address: 'Venloer Str. 218, Ehrenfeld', distance: '0.3 km', phone: '+49 221 5541200',
-        acceptingNew: true, insurance: ['TK', 'AOK', 'Barmer', 'Private'],
-        desc: 'Dr. Müller is highly recommended by the Cologne expat community. Fluent English, patient with paperwork questions, and takes time to explain diagnoses clearly.',
-        hours: 'Mon–Fri 8:00–18:00', website: 'https://www.doctolib.de',
-        tips: [{ text: '"Books up fast — call first thing Monday morning for same-week appointments."', author: 'Sarah K.' }],
-    },
-    {
-        id: 2, cat: 'doctor', name: 'Dr. Hendrik Bauer', type: 'Internal Medicine · Belgisches Viertel', emoji: '🩺', avatarBg: '#D4F0E6',
-        rating: 4.7, reviews: 89, verified: true, languages: ['English', 'German'],
-        address: 'Aachener Str. 55, Belgisches Viertel', distance: '1.1 km', phone: '+49 221 4402100',
-        acceptingNew: true, insurance: ['TK', 'AOK', 'Private'],
-        desc: 'Specialises in chronic conditions and preventive medicine. Known for thorough check-ups and excellent bedside manner with international patients.',
-        hours: 'Mon–Thu 8:30–17:00, Fri 8:30–13:00', website: 'https://www.doctolib.de', tips: [],
-    },
-    {
-        id: 3, cat: 'dental', name: 'Zahnarztpraxis Köln Mitte', type: 'Dentist · Innenstadt', emoji: '🦷', avatarBg: '#FDF0D4',
-        rating: 4.8, reviews: 203, verified: true, languages: ['English', 'German', 'Spanish'],
-        address: 'Hohenstaufenring 62, Innenstadt', distance: '2.0 km', phone: '+49 221 2573900',
-        acceptingNew: true, insurance: ['TK', 'AOK', 'Barmer', 'Private', 'Self-pay'],
-        desc: 'Modern dental practice with English-speaking staff. Same-day emergency appointments available. Transparent pricing with written quotes before any procedure.',
-        hours: 'Mon–Fri 8:00–19:00, Sat 9:00–14:00', website: 'https://www.doctolib.de', tips: [],
-    },
-    {
-        id: 4, cat: 'mental', name: 'Expat Counselling Cologne', type: 'Psychotherapy · English-only practice', emoji: '🧠', avatarBg: '#EDE9FE',
-        rating: 5.0, reviews: 44, verified: true, languages: ['English', 'German'],
-        address: 'Friesenplatz 4, Innenstadt', distance: '1.4 km', phone: '+49 221 9988100',
-        acceptingNew: true, insurance: ['Private', 'Self-pay'],
-        desc: 'Specialises in expat-specific challenges: relocation stress, cultural adjustment, career transitions. Sessions fully in English. Video appointments available.',
-        hours: 'Mon–Fri 9:00–20:00', website: '#',
-        tips: [{ text: '"Life-changing for my first year in Cologne. Worth every euro."', author: 'Carlos M.' }],
-    },
-    {
-        id: 5, cat: 'bank', name: 'N26', type: 'Online Bank · App-based', emoji: '🏦', avatarBg: '#EBF0FD',
-        rating: 4.6, reviews: 4800, verified: false, languages: ['English', 'German', 'French', 'Spanish', 'Italian'],
-        address: 'App-based — no branch needed', distance: 'Online', phone: null,
-        acceptingNew: true, insurance: [],
-        desc: 'Best bank for new expats. English-first app, no monthly fees on basic account, instant IBAN, and VideoIdent verification from your phone. Open in under 10 minutes.',
-        hours: '24/7 app · Support Mon–Fri 9–18', website: 'https://n26.com', tips: [],
-    },
-    {
-        id: 6, cat: 'bank', name: 'Deutsche Bank Ehrenfeld', type: 'Full-service Bank · Branch', emoji: '🏦', avatarBg: '#D4F0E6',
-        rating: 4.2, reviews: 312, verified: true, languages: ['English', 'German'],
-        address: 'Venloer Str. 100, Ehrenfeld', distance: '0.4 km', phone: '+49 800 4000400',
-        acceptingNew: true, insurance: [],
-        desc: 'Traditional bank with English-speaking advisors. Good for those who need in-person service, mortgages, or business accounts. English appointments available on request.',
-        hours: 'Mon–Fri 9:00–18:00', website: 'https://www.deutsche-bank.de', tips: [],
-    },
-    {
-        id: 7, cat: 'tax', name: 'ExpatTax Cologne', type: 'Tax Advisor · Expat specialists', emoji: '📋', avatarBg: '#FDF0D4',
-        rating: 4.9, reviews: 178, verified: true, languages: ['English', 'German'],
-        address: 'Habsburgerring 2, Innenstadt', distance: '1.8 km', phone: '+49 221 3339900',
-        acceptingNew: true, insurance: [],
-        desc: 'Specialist tax advisory firm for international employees and self-employed expats. Handles German tax returns, double taxation, and Freiberufler registration. All communication in English.',
-        hours: 'Mon–Fri 9:00–17:30', website: '#',
-        tips: [{ text: '"Got €1,800 back on my first German tax return. Worth every cent of their fee."', author: 'Yuki T.' }],
-    },
-    {
-        id: 8, cat: 'tax', name: 'Taxfix', type: 'Tax App · DIY digital filing', emoji: '📱', avatarBg: '#EBF0FD',
-        rating: 4.5, reviews: 12000, verified: false, languages: ['English', 'German'],
-        address: 'App-based', distance: 'Online', phone: null,
-        acceptingNew: true, insurance: [],
-        desc: 'Beginner-friendly tax app with English interface. Guides you step-by-step through your German Steuererklärung. Costs ~€40 and takes 1–2 hours. Average refund: €1,095.',
-        hours: '24/7', website: 'https://taxfix.de', tips: [],
-    },
-    {
-        id: 9, cat: 'legal', name: 'RA Expat Law Cologne', type: 'Lawyer · Immigration & Employment', emoji: '⚖️', avatarBg: '#EDE9FE',
-        rating: 4.8, reviews: 67, verified: true, languages: ['English', 'German', 'Turkish'],
-        address: 'Breite Str. 6–26, Innenstadt', distance: '2.2 km', phone: '+49 221 9974400',
-        acceptingNew: true, insurance: [],
-        desc: 'Specialises in expat legal issues: residence permits, work visas, employment contract disputes, and tenancy law. First consultation (30 min) free of charge.',
-        hours: 'Mon–Fri 9:00–18:00', website: '#',
-        tips: [{ text: '"Helped me resolve a lease dispute in 2 weeks. Highly professional."', author: 'Mehmet A.' }],
-    },
-    {
-        id: 10, cat: 'insure', name: 'Feather Insurance', type: 'Expat Insurance · Digital-first', emoji: '🛡️', avatarBg: '#D4F0E6',
-        rating: 4.7, reviews: 2100, verified: false, languages: ['English', 'German'],
-        address: 'App-based — Germany-wide', distance: 'Online', phone: null,
-        acceptingNew: true, insurance: [],
-        desc: 'English-first insurance for expats in Germany. Covers health, liability, household, legal, and dental. Designed specifically for non-EU nationals. Cancel anytime.',
-        hours: '24/7 app · Support Mon–Fri', website: 'https://feather-insurance.com', tips: [],
-    },
-];
+// No more hardcoded SERVICES — data comes from ServicesController via dbServices prop
 
 // ============================================================
 // Page Component
 // ============================================================
 
 export default function Services() {
+    const { dbServices, categoryCounts } = usePage<{
+        dbServices?: DbService[];
+        categoryCounts?: Record<string, number>;
+    }>().props;
+
     const [activeCat, setActiveCat] = useState('all');
     const [search, setSearch] = useState('');
     const [selectedService, setSelectedService] = useState<ServiceData | null>(null);
 
+    // Map backend data to ServiceData shape
+    const services = useMemo(() => (dbServices ?? []).map(dbToServiceData), [dbServices]);
+
     // Filter services
     const filtered = useMemo(() => {
         const q = search.toLowerCase().trim();
-        return SERVICES.filter((s) => {
+        return services.filter((s) => {
             const matchCat = activeCat === 'all' || s.cat === activeCat;
             const matchQ =
                 !q ||
@@ -133,7 +100,7 @@ export default function Services() {
                 s.languages.some((l) => l.toLowerCase().includes(q));
             return matchCat && matchQ;
         });
-    }, [activeCat, search]);
+    }, [services, activeCat, search]);
 
     return (
         <AppLayout
@@ -193,7 +160,11 @@ export default function Services() {
                                 }}
                             >
                                 <span style={{ fontSize: 20 }}>{c.ico}</span>
-                                <span style={{ fontSize: 11, fontWeight: 600 }}>{c.label}</span>
+                                <span style={{ fontSize: 11, fontWeight: 600 }}>
+                                    {c.label}
+                                    {categoryCounts && c.id !== 'all' && categoryCounts[c.id] ? ` (${categoryCounts[c.id]})` : ''}
+                                    {c.id === 'all' && services.length > 0 ? ` (${services.length})` : ''}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -261,8 +232,12 @@ function ServiceDetailContent({ service }: { service: ServiceData }) {
                         ✓ Verified by expats
                     </span>
                 )}
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#C47D0E' }}>★ {s.rating}</span>
-                <span style={{ fontSize: 12, color: '#AAA89F' }}>{s.reviews} reviews</span>
+                {s.rating > 0 && (
+                    <>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#C47D0E' }}>★ {s.rating}</span>
+                        <span style={{ fontSize: 12, color: '#AAA89F' }}>{s.reviews} reviews</span>
+                    </>
+                )}
                 {s.acceptingNew && (
                     <span
                         className="rounded-[20px]"
@@ -280,14 +255,18 @@ function ServiceDetailContent({ service }: { service: ServiceData }) {
 
             {/* Details rows */}
             <div className="mb-4 flex flex-col gap-2">
-                <div className="flex gap-2.5" style={{ fontSize: 13 }}>
-                    <span>📍</span>
-                    <span>{s.address} · {s.distance}</span>
-                </div>
-                <div className="flex gap-2.5" style={{ fontSize: 13 }}>
-                    <span>🕐</span>
-                    <span>{s.hours}</span>
-                </div>
+                {s.address && (
+                    <div className="flex gap-2.5" style={{ fontSize: 13 }}>
+                        <span>📍</span>
+                        <span>{s.address}{s.distance ? ` · ${s.distance}` : ''}</span>
+                    </div>
+                )}
+                {s.hours && (
+                    <div className="flex gap-2.5" style={{ fontSize: 13 }}>
+                        <span>🕐</span>
+                        <span>{s.hours}</span>
+                    </div>
+                )}
                 {s.phone && (
                     <div className="flex gap-2.5" style={{ fontSize: 13 }}>
                         <span>📞</span>

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'organiser_id'])]
+#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score'])]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
@@ -27,7 +27,38 @@ class Event extends Model
             'ends_at' => 'datetime',
             'is_free' => 'boolean',
             'price' => 'decimal:2',
+            'tags' => 'array',
+            'is_expat_relevant' => 'boolean',
+            'quality_score' => 'float',
         ];
+    }
+
+    /**
+     * Extract latitude from PostGIS location column.
+     */
+    public function getLatAttribute(): ?float
+    {
+        if (! $this->location) {
+            return null;
+        }
+
+        $result = \DB::selectOne('SELECT ST_Y(location::geometry) as lat FROM events WHERE id = ?', [$this->id]);
+
+        return $result?->lat ? (float) $result->lat : null;
+    }
+
+    /**
+     * Extract longitude from PostGIS location column.
+     */
+    public function getLngAttribute(): ?float
+    {
+        if (! $this->location) {
+            return null;
+        }
+
+        $result = \DB::selectOne('SELECT ST_X(location::geometry) as lng FROM events WHERE id = ?', [$this->id]);
+
+        return $result?->lng ? (float) $result->lng : null;
     }
 
     /** @return BelongsTo<User, $this> */

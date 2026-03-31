@@ -1,0 +1,496 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\CityNews;
+use App\Models\Event;
+use App\Models\Service;
+use App\Models\Spot;
+use App\Models\User;
+use Illuminate\Support\Facades\App;
+
+/**
+ * Provides rotating discovery suggestions from REAL database data.
+ * Zero hardcoded place names — all suggestions come from Spot, Service, Event, CityNews models.
+ *
+ * Used in two modes:
+ * - Full discovery (off-hours): all 3 cards
+ * - Context card (commute Card 3): 1 smart card based on time/context
+ */
+class DiscoverySuggestionService
+{
+    /**
+     * Full discovery mode — 3 rotating cards.
+     */
+    public function getFullDiscovery(User $user, float $lat, float $lng): array
+    {
+        $weather = app(WeatherService::class)->getCurrentWeather($lat, $lng);
+        $forecast = app(WeatherService::class)->getForecast($lat, $lng);
+        $home = $user->places()->where('category', 'home')->first();
+        $work = $user->places()->where('category', 'work')->first();
+
+        // Build pools for client-side rotation
+        $activityPool = $this->buildActivityPool($user, $weather, $forecast, $lat, $lng);
+        $favPool = $this->buildFavPool($user, $lat, $lng);
+        $eventPool = $this->buildEventPool($user);
+
+        return [
+            'from' => $home?->name ?? 'Home',
+            'to' => 'Discover',
+            'headline' => "{$weather['emoji']} {$weather['temperature']}°C — {$weather['condition']}",
+            'route_cards' => [
+                $activityPool[0] ?? $this->card('🗺️', 'Explore nearby', 'Open the map'),
+                $favPool[0] ?? $this->card('🗺️', 'Discover spots', 'Check the explore page'),
+                $eventPool[0] ?? $this->card('📅', 'Check events', 'See what\'s happening'),
+            ],
+            'card_pools' => [
+                array_slice($activityPool, 0, 5),
+                array_slice($favPool, 0, 5),
+                array_slice($eventPool, 0, 5),
+            ],
+            'leave_by' => null,
+            'weather' => $weather,
+            'forecast' => $forecast,
+            'context' => 'discovery',
+            'needs_setup' => ! $home?->address || ! $work?->address,
+        ];
+    }
+
+    /**
+     * Activity card — nearby real spots from DB, filtered by weather.
+     */
+    public function getActivityCard(User $user, array $weather, array $forecast, ?float $lat = null, ?float $lng = null): array
+    {
+        $pool = $this->buildActivityPool($user, $weather, $forecast, $lat, $lng);
+
+        if (empty($pool)) {
+            return $this->card('🗺️', 'Explore nearby', 'Open the map to discover spots');
+        }
+
+        return $pool[now()->minute % count($pool)];
+    }
+
+    /**
+     * Build the full activity suggestion pool — returned to frontend for rotation.
+     *
+     * @return array<int, array>
+     */
+    public function buildActivityPool(User $user, array $weather, array $forecast, ?float $lat = null, ?float $lng = null): array
+    {
+        $lat ??= 50.9375;
+        $lng ??= 6.9603;
+        $temp = $weather['temperature'] ?? 10;
+        $wind = $weather['wind_speed'] ?? 0;
+        $condition = $weather['condition'] ?? 'Cloudy';
+        $raining = ($weather['precipitation'] ?? 0) > 0.5
+            || in_array($weather['icon'] ?? '', ['rain', 'thunderstorm'], true);
+        $hour = now()->hour;
+
+        $pool = [];
+
+        $cafes = Spot::nearby($lat, $lng)->where('category', 'cafe')->limit(6)->get();
+        $libraries = Spot::nearby($lat, $lng)->where('category', 'library')->limit(3)->get();
+        $parks = Spot::nearby($lat, $lng)->where('category', 'park')->limit(3)->get();
+        $coworking = Spot::nearby($lat, $lng)->where('category', 'coworking')->limit(3)->get();
+
+        $outdoorOk = $temp >= 8 && ! $raining && $wind < 25;
+        $badWeather = $raining || $temp < 5 || $wind > 30;
+
+        if ($outdoorOk) {
+            foreach ($parks as $p) {
+                $pool[] = $this->card('🌳', $p->name, "{$temp}°C · Fresh air", (float) $p->lat, (float) $p->lng);
+            }
+            foreach ($cafes->skip(2)->take(2) as $c) {
+                $pool[] = $this->card('🚲', "Bike to {$c->name}", "{$temp}°C · {$condition}", (float) $c->lat, (float) $c->lng);
+            }
+        }
+
+        foreach ($cafes->take(3) as $c) {
+            $pool[] = $this->card('☕', $c->name, "{$condition} · Nearby café", (float) $c->lat, (float) $c->lng);
+        }
+
+        if ($hour >= 17 && $hour < 22 && ! $raining) {
+            foreach ($cafes->take(2) as $c) {
+                $pool[] = $this->card('🌆', $c->name, 'Evening spot nearby', (float) $c->lat, (float) $c->lng);
+            }
+        }
+
+        foreach ($libraries->take(1) as $l) {
+            $pool[] = $this->card('📚', $l->name, 'Free · Quiet · WiFi', (float) $l->lat, (float) $l->lng);
+        }
+
+        if ($badWeather) {
+            foreach ($libraries as $l) {
+                $pool[] = $this->card('📚', $l->name, 'Stay warm · Free WiFi', (float) $l->lat, (float) $l->lng);
+            }
+            foreach ($coworking as $c) {
+                $pool[] = $this->card('💻', $c->name, 'Coworking · Warm · WiFi', (float) $c->lat, (float) $c->lng);
+            }
+            foreach ($cafes->take(2) as $c) {
+                $pool[] = $this->card('☕', $c->name, 'Warm up with coffee', (float) $c->lat, (float) $c->lng);
+            }
+        }
+
+        if (empty($pool) && $cafes->isNotEmpty()) {
+            $pool[] = $this->card('☕', $cafes->first()->name, 'Nearby', (float) $cafes->first()->lat, (float) $cafes->first()->lng);
+        }
+
+        return $pool;
+    }
+
+    /**
+     * Context-aware smart card for commute Card 3.
+     * Shows different content based on commute context.
+     */
+    public function getContextCard(User $user, array $weather, array $forecast, string $contextType, float $toLat, float $toLng): array
+    {
+        $hour = now()->hour;
+
+        return match ($contextType) {
+            // Morning commute → tonight's event or weather alert
+            'to_work', 'routine' => $this->morningContextCard($user, $weather, $forecast, $toLat, $toLng),
+
+            // At work → lunch spot or disruption alert
+            'at_work' => $this->workContextCard($user, $weather, $toLat, $toLng),
+
+            // Evening return → event tonight or café near home
+            'to_home' => $this->eveningContextCard($user, $weather, $toLat, $toLng),
+
+            // Any other → activity card
+            default => $this->getActivityCard($user, $weather, $forecast, $toLat, $toLng),
+        };
+    }
+
+    /**
+     * Morning: tonight's event > weather alert > café near work for lunch.
+     */
+    private function morningContextCard(User $user, array $weather, array $forecast, float $workLat, float $workLng): array
+    {
+        // Tonight's event the user is attending
+        $goingEvent = Event::query()
+            ->whereDate('starts_at', today())
+            ->where('starts_at', '>', now())
+            ->where('quality_score', '>=', 0.3)
+            ->whereHas('attendees', fn ($q) => $q->where('user_id', $user->id))
+            ->first();
+
+        if ($goingEvent) {
+            return $this->card(
+                '🎫',
+                $goingEvent->title,
+                ($goingEvent->location_name ?? 'Cologne').' · '.$goingEvent->starts_at->format('H:i'),
+                $goingEvent->lat ?? $workLat,
+                $goingEvent->lng ?? $workLng,
+            );
+        }
+
+        // Weather alert if rain coming
+        if ($forecast['rain_starts'] ?? null) {
+            return $this->card('🌧️', "Rain from {$forecast['rain_starts']}", 'Bring umbrella · Plan return early');
+        }
+
+        // Tonight's top event (not attending)
+        $event = Event::query()
+            ->whereDate('starts_at', today())
+            ->where('starts_at', '>', now()->setTime(17, 0))
+            ->where('quality_score', '>=', 0.5)
+            ->orderByDesc('is_expat_relevant')
+            ->first();
+
+        if ($event) {
+            return $this->card(
+                $event->emoji ?? '📅',
+                $event->title,
+                ($event->location_name ?? 'Cologne').' · '.$event->starts_at->format('H:i'),
+                $event->lat ?? $workLat,
+                $event->lng ?? $workLng,
+            );
+        }
+
+        // Fallback: café near work for lunch
+        $cafe = Spot::nearby($workLat, $workLng)->where('category', 'cafe')->first();
+
+        if ($cafe) {
+            return $this->card('☕', $cafe->name, 'Near work · Lunch spot', (float) $cafe->lat, (float) $cafe->lng);
+        }
+
+        return $this->card('☀️', "{$weather['temperature']}°C today", $weather['condition']);
+    }
+
+    /**
+     * At work: lunch spot > disruption alert.
+     */
+    private function workContextCard(User $user, array $weather, float $workLat, float $workLng): array
+    {
+        $hour = now()->hour;
+        $pool = [];
+
+        // Lunch hours (11-14): nearby cafés and restaurants
+        if ($hour >= 11 && $hour <= 14) {
+            $cafes = Spot::nearby($workLat, $workLng)->where('category', 'cafe')->limit(3)->get();
+            foreach ($cafes as $c) {
+                $pool[] = $this->card('🍽️', $c->name, 'Lunch break · Nearby', (float) $c->lat, (float) $c->lng);
+            }
+        }
+
+        // Disruption affecting user's commute lines
+        $disruptions = app(DisruptionService::class)->getLineDisruptions();
+        $activeDisruption = collect($disruptions)->first(fn ($d) => ($d['severity'] ?? '') !== 'minor');
+        if ($activeDisruption) {
+            $pool[] = $this->card('⚠️', $activeDisruption['title'], $activeDisruption['description'] ?? 'Transit disruption');
+        }
+
+        // Nearby useful services
+        $pharmacy = Service::where('category', 'pharmacy')
+            ->selectRaw('*, ABS(lat - ?) + ABS(lng - ?) as dist', [$workLat, $workLng])
+            ->orderBy('dist')
+            ->first();
+        if ($pharmacy) {
+            $pool[] = $this->card('💊', $pharmacy->name, 'Nearest pharmacy', (float) $pharmacy->lat, (float) $pharmacy->lng);
+        }
+
+        if (! empty($pool)) {
+            return $pool[now()->minute % count($pool)];
+        }
+
+        return $this->card('☀️', "{$weather['temperature']}°C", "{$weather['condition']} · Check before leaving");
+    }
+
+    /**
+     * Evening return: tonight's event > café near home.
+     */
+    private function eveningContextCard(User $user, array $weather, float $homeLat, float $homeLng): array
+    {
+        // Event the user is attending tonight
+        $goingEvent = Event::query()
+            ->whereDate('starts_at', today())
+            ->where('starts_at', '>', now())
+            ->where('quality_score', '>=', 0.3)
+            ->whereHas('attendees', fn ($q) => $q->where('user_id', $user->id))
+            ->first();
+
+        if ($goingEvent) {
+            return $this->card(
+                '🎫',
+                $goingEvent->title,
+                'You\'re going · '.$goingEvent->starts_at->format('H:i'),
+                $goingEvent->lat ?? $homeLat,
+                $goingEvent->lng ?? $homeLng,
+            );
+        }
+
+        // Café near home
+        $cafe = Spot::nearby($homeLat, $homeLng)->where('category', 'cafe')->first();
+        if ($cafe) {
+            return $this->card('☕', $cafe->name, 'Near home · Evening coffee', (float) $cafe->lat, (float) $cafe->lng);
+        }
+
+        return $this->card('🏠', 'Heading home', "{$weather['temperature']}°C · {$weather['condition']}");
+    }
+
+    /**
+     * Favorite spot card — rotates through tracked spots from DB.
+     */
+    public function getFavSpotCard(User $user, float $lat, float $lng): array
+    {
+        $pool = $this->buildFavPool($user, $lat, $lng);
+
+        if (empty($pool)) {
+            return $this->card('🗺️', 'Explore your neighborhood', 'Open the map to find spots');
+        }
+
+        return $pool[(now()->minute + 3) % count($pool)];
+    }
+
+    /**
+     * @return array<int, array>
+     */
+    public function buildFavPool(User $user, float $lat, float $lng): array
+    {
+        $pool = [];
+        $frequent = app(FrequentDestinationService::class);
+        $spots = $frequent->getFrequentDestinations($user, 60, 10);
+        $spots = array_values(array_filter($spots, fn ($s) => $s['visits'] >= 2));
+
+        // Build lookup: places with explicit schedule settings (UserPlace overrides auto-detection)
+        $userPlaces = $user->places()->get();
+        $inactiveNames = [];
+        $hasManualSchedule = []; // names where user set day_mode/arrive_by explicitly
+
+        foreach ($userPlaces as $p) {
+            $lowerName = mb_strtolower($p->name);
+
+            // If place has manual schedule (not 'all'), use isActiveToday() as the authority
+            if ($p->day_mode !== 'all' || $p->arrive_by) {
+                $hasManualSchedule[] = $lowerName;
+                if (! $p->isActiveToday()) {
+                    $inactiveNames[] = $lowerName;
+                }
+            } elseif (! $p->isActiveToday()) {
+                $inactiveNames[] = $lowerName;
+            }
+        }
+
+        $currentDow = (int) now()->dayOfWeek;
+        $currentHour = now()->hour;
+
+        $spots = array_values(array_filter($spots, function ($s) use ($inactiveNames, $hasManualSchedule, $currentDow, $currentHour) {
+            $name = mb_strtolower($s['name']);
+
+            // Check if this destination matches a UserPlace with manual schedule
+            $hasManual = false;
+            foreach ($hasManualSchedule as $manual) {
+                if (str_contains($name, $manual) || str_contains($manual, $name)) {
+                    $hasManual = true;
+                    break;
+                }
+            }
+
+            // If UserPlace has manual schedule → use isActiveToday() result (already in inactiveNames)
+            if ($hasManual) {
+                foreach ($inactiveNames as $inactive) {
+                    if (str_contains($name, $inactive) || str_contains($inactive, $name)) {
+                        return false;
+                    }
+                }
+
+                return true; // Manual schedule says it's active → show it
+            }
+
+            // No manual schedule → check places inactive today
+            foreach ($inactiveNames as $inactive) {
+                if (str_contains($name, $inactive) || str_contains($inactive, $name)) {
+                    return false;
+                }
+            }
+
+            // Auto-detected routine (no manual config): only show near typical DOW + hour
+            if (($s['classification'] ?? 'favourite') === 'routine') {
+                $routineDays = $s['routine_days'] ?? [];
+                $routineHour = $s['routine_hour'] ?? null;
+
+                if (! empty($routineDays) && ! in_array($currentDow, $routineDays, true)) {
+                    return false;
+                }
+                if ($routineHour !== null && abs($currentHour - $routineHour) > 2) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+
+        foreach ($spots as $spot) {
+            $isRoutine = ($spot['classification'] ?? 'favourite') === 'routine';
+            $label = $isRoutine ? 'Regular · '.$spot['visits'].' visits' : 'Your favourite · '.$spot['visits'].' visits';
+            $pool[] = $this->card($isRoutine ? '🔄' : '⭐', $spot['name'], $label, $spot['lat'], $spot['lng']);
+        }
+
+        if (empty($pool)) {
+            $nearby = Spot::nearby($lat, $lng)->limit(5)->get();
+            foreach ($nearby as $s) {
+                $pool[] = $this->card('📍', $s->name, 'Discover something new', (float) $s->lat, (float) $s->lng);
+            }
+        }
+
+        return $pool;
+    }
+
+    /**
+     * Event or city news card — rotates through today's events and news.
+     */
+    public function getEventCard(User $user): array
+    {
+        $pool = $this->buildEventPool($user);
+
+        if (empty($pool)) {
+            return $this->card('🗺️', 'Explore Cologne', 'Check events and spots nearby');
+        }
+
+        return $pool[(now()->minute + 7) % count($pool)];
+    }
+
+    /**
+     * @return array<int, array>
+     */
+    public function buildEventPool(User $user): array
+    {
+        $items = [];
+
+        $events = Event::query()
+            ->where('starts_at', '>', now())
+            ->where('starts_at', '<', now()->addDays(7))
+            ->where('quality_score', '>=', 0.3)
+            ->orderByDesc('is_expat_relevant')
+            ->orderBy('starts_at')
+            ->limit(10)
+            ->get();
+
+        foreach ($events as $e) {
+            $going = $e->attendees()->where('user_id', $user->id)->exists();
+            $items[] = $this->card(
+                $going ? '🎫' : ($e->emoji ?? '📅'),
+                $e->title,
+                ($going ? 'You\'re going · ' : '').($e->location_name ?? 'Cologne').' · '.$e->starts_at->format('H:i'),
+                $e->lat,
+                $e->lng,
+            );
+        }
+
+        $news = CityNews::query()
+            ->where('published_at', '>', now()->subDays(3))
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->where('relevance', '!=', 'skip')
+            ->orderByDesc('published_at')
+            ->limit(5)
+            ->get();
+
+        foreach ($news as $n) {
+            $emoji = match ($n->category) {
+                'transit' => '🚋',
+                'event' => '📅',
+                default => '📰',
+            };
+            $items[] = $this->card($emoji, $n->title, $n->summary ?? $n->source, null, null, $n->source_url);
+        }
+
+        if (empty($items)) {
+            $gtfs = App::make(GtfsDepartureService::class);
+            $home = $user->places()->where('category', 'home')->first();
+            $deps = $gtfs->getDeparturesNearby(
+                $home?->lat ? (float) $home->lat : 50.9375,
+                $home?->lng ? (float) $home->lng : 6.9603,
+                3,
+            );
+            $next = ($deps['departures'] ?? [])[0] ?? null;
+
+            if ($next && ! empty($next['departures'])) {
+                $items[] = $this->card('🚋', "Line {$next['line']} in {$next['departures'][0]} min", ($deps['stop_name'] ?? 'Nearby')." → {$next['direction']}");
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Build a card. All names come from database — never hardcoded place names.
+     *
+     * @return array{type: string, badge: string, name: string, detail: string, time: int, status: string, best: bool, to_lat: float|null, to_lng: float|null, to_name: string}
+     */
+    private function card(string $badge, string $name, string $detail, ?float $lat = null, ?float $lng = null, ?string $link = null): array
+    {
+        return [
+            'type' => 'discovery',
+            'badge' => $badge,
+            'name' => $name,
+            'detail' => $detail,
+            'time' => 0,
+            'status' => 'ok',
+            'best' => false,
+            'to_lat' => $lat,
+            'to_lng' => $lng,
+            'to_name' => $name,
+            'link' => $link,
+        ];
+    }
+}

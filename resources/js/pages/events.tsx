@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { EventCard } from '@/components/events/event-card';
 import { EventDetailContent } from '@/components/events/event-detail-content';
@@ -22,11 +22,12 @@ export type EventData = {
     day: string;
     fullDate: string;
     title: string;
+    emoji?: string;
     venue: string;
     area: string;
     distance: string;
     time: string;
-    duration: string;
+    duration: string | null;
     price: string;
     color: string;
     barColor: string;
@@ -34,7 +35,7 @@ export type EventData = {
     englishFriendly: boolean;
     free: boolean;
     attending: number;
-    max: number;
+    max: number | null;
     going: boolean;
     saved: boolean;
     attendees: string[];
@@ -43,155 +44,10 @@ export type EventData = {
     desc: string;
     tags: EventTag[];
     organiser: string;
-    link: string;
+    link: string | null;
 };
 
-// ============================================================
-// Hardcoded prototype data
-// ============================================================
-
-const SEED_EVENTS: EventData[] = [
-    {
-        id: 1, date: '22', month: 'Mar', day: 'Sat', fullDate: '2026-03-22',
-        title: 'Language Evening at Café Schmitz',
-        venue: 'Café Schmitz', area: 'Ehrenfeld', distance: '0.4 km',
-        time: '19:00', duration: '2 hours', price: 'Free',
-        color: '#1A4CD4', barColor: '#1A4CD4',
-        categories: ['language', 'expat'], englishFriendly: true, free: true,
-        attending: 14, max: 20, going: false, saved: false,
-        attendees: ['🇬🇧', '🇹🇷', '🇫🇷', '🇪🇸'],
-        featured: false, karneval: false,
-        desc: 'Relaxed weekly language exchange. Split into small groups by language pair. All levels welcome — bring curiosity and a coffee order.',
-        tags: [{ l: 'Language', bg: '#EBF0FD', c: '#1A4CD4' }, { l: 'Expat', bg: '#EDE9FE', c: '#7C3AED' }],
-        organiser: 'Anker Community', link: 'https://www.cafeschmitz.de',
-    },
-    {
-        id: 2, date: '22', month: 'Mar', day: 'Sat', fullDate: '2026-03-22',
-        title: 'Contemporary Art at Museum Ludwig',
-        venue: 'Museum Ludwig', area: 'Innenstadt', distance: '2.1 km',
-        time: '11:00', duration: '3 hours', price: '€12',
-        color: '#C4271A', barColor: '#C4271A',
-        categories: ['culture'], englishFriendly: true, free: false,
-        attending: 180, max: 500, going: false, saved: false,
-        attendees: ['🇩🇪', '🇬🇧', '🇫🇷'],
-        featured: false, karneval: false,
-        desc: "Explore one of Europe's premier collections of modern and contemporary art. Audio guide available in English, French, and German.",
-        tags: [{ l: 'Culture', bg: '#FDF0D4', c: '#C47D0E' }, { l: 'Art', bg: '#EFEDE7', c: '#6B6860' }],
-        organiser: 'Museum Ludwig', link: 'https://www.museum-ludwig.de',
-    },
-    {
-        id: 3, date: '22', month: 'Mar', day: 'Sat', fullDate: '2026-03-22',
-        title: 'Jazz Night at Stadtgarten',
-        venue: 'Stadtgarten', area: 'Belgisches Viertel', distance: '0.9 km',
-        time: '20:00', duration: '3 hours', price: '€12',
-        color: '#7C3AED', barColor: '#7C3AED',
-        categories: ['music'], englishFriendly: true, free: false,
-        attending: 87, max: 200, going: false, saved: false,
-        attendees: ['🇩🇪', '🇬🇧', '🇯🇵'],
-        featured: true, karneval: false,
-        desc: 'The legendary Stadtgarten hosts some of the best jazz in Germany. This week: the Marcus Reinhardt Quartet. Arrive early for good seats.',
-        tags: [{ l: 'Music', bg: '#EDE9FE', c: '#7C3AED' }, { l: 'Jazz', bg: '#EFEDE7', c: '#6B6860' }],
-        organiser: 'Stadtgarten Cologne', link: 'https://www.stadtgarten.de',
-    },
-    {
-        id: 4, date: '22', month: 'Mar', day: 'Sat', fullDate: '2026-03-22',
-        title: 'International Expat Mixer',
-        venue: 'Startplatz', area: 'Mediapark', distance: '0.7 km',
-        time: '18:00', duration: '2.5 hours', price: 'Free',
-        color: '#0A7C52', barColor: '#0A7C52',
-        categories: ['expat'], englishFriendly: true, free: true,
-        attending: 32, max: 80, going: true, saved: true,
-        attendees: ['🇬🇧', '🇹🇷', '🇫🇷', '🇯🇵'],
-        featured: true, karneval: false,
-        desc: "Anker's monthly big mixer. Meet expats from all over, drink Kölsch, swap tips about living in Cologne. Networking, games, good vibes.",
-        tags: [{ l: 'Expat', bg: '#EDE9FE', c: '#7C3AED' }, { l: 'Networking', bg: '#EBF0FD', c: '#1A4CD4' }],
-        organiser: 'Anker Community', link: '#',
-    },
-    {
-        id: 5, date: '23', month: 'Mar', day: 'Sun', fullDate: '2026-03-23',
-        title: 'Cologne Craft Brewery Tour',
-        venue: 'Brauhaus Sion', area: 'Altstadt', distance: '2.4 km',
-        time: '14:00', duration: '2 hours', price: '€18',
-        color: '#C47D0E', barColor: '#C47D0E',
-        categories: ['food'], englishFriendly: true, free: false,
-        attending: 16, max: 24, going: false, saved: false,
-        attendees: ['🇬🇧', '🇺🇸', '🇦🇺'],
-        featured: false, karneval: false,
-        desc: "Tour Cologne's oldest brewery and taste the city's iconic Kölsch beer. Guided in English. Includes 3 tastings and a pretzel.",
-        tags: [{ l: 'Food & drink', bg: '#FDF0D4', c: '#C47D0E' }, { l: 'English', bg: '#D4F0E6', c: '#0A7C52' }],
-        organiser: 'Cologne Beer Tours', link: 'https://www.brauhaus-sion.de',
-    },
-    {
-        id: 6, date: '24', month: 'Mar', day: 'Mon', fullDate: '2026-03-24',
-        title: 'Beginners German Practice',
-        venue: 'StadtBibliothek', area: 'Centrum', distance: '1.2 km',
-        time: '10:00', duration: '1 hour', price: 'Free',
-        color: '#0891B2', barColor: '#0891B2',
-        categories: ['language'], englishFriendly: true, free: true,
-        attending: 6, max: 12, going: false, saved: false,
-        attendees: ['🇬🇧', '🇫🇷', '🇪🇸'],
-        featured: false, karneval: false,
-        desc: 'Morning session for A1–B1 German learners. Supportive, low-pressure environment. Practice real conversations with patient native speakers.',
-        tags: [{ l: 'Language', bg: '#EBF0FD', c: '#1A4CD4' }, { l: 'Beginners', bg: '#EFEDE7', c: '#6B6860' }],
-        organiser: 'Sarah K.', link: '#',
-    },
-    {
-        id: 7, date: '27', month: 'Mar', day: 'Thu', fullDate: '2026-03-27',
-        title: 'Karneval Rosenmontagszug Parade',
-        venue: 'Cologne City Centre', area: 'Innenstadt', distance: '2.0 km',
-        time: 'All day', duration: '8 hours', price: 'Free',
-        color: '#C4271A', barColor: '#C4271A',
-        categories: ['culture'], englishFriendly: false, free: true,
-        attending: 900000, max: 1000000, going: false, saved: false,
-        attendees: ['🇩🇪', '🇩🇪', '🇩🇪', '🇬🇧'],
-        featured: false, karneval: true,
-        desc: "Cologne's legendary Rose Monday parade — one of the world's largest street carnivals. Expect 10,000 confetti throwers, floats, and Kölsch. Dress up or blend in as a tourist (good luck with the second one).",
-        tags: [{ l: 'Karneval', bg: '#FDE8E6', c: '#C4271A' }, { l: 'Free', bg: '#D4F0E6', c: '#0A7C52' }],
-        organiser: 'City of Cologne', link: 'https://www.koelner-karneval.de',
-    },
-    {
-        id: 8, date: '25', month: 'Mar', day: 'Tue', fullDate: '2026-03-25',
-        title: 'German for Daily Life',
-        venue: 'VHS Köln', area: 'Neumarkt', distance: '1.8 km',
-        time: '18:30', duration: '1.5 hours', price: 'Free',
-        color: '#0891B2', barColor: '#0891B2',
-        categories: ['language'], englishFriendly: true, free: true,
-        attending: 22, max: 30, going: false, saved: false,
-        attendees: ['🇬🇧', '🇹🇷', '🇯🇵', '🇨🇳'],
-        featured: false, karneval: false,
-        desc: 'Practical German for everyday situations — at the supermarket, doctor, Bürgeramt. Run by VHS Köln, fully free for Cologne residents.',
-        tags: [{ l: 'Language', bg: '#EBF0FD', c: '#1A4CD4' }, { l: 'Free', bg: '#D4F0E6', c: '#0A7C52' }],
-        organiser: 'VHS Köln', link: 'https://www.vhs-koeln.de',
-    },
-    {
-        id: 9, date: '28', month: 'Mar', day: 'Fri', fullDate: '2026-03-28',
-        title: 'Cologne Street Food Festival',
-        venue: 'Rheinpark', area: 'Deutz', distance: '3.1 km',
-        time: '12:00', duration: '8 hours', price: 'Free entry',
-        color: '#C47D0E', barColor: '#C47D0E',
-        categories: ['food'], englishFriendly: true, free: true,
-        attending: 2400, max: 5000, going: false, saved: false,
-        attendees: ['🇩🇪', '🇬🇧', '🇹🇷'],
-        featured: true, karneval: false,
-        desc: 'Over 40 vendors from around the world. Korean BBQ, Lebanese mezze, Mexican tacos, Bavarian pretzels — and yes, Kölsch. Three days, free entry.',
-        tags: [{ l: 'Food', bg: '#FDF0D4', c: '#C47D0E' }, { l: 'Outdoor', bg: '#D4F0E6', c: '#0A7C52' }],
-        organiser: 'Rheinpark Events', link: '#',
-    },
-    {
-        id: 10, date: '29', month: 'Mar', day: 'Sat', fullDate: '2026-03-29',
-        title: 'Expat Running Club — Rheinufer',
-        venue: 'Rheinufer, Deutz Bridge', area: 'Deutz', distance: '3.0 km',
-        time: '09:00', duration: '1 hour', price: 'Free',
-        color: '#0A7C52', barColor: '#0A7C52',
-        categories: ['sport', 'expat'], englishFriendly: true, free: true,
-        attending: 18, max: 40, going: false, saved: false,
-        attendees: ['🇬🇧', '🇺🇸', '🇦🇺', '🇿🇦'],
-        featured: false, karneval: false,
-        desc: 'Weekly Saturday run along the Rhine with fellow expats. All paces welcome — 5K easy route or 10K extended. Coffee at Café Central after.',
-        tags: [{ l: 'Sport', bg: '#D4F0E6', c: '#0A7C52' }, { l: 'Expat', bg: '#EDE9FE', c: '#7C3AED' }],
-        organiser: 'Cologne Expat Runners', link: '#',
-    },
-];
+// No more SEED_EVENTS — data comes from backend via dbEvents prop
 
 // ============================================================
 // Filter config
@@ -224,9 +80,16 @@ const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Events() {
     const { track } = useTracker();
+    const { dbEvents } = usePage<{ dbEvents: { data: EventData[] } }>().props;
 
-    // Use hardcoded data (the backend can supplement, but for now prototype data drives UI)
-    const [events, setEvents] = useState<EventData[]>(SEED_EVENTS);
+    // Derive events from backend data
+    const [localOverrides, setLocalOverrides] = useState<Record<number, { going?: boolean; saved?: boolean; attending?: number }>>({});
+    const events = useMemo(() => {
+        return (dbEvents?.data ?? []).map((e) => ({
+            ...e,
+            ...localOverrides[e.id],
+        }));
+    }, [dbEvents, localOverrides]);
 
     // UI state
     const [activeTab, setActiveTab] = useTabState('upcoming');
@@ -235,8 +98,8 @@ export default function Events() {
     const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
 
     // Calendar state
-    const [calYear, setCalYear] = useState(2026);
-    const [calMonth, setCalMonth] = useState(2); // 0-indexed, March = 2
+    const [calYear, setCalYear] = useState(() => new Date().getFullYear());
+    const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
     const [selectedCalDay, setSelectedCalDay] = useState<number | null>(null);
 
     // ── Filtering ──
@@ -298,32 +161,36 @@ export default function Events() {
     // ── Handlers ──
     function toggleRsvp(id: number) {
         const ev = events.find((e) => e.id === id);
-        if (ev && !ev.going) {
+        if (!ev) return;
+        if (!ev.going) {
             track('event_rsvp', { event_id: id, event_title: ev.title });
         }
-        setEvents((prev) =>
-            prev.map((e) => {
-                if (e.id !== id) return e;
-                const newGoing = !e.going;
-                return { ...e, going: newGoing, attending: newGoing ? e.attending + 1 : e.attending - 1 };
-            }),
-        );
-        // Also call backend
-        if (ev) {
-            if (ev.going) {
-                router.delete(`/events/${id}/join`, { preserveScroll: true, preserveState: true });
-            } else {
-                router.post(`/events/${id}/join`, {}, { preserveScroll: true, preserveState: true });
-            }
+        const newGoing = !ev.going;
+        setLocalOverrides((prev) => ({
+            ...prev,
+            [id]: {
+                ...prev[id],
+                going: newGoing,
+                attending: newGoing ? ev.attending + 1 : ev.attending - 1,
+            },
+        }));
+        if (ev.going) {
+            router.delete(`/events/${id}/join`, { preserveScroll: true, preserveState: true });
+        } else {
+            router.post(`/events/${id}/join`, {}, { preserveScroll: true, preserveState: true });
         }
     }
 
     function toggleSave(id: number) {
         const ev = events.find((e) => e.id === id);
-        if (ev && !ev.saved) {
+        if (!ev) return;
+        if (!ev.saved) {
             track('event_saved', { event_id: id });
         }
-        setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)));
+        setLocalOverrides((prev) => ({
+            ...prev,
+            [id]: { ...prev[id], saved: !ev.saved },
+        }));
     }
 
     function openEvent(id: number) {
@@ -443,7 +310,10 @@ export default function Events() {
                                 </div>
                             ) : (
                                 Object.entries(groupedByDate).map(([label, evs], gi) => {
-                                    const isToday = label.includes('22') && label.includes('Mar');
+                                    const now = new Date();
+                                    const todayDate = String(now.getDate()).padStart(2, '0');
+                                    const todayMonth = now.toLocaleString('en', { month: 'short' });
+                                    const isToday = label.includes(todayDate) && label.includes(todayMonth);
                                     return (
                                         <div key={label}>
                                             {/* Day label with line */}

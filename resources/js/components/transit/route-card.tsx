@@ -5,6 +5,7 @@ export type RouteCardData = {
     name: string;
     detail: string;
     time: number;
+    showTime?: boolean;
     statusColor: string; // '#4ADE80' ok, '#FCD34D' warn
     best?: boolean;
 };
@@ -29,7 +30,7 @@ export function RouteCard({ route, onClick }: { route: RouteCardData; onClick?: 
                     height: 34,
                     borderRadius: 8,
                     background: 'rgba(255,255,255,.2)',
-                    fontSize: route.badgeMono ? 14 : 16,
+                    fontSize: route.badgeMono ? 13 : 16,
                     fontFamily: route.badgeMono ? "'Geist Mono', monospace" : undefined,
                     fontWeight: route.badgeMono ? 700 : undefined,
                 }}
@@ -62,10 +63,12 @@ export function RouteCard({ route, onClick }: { route: RouteCardData; onClick?: 
             </div>
 
             {/* Time */}
-            <div className="shrink-0 text-right">
-                <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1 }}>{route.time}</div>
-                <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>min</div>
-            </div>
+            {route.showTime !== false && (
+                <div className="shrink-0 text-right">
+                    <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1 }}>{route.time}</div>
+                    <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>min</div>
+                </div>
+            )}
 
             {/* Status dot */}
             <div

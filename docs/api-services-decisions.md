@@ -1,6 +1,6 @@
 # Expadu — External APIs & Services Decisions
 
-Last updated: 2026-03-25
+Last updated: 2026-03-29
 
 ---
 
@@ -83,24 +83,21 @@ Unreliable update frequency, community-maintained. DELFI/Mobilithek is superior.
 
 ## Weather
 
-### Primary: Bright Sky
+### Primary: Open-Meteo (best_match model)
 
-- **API:** https://api.brightsky.dev
-- **What:** Free JSON wrapper around DWD (German Weather Service) data — the authoritative source for German weather
-- **Cost:** Free, no API key, no documented rate limit
-- **Use for:** Current conditions, 10-day forecast for Cologne
-- **Example:** `https://api.brightsky.dev/weather?lat=50.9375&lon=6.9603&date=2026-03-25`
-
-### Supplement: Open-Meteo
-
-- **API:** https://api.open-meteo.com
-- **What:** DWD ICON model data via clean REST API, global coverage
+- **API:** https://api.open-meteo.com/v1/forecast
+- **What:** Multi-model blend (best_match) — most accurate for German weather
 - **Cost:** Free for non-commercial (10,000 calls/day), from EUR 15/month commercial
-- **Use for:** Hourly forecasts, ensemble data, future expansion beyond Germany
+- **Use for:** Current conditions + hourly forecast for Cologne
+- **Note:** Switched from DWD ICON (`/v1/dwd-icon`) to best_match (`/v1/forecast`) for accurate wind speed. Cloud cover override when precip < 0.5mm but code says rain.
+
+### Rejected: Bright Sky
+
+JSON wrapper around DWD data, but less accurate wind speed than Open-Meteo's multi-model blend.
 
 ### Rejected: OpenWeatherMap
 
-Not DWD-native, requires API key + credit card, rate-limited. Bright Sky + Open-Meteo provide better German data for free.
+Not DWD-native, requires API key + credit card, rate-limited.
 
 ---
 

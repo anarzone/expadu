@@ -2,8 +2,10 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ExploreFilterBar } from '@/components/explore/filter-bar';
 import type { MapBounds, MapViewHandle } from '@/components/explore/map-view';
+import { ModePicker } from '@/components/explore/mode-picker';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
+import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
@@ -36,6 +38,7 @@ type SpotData = {
     time_limit_mins: number | null;
     rating: number | null;
     active_checkins_count: number;
+    distance_km?: number;
     lat?: number;
     lng?: number;
 };
@@ -99,6 +102,87 @@ export default function Explore() {
     const [geoSuggestions, setGeoSuggestions] = useState<GeoResult[]>([]);
     const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Routing state
+    type RouteOption = { mode: string; emoji: string; time: number; distance_km: number | null; detail: string; best: boolean; disrupted?: boolean; recommendation_reason?: string; geometry?: string | null };
+    type FullRoute = { mode: string; duration_min: number; distance_km: number; geometry: string; steps: Array<{ instruction: string; distance_km: number; time_sec: number; type: string; emoji: string }> };
+    const [routeDest, setRouteDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
+    const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
+    const [routeMode, setRouteMode] = useState<string | null>(null);
+    const [routeDetail, setRouteDetail] = useState<FullRoute | null>(null);
+    const [routeLoading, setRouteLoading] = useState(false);
+    const [routeMapsUrl, setRouteMapsUrl] = useState<{ google: string; apple: string } | null>(null);
+    const [showGoogleEmbed, setShowGoogleEmbed] = useState(false);
+
+    function startDirections(lat: number, lng: number, name: string) {
+        setRouteDest({ lat, lng, name });
+        setRouteMode(null);
+        setRouteDetail(null);
+        setRouteLoading(true);
+        setSelectedSpot(null);
+
+        fetch(`/api/route-options?to_lat=${lat}&to_lng=${lng}&name=${encodeURIComponent(name)}`, { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => {
+                setRouteOptions(data.options ?? []);
+                setRouteMapsUrl(data.maps_url ?? null);
+                setRouteLoading(false);
+                // Always start with bike mode
+                const bikeOpt = (data.options ?? []).find((o: RouteOption) => o.mode === 'bike');
+                if (bikeOpt) {
+                    selectRouteMode('bike', bikeOpt.geometry, { lat: data.from.lat, lng: data.from.lng }, { lat, lng });
+                }
+            })
+            .catch(() => setRouteLoading(false));
+    }
+
+    function selectRouteMode(mode: string, _geometry?: string | null, from?: { lat: number; lng: number }, to?: { lat: number; lng: number }) {
+        setRouteMode(mode);
+        setRouteDetail(null);
+
+        const dest = routeDest ?? to;
+        const origin = from ?? { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+        const costing = mode === 'bike' ? 'bicycle' : mode === 'walk' ? 'pedestrian' : mode === 'drive' ? 'auto' : null;
+
+        if (mode === 'transit') {
+            // Transit uses Google Maps embed — no custom route drawing
+            mapRef.current?.clearRoute();
+            setShowGoogleEmbed(true);
+            setRouteDetail({
+                mode: 'transit',
+                duration_min: routeOptions.find((o) => o.mode === 'transit')?.time ?? 0,
+                distance_km: 0,
+                geometry: '',
+                steps: [],
+            });
+            return;
+        }
+        setShowGoogleEmbed(false);
+
+        if (costing && dest) {
+            fetch(`/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=${costing}`, { credentials: 'same-origin' })
+                .then((r) => r.json())
+                .then((data) => {
+                    if (data.geometry) {
+                        mapRef.current?.drawRoute(data.geometry, mode, { lat: data.from.lat, lng: data.from.lng }, dest);
+                    }
+                    if (data.steps) {
+                        setRouteDetail(data);
+                    }
+                })
+                .catch(() => {});
+        }
+    }
+
+    function closeRoute() {
+        setRouteDest(null);
+        setRouteOptions([]);
+        setRouteMode(null);
+        setRouteDetail(null);
+        setRouteMapsUrl(null);
+        setShowGoogleEmbed(false);
+        mapRef.current?.clearRoute();
+    }
+
     // Tap-to-discover state
     const [tapPoint, setTapPoint] = useState<{ lat: number; lng: number; address: string } | null>(null);
     const [showPlaceForm, setShowPlaceForm] = useState(false);
@@ -111,32 +195,36 @@ export default function Explore() {
 
     function filterByCategory(cat: string) {
         setCategory(cat);
-        setMapSpots([]); // clear stale viewport spots
+        setMapSpots([]);
 
-        // Re-fetch with new category for current viewport
-        if (lastBoundsRef.current) {
-            const bounds = lastBoundsRef.current;
-            const params = new URLSearchParams({
-                sw_lat: String(bounds.sw_lat),
-                sw_lng: String(bounds.sw_lng),
-                ne_lat: String(bounds.ne_lat),
-                ne_lng: String(bounds.ne_lng),
-                limit: '100',
-            });
-            if (cat) params.set('category', cat);
-            fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
-                .then((r) => r.ok ? r.json() : [])
-                .then((data: any[]) => {
-                    setMapSpots(data.map((s) => ({
-                        id: s.id, name: s.name, category: s.category, address: s.address,
-                        wifi_speed: s.wifi_speed, noise_level: s.noise_level,
-                        time_limit_mins: s.time_limit_mins, rating: s.rating,
-                        active_checkins_count: s.active_checkins_count ?? 0,
-                        lat: s.lat, lng: s.lng,
-                    })));
-                })
-                .catch(() => {});
+        // Always search all of Cologne — filters should show all matching spots, not just viewport
+        const params = new URLSearchParams({
+            sw_lat: '50.83',
+            sw_lng: '6.78',
+            ne_lat: '51.09',
+            ne_lng: '7.17',
+            limit: '100',
+        });
+        if (cat && ['cafe', 'coworking', 'library', 'park'].includes(cat)) {
+            params.set('category', cat);
         }
+
+        fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
+            .then((r) => r.ok ? r.json() : [])
+            .then((data: any[]) => {
+                let mapped = data.map((s: any) => ({
+                    id: s.id, name: s.name, category: s.category, address: s.address,
+                    wifi_speed: s.wifi_speed, noise_level: s.noise_level,
+                    time_limit_mins: s.time_limit_mins, rating: s.rating,
+                    active_checkins_count: s.active_checkins_count ?? 0,
+                    distance_km: s.distance_km ?? undefined,
+                    lat: s.lat, lng: s.lng,
+                }));
+                if (cat === 'wifi') mapped = mapped.filter((s) => s.wifi_speed === 'fast');
+                if (cat === 'quiet') mapped = mapped.filter((s) => s.noise_level === 'quiet');
+                setMapSpots(mapped);
+            })
+            .catch(() => {});
     }
 
     const filteredSpots = allSpots.filter((s) => {
@@ -173,7 +261,7 @@ export default function Explore() {
     }, [search, filteredSpots.length]);
 
     function selectSpot(spot: SpotData) {
-        track('spot_viewed', { spot_id: spot.id, spot_name: spot.name });
+        track('spot_viewed', { spot_id: spot.id, spot_name: spot.name, lat: spot.lat, lng: spot.lng });
         setSelectedSpot({
             ...spot,
             lat: spot.lat ?? 50.9375,
@@ -265,61 +353,167 @@ export default function Explore() {
                     max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-[80] max-lg:shadow-[4px_0_32px_rgba(0,0,0,0.1)] max-lg:transition-transform max-lg:duration-300
                     ${listOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'}
                 `}>
-                    {/* Header: title, search, filters */}
-                    <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
-                        <div className="mb-3 flex items-center justify-between">
-                            <span className="font-display text-xl font-medium tracking-tight">Explore Cologne</span>
-                            <span className="font-mono text-xs text-[#AAA89F]">{filteredSpots.length} spots</span>
-                        </div>
-                        <SearchBar search={search} setSearch={setSearch} />
-                        <ExploreFilterBar active={category} onChange={filterByCategory} />
-                    </div>
-
-                    {/* Spot list — always visible */}
-                    <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
-                        {filteredSpots.length === 0 && geoSuggestions.length > 0 && (
-                            <div className="mb-3">
-                                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
-                                    Search nearby
-                                </div>
-                                {geoSuggestions.map((g, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                        onClick={() => {
-                                            setSearch([g.name, g.city].filter(Boolean).join(', '));
-                                            mapRef.current?.flyTo(g.lat, g.lng, 16);
-                                            mapRef.current?.addSearchPin(g.lat, g.lng, g.name);
-                                        }}
-                                    >
-                                        <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{g.name}</div>
-                                            <div className="text-xs text-[#6B6860]">
-                                                {[g.street, g.city].filter(Boolean).join(', ')}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                    {routeDest ? (
+                        <>
+                            {/* ── Directions mode header ── */}
+                            <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
+                                <button
+                                    onClick={closeRoute}
+                                    className="mb-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 transition-colors hover:text-[#1A4CD4]"
+                                    style={{ fontSize: 13, fontWeight: 600, color: '#6B6860' }}
+                                >
+                                    ← Back to spots
+                                </button>
+                                <div className="font-display text-xl font-medium tracking-tight">Directions</div>
+                                <div className="mt-1 text-sm text-[#6B6860]">To {routeDest.name}</div>
                             </div>
-                        )}
-                        {filteredSpots.length === 0 ? (
-                            <div className="py-12 text-center text-sm text-[#AAA89F]">No spots found.</div>
-                        ) : (
-                            filteredSpots.map((s) => (
-                                <SpotCard
-                                    key={s.id}
-                                    spot={s}
-                                    selected={selectedSpot?.id === s.id}
-                                    onSelect={() => selectSpot(s)}
-                                />
-                            ))
-                        )}
-                    </div>
+
+                            {/* ── Mode picker inside panel ── */}
+                            {routeOptions.length > 0 && (
+                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3">
+                                    <div className="flex gap-2">
+                                        {routeOptions.map((opt) => {
+                                            const isActive = routeMode === opt.mode;
+                                            return (
+                                                <button
+                                                    key={opt.mode}
+                                                    onClick={() => {
+                                                        const from = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                                                        selectRouteMode(opt.mode, opt.geometry, from, routeDest);
+                                                    }}
+                                                    className="flex flex-1 cursor-pointer flex-col items-center gap-0.5 transition-all"
+                                                    style={{
+                                                        padding: '8px 2px', borderRadius: 10,
+                                                        border: isActive ? '2px solid #1A4CD4' : '2px solid #E2DFD6',
+                                                        background: isActive ? '#EBF0FD' : 'white',
+                                                        position: 'relative',
+                                                    }}
+                                                >
+                                                    {opt.best && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 20, background: '#FEF9EC', color: '#C47D0E', textTransform: 'uppercase' }}>Best</span>}
+                                                    {opt.disrupted && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 9 }}>⚠️</span>}
+                                                    <span style={{ fontSize: 16 }}>{opt.emoji}</span>
+                                                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 14, fontWeight: 600, color: isActive ? '#1A4CD4' : '#18170F', lineHeight: 1 }}>
+                                                        {opt.time}<span style={{ fontSize: 8, color: '#AAA89F' }}>m</span>
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {routeOptions.find((o) => o.best)?.recommendation_reason && (
+                                        <div className="mt-2 text-center" style={{ fontSize: 11, color: '#0A7C52' }}>
+                                            {routeOptions.find((o) => o.best)?.recommendation_reason}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── Google Maps toggle ── */}
+                            {routeMode && (
+                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-2">
+                                    <button
+                                        onClick={() => {
+                                            const next = !showGoogleEmbed;
+                                            setShowGoogleEmbed(next);
+                                            if (next) {
+                                                mapRef.current?.clearRoute();
+                                            } else if (routeMode && routeMode !== 'transit' && routeDetail?.geometry) {
+                                                // Redraw Valhalla route when toggling back
+                                                mapRef.current?.drawRoute(routeDetail.geometry, routeMode, { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 }, routeDest!);
+                                            }
+                                        }}
+                                        className="flex w-full cursor-pointer items-center justify-between rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] transition-all hover:bg-[#EFEDE7]"
+                                        style={{ fontWeight: 500 }}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <span style={{ fontSize: 14 }}>🗺️</span>
+                                            Show in Google Maps
+                                        </span>
+                                        <span style={{ fontSize: 16, color: showGoogleEmbed ? '#1A4CD4' : '#AAA89F' }}>
+                                            {showGoogleEmbed ? '●' : '○'}
+                                        </span>
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* ── Steps ── */}
+                            <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
+                                {routeLoading && <div className="py-12 text-center text-sm text-[#AAA89F]">Loading routes...</div>}
+                                {showGoogleEmbed ? (
+                                    <div className="py-4 text-center text-sm text-[#6B6860]">
+                                        Showing route in Google Maps on the right
+                                    </div>
+                                ) : routeDetail && routeDetail.steps.length > 0 ? (
+                                    <RouteStepsPanel
+                                        mode={routeDetail.mode}
+                                        durationMin={routeDetail.duration_min}
+                                        distanceKm={routeDetail.distance_km}
+                                        steps={routeDetail.steps}
+                                        mapsUrl={routeMapsUrl ?? undefined}
+                                    />
+                                ) : !routeLoading && routeOptions.length > 0 ? (
+                                    <div className="py-8 text-center text-sm text-[#AAA89F]">Select a mode above to see directions</div>
+                                ) : null}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            {/* ── Normal spots mode ── */}
+                            <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span className="font-display text-xl font-medium tracking-tight">Explore Cologne</span>
+                                    <span className="font-mono text-xs text-[#AAA89F]">{filteredSpots.length} spots</span>
+                                </div>
+                                <SearchBar search={search} setSearch={setSearch} />
+                                <ExploreFilterBar active={category} onChange={filterByCategory} />
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
+                                {filteredSpots.length === 0 && geoSuggestions.length > 0 && (
+                                    <div className="mb-3">
+                                        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
+                                            Search nearby
+                                        </div>
+                                        {geoSuggestions.map((g, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                onClick={() => {
+                                                    const label = [g.name, g.city].filter(Boolean).join(', ');
+                                                    setSearch(label);
+                                                    mapRef.current?.flyTo(g.lat, g.lng, 16);
+                                                    mapRef.current?.addSearchPin(g.lat, g.lng, g.name);
+                                                }}
+                                            >
+                                                <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{g.name}</div>
+                                                    <div className="text-xs text-[#6B6860]">
+                                                        {[g.street, g.city].filter(Boolean).join(', ')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {filteredSpots.length === 0 ? (
+                                    <div className="py-12 text-center text-sm text-[#AAA89F]">No spots found.</div>
+                                ) : (
+                                    filteredSpots.map((s) => (
+                                        <SpotCard
+                                            key={s.id}
+                                            spot={s}
+                                            selected={selectedSpot?.id === s.id}
+                                            onSelect={() => selectSpot(s)}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                {/* ═══ DETAIL PANEL ═══ Desktop/tablet — overlays on top of map, next to list */}
-                {selectedSpot && (
+                {/* ═══ DETAIL PANEL ═══ Desktop/tablet — overlays on top of map, next to list. Hidden when routing. */}
+                {selectedSpot && !routeDest && (
                     <div className="absolute inset-y-0 left-[420px] z-[70] flex w-[420px] flex-col border-r border-[#E2DFD6] bg-white shadow-[4px_0_24px_rgba(0,0,0,0.08)] max-md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
                         {/* Header: Work Spot label + name + close */}
                         <div className="flex shrink-0 items-center justify-between border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
@@ -334,7 +528,7 @@ export default function Explore() {
                             </button>
                         </div>
                         {/* Detail content */}
-                        <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} inline />
+                        <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} inline onDirections={(s) => s.lat && s.lng && startDirections(s.lat, s.lng, s.name)} />
                     </div>
                 )}
 
@@ -393,9 +587,31 @@ export default function Explore() {
                                 }}
                                 onMapTap={handleMapTap}
                                 onBoundsChange={handleBoundsChange}
+                                onSearchPinClick={(lat, lng, label) => {
+                                    setTapPoint({ lat, lng, address: label });
+                                }}
+                                hideMarkers={!!routeDest}
                             />
                         )}
                     </Suspense>
+
+                    {/* ═══ GOOGLE MAPS EMBED (transit + toggle) ═══ */}
+                    {showGoogleEmbed && routeDest && (() => {
+                        const gmMode = routeMode === 'transit' ? 'transit' : routeMode === 'bike' ? 'bicycling' : routeMode === 'drive' ? 'driving' : 'walking';
+                        const originStr = `${userLocation?.lat ?? 50.9375},${userLocation?.lng ?? 6.9603}`;
+                        const destStr = `${routeDest.lat},${routeDest.lng}`;
+                        return (
+                            <div className="absolute inset-0 z-[55] bg-white">
+                                <iframe
+                                    className="size-full border-0"
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer-when-downgrade"
+                                    src={`https://www.google.com/maps?saddr=${originStr}&daddr=${destStr}&dirflg=${gmMode === 'transit' ? 'r' : gmMode === 'walking' ? 'w' : gmMode === 'bicycling' ? 'b' : 'd'}&output=embed`}
+                                    allow="geolocation"
+                                />
+                            </div>
+                        );
+                    })()}
 
                     {/* ═══ TAP-TO-DISCOVER TOAST ═══ */}
                     {tapPoint && !showPlaceForm && (
@@ -406,10 +622,16 @@ export default function Explore() {
                                     <div className="truncate text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{tapPoint.address}</div>
                                 </div>
                                 <button
+                                    onClick={() => { startDirections(tapPoint.lat, tapPoint.lng, tapPoint.address); setTapPoint(null); }}
+                                    className="shrink-0 rounded-[8px] bg-[#1A4CD4] px-3 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[#1541B8]"
+                                >
+                                    Directions
+                                </button>
+                                <button
                                     onClick={openPlaceForm}
                                     className="shrink-0 rounded-[8px] bg-[#F5C518] px-3 py-1.5 text-[12px] font-bold text-[#78600A] transition-all hover:bg-[#E6B800]"
                                 >
-                                    Save as place
+                                    Save
                                 </button>
                                 <button
                                     onClick={() => setTapPoint(null)}
@@ -484,8 +706,25 @@ export default function Explore() {
                         </div>
                     )}
 
+                    {/* ═══ ROUTE MODE PICKER — mobile only (desktop uses left panel) ═══ */}
+                    {routeDest && routeOptions.length > 0 && (
+                        <div className="md:hidden">
+                            <ModePicker
+                                options={routeOptions}
+                                activeMode={routeMode}
+                                onSelectMode={(mode) => {
+                                    const from = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                                    selectRouteMode(mode, undefined, from, routeDest);
+                                }}
+                                onClose={closeRoute}
+                                loading={routeLoading}
+                                destinationName={routeDest.name}
+                            />
+                        </div>
+                    )}
+
                     {/* ═══ MOBILE: Draggable bottom sheet list ═══ */}
-                    <MobileListSheet spots={filteredSpots} selectedId={selectedSpot?.id ?? null} onSelect={selectSpot} />
+                    {!routeDest && <MobileListSheet spots={filteredSpots} selectedId={selectedSpot?.id ?? null} onSelect={selectSpot} />}
                 </div>
 
                 {/* Tablet: overlay behind list to close it */}
@@ -496,7 +735,7 @@ export default function Explore() {
 
             {/* Spot detail bottom sheet — mobile only */}
             <div className="md:hidden">
-                <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} />
+                <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} onDirections={(s) => s.lat && s.lng && startDirections(s.lat, s.lng, s.name)} />
             </div>
         </AppLayout>
     );

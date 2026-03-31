@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\Api\NearbyDeparturesController;
+use App\Http\Controllers\Api\RouteOptionsController;
 use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TrackEventController;
@@ -12,6 +14,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RoutineController;
+use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\SlotMonitorController;
 use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TaskController;
@@ -25,19 +28,13 @@ Route::inertia('/', 'welcome', [
 ])->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // APIs
-    Route::get('api/geocode', GeocodeController::class)
-        ->middleware('throttle:10,1')
-        ->name('api.geocode');
-    Route::get('api/stops', StopSearchController::class)
-        ->middleware('throttle:20,1')
-        ->name('api.stops');
-    Route::get('api/spots', SpotSearchController::class)
-        ->middleware('throttle:120,1')
-        ->name('api.spots');
-    Route::post('api/track', TrackEventController::class)
-        ->middleware('throttle:60,1')
-        ->name('api.track');
+    // APIs — generous limits since all are authenticated + local data
+    Route::get('api/geocode', GeocodeController::class)->name('api.geocode');
+    Route::get('api/stops', StopSearchController::class)->name('api.stops');
+    Route::get('api/spots', SpotSearchController::class)->name('api.spots');
+    Route::post('api/track', TrackEventController::class)->name('api.track');
+    Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
+    Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
 
     Route::inertia('onboarding', 'onboarding')->name('onboarding');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
@@ -84,7 +81,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('language-exchange', 'language-exchange')->name('language-exchange');
     Route::inertia('chat', 'chat')->name('chat');
     Route::inertia('neighborhoods', 'neighborhoods')->name('neighborhoods');
-    Route::inertia('services', 'services')->name('services');
+    Route::get('services', [ServicesController::class, 'index'])->name('services');
     Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
     Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
     Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');

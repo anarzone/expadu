@@ -26,7 +26,26 @@ class BureaucracyController extends Controller
         // User's task completion status
         $userTasks = $user->userTasks()->pluck('completed_at', 'task_id');
 
-        $formattedTasks = $allTasks->map(function (Task $task) use ($userTasks) {
+        $formattedTasks = $allTasks->map(function (Task $task) use ($user, $userTasks) {
+            $deadline = $task->computeDeadlineFor($user);
+            $daysRemaining = $deadline ? (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false) : null;
+            $isCompleted = isset($userTasks[$task->id]) && $userTasks[$task->id] !== null;
+
+            $deadlineUrgency = 'none';
+            if ($daysRemaining !== null && ! $isCompleted) {
+                if ($daysRemaining < 0) {
+                    $deadlineUrgency = 'overdue';
+                } elseif ($daysRemaining <= 3) {
+                    $deadlineUrgency = 'critical';
+                } elseif ($daysRemaining <= 7) {
+                    $deadlineUrgency = 'urgent';
+                } elseif ($daysRemaining <= 14) {
+                    $deadlineUrgency = 'approaching';
+                } else {
+                    $deadlineUrgency = 'on_track';
+                }
+            }
+
             return [
                 'id' => $task->id,
                 'title' => $task->title,
@@ -38,6 +57,9 @@ class BureaucracyController extends Controller
                 'documents_required' => $task->documents_required ?? [],
                 'links' => $task->links ?? [],
                 'completed_at' => $userTasks[$task->id] ?? null,
+                'absolute_deadline' => $deadline?->toDateString(),
+                'days_remaining' => $daysRemaining,
+                'deadline_urgency' => $deadlineUrgency,
             ];
         });
 
@@ -60,6 +82,14 @@ class BureaucracyController extends Controller
             ],
             'slots' => $slots,
             'monitors' => $monitors,
+            'bookingServices' => collect(BuergeramtService::SERVICES)->map(fn ($s, $key) => [
+                'key' => $key,
+                'name' => $s['name'],
+                'name_en' => $s['name_en'],
+                'emoji' => $s['emoji'],
+                'duration' => $s['duration'],
+                'url' => BuergeramtService::BOOKING_URLS[$s['category']].'&service='.$s['uid'],
+            ])->values(),
         ]);
     }
 }

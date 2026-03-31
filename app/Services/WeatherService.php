@@ -18,6 +18,18 @@ class WeatherService
 
         $current = $data['current'] ?? [];
         $weatherCode = $current['weather_code'] ?? 3;
+        $precip = (float) ($current['precipitation'] ?? 0);
+        $cloudCover = (int) ($current['cloud_cover'] ?? 50);
+
+        // Override weather code when model disagrees with actual conditions:
+        // If precipitation is negligible but code says rain, use cloud cover instead
+        if ($precip < 0.5 && $weatherCode >= 50 && $weatherCode <= 69) {
+            $weatherCode = match (true) {
+                $cloudCover <= 10 => 0,  // Clear
+                $cloudCover <= 50 => 2,  // Partly cloudy
+                default => 3,            // Overcast
+            };
+        }
 
         return [
             'temperature' => (int) floor($current['temperature_2m'] ?? 0),
@@ -29,7 +41,7 @@ class WeatherService
             'wind_gust' => (int) floor($current['wind_gusts_10m'] ?? 0),
             'wind_direction' => $current['wind_direction_10m'] ?? 0,
             'humidity' => round($current['relative_humidity_2m'] ?? 0),
-            'precipitation' => $current['precipitation'] ?? 0,
+            'precipitation' => $precip,
         ];
     }
 
@@ -75,10 +87,10 @@ class WeatherService
         return Cache::remember("openmeteo_{$lat}_{$lng}", 300, function () use ($lat, $lng) {
             try {
                 $response = Http::timeout(5)->retry(2, 500)
-                    ->get('https://api.open-meteo.com/v1/dwd-icon', [
+                    ->get('https://api.open-meteo.com/v1/forecast', [
                         'latitude' => $lat,
                         'longitude' => $lng,
-                        'current' => 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+                        'current' => 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover',
                         'hourly' => 'precipitation,temperature_2m,wind_speed_10m',
                         'timezone' => 'Europe/Berlin',
                         'forecast_days' => 1,
@@ -125,9 +137,12 @@ class WeatherService
      */
     protected function wmoToEmoji(int $code): string
     {
+        $isNight = now()->hour < 6 || now()->hour >= 20;
+
         return match (true) {
-            $code === 0 => '☀️',
-            $code <= 3 => '⛅',
+            $code === 0 => $isNight ? '🌙' : '☀️',
+            $code <= 2 => $isNight ? '🌙' : '⛅',
+            $code === 3 => '☁️',
             $code <= 49 => '🌫️',
             $code <= 59 => '🌦️',
             $code <= 69 => '🌧️',
@@ -135,15 +150,17 @@ class WeatherService
             $code <= 84 => '🌧️',
             $code <= 89 => '🌨️',
             $code <= 99 => '⛈️',
-            default => '⛅',
+            default => $isNight ? '🌙' : '⛅',
         };
     }
 
     protected function wmoToIcon(int $code): string
     {
+        $isDay = now()->hour >= 6 && now()->hour < 20;
+
         return match (true) {
-            $code === 0 => now()->hour >= 6 && now()->hour < 20 ? 'clear-day' : 'clear-night',
-            $code <= 2 => 'partly-cloudy-day',
+            $code === 0 => $isDay ? 'clear-day' : 'clear-night',
+            $code <= 2 => $isDay ? 'partly-cloudy-day' : 'partly-cloudy-night',
             $code === 3 => 'cloudy',
             $code <= 49 => 'fog',
             $code <= 69 => 'rain',

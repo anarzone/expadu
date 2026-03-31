@@ -4,7 +4,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
 
-test('home feed returns cards for onboarded user', function () {
+test('home feed returns unified feed for onboarded user', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
@@ -13,53 +13,42 @@ test('home feed returns cards for onboarded user', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
-        ->has('cards')
-        ->where('cards', fn ($cards) => count($cards) > 0)
+        ->has('feed')
+        ->has('feed.recommendations')
+        ->has('feed.settlement')
+        ->has('feed.places')
+        ->has('weather')
     );
 });
 
-test('home feed includes settlement progress card', function () {
+test('home feed includes settlement progress', function () {
     $user = User::factory()->onboarded()->create([
         'arrival_date' => now()->subDays(10),
     ]);
+    $task = Task::factory()->create(['urgency' => 'critical', 'situation' => ['non_eu_employee']]);
+    UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
 
     $response->assertInertia(fn ($page) => $page
-        ->has('cards', fn ($cards) => $cards
-            ->each(fn ($card) => $card->hasAll(['type', 'data', 'priority']))
-        )
+        ->has('feed.settlement')
+        ->where('feed.settlement.total', fn ($v) => $v > 0)
     );
 });
 
-test('home feed includes blue highlight when user has urgent tasks', function () {
-    $user = User::factory()->onboarded()->create();
-    $task = Task::factory()->create(['urgency' => 'critical']);
-    UserTask::factory()->create([
-        'user_id' => $user->id,
-        'task_id' => $task->id,
-        'completed_at' => null,
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertInertia(fn ($page) => $page
-        ->where('cards', fn ($cards) => collect($cards)->contains(fn ($c) => $c['type'] === 'blue_highlight'))
-    );
-});
-
-test('cards are sorted by priority descending', function () {
+test('home feed recommendations sorted by priority', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
 
     $response->assertInertia(fn ($page) => $page
-        ->where('cards', function ($cards) {
-            $priorities = collect($cards)->pluck('priority')->all();
+        ->where('feed.recommendations', function ($recs) {
+            if (count($recs) < 2) {
+                return true;
+            }
+            $priorities = collect($recs)->pluck('priority')->all();
             $sorted = collect($priorities)->sortDesc()->values()->all();
 
             return $priorities === $sorted;

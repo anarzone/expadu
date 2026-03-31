@@ -1,4 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { usePage } from '@inertiajs/react';
+import type { EventData } from '@/pages/events';
 
 type RightPanelEvent = {
     id: number;
@@ -10,35 +12,79 @@ type RightPanelEvent = {
     tagColor: string;
 };
 
-const weekendEvents: RightPanelEvent[] = [
-    { id: 3, emoji: '🎵', title: 'Jazz at Stadtgarten', sub: 'Sat 22 Mar · 20:00', tagLabel: '€12', tagBg: '#EFEDE7', tagColor: '#6B6860' },
-    { id: 4, emoji: '🌍', title: 'International Expat Mixer', sub: 'Sat 22 Mar · 18:00', tagLabel: 'Free', tagBg: '#D4F0E6', tagColor: '#0A7C52' },
-    { id: 5, emoji: '🍺', title: 'Cologne Brewery Tour', sub: 'Sun 23 Mar · 14:00', tagLabel: '€18', tagBg: '#EFEDE7', tagColor: '#6B6860' },
-];
+const CATEGORY_EMOJIS: Record<string, string> = {
+    language: '🗣️',
+    social: '🌍',
+    culture: '🎭',
+    music: '🎵',
+    food: '🍽️',
+    sports: '🏃',
+};
 
-const comingUpEvents: RightPanelEvent[] = [
-    { id: 7, emoji: '🎭', title: 'Karneval Opening Parade', sub: 'Thu 27 Feb · All day', tagLabel: 'Karneval', tagBg: '#FDE8E6', tagColor: '#C4271A' },
-    { id: 8, emoji: '🗣️', title: 'German for Beginners', sub: 'Mon 25 Mar · 18:30', tagLabel: 'Free', tagBg: '#D4F0E6', tagColor: '#0A7C52' },
-];
+function toRpEvent(ev: EventData): RightPanelEvent {
+    const emoji = ev.emoji || CATEGORY_EMOJIS[ev.categories?.[0] ?? ''] || '📅';
+    return {
+        id: ev.id,
+        emoji,
+        title: ev.title,
+        sub: `${ev.day} ${ev.date} ${ev.month} · ${ev.time}`,
+        tagLabel: ev.price ?? 'Free',
+        tagBg: ev.free ? '#D4F0E6' : '#EFEDE7',
+        tagColor: ev.free ? '#0A7C52' : '#6B6860',
+    };
+}
 
 export function EventsRightPanel({ onSelectEvent }: { onSelectEvent?: (id: number) => void }) {
+    const { dbEvents } = usePage<{ dbEvents?: { data: EventData[] } }>().props;
+    const allEvents = dbEvents?.data ?? [];
     const [digestSubscribed, setDigestSubscribed] = useState(false);
+
+    // Split into "this weekend" and "coming up"
+    const { weekendEvents, comingUpEvents } = useMemo(() => {
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0=Sun
+        const daysUntilSat = dayOfWeek === 0 ? 6 : 6 - dayOfWeek;
+        const daysUntilSun = daysUntilSat + 1;
+        const satDate = new Date(now); satDate.setDate(now.getDate() + daysUntilSat); satDate.setHours(0, 0, 0, 0);
+        const sunEnd = new Date(now); sunEnd.setDate(now.getDate() + daysUntilSun); sunEnd.setHours(23, 59, 59, 999);
+
+        const weekend: RightPanelEvent[] = [];
+        const coming: RightPanelEvent[] = [];
+
+        for (const ev of allEvents) {
+            const evDate = new Date(ev.fullDate);
+            if (evDate >= satDate && evDate <= sunEnd) {
+                weekend.push(toRpEvent(ev));
+            } else if (evDate > sunEnd) {
+                coming.push(toRpEvent(ev));
+            }
+        }
+
+        return {
+            weekendEvents: weekend.slice(0, 3),
+            comingUpEvents: coming.slice(0, 3),
+        };
+    }, [allEvents]);
 
     return (
         <>
             {/* This weekend */}
-            <RpBlock title="This weekend">
-                {weekendEvents.map((ev) => (
-                    <RpRow key={ev.id} event={ev} onClick={() => onSelectEvent?.(ev.id)} />
-                ))}
-            </RpBlock>
+            {weekendEvents.length > 0 && (
+                <RpBlock title="This weekend">
+                    {weekendEvents.map((ev) => (
+                        <RpRow key={ev.id} event={ev} onClick={() => onSelectEvent?.(ev.id)} />
+                    ))}
+                </RpBlock>
+            )}
 
             {/* Coming up */}
-            <RpBlock title="Coming up">
-                {comingUpEvents.map((ev) => (
-                    <RpRow key={ev.id} event={ev} onClick={() => onSelectEvent?.(ev.id)} />
-                ))}
-            </RpBlock>
+            {comingUpEvents.length > 0 && (
+                <RpBlock title="Coming up">
+                    {comingUpEvents.map((ev) => (
+                        <RpRow key={ev.id} event={ev} onClick={() => onSelectEvent?.(ev.id)} />
+                    ))}
+                </RpBlock>
+            )}
 
             {/* Weekly digest */}
             <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">

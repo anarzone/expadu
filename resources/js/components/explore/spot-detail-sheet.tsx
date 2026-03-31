@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { IconWifi, IconVolume3, IconClock, IconUsers, IconMapPin, IconHeart, IconLogin } from '@tabler/icons-react';
 import { useState } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { useTracker } from '@/hooks/use-tracker';
@@ -13,22 +14,15 @@ type SpotData = {
     time_limit_mins: number | null;
     rating: number | null;
     active_checkins_count: number;
+    distance_km?: number;
     lat?: number;
     lng?: number;
 };
 
 const categoryEmoji: Record<string, string> = { cafe: '☕', coworking: '🏢', library: '📚', park: '🌳' };
 
-function attrChip(type: string): { label: string; cls: string } | null {
-    const map: Record<string, { label: string; cls: string }> = {
-        wifi: { label: '📶 WiFi', cls: 'bg-[#EBF0FD] text-[#1A4CD4]' },
-        quiet: { label: '🤫 Quiet', cls: 'bg-[#EDFAF4] text-[#0A7C52]' },
-        plugs: { label: '🔌 Plugs', cls: 'bg-[#FEF9EC] text-[#C47D0E]' },
-        cowork: { label: '🏢 Cowork', cls: 'bg-[#EFEDE7] text-[#6B6860]' },
-        free: { label: '🆓 Free', cls: 'bg-[#EDE9FE] text-[#7C3AED]' },
-    };
-    return map[type] || null;
-}
+import { getTag } from '@/constants/tags';
+import { ICON_STROKE } from '@/constants/icons';
 
 // Mock reviews matching prototype
 const mockReviews: Record<number, { name: string; flag: string; stars: string; time: string; text: string }[]> = {
@@ -38,7 +32,7 @@ const mockReviews: Record<number, { name: string; flag: string; stars: string; t
     ],
 };
 
-export function SpotDetailSheet({ spot, onClose, inline = false }: { spot: SpotData | null; onClose: () => void; inline?: boolean }) {
+export function SpotDetailSheet({ spot, onClose, inline = false, onDirections }: { spot: SpotData | null; onClose: () => void; inline?: boolean; onDirections?: (spot: SpotData) => void }) {
     const { track } = useTracker();
     const [navMenuOpen, setNavMenuOpen] = useState(false);
 
@@ -85,7 +79,7 @@ export function SpotDetailSheet({ spot, onClose, inline = false }: { spot: SpotD
                 <span className="shrink-0 text-[40px] leading-none">{emoji}</span>
                 <div className="flex-1">
                     <div className="mb-1 font-display text-[22px] font-medium leading-[1.1]">{spot.name}</div>
-                    <div className="mb-1.5 text-sm text-[#6B6860]">📍 {area} · 0.3 km away</div>
+                    <div className="mb-1.5 text-sm text-[#6B6860]">📍 {area}{spot.distance_km != null ? ` · ${Math.round(spot.distance_km * 10) / 10} km away` : ''}</div>
                     <div className="flex items-center gap-2">
                         <span className="rounded-full bg-[#EDFAF4] px-[9px] py-[3px] text-[11px] font-bold uppercase tracking-[0.05em] text-[#0A7C52]">
                             Open
@@ -98,11 +92,13 @@ export function SpotDetailSheet({ spot, onClose, inline = false }: { spot: SpotD
             {/* Attribute chips + rating */}
             <div className="mb-4 flex flex-wrap gap-[7px]">
                 {attrs.map((a) => {
-                    const chip = attrChip(a);
-                    if (!chip) return null;
+                    const tag = getTag(a);
+                    if (!tag) return null;
+                    const TagIcon = tag.icon;
                     return (
-                        <span key={a} className={`flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium ${chip.cls}`}>
-                            {chip.label}
+                        <span key={a} className={`flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium ${tag.cls}`}>
+                            <TagIcon size={12} stroke={ICON_STROKE} />
+                            {tag.label}
                         </span>
                     );
                 })}
@@ -128,65 +124,25 @@ export function SpotDetailSheet({ spot, onClose, inline = false }: { spot: SpotD
             {/* Details table */}
             <div className="mb-[9px] text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Details</div>
             <div className="mb-3.5 overflow-hidden rounded-[9px] bg-[#EFEDE7]">
-                <DetailRow emoji="📶" label="WiFi" value={spot.wifi_speed ? `${spot.wifi_speed === 'fast' ? 'Fast · ~85 Mbps' : 'Decent · ~40 Mbps'}` : 'None'} />
-                <DetailRow emoji="🔊" label="Noise level" value={spot.noise_level ? spot.noise_level.charAt(0).toUpperCase() + spot.noise_level.slice(1) : 'Unknown'} />
-                <DetailRow emoji="⏱️" label="Time limit" value={spot.time_limit_mins ? `${spot.time_limit_mins} min` : 'None'} />
-                <DetailRow emoji="👥" label="Checked in now" value={`${spot.active_checkins_count} people`} valueColor="#0A7C52" />
+                <DetailRow icon={IconWifi} label="WiFi" value={spot.wifi_speed ? `${spot.wifi_speed === 'fast' ? 'Fast · ~85 Mbps' : 'Decent · ~40 Mbps'}` : 'None'} />
+                <DetailRow icon={IconVolume3} label="Noise level" value={spot.noise_level ? spot.noise_level.charAt(0).toUpperCase() + spot.noise_level.slice(1) : 'Unknown'} />
+                <DetailRow icon={IconClock} label="Time limit" value={spot.time_limit_mins ? `${spot.time_limit_mins} min` : 'None'} />
+                <DetailRow icon={IconUsers} label="Checked in now" value={`${spot.active_checkins_count} people`} valueColor="#0A7C52" />
             </div>
 
             {/* Action buttons */}
-            <div className="mt-4 mb-2 flex gap-[9px]">
-                <button
-                    onClick={handleCheckin}
-                    className="flex flex-1 items-center justify-center gap-[7px] rounded-[9px] bg-[#1A4CD4] px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
+            <div className="mt-3 mb-2 flex gap-2">
+                <span
+                    onClick={() => onDirections ? onDirections(spot) : setNavMenuOpen(!navMenuOpen)}
+                    className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] bg-[#1A4CD4] py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#1541B8]"
                 >
-                    👥 Check in here
-                </button>
-                <div className="relative flex-1">
-                    <button
-                        onClick={() => setNavMenuOpen(!navMenuOpen)}
-                        className="flex w-full items-center justify-center gap-[7px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
-                    >
-                        Navigate ↗
-                    </button>
-                    {navMenuOpen && (
-                        <div
-                            className="absolute bottom-[calc(100%+6px)] left-0 z-50 w-[200px] overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
-                        >
-                            <a
-                                href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat ?? 50.9375},${spot.lng ?? 6.9603}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2.5 px-3.5 py-3 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7]"
-                                onClick={() => setNavMenuOpen(false)}
-                            >
-                                🗺️ Google Maps
-                            </a>
-                            <a
-                                href={`https://maps.apple.com/?daddr=${spot.lat ?? 50.9375},${spot.lng ?? 6.9603}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2.5 border-t border-[#E2DFD6] px-3.5 py-3 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7]"
-                                onClick={() => setNavMenuOpen(false)}
-                            >
-                                🍎 Apple Maps
-                            </a>
-                            <button
-                                onClick={() => {
-                                    const coords = `${spot.lat ?? 50.9375}, ${spot.lng ?? 6.9603}`;
-                                    navigator.clipboard.writeText(coords);
-                                    setNavMenuOpen(false);
-                                }}
-                                className="flex w-full items-center gap-2.5 border-t border-[#E2DFD6] bg-transparent px-3.5 py-3 text-left text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7]"
-                            >
-                                📋 Copy coordinates
-                            </button>
-                        </div>
-                    )}
-                </div>
-                <button className="flex flex-1 items-center justify-center gap-[7px] rounded-[9px] border border-[#EBF0FD] bg-transparent px-3 py-3 text-sm font-semibold text-[#1A4CD4] transition-colors hover:bg-[#EBF0FD]">
-                    ♡ Save
-                </button>
+                    <IconMapPin size={14} stroke={ICON_STROKE} />
+                    Directions
+                </span>
+                <span className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] border border-[#EBF0FD] py-2 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:bg-[#EBF0FD]">
+                    <IconHeart size={14} stroke={ICON_STROKE} />
+                    Save
+                </span>
             </div>
 
             {/* Reviews */}
@@ -218,11 +174,11 @@ export function SpotDetailSheet({ spot, onClose, inline = false }: { spot: SpotD
     );
 }
 
-function DetailRow({ emoji, label, value, valueColor }: { emoji: string; label: string; value: string; valueColor?: string }) {
+function DetailRow({ icon: IconComp, label, value, valueColor }: { icon: React.ComponentType<{ size?: number; stroke?: number; className?: string }>; label: string; value: string; valueColor?: string }) {
     return (
         <div className="flex items-center justify-between border-b border-[#E2DFD6] px-3.5 py-[11px] last:border-b-0">
             <span className="flex items-center gap-2 text-[13px] text-[#6B6860]">
-                <span className="text-base">{emoji}</span>
+                <IconComp size={16} stroke={ICON_STROKE} className="shrink-0 opacity-60" />
                 {label}
             </span>
             <span className="font-mono text-[13px] font-medium" style={valueColor ? { color: valueColor } : undefined}>

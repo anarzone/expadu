@@ -16,6 +16,10 @@ class UserPlaceController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'arrive_by' => ['nullable', 'date_format:H:i'],
+            'day_mode' => ['nullable', 'in:all,weekdays,weekends,custom'],
+            'active_days' => ['nullable', 'array'],
+            'active_days.*' => ['in:mon,tue,wed,thu,fri,sat,sun'],
         ]);
 
         $request->user()->places()->create([
@@ -38,7 +42,16 @@ class UserPlaceController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'arrive_by' => ['nullable', 'date_format:H:i'],
+            'day_mode' => ['nullable', 'in:all,weekdays,weekends,custom'],
+            'active_days' => ['nullable', 'array'],
+            'active_days.*' => ['in:mon,tue,wed,thu,fri,sat,sun'],
         ]);
+
+        // Prevent changing category of protected places
+        if ($userPlace->isProtected()) {
+            unset($validated['category']);
+        }
 
         $userPlace->update($validated);
 
@@ -49,6 +62,10 @@ class UserPlaceController extends Controller
     {
         if ($userPlace->user_id !== $request->user()->id) {
             abort(403);
+        }
+
+        if ($userPlace->isProtected()) {
+            return back()->withErrors(['place' => 'Home and Work places cannot be removed — they are needed for route recommendations.']);
         }
 
         $userPlace->delete();

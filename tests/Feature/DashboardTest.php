@@ -23,7 +23,7 @@ test('authenticated non-onboarded users are redirected to onboarding', function 
     $response->assertRedirect(route('onboarding'));
 });
 
-test('dashboard returns home feed cards', function () {
+test('dashboard returns unified feed', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
@@ -31,6 +31,8 @@ test('dashboard returns home feed cards', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
-        ->has('cards')
+        ->has('feed')
+        ->has('feed.recommendations')
+        ->has('weather')
     );
 });

@@ -32,6 +32,18 @@
 
         <title inertia>{{ config('app.name', 'Expadu') }}</title>
 
+        <meta name="description" content="Expadu — your smart city companion for life in Germany. Transit, events, bureaucracy help, and local spots for expats in Cologne.">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        {{-- Open Graph --}}
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="{{ config('app.name', 'Expadu') }} — Smart City Companion for Expats">
+        <meta property="og:description" content="Transit, events, bureaucracy help, and local spots for expats in Cologne.">
+        <meta property="og:url" content="{{ config('app.url') }}">
+        <meta property="og:image" content="{{ config('app.url') }}/og-image.png">
+        <meta property="og:locale" content="en_US">
+
+        <link rel="canonical" href="{{ url()->current() }}">
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'valhalla' => [
+        'url' => env('VALHALLA_URL'),
+    ],
+
 ];

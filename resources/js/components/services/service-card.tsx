@@ -117,19 +117,21 @@ export function ServiceCard({
                     </div>
                 </div>
 
-                {/* Rating */}
-                <div className="flex shrink-0 flex-col items-end gap-[3px]">
-                    <div style={{ fontSize: 12, color: '#C47D0E' }}>{stars}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>{service.rating}</div>
-                    <div style={{ fontSize: 10, color: '#AAA89F' }}>{service.reviews} reviews</div>
-                </div>
+                {/* Rating — only show if we have data */}
+                {service.rating > 0 && (
+                    <div className="flex shrink-0 flex-col items-end gap-[3px]">
+                        <div style={{ fontSize: 12, color: '#C47D0E' }}>{stars}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>{service.rating}</div>
+                        <div style={{ fontSize: 10, color: '#AAA89F' }}>{service.reviews} reviews</div>
+                    </div>
+                )}
             </div>
 
             {/* Bottom row: meta + actions */}
             <div className="flex items-center justify-between border-t border-[#E2DFD6] pt-2.5">
                 <div className="flex flex-wrap gap-2.5" style={{ fontSize: 12, color: '#6B6860' }}>
-                    <span>📍 {service.address}</span>
-                    <span>· {service.distance}</span>
+                    {service.address && <span>📍 {service.address}</span>}
+                    {service.distance && <span>· {service.distance}</span>}
                 </div>
                 <div className="flex gap-[7px]">
                     {service.phone && (

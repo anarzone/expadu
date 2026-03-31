@@ -12,9 +12,10 @@ test('transit page renders for onboarded user', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('transit')
-        ->has('departures')
-        ->has('disruptions')
         ->has('routines')
+        ->has('gtfsDepartures')
+        ->has('userPlaces')
+        ->has('currentStop')
     );
 });
 

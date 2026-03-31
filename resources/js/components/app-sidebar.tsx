@@ -1,8 +1,24 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import {
+    IconHome,
+    IconCompass,
+    IconBell,
+    IconTrain,
+    IconCalendarEvent,
+    IconLanguage,
+    IconBuildingCommunity,
+    IconFirstAidKit,
+    IconFileText,
+    IconPackage,
+    IconUser,
+    IconPalette,
+    IconLogout,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { ICON_STROKE } from '@/constants/icons';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import type { NavGroup } from '@/types';
@@ -11,33 +27,33 @@ const navGroups: NavGroup[] = [
     {
         label: 'Main',
         items: [
-            { title: 'Home', href: '/dashboard', emoji: '🏠' },
-            { title: 'Explore', href: '/explore', emoji: '🗺️' },
-            { title: 'Alerts', href: '/alerts', emoji: '🔔', badge: 5 },
+            { title: 'Home', href: '/dashboard', icon: IconHome },
+            { title: 'Explore', href: '/explore', icon: IconCompass },
+            { title: 'Alerts', href: '/alerts', icon: IconBell, badge: 5 },
         ],
     },
     {
         label: 'City',
         items: [
-            { title: 'Transit', href: '/transit', emoji: '🚇' },
-            { title: 'Events', href: '/events', emoji: '📅' },
-            { title: 'Language Exchange', href: '/language-exchange', emoji: '🗣️' },
-            { title: 'Neighborhoods', href: '/neighborhoods', emoji: '🏘️' },
-            { title: 'Services', href: '/services', emoji: '🏥' },
+            { title: 'Transit', href: '/transit', icon: IconTrain },
+            { title: 'Events', href: '/events', icon: IconCalendarEvent },
+            { title: 'Language Exchange', href: '/language-exchange', icon: IconLanguage },
+            { title: 'Neighborhoods', href: '/neighborhoods', icon: IconBuildingCommunity },
+            { title: 'Services', href: '/services', icon: IconFirstAidKit },
         ],
     },
     {
         label: 'Personal',
         items: [
-            { title: 'Bureaucracy', href: '/bureaucracy', emoji: '🏛️', badge: 3, badgeVariant: 'warn' },
-            { title: 'Just Arrived', href: '/just-arrived', emoji: '📦' },
+            { title: 'Bureaucracy', href: '/bureaucracy', icon: IconFileText, badge: 3, badgeVariant: 'warn' },
+            { title: 'Just Arrived', href: '/just-arrived', icon: IconPackage },
         ],
     },
 ];
 
 const dropdownItems = [
-    { label: 'Profile', emoji: '👤', href: '/profile' },
-    { label: 'Appearance', emoji: '🎨', href: '/settings/appearance' },
+    { label: 'Profile', icon: IconUser, href: '/profile' },
+    { label: 'Appearance', icon: IconPalette, href: '/settings/appearance' },
 ];
 
 export function AppSidebar() {
@@ -98,7 +114,7 @@ export function AppSidebar() {
                                     onClick={() => setDropdownOpen(false)}
                                     className="flex items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7] dark:text-[#F6F5F1] dark:hover:bg-[#2A2920]"
                                 >
-                                    <span className="w-[18px] text-center text-sm">{item.emoji}</span>
+                                    <item.icon size={16} stroke={ICON_STROKE} className="shrink-0 opacity-60" />
                                     {item.label}
                                 </Link>
                             ))}
@@ -107,7 +123,7 @@ export function AppSidebar() {
                                 onClick={handleLogout}
                                 className="flex w-full items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#C4271A] transition-colors hover:bg-[#FDECEA] dark:hover:bg-[#2E1A1A]"
                             >
-                                <span className="w-[18px] text-center text-sm">🚪</span>
+                                <IconLogout size={16} stroke={ICON_STROKE} className="shrink-0" />
                                 Log out
                             </button>
                         </div>

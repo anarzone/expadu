@@ -74,7 +74,7 @@ test('geocode endpoint is rate limited', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    for ($i = 0; $i < 10; $i++) {
+    for ($i = 0; $i < 200; $i++) {
         $this->getJson(route('api.geocode', ['q' => "query{$i}"]));
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Routine;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,7 +27,7 @@ class RoutineController extends Controller
         return back();
     }
 
-    public function update(Request $request, Routine $routine): RedirectResponse
+    public function update(Request $request, Routine $routine): JsonResponse|RedirectResponse
     {
         Gate::authorize('update', $routine);
 
@@ -43,14 +44,22 @@ class RoutineController extends Controller
 
         $routine->update($validated);
 
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back();
     }
 
-    public function destroy(Routine $routine): RedirectResponse
+    public function destroy(Request $request, Routine $routine): JsonResponse|RedirectResponse
     {
         Gate::authorize('delete', $routine);
 
         $routine->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back();
     }

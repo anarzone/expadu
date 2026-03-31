@@ -28,6 +28,70 @@ export type TaskData = {
     linkLabel?: string;
 };
 
+// Backend shape from BureaucracyController
+type DbTask = {
+    id: number;
+    title: string;
+    description: string | null;
+    urgency: string;
+    phase: string | null;
+    deadline_type: string;
+    deadline_days: number | null;
+    documents_required: string[];
+    links: string[];
+    completed_at: string | null;
+    absolute_deadline: string | null;
+    days_remaining: number | null;
+    deadline_urgency: string;
+};
+
+type TaskProgress = {
+    completed: number;
+    total: number;
+    percent: number;
+};
+
+function deadlineLabel(t: DbTask): string {
+    if (t.completed_at) return 'Completed';
+    if (t.days_remaining === null) return 'No deadline';
+    if (t.days_remaining < 0) return `Overdue by ${Math.abs(t.days_remaining)} days`;
+    if (t.days_remaining === 0) return 'Due today';
+    if (t.days_remaining <= 3) return `${t.days_remaining} days left — urgent`;
+    if (t.days_remaining <= 7) return `${t.days_remaining} days left`;
+    if (t.absolute_deadline) {
+        const d = new Date(t.absolute_deadline);
+        return `Due ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · ${t.days_remaining} days`;
+    }
+    return `${t.days_remaining} days left`;
+}
+
+function urgencyTagFromDeadline(t: DbTask): TaskTag {
+    if (t.completed_at) return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
+    if (t.deadline_urgency === 'overdue') return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
+    if (t.deadline_urgency === 'critical') return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
+    if (t.deadline_urgency === 'urgent') return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
+    if (t.urgency === 'critical' || t.urgency === 'high') return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
+    return { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' };
+}
+
+function dbTaskToTaskData(t: DbTask): TaskData {
+    const done = !!t.completed_at;
+    const urgent = t.urgency === 'critical' || t.urgency === 'high' || t.deadline_urgency === 'overdue' || t.deadline_urgency === 'critical';
+    return {
+        id: t.id,
+        done,
+        urgent,
+        title: t.title,
+        desc: t.description ?? '',
+        tag: urgencyTagFromDeadline(t),
+        steps: [],
+        docs: t.documents_required ?? [],
+        time: deadlineLabel(t),
+        link: t.links?.[0] ?? null,
+        linkLabel: t.links?.[0] ? 'More info ↗' : undefined,
+    };
+}
+
 export type DocTag = { l: string; bg: string; c: string };
 
 export type DocData = {
@@ -50,6 +114,7 @@ export type OfficeData = {
     id: string;
     name: string;
     address: string;
+    category: string;
     status: string;
     nextSlot: string;
     distance: string;
@@ -73,107 +138,7 @@ type AiResponse = {
 // Hardcoded data from prototype
 // ============================================================
 
-const SEED_TASKS: TaskData[] = [
-    {
-        id: 1, done: true, urgent: false,
-        title: 'Register at Bürgeramt (Anmeldung)',
-        desc: 'Register your address with the city within 14 days of moving in. Required for everything else.',
-        tag: { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' },
-        steps: ['Book appointment at bürgeramt.de or via phone', 'Bring passport + rental contract (Mietvertrag)', 'Bring your landlord\'s Wohnungsgeberbestätigung form', 'Receive Meldebescheinigung on the spot'],
-        docs: ['Passport', 'Mietvertrag', 'Wohnungsgeberbestätigung'],
-        time: '~1 hour including travel', link: 'https://www.stadt-koeln.de', linkLabel: 'Book appointment ↗',
-    },
-    {
-        id: 2, done: true, urgent: false,
-        title: 'Apply for Tax Identification Number (Steuer-ID)',
-        desc: 'Automatically sent by post to your registered address 2–4 weeks after Anmeldung. No action needed.',
-        tag: { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' },
-        steps: ['Complete Anmeldung first', 'Wait 2–4 weeks for letter from Bundeszentralamt für Steuern', 'Give the 11-digit number to your employer'],
-        docs: ['Meldebescheinigung (from Anmeldung)'],
-        time: 'Automatic — no appointment needed', link: null,
-    },
-    {
-        id: 3, done: true, urgent: false,
-        title: 'Enrol in health insurance (Krankenversicherung)',
-        desc: 'Mandatory in Germany. Choose a public insurer (TK, AOK, Barmer) or private. Must be done before starting work.',
-        tag: { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' },
-        steps: ['Compare public insurers — TK and Barmer recommended for English support', 'Apply online or in person', 'Receive insurance card and membership number', 'Give membership number to employer'],
-        docs: ['Passport', 'Work contract'],
-        time: '30 min online, card arrives in 1–2 weeks', link: 'https://www.tk.de', linkLabel: 'Apply at TK ↗',
-    },
-    {
-        id: 4, done: false, urgent: true,
-        title: 'Open a German bank account',
-        desc: 'Required for salary payments, rent, and direct debits. N26 and Deutsche Bank have English interfaces.',
-        tag: { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' },
-        steps: ['Choose: N26 (online, English) or Deutsche Bank (branch, more features)', 'Prepare passport + Meldebescheinigung', 'Apply online or visit branch', 'Verify identity via VideoIdent or in person', 'Receive IBAN — share with employer and landlord'],
-        docs: ['Passport', 'Meldebescheinigung', 'Steuer-ID (helpful)'],
-        time: '30 min to apply, account active in 1–3 days', link: 'https://n26.com', linkLabel: 'Open N26 account ↗',
-    },
-    {
-        id: 5, done: false, urgent: true,
-        title: 'Register with Ausländerbehörde (non-EU)',
-        desc: 'Non-EU citizens must register with the immigration office and obtain a residence permit (Aufenthaltstitel).',
-        tag: { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' },
-        steps: ['Book appointment at Ausländerbehörde Cologne', 'Bring: passport, work contract, proof of income, health insurance, Meldebescheinigung, biometric photo', 'Pay fee ~€100', 'Receive temporary confirmation, permit by post in 4–8 weeks'],
-        docs: ['Passport', 'Work contract', 'Health insurance card', 'Meldebescheinigung', 'Biometric photo', '€100 fee'],
-        time: 'Appointment 1–2 hours, permit arrives weeks later', link: 'https://www.stadt-koeln.de', linkLabel: 'Book appointment ↗',
-    },
-    {
-        id: 6, done: false, urgent: false,
-        title: 'Get a German SIM card',
-        desc: 'Needed for German phone number required by many services, banks, and the Bürgeramt.',
-        tag: { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' },
-        steps: ['Visit a carrier shop: Telekom (best coverage), O2, Vodafone', 'Bring passport for identity verification', 'Choose a monthly plan — Telekom MagentaMobil from €15/mo'],
-        docs: ['Passport'],
-        time: '15 minutes in-store', link: null,
-    },
-    {
-        id: 7, done: false, urgent: false,
-        title: 'Register with a general practitioner (Hausarzt)',
-        desc: 'You need a regular GP for referrals and prescriptions. Find one who accepts new patients and speaks English.',
-        tag: { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' },
-        steps: ['Search doctolib.de for English-speaking GPs in Cologne', 'Check if they accept new patients with your insurer', 'Call to register — bring insurance card on first visit'],
-        docs: ['Health insurance card (Versicherungskarte)'],
-        time: '15 min to find, first appointment varies', link: 'https://www.doctolib.de', linkLabel: 'Find a GP ↗',
-    },
-    {
-        id: 8, done: false, urgent: false,
-        title: 'Set up internet at home',
-        desc: 'Most apartments need a separate internet contract. Glasfaser (fibre) is available in much of Cologne.',
-        tag: { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' },
-        steps: ['Check availability: Telekom, Vodafone, or NetCologne', 'Order online — needs your address and IBAN', 'Router arrives in 1–2 weeks', 'Activation takes up to 4 weeks for new connections'],
-        docs: ['IBAN (for direct debit)', 'Rental address'],
-        time: '20 min to order, 2–4 weeks to activate', link: null,
-    },
-    {
-        id: 9, done: false, urgent: false,
-        title: 'File your first German tax return (Steuererklärung)',
-        desc: 'Not always mandatory but often results in a refund. Due by 31 July for the previous year.',
-        tag: { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' },
-        steps: ['Use WISO Steuer or Taxfix app (English available)', 'Gather: Lohnsteuerbescheinigung from employer, Steuer-ID, bank statements', 'Submit electronically via ELSTER or tax app', 'Refund typically arrives 6–8 weeks after submission'],
-        docs: ['Steuer-ID', 'Lohnsteuerbescheinigung', 'Bank statements'],
-        time: '2–4 hours first time, faster with a tax advisor', link: 'https://www.taxfix.de', linkLabel: 'Try Taxfix ↗',
-    },
-    {
-        id: 10, done: false, urgent: false,
-        title: 'Get a Deutschlandticket (€58/month)',
-        desc: 'Unlimited travel on all local and regional public transport across Germany. Best value transit deal.',
-        tag: { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' },
-        steps: ['Order at kvb.koeln or DB Navigator app', 'Needs a German payment method (SEPA direct debit or credit card)', 'Digital ticket available immediately in the app'],
-        docs: ['German bank IBAN (for direct debit)'],
-        time: '10 minutes online', link: 'https://www.kvb.koeln', linkLabel: 'Get Deutschlandticket ↗',
-    },
-    {
-        id: 11, done: false, urgent: false,
-        title: 'Learn basic German (A1–A2)',
-        desc: 'Not required but dramatically improves daily life. Many services, landlords, and government offices expect some German.',
-        tag: { label: 'Ongoing', bg: '#EDE9FE', color: '#7C3AED' },
-        steps: ['Start with Duolingo or Babbel for basics', 'Consider a Volkshochschule (VHS) course — subsidised and local', 'Join language exchange on Anker to practise with locals'],
-        docs: [],
-        time: 'Ongoing — 15 min/day makes a real difference', link: null,
-    },
-];
+// No more SEED_TASKS — data comes from backend via dbTasks prop
 
 const SEED_DOCS: DocData[] = [
     {
@@ -254,9 +219,11 @@ const SEED_DOCS: DocData[] = [
 type SlotData = {
     name: string;
     address: string;
+    category: string;
     status: string;
     next_slot: string | null;
     slots_today: number;
+    booking_url: string;
 };
 
 /**
@@ -289,7 +256,11 @@ function slotsToOffices(
         let statusLabel = 'Fully booked';
         let color = '#C4271A';
         let colorS = '#FDE8E6';
-        if (isAvailable) {
+        if (slot.status === 'check_online' || slot.status === 'unavailable' || slot.status === 'checking') {
+            statusLabel = 'Check online →';
+            color = '#1A4CD4';
+            colorS = '#EBF0FD';
+        } else if (isAvailable) {
             statusLabel = slot.slots_today === 1 ? '1 slot available' : `${slot.slots_today} slots available`;
             color = '#0A7C52';
             colorS = '#D4F0E6';
@@ -303,8 +274,9 @@ function slotsToOffices(
 
         return {
             id: key,
-            name: slot.name.replace('Buergeramt', 'Bürgeramt'),
+            name: slot.name,
             address: `${slot.address}, Köln`,
+            category: slot.category ?? 'buergeramt',
             status: slot.status,
             nextSlot,
             distance: '',
@@ -312,7 +284,7 @@ function slotsToOffices(
             color,
             colorS,
             statusLabel,
-            bookingUrl: 'https://termine-online.stadt-koeln.de/index.php?company=stadtkoeln',
+            bookingUrl: slot.booking_url || 'https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071',
             mapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`,
         };
     });
@@ -422,12 +394,7 @@ const TABS = [
     { id: 'translator', label: 'AI Translator' },
 ];
 
-const FILTERS = [
-    { id: 'all', label: 'All (11)' },
-    { id: 'pending', label: 'Pending (8)' },
-    { id: 'done', label: 'Done (3)' },
-    { id: 'urgent', label: 'Urgent (2)' },
-];
+// Filter labels are dynamic — computed from real task counts below
 
 // ============================================================
 // Page
@@ -435,21 +402,41 @@ const FILTERS = [
 
 export default function Bureaucracy() {
     const { track } = useTracker();
-    const { slots, monitors } = usePage<{
+    type BookingService = { key: string; name: string; name_en: string; emoji: string; duration: number; url: string };
+
+    const { slots, monitors, dbTasks, taskProgress, bookingServices } = usePage<{
         slots: Record<string, SlotData>;
         monitors: string[];
+        dbTasks: DbTask[];
+        taskProgress: TaskProgress;
+        bookingServices?: BookingService[];
     }>().props;
 
     const offices = useMemo(() => slotsToOffices(slots ?? {}, monitors ?? []), [slots, monitors]);
     const monitoringCount = offices.filter((o) => o.monitoring).length;
 
-    const [tasks, setTasks] = useState<TaskData[]>(SEED_TASKS);
+    // Map backend tasks to frontend shape
+    const tasks = useMemo(() => (dbTasks ?? []).map(dbTaskToTaskData), [dbTasks]);
+
+    const FILTERS = useMemo(() => {
+        const pending = tasks.filter((t) => !t.done).length;
+        const done = tasks.filter((t) => t.done).length;
+        const urgent = tasks.filter((t) => t.urgent && !t.done).length;
+        return [
+            { id: 'all', label: `All (${tasks.length})` },
+            { id: 'pending', label: `Pending (${pending})` },
+            { id: 'done', label: `Done (${done})` },
+            { id: 'urgent', label: `Urgent (${urgent})` },
+        ];
+    }, [tasks]);
+
     const [activeTab, setActiveTab] = useTabState('checklist');
     const [taskFilter, setTaskFilter] = useState('all');
     const [expandedTask, setExpandedTask] = useState<number | null>(null);
     const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
     const [docSearch, setDocSearch] = useState('');
-    const [alertOn, setAlertOn] = useState(true);
+    const [slotFilter, setSlotFilter] = useState('all');
+    const [slotSearch, setSlotSearch] = useState('');
 
     // AI Translator state
     const [pasteText, setPasteText] = useState('');
@@ -458,10 +445,10 @@ export default function Bureaucracy() {
     const [translationResult, setTranslationResult] = useState<AiResponse | null>(null);
     const resultRef = useRef<HTMLDivElement>(null);
 
-    // Derived
-    const doneCount = useMemo(() => tasks.filter((t) => t.done).length, [tasks]);
-    const totalCount = tasks.length;
-    const progressPct = Math.round((doneCount / totalCount) * 100);
+    // Derived from backend progress
+    const doneCount = taskProgress?.completed ?? tasks.filter((t) => t.done).length;
+    const totalCount = taskProgress?.total ?? tasks.length;
+    const progressPct = taskProgress?.percent ?? (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
 
     const filteredTasks = useMemo(() => {
         if (taskFilter === 'done') return tasks.filter((t) => t.done);
@@ -478,27 +465,16 @@ export default function Bureaucracy() {
         );
     }, [docSearch]);
 
-    // Handlers
+    // Handlers — toggle calls backend
     function toggleTaskDone(id: number) {
         const task = tasks.find((t) => t.id === id);
         if (task && !task.done) {
             track('task_completed', { task_id: id });
         }
-        setTasks((prev) =>
-            prev.map((t) => {
-                if (t.id !== id) return t;
-                const newDone = !t.done;
-                let tag: TaskTag;
-                if (newDone) {
-                    tag = { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
-                } else if (t.urgent) {
-                    tag = { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
-                } else {
-                    tag = { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' };
-                }
-                return { ...t, done: newDone, tag };
-            }),
-        );
+        router.post(`/tasks/${id}/toggle`, {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
     }
 
     function loadExample(key: string) {
@@ -762,10 +738,10 @@ export default function Bureaucracy() {
                 {/* ════ SLOTS TAB ════ */}
                 {activeTab === 'slots' && (
                     <div style={{ padding: '20px 24px' }}>
-                        {/* Slot hero */}
+                        {/* Hero */}
                         <div
                             style={{
-                                background: 'linear-gradient(135deg, #1B3A8A 0%, #1A4CD4 100%)',
+                                background: '#1A4CD4',
                                 borderRadius: 20,
                                 padding: '20px 22px',
                                 color: 'white',
@@ -774,119 +750,130 @@ export default function Bureaucracy() {
                                 marginBottom: 16,
                             }}
                         >
-                            {/* Decorative circle */}
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    bottom: -40,
-                                    right: -40,
-                                    width: 140,
-                                    height: 140,
-                                    background: 'rgba(255,255,255,.06)',
-                                    borderRadius: '50%',
-                                }}
-                            />
-                            <div
-                                style={{
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.10em',
-                                    opacity: 0.65,
-                                    marginBottom: 5,
-                                }}
+                            <div className="pointer-events-none absolute" style={{ bottom: -40, right: -40, width: 140, height: 140, background: 'rgba(255,255,255,.06)', borderRadius: '50%' }} />
+                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', opacity: 0.65, marginBottom: 5 }}>
+                                Appointments · Cologne
+                            </div>
+                            <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 400, marginBottom: 12, position: 'relative', zIndex: 1 }}>
+                                Government offices &amp; locations
+                            </div>
+                            <div style={{ fontSize: 13, opacity: 0.8, position: 'relative', zIndex: 1, marginBottom: 14 }}>
+                                Book online — select your service, then the system shows available offices and times.
+                            </div>
+                            <a
+                                href="https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative z-[1] inline-flex items-center gap-2 rounded-[9px] px-5 py-[10px] text-sm font-semibold transition-all hover:bg-white"
+                                style={{ background: 'rgba(255,255,255,.9)', color: '#1A4CD4', textDecoration: 'none' }}
                             >
-                                Bürgeramt · Cologne
-                            </div>
-                            <div
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 20,
-                                    fontWeight: 400,
-                                    marginBottom: 12,
-                                    position: 'relative',
-                                    zIndex: 1,
-                                }}
-                            >
-                                Appointment slot monitor — Cologne offices
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
-                                <div
-                                    style={{
-                                        width: 10,
-                                        height: 10,
-                                        borderRadius: '50%',
-                                        background: '#4ADE80',
-                                        flexShrink: 0,
-                                        animation: 'pulse 2s infinite',
-                                    }}
-                                />
-                                <div>
-                                    <div style={{ fontSize: 14, fontWeight: 600 }}>Monitoring {monitoringCount} {monitoringCount === 1 ? 'office' : 'offices'} · Checking every 15 min</div>
-                                    <div style={{ fontSize: 12, opacity: 0.75, marginTop: 3 }}>Last checked: just now</div>
-                                </div>
-                            </div>
+                                🏛️ Book Bürgeramt appointment →
+                            </a>
                         </div>
 
-                        {/* Global alert toggle */}
+                        {/* Search */}
                         <div
-                            onClick={() => setAlertOn(!alertOn)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '12px 14px',
-                                background: '#EFEDE7',
-                                borderRadius: 9,
-                                marginBottom: 10,
-                                cursor: 'pointer',
-                            }}
+                            className="mb-3 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]"
                         >
-                            <div>
-                                <div style={{ fontSize: 13, fontWeight: 600 }}>🔔 Instant slot alerts</div>
-                                <div style={{ fontSize: 12, color: '#6B6860', marginTop: 1 }}>
-                                    Push notification the moment a slot opens
-                                </div>
-                            </div>
-                            <div
-                                style={{
-                                    width: 44,
-                                    height: 24,
-                                    borderRadius: 20,
-                                    background: alertOn ? '#0A7C52' : '#E2DFD6',
-                                    position: 'relative',
-                                    transition: 'background .25s',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                <div
+                            <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
+                            <input
+                                type="text"
+                                placeholder="Search offices…"
+                                value={slotSearch}
+                                onChange={(e) => setSlotSearch(e.target.value)}
+                                className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
+                                style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
+                            />
+                            {slotSearch && (
+                                <button onClick={() => setSlotSearch('')} className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]">✕</button>
+                            )}
+                        </div>
+
+                        {/* Category filter pills */}
+                        <div className="mb-4 flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                            {[
+                                { id: 'all', label: `All (${offices.length})` },
+                                { id: 'buergeramt', label: `🏛️ Bürgeramt (${offices.filter(o => o.category === 'buergeramt').length})` },
+                                { id: 'auslaenderbehoerde', label: `🛂 Ausländerb. (${offices.filter(o => o.category === 'auslaenderbehoerde').length})` },
+                                { id: 'finanzamt', label: `📋 Finanzamt (${offices.filter(o => o.category === 'finanzamt').length})` },
+                                { id: 'kfz', label: `🚗 KFZ (${offices.filter(o => o.category === 'kfz').length})` },
+                            ].map((f) => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setSlotFilter(f.id)}
+                                    className="shrink-0 cursor-pointer rounded-full border px-3 py-[5px] transition-all"
                                     style={{
-                                        position: 'absolute',
-                                        top: 3,
-                                        left: alertOn ? 23 : 3,
-                                        width: 18,
-                                        height: 18,
-                                        borderRadius: '50%',
-                                        background: 'white',
-                                        transition: 'left .25s cubic-bezier(.32,1,.4,1)',
-                                        boxShadow: '0 1px 4px rgba(0,0,0,.2)',
+                                        fontSize: 12,
+                                        fontWeight: 500,
+                                        fontFamily: "'Geist', sans-serif",
+                                        whiteSpace: 'nowrap',
+                                        background: slotFilter === f.id ? '#1A4CD4' : 'white',
+                                        color: slotFilter === f.id ? 'white' : '#6B6860',
+                                        borderColor: slotFilter === f.id ? '#1A4CD4' : '#E2DFD6',
                                     }}
-                                />
-                            </div>
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Section header */}
-                        <div className="mb-3 flex items-center justify-between">
-                            <span style={{ fontSize: 15, fontWeight: 700 }}>Cologne Offices</span>
-                            <span style={{ fontSize: 12, color: '#1A4CD4', fontWeight: 600, cursor: 'pointer' }}>Add office</span>
-                        </div>
+                        {/* Grouped office cards */}
+                        {(() => {
+                            const q = slotSearch.toLowerCase().trim();
+                            const filtered = offices.filter((o) => {
+                                const matchCategory = slotFilter === 'all' || o.category === slotFilter;
+                                const matchSearch = !q || o.name.toLowerCase().includes(q) || o.address.toLowerCase().includes(q);
+                                return matchCategory && matchSearch;
+                            });
 
-                        {/* Office cards */}
-                        {offices.map((office) => (
-                            <OfficeCard key={office.id} office={office} onToggleMonitor={() => {
-                                router.post('/slots/toggle', { office_id: office.id }, { preserveScroll: true });
-                            }} />
-                        ))}
+                            if (filtered.length === 0) {
+                                return (
+                                    <div className="py-12 text-center" style={{ color: '#AAA89F' }}>
+                                        <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
+                                        <div style={{ fontSize: 15, fontWeight: 600, color: '#6B6860', marginBottom: 6 }}>No offices found</div>
+                                        <div style={{ fontSize: 13 }}>Try a different filter or search term</div>
+                                    </div>
+                                );
+                            }
+
+                            const GROUPS = [
+                                { key: 'buergeramt', label: 'Bürgeramt', emoji: '🏛️' },
+                                { key: 'auslaenderbehoerde', label: 'Ausländerbehörde', emoji: '🛂' },
+                                { key: 'finanzamt', label: 'Finanzamt', emoji: '📋' },
+                                { key: 'kfz', label: 'KFZ-Zulassungsstelle', emoji: '🚗' },
+                            ];
+
+                            return GROUPS.map((group) => {
+                                const groupOffices = filtered.filter((o) => o.category === group.key);
+                                if (groupOffices.length === 0) return null;
+                                const bookingUrl = groupOffices[0]?.bookingUrl;
+                                return (
+                                    <div key={group.key} className="mb-5">
+                                        <div className="mb-2 flex items-center justify-between">
+                                            <span style={{ fontSize: 14, fontWeight: 700 }}>
+                                                {group.emoji} {group.label}
+                                            </span>
+                                            {bookingUrl && (
+                                                <a
+                                                    href={bookingUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="transition-colors hover:text-[#1540B8]"
+                                                    style={{ fontSize: 12, color: '#1A4CD4', fontWeight: 600, textDecoration: 'none' }}
+                                                >
+                                                    Book appointment →
+                                                </a>
+                                            )}
+                                        </div>
+                                        {groupOffices.map((office) => (
+                                            <OfficeCard key={office.id} office={office} onToggleMonitor={() => {
+                                                router.post('/slots/toggle', { office_id: office.id }, { preserveScroll: true });
+                                            }} />
+                                        ))}
+                                    </div>
+                                );
+                            });
+                        })()}
                     </div>
                 )}
 

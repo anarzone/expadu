@@ -1,4 +1,4 @@
-import { useState, useCallback, type MouseEvent } from 'react';
+import { useState, useCallback, useEffect, type MouseEvent } from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { JourneyRightPanel } from '@/components/journey/journey-right-panel';
@@ -259,7 +259,30 @@ function showToast(msg: string) {
 // COMPONENT
 // ════════════════════════════════════════
 export default function JustArrived() {
-    const [steps, setSteps] = useState<StepData[]>(() => JSON.parse(JSON.stringify(initialSteps)));
+    const [steps, setSteps] = useState<StepData[]>(() => {
+        const base = JSON.parse(JSON.stringify(initialSteps)) as StepData[];
+        try {
+            const saved = JSON.parse(localStorage.getItem('journey_steps') ?? '{}') as Record<string, string>;
+            for (const s of base) {
+                if (saved[s.id] === 'done') {
+                    s.done = true; s.skipped = false; s.tag = { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
+                } else if (saved[s.id] === 'skipped') {
+                    s.skipped = true; s.tag = { label: 'Skipped', bg: '#EFEDE7', color: '#AAA89F' };
+                }
+            }
+        } catch { /* ignore */ }
+        return base;
+    });
+
+    // Persist step state to localStorage
+    useEffect(() => {
+        const state: Record<string, string> = {};
+        for (const s of steps) {
+            if (s.done) state[s.id] = 'done';
+            else if (s.skipped) state[s.id] = 'skipped';
+        }
+        localStorage.setItem('journey_steps', JSON.stringify(state));
+    }, [steps]);
     const [expandedStep, setExpandedStep] = useState<number | null>(null);
     const [activePhaseFilters, setActivePhaseFilters] = useState<Set<string>>(new Set());
 

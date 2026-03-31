@@ -6,6 +6,7 @@ use App\Enums\NoiseLevel;
 use App\Enums\SpotCategory;
 use Database\Factories\SpotFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -41,5 +42,17 @@ class Spot extends Model
     public function activeCheckins(): HasMany
     {
         return $this->hasMany(SpotCheckin::class)->whereNull('checked_out_at');
+    }
+
+    /**
+     * Order by proximity to given coordinates.
+     *
+     * @param  Builder<Spot>  $query
+     * @return Builder<Spot>
+     */
+    public function scopeNearby(Builder $query, float $lat, float $lng): Builder
+    {
+        return $query->selectRaw('*, ABS(lat - ?) + ABS(lng - ?) as dist', [$lat, $lng])
+            ->orderBy('dist');
     }
 }

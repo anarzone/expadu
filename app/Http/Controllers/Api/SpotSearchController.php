@@ -24,6 +24,12 @@ class SpotSearchController extends Controller
             'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
 
+        // User's location for distance calculation
+        $user = $request->user();
+        $home = $user?->places()->where('category', 'home')->first();
+        $userLat = $home?->lat ? (float) $home->lat : 50.9375;
+        $userLng = $home?->lng ? (float) $home->lng : 6.9603;
+
         $query = Spot::query()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
@@ -36,12 +42,27 @@ class SpotSearchController extends Controller
             $query->where('category', $category);
         }
 
+        // Add distance calculation and sort by distance
         $spots = $query
             ->withCount('activeCheckins')
-            ->orderByDesc('rating')
+            ->selectRaw('*, (6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))) as distance_km', [$userLat, $userLng, $userLat])
+            ->orderBy('distance_km')
             ->limit((int) ($request->query('limit', 50)))
-            ->get(['id', 'name', 'category', 'address', 'lat', 'lng', 'wifi_speed', 'noise_level', 'rating', 'time_limit_mins']);
+            ->get();
 
-        return response()->json($spots);
+        return response()->json($spots->map(fn (Spot $s) => [
+            'id' => $s->id,
+            'name' => $s->name,
+            'category' => $s->category instanceof \BackedEnum ? $s->category->value : $s->category,
+            'address' => $s->address,
+            'lat' => (float) $s->lat,
+            'lng' => (float) $s->lng,
+            'wifi_speed' => $s->wifi_speed,
+            'noise_level' => $s->noise_level instanceof \BackedEnum ? $s->noise_level->value : $s->noise_level,
+            'rating' => $s->rating,
+            'time_limit_mins' => $s->time_limit_mins,
+            'active_checkins_count' => $s->active_checkins_count ?? 0,
+            'distance_km' => round((float) $s->distance_km, 1),
+        ]));
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\Event;
+use App\Services\DisruptionService;
+use App\Services\RhineService;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -46,8 +48,6 @@ class HandleInertiaRequests extends Middleware
             'isOnboarded' => $request->user()?->isOnboarded() ?? false,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'vapidPublicKey' => config('webpush.vapid.public_key'),
-            'weather' => fn () => app(WeatherService::class)->getCurrentWeather(),
-            'forecast' => fn () => app(WeatherService::class)->getForecast(),
             'userLocation' => function () use ($request) {
                 $user = $request->user();
                 if (! $user) {
@@ -56,7 +56,7 @@ class HandleInertiaRequests extends Middleware
                 $home = $user->places()->orderBy('sort_order')->first();
 
                 if (! $home) {
-                    return null; // No home location set — frontend should prompt user or use live GPS
+                    return null;
                 }
 
                 return [
@@ -66,17 +66,63 @@ class HandleInertiaRequests extends Middleware
                     'lng' => $home->lng ? (float) $home->lng : null,
                 ];
             },
+            'weather' => function () use ($request) {
+                $user = $request->user();
+                $home = $user?->places()->orderBy('sort_order')->first();
+                $lat = $home?->lat ? (float) $home->lat : 50.9375;
+                $lng = $home?->lng ? (float) $home->lng : 6.9603;
+
+                return app(WeatherService::class)->getCurrentWeather($lat, $lng);
+            },
+            'forecast' => function () use ($request) {
+                $user = $request->user();
+                $home = $user?->places()->orderBy('sort_order')->first();
+                $lat = $home?->lat ? (float) $home->lat : 50.9375;
+                $lng = $home?->lng ? (float) $home->lng : 6.9603;
+
+                return app(WeatherService::class)->getForecast($lat, $lng);
+            },
             'todayEvents' => fn () => Event::query()
                 ->whereDate('starts_at', today())
                 ->where('starts_at', '>', now())
                 ->orderBy('starts_at')
-                ->limit(3)
-                ->get(['id', 'title', 'emoji', 'starts_at', 'location_name', 'is_free'])
+                ->limit(7)
+                ->get(['id', 'title', 'starts_at', 'location_name', 'is_free', 'category'])
                 ->map(fn ($e) => [
                     'time' => $e->starts_at->format('H:i'),
-                    'title' => ($e->emoji ?? '📅').' '.$e->title.' · '.$e->location_name,
-                    'badge' => $e->is_free ? 'Open' : 'Paid',
+                    'emoji' => match ($e->category) {
+                        'music' => '🎵',
+                        'sports' => '⚽',
+                        'language' => '🗣️',
+                        'culture' => '🎭',
+                        'community' => '🤝',
+                        'food' => '🍽️',
+                        'market' => '🛒',
+                        default => '📅',
+                    },
+                    'title' => $e->title,
+                    'location' => $e->location_name,
+                    'badge' => $e->is_free ? 'Free' : match ($e->category) {
+                        'music' => 'Music',
+                        'sports' => 'Sports',
+                        'language' => 'Language',
+                        'culture' => 'Culture',
+                        'community' => 'Community',
+                        'food' => 'Food',
+                        default => 'Event',
+                    },
+                    'badgeType' => $e->is_free ? 'free' : 'category',
                 ]),
+            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
+            'activeDisruptions' => fn () => collect(app(DisruptionService::class)->getLineDisruptions())
+                ->map(fn ($d) => [
+                    'title' => $d['title'],
+                    'severity' => $d['severity'],
+                    'lines' => $d['affected_lines'],
+                ])
+                ->take(5)
+                ->values()
+                ->all(),
         ];
     }
 }

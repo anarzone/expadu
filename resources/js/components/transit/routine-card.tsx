@@ -8,6 +8,8 @@ export type RoutineCardData = {
     badgeColor: string;
     days: boolean[]; // [M, T, W, T, F, S, S]
     leaveBy: string;
+    nextDepartureMin?: number | null;
+    nextDepartureLine?: string | null;
 };
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -16,7 +18,7 @@ export function RoutineCard({ routine, onClick }: { routine: RoutineCardData; on
     return (
         <div
             onClick={onClick}
-            className="cursor-pointer transition-all"
+            className="cursor-pointer transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:border-[rgba(26,76,212,0.3)]"
             style={{
                 background: '#FFFFFF',
                 border: '1px solid #E2DFD6',
@@ -47,7 +49,7 @@ export function RoutineCard({ routine, onClick }: { routine: RoutineCardData; on
                 </span>
             </div>
 
-            {/* Bottom row: day indicators + leave time */}
+            {/* Bottom row: day indicators + live departure + leave time */}
             <div className="flex items-center gap-2">
                 <div className="flex gap-1">
                     {routine.days.map((active, i) => (
@@ -68,15 +70,21 @@ export function RoutineCard({ routine, onClick }: { routine: RoutineCardData; on
                         </div>
                     ))}
                 </div>
-                <div
-                    className="ml-auto"
-                    style={{
-                        fontSize: 12,
-                        color: '#6B6860',
-                        fontFamily: "'Geist Mono', monospace",
-                    }}
-                >
-                    {routine.leaveBy}
+                <div className="ml-auto flex items-center gap-2">
+                    {routine.nextDepartureMin != null && (
+                        <span style={{ fontSize: 11, color: '#0A7C52', fontWeight: 600 }}>
+                            {routine.nextDepartureLine ? `${routine.nextDepartureLine} in ` : ''}{routine.nextDepartureMin} min
+                        </span>
+                    )}
+                    <span
+                        style={{
+                            fontSize: 12,
+                            color: '#6B6860',
+                            fontFamily: "'Geist Mono', monospace",
+                        }}
+                    >
+                        {routine.leaveBy}
+                    </span>
                 </div>
             </div>
         </div>

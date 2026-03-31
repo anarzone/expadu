@@ -90,14 +90,14 @@ export function DepartureBoard({
             </div>
 
             {/* Rows */}
-            {sorted.map((s) => (
-                <ServiceRow key={`${s.line}_${s.direction}`} service={s} onOpenRoute={onOpenRoute} />
+            {sorted.map((s, i) => (
+                <ServiceRow key={`${s.line}_${s.direction}`} service={s} onOpenRoute={onOpenRoute} isLast={i === sorted.length - 1} />
             ))}
         </div>
     );
 }
 
-function ServiceRow({ service: s, onOpenRoute }: { service: DepartureService; onOpenRoute?: (key: string) => void }) {
+function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureService; onOpenRoute?: (key: string) => void; isLast?: boolean }) {
     // Status tag
     let statusTag: React.ReactNode;
     let nextClass: string;
@@ -148,7 +148,7 @@ function ServiceRow({ service: s, onOpenRoute }: { service: DepartureService; on
             className="flex items-center gap-3 transition-colors hover:bg-[#EFEDE7]"
             style={{
                 padding: '12px 16px',
-                borderBottom: '1px solid #E2DFD6',
+                borderBottom: isLast ? 'none' : '1px solid #E2DFD6',
                 cursor: s.routeKey ? 'pointer' : 'default',
                 opacity: s.cancelled ? 0.7 : 1,
                 ...savedStyle,

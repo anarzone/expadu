@@ -36,11 +36,10 @@ class SpotController extends Controller
         }
 
         if ($userLat && $userLng) {
-            // Sort by approximate distance (Manhattan distance — fast, good enough for city scale)
             $query->whereNotNull('lat')
                 ->whereNotNull('lng')
-                ->selectRaw('*, (ABS(lat - ?) + ABS(lng - ?)) as distance', [(float) $userLat, (float) $userLng])
-                ->orderBy('distance');
+                ->selectRaw('*, (6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))) as distance_km', [(float) $userLat, (float) $userLng, (float) $userLat])
+                ->orderBy('distance_km');
         } else {
             $sort = $request->query('sort', 'rating');
             $query = match ($sort) {

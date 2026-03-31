@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { ICON_STROKE } from '@/constants/icons';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavGroup } from '@/types';
 
@@ -16,6 +17,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
 
                     {group.items.map((item) => {
                         const active = isCurrentUrl(item.href);
+                        const IconComp = item.icon;
                         return (
                             <Link
                                 key={item.title}
@@ -27,8 +29,8 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                         : 'text-[#6B6860] hover:bg-[#EFEDE7] hover:text-[#18170F] dark:text-[#AAA89F] dark:hover:bg-[#2A2920] dark:hover:text-[#F6F5F1]'
                                 }`}
                             >
-                                <span className="w-[22px] shrink-0 text-center text-lg leading-none">
-                                    {item.emoji || '•'}
+                                <span className="flex w-[22px] shrink-0 items-center justify-center">
+                                    {IconComp ? <IconComp size={20} stroke={ICON_STROKE} /> : <span className="text-lg leading-none">{item.emoji || '•'}</span>}
                                 </span>
                                 <span data-sidebar-text className="text-[15px] font-medium">{item.title}</span>
                                 {item.badge !== undefined && (

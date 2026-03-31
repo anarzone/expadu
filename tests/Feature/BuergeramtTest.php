@@ -35,7 +35,7 @@ test('buergeramt service returns correct slot structure', function () {
     foreach ($slots as $officeId => $slot) {
         expect($officeId)->toBeIn(array_keys(BuergeramtService::OFFICES))
             ->and($slot)->toHaveKeys(['name', 'address', 'status', 'next_slot', 'slots_today'])
-            ->and($slot['status'])->toBeIn(['available', 'mostly_booked', 'booked'])
+            ->and($slot['status'])->toBeIn(['available', 'mostly_booked', 'booked', 'unavailable', 'checking', 'check_online'])
             ->and($slot['slots_today'])->toBeInt();
     }
 });
