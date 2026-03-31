@@ -1,15 +1,4 @@
-# Stage 1: Build frontend assets
-FROM node:22-alpine AS node-build
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
-
-COPY . .
-RUN npm run build
-
-# Stage 2: Install PHP dependencies
+# Stage 1: Install PHP dependencies
 FROM composer:2 AS composer-build
 
 WORKDIR /app
@@ -19,6 +8,25 @@ RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoload
 
 COPY . .
 RUN composer dump-autoload --optimize
+
+# Stage 2: Build frontend assets (needs PHP for Wayfinder artisan command)
+FROM php:8.4-cli-alpine AS node-build
+
+# Install Node.js
+RUN apk add --no-cache nodejs npm
+
+# Install PHP extensions needed by artisan
+RUN apk add --no-cache postgresql-dev icu-dev && \
+    docker-php-ext-install pdo_pgsql intl bcmath
+
+WORKDIR /app
+
+# Copy PHP app + vendor from composer stage
+COPY --from=composer-build /app /app
+
+# Install npm dependencies and build
+RUN npm ci --legacy-peer-deps
+RUN npm run build
 
 # Stage 3: Production image
 FROM php:8.4-fpm-alpine AS production
@@ -61,7 +69,7 @@ COPY docker/prod/php.ini "$PHP_INI_DIR/conf.d/99-app.ini"
 
 WORKDIR /var/www/html
 
-# Copy application code
+# Copy application code with vendor
 COPY --from=composer-build /app/vendor ./vendor
 COPY . .
 
@@ -81,6 +89,9 @@ RUN mkdir -p \
         bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
+
+# Cache config, routes, views for production
+RUN php artisan view:cache || true
 
 EXPOSE 8080
 
