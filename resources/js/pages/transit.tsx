@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
-import { DepartureBoard, type BoardData } from '@/components/transit/departure-board';
+import { DepartureBoard, type BoardData, useClock } from '@/components/transit/departure-board';
 import { GeocodeInput } from '@/components/transit/geocode-input';
 
 import { RoutineCard, type RoutineCardData } from '@/components/transit/routine-card';
@@ -51,11 +51,13 @@ type GtfsDeparture = {
     color: string;
     type: 'tram' | 'bus' | 'rail' | 'subway' | 'transit';
     departures: number[];
+    delay?: number;
+    cancelled?: boolean;
 };
 
 type GtfsDeparturesData = {
     stop_name: string;
-    source: 'mock' | 'gtfs_static' | 'gtfs_rt';
+    source: 'mock' | 'gtfs_static' | 'gtfs_rt' | 'trias_rt';
     departures: GtfsDeparture[];
 };
 
@@ -82,8 +84,8 @@ function gtfsToBoardData(
             via: '',
             color: 'white',
             bg: d.color,
-            delay: 0,
-            cancelled: false,
+            delay: d.delay ?? 0,
+            cancelled: d.cancelled ?? false,
             extra: false,
             departures: d.departures,
             routeKey: null,
@@ -99,6 +101,7 @@ function sourceLabel(source: string): string {
         case 'gtfs_static':
             return 'Static timetable';
         case 'gtfs_rt':
+        case 'trias_rt':
             return 'Live';
         case 'mock':
         default:
@@ -688,22 +691,37 @@ export default function Transit() {
 
     // GPS-based nearby departures: fetch when geolocation available, fallback to server (Home) data
     // Skip GPS override when user manually selected a stop via "Change stop"
+    const clock = useClock();
+
     type NearbyDeps = NonNullable<typeof serverNearbyDepartures>;
     const [liveNearbyDeps, setLiveNearbyDeps] = useState<NearbyDeps | null>(null);
     const lastGeoFetch = useRef<string>('');
     const hasManualStop = new URLSearchParams(window.location.search).has('stop');
 
+    const fetchNearbyDeps = useCallback((lat: number, lng: number) => {
+        fetch(`/api/nearby-departures?lat=${lat}&lng=${lng}`, { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => setLiveNearbyDeps(data))
+            .catch(() => {});
+    }, []);
+
+    // Fetch on GPS change
     useEffect(() => {
         if (!geoPos || hasManualStop) return;
         const key = `${geoPos.lat.toFixed(3)}_${geoPos.lng.toFixed(3)}`;
         if (key === lastGeoFetch.current) return;
         lastGeoFetch.current = key;
-
-        fetch(`/api/nearby-departures?lat=${geoPos.lat}&lng=${geoPos.lng}`, { credentials: 'same-origin' })
-            .then((r) => r.json())
-            .then((data) => setLiveNearbyDeps(data))
-            .catch(() => {});
+        fetchNearbyDeps(geoPos.lat, geoPos.lng);
     }, [geoPos?.lat, geoPos?.lng]);
+
+    // Poll nearby departures every 30s for real-time updates
+    useEffect(() => {
+        if (!geoPos || hasManualStop) return;
+        const interval = setInterval(() => {
+            fetchNearbyDeps(geoPos.lat, geoPos.lng);
+        }, 30_000);
+        return () => clearInterval(interval);
+    }, [geoPos?.lat, geoPos?.lng, hasManualStop]);
 
     // Use GPS departures if available, otherwise fall back to server data
     const nearbyDepartures = liveNearbyDeps ?? serverNearbyDepartures;
@@ -725,6 +743,7 @@ export default function Transit() {
     const kvbBoard = gtfsToBoardData(kvbDepartures, gtfsDepartures?.stop_name ?? currentStop ?? homeName, '📍');
     const dbBoard = gtfsToBoardData(dbDepartures, (gtfsDepartures?.stop_name ?? currentStop ?? homeName) + ' Bf', '🚂');
     const dataSource = gtfsDepartures?.source ?? 'mock';
+    const isLive = dataSource === 'gtfs_rt' || dataSource === 'trias_rt';
 
     // Stop search state for API-based picker
     const [stopSearchResults, setStopSearchResults] = useState<StopSearchResult[]>([]);
@@ -948,31 +967,6 @@ export default function Transit() {
                     <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}>
                         Transit & Commute
                     </span>
-                    <div
-                        className="flex items-center gap-[5px]"
-                        style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: dataSource === 'gtfs_rt' ? '#0A7C52' : dataSource === 'gtfs_static' ? '#1A4CD4' : '#6B6860',
-                            background: dataSource === 'gtfs_rt' ? '#D4F0E6' : dataSource === 'gtfs_static' ? '#EBF0FD' : '#EFEDE7',
-                            padding: '3px 9px',
-                            borderRadius: 20,
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
-                        <span
-                            className={dataSource === 'gtfs_rt' ? 'animate-pulse' : ''}
-                            style={{
-                                width: 5,
-                                height: 5,
-                                borderRadius: '50%',
-                                background: dataSource === 'gtfs_rt' ? '#0A7C52' : dataSource === 'gtfs_static' ? '#1A4CD4' : '#AAA89F',
-                                display: 'inline-block',
-                                flexShrink: 0,
-                            }}
-                        />
-                        {sourceLabel(dataSource)} · KVB · DB
-                    </div>
                 </div>
 
                 {/* ── Feed sections ── */}
@@ -1269,7 +1263,16 @@ export default function Transit() {
                             <div className="mb-[14px] overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
                                 {/* Header */}
                                 <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7]" style={{ padding: '12px 16px' }}>
-                                    <span style={{ fontSize: 13, fontWeight: 700 }}>🚋 {nearbyDepartures?.stops_used?.[0]?.name ?? activeStopName}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span style={{ fontSize: 13, fontWeight: 700 }}>🚋 {nearbyDepartures?.stops_used?.[0]?.name ?? activeStopName}</span>
+                                        <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, color: '#6B6860', background: '#DDDBD4', padding: '2px 8px', borderRadius: 6 }}>{clock}</span>
+                                        {isLive && (
+                                            <span className="flex items-center gap-1" style={{ fontSize: 10, fontWeight: 700, color: '#0A7C52', background: '#D4F0E6', padding: '2px 7px', borderRadius: 20 }}>
+                                                <span className="animate-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: '#0A7C52', display: 'inline-block' }} />
+                                                Live
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex gap-[5px]">
                                         {[...new Set((nearbyDepartures?.kvb ?? []).map((d) => d.line))].slice(0, 6).map((line) => {
                                             const dep = (nearbyDepartures?.kvb ?? []).find((d) => d.line === line);
@@ -1284,8 +1287,8 @@ export default function Transit() {
                                 {/* Rows */}
                                 {(nearbyDepartures?.kvb ?? []).slice(0, showMoreKvb ? 8 : 4).map((dep, i, arr) => {
                                     const bg = lineColor(dep.line, dep.color);
-                                    const isCancelled = dep.disrupted && dep.disruption_severity === 'critical';
-                                    const isDelayed = dep.disrupted && !isCancelled;
+                                    const isCancelled = dep.cancelled || (dep.disrupted && dep.disruption_severity === 'critical');
+                                    const isDelayed = (dep.delay ?? 0) > 0 || (dep.disrupted && !isCancelled);
                                     return (
                                     <div
                                         key={`${dep.line}_${dep.direction}`}
@@ -1321,6 +1324,8 @@ export default function Transit() {
                                             {/* Status badge */}
                                             {isCancelled ? (
                                                 <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDE8E6', color: '#C4271A' }}>Cancelled</span>
+                                            ) : (dep.delay ?? 0) > 0 ? (
+                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>+{dep.delay} min delay</span>
                                             ) : isDelayed ? (
                                                 <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>Disrupted</span>
                                             ) : (
@@ -1330,7 +1335,7 @@ export default function Transit() {
                                         {/* Times */}
                                         <div className="shrink-0 text-right">
                                             {isCancelled ? (
-                                                <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 18, fontWeight: 500, lineHeight: 1, color: '#C4271A' }}>—</div>
+                                                <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 500, lineHeight: 1, color: '#C4271A' }}>—</div>
                                             ) : (
                                                 <>
                                                     <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
@@ -1364,7 +1369,16 @@ export default function Transit() {
                             {(nearbyDepartures?.db ?? []).length > 0 && (
                             <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
                                 <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7]" style={{ padding: '12px 16px' }}>
-                                    <span style={{ fontSize: 13, fontWeight: 700 }}>🚂 {nearbyDepartures?.stops_used?.find((s) => s.name.includes('Bf'))?.name ?? 'S-Bahn / Regional'}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span style={{ fontSize: 13, fontWeight: 700 }}>🚂 {nearbyDepartures?.stops_used?.find((s) => s.name.includes('Bf'))?.name ?? 'S-Bahn / Regional'}</span>
+                                        <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, color: '#6B6860', background: '#DDDBD4', padding: '2px 8px', borderRadius: 6 }}>{clock}</span>
+                                        {isLive && (
+                                            <span className="flex items-center gap-1" style={{ fontSize: 10, fontWeight: 700, color: '#0A7C52', background: '#D4F0E6', padding: '2px 7px', borderRadius: 20 }}>
+                                                <span className="animate-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: '#0A7C52', display: 'inline-block' }} />
+                                                Live
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex gap-[5px]">
                                         {[...new Set((nearbyDepartures?.db ?? []).map((d) => d.line))].slice(0, 4).map((line) => {
                                             const dep = (nearbyDepartures?.db ?? []).find((d) => d.line === line);
@@ -1378,8 +1392,8 @@ export default function Transit() {
                                 </div>
                                 {(nearbyDepartures?.db ?? []).slice(0, showMoreDb ? 6 : 3).map((dep, i, arr) => {
                                     const bg = lineColor(dep.line, dep.color);
-                                    const isCancelled = dep.disrupted && dep.disruption_severity === 'critical';
-                                    const isDelayed = dep.disrupted && !isCancelled;
+                                    const isCancelled = dep.cancelled || (dep.disrupted && dep.disruption_severity === 'critical');
+                                    const isDelayed = (dep.delay ?? 0) > 0 || (dep.disrupted && !isCancelled);
                                     return (
                                     <div
                                         key={`${dep.line}_${dep.direction}`}
@@ -1404,6 +1418,8 @@ export default function Transit() {
                                             </div>
                                             {isCancelled ? (
                                                 <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDE8E6', color: '#C4271A' }}>Cancelled</span>
+                                            ) : (dep.delay ?? 0) > 0 ? (
+                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>+{dep.delay} min delay</span>
                                             ) : isDelayed ? (
                                                 <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>Disrupted</span>
                                             ) : (
@@ -1412,7 +1428,7 @@ export default function Transit() {
                                         </div>
                                         <div className="shrink-0 text-right">
                                             {isCancelled ? (
-                                                <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 18, fontWeight: 500, lineHeight: 1, color: '#C4271A' }}>—</div>
+                                                <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 500, lineHeight: 1, color: '#C4271A' }}>—</div>
                                             ) : (
                                                 <>
                                                     <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>

@@ -355,10 +355,19 @@ export default function Dashboard() {
                                         <div style={{ fontSize: 13, fontWeight: 600 }}>{dep.direction}</div>
                                     </div>
                                     <div className="shrink-0 text-right">
-                                        <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 18, fontWeight: 500, color: '#0A7C52' }}>
-                                            {dep.departures[0]}
-                                        </span>
-                                        <span style={{ fontSize: 10, color: '#AAA89F', marginLeft: 2 }}>min</span>
+                                        {dep.cancelled ? (
+                                            <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 18, fontWeight: 500, color: '#C4271A' }}>—</span>
+                                        ) : (
+                                            <>
+                                                <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 18, fontWeight: 500, color: (dep.delay ?? 0) > 0 ? '#C47D0E' : '#0A7C52' }}>
+                                                    {dep.departures[0]}
+                                                </span>
+                                                <span style={{ fontSize: 10, color: '#AAA89F', marginLeft: 2 }}>min</span>
+                                            </>
+                                        )}
+                                        {(dep.delay ?? 0) > 0 && !dep.cancelled && (
+                                            <div style={{ fontSize: 9, fontWeight: 700, color: '#C47D0E', marginTop: 1 }}>+{dep.delay}m</div>
+                                        )}
                                     </div>
                                 </div>
                             ))}

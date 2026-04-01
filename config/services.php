@@ -39,4 +39,12 @@ return [
         'url' => env('VALHALLA_URL'),
     ],
 
+    'vrs' => [
+        'gtfsrt_url' => env('VRS_GTFSRT_URL', 'https://gtfs-rt-test.vrs.de:4443/buffer/tripUpdate.buf'),
+        'trias_url' => env('VRS_TRIAS_URL', 'https://apitest.vrs.de:4443/v1/trias'),
+        'ca_cert' => env('VRS_CA_CERT', base_path('VRS-CA.cer')),
+        'enabled' => env('VRS_REALTIME_ENABLED', false),
+        'requestor_ref' => env('VRS_REQUESTOR_REF', 'expadu'),
+    ],
+
 ];

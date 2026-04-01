@@ -1,0 +1,407 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * VRS TRIAS API client for real-time departure boards and stop search.
+ * Primary source for departure data — falls back to GTFS static when unavailable.
+ */
+class VrsTriasService
+{
+    /**
+     * Get real-time departures from a stop using TRIAS StopEventRequest.
+     *
+     * @return array{stop_name: string, source: string, departures: array}|null
+     */
+    public function getDepartures(string $stopName, int $limit = 10): ?array
+    {
+        if (! config('services.vrs.enabled')) {
+            return null;
+        }
+
+        $cacheKey = "trias_departures_{$stopName}_{$limit}";
+
+        return Cache::remember($cacheKey, 30, function () use ($stopName, $limit) {
+            // Resolve stop name to TRIAS GlobalID
+            $globalId = $this->resolveStopGlobalId($stopName);
+            if (! $globalId) {
+                return null;
+            }
+
+            $departures = $this->fetchStopEvents($globalId['id'], $limit);
+            if ($departures === null) {
+                return null;
+            }
+
+            return [
+                'stop_name' => $globalId['name'],
+                'source' => 'trias_rt',
+                'departures' => $departures,
+            ];
+        });
+    }
+
+    /**
+     * Get real-time departures for the nearest stop to given coordinates.
+     *
+     * @return array{stop_name: string, source: string, departures: array}|null
+     */
+    public function getDeparturesNearby(float $lat, float $lng, int $limit = 10): ?array
+    {
+        if (! config('services.vrs.enabled')) {
+            return null;
+        }
+
+        $cacheKey = "trias_departures_nearby_{$lat}_{$lng}_{$limit}";
+
+        return Cache::remember($cacheKey, 30, function () use ($lat, $lng, $limit) {
+            $globalId = $this->resolveNearbyStop($lat, $lng);
+            if (! $globalId) {
+                return null;
+            }
+
+            $departures = $this->fetchStopEvents($globalId['id'], $limit);
+            if ($departures === null) {
+                return null;
+            }
+
+            return [
+                'stop_name' => $globalId['name'],
+                'source' => 'trias_rt',
+                'departures' => $departures,
+            ];
+        });
+    }
+
+    /**
+     * Resolve a stop name to a TRIAS GlobalID via LocationInformationRequest.
+     *
+     * @return array{id: string, name: string}|null
+     */
+    public function resolveStopGlobalId(string $stopName): ?array
+    {
+        // Strip "Köln " prefix if present — TRIAS handles it
+        $search = preg_replace('/^Köln\s+/i', '', $stopName);
+
+        return Cache::remember("trias_stop_id_{$search}", 86400, function () use ($search) {
+            $xml = $this->buildLocationRequest($search);
+            $response = $this->post($xml);
+
+            if (! $response) {
+                return null;
+            }
+
+            $parsed = $this->parseXml($response);
+            if (! $parsed) {
+                return null;
+            }
+
+            $refs = $parsed->xpath('//StopPlaceRef');
+            $names = $parsed->xpath('//StopPlaceName/Text');
+
+            if (empty($refs) || empty($names)) {
+                return null;
+            }
+
+            return [
+                'id' => (string) $refs[0],
+                'name' => (string) $names[0],
+            ];
+        });
+    }
+
+    /**
+     * Find the nearest stop to coordinates via TRIAS LocationInformationRequest.
+     *
+     * @return array{id: string, name: string}|null
+     */
+    public function resolveNearbyStop(float $lat, float $lng): ?array
+    {
+        $cacheKey = 'trias_nearby_stop_'.round($lat, 3).'_'.round($lng, 3);
+
+        return Cache::remember($cacheKey, 300, function () use ($lat, $lng) {
+            $xml = $this->buildGeoLocationRequest($lat, $lng);
+            $response = $this->post($xml);
+
+            if (! $response) {
+                return null;
+            }
+
+            $parsed = $this->parseXml($response);
+            if (! $parsed) {
+                return null;
+            }
+
+            $refs = $parsed->xpath('//StopPlaceRef');
+            $names = $parsed->xpath('//StopPlaceName/Text');
+
+            if (empty($refs) || empty($names)) {
+                return null;
+            }
+
+            return [
+                'id' => (string) $refs[0],
+                'name' => (string) $names[0],
+            ];
+        });
+    }
+
+    /**
+     * Fetch stop events (departures) from TRIAS and parse into app format.
+     *
+     * @return array<int, array>|null
+     */
+    private function fetchStopEvents(string $globalId, int $limit): ?array
+    {
+        $xml = $this->buildStopEventRequest($globalId, $limit);
+        $response = $this->post($xml);
+
+        if (! $response) {
+            return null;
+        }
+
+        $parsed = $this->parseXml($response);
+        if (! $parsed) {
+            return null;
+        }
+
+        $results = $parsed->xpath('//StopEventResult');
+        if (empty($results)) {
+            return null;
+        }
+
+        $now = Carbon::now();
+        $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
+        $grouped = [];
+
+        foreach ($results as $result) {
+            $event = $result->StopEvent ?? null;
+            if (! $event) {
+                continue;
+            }
+
+            $service = $event->Service ?? null;
+            $call = $event->ThisCall ?? null;
+            if (! $service || ! $call) {
+                continue;
+            }
+
+            $section = $service->ServiceSection ?? null;
+            $lineName = (string) ($section->PublishedLineName->Text ?? '');
+            $dest = (string) ($service->DestinationText->Text ?? '');
+            $ptMode = (string) ($section->Mode->PtMode ?? '');
+
+            if (! $lineName && ! $dest) {
+                continue;
+            }
+
+            // Get times — prefer EstimatedTime (live), fall back to TimetabledTime
+            $departure = $call->CallAtStop->ServiceDeparture ?? null;
+            $scheduled = (string) ($departure->TimetabledTime ?? '');
+            $estimated = (string) ($departure->EstimatedTime ?? '');
+            $timeStr = $estimated ?: $scheduled;
+
+            if (! $timeStr) {
+                continue;
+            }
+
+            $depTime = Carbon::parse($timeStr);
+            $scheduledTime = $scheduled ? Carbon::parse($scheduled) : $depTime;
+            $minsAway = (int) $now->diffInMinutes($depTime, false);
+
+            if ($minsAway < 0) {
+                continue;
+            }
+
+            // Calculate delay in minutes
+            $delayMin = $estimated && $scheduled
+                ? max(0, (int) round(($depTime->timestamp - $scheduledTime->timestamp) / 60))
+                : 0;
+
+            $type = $this->mapPtMode($ptMode, $lineName);
+
+            $key = $lineName.'_'.$dest;
+            if (! isset($grouped[$key])) {
+                $isDisrupted = isset($disruptedLines[$lineName]);
+                $grouped[$key] = [
+                    'line' => $lineName,
+                    'direction' => $dest,
+                    'color' => '#1A4CD4',
+                    'type' => $type,
+                    'departures' => [],
+                    'delay' => 0,
+                    'cancelled' => false,
+                    'disrupted' => $isDisrupted,
+                    'disruption_severity' => $isDisrupted ? $disruptedLines[$lineName] : null,
+                ];
+            }
+
+            if (count($grouped[$key]['departures']) < 5 && ! in_array($minsAway, $grouped[$key]['departures'], true)) {
+                $grouped[$key]['departures'][] = $minsAway;
+
+                // Use first departure's delay as the group indicator
+                if (count($grouped[$key]['departures']) === 1) {
+                    $grouped[$key]['delay'] = $delayMin;
+                }
+            }
+        }
+
+        // Filter out empty groups and sort by next departure
+        $results = array_values(array_filter($grouped, fn ($g) => ! empty($g['departures'])));
+        usort($results, fn ($a, $b) => ($a['departures'][0] ?? 999) <=> ($b['departures'][0] ?? 999));
+
+        return array_slice($results, 0, $limit);
+    }
+
+    private function buildStopEventRequest(string $globalId, int $limit): string
+    {
+        $timestamp = now()->toIso8601String();
+        $ref = config('services.vrs.requestor_ref', 'expadu');
+
+        return <<<XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Trias version="1.1" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+            <ServiceRequest>
+                <siri:RequestTimestamp>{$timestamp}</siri:RequestTimestamp>
+                <siri:RequestorRef>{$ref}</siri:RequestorRef>
+                <RequestPayload>
+                    <StopEventRequest>
+                        <Location>
+                            <LocationRef>
+                                <StopPointRef>{$globalId}</StopPointRef>
+                            </LocationRef>
+                        </Location>
+                        <Params>
+                            <NumberOfResults>{$limit}</NumberOfResults>
+                            <StopEventType>departure</StopEventType>
+                            <IncludeRealtimeData>true</IncludeRealtimeData>
+                        </Params>
+                    </StopEventRequest>
+                </RequestPayload>
+            </ServiceRequest>
+        </Trias>
+        XML;
+    }
+
+    private function buildLocationRequest(string $name): string
+    {
+        $timestamp = now()->toIso8601String();
+        $ref = config('services.vrs.requestor_ref', 'expadu');
+        $name = htmlspecialchars($name, ENT_XML1);
+
+        return <<<XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Trias version="1.1" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+            <ServiceRequest>
+                <siri:RequestTimestamp>{$timestamp}</siri:RequestTimestamp>
+                <siri:RequestorRef>{$ref}</siri:RequestorRef>
+                <RequestPayload>
+                    <LocationInformationRequest>
+                        <InitialInput>
+                            <LocationName>{$name}</LocationName>
+                        </InitialInput>
+                        <Restrictions>
+                            <Type>stop</Type>
+                            <NumberOfResults>1</NumberOfResults>
+                        </Restrictions>
+                    </LocationInformationRequest>
+                </RequestPayload>
+            </ServiceRequest>
+        </Trias>
+        XML;
+    }
+
+    private function buildGeoLocationRequest(float $lat, float $lng): string
+    {
+        $timestamp = now()->toIso8601String();
+        $ref = config('services.vrs.requestor_ref', 'expadu');
+
+        return <<<XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Trias version="1.1" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+            <ServiceRequest>
+                <siri:RequestTimestamp>{$timestamp}</siri:RequestTimestamp>
+                <siri:RequestorRef>{$ref}</siri:RequestorRef>
+                <RequestPayload>
+                    <LocationInformationRequest>
+                        <InitialInput>
+                            <GeoPosition>
+                                <Longitude>{$lng}</Longitude>
+                                <Latitude>{$lat}</Latitude>
+                            </GeoPosition>
+                        </InitialInput>
+                        <Restrictions>
+                            <Type>stop</Type>
+                            <NumberOfResults>1</NumberOfResults>
+                        </Restrictions>
+                    </LocationInformationRequest>
+                </RequestPayload>
+            </ServiceRequest>
+        </Trias>
+        XML;
+    }
+
+    private function post(string $xml): ?string
+    {
+        try {
+            $url = config('services.vrs.trias_url');
+
+            $options = ['timeout' => 10, 'connect_timeout' => 5];
+            if (str_contains($url, 'apitest.vrs.de') || str_contains($url, '-test.vrs.de')) {
+                $options['verify'] = false;
+            }
+
+            $response = Http::withOptions($options)
+                ->withHeaders(['Content-Type' => 'text/xml; charset=UTF-8'])
+                ->withBody($xml, 'text/xml')
+                ->post($url);
+
+            if (! $response->successful()) {
+                Log::warning('VRS TRIAS request failed', ['status' => $response->status()]);
+
+                return null;
+            }
+
+            return $response->body();
+        } catch (\Throwable $e) {
+            Log::warning('VRS TRIAS error', ['message' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Parse TRIAS XML response, stripping namespaces for simpler XPath.
+     */
+    private function parseXml(string $body): ?\SimpleXMLElement
+    {
+        // Strip namespace prefixes for easier XPath
+        $clean = preg_replace('/xmlns[^=]*="[^"]*"/', '', $body);
+        $clean = preg_replace('/<([a-z]+):/i', '<', $clean);
+        $clean = preg_replace('/<\/([a-z]+):/i', '</', $clean);
+
+        $xml = @simplexml_load_string($clean);
+
+        return $xml ?: null;
+    }
+
+    private function mapPtMode(string $ptMode, string $lineName): string
+    {
+        if (preg_match('/^(S|RE|RB|IC)/', $lineName)) {
+            return 'rail';
+        }
+
+        return match ($ptMode) {
+            'tram' => 'tram',
+            'metro' => 'subway',
+            'rail', 'suburbanRailway', 'regionalRail' => 'rail',
+            'bus', 'localBus' => 'bus',
+            default => is_numeric($lineName) && (int) $lineName <= 18 ? 'tram' : 'bus',
+        };
+    }
+}

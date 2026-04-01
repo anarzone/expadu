@@ -1,0 +1,75 @@
+// Minimal GTFS-RT proto3 subset for TripUpdate parsing
+// Based on: https://github.com/google/transit/blob/master/gtfs-realtime/proto/gtfs-realtime.proto
+
+syntax = "proto3";
+package transit_realtime;
+
+option php_namespace = "App\\Proto\\TransitRealtime";
+option php_metadata_namespace = "App\\Proto\\GPBMetadata";
+
+message FeedMessage {
+  FeedHeader header = 1;
+  repeated FeedEntity entity = 2;
+}
+
+message FeedHeader {
+  string gtfs_realtime_version = 1;
+  enum Incrementality {
+    FULL_DATASET = 0;
+    DIFFERENTIAL = 1;
+  }
+  Incrementality incrementality = 2;
+  uint64 timestamp = 3;
+}
+
+message FeedEntity {
+  string id = 1;
+  bool is_deleted = 2;
+  TripUpdate trip_update = 3;
+}
+
+message TripUpdate {
+  TripDescriptor trip = 1;
+  repeated StopTimeUpdate stop_time_update = 2;
+  uint64 timestamp = 4;
+
+  message StopTimeEvent {
+    int32 delay = 1;
+    int64 time = 2;
+    int32 uncertainty = 3;
+  }
+
+  message StopTimeUpdate {
+    uint32 stop_sequence = 1;
+    StopTimeEvent arrival = 2;
+    StopTimeEvent departure = 3;
+    string stop_id = 4;
+
+    enum ScheduleRelationship {
+      SCHEDULED = 0;
+      SKIPPED = 1;
+      NO_DATA = 2;
+      UNSCHEDULED = 3;
+    }
+    ScheduleRelationship schedule_relationship = 5;
+  }
+}
+
+message TripDescriptor {
+  string trip_id = 1;
+  string start_time = 2;
+  string start_date = 3;
+
+  enum ScheduleRelationship {
+    SCHEDULED = 0;
+    ADDED = 1;
+    UNSCHEDULED = 2;
+    CANCELED = 3;
+    REPLACEMENT = 5;
+    DUPLICATED = 6;
+    DELETED = 7;
+  }
+  ScheduleRelationship schedule_relationship = 4;
+  string route_id = 5;
+  uint32 direction_id = 6;
+}

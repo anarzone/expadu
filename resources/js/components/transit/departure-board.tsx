@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type DepartureService = {
     line: string;
@@ -33,17 +33,30 @@ function sortServices(services: DepartureService[]) {
     });
 }
 
+/** Live digital clock that ticks every second */
+export function useClock(): string {
+    const [time, setTime] = useState(() => new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    useEffect(() => {
+        const id = setInterval(() => setTime(new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })), 1000);
+        return () => clearInterval(id);
+    }, []);
+    return time;
+}
+
 export function DepartureBoard({
     data,
     showMore,
     onOpenRoute,
+    isLive,
 }: {
     data: BoardData;
     showMore: boolean;
     onOpenRoute?: (key: string) => void;
+    isLive?: boolean;
 }) {
     const visibleServices = data.services.filter((s) => showMore || !s.hidden);
     const sorted = sortServices(visibleServices);
+    const clock = useClock();
 
     // Line pills for the header
     const pills = visibleServices;
@@ -66,9 +79,20 @@ export function DepartureBoard({
                     background: '#EFEDE7',
                 }}
             >
-                <span style={{ fontSize: 13, fontWeight: 700 }}>
-                    {data.icon} {data.stop}
-                </span>
+                <div className="flex items-center gap-2">
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                        {data.icon} {data.stop}
+                    </span>
+                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, color: '#6B6860', background: '#DDDBD4', padding: '2px 8px', borderRadius: 6 }}>
+                        {clock}
+                    </span>
+                    {isLive && (
+                        <span className="flex items-center gap-1" style={{ fontSize: 10, fontWeight: 700, color: '#0A7C52', background: '#D4F0E6', padding: '2px 7px', borderRadius: 20 }}>
+                            <span className="animate-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: '#0A7C52', display: 'inline-block' }} />
+                            Live
+                        </span>
+                    )}
+                </div>
                 <div className="flex gap-[5px]">
                     {pills.map((s) => (
                         <span

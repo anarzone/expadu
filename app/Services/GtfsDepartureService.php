@@ -9,14 +9,25 @@ use Illuminate\Support\Facades\DB;
 
 class GtfsDepartureService
 {
+    public function __construct(
+        private readonly VrsRealtimeService $realtimeService,
+        private readonly VrsTriasService $triasService,
+    ) {}
+
     /**
      * Get departures for the nearest stop to given coordinates.
-     * Uses PostGIS-free distance calculation (Haversine approximation).
+     * Tries TRIAS first (real-time), falls back to GTFS static.
      *
      * @return array{stop_name: string, source: string, departures: array}
      */
     public function getDeparturesNearby(float $lat, float $lng, int $limit = 10): array
     {
+        // Try TRIAS first for real-time data
+        $trias = $this->triasService->getDeparturesNearby($lat, $lng, $limit);
+        if ($trias && ! empty($trias['departures'])) {
+            return $trias;
+        }
+
         if (! $this->hasGtfsData()) {
             return $this->fallbackDepartures('Nearby');
         }
@@ -24,7 +35,6 @@ class GtfsDepartureService
         $cacheKey = "gtfs_departures_nearby_{$lat}_{$lng}_{$limit}";
 
         return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
-            // Find nearest stop using simple distance formula (good enough for city scale)
             $nearestStop = GtfsStop::where('location_type', 0)
                 ->whereNotNull('stop_lat')
                 ->whereNotNull('stop_lng')
@@ -36,24 +46,43 @@ class GtfsDepartureService
                 return $this->fallbackDepartures('Nearby');
             }
 
-            return $this->getDepartures($nearestStop->stop_name, $limit);
+            return $this->getStaticDepartures($nearestStop->stop_name, $limit);
         });
     }
 
     /**
-     * Get upcoming departures for a stop name from GTFS static data.
-     * Falls back to mock data if GTFS tables are empty.
+     * Get upcoming departures for a stop name.
+     * Tries TRIAS first (real-time), falls back to GTFS static + GTFS-RT.
      *
      * @return array{stop_name: string, source: string, departures: array}
      */
     public function getDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
+    {
+        // Try TRIAS first for real-time data
+        $trias = $this->triasService->getDepartures($stopName, $limit);
+        if ($trias && ! empty($trias['departures'])) {
+            return $trias;
+        }
+
+        return $this->getStaticDepartures($stopName, $limit);
+    }
+
+    /**
+     * Get departures from GTFS static data with optional GTFS-RT overlay.
+     *
+     * @return array{stop_name: string, source: string, departures: array}
+     */
+    public function getStaticDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
     {
         // Check if GTFS data exists
         if (! $this->hasGtfsData()) {
             return $this->fallbackDepartures($stopName);
         }
 
-        return Cache::remember("gtfs_departures_{$stopName}_{$limit}", 60, function () use ($stopName, $limit) {
+        $hasRealtime = config('services.vrs.enabled');
+        $cacheTtl = $hasRealtime ? 30 : 60;
+
+        return Cache::remember("gtfs_departures_{$stopName}_{$limit}", $cacheTtl, function () use ($stopName, $limit, $hasRealtime) {
             // Find stops matching the name
             $stops = GtfsStop::where('stop_name', 'ILIKE', "%{$stopName}%")
                 ->where('location_type', 0) // actual stops, not stations
@@ -126,12 +155,14 @@ class GtfsDepartureService
                 ->orderByRaw('MIN(gtfs_stop_times.departure_time)')
                 ->limit($limit * 10)
                 ->selectRaw('
+                    gtfs_trips.trip_id,
                     gtfs_routes.route_short_name as line,
                     gtfs_routes.route_long_name as route_name,
                     gtfs_routes.route_color,
                     gtfs_routes.route_type,
                     gtfs_trips.trip_headsign as direction,
-                    MIN(gtfs_stop_times.departure_time) as departure_time
+                    MIN(gtfs_stop_times.departure_time) as departure_time,
+                    MIN(gtfs_stop_times.stop_id) as stop_id
                 ')
                 ->get();
 
@@ -142,7 +173,11 @@ class GtfsDepartureService
             // Get disrupted lines to mark them
             $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
 
-            // Group by line+direction, collect distinct departure minutes
+            // Fetch real-time updates if enabled
+            $realtimeUpdates = $hasRealtime ? $this->realtimeService->getTripUpdates() : [];
+            $hasRealtimeData = ! empty($realtimeUpdates);
+
+            // Group by line+direction, collect distinct departure minutes with real-time overlay
             $grouped = [];
             foreach ($departures as $dep) {
                 // Fix missing line name — fall back to route_long_name or extract from it
@@ -159,6 +194,24 @@ class GtfsDepartureService
                     continue; // skip completely unnamed routes
                 }
 
+                // Look up real-time data for this trip
+                $rtDelay = null;
+                $rtCancelled = false;
+                $rtSkipped = false;
+                if ($hasRealtimeData && $dep->trip_id) {
+                    $rtInfo = $this->realtimeService->getDelayForTripAtStop($dep->trip_id, $dep->stop_id);
+                    if ($rtInfo) {
+                        $rtDelay = (int) round($rtInfo['delay'] / 60); // seconds → minutes
+                        $rtCancelled = $rtInfo['cancelled'];
+                        $rtSkipped = $rtInfo['skipped'];
+                    }
+                }
+
+                // Skip this departure if the stop is skipped in real-time
+                if ($rtSkipped) {
+                    continue;
+                }
+
                 $key = $lineName.'_'.$dep->direction;
                 if (! isset($grouped[$key])) {
                     $isDisrupted = isset($disruptedLines[$lineName]);
@@ -168,15 +221,28 @@ class GtfsDepartureService
                         'color' => $dep->route_color ? "#{$dep->route_color}" : '#1A4CD4',
                         'type' => $this->routeTypeLabel($dep->route_type),
                         'departures' => [],
+                        'delay' => 0,
+                        'cancelled' => false,
                         'disrupted' => $isDisrupted,
                         'disruption_severity' => $isDisrupted ? $disruptedLines[$lineName] : null,
                     ];
                 }
+
                 if (count($grouped[$key]['departures']) < 5) {
                     $depTime = Carbon::createFromFormat('H:i:s', $dep->departure_time);
-                    $minsAway = (int) $now->diffInMinutes($depTime, false);
-                    if ($minsAway > 0 && ! in_array($minsAway, $grouped[$key]['departures'], true)) {
-                        $grouped[$key]['departures'][] = $minsAway;
+                    $scheduledMins = (int) $now->diffInMinutes($depTime, false);
+
+                    // Apply real-time delay to departure time
+                    $actualMins = $rtDelay !== null ? $scheduledMins + $rtDelay : $scheduledMins;
+
+                    if ($actualMins > 0 && ! in_array($actualMins, $grouped[$key]['departures'], true)) {
+                        $grouped[$key]['departures'][] = $actualMins;
+                    }
+
+                    // Use the first (nearest) departure's RT info as the group indicator
+                    if (count($grouped[$key]['departures']) === 1 && $rtDelay !== null) {
+                        $grouped[$key]['delay'] = max(0, $rtDelay);
+                        $grouped[$key]['cancelled'] = $rtCancelled;
                     }
                 }
             }
@@ -186,7 +252,7 @@ class GtfsDepartureService
 
             return [
                 'stop_name' => $stopName,
-                'source' => 'gtfs_static',
+                'source' => $hasRealtimeData ? 'gtfs_rt' : 'gtfs_static',
                 'departures' => array_slice($results, 0, $limit),
             ];
         });
