@@ -71,6 +71,66 @@ test('place creation validates required fields', function () {
     $response->assertSessionHasErrors(['emoji', 'name']);
 });
 
+test('user can update work days on a place', function () {
+    $user = User::factory()->onboarded()->create();
+    $place = UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'day_mode' => 'all',
+        'active_days' => null,
+    ]);
+    $this->actingAs($user);
+
+    $response = $this->put(route('user-places.update', $place), [
+        'day_mode' => 'custom',
+        'active_days' => ['mon', 'tue', 'wed', 'thu', 'fri'],
+    ]);
+
+    $response->assertRedirect();
+    $place->refresh();
+    expect($place->day_mode)->toBe('custom');
+    expect($place->active_days)->toBe(['mon', 'tue', 'wed', 'thu', 'fri']);
+});
+
+test('user can update work days to weekdays preset', function () {
+    $user = User::factory()->onboarded()->create();
+    $place = UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'day_mode' => 'custom',
+        'active_days' => ['mon', 'wed'],
+    ]);
+    $this->actingAs($user);
+
+    $response = $this->put(route('user-places.update', $place), [
+        'day_mode' => 'weekdays',
+        'active_days' => null,
+    ]);
+
+    $response->assertRedirect();
+    $place->refresh();
+    expect($place->day_mode)->toBe('weekdays');
+    expect($place->active_days)->toBeNull();
+});
+
+test('profile page returns day_mode and active_days for places', function () {
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'day_mode' => 'custom',
+        'active_days' => ['mon', 'fri'],
+    ]);
+    $this->actingAs($user);
+
+    $response = $this->get(route('profile'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('profile')
+        ->has('userPlaces', 1)
+        ->where('userPlaces.0.day_mode', 'custom')
+        ->where('userPlaces.0.active_days', ['mon', 'fri'])
+    );
+});
+
 test('profile page loads with user places', function () {
     $user = User::factory()->onboarded()->create();
     UserPlace::factory()->count(2)->create(['user_id' => $user->id]);

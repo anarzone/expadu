@@ -21,7 +21,7 @@ const ACTIVITY: Activity[] = [
 
 const DEFAULT_INTERESTS = ['Tech', 'Travel', 'Coffee', 'Language exchange', 'Running'];
 
-type Place = { id: number; emoji: string; name: string; addr: string; lat?: number | null; lng?: number | null; arrive_by?: string | null; category?: string };
+type Place = { id: number; emoji: string; name: string; addr: string; lat?: number | null; lng?: number | null; arrive_by?: string | null; category?: string; day_mode?: string; active_days?: string[] };
 
 type UserPlaceData = {
     id: number;
@@ -30,6 +30,10 @@ type UserPlaceData = {
     address: string | null;
     lat: number | null;
     lng: number | null;
+    arrive_by?: string | null;
+    category?: string;
+    day_mode?: string;
+    active_days?: string[];
 };
 
 const FALLBACK_PLACES: Place[] = [
@@ -138,7 +142,7 @@ export default function Profile() {
     const [newInterest, setNewInterest] = useState('');
 
     // Places — always derived from backend props (re-syncs after Inertia navigations)
-    const backendPlaces: Place[] = (userPlaces ?? []).map((p: UserPlaceData & { category?: string; arrive_by?: string }) => ({
+    const backendPlaces: Place[] = (userPlaces ?? []).map((p: UserPlaceData) => ({
         id: p.id,
         emoji: p.emoji || '📍',
         name: p.name,
@@ -147,6 +151,8 @@ export default function Profile() {
         lng: p.lng ?? null,
         arrive_by: p.arrive_by ?? null,
         category: p.category ?? 'custom',
+        day_mode: p.day_mode ?? 'all',
+        active_days: p.active_days ?? [],
     }));
     const [localPlaces, setLocalPlaces] = useState<Place[]>([]);
 
@@ -281,8 +287,8 @@ export default function Profile() {
             setPlaceLat(place.lat ?? null);
             setPlaceLng(place.lng ?? null);
             setPlaceArriveBy(place.arrive_by?.slice(0, 5) ?? '');
-            setPlaceDayMode((place as any).day_mode ?? 'all');
-            setPlaceActiveDays((place as any).active_days ?? []);
+            setPlaceDayMode(place.day_mode ?? 'all');
+            setPlaceActiveDays(place.active_days ?? []);
         } else {
             setPlaceName('');
             setPlaceAddr('');
