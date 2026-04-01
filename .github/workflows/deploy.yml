@@ -11,7 +11,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-24.04-arm  # Native ARM runner — no QEMU emulation needed
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
@@ -42,19 +42,20 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
+    name: Deploy to Production
     needs: build-and-push
-    runs-on: ubuntu-latest
     if: success()
+    runs-on: ubuntu-latest
     steps:
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            docker pull ghcr.io/anarzone/expadu/app:latest
-            curl -s -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-              -H "Accept: application/json" \
-              -X GET "http://localhost:8000/api/v1/deploy?uuid=ogc4k00kscoks08k088gcgg4&force=true"
-            echo "Deploy triggered"
+      - name: Trigger Coolify Deployment
+        run: |
+          curl --request POST \
+            --header "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            --header "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            --header "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
+            --header "Content-Type: application/json" \
+            --data '{"uuid": "${{ secrets.COOLIFY_APP_UUID }}", "force": true}' \
+            --retry 3 \
+            --retry-delay 5 \
+            --silent --show-error \
+            "${{ secrets.COOLIFY_URL }}/api/v1/deploy"
