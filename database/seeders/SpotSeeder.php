@@ -3,35 +3,87 @@
 namespace Database\Seeders;
 
 use App\Models\Spot;
+use App\Services\GeocodingService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
+/**
+ * Seeds curated expat-friendly work spots in Cologne.
+ * Idempotent — skips spots that already exist by name.
+ * Sources: laptopfriendly.co/cologne, Starbucks, Coffee Fellows, Cafe Nova, libraries, coworking.
+ */
 class SpotSeeder extends Seeder
 {
     public function run(): void
     {
         $spots = [
-            ['name' => 'Café Schmitz', 'category' => 'cafe', 'description' => 'Cozy café with great WiFi in Ehrenfeld', 'address' => 'Venloer Str. 236, Ehrenfeld', 'wifi_speed' => 'fast', 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.8, 'lat' => 50.9478, 'lng' => 6.9183],
-            ['name' => 'Startplatz', 'category' => 'coworking', 'description' => 'Cologne startup hub with hot desks and meeting rooms', 'address' => 'Im Mediapark 5, Neustadt-Nord', 'wifi_speed' => 'fast', 'noise_level' => 'moderate', 'time_limit_mins' => null, 'rating' => 4.6, 'lat' => 50.9467, 'lng' => 6.9417],
-            ['name' => 'StadtBibliothek Köln', 'category' => 'library', 'description' => 'Central city library with silent study areas', 'address' => 'Josef-Haubrich-Hof 1, Neustadt-Süd', 'wifi_speed' => 'fast', 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.7, 'lat' => 50.9339, 'lng' => 6.9479],
-            ['name' => 'Wohnzimmer', 'category' => 'cafe', 'description' => 'Living room-style café, perfect for long work sessions', 'address' => 'Aachener Str. 70, Ehrenfeld', 'wifi_speed' => 'ok', 'noise_level' => 'moderate', 'time_limit_mins' => 180, 'rating' => 4.4, 'lat' => 50.9411, 'lng' => 6.9228],
-            ['name' => 'COWOKI Ehrenfeld', 'category' => 'coworking', 'description' => 'Flexible coworking with day passes', 'address' => 'Lichtstr. 25, Ehrenfeld', 'wifi_speed' => 'fast', 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.5, 'lat' => 50.9452, 'lng' => 6.9211],
-            ['name' => 'Uni-Bibliothek Köln', 'category' => 'library', 'description' => 'University library open to all with student-friendly hours', 'address' => 'Universitätsstr. 33, Lindenthal', 'wifi_speed' => 'fast', 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.3, 'lat' => 50.9280, 'lng' => 6.9286],
-            ['name' => 'Rheinpark', 'category' => 'park', 'description' => 'Beautiful park along the Rhine with benches and shade', 'address' => 'Rheinparkweg, Deutz', 'wifi_speed' => null, 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.9, 'lat' => 50.9414, 'lng' => 6.9736],
-            ['name' => 'Café Sehnsucht', 'category' => 'cafe', 'description' => 'Hip café with power outlets at every table', 'address' => 'Kyffhäuserstr. 36, Südstadt', 'wifi_speed' => 'fast', 'noise_level' => 'moderate', 'time_limit_mins' => 90, 'rating' => 4.5, 'lat' => 50.9241, 'lng' => 6.9442],
-            ['name' => 'Design Offices Mediapark', 'category' => 'coworking', 'description' => 'Premium coworking with ergonomic desks and lounge', 'address' => 'Im Mediapark 8, Neustadt-Nord', 'wifi_speed' => 'fast', 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.7, 'lat' => 50.9471, 'lng' => 6.9399],
-            ['name' => 'Volksgarten', 'category' => 'park', 'description' => 'Large park in Südstadt with a pond and outdoor café', 'address' => 'Volksgartenstr., Südstadt', 'wifi_speed' => null, 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.6, 'lat' => 50.9218, 'lng' => 6.9499],
-            ['name' => 'Heilandt Kaffeemanufaktur', 'category' => 'cafe', 'description' => 'Specialty coffee roasters with work-friendly atmosphere', 'address' => 'Hohenstaufenring 19, Neustadt-Süd', 'wifi_speed' => 'ok', 'noise_level' => 'moderate', 'time_limit_mins' => 120, 'rating' => 4.6, 'lat' => 50.9308, 'lng' => 6.9407],
-            ['name' => 'Zentralbibliothek', 'category' => 'library', 'description' => 'Modern central library with digital workstations', 'address' => 'Josef-Haubrich-Hof 1, Neustadt-Süd', 'wifi_speed' => 'fast', 'noise_level' => 'quiet', 'time_limit_mins' => null, 'rating' => 4.5, 'lat' => 50.9340, 'lng' => 6.9478],
+            // laptopfriendly.co/cologne
+            ['name' => 'AYNI x Schanze', 'category' => 'cafe', 'address' => 'Schanzenstraße 6, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            ['name' => 'AYNI em Stüverhoff', 'category' => 'cafe', 'address' => 'Im Stavenhof 6, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'quiet'],
+            ['name' => 'THE COFFICE DEUTZ', 'category' => 'coworking', 'address' => 'Charles-de-Gaulle-Platz 1d, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'quiet'],
+            ['name' => 'URBAN LOFT Cologne', 'category' => 'coworking', 'address' => 'Eigelstein 41, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            ['name' => 'Café Heimisch', 'category' => 'cafe', 'address' => 'Deutzer Freiheit 89, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'moderate'],
+            ['name' => 'Espresso House', 'category' => 'cafe', 'address' => 'Bonner Str. 22, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'moderate'],
+            ['name' => 'Impact Café by Plastic2Beans', 'category' => 'cafe', 'address' => 'Luxemburger Str. 190, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'quiet'],
+            ['name' => 'Goldmund Literatur Café', 'category' => 'cafe', 'address' => 'Glasstraße 2, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'quiet'],
+            ['name' => 'Kaffeesaurus', 'category' => 'cafe', 'address' => 'Friesenplatz 15, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'moderate'],
+            ['name' => 'Die Mehlwerkstatt', 'category' => 'cafe', 'address' => 'Venloer Str. 202, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'quiet'],
+            // Coffee Fellows
+            ['name' => 'Coffee Fellows Mediapark', 'category' => 'cafe', 'address' => 'Im Mediapark 1, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            ['name' => 'Coffee Fellows Karolingerring', 'category' => 'cafe', 'address' => 'Karolingerring 2, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            ['name' => 'Coffee Fellows Antonsgasse', 'category' => 'cafe', 'address' => 'Antonsgasse 7, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            ['name' => 'Coffee Fellows Hbf', 'category' => 'cafe', 'address' => 'Trankgasse 11, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'loud'],
+            // Starbucks
+            ['name' => 'Starbucks Hohenzollernring', 'category' => 'cafe', 'address' => 'Hohenzollernring 70, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'loud'],
+            ['name' => 'Starbucks Schildergasse', 'category' => 'cafe', 'address' => 'Schildergasse 67, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'loud'],
+            ['name' => 'Starbucks Neumarkt', 'category' => 'cafe', 'address' => 'Neumarkt 1, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'loud'],
+            ['name' => 'Starbucks Hbf', 'category' => 'cafe', 'address' => 'Köln Hauptbahnhof, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'loud'],
+            ['name' => 'Starbucks Ehrenstraße', 'category' => 'cafe', 'address' => 'Ehrenstraße 72, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'loud'],
+            ['name' => 'Starbucks Rudolfplatz', 'category' => 'cafe', 'address' => 'Rudolfplatz 3, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            // Cafe Nova
+            ['name' => 'Cafe Nova', 'category' => 'cafe', 'address' => 'Breite Str. 64, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'moderate'],
+            ['name' => 'Cafe Nova Deutz', 'category' => 'cafe', 'address' => 'Deutzer Freiheit 72, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'moderate'],
+            // Libraries
+            ['name' => 'Stadtbibliothek Köln', 'category' => 'library', 'address' => 'Josef-Haubrich-Hof 1, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'quiet'],
+            ['name' => 'Stadtteilbibliothek Ehrenfeld', 'category' => 'library', 'address' => 'Subbelrather Str. 247a, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'quiet'],
+            ['name' => 'Stadtteilbibliothek Nippes', 'category' => 'library', 'address' => 'Neusser Str. 450, Köln', 'wifi_speed' => 'decent', 'noise_level' => 'quiet'],
+            // Coworking
+            ['name' => 'Startplatz', 'category' => 'coworking', 'address' => 'Im Mediapark 5, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            ['name' => 'Design Offices Köln Dominium', 'category' => 'coworking', 'address' => 'Tunisstr. 19-23, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'quiet'],
+            ['name' => 'WeWork Friesenplatz', 'category' => 'coworking', 'address' => 'Hohenzollernring 85-87, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
+            ['name' => 'JUNO Coworking', 'category' => 'coworking', 'address' => 'Jülicher Str. 72a, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'quiet'],
+            ['name' => 'Colabor Ehrenfeld', 'category' => 'coworking', 'address' => 'Vogelsanger Str. 187, Köln', 'wifi_speed' => 'fast', 'noise_level' => 'moderate'],
         ];
 
-        foreach ($spots as $spotData) {
-            $lat = $spotData['lat'];
-            $lng = $spotData['lng'];
-            unset($spotData['lat'], $spotData['lng']);
+        $geocode = app(GeocodingService::class);
+        $created = 0;
 
-            $spot = Spot::create($spotData);
-            DB::statement('UPDATE spots SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?', [$lng, $lat, $spot->id]);
+        foreach ($spots as $s) {
+            if (Spot::where('name', $s['name'])->exists()) {
+                continue;
+            }
+
+            $results = $geocode->search($s['address']);
+            $first = $results[0] ?? null;
+
+            if (! $first) {
+                $this->command?->warn("Skipped (no coords): {$s['name']}");
+
+                continue;
+            }
+
+            Spot::create([
+                'name' => $s['name'],
+                'category' => $s['category'],
+                'address' => $s['address'],
+                'lat' => $first['lat'],
+                'lng' => $first['lng'],
+                'wifi_speed' => $s['wifi_speed'],
+                'noise_level' => $s['noise_level'],
+            ]);
+            $created++;
+            usleep(200000); // geocoder rate limit
         }
+
+        $this->command?->info("Spots: {$created} created, ".(Spot::count()).' total');
     }
 }

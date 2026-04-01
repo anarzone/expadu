@@ -167,7 +167,10 @@ class TaskSeeder extends Seeder
         ];
 
         foreach ($tasks as $task) {
-            Task::create($task);
+            Task::firstOrCreate(
+                ['title' => $task['title']],
+                $task,
+            );
         }
     }
 }

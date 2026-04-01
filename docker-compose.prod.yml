@@ -1,76 +1,85 @@
 services:
-    app:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        ports:
-            - '${APP_PORT:-8080}:8080'
-        environment:
-            - APP_ENV=production
-            - APP_DEBUG=false
-        env_file:
-            - .env
-        depends_on:
-            pgsql:
-                condition: service_healthy
-            redis:
-                condition: service_healthy
-        networks:
-            - expadu
-        restart: unless-stopped
+  app:
+    image: ghcr.io/anarzone/expadu/app:latest
+    pull_policy: always
+    restart: always
+    environment:
+      APP_ENV: production
+      APP_DEBUG: '0'
+      APP_URL: ${APP_URL}
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: pgsql
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_CLIENT: phpredis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      VALHALLA_URL: http://valhalla:8002
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@expadu.com}
+      BCRYPT_ROUNDS: 12
+      LOG_CHANNEL: stack
+    ports:
+      - '8080:8080'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8080']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-    pgsql:
-        image: 'postgis/postgis:16-3.4'
-        environment:
-            PGPASSWORD: '${DB_PASSWORD}'
-            POSTGRES_DB: '${DB_DATABASE}'
-            POSTGRES_USER: '${DB_USERNAME}'
-            POSTGRES_PASSWORD: '${DB_PASSWORD}'
-        volumes:
-            - 'pgsql-data:/var/lib/postgresql/data'
-            - './docker/pgsql/create-postgis-extensions.sql:/docker-entrypoint-initdb.d/20-create-postgis-extensions.sql'
-        networks:
-            - expadu
-        healthcheck:
-            test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE}', '-U', '${DB_USERNAME}']
-            retries: 3
-            timeout: 5s
-        restart: unless-stopped
+  pgsql:
+    image: imresamu/postgis:16-3.4
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgsql-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE}', '-U', '${DB_USERNAME}']
+      interval: 10s
+      retries: 3
+      timeout: 5s
+    restart: always
 
-    redis:
-        image: 'redis:alpine'
-        volumes:
-            - 'redis-data:/data'
-        networks:
-            - expadu
-        healthcheck:
-            test: ['CMD', 'redis-cli', 'ping']
-            retries: 3
-            timeout: 5s
-        restart: unless-stopped
+  redis:
+    image: redis:alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      retries: 3
+      timeout: 5s
+    restart: always
 
-    valhalla:
-        image: 'ghcr.io/gis-ops/docker-valhalla/valhalla:latest'
-        volumes:
-            - 'valhalla-data:/custom_files'
-        environment:
-            - use_tiles_ignore_pbf=True
-            - force_rebuild=False
-            - serve_tiles=True
-            - build_elevation=False
-            - build_admins=False
-        networks:
-            - expadu
-        restart: unless-stopped
-
-networks:
-    expadu:
-        driver: bridge
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    environment:
+      - use_tiles_ignore_pbf=True
+      - force_rebuild=False
+      - serve_tiles=True
+      - build_elevation=False
+      - build_admins=False
+    volumes:
+      - valhalla-data:/custom_files
+    restart: always
 
 volumes:
-    pgsql-data:
-        driver: local
-    redis-data:
-        driver: local
-    valhalla-data:
-        driver: local
+  pgsql-data:
+  redis-data:
+  valhalla-data:
