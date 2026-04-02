@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies
         run: |
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-          npm ci
+          npm ci --legacy-peer-deps
 
       - name: PHP Code Style
         run: composer lint:check
@@ -93,7 +93,7 @@ jobs:
       - name: Install Dependencies
         run: |
           composer install --no-interaction --prefer-dist --optimize-autoloader
-          npm ci
+          npm ci --legacy-peer-deps
 
       - name: Prepare Environment
         run: |
