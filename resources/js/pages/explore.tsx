@@ -60,8 +60,8 @@ export default function Explore() {
     const { position: geoPos } = useGeolocation();
 
     // Best known location: GPS → server-resolved → default
-    const myLat = geoPos?.lat ?? myLat;
-    const myLng = geoPos?.lng ?? myLng;
+    const myLat = geoPos?.lat ?? userLocation?.lat ?? 50.9375;
+    const myLng = geoPos?.lng ?? userLocation?.lng ?? 6.9603;
     const [category, setCategory] = useState(filters.category ?? '');
     const [selectedSpot, setSelectedSpot] = useState<SpotData | null>(null);
     const [search, setSearch] = useState('');
