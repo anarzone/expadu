@@ -506,18 +506,17 @@ export default function Explore() {
                             <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
                                 <button
                                     onClick={closeRoute}
-                                    className="mb-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 transition-colors hover:text-[#1A4CD4]"
-                                    style={{ fontSize: 13, fontWeight: 600, color: '#6B6860' }}
+                                    className="mb-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
                                 >
                                     ← {selectedSpot ? `Back to ${selectedSpot.name}` : 'Back to spots'}
                                 </button>
                                 <div className="font-display text-xl font-medium tracking-tight">Directions</div>
-                                <div className="mt-1 text-sm text-[#6B6860]">To {routeDest.name}</div>
+                                <div className="mt-1 text-sm text-[#6B6860] dark:text-[#AAA89F]">To {routeDest.name}</div>
                             </div>
 
                             {/* ── Mode picker inside panel ── */}
                             {routeOptions.length > 0 && (
-                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3">
+                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
                                     <div className="flex gap-2">
                                         {routeOptions.map((opt) => {
                                             const isActive = routeMode === opt.mode;
@@ -528,26 +527,24 @@ export default function Explore() {
                                                         const from = { lat: myLat, lng: myLng };
                                                         selectRouteMode(opt.mode, opt.geometry, from, routeDest);
                                                     }}
-                                                    className="flex flex-1 cursor-pointer flex-col items-center gap-0.5 transition-all"
-                                                    style={{
-                                                        padding: '8px 2px', borderRadius: 10,
-                                                        border: isActive ? '2px solid #1A4CD4' : '2px solid #E2DFD6',
-                                                        background: isActive ? '#EBF0FD' : 'white',
-                                                        position: 'relative',
-                                                    }}
+                                                    className={`relative flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-[10px] px-[2px] py-2 transition-all ${
+                                                        isActive
+                                                            ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] dark:bg-[#1A4CD4]/20'
+                                                            : 'border-2 border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                                                    }`}
                                                 >
-                                                    {opt.best && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 20, background: '#FEF9EC', color: '#C47D0E', textTransform: 'uppercase' }}>Best</span>}
-                                                    {opt.disrupted && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 9 }}>⚠️</span>}
-                                                    <span style={{ fontSize: 16 }}>{opt.emoji}</span>
-                                                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 14, fontWeight: 600, color: isActive ? '#1A4CD4' : '#18170F', lineHeight: 1 }}>
-                                                        {opt.time}<span style={{ fontSize: 8, color: '#AAA89F' }}>m</span>
+                                                    {opt.best && <span className="absolute -top-[5px] -right-[3px] rounded-full bg-[#FEF9EC] px-1 py-[1px] text-[7px] font-bold uppercase text-[#C47D0E]">Best</span>}
+                                                    {opt.disrupted && <span className="absolute -top-[5px] -right-[3px] text-[9px]">⚠️</span>}
+                                                    <span className="text-[16px]">{opt.emoji}</span>
+                                                    <span className={`font-mono text-[14px] font-semibold leading-none ${isActive ? 'text-[#1A4CD4]' : 'text-[#18170F] dark:text-[#F5F4F0]'}`}>
+                                                        {opt.time}<span className="text-[8px] text-[#AAA89F]">m</span>
                                                     </span>
                                                 </button>
                                             );
                                         })}
                                     </div>
                                     {routeOptions.find((o) => o.best)?.recommendation_reason && (
-                                        <div className="mt-2 text-center" style={{ fontSize: 11, color: '#0A7C52' }}>
+                                        <div className="mt-2 text-center text-[11px] text-[#0A7C52]">
                                             {routeOptions.find((o) => o.best)?.recommendation_reason}
                                         </div>
                                     )}
@@ -566,34 +563,34 @@ export default function Explore() {
                                             <div
                                                 key={i}
                                                 onClick={() => selectTransitTrip(i)}
-                                                className="cursor-pointer border-b border-[#E2DFD6] px-5 py-4 transition-colors hover:bg-[#F5F4F0]"
+                                                className="cursor-pointer border-b border-[#E2DFD6] px-5 py-4 transition-colors hover:bg-[#F5F4F0] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                             >
                                                 <div className="flex items-start justify-between">
                                                     <div>
-                                                        <div style={{ fontSize: 15, fontWeight: 600 }}>
+                                                        <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
                                                             {trip.departure_time} — {trip.arrival_time}
                                                         </div>
                                                         <div className="mt-1.5 flex flex-wrap items-center gap-1">
                                                             {trip.legs.map((leg, j) => (
                                                                 <span key={j} className="flex items-center gap-1">
-                                                                    {j > 0 && <span style={{ fontSize: 10, color: '#AAA89F' }}>›</span>}
+                                                                    {j > 0 && <span className="text-[10px] text-[#AAA89F]">›</span>}
                                                                     {leg.type === 'walk' ? (
-                                                                        <span style={{ fontSize: 13 }}>🚶</span>
+                                                                        <span className="text-[13px]">🚶</span>
                                                                     ) : (
-                                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#1A4CD4', color: 'white', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 700, fontFamily: "'Geist Mono', monospace" }}>
+                                                                        <span className="inline-flex items-center gap-0.5 rounded bg-[#1A4CD4] px-1.5 py-[1px] font-mono text-[11px] font-bold text-white">
                                                                             {leg.mode === 'rail' ? '🚂' : '🚋'} {leg.line}
                                                                         </span>
                                                                     )}
                                                                 </span>
                                                             ))}
                                                         </div>
-                                                        <div style={{ fontSize: 11, color: '#6B6860', marginTop: 4 }}>
-                                                            {trip.first_line_departure && <><span style={{ color: '#0A7C52', fontWeight: 600 }}>{trip.first_line_departure}</span> from {trip.boarding_stop}</>}
+                                                        <div className="mt-1 text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                                            {trip.first_line_departure && <><span className="font-semibold text-[#0A7C52]">{trip.first_line_departure}</span> from {trip.boarding_stop}</>}
                                                             {trip.walk_min > 0 && <> · 🚶 {trip.walk_min} min</>}
                                                         </div>
                                                     </div>
                                                     <div className="shrink-0 text-right">
-                                                        <div style={{ fontSize: 15, fontWeight: 600 }}>{trip.total_duration_min} min</div>
+                                                        <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{trip.total_duration_min} min</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -612,18 +609,18 @@ export default function Explore() {
                                         </button>
 
                                         {/* Summary */}
-                                        <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4">
+                                        <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
                                             <div className="flex items-center gap-2">
-                                                <span style={{ fontSize: 20 }}>🚋</span>
-                                                <span style={{ fontSize: 15, fontWeight: 600 }}>Transit</span>
+                                                <span className="text-[20px]">🚋</span>
+                                                <span className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">Transit</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 600, color: '#1A4CD4' }}>
+                                                <span className="font-mono text-[16px] font-semibold text-[#1A4CD4]">
                                                     {routeDetail.departure_time} → {routeDetail.arrival_time}
                                                 </span>
-                                                <span style={{ fontSize: 11, color: '#AAA89F' }}>{routeDetail.duration_min} min</span>
+                                                <span className="text-[11px] text-[#AAA89F]">{routeDetail.duration_min} min</span>
                                                 {(routeDetail.transfers ?? 0) > 0 && (
-                                                    <span style={{ fontSize: 10, fontWeight: 700, color: '#6B6860', background: '#EFEDE7', padding: '2px 7px', borderRadius: 20 }}>
+                                                    <span className="rounded-full bg-[#EFEDE7] px-[7px] py-[2px] text-[10px] font-bold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
                                                         {routeDetail.transfers} transfer{routeDetail.transfers !== 1 ? 's' : ''}
                                                     </span>
                                                 )}
@@ -631,17 +628,17 @@ export default function Explore() {
                                         </div>
 
                                         {/* Timeline */}
-                                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white px-4">
+                                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white px-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
                                             <JourneyTimeline segments={routeDetail.segments ?? []} departureTime={routeDetail.departure_time} />
                                         </div>
 
                                         {/* Maps buttons */}
                                         {routeMapsUrl && (
                                             <div className="mt-3 flex gap-2">
-                                                <a href={routeMapsUrl.google} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]" style={{ textDecoration: 'none' }}>
+                                                <a href={routeMapsUrl.google} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-[#1541B8]">
                                                     Google Maps
                                                 </a>
-                                                <a href={routeMapsUrl.apple} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]" style={{ textDecoration: 'none' }}>
+                                                <a href={routeMapsUrl.apple} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] no-underline transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]">
                                                     Apple Maps
                                                 </a>
                                             </div>
@@ -680,8 +677,7 @@ export default function Explore() {
                                 <div className="flex items-center justify-between">
                                     <button
                                         onClick={() => setSelectedSpot(null)}
-                                        className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 transition-colors hover:text-[#1A4CD4]"
-                                        style={{ fontSize: 13, fontWeight: 600, color: '#6B6860' }}
+                                        className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
                                     >
                                         ← Back to spots
                                     </button>
@@ -724,7 +720,7 @@ export default function Explore() {
                                                 <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
                                                 <div className="min-w-0 flex-1">
                                                     <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{g.name}</div>
-                                                    <div className="text-xs text-[#6B6860]">
+                                                    <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
                                                         {[g.street, g.city].filter(Boolean).join(', ')}
                                                     </div>
                                                 </div>
@@ -756,22 +752,22 @@ export default function Explore() {
                     {/* Tablet: ☰ toggle button — md visible, lg hidden */}
                     <button
                         onClick={() => setListOpen(!listOpen)}
-                        className="absolute top-5 left-5 z-[60] hidden items-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-2.5 text-[13px] font-semibold shadow-md transition-all hover:bg-[#EFEDE7] md:flex lg:hidden"
+                        className="absolute top-5 left-5 z-[60] hidden items-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-2.5 text-[13px] font-semibold shadow-md transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920] md:flex lg:hidden"
                     >
                         <span>☰</span>
                         <span>{listOpen ? 'Hide list' : 'Show list'}</span>
                     </button>
 
                     {/* Mobile: floating search + filters over map */}
-                    <div className="absolute top-4 left-1/2 z-[85] w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl md:hidden">
-                        <div className="flex items-center gap-2.5 border-b border-[#E2DFD6] px-3.5 py-[11px]">
+                    <div className="absolute top-4 left-1/2 z-[85] w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97] md:hidden">
+                        <div className="flex items-center gap-2.5 border-b border-[#E2DFD6] px-3.5 py-[11px] dark:border-[#3A3930]">
                             <span className="text-[15px] text-[#AAA89F]">🔍</span>
                             <input
                                 type="text"
                                 placeholder="Search work spots…"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-[#AAA89F]"
+                                className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F5F4F0]"
                             />
                             {search && <button onClick={() => setSearch('')} className="text-[13px] text-[#AAA89F]">✕</button>}
                         </div>
@@ -780,18 +776,17 @@ export default function Explore() {
                         </div>
                         {/* Search results dropdown on mobile */}
                         {search && filteredSpots.length > 0 && (
-                            <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6]">
+                            <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6] dark:border-[#3A3930]">
                                 {filteredSpots.slice(0, 8).map((s) => (
                                     <div
                                         key={s.id}
                                         onClick={() => { selectSpot(s); setSearch(''); if (s.lat && s.lng) mapRef.current?.flyTo(s.lat, s.lng, 15); }}
-                                        className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-[#EFEDE7]"
-                                        style={{ borderBottom: '1px solid #E2DFD6' }}
+                                        className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                     >
                                         <span className="text-lg">{s.category === 'cafe' ? '☕' : s.category === 'coworking' ? '🏢' : s.category === 'library' ? '📚' : '📍'}</span>
                                         <div>
-                                            <div style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</div>
-                                            <div style={{ fontSize: 11, color: '#6B6860' }}>{s.address}</div>
+                                            <div className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{s.name}</div>
+                                            <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{s.address}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -799,7 +794,7 @@ export default function Explore() {
                         )}
                         {/* Geocode suggestions when no spot matches */}
                         {search && filteredSpots.length === 0 && geoSuggestions.length > 0 && (
-                            <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6]">
+                            <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6] dark:border-[#3A3930]">
                                 {geoSuggestions.map((g, i) => (
                                     <div
                                         key={i}
@@ -807,13 +802,12 @@ export default function Explore() {
                                             mapRef.current?.flyTo(g.lat, g.lng, 15);
                                             setSearch('');
                                         }}
-                                        className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-[#EFEDE7]"
-                                        style={{ borderBottom: '1px solid #E2DFD6' }}
+                                        className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                     >
                                         <span className="text-lg">📍</span>
                                         <div>
-                                            <div style={{ fontSize: 13, fontWeight: 600 }}>{g.name}</div>
-                                            <div style={{ fontSize: 11, color: '#6B6860' }}>{[g.street, g.city].filter(Boolean).join(', ')}</div>
+                                            <div className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{g.name}</div>
+                                            <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{[g.street, g.city].filter(Boolean).join(', ')}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -876,7 +870,7 @@ export default function Explore() {
                                 </button>
                                 <button
                                     onClick={() => setTapPoint(null)}
-                                    className="shrink-0 text-[13px] text-[#AAA89F] hover:text-[#6B6860]"
+                                    className="shrink-0 text-[13px] text-[#AAA89F] hover:text-[#6B6860] dark:hover:text-[#F5F4F0]"
                                 >
                                     ✕
                                 </button>
@@ -892,7 +886,7 @@ export default function Explore() {
                                     <span className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">Save Place</span>
                                     <button
                                         onClick={() => { setShowPlaceForm(false); setTapPoint(null); }}
-                                        className="text-[13px] text-[#AAA89F] hover:text-[#6B6860]"
+                                        className="text-[13px] text-[#AAA89F] hover:text-[#6B6860] dark:hover:text-[#F5F4F0]"
                                     >
                                         ✕
                                     </button>
@@ -909,7 +903,7 @@ export default function Explore() {
                                                 className={`flex h-8 w-8 items-center justify-center rounded-[8px] text-base transition-all ${
                                                     placeEmoji === emoji
                                                         ? 'bg-[#F5C518] shadow-[0_0_0_2px_#E6B800]'
-                                                        : 'bg-[#EFEDE7] hover:bg-[#E2DFD6] dark:bg-[#2A2920]'
+                                                        : 'bg-[#EFEDE7] hover:bg-[#E2DFD6] dark:bg-[#2A2920] dark:hover:bg-[#3A3930]'
                                                 }`}
                                             >
                                                 {emoji}
@@ -931,7 +925,7 @@ export default function Explore() {
                                 </div>
 
                                 {/* Address display */}
-                                <div className="mb-3 text-xs text-[#6B6860]">
+                                <div className="mb-3 text-xs text-[#6B6860] dark:text-[#AAA89F]">
                                     📍 {tapPoint.address}
                                 </div>
 
@@ -981,7 +975,7 @@ export default function Explore() {
 /* ═══ SEARCH BAR ═══ matching prototype: #EFEDE7 bg, #E2DFD6 border, focus: #1A4CD4 border + white bg + #EBF0FD ring */
 function SearchBar({ search, setSearch }: { search: string; setSearch: (v: string) => void }) {
     return (
-        <div className="mb-3 flex cursor-text items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]">
+        <div className="mb-3 flex cursor-text items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
             <span className="text-[15px] text-[#AAA89F]">🔍</span>
             <input
                 type="text"
@@ -1100,7 +1094,7 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
                 className="flex shrink-0 cursor-grab justify-center py-3 select-none"
                 style={{ touchAction: 'none' }}
             >
-                <div className="h-1 w-9 rounded-full bg-[#E2DFD6] transition-all hover:w-12 hover:bg-[#AAA89F]" />
+                <div className="h-1 w-9 rounded-full bg-[#E2DFD6] transition-all hover:w-12 hover:bg-[#AAA89F] dark:bg-[#3A3930]" />
             </div>
 
             {/* Header */}
@@ -1122,7 +1116,7 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
                         <span className="shrink-0 text-2xl">{categoryEmoji[s.category] || '📍'}</span>
                         <div className="min-w-0 flex-1">
                             <div className="mb-0.5 text-sm font-semibold">{s.name}</div>
-                            <div className="text-xs text-[#6B6860]">{s.address?.split(',')[1]?.trim() || s.address}</div>
+                            <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">{s.address?.split(',')[1]?.trim() || s.address}</div>
                             <div className="mt-1 flex gap-1">
                                 {s.wifi_speed && (() => { const t = getTag('wifi'); return t ? <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}><t.icon size={10} stroke={1.5} /> WiFi</span> : null; })()}
                                 {s.noise_level === 'quiet' && (() => { const t = getTag('quiet'); return t ? <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}><t.icon size={10} stroke={1.5} /> Quiet</span> : null; })()}

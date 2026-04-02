@@ -116,18 +116,18 @@ export default function Dashboard() {
             <div className="mx-auto w-full max-w-[680px]">
                 {/* Header */}
                 <div
-                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] px-6 backdrop-blur-2xl dark:border-[#3A3930]"
-                    style={{ padding: '16px 24px 14px', background: 'rgba(246,245,241,.94)' }}
+                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] bg-[rgba(246,245,241,.94)] px-6 backdrop-blur-2xl dark:border-[#3A3930] dark:bg-[rgba(30,29,21,.94)]"
+                    style={{ padding: '16px 24px 14px' }}
                 >
                     <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}>{greeting}</span>
-                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 11, color: '#AAA89F', textTransform: 'uppercase' }}>
+                    <span className="text-[#AAA89F] dark:text-[#6B6860]" style={{ fontFamily: "'Geist Mono', monospace", fontSize: 11, textTransform: 'uppercase' }}>
                         {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </span>
                 </div>
 
                 {/* Blue highlight — Today's Highlights */}
                 {weather && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div
                             className="relative overflow-hidden"
                             style={{ background: '#1A4CD4', borderRadius: 20, padding: '20px 22px', color: 'white' }}
@@ -224,22 +224,22 @@ export default function Dashboard() {
 
                 {/* Warnings section removed — handled by commute recommendation cards now */}
                 {false && warnings.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}></div>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}></div>
                 )}
 
                 {/* Settlement progress */}
                 {settlement && settlement.total > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Settlement Progress</span>
-                            <span style={{ fontSize: 12, color: '#6B6860' }}>{settlement.days_since_arrival} days in Germany</span>
+                            <span className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>{settlement.days_since_arrival} days in Germany</span>
                         </div>
                         <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] p-4">
                             <div className="mb-2 flex justify-between text-sm">
                                 <span style={{ fontWeight: 600 }}>{settlement.completed} of {settlement.total} tasks</span>
                                 <span style={{ fontFamily: "'Geist Mono', monospace", color: '#1A4CD4', fontWeight: 600 }}>{settlement.percent}%</span>
                             </div>
-                            <div style={{ background: '#EFEDE7', borderRadius: 20, height: 6 }}>
+                            <div className="bg-[#EFEDE7] dark:bg-[#2A2920]" style={{ borderRadius: 20, height: 6 }}>
                                 <div style={{ background: '#1A4CD4', borderRadius: 20, height: 6, width: `${settlement.percent}%`, transition: 'width .6s' }} />
                             </div>
                         </div>
@@ -248,11 +248,11 @@ export default function Dashboard() {
 
                 {/* Your places */}
                 {places.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-3" style={{ fontSize: 16, fontWeight: 600 }}>Your Places</div>
                         <div className="flex flex-wrap gap-2">
                             {places.map((p) => (
-                                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] px-3 py-1.5 text-xs font-medium text-[#6B6860]">
+                                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full border border-[#E2DFD6] bg-white px-3 py-1.5 text-xs font-medium text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]">
                                     {p.emoji} {p.name}
                                 </span>
                             ))}
@@ -262,9 +262,9 @@ export default function Dashboard() {
 
                 {/* Work spots nearby */}
                 {nearbySpots.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-3 flex items-baseline justify-between">
-                            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F' }}>Work Spots Nearby</span>
+                            <span className="text-[#AAA89F] dark:text-[#6B6860]" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Work Spots Nearby</span>
                             <a href="/explore" className="text-xs font-semibold text-[#1A4CD4]" style={{ textDecoration: 'none' }}>See all →</a>
                         </div>
                         <div className="flex flex-col" style={{ gap: 8 }}>
@@ -272,14 +272,14 @@ export default function Dashboard() {
                                 <div
                                     key={spot.id}
                                     onClick={() => setRouteSheetDest({ name: spot.name, emoji: spot.emoji, lat: spot.lat, lng: spot.lng })}
-                                    className="flex cursor-pointer items-center transition-all hover:translate-x-0.5 hover:border-[rgba(26,76,212,.25)]"
-                                    style={{ background: 'white', border: '1px solid #E2DFD6', borderRadius: 9, padding: '10px 14px', gap: 12 }}
+                                    className="flex cursor-pointer items-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:translate-x-0.5 hover:border-[rgba(26,76,212,.25)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                    style={{ padding: '10px 14px', gap: 12 }}
                                 >
                                     <span style={{ fontSize: 22, flexShrink: 0 }}>{spot.emoji}</span>
                                     <div className="min-w-0 flex-1">
                                         <div style={{ fontSize: 14, fontWeight: 600 }}>{spot.name}</div>
                                         <div style={{ fontSize: 12, marginTop: 1 }}>
-                                            <span style={{ color: '#6B6860' }}>{spot.area.trim()}{spot.area.trim() ? ' · ' : ''}</span>
+                                            <span className="text-[#6B6860] dark:text-[#AAA89F]">{spot.area.trim()}{spot.area.trim() ? ' · ' : ''}</span>
                                             <span style={{ color: '#0A7C52', fontWeight: 500 }}>Open now</span>
                                         </div>
                                         {spot.tags.length > 0 && (
@@ -305,7 +305,7 @@ export default function Dashboard() {
                                             </div>
                                         )}
                                     </div>
-                                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, color: '#AAA89F', flexShrink: 0 }}>
+                                    <span className="text-[#AAA89F] dark:text-[#6B6860]" style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, flexShrink: 0 }}>
                                         {spot.distance_km} km
                                     </span>
                                 </div>
@@ -316,7 +316,7 @@ export default function Dashboard() {
 
                 {/* This week events */}
                 {thisWeek.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>This Week</span>
                             <a href="/events" className="text-xs font-semibold text-[#1A4CD4]" style={{ textDecoration: 'none' }}>See all →</a>
@@ -332,7 +332,7 @@ export default function Dashboard() {
                                     <span className="text-lg">{ev.emoji || '📅'}</span>
                                     <div className="min-w-0 flex-1">
                                         <div style={{ fontSize: 13, fontWeight: 600 }}>{ev.title}</div>
-                                        <div style={{ fontSize: 12, color: '#6B6860' }}>
+                                        <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>
                                             {new Date(ev.starts_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                                             {ev.location_name && ` · ${ev.location_name}`}
                                         </div>
@@ -348,7 +348,7 @@ export default function Dashboard() {
 
                 {/* Live departures */}
                 {departures && (departures.departures?.length ?? 0) > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span style={{ fontSize: 16, fontWeight: 600 }}>Departures · {departures.stop_name}</span>
@@ -367,7 +367,7 @@ export default function Dashboard() {
                         </div>
                         <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
                             {departures.departures.slice(0, 4).map((dep, i) => (
-                                <div key={`${dep.line}-${dep.direction}`} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i < 3 ? '1px solid #E2DFD6' : 'none' }}>
+                                <div key={`${dep.line}-${dep.direction}`} className={`flex items-center gap-3 px-4 py-3 ${i < 3 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}>
                                     <div
                                         className="flex size-8 shrink-0 items-center justify-center rounded-md"
                                         style={{ background: dep.color, color: 'white', fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 700 }}
@@ -385,7 +385,7 @@ export default function Dashboard() {
                                                 <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 18, fontWeight: 500, color: (dep.delay ?? 0) > 0 ? '#C47D0E' : '#0A7C52' }}>
                                                     {dep.departures[0]}
                                                 </span>
-                                                <span style={{ fontSize: 10, color: '#AAA89F', marginLeft: 2 }}>min</span>
+                                                <span className="text-[#AAA89F] dark:text-[#6B6860]" style={{ fontSize: 10, marginLeft: 2 }}>min</span>
                                             </>
                                         )}
                                         {(dep.delay ?? 0) > 0 && !dep.cancelled && (
@@ -410,7 +410,7 @@ export default function Dashboard() {
                             <a
                                 key={item.label}
                                 href={item.href}
-                                className="flex flex-col items-center gap-1.5 rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] py-3 text-[#6B6860] transition-all hover:border-[rgba(26,76,212,.2)] hover:text-[#1A4CD4] hover:shadow-sm"
+                                className="flex flex-col items-center gap-1.5 rounded-[14px] border border-[#E2DFD6] bg-white py-3 text-[#6B6860] transition-all hover:border-[rgba(26,76,212,.2)] hover:text-[#1A4CD4] hover:shadow-sm dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
                                 style={{ textDecoration: 'none' }}
                             >
                                 <item.icon size={22} stroke={ICON_STROKE} />
@@ -435,8 +435,8 @@ export default function Dashboard() {
                         style={{ top: '50%', transform: 'translateY(-50%)', left: 'calc(50% - 280px)', width: 560, maxHeight: '80vh', overflowY: 'auto' }}
                     >
                         <div className="mb-3 flex items-center justify-between">
-                            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F' }}>Route options</span>
-                            <button onClick={() => setRouteSheetDest(null)} className="cursor-pointer border-none bg-transparent text-lg text-[#AAA89F] hover:text-[#18170F]">✕</button>
+                            <span className="text-[#AAA89F] dark:text-[#6B6860]" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Route options</span>
+                            <button onClick={() => setRouteSheetDest(null)} className="cursor-pointer border-none bg-transparent text-lg text-[#AAA89F] hover:text-[#18170F] dark:text-[#6B6860] dark:hover:text-[#F5F4F0]">✕</button>
                         </div>
                         <RouteSheet destination={routeSheetDest} onClose={() => setRouteSheetDest(null)} />
                     </div>
@@ -458,20 +458,20 @@ function RecCard({ rec }: { rec: Recommendation }) {
 
     return (
         <div
-            className="flex items-center gap-3 rounded-[14px] border p-3.5 transition-all hover:shadow-sm"
-            style={{ background: 'white', borderColor: colors.border }}
+            className="flex items-center gap-3 rounded-[14px] border bg-white p-3.5 transition-all hover:shadow-sm dark:bg-[#1E1D15]"
+            style={{ borderColor: colors.border }}
         >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg" style={{ background: colors.bg }}>
                 {rec.emoji}
             </div>
             <div className="min-w-0 flex-1">
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{rec.title}</div>
-                <div style={{ fontSize: 12, color: '#6B6860' }}>{rec.subtitle}</div>
+                <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>{rec.subtitle}</div>
             </div>
             {rec.value && (
                 <div className="shrink-0 text-right">
                     <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 20, fontWeight: 500, lineHeight: 1, color: colors.text }}>{rec.value}</div>
-                    <div style={{ fontSize: 9, color: '#AAA89F' }}>{rec.unit}</div>
+                    <div className="text-[#AAA89F] dark:text-[#6B6860]" style={{ fontSize: 9 }}>{rec.unit}</div>
                 </div>
             )}
         </div>

@@ -221,20 +221,18 @@ function JourneyRoutePanel({ origin, destination, onClear }: {
                         <button
                             key={opt.mode}
                             onClick={() => selectMode(opt.mode)}
-                            className="flex flex-1 cursor-pointer flex-col items-center gap-0.5 transition-all"
+                            className={`flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-[10px] transition-all ${active ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'}`}
                             style={{
-                                padding: '8px 2px', borderRadius: 10,
-                                border: active ? '2px solid #1A4CD4' : '2px solid #E2DFD6',
-                                background: active ? '#EBF0FD' : 'white',
+                                padding: '8px 2px',
                                 position: 'relative',
                             }}
                         >
                             {opt.best && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 20, background: '#FEF9EC', color: '#C47D0E', textTransform: 'uppercase' }}>Best</span>}
                             <span style={{ fontSize: 16 }}>{opt.emoji}</span>
-                            <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 14, fontWeight: 600, color: active ? '#1A4CD4' : '#18170F', lineHeight: 1 }}>
+                            <span className={active ? '' : 'text-[#18170F] dark:text-[#F5F4F0]'} style={{ fontFamily: "'Geist Mono', monospace", fontSize: 14, fontWeight: 600, color: active ? '#1A4CD4' : undefined, lineHeight: 1 }}>
                                 {opt.time}<span style={{ fontSize: 8, color: '#AAA89F' }}>m</span>
                             </span>
-                            <span style={{ fontSize: 10, color: '#6B6860' }}>
+                            <span className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 10 }}>
                                 {opt.mode === 'bike' ? 'Bike' : opt.mode === 'walk' ? 'Walk' : opt.mode === 'drive' ? 'Drive' : 'Transit'}
                             </span>
                         </button>
@@ -267,7 +265,7 @@ function JourneyRoutePanel({ origin, destination, onClear }: {
                     href={`https://maps.apple.com/?saddr=${origin.lat},${origin.lng}&daddr=${destination.lat},${destination.lng}&dirflg=${gmMode === 'transit' ? 'r' : gmMode === 'walking' ? 'w' : gmMode === 'bicycling' ? 'b' : 'd'}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
+                    className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                     style={{ textDecoration: 'none' }}
                 >
                     🍎 Apple Maps
@@ -315,8 +313,8 @@ function RoutineDetailContent({ routine: er, onClose, onToggle, onDelete, userPl
                 {/* Back button */}
                 <button
                     onClick={() => setMode('view')}
-                    className="mb-4 flex cursor-pointer items-center gap-1 border-none bg-transparent transition-colors hover:text-[#1A4CD4]"
-                    style={{ fontSize: 13, fontWeight: 600, color: '#6B6860', padding: 0 }}
+                    className="mb-4 flex cursor-pointer items-center gap-1 border-none bg-transparent text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
+                    style={{ fontSize: 13, fontWeight: 600, padding: 0 }}
                 >
                     ← Back to details
                 </button>
@@ -332,7 +330,7 @@ function RoutineDetailContent({ routine: er, onClose, onToggle, onDelete, userPl
 
                 {/* Time */}
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F', marginBottom: 8, marginTop: 16 }}>Departure time</div>
-                <div className="mb-3 flex items-center gap-[10px]" style={{ background: '#EFEDE7', border: '1px solid #E2DFD6', borderRadius: 9, padding: '10px 14px' }}>
+                <div className="mb-3 flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]" style={{ padding: '10px 14px' }}>
                     <span style={{ fontSize: 15, color: '#AAA89F' }}>🕐</span>
                     <input
                         type="time"
@@ -393,7 +391,7 @@ function RoutineDetailContent({ routine: er, onClose, onToggle, onDelete, userPl
                 <span style={{ fontSize: 28 }}>{er.emoji || '🚌'}</span>
                 <div className="min-w-0 flex-1">
                     <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500 }}>{er.name}</div>
-                    <div style={{ fontSize: 13, color: '#6B6860', marginTop: 2 }}>{er.from_stop} → {er.to_stop}</div>
+                    <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 13, marginTop: 2 }}>{er.from_stop} → {er.to_stop}</div>
                 </div>
                 <span style={{
                     fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20,
@@ -403,13 +401,13 @@ function RoutineDetailContent({ routine: er, onClose, onToggle, onDelete, userPl
                     {isActive ? 'Active' : 'Paused'}
                 </span>
             </div>
-            <div className="mb-3 rounded-[14px] border border-[#E2DFD6] bg-white p-4">
+            <div className="mb-3 rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
                 <div className="mb-3 flex items-center justify-between">
-                    <span style={{ fontSize: 12, color: '#6B6860' }}>Departure time</span>
+                    <span className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>Departure time</span>
                     <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 600, color: '#1A4CD4' }}>{er.departure_time}</span>
                 </div>
                 <div className="mb-3 flex items-center justify-between">
-                    <span style={{ fontSize: 12, color: '#6B6860' }}>Next departure</span>
+                    <span className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>Next departure</span>
                     <span style={{ fontSize: 14, fontWeight: 600, color: er.next_departure_min != null ? '#0A7C52' : '#AAA89F' }}>
                         {er.next_departure_min != null
                             ? `${er.next_departure_line ? er.next_departure_line + ' in ' : ''}${er.next_departure_min} min`
@@ -417,7 +415,7 @@ function RoutineDetailContent({ routine: er, onClose, onToggle, onDelete, userPl
                     </span>
                 </div>
                 <div className="flex items-center justify-between">
-                    <span style={{ fontSize: 12, color: '#6B6860' }}>Active days</span>
+                    <span className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>Active days</span>
                     <div className="flex gap-1">
                         {dayLabels.map((d, i) => (
                             <div key={i} className="flex items-center justify-center" style={{
@@ -459,8 +457,8 @@ function RoutineDetailContent({ routine: er, onClose, onToggle, onDelete, userPl
                 </button>
                 <button
                     onClick={() => setMode('edit')}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 transition-all hover:bg-[#EBF0FD]"
-                    style={{ padding: '13px', borderRadius: 9, fontSize: 15, fontWeight: 600, background: '#FFFFFF', color: '#1A4CD4', border: '1px solid #E2DFD6' }}
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                    style={{ padding: '13px', fontSize: 15, fontWeight: 600, color: '#1A4CD4' }}
                 >
                     ✏️ Edit routine
                 </button>
@@ -477,8 +475,8 @@ function RoutineDetailContent({ routine: er, onClose, onToggle, onDelete, userPl
                             router.reload({ only: ['routines'], preserveScroll: true });
                         });
                     }}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 transition-all hover:bg-[#FDE8E6]"
-                    style={{ padding: '13px', borderRadius: 9, fontSize: 15, fontWeight: 600, background: '#FFFFFF', color: '#C4271A', border: '1px solid #E2DFD6' }}
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#FDE8E6] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                    style={{ padding: '13px', fontSize: 15, fontWeight: 600, color: '#C4271A' }}
                 >
                     🗑 Delete routine
                 </button>
@@ -538,12 +536,12 @@ function StopInput({ emoji, placeholder, value, onChange, places }: {
     return (
         <div className="relative">
             <div
-                className="flex items-center gap-[10px] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                style={{ background: '#EFEDE7', border: '1px solid #E2DFD6', borderRadius: 9, padding: '10px 14px' }}
+                className="flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                style={{ padding: '10px 14px' }}
             >
                 <span style={{ fontSize: 15, color: '#AAA89F' }}>{emoji}</span>
                 <input
-                    className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
+                    className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F5F4F0]"
                     style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
                     placeholder={placeholder}
                     value={value}
@@ -554,12 +552,12 @@ function StopInput({ emoji, placeholder, value, onChange, places }: {
                 />
             </div>
             {focused && results.length > 0 && (
-                <div className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-lg">
+                <div className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-lg dark:border-[#3A3930] dark:bg-[#1E1D15]">
                     {results.slice(0, 6).map((r) => (
                         <div
                             key={r.name}
                             onMouseDown={() => select(r.name)}
-                            className="flex cursor-pointer items-center gap-2 px-3 py-2.5 transition-colors hover:bg-[#EFEDE7]"
+                            className="flex cursor-pointer items-center gap-2 px-3 py-2.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
                             style={{ fontSize: 13 }}
                         >
                             <span style={{ fontSize: 14 }}>{r.type === 'place' ? '📍' : '🚏'}</span>
@@ -589,12 +587,12 @@ function StopPickerContent({ stopSearch, onSearch, loading, results, activeStop,
         <div>
             <div style={{ fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 500, marginBottom: 12 }}>Choose a stop</div>
             <div
-                className="mb-4 flex items-center gap-[10px] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                style={{ background: '#EFEDE7', border: '1px solid #E2DFD6', borderRadius: 9, padding: '10px 14px' }}
+                className="mb-4 flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                style={{ padding: '10px 14px' }}
             >
                 <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
                 <input
-                    className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
+                    className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F5F4F0]"
                     style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
                     placeholder="Search stops (e.g. Neumarkt, Ehrenfeld)..."
                     value={stopSearch}
@@ -625,8 +623,8 @@ function StopPickerContent({ stopSearch, onSearch, loading, results, activeStop,
                         <div
                             key={s.stop_id}
                             onClick={() => onSelect(s.name, s.lat, s.lng)}
-                            className="flex cursor-pointer items-center gap-3 transition-colors hover:bg-[#EFEDE7]"
-                            style={{ padding: '12px 4px', borderBottom: '1px solid #E2DFD6', background: activeStop === s.name ? '#EBF0FD' : 'transparent' }}
+                            className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                            style={{ padding: '12px 4px', background: activeStop === s.name ? '#EBF0FD' : 'transparent' }}
                         >
                             <span style={{ fontSize: 20, flexShrink: 0, width: 28, textAlign: 'center' }}>🚏</span>
                             <div className="flex-1">
@@ -968,13 +966,8 @@ export default function Transit() {
             <div className="mx-auto w-full max-w-[680px]">
                 {/* ── Sticky header ── */}
                 <div
-                    className="sticky top-0 z-50 flex items-center justify-between border-b px-6"
-                    style={{
-                        padding: '16px 24px 14px',
-                        borderColor: '#E2DFD6',
-                        background: 'rgba(246,245,241,.94)',
-                        backdropFilter: 'blur(16px)',
-                    }}
+                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] bg-[rgba(246,245,241,.94)] px-6 backdrop-blur-[16px] dark:border-[#3A3930] dark:bg-[rgba(30,29,21,.94)]"
+                    style={{ padding: '16px 24px 14px' }}
                 >
                     <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}>
                         Transit & Commute
@@ -984,7 +977,7 @@ export default function Transit() {
                 {/* ── Feed sections ── */}
                 <div>
                     {/* ═══ 1. Smart Commute Hero ═══ */}
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-[13px] flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Smart Commute</span>
                             <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F' }}>
@@ -1092,7 +1085,7 @@ export default function Transit() {
                     </div>
 
                     {/* ═══ 2. Plan a Journey ═══ */}
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-[13px]">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Plan a Journey</span>
                         </div>
@@ -1136,8 +1129,8 @@ export default function Transit() {
                                 />
                                 <button
                                     onClick={swapDestinations}
-                                    className="flex shrink-0 cursor-pointer items-center justify-center transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD]"
-                                    style={{ width: 36, height: 36, background: '#FFFFFF', border: '1px solid #E2DFD6', borderRadius: 9, fontSize: 16 }}
+                                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                    style={{ width: 36, height: 36, fontSize: 16 }}
                                     title="Swap origin/destination"
                                 >
                                     ⇅
@@ -1153,15 +1146,11 @@ export default function Transit() {
                                 <button
                                     key={c.label}
                                     onClick={() => setDest(c.value, c.lat, c.lng)}
-                                    className="inline-flex cursor-pointer items-center gap-[5px] whitespace-nowrap transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4]"
+                                    className="inline-flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-full border border-[#E2DFD6] bg-white text-[#6B6860] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
                                     style={{
                                         padding: '6px 12px',
-                                        borderRadius: 100,
-                                        background: '#FFFFFF',
-                                        border: '1px solid #E2DFD6',
                                         fontSize: 12,
                                         fontWeight: 500,
-                                        color: '#6B6860',
                                     }}
                                 >
                                     {c.emoji} {c.label}
@@ -1184,7 +1173,7 @@ export default function Transit() {
                         const visible = (disruptions ?? []).filter((d) => !dismissedDisruptions.includes(d.id)).slice(0, 3);
                         if (visible.length === 0) return null;
                         return (
-                            <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                            <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                                 <div className="mb-[13px] flex items-baseline justify-between">
                                     <span style={{ fontSize: 16, fontWeight: 600 }}>Live Disruptions</span>
                                     <span
@@ -1213,7 +1202,7 @@ export default function Transit() {
                                                     {isDanger ? '🚧' : '⚠️'}
                                                 </span>
                                                 <div className="min-w-0 flex-1">
-                                                    <div style={{ fontSize: 13, fontWeight: 700, color: isDanger ? '#C4271A' : '#18170F', marginBottom: 2 }}>
+                                                    <div className={isDanger ? '' : 'text-[#18170F] dark:text-[#F5F4F0]'} style={{ fontSize: 13, fontWeight: 700, color: isDanger ? '#C4271A' : undefined, marginBottom: 2 }}>
                                                         {d.title}
                                                     </div>
                                                     <div style={{ fontSize: 12, color: isDanger ? '#7C2015' : '#7C4A00', lineHeight: 1.4 }}>
@@ -1246,7 +1235,7 @@ export default function Transit() {
                     })()}
 
                     {/* ═══ 4. Departure Boards ═══ */}
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]" style={{ padding: '20px 24px' }}>
                         <div className="mb-[13px] flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Departures</span>
                             <span className="cursor-pointer" style={{ fontSize: 13, color: '#1A4CD4', fontWeight: 500 }} onClick={openStopPicker}>
@@ -1272,12 +1261,12 @@ export default function Transit() {
 
                             return (
                             <>
-                            <div className="mb-[14px] overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
+                            <div className="mb-[14px] overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
                                 {/* Header */}
-                                <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7]" style={{ padding: '12px 16px' }}>
+                                <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]" style={{ padding: '12px 16px' }}>
                                     <div className="flex items-center gap-2">
                                         <span style={{ fontSize: 13, fontWeight: 700 }}>🚋 {nearbyDepartures?.stops_used?.[0]?.name ?? activeStopName}</span>
-                                        <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, color: '#6B6860', background: '#DDDBD4', padding: '2px 8px', borderRadius: 6 }}>{clock}</span>
+                                        <span className="rounded-[6px] bg-[#DDDBD4] text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]" style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, padding: '2px 8px' }}>{clock}</span>
                                         {isLive && (
                                             <span className="flex items-center gap-1" style={{ fontSize: 10, fontWeight: 700, color: '#0A7C52', background: '#D4F0E6', padding: '2px 7px', borderRadius: 20 }}>
                                                 <span className="animate-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: '#0A7C52', display: 'inline-block' }} />
@@ -1304,17 +1293,13 @@ export default function Transit() {
                                     return (
                                     <div
                                         key={`${dep.line}_${dep.direction}`}
-                                        className="flex items-center gap-3 cursor-pointer"
+                                        className={`flex items-center gap-3 cursor-pointer transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
                                         style={{
                                             padding: '12px 16px',
-                                            borderBottom: i < arr.length - 1 ? '1px solid #E2DFD6' : 'none',
                                             opacity: isCancelled ? 0.7 : 1,
-                                            transition: 'background 0.15s',
                                             ...(dep.towards_dest ? { borderLeft: '3px solid #1A4CD4', paddingLeft: 13 } : {}),
                                         }}
                                         onClick={() => setLineDetail(dep)}
-                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEDE7'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}
                                     >
                                         {/* Line badge */}
                                         <div className="flex shrink-0 items-center justify-center" style={{ width: 34, height: 34, borderRadius: 8, background: bg, color: 'white', fontFamily: "'Geist Mono', monospace", fontSize: dep.line.length > 2 ? 11 : 13, fontWeight: 700 }}>
@@ -1330,7 +1315,7 @@ export default function Transit() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <div style={{ fontSize: 11, color: '#6B6860', marginBottom: 3 }}>
+                                            <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 11, marginBottom: 3 }}>
                                                 via {dep.stop_name} · {dep.walk_min} min walk
                                             </div>
                                             {/* Status badge */}
@@ -1353,9 +1338,9 @@ export default function Transit() {
                                                     <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
                                                         {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
                                                     </div>
-                                                    <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 1 }}>min</div>
+                                                    <div className="text-[#AAA89F]" style={{ fontSize: 10, marginTop: 1 }}>min</div>
                                                     {dep.departures.length > 1 && (
-                                                        <div style={{ fontSize: 11, color: '#AAA89F', fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
+                                                        <div className="text-[#AAA89F]" style={{ fontSize: 11, fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
                                                             then {dep.departures.slice(1, 3).join(', ')} min
                                                         </div>
                                                     )}
@@ -1368,8 +1353,8 @@ export default function Transit() {
                                 {/* KVB show more toggle */}
                                 {(nearbyDepartures?.kvb ?? []).length > 4 && (
                                     <div
-                                        className="cursor-pointer text-center transition-colors hover:bg-[#EFEDE7]"
-                                        style={{ padding: '10px 16px', borderTop: '1px solid #E2DFD6', fontSize: 13, fontWeight: 600, color: '#1A4CD4' }}
+                                        className="cursor-pointer border-t border-[#E2DFD6] text-center transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                                        style={{ padding: '10px 16px', fontSize: 13, fontWeight: 600, color: '#1A4CD4' }}
                                         onClick={() => setShowMoreKvb(!showMoreKvb)}
                                     >
                                         {showMoreKvb ? 'Show fewer' : `Show all ${(nearbyDepartures?.kvb ?? []).length} departures`}
@@ -1379,11 +1364,11 @@ export default function Transit() {
 
                             {/* DB Board (S-Bahn / RE / RB) */}
                             {(nearbyDepartures?.db ?? []).length > 0 && (
-                            <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
-                                <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7]" style={{ padding: '12px 16px' }}>
+                            <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]" style={{ padding: '12px 16px' }}>
                                     <div className="flex items-center gap-2">
                                         <span style={{ fontSize: 13, fontWeight: 700 }}>🚂 {nearbyDepartures?.stops_used?.find((s) => s.name.includes('Bf'))?.name ?? 'S-Bahn / Regional'}</span>
-                                        <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, color: '#6B6860', background: '#DDDBD4', padding: '2px 8px', borderRadius: 6 }}>{clock}</span>
+                                        <span className="rounded-[6px] bg-[#DDDBD4] text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]" style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, padding: '2px 8px' }}>{clock}</span>
                                         {isLive && (
                                             <span className="flex items-center gap-1" style={{ fontSize: 10, fontWeight: 700, color: '#0A7C52', background: '#D4F0E6', padding: '2px 7px', borderRadius: 20 }}>
                                                 <span className="animate-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: '#0A7C52', display: 'inline-block' }} />
@@ -1409,23 +1394,19 @@ export default function Transit() {
                                     return (
                                     <div
                                         key={`${dep.line}_${dep.direction}`}
-                                        className="flex items-center gap-3 cursor-pointer"
+                                        className={`flex items-center gap-3 cursor-pointer transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
                                         style={{
                                             padding: '12px 16px',
-                                            borderBottom: i < arr.length - 1 ? '1px solid #E2DFD6' : 'none',
                                             opacity: isCancelled ? 0.7 : 1,
-                                            transition: 'background 0.15s',
                                         }}
                                         onClick={() => setLineDetail(dep)}
-                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEDE7'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}
                                     >
                                         <div className="flex shrink-0 items-center justify-center" style={{ width: 34, height: 34, borderRadius: 8, background: bg, color: 'white', fontFamily: "'Geist Mono', monospace", fontSize: dep.line.length > 2 ? 11 : 13, fontWeight: 700 }}>
                                             {dep.line}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{dep.direction}</div>
-                                            <div style={{ fontSize: 11, color: '#6B6860', marginBottom: 3 }}>
+                                            <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 11, marginBottom: 3 }}>
                                                 via {dep.stop_name}
                                             </div>
                                             {isCancelled ? (
@@ -1446,9 +1427,9 @@ export default function Transit() {
                                                     <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
                                                         {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
                                                     </div>
-                                                    <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 1 }}>min</div>
+                                                    <div className="text-[#AAA89F]" style={{ fontSize: 10, marginTop: 1 }}>min</div>
                                                     {dep.departures.length > 1 && (
-                                                        <div style={{ fontSize: 11, color: '#AAA89F', fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
+                                                        <div className="text-[#AAA89F]" style={{ fontSize: 11, fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
                                                             then {dep.departures.slice(1, 3).join(', ')} min
                                                         </div>
                                                     )}
@@ -1461,8 +1442,8 @@ export default function Transit() {
                                 {/* DB show more toggle */}
                                 {(nearbyDepartures?.db ?? []).length > 3 && (
                                     <div
-                                        className="cursor-pointer text-center transition-colors hover:bg-[#EFEDE7]"
-                                        style={{ padding: '10px 16px', borderTop: '1px solid #E2DFD6', fontSize: 13, fontWeight: 600, color: '#1A4CD4' }}
+                                        className="cursor-pointer border-t border-[#E2DFD6] text-center transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                                        style={{ padding: '10px 16px', fontSize: 13, fontWeight: 600, color: '#1A4CD4' }}
                                         onClick={() => setShowMoreDb(!showMoreDb)}
                                     >
                                         {showMoreDb ? 'Show fewer' : `Show all ${(nearbyDepartures?.db ?? []).length} departures`}
@@ -1475,7 +1456,7 @@ export default function Transit() {
                         })()}
 
                         {(nearbyDepartures?.kvb ?? []).length === 0 && (nearbyDepartures?.db ?? []).length === 0 && (
-                            <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F]">
+                            <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
                                 No departures found nearby
                             </div>
                         )}
@@ -1504,7 +1485,7 @@ export default function Transit() {
                                 <span style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>🧠</span>
                                 <div className="flex-1">
                                     <div style={{ fontSize: 14, fontWeight: 600, color: '#1A4CD4', marginBottom: 4 }}>Routine detected</div>
-                                    <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5 }}>
+                                    <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 13, lineHeight: 1.5 }}>
                                         {(detectedRoutines ?? [])[0]?.suggestion ?? 'We noticed a regular pattern in your travels.'}
                                     </div>
                                     <div className="mt-3 flex gap-2">
@@ -1535,8 +1516,8 @@ export default function Transit() {
                                         </button>
                                         <button
                                             onClick={() => { setRoutinePromptVisible(false); localStorage.setItem(ROUTINE_DISMISS_KEY, String(Date.now())); }}
-                                            className="cursor-pointer transition-all hover:bg-[#EFEDE7]"
-                                            style={{ padding: '7px 14px', borderRadius: 9, fontSize: 13, fontWeight: 600, background: 'transparent', color: '#6B6860', border: '1px solid #E2DFD6' }}
+                                            className="cursor-pointer rounded-[9px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                                            style={{ padding: '7px 14px', fontSize: 13, fontWeight: 600 }}
                                         >
                                             Dismiss
                                         </button>
@@ -1554,7 +1535,7 @@ export default function Transit() {
                                 <span style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>✅</span>
                                 <div className="flex-1">
                                     <div style={{ fontSize: 14, fontWeight: 600, color: '#0A7C52' }}>Routine saved!</div>
-                                    <div style={{ fontSize: 13, color: '#6B6860', marginTop: 2 }}>
+                                    <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 13, marginTop: 2 }}>
                                         Expadu will use this to recommend the right route at the right time.
                                     </div>
                                 </div>
@@ -1587,16 +1568,16 @@ export default function Transit() {
                     {newsCard && (
                         <div>
                             <div className="mb-4 flex items-center gap-3">
-                                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#EFEDE7] text-2xl">{newsCard.emoji}</div>
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#EFEDE7] text-2xl dark:bg-[#2A2920]">{newsCard.emoji}</div>
                                 <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500 }}>{newsCard.name}</div>
                             </div>
-                            <div style={{ fontSize: 14, color: '#6B6860', lineHeight: 1.65, marginBottom: 16 }}>{newsCard.detail}</div>
+                            <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 14, lineHeight: 1.65, marginBottom: 16 }}>{newsCard.detail}</div>
                             {newsCard.link && (
                                 <a
                                     href={newsCard.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
+                                    className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                                     style={{ textDecoration: 'none' }}
                                 >
                                     Read more ↗
@@ -1614,7 +1595,7 @@ export default function Transit() {
                 <div className="hidden md:block">
                     <div className="fixed inset-0 z-40 bg-black/15" onClick={() => { setRouteSheetDest(null); setDepartureCard(null); setNewsCard(null); setLineDetail(null); setEditingRoutine(null); setStopPickerOpen(false); }} />
                     <div
-                        className="fixed z-50 rounded-[20px] border border-[#E2DFD6] bg-white p-6 shadow-[0_16px_48px_rgba(0,0,0,0.15)]"
+                        className="fixed z-50 rounded-[20px] border border-[#E2DFD6] bg-white p-6 shadow-[0_16px_48px_rgba(0,0,0,0.15)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                         style={{
                             top: '50%',
                             transform: 'translateY(-50%)',
@@ -1638,12 +1619,12 @@ export default function Transit() {
                         {newsCard && (
                             <div>
                                 <div className="mb-4 flex items-center gap-3">
-                                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#EFEDE7] text-2xl">{newsCard.emoji}</div>
+                                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#EFEDE7] text-2xl dark:bg-[#2A2920]">{newsCard.emoji}</div>
                                     <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500 }}>{newsCard.name}</div>
                                 </div>
-                                <div style={{ fontSize: 14, color: '#6B6860', lineHeight: 1.65, marginBottom: 16 }}>{newsCard.detail}</div>
+                                <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 14, lineHeight: 1.65, marginBottom: 16 }}>{newsCard.detail}</div>
                                 {newsCard.link && (
-                                    <a href={newsCard.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]" style={{ textDecoration: 'none' }}>Read more ↗</a>
+                                    <a href={newsCard.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]" style={{ textDecoration: 'none' }}>Read more ↗</a>
                                 )}
                             </div>
                         )}
@@ -1671,8 +1652,8 @@ export default function Transit() {
                     <div className="flex items-center justify-center">
                         <button
                             onClick={swapRoutineRoute}
-                            className="flex cursor-pointer items-center justify-center transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD]"
-                            style={{ width: 36, height: 36, background: '#FFFFFF', border: '1px solid #E2DFD6', borderRadius: 9, fontSize: 16 }}
+                            className="flex cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                            style={{ width: 36, height: 36, fontSize: 16 }}
                             title="Swap"
                         >
                             ⇅
@@ -1686,8 +1667,8 @@ export default function Transit() {
                     Arrive by
                 </div>
                 <div
-                    className="mb-5 flex items-center gap-[10px]"
-                    style={{ background: '#EFEDE7', border: '1px solid #E2DFD6', borderRadius: 9, padding: '10px 14px' }}
+                    className="mb-5 flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                    style={{ padding: '10px 14px' }}
                 >
                     <span style={{ fontSize: 15, color: '#AAA89F' }}>🕐</span>
                     <input
@@ -1800,16 +1781,12 @@ export default function Transit() {
                 </button>
                 <button
                     onClick={() => setAddRoutineOpen(false)}
-                    className="mt-2 w-full cursor-pointer transition-all hover:bg-[#EFEDE7]"
+                    className="mt-2 w-full cursor-pointer rounded-[9px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                     style={{
                         padding: '13px',
-                        borderRadius: 9,
-                        background: 'transparent',
-                        color: '#6B6860',
                         fontFamily: "'Geist', sans-serif",
                         fontSize: 15,
                         fontWeight: 600,
-                        border: '1px solid #E2DFD6',
                     }}
                 >
                     Cancel
