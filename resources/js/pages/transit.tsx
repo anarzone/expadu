@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
-import { DepartureBoard, type BoardData, useClock } from '@/components/transit/departure-board';
+import { DepartureBoard, type BoardData, useClock, formatDepartureTime } from '@/components/transit/departure-board';
 import { GeocodeInput } from '@/components/transit/geocode-input';
 
 import { RoutineCard, type RoutineCardData } from '@/components/transit/routine-card';
@@ -1336,12 +1336,12 @@ export default function Transit() {
                                             ) : (
                                                 <>
                                                     <div className="font-mono text-[22px] font-medium leading-none" style={{ color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
-                                                        {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
+                                                        {formatDepartureTime(dep.departures[0] ?? 0).display}
                                                     </div>
-                                                    <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>
+                                                    {!formatDepartureTime(dep.departures[0] ?? 0).isClockTime && formatDepartureTime(dep.departures[0] ?? 0).display !== 'now' && <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>}
                                                     {dep.departures.length > 1 && (
-                                                        <div className="text-[#AAA89F]" style={{ fontSize: 11, fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
-                                                            then {dep.departures.slice(1, 3).join(', ')} min
+                                                        <div className="mt-[3px] font-mono text-[11px] text-[#AAA89F]">
+                                                            then {dep.departures.slice(1, 3).map((m) => formatDepartureTime(m).display).join(', ')}{!formatDepartureTime(dep.departures[1]).isClockTime && ' min'}
                                                         </div>
                                                     )}
                                                 </>
@@ -1425,7 +1425,7 @@ export default function Transit() {
                                             ) : (
                                                 <>
                                                     <div className="font-mono text-[22px] font-medium leading-none" style={{ color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
-                                                        {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
+                                                        {formatDepartureTime(dep.departures[0] ?? 0).display}
                                                     </div>
                                                     <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>
                                                     {dep.departures.length > 1 && (

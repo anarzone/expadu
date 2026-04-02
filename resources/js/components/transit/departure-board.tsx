@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
 
+/** Format departure minutes: 0 → "now", 1-60 → "5", >60 → "05:13" */
+export function formatDepartureTime(mins: number): { display: string; isClockTime: boolean } {
+    if (mins === 0) return { display: 'now', isClockTime: false };
+    if (mins <= 60) return { display: String(mins), isClockTime: false };
+    const d = new Date(Date.now() + mins * 60_000);
+    return { display: d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), isClockTime: true };
+}
+
 export type DepartureService = {
     line: string;
     direction: string;
@@ -111,15 +119,15 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
     } else if (s.delay > 0) {
         statusTag = <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C47D0E] dark:bg-[#C47D0E]/20">+{s.delay} min delay</span>;
         nextClass = 'delayed';
-        nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
+        nextDisplay = formatDepartureTime(s.departures[0]).display;
     } else if (s.extra) {
         statusTag = <span className="rounded-full bg-[#EBF0FD] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#1A4CD4] dark:bg-[#1A4CD4]/20">Extra service</span>;
         nextClass = 'on-time';
-        nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
+        nextDisplay = formatDepartureTime(s.departures[0]).display;
     } else {
         statusTag = <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#0A7C52] dark:bg-[#0A7C52]/20">On time</span>;
         nextClass = 'on-time';
-        nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
+        nextDisplay = formatDepartureTime(s.departures[0]).display;
     }
 
     const following = s.departures.slice(1);
@@ -169,12 +177,12 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
                         >
                             {nextDisplay}
                         </div>
-                        {nextDisplay !== 'now' && <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>}
+                        {!formatDepartureTime(s.departures[0]).isClockTime && nextDisplay !== 'now' && <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>}
                     </>
                 )}
                 {following.length > 0 && (
                     <div className="mt-[3px] font-mono text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
-                        then {following.join(', ')} min
+                        then {following.map((m) => { const f = formatDepartureTime(m); return f.isClockTime ? f.display : `${m}`; }).join(', ')}{!formatDepartureTime(following[0]).isClockTime && ' min'}
                     </div>
                 )}
             </div>
