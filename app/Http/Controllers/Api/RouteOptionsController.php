@@ -8,6 +8,7 @@ use App\Services\GtfsDepartureService;
 use App\Services\LocationPatternService;
 use App\Services\NearbyStopService;
 use App\Services\ValhallaRoutingService;
+use App\Services\VrsTriasService;
 use App\Services\WeatherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\App;
  */
 class RouteOptionsController extends Controller
 {
-    public function __invoke(Request $request, ValhallaRoutingService $valhalla): JsonResponse
+    public function __invoke(Request $request, ValhallaRoutingService $valhalla, VrsTriasService $trias): JsonResponse
     {
         $validated = $request->validate([
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
@@ -53,9 +54,9 @@ class RouteOptionsController extends Controller
 
         // Single mode request — return full route with geometry + steps
         if (isset($validated['mode'])) {
-            // Transit: 3-segment walk→ride→walk route
+            // Transit: TRIAS journey planning with GTFS fallback
             if ($validated['mode'] === 'transit') {
-                return $this->buildTransitRoute($valhalla, $fromLat, $fromLng, $toLat, $toLng, $fromName, $toName, $toAddress);
+                return $this->buildTransitRoute($valhalla, $trias, $fromLat, $fromLng, $toLat, $toLng, $fromName, $toName, $toAddress);
             }
 
             $route = $valhalla->route($fromLat, $fromLng, $toLat, $toLng, $validated['mode']);
@@ -101,36 +102,57 @@ class RouteOptionsController extends Controller
         $walkDist = $walkRoute ? $walkRoute['distance_km'] : round($distKm, 1);
         $driveDist = $driveRoute ? $driveRoute['distance_km'] : round($distKm, 1);
 
-        // Transit options from GTFS
-        $gtfs = App::make(GtfsDepartureService::class);
-        $departures = $gtfs->getDeparturesNearby($fromLat, $fromLng, 5);
-        $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
-
+        // Transit option: try TRIAS journey planning first, fall back to GTFS departures
         $transitOption = null;
-        foreach ($departures['departures'] ?? [] as $dep) {
-            $nextMin = $dep['departures'][0] ?? null;
-            if ($nextMin === null) {
-                continue;
-            }
-            $line = $dep['line'];
-            $isDisrupted = isset($disruptedLines[$line]);
-            $following = array_values(array_filter(array_slice($dep['departures'], 1, 3), fn ($t) => $t > 0));
-
+        $triasResult = $trias->planJourney($fromLat, $fromLng, $toLat, $toLng, 1);
+        if ($triasResult && ! empty($triasResult['trips'])) {
+            $firstTrip = $triasResult['trips'][0];
+            $transferLabel = $firstTrip['transfers'] > 0
+                ? "{$firstTrip['transfers']} transfer".($firstTrip['transfers'] > 1 ? 's' : '')
+                : 'Direct';
             $transitOption = [
                 'mode' => 'transit',
                 'emoji' => '🚋',
-                'line' => $line,
-                'direction' => $dep['direction'],
-                'time' => $nextMin,
+                'time' => $firstTrip['total_duration_min'],
                 'distance_km' => null,
-                'detail' => $isDisrupted
-                    ? 'Disrupted · Use alternative'
-                    : ($following ? 'Then in '.implode(', ', $following).' min' : 'On time'),
+                'detail' => "Dep {$firstTrip['departure_time']} · {$transferLabel}",
                 'best' => false,
-                'disrupted' => $isDisrupted,
+                'disrupted' => false,
                 'geometry' => null,
             ];
-            break;
+        }
+
+        // Fallback: use GTFS departures for transit option
+        if (! $transitOption) {
+            $gtfs = App::make(GtfsDepartureService::class);
+            $departures = $gtfs->getDeparturesNearby($fromLat, $fromLng, 5);
+            $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
+
+            foreach ($departures['departures'] ?? [] as $dep) {
+                $nextMin = $dep['departures'][0] ?? null;
+                if ($nextMin === null) {
+                    continue;
+                }
+                $line = $dep['line'];
+                $isDisrupted = isset($disruptedLines[$line]);
+                $following = array_values(array_filter(array_slice($dep['departures'], 1, 3), fn ($t) => $t > 0));
+
+                $transitOption = [
+                    'mode' => 'transit',
+                    'emoji' => '🚋',
+                    'line' => $line,
+                    'direction' => $dep['direction'],
+                    'time' => $nextMin,
+                    'distance_km' => null,
+                    'detail' => $isDisrupted
+                        ? 'Disrupted · Use alternative'
+                        : ($following ? 'Then in '.implode(', ', $following).' min' : 'On time'),
+                    'best' => false,
+                    'disrupted' => $isDisrupted,
+                    'geometry' => null,
+                ];
+                break;
+            }
         }
 
         // Smart mode recommendation based on context
@@ -219,9 +241,81 @@ class RouteOptionsController extends Controller
     }
 
     /**
-     * Build a 3-segment transit route: walk → ride → walk.
+     * Build transit route using TRIAS journey planning, with GTFS fallback.
      */
     private function buildTransitRoute(
+        ValhallaRoutingService $valhalla,
+        VrsTriasService $trias,
+        float $fromLat, float $fromLng,
+        float $toLat, float $toLng,
+        string $fromName, string $toName, ?string $toAddress,
+    ): JsonResponse {
+        // Try TRIAS first — request extra results to find different routes
+        $triasResult = $trias->planJourney($fromLat, $fromLng, $toLat, $toLng, 10);
+
+        if ($triasResult && ! empty($triasResult['trips'])) {
+            // Group trips by unique line combination to find different routes
+            $routeGroups = [];
+            foreach ($triasResult['trips'] as $trip) {
+                $routeKey = collect($trip['segments'])
+                    ->where('type', 'transit')
+                    ->pluck('line')
+                    ->implode('→') ?: 'walk';
+
+                if (! isset($routeGroups[$routeKey])) {
+                    $routeGroups[$routeKey] = [];
+                }
+                $routeGroups[$routeKey][] = $trip;
+            }
+
+            // First route of each group = route alternative, rest = later departures
+            $routeAlternatives = [];
+            foreach ($routeGroups as $trips) {
+                $first = $trips[0];
+                $laterDeps = array_map(fn ($t) => [
+                    'departure_time' => $t['departure_time'],
+                    'arrival_time' => $t['arrival_time'],
+                    'total_duration_min' => $t['total_duration_min'],
+                ], array_slice($trips, 1));
+
+                $lines = collect($first['segments'])->where('type', 'transit')->pluck('line')->implode(' → ');
+                $routeAlternatives[] = [
+                    ...$first,
+                    'route_label' => $lines ?: 'Walk',
+                    'later_departures' => $laterDeps,
+                ];
+            }
+
+            $primary = $routeAlternatives[0];
+            $alternatives = array_slice($routeAlternatives, 1);
+
+            return response()->json([
+                'from' => ['name' => $fromName, 'lat' => $fromLat, 'lng' => $fromLng],
+                'to' => ['name' => $toName, 'lat' => $toLat, 'lng' => $toLng, 'address' => $toAddress],
+                'mode' => 'transit',
+                'source' => 'trias',
+                'duration_min' => $primary['total_duration_min'],
+                'distance_km' => round($this->haversineKm($fromLat, $fromLng, $toLat, $toLng), 1),
+                'departure_time' => $primary['departure_time'],
+                'arrival_time' => $primary['arrival_time'],
+                'transfers' => $primary['transfers'],
+                'segments' => $primary['segments'],
+                'steps' => $primary['steps'],
+                'route_label' => $primary['route_label'],
+                'later_departures' => $primary['later_departures'],
+                'trip_alternatives' => $alternatives,
+                'geometry' => '',
+            ]);
+        }
+
+        // Fallback: GTFS-based single-line transit route
+        return $this->buildTransitRouteFallback($valhalla, $fromLat, $fromLng, $toLat, $toLng, $fromName, $toName, $toAddress);
+    }
+
+    /**
+     * Fallback transit route using GTFS static data (walk → single ride → walk).
+     */
+    private function buildTransitRouteFallback(
         ValhallaRoutingService $valhalla,
         float $fromLat, float $fromLng,
         float $toLat, float $toLng,
@@ -230,7 +324,6 @@ class RouteOptionsController extends Controller
         $nearbyService = app(NearbyStopService::class);
         $gtfs = app(GtfsDepartureService::class);
 
-        // Find nearest stops to origin and destination
         $originStops = $nearbyService->getWalkableStops($fromLat, $fromLng, 800);
         $destStops = $nearbyService->getWalkableStops($toLat, $toLng, 800);
 
@@ -238,7 +331,6 @@ class RouteOptionsController extends Controller
             return response()->json(['error' => 'No transit stops nearby'], 404);
         }
 
-        // Try combinations of origin/dest stops to find a connecting line
         $originStop = $originStops[0];
         $destStop = $destStops[0];
         $transitLine = null;
@@ -246,7 +338,6 @@ class RouteOptionsController extends Controller
         $transitTime = null;
         $routeStops = null;
 
-        // Get departures from origin stops, try to find a line that also serves a destination stop
         foreach (array_slice($originStops, 0, 3) as $oStop) {
             $departures = $gtfs->getDepartures($oStop['name'], 10);
             foreach ($departures['departures'] ?? [] as $dep) {
@@ -265,7 +356,6 @@ class RouteOptionsController extends Controller
             }
         }
 
-        // Fallback: just use the first departure from the nearest stop
         if (! $transitLine) {
             $departures = $gtfs->getDepartures($originStops[0]['name'], 5);
             $firstDep = $departures['departures'][0] ?? null;
@@ -276,25 +366,21 @@ class RouteOptionsController extends Controller
             }
         }
 
-        // Walk segment 1: origin → boarding stop
         $walk1 = $valhalla->route($fromLat, $fromLng, $originStop['lat'], $originStop['lng'], 'pedestrian');
-
-        // Walk segment 2: alighting stop → destination
         $walk2 = $valhalla->route($destStop['lat'], $destStop['lng'], $toLat, $toLng, 'pedestrian');
 
-        // Build segments
         $segments = [];
 
         if ($walk1 && $walk1['duration_min'] > 0) {
             $segments[] = [
                 'type' => 'walk',
                 'geometry' => $walk1['geometry'],
+                'coordinates' => [],
                 'duration_min' => $walk1['duration_min'],
                 'distance_km' => $walk1['distance_km'],
             ];
         }
 
-        // Transit segment: use stop coordinates
         $transitCoords = [];
         $transitStopNames = [];
         if ($routeStops && ! empty($routeStops['stops'])) {
@@ -303,11 +389,7 @@ class RouteOptionsController extends Controller
                 $transitStopNames[] = $s['name'];
             }
         } else {
-            // Fallback: straight line between stops
-            $transitCoords = [
-                [$originStop['lng'], $originStop['lat']],
-                [$destStop['lng'], $destStop['lat']],
-            ];
+            $transitCoords = [[$originStop['lng'], $originStop['lat']], [$destStop['lng'], $destStop['lat']]];
             $transitStopNames = [$originStop['name'], $destStop['name']];
         }
 
@@ -326,47 +408,22 @@ class RouteOptionsController extends Controller
             $segments[] = [
                 'type' => 'walk',
                 'geometry' => $walk2['geometry'],
+                'coordinates' => [],
                 'duration_min' => $walk2['duration_min'],
                 'distance_km' => $walk2['distance_km'],
             ];
         }
 
-        $totalMin = array_sum(array_column($segments, 'duration_min'));
-        if ($transitTime) {
-            $totalMin += $transitTime; // add wait time
-        }
+        $totalMin = array_sum(array_column($segments, 'duration_min')) + ($transitTime ?? 0);
 
-        // Build steps
         $steps = [];
         foreach ($segments as $seg) {
             if ($seg['type'] === 'walk') {
-                $steps[] = [
-                    'instruction' => "Walk {$seg['duration_min']} min ({$seg['distance_km']} km)",
-                    'distance_km' => $seg['distance_km'],
-                    'time_sec' => $seg['duration_min'] * 60,
-                    'type' => 'depart',
-                    'emoji' => '🚶',
-                ];
+                $steps[] = ['instruction' => "Walk {$seg['duration_min']} min", 'distance_km' => $seg['distance_km'] ?? 0, 'time_sec' => $seg['duration_min'] * 60, 'type' => 'walk', 'emoji' => '🚶'];
             } else {
-                $stopCount = count($seg['stop_names']);
                 $lineLabel = $seg['line'] !== '?' ? "Line {$seg['line']}" : 'Transit';
                 $dirLabel = $seg['direction'] ? " → {$seg['direction']}" : '';
-                $steps[] = [
-                    'instruction' => "{$lineLabel}{$dirLabel} ({$stopCount} stops)",
-                    'distance_km' => 0,
-                    'time_sec' => $seg['duration_min'] * 60,
-                    'type' => 'continue',
-                    'emoji' => '🚋',
-                ];
-                if ($seg['next_departure_min'] !== null) {
-                    $steps[] = [
-                        'instruction' => "Next departure in {$seg['next_departure_min']} min",
-                        'distance_km' => 0,
-                        'time_sec' => 0,
-                        'type' => 'continue',
-                        'emoji' => '🕐',
-                    ];
-                }
+                $steps[] = ['instruction' => "{$lineLabel}{$dirLabel} (".count($seg['stop_names']).' stops)', 'distance_km' => 0, 'time_sec' => $seg['duration_min'] * 60, 'type' => 'ride', 'emoji' => '🚋'];
             }
         }
 
@@ -374,11 +431,12 @@ class RouteOptionsController extends Controller
             'from' => ['name' => $fromName, 'lat' => $fromLat, 'lng' => $fromLng],
             'to' => ['name' => $toName, 'lat' => $toLat, 'lng' => $toLng, 'address' => $toAddress],
             'mode' => 'transit',
+            'source' => 'gtfs_fallback',
             'duration_min' => $totalMin,
             'distance_km' => round($this->haversineKm($fromLat, $fromLng, $toLat, $toLng), 1),
             'segments' => $segments,
             'steps' => $steps,
-            'geometry' => '', // no single geometry for transit
+            'geometry' => '',
         ]);
     }
 

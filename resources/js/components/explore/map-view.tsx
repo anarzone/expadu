@@ -188,7 +188,7 @@ export const MapView = forwardRef<MapViewHandle, {
 
                 if (seg.type === 'walk' && seg.geometry) {
                     coords = decodePolyline(seg.geometry, 6);
-                } else if (seg.type === 'transit' && seg.coordinates) {
+                } else if (seg.coordinates && seg.coordinates.length >= 2) {
                     coords = seg.coordinates;
                 }
 

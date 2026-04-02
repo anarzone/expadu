@@ -104,7 +104,15 @@ export default function Explore() {
 
     // Routing state
     type RouteOption = { mode: string; emoji: string; time: number; distance_km: number | null; detail: string; best: boolean; disrupted?: boolean; recommendation_reason?: string; geometry?: string | null };
-    type FullRoute = { mode: string; duration_min: number; distance_km: number; geometry: string; steps: Array<{ instruction: string; distance_km: number; time_sec: number; type: string; emoji: string }> };
+    type FullRoute = {
+        mode: string; duration_min: number; distance_km: number; geometry: string;
+        source?: string; departure_time?: string; arrival_time?: string; transfers?: number;
+        route_label?: string;
+        later_departures?: Array<{ departure_time: string; arrival_time: string; total_duration_min: number }>;
+        segments?: Array<{ type: string; geometry?: string; coordinates?: [number, number][]; color?: string; line?: string; direction?: string; boarding_stop?: string; alighting_stop?: string; departure_time?: string; arrival_time?: string; delay_min?: number; duration_min?: number; mode?: string }>;
+        steps: Array<{ instruction: string; distance_km: number; time_sec: number; type: string; emoji: string; detail?: string }>;
+        trip_alternatives?: Array<{ total_duration_min: number; departure_time: string; arrival_time: string; transfers: number; segments: any[]; steps: any[]; route_label?: string; later_departures?: any[] }>;
+    };
     const [routeDest, setRouteDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
     const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
     const [routeMode, setRouteMode] = useState<string | null>(null);
@@ -144,16 +152,23 @@ export default function Explore() {
         const costing = mode === 'bike' ? 'bicycle' : mode === 'walk' ? 'pedestrian' : mode === 'drive' ? 'auto' : null;
 
         if (mode === 'transit') {
-            // Transit uses Google Maps embed — no custom route drawing
-            mapRef.current?.clearRoute();
-            setShowGoogleEmbed(true);
-            setRouteDetail({
-                mode: 'transit',
-                duration_min: routeOptions.find((o) => o.mode === 'transit')?.time ?? 0,
-                distance_km: 0,
-                geometry: '',
-                steps: [],
-            });
+            setShowGoogleEmbed(false);
+            const dest = routeDest ?? to;
+            if (dest) {
+                fetch(`/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=transit`, { credentials: 'same-origin' })
+                    .then((r) => r.json())
+                    .then((data) => {
+                        setRouteDetail(data);
+                        if (data.segments && data.segments.length > 0) {
+                            const orig = data.from ?? origin;
+                            mapRef.current?.drawTransitRoute(data.segments, { lat: orig.lat, lng: orig.lng }, dest);
+                        }
+                    })
+                    .catch(() => {
+                        // Fallback to Google Maps embed if TRIAS fails
+                        setShowGoogleEmbed(true);
+                    });
+            }
             return;
         }
         setShowGoogleEmbed(false);
@@ -449,6 +464,28 @@ export default function Explore() {
                                         distanceKm={routeDetail.distance_km}
                                         steps={routeDetail.steps}
                                         mapsUrl={routeMapsUrl ?? undefined}
+                                        departureTime={routeDetail.departure_time}
+                                        arrivalTime={routeDetail.arrival_time}
+                                        transfers={routeDetail.transfers}
+                                        routeLabel={routeDetail.route_label}
+                                        laterDepartures={routeDetail.later_departures}
+                                        tripAlternatives={routeDetail.trip_alternatives}
+                                        onSelectAlternative={(alt) => {
+                                            setRouteDetail({
+                                                ...routeDetail,
+                                                duration_min: alt.total_duration_min,
+                                                departure_time: alt.departure_time,
+                                                arrival_time: alt.arrival_time,
+                                                transfers: alt.transfers,
+                                                segments: alt.segments,
+                                                steps: alt.steps,
+                                                trip_alternatives: routeDetail.trip_alternatives,
+                                            });
+                                            if (alt.segments.length > 0 && routeDest) {
+                                                const orig = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                                                mapRef.current?.drawTransitRoute(alt.segments, orig, routeDest);
+                                            }
+                                        }}
                                     />
                                 ) : !routeLoading && routeOptions.length > 0 ? (
                                     <div className="py-8 text-center text-sm text-[#AAA89F]">Select a mode above to see directions</div>

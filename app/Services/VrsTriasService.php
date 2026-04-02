@@ -258,6 +258,292 @@ class VrsTriasService
         return array_slice($results, 0, $limit);
     }
 
+    /**
+     * Plan a transit journey from origin to destination using TRIAS TripRequest.
+     * Returns multiple trip alternatives with walk/transit segments.
+     *
+     * @return array{source: string, trips: array}|null
+     */
+    public function planJourney(float $fromLat, float $fromLng, float $toLat, float $toLng, int $maxResults = 3): ?array
+    {
+        if (! config('services.vrs.enabled')) {
+            return null;
+        }
+
+        $cacheKey = "trias_trip_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
+
+        return Cache::remember($cacheKey, 60, function () use ($fromLat, $fromLng, $toLat, $toLng, $maxResults) {
+            $xml = $this->buildTripRequest($fromLat, $fromLng, $toLat, $toLng, $maxResults);
+            $response = $this->post($xml);
+
+            if (! $response) {
+                return null;
+            }
+
+            $parsed = $this->parseXml($response);
+            if (! $parsed) {
+                return null;
+            }
+
+            return $this->parseTripResponse($parsed);
+        });
+    }
+
+    /**
+     * Parse TRIAS TripResponse into structured trip alternatives.
+     *
+     * @return array{source: string, trips: array}|null
+     */
+    private function parseTripResponse(\SimpleXMLElement $xml): ?array
+    {
+        $tripResults = $xml->xpath('//TripResult');
+        if (empty($tripResults)) {
+            return null;
+        }
+
+        $trips = [];
+
+        foreach ($tripResults as $tripResult) {
+            $trip = $tripResult->Trip ?? null;
+            if (! $trip) {
+                continue;
+            }
+
+            $durationIso = (string) ($trip->Duration ?? '');
+            $startTime = (string) ($trip->StartTime ?? '');
+            $endTime = (string) ($trip->EndTime ?? '');
+            $interchanges = (int) ($trip->Interchanges ?? 0);
+
+            $segments = [];
+            $steps = [];
+
+            foreach ($trip->xpath('TripLeg') as $leg) {
+                if ($leg->TimedLeg) {
+                    $this->parseTimedLeg($leg->TimedLeg, $segments, $steps);
+                } elseif ($leg->ContinuousLeg) {
+                    $this->parseContinuousLeg($leg->ContinuousLeg, $segments, $steps);
+                } elseif ($leg->InterchangeLeg) {
+                    $this->parseInterchangeLeg($leg->InterchangeLeg, $segments, $steps);
+                }
+            }
+
+            if (empty($segments)) {
+                continue;
+            }
+
+            $trips[] = [
+                'total_duration_min' => $this->isoDurationToMinutes($durationIso),
+                'departure_time' => $startTime ? Carbon::parse($startTime)->format('H:i') : '',
+                'arrival_time' => $endTime ? Carbon::parse($endTime)->format('H:i') : '',
+                'transfers' => $interchanges,
+                'segments' => $segments,
+                'steps' => $steps,
+            ];
+        }
+
+        if (empty($trips)) {
+            return null;
+        }
+
+        return [
+            'source' => 'trias',
+            'trips' => $trips,
+        ];
+    }
+
+    private function parseTimedLeg(\SimpleXMLElement $tl, array &$segments, array &$steps): void
+    {
+        $section = $tl->Service->ServiceSection ?? null;
+        $lineName = (string) ($section->PublishedLineName->Text ?? '');
+        $ptMode = (string) ($section->Mode->PtMode ?? '');
+        $type = $this->mapPtMode($ptMode, $lineName);
+
+        $boardStop = (string) ($tl->LegBoard->StopPointName->Text ?? '');
+        $alightStop = (string) ($tl->LegAlight->StopPointName->Text ?? '');
+
+        // Strip city prefix for cleaner display (e.g. "Chorweiler (U) Gleis 3, Köln Chorweiler" → "Chorweiler")
+        $boardShort = preg_replace('/\s*\(.*$|,.*$/', '', $boardStop);
+        $alightShort = preg_replace('/\s*\(.*$|,.*$/', '', $alightStop);
+
+        $depSched = (string) ($tl->LegBoard->ServiceDeparture->TimetabledTime ?? '');
+        $depEst = (string) ($tl->LegBoard->ServiceDeparture->EstimatedTime ?? '');
+        $arrSched = (string) ($tl->LegAlight->ServiceArrival->TimetabledTime ?? '');
+        $arrEst = (string) ($tl->LegAlight->ServiceArrival->EstimatedTime ?? '');
+
+        $depTime = $depEst ?: $depSched;
+        $arrTime = $arrEst ?: $arrSched;
+
+        $delayMin = 0;
+        if ($depSched && $depEst) {
+            $delayMin = max(0, (int) round((Carbon::parse($depEst)->timestamp - Carbon::parse($depSched)->timestamp) / 60));
+        }
+
+        // Extract projection coordinates for map drawing
+        $coordinates = [];
+        foreach ($tl->xpath('.//Position') as $pos) {
+            $lng = (float) ($pos->Longitude ?? 0);
+            $lat = (float) ($pos->Latitude ?? 0);
+            if ($lng && $lat) {
+                $coordinates[] = [$lng, $lat];
+            }
+        }
+
+        // Extract platform info
+        $platform = (string) ($tl->LegBoard->PlannedBay->Text ?? '');
+
+        $segments[] = [
+            'type' => 'transit',
+            'line' => $lineName,
+            'direction' => $alightShort,
+            'color' => '#1A4CD4',
+            'mode' => $type,
+            'coordinates' => $coordinates,
+            'boarding_stop' => $boardShort,
+            'alighting_stop' => $alightShort,
+            'departure_time' => $depTime ? Carbon::parse($depTime)->format('H:i') : '',
+            'departure_time_scheduled' => $depSched ? Carbon::parse($depSched)->format('H:i') : '',
+            'arrival_time' => $arrTime ? Carbon::parse($arrTime)->format('H:i') : '',
+            'platform' => $platform,
+            'delay_min' => $delayMin,
+            'duration_min' => ($depTime && $arrTime) ? max(1, (int) round((Carbon::parse($arrTime)->timestamp - Carbon::parse($depTime)->timestamp) / 60)) : 0,
+        ];
+
+        // Build steps
+        $depDisplay = $depTime ? Carbon::parse($depTime)->format('H:i') : '';
+        $arrDisplay = $arrTime ? Carbon::parse($arrTime)->format('H:i') : '';
+
+        $steps[] = [
+            'instruction' => "Board Line {$lineName} → {$alightShort} at {$boardShort}",
+            'distance_km' => 0,
+            'time_sec' => 0,
+            'type' => 'board',
+            'emoji' => $type === 'rail' ? '🚂' : ($type === 'tram' ? '🚋' : '🚌'),
+            'detail' => "Dep {$depDisplay}".($platform ? " · Platform {$platform}" : '').($delayMin > 0 ? " · +{$delayMin}min late" : ''),
+        ];
+
+        $steps[] = [
+            'instruction' => "Ride to {$alightShort}",
+            'distance_km' => 0,
+            'time_sec' => ($depTime && $arrTime) ? Carbon::parse($arrTime)->timestamp - Carbon::parse($depTime)->timestamp : 0,
+            'type' => 'ride',
+            'emoji' => $type === 'rail' ? '🚂' : ($type === 'tram' ? '🚋' : '🚌'),
+            'detail' => "Arr {$arrDisplay}",
+        ];
+    }
+
+    private function parseContinuousLeg(\SimpleXMLElement $cl, array &$segments, array &$steps): void
+    {
+        $durationIso = (string) ($cl->Duration ?? '');
+        $durationMin = $this->isoDurationToMinutes($durationIso);
+
+        $startPos = $cl->LegStart->GeoPosition ?? null;
+        $endPos = $cl->LegEnd->GeoPosition ?? null;
+
+        $coordinates = [];
+        if ($startPos) {
+            $coordinates[] = [(float) $startPos->Longitude, (float) $startPos->Latitude];
+        }
+
+        // Include projection points if available
+        foreach ($cl->xpath('.//Position') as $pos) {
+            $lng = (float) ($pos->Longitude ?? 0);
+            $lat = (float) ($pos->Latitude ?? 0);
+            if ($lng && $lat) {
+                $coordinates[] = [$lng, $lat];
+            }
+        }
+
+        if ($endPos) {
+            $coordinates[] = [(float) $endPos->Longitude, (float) $endPos->Latitude];
+        }
+
+        $segments[] = [
+            'type' => 'walk',
+            'coordinates' => $coordinates,
+            'duration_min' => $durationMin,
+        ];
+
+        $steps[] = [
+            'instruction' => "Walk {$durationMin} min",
+            'distance_km' => round($durationMin * 0.08, 1), // ~80m/min
+            'time_sec' => $durationMin * 60,
+            'type' => 'walk',
+            'emoji' => '🚶',
+        ];
+    }
+
+    private function parseInterchangeLeg(\SimpleXMLElement $il, array &$segments, array &$steps): void
+    {
+        $durationIso = (string) ($il->WalkDuration ?? $il->Duration ?? '');
+        $durationMin = $this->isoDurationToMinutes($durationIso);
+
+        if ($durationMin > 0) {
+            $steps[] = [
+                'instruction' => "Transfer ({$durationMin} min)",
+                'distance_km' => 0,
+                'time_sec' => $durationMin * 60,
+                'type' => 'transfer',
+                'emoji' => '🔄',
+            ];
+        }
+    }
+
+    private function isoDurationToMinutes(string $iso): int
+    {
+        if (! $iso) {
+            return 0;
+        }
+
+        try {
+            $interval = new \DateInterval($iso);
+
+            return ($interval->h * 60) + $interval->i + (int) round($interval->s / 60);
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    private function buildTripRequest(float $fromLat, float $fromLng, float $toLat, float $toLng, int $maxResults): string
+    {
+        $timestamp = now()->toIso8601String();
+        $ref = config('services.vrs.requestor_ref', 'expadu');
+
+        return <<<XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Trias version="1.1" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+            <ServiceRequest>
+                <siri:RequestTimestamp>{$timestamp}</siri:RequestTimestamp>
+                <siri:RequestorRef>{$ref}</siri:RequestorRef>
+                <RequestPayload>
+                    <TripRequest>
+                        <Origin>
+                            <LocationRef>
+                                <GeoPosition>
+                                    <Longitude>{$fromLng}</Longitude>
+                                    <Latitude>{$fromLat}</Latitude>
+                                </GeoPosition>
+                            </LocationRef>
+                            <DepArrTime>{$timestamp}</DepArrTime>
+                        </Origin>
+                        <Destination>
+                            <LocationRef>
+                                <GeoPosition>
+                                    <Longitude>{$toLng}</Longitude>
+                                    <Latitude>{$toLat}</Latitude>
+                                </GeoPosition>
+                            </LocationRef>
+                        </Destination>
+                        <Params>
+                            <NumberOfResults>{$maxResults}</NumberOfResults>
+                            <IncludeLegProjection>true</IncludeLegProjection>
+                        </Params>
+                    </TripRequest>
+                </RequestPayload>
+            </ServiceRequest>
+        </Trias>
+        XML;
+    }
+
     private function buildStopEventRequest(string $globalId, int $limit): string
     {
         $timestamp = now()->toIso8601String();
