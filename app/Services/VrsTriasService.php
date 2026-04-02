@@ -251,9 +251,18 @@ class VrsTriasService
             }
         }
 
-        // Filter out empty groups and sort by next departure
+        // Filter out empty groups and sort: trams first, buses last, then by next departure
+        $typeOrder = ['tram' => 0, 'subway' => 1, 'rail' => 2, 'bus' => 3];
         $results = array_values(array_filter($grouped, fn ($g) => ! empty($g['departures'])));
-        usort($results, fn ($a, $b) => ($a['departures'][0] ?? 999) <=> ($b['departures'][0] ?? 999));
+        usort($results, function ($a, $b) use ($typeOrder) {
+            $aType = $typeOrder[$a['type'] ?? 'bus'] ?? 3;
+            $bType = $typeOrder[$b['type'] ?? 'bus'] ?? 3;
+            if ($aType !== $bType) {
+                return $aType <=> $bType;
+            }
+
+            return ($a['departures'][0] ?? 999) <=> ($b['departures'][0] ?? 999);
+        });
 
         return array_slice($results, 0, $limit);
     }
@@ -472,7 +481,8 @@ class VrsTriasService
             'time_sec' => 0,
             'type' => 'board',
             'emoji' => $type === 'rail' ? '🚂' : ($type === 'tram' ? '🚋' : '🚌'),
-            'detail' => "Dep {$depDisplay}".($platform ? " · Platform {$platform}" : '').($delayMin > 0 ? " · +{$delayMin}min late" : ''),
+            'detail' => "Dep {$depDisplay}".($platform ? " · Platform {$platform}" : ''),
+            'delay_min' => $delayMin,
         ];
 
         $steps[] = [

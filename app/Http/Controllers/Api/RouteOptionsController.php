@@ -346,8 +346,19 @@ class RouteOptionsController extends Controller
                 $uniqueTrips[] = $trip;
             }
 
-            // Sort by total duration
-            usort($uniqueTrips, fn ($a, $b) => $a['total_duration_min'] <=> $b['total_duration_min']);
+            // Sort: trains/trams first, buses last, then by duration
+            $modeOrder = ['rail' => 0, 'subway' => 1, 'tram' => 2, 'bus' => 3];
+            usort($uniqueTrips, function ($a, $b) use ($modeOrder) {
+                $aMode = collect($a['segments'])->where('type', 'transit')->pluck('mode')->first() ?? 'bus';
+                $bMode = collect($b['segments'])->where('type', 'transit')->pluck('mode')->first() ?? 'bus';
+                $aOrder = $modeOrder[$aMode] ?? 3;
+                $bOrder = $modeOrder[$bMode] ?? 3;
+                if ($aOrder !== $bOrder) {
+                    return $aOrder <=> $bOrder;
+                }
+
+                return $a['total_duration_min'] <=> $b['total_duration_min'];
+            });
 
             // Build trip options for frontend
             $tripOptions = [];

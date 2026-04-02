@@ -1339,7 +1339,7 @@ export default function Transit() {
                                             ) : (
                                                 <>
                                                     <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
-                                                        {dep.departures[0] ?? '—'}
+                                                        {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
                                                     </div>
                                                     <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 1 }}>min</div>
                                                     {dep.departures.length > 1 && (
@@ -1432,7 +1432,7 @@ export default function Transit() {
                                             ) : (
                                                 <>
                                                     <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
-                                                        {dep.departures[0] ?? '—'}
+                                                        {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
                                                     </div>
                                                     <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 1 }}>min</div>
                                                     {dep.departures.length > 1 && (

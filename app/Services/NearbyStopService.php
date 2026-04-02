@@ -249,10 +249,16 @@ class NearbyStopService
             }
         }
 
-        // Sort: towards-destination first, then by soonest departure
-        $sorter = function ($a, $b) {
+        // Sort: towards-destination first, then trams before buses, then by soonest departure
+        $typeOrder = ['tram' => 0, 'subway' => 1, 'rail' => 2, 'bus' => 3];
+        $sorter = function ($a, $b) use ($typeOrder) {
             if ($a['towards_dest'] !== $b['towards_dest']) {
                 return $b['towards_dest'] <=> $a['towards_dest'];
+            }
+            $aType = $typeOrder[$a['type'] ?? 'bus'] ?? 3;
+            $bType = $typeOrder[$b['type'] ?? 'bus'] ?? 3;
+            if ($aType !== $bType) {
+                return $aType <=> $bType;
             }
 
             return ($a['departures'][0] ?? 999) <=> ($b['departures'][0] ?? 999);

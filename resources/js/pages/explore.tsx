@@ -150,7 +150,7 @@ export default function Explore() {
         setRouteMode(null);
         setRouteDetail(null);
         setRouteLoading(true);
-        setSelectedSpot(null);
+        // Keep selectedSpot so we can go back to detail view
         setListOpen(true);
 
         // Persist in URL so refresh restores directions
@@ -194,8 +194,14 @@ export default function Explore() {
                 fetch(`/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=transit`, { credentials: 'same-origin' })
                     .then((r) => r.json())
                     .then((data) => {
-                        setTransitTrips(data.trips ?? []);
+                        const trips = data.trips ?? [];
+                        setTransitTrips(trips);
                         setRouteLoading(false);
+                        // Draw the first trip's route on the map immediately
+                        if (trips.length > 0 && trips[0].segments?.length > 0 && dest) {
+                            const orig = data.from ?? { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                            mapRef.current?.drawTransitRoute(trips[0].segments, { lat: orig.lat, lng: orig.lng }, dest);
+                        }
                     })
                     .catch(() => setRouteLoading(false));
             }
@@ -496,7 +502,7 @@ export default function Explore() {
                                     className="mb-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 transition-colors hover:text-[#1A4CD4]"
                                     style={{ fontSize: 13, fontWeight: 600, color: '#6B6860' }}
                                 >
-                                    ← Back to spots
+                                    ← {selectedSpot ? `Back to ${selectedSpot.name}` : 'Back to spots'}
                                 </button>
                                 <div className="font-display text-xl font-medium tracking-tight">Directions</div>
                                 <div className="mt-1 text-sm text-[#6B6860]">To {routeDest.name}</div>
@@ -660,6 +666,25 @@ export default function Explore() {
                                 )}
                             </div>
                         </>
+                    ) : selectedSpot && !routeDest ? (
+                        <>
+                            {/* ── Spot detail mode (in same panel) ── */}
+                            <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
+                                <div className="flex items-center justify-between">
+                                    <button
+                                        onClick={() => setSelectedSpot(null)}
+                                        className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 transition-colors hover:text-[#1A4CD4]"
+                                        style={{ fontSize: 13, fontWeight: 600, color: '#6B6860' }}
+                                    >
+                                        ← Back to spots
+                                    </button>
+                                    <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Work Spot</div>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                                <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} inline onDirections={(s) => s.lat && s.lng && startDirections(s.lat, s.lng, s.name)} />
+                            </div>
+                        </>
                     ) : (
                         <>
                             {/* ── Normal spots mode ── */}
@@ -717,25 +742,6 @@ export default function Explore() {
                     )}
                 </div>
 
-                {/* ═══ DETAIL PANEL ═══ Desktop/tablet — overlays on top of map, next to list. Hidden when routing. */}
-                {selectedSpot && !routeDest && (
-                    <div className="absolute inset-y-0 left-[420px] z-[70] flex w-[420px] flex-col border-r border-[#E2DFD6] bg-white shadow-[4px_0_24px_rgba(0,0,0,0.08)] max-md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                        {/* Header: Work Spot label + name + close */}
-                        <div className="flex shrink-0 items-center justify-between border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
-                            <div className="min-w-0 flex-1">
-                                <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Work Spot</div>
-                            </div>
-                            <button
-                                onClick={() => setSelectedSpot(null)}
-                                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#EFEDE7] text-[13px] text-[#6B6860] transition-colors hover:bg-[#E2DFD6]"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        {/* Detail content */}
-                        <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} inline onDirections={(s) => s.lat && s.lng && startDirections(s.lat, s.lng, s.name)} />
-                    </div>
-                )}
 
                 {/* ═══ MAP PANEL ═══ flex:1, always visible */}
                 <div className="relative flex-1 overflow-hidden bg-[#E8E4DC]">
@@ -750,7 +756,7 @@ export default function Explore() {
                     </button>
 
                     {/* Mobile: floating search + filters over map */}
-                    <div className="absolute top-4 left-1/2 z-50 w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl md:hidden">
+                    <div className="absolute top-4 left-1/2 z-[85] w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl md:hidden">
                         <div className="flex items-center gap-2.5 border-b border-[#E2DFD6] px-3.5 py-[11px]">
                             <span className="text-[15px] text-[#AAA89F]">🔍</span>
                             <input
@@ -765,6 +771,47 @@ export default function Explore() {
                         <div className="px-3.5 py-2">
                             <ExploreFilterBar active={category} onChange={filterByCategory} />
                         </div>
+                        {/* Search results dropdown on mobile */}
+                        {search && filteredSpots.length > 0 && (
+                            <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6]">
+                                {filteredSpots.slice(0, 8).map((s) => (
+                                    <div
+                                        key={s.id}
+                                        onClick={() => { selectSpot(s); setSearch(''); if (s.lat && s.lng) mapRef.current?.flyTo(s.lat, s.lng, 15); }}
+                                        className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-[#EFEDE7]"
+                                        style={{ borderBottom: '1px solid #E2DFD6' }}
+                                    >
+                                        <span className="text-lg">{s.category === 'cafe' ? '☕' : s.category === 'coworking' ? '🏢' : s.category === 'library' ? '📚' : '📍'}</span>
+                                        <div>
+                                            <div style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</div>
+                                            <div style={{ fontSize: 11, color: '#6B6860' }}>{s.address}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {/* Geocode suggestions when no spot matches */}
+                        {search && filteredSpots.length === 0 && geoSuggestions.length > 0 && (
+                            <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6]">
+                                {geoSuggestions.map((g, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => {
+                                            mapRef.current?.flyTo(g.lat, g.lng, 15);
+                                            setSearch('');
+                                        }}
+                                        className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-[#EFEDE7]"
+                                        style={{ borderBottom: '1px solid #E2DFD6' }}
+                                    >
+                                        <span className="text-lg">📍</span>
+                                        <div>
+                                            <div style={{ fontSize: 13, fontWeight: 600 }}>{g.name}</div>
+                                            <div style={{ fontSize: 11, color: '#6B6860' }}>{[g.street, g.city].filter(Boolean).join(', ')}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* MapLibre map */}

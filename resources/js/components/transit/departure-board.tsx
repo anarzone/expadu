@@ -142,7 +142,7 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
             </span>
         );
         nextClass = 'delayed';
-        nextDisplay = s.departures[0];
+        nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
     } else if (s.extra) {
         statusTag = (
             <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#EBF0FD', color: '#1A4CD4' }}>
@@ -150,7 +150,7 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
             </span>
         );
         nextClass = 'on-time';
-        nextDisplay = s.departures[0];
+        nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
     } else {
         statusTag = (
             <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#D4F0E6', color: '#0A7C52' }}>
@@ -158,7 +158,7 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
             </span>
         );
         nextClass = 'on-time';
-        nextDisplay = s.departures[0];
+        nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
     }
 
     const following = s.departures.slice(1);
@@ -236,7 +236,7 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
                         >
                             {nextDisplay}
                         </div>
-                        <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 1 }}>min</div>
+                        {nextDisplay !== 'now' && <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 1 }}>min</div>}
                     </>
                 )}
                 {following.length > 0 && (

@@ -34,8 +34,8 @@ export function ModePicker({
 }) {
     return (
         <div
-            className="absolute bottom-0 left-0 right-0 z-30"
-            style={{ background: 'linear-gradient(transparent, rgba(255,255,255,0.95) 20%, white)', padding: '32px 16px 16px' }}
+            className="absolute right-0 bottom-0 left-0 z-[9002]"
+            style={{ background: 'linear-gradient(transparent, rgba(255,255,255,0.95) 20%, white)', padding: '32px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}
         >
             {/* Destination label + close */}
             <div className="mb-2.5 flex items-center justify-between px-1">
