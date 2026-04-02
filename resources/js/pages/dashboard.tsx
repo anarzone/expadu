@@ -116,8 +116,8 @@ export default function Dashboard() {
             <div className="mx-auto w-full max-w-[680px]">
                 {/* Header */}
                 <div
-                    className="sticky top-0 z-50 flex items-center justify-between border-b px-6"
-                    style={{ padding: '16px 24px 14px', borderColor: '#E2DFD6', background: 'rgba(246,245,241,.94)', backdropFilter: 'blur(16px)' }}
+                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] px-6 backdrop-blur-2xl dark:border-[#3A3930]"
+                    style={{ padding: '16px 24px 14px', background: 'rgba(246,245,241,.94)' }}
                 >
                     <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}>{greeting}</span>
                     <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 11, color: '#AAA89F', textTransform: 'uppercase' }}>
@@ -127,7 +127,7 @@ export default function Dashboard() {
 
                 {/* Blue highlight — Today's Highlights */}
                 {weather && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
                         <div
                             className="relative overflow-hidden"
                             style={{ background: '#1A4CD4', borderRadius: 20, padding: '20px 22px', color: 'white' }}
@@ -224,17 +224,17 @@ export default function Dashboard() {
 
                 {/* Warnings section removed — handled by commute recommendation cards now */}
                 {false && warnings.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}></div>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}></div>
                 )}
 
                 {/* Settlement progress */}
                 {settlement && settlement.total > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Settlement Progress</span>
                             <span style={{ fontSize: 12, color: '#6B6860' }}>{settlement.days_since_arrival} days in Germany</span>
                         </div>
-                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white p-4">
+                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] p-4">
                             <div className="mb-2 flex justify-between text-sm">
                                 <span style={{ fontWeight: 600 }}>{settlement.completed} of {settlement.total} tasks</span>
                                 <span style={{ fontFamily: "'Geist Mono', monospace", color: '#1A4CD4', fontWeight: 600 }}>{settlement.percent}%</span>
@@ -248,11 +248,11 @@ export default function Dashboard() {
 
                 {/* Your places */}
                 {places.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
                         <div className="mb-3" style={{ fontSize: 16, fontWeight: 600 }}>Your Places</div>
                         <div className="flex flex-wrap gap-2">
                             {places.map((p) => (
-                                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full border border-[#E2DFD6] bg-white px-3 py-1.5 text-xs font-medium text-[#6B6860]">
+                                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] px-3 py-1.5 text-xs font-medium text-[#6B6860]">
                                     {p.emoji} {p.name}
                                 </span>
                             ))}
@@ -262,7 +262,7 @@ export default function Dashboard() {
 
                 {/* Work spots nearby */}
                 {nearbySpots.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F' }}>Work Spots Nearby</span>
                             <a href="/explore" className="text-xs font-semibold text-[#1A4CD4]" style={{ textDecoration: 'none' }}>See all →</a>
@@ -316,7 +316,7 @@ export default function Dashboard() {
 
                 {/* This week events */}
                 {thisWeek.length > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>This Week</span>
                             <a href="/events" className="text-xs font-semibold text-[#1A4CD4]" style={{ textDecoration: 'none' }}>See all →</a>
@@ -326,7 +326,7 @@ export default function Dashboard() {
                                 <a
                                     key={ev.id}
                                     href={`/events/${ev.id}`}
-                                    className="flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3 transition-all hover:border-[rgba(26,76,212,.2)] hover:shadow-sm"
+                                    className="flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] p-3 transition-all hover:border-[rgba(26,76,212,.2)] hover:shadow-sm"
                                     style={{ textDecoration: 'none', color: 'inherit' }}
                                 >
                                     <span className="text-lg">{ev.emoji || '📅'}</span>
@@ -348,12 +348,12 @@ export default function Dashboard() {
 
                 {/* Live departures */}
                 {departures && (departures.departures?.length ?? 0) > 0 && (
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2DFD6' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>Departures · {departures.stop_name}</span>
                             <a href="/transit" className="text-xs font-semibold text-[#1A4CD4]" style={{ textDecoration: 'none' }}>Full board →</a>
                         </div>
-                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
+                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
                             {departures.departures.slice(0, 4).map((dep, i) => (
                                 <div key={`${dep.line}-${dep.direction}`} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i < 3 ? '1px solid #E2DFD6' : 'none' }}>
                                     <div
@@ -398,7 +398,7 @@ export default function Dashboard() {
                             <a
                                 key={item.label}
                                 href={item.href}
-                                className="flex flex-col items-center gap-1.5 rounded-[14px] border border-[#E2DFD6] bg-white py-3 text-[#6B6860] transition-all hover:border-[rgba(26,76,212,.2)] hover:text-[#1A4CD4] hover:shadow-sm"
+                                className="flex flex-col items-center gap-1.5 rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] py-3 text-[#6B6860] transition-all hover:border-[rgba(26,76,212,.2)] hover:text-[#1A4CD4] hover:shadow-sm"
                                 style={{ textDecoration: 'none' }}
                             >
                                 <item.icon size={22} stroke={ICON_STROKE} />
@@ -419,7 +419,7 @@ export default function Dashboard() {
                 <div className="hidden md:block">
                     <div className="fixed inset-0 z-40 bg-black/15" onClick={() => setRouteSheetDest(null)} />
                     <div
-                        className="fixed z-50 rounded-[20px] border border-[#E2DFD6] bg-white p-6 shadow-[0_16px_48px_rgba(0,0,0,0.15)]"
+                        className="fixed z-50 rounded-[20px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.15)]"
                         style={{ top: '50%', transform: 'translateY(-50%)', left: 'calc(50% - 280px)', width: 560, maxHeight: '80vh', overflowY: 'auto' }}
                     >
                         <div className="mb-3 flex items-center justify-between">
