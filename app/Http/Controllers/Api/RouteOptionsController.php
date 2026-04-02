@@ -12,6 +12,7 @@ use App\Services\VrsTriasService;
 use App\Services\WeatherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
 
 /**
@@ -254,56 +255,136 @@ class RouteOptionsController extends Controller
         $triasResult = $trias->planJourney($fromLat, $fromLng, $toLat, $toLng, 10);
 
         if ($triasResult && ! empty($triasResult['trips'])) {
-            // Group trips by unique line combination to find different routes
-            $routeGroups = [];
+            // Collect all unique transfer stops from initial results
+            $transferStops = [];
             foreach ($triasResult['trips'] as $trip) {
-                $routeKey = collect($trip['segments'])
-                    ->where('type', 'transit')
-                    ->pluck('line')
-                    ->implode('→') ?: 'walk';
-
-                if (! isset($routeGroups[$routeKey])) {
-                    $routeGroups[$routeKey] = [];
+                $segs = $trip['segments'];
+                for ($j = 0; $j < count($segs); $j++) {
+                    if (($segs[$j]['type'] ?? '') !== 'transit' || empty($segs[$j]['alighting_stop_id'])) {
+                        continue;
+                    }
+                    // Check if there's another transit segment after this one (= transfer point)
+                    $hasNextTransit = false;
+                    for ($k = $j + 1; $k < count($segs); $k++) {
+                        if (($segs[$k]['type'] ?? '') === 'transit') {
+                            $hasNextTransit = true;
+                            break;
+                        }
+                    }
+                    if ($hasNextTransit) {
+                        $rawId = $segs[$j]['alighting_stop_id'];
+                        $parentId = preg_match('/^(de:\d+:\d+)/', $rawId, $m) ? $m[1] : $rawId;
+                        if (! isset($transferStops[$parentId])) {
+                            $transferStops[$parentId] = [
+                                'name' => $segs[$j]['alighting_stop'],
+                                'arrival_time' => $segs[$j]['arrival_time'] ?? '',
+                                'segments_before' => array_slice($segs, 0, $j + 1),
+                                'steps_before' => $this->buildStepsForSegments(array_slice($segs, 0, $j + 1)),
+                            ];
+                        }
+                    }
                 }
-                $routeGroups[$routeKey][] = $trip;
             }
 
-            // First route of each group = route alternative, rest = later departures
-            $routeAlternatives = [];
-            foreach ($routeGroups as $trips) {
-                $first = $trips[0];
-                $laterDeps = array_map(fn ($t) => [
-                    'departure_time' => $t['departure_time'],
-                    'arrival_time' => $t['arrival_time'],
-                    'total_duration_min' => $t['total_duration_min'],
-                ], array_slice($trips, 1));
+            // For each transfer stop, query alternative routes to destination
+            $allTrips = $triasResult['trips'];
 
-                $lines = collect($first['segments'])->where('type', 'transit')->pluck('line')->implode(' → ');
-                $routeAlternatives[] = [
-                    ...$first,
-                    'route_label' => $lines ?: 'Walk',
-                    'later_departures' => $laterDeps,
+            foreach ($transferStops as $stopId => $info) {
+                // Use arrival time at transfer stop (or now+5min as fallback)
+                $depTime = ! empty($info['arrival_time'])
+                    ? Carbon::parse($info['arrival_time'])->toIso8601String()
+                    : now()->addMinutes(5)->toIso8601String();
+                $altResult = $trias->planJourneyFromStop($stopId, $toLat, $toLng, $depTime, 10);
+                if (! $altResult || empty($altResult['trips'])) {
+                    continue;
+                }
+
+                foreach ($altResult['trips'] as $altTrip) {
+                    // Stitch: original segments before transfer + new trip segments
+                    $stitchedSegments = array_merge($info['segments_before'], $altTrip['segments']);
+                    $stitchedSteps = array_merge($info['steps_before'], [
+                        ['instruction' => 'Transfer', 'distance_km' => 0, 'time_sec' => 60, 'type' => 'transfer', 'emoji' => '🔄'],
+                    ], $altTrip['steps']);
+
+                    // Calculate times from the full stitched route
+                    $allTransitSegs = collect($stitchedSegments)->where('type', 'transit');
+                    $firstDep = $allTransitSegs->pluck('departure_time')->first();
+                    $lastArr = $allTransitSegs->pluck('arrival_time')->last();
+                    $walkMin = (int) collect($stitchedSegments)->where('type', 'walk')->sum('duration_min');
+                    $transitMin = ($firstDep && $lastArr) ? max(0, (int) round((Carbon::parse($lastArr)->timestamp - Carbon::parse($firstDep)->timestamp) / 60)) : 0;
+                    $transfers = max(0, $allTransitSegs->count() - 1);
+
+                    // Use original trip's overall departure (including walk to first stop)
+                    $origFirstSeg = collect($info['segments_before'])->first();
+                    $walkBeforeMin = ($origFirstSeg && ($origFirstSeg['type'] ?? '') === 'walk') ? ($origFirstSeg['duration_min'] ?? 0) : 0;
+                    $overallDep = $firstDep ? Carbon::parse($firstDep)->subMinutes($walkBeforeMin)->format('H:i') : $altTrip['departure_time'];
+                    $overallArr = $lastArr ?? $altTrip['arrival_time'];
+                    // Add walk after last transit if altTrip has one
+                    $lastAltSeg = collect($altTrip['segments'])->last();
+                    $walkAfterMin = ($lastAltSeg && ($lastAltSeg['type'] ?? '') === 'walk') ? ($lastAltSeg['duration_min'] ?? 0) : 0;
+
+                    $allTrips[] = [
+                        'departure_time' => $overallDep,
+                        'arrival_time' => $lastArr ? Carbon::parse($lastArr)->addMinutes($walkAfterMin)->format('H:i') : $overallArr,
+                        'total_duration_min' => $walkMin + $transitMin + $walkBeforeMin,
+                        'transfers' => $transfers,
+                        'segments' => $stitchedSegments,
+                        'steps' => $stitchedSteps,
+                    ];
+                }
+            }
+
+            // Deduplicate by line combination and sort by departure time
+            $seen = [];
+            $uniqueTrips = [];
+            foreach ($allTrips as $trip) {
+                $lineKey = collect($trip['segments'])->where('type', 'transit')->map(fn ($s) => $s['line'].'@'.$s['boarding_stop'])->implode('→');
+                if (isset($seen[$lineKey])) {
+                    continue;
+                }
+                $seen[$lineKey] = true;
+                $uniqueTrips[] = $trip;
+            }
+
+            // Sort by total duration
+            usort($uniqueTrips, fn ($a, $b) => $a['total_duration_min'] <=> $b['total_duration_min']);
+
+            // Build trip options for frontend
+            $tripOptions = [];
+            foreach (array_slice($uniqueTrips, 0, 10) as $trip) {
+                $transitSegs = collect($trip['segments'])->where('type', 'transit');
+                $firstTransit = $transitSegs->first();
+                $walkMin = collect($trip['segments'])->where('type', 'walk')->sum('duration_min');
+
+                $legIcons = [];
+                foreach ($trip['segments'] as $seg) {
+                    if ($seg['type'] === 'walk') {
+                        $legIcons[] = ['type' => 'walk'];
+                    } elseif ($seg['type'] === 'transit') {
+                        $legIcons[] = ['type' => 'transit', 'line' => $seg['line'], 'mode' => $seg['mode'] ?? 'tram'];
+                    }
+                }
+
+                $tripOptions[] = [
+                    'departure_time' => $trip['departure_time'],
+                    'arrival_time' => $trip['arrival_time'],
+                    'total_duration_min' => $trip['total_duration_min'],
+                    'transfers' => $trip['transfers'],
+                    'legs' => $legIcons,
+                    'walk_min' => $walkMin,
+                    'boarding_stop' => $firstTransit['boarding_stop'] ?? '',
+                    'first_line_departure' => $firstTransit['departure_time'] ?? '',
+                    'segments' => $trip['segments'],
+                    'steps' => $trip['steps'],
                 ];
             }
-
-            $primary = $routeAlternatives[0];
-            $alternatives = array_slice($routeAlternatives, 1);
 
             return response()->json([
                 'from' => ['name' => $fromName, 'lat' => $fromLat, 'lng' => $fromLng],
                 'to' => ['name' => $toName, 'lat' => $toLat, 'lng' => $toLng, 'address' => $toAddress],
                 'mode' => 'transit',
                 'source' => 'trias',
-                'duration_min' => $primary['total_duration_min'],
-                'distance_km' => round($this->haversineKm($fromLat, $fromLng, $toLat, $toLng), 1),
-                'departure_time' => $primary['departure_time'],
-                'arrival_time' => $primary['arrival_time'],
-                'transfers' => $primary['transfers'],
-                'segments' => $primary['segments'],
-                'steps' => $primary['steps'],
-                'route_label' => $primary['route_label'],
-                'later_departures' => $primary['later_departures'],
-                'trip_alternatives' => $alternatives,
+                'trips' => $tripOptions,
                 'geometry' => '',
             ]);
         }
@@ -438,6 +519,26 @@ class RouteOptionsController extends Controller
             'steps' => $steps,
             'geometry' => '',
         ]);
+    }
+
+    /**
+     * Build journey steps from a set of segments (for stitching routes).
+     */
+    private function buildStepsForSegments(array $segments): array
+    {
+        $steps = [];
+        foreach ($segments as $seg) {
+            if (($seg['type'] ?? '') === 'walk') {
+                $steps[] = ['instruction' => 'Walk '.($seg['duration_min'] ?? '?').' min', 'distance_km' => $seg['distance_km'] ?? round(($seg['duration_min'] ?? 0) * 0.08, 1), 'time_sec' => ($seg['duration_min'] ?? 0) * 60, 'type' => 'walk', 'emoji' => '🚶'];
+            } elseif (($seg['type'] ?? '') === 'transit') {
+                $mode = $seg['mode'] ?? 'tram';
+                $emoji = $mode === 'rail' ? '🚂' : ($mode === 'tram' ? '🚋' : '🚌');
+                $steps[] = ['instruction' => 'Board Line '.($seg['line'] ?? '?').' at '.($seg['boarding_stop'] ?? '?'), 'distance_km' => 0, 'time_sec' => 0, 'type' => 'board', 'emoji' => $emoji, 'detail' => 'Dep '.($seg['departure_time'] ?? '')];
+                $steps[] = ['instruction' => 'Ride to '.($seg['alighting_stop'] ?? '?'), 'distance_km' => 0, 'time_sec' => ($seg['duration_min'] ?? 0) * 60, 'type' => 'ride', 'emoji' => $emoji, 'detail' => 'Arr '.($seg['arrival_time'] ?? '')];
+            }
+        }
+
+        return $steps;
     }
 
     private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float

@@ -107,19 +107,28 @@ export default function Explore() {
     type FullRoute = {
         mode: string; duration_min: number; distance_km: number; geometry: string;
         source?: string; departure_time?: string; arrival_time?: string; transfers?: number;
-        route_label?: string;
-        later_departures?: Array<{ departure_time: string; arrival_time: string; total_duration_min: number }>;
-        segments?: Array<{ type: string; geometry?: string; coordinates?: [number, number][]; color?: string; line?: string; direction?: string; boarding_stop?: string; alighting_stop?: string; departure_time?: string; arrival_time?: string; delay_min?: number; duration_min?: number; mode?: string }>;
-        steps: Array<{ instruction: string; distance_km: number; time_sec: number; type: string; emoji: string; detail?: string }>;
-        trip_alternatives?: Array<{ total_duration_min: number; departure_time: string; arrival_time: string; transfers: number; segments: any[]; steps: any[]; route_label?: string; later_departures?: any[] }>;
+        segments?: Array<{ type: string; geometry?: string; coordinates?: [number, number][]; color?: string; line?: string; direction?: string; boarding_stop?: string; alighting_stop?: string; alighting_stop_id?: string; boarding_stop_id?: string; departure_time?: string; arrival_time?: string; delay_min?: number; duration_min?: number; mode?: string }>;
+        steps: Array<{ instruction: string; distance_km: number; time_sec: number; type: string; emoji: string; detail?: string; transfer_stop_id?: string; transfer_stop_name?: string }>;
+    };
+    type TransitTrip = {
+        departure_time: string; arrival_time: string; total_duration_min: number; transfers: number;
+        legs: Array<{ type: string; line?: string; mode?: string }>;
+        walk_min: number; boarding_stop: string; first_line_departure: string;
+        segments: any[]; steps: any[];
     };
     const [routeDest, setRouteDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
     const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
     const [routeMode, setRouteMode] = useState<string | null>(null);
     const [routeDetail, setRouteDetail] = useState<FullRoute | null>(null);
+    const [transitTrips, setTransitTrips] = useState<TransitTrip[]>([]);
+    const [selectedTripIdx, setSelectedTripIdx] = useState<number | null>(null);
     const [routeLoading, setRouteLoading] = useState(false);
     const [routeMapsUrl, setRouteMapsUrl] = useState<{ google: string; apple: string } | null>(null);
-    const [showGoogleEmbed, setShowGoogleEmbed] = useState(false);
+
+    // Connection alternatives at transfer points
+    type ConnectionOption = { line: string; direction: string; departure_time: string; minutes: number | null; type: string; is_current: boolean; toward_destination: boolean };
+    const [connectionsByStop, setConnectionsByStop] = useState<Record<string, ConnectionOption[]>>({});
+    const [connectionsLoading, setConnectionsLoading] = useState<Record<string, boolean>>({});
 
     function startDirections(lat: number, lng: number, name: string) {
         setRouteDest({ lat, lng, name });
@@ -127,6 +136,7 @@ export default function Explore() {
         setRouteDetail(null);
         setRouteLoading(true);
         setSelectedSpot(null);
+        setListOpen(true); // Ensure panel is open on tablet
 
         fetch(`/api/route-options?to_lat=${lat}&to_lng=${lng}&name=${encodeURIComponent(name)}`, { credentials: 'same-origin' })
             .then((r) => r.json())
@@ -152,22 +162,20 @@ export default function Explore() {
         const costing = mode === 'bike' ? 'bicycle' : mode === 'walk' ? 'pedestrian' : mode === 'drive' ? 'auto' : null;
 
         if (mode === 'transit') {
-            setShowGoogleEmbed(false);
+            setTransitTrips([]);
+            setSelectedTripIdx(null);
+            setRouteDetail(null);
+            mapRef.current?.clearRoute();
             const dest = routeDest ?? to;
             if (dest) {
+                setRouteLoading(true);
                 fetch(`/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=transit`, { credentials: 'same-origin' })
                     .then((r) => r.json())
                     .then((data) => {
-                        setRouteDetail(data);
-                        if (data.segments && data.segments.length > 0) {
-                            const orig = data.from ?? origin;
-                            mapRef.current?.drawTransitRoute(data.segments, { lat: orig.lat, lng: orig.lng }, dest);
-                        }
+                        setTransitTrips(data.trips ?? []);
+                        setRouteLoading(false);
                     })
-                    .catch(() => {
-                        // Fallback to Google Maps embed if TRIAS fails
-                        setShowGoogleEmbed(true);
-                    });
+                    .catch(() => setRouteLoading(false));
             }
             return;
         }
@@ -194,8 +202,91 @@ export default function Explore() {
         setRouteMode(null);
         setRouteDetail(null);
         setRouteMapsUrl(null);
-        setShowGoogleEmbed(false);
+        setTransitTrips([]);
+        setSelectedTripIdx(null);
+        setConnectionsByStop({});
+        setConnectionsLoading({});
         mapRef.current?.clearRoute();
+    }
+
+    function selectTransitTrip(idx: number) {
+        const trip = transitTrips[idx];
+        if (!trip || !routeDest) return;
+        setSelectedTripIdx(idx);
+        setRouteDetail({
+            mode: 'transit',
+            duration_min: trip.total_duration_min,
+            distance_km: 0,
+            geometry: '',
+            source: 'trias',
+            departure_time: trip.departure_time,
+            arrival_time: trip.arrival_time,
+            transfers: trip.transfers,
+            segments: trip.segments,
+            steps: trip.steps,
+        });
+        if (trip.segments?.length > 0) {
+            const orig = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+            mapRef.current?.drawTransitRoute(trip.segments, orig, routeDest);
+        }
+    }
+
+    function backToTripList() {
+        setSelectedTripIdx(null);
+        setRouteDetail(null);
+        setConnectionsByStop({});
+        mapRef.current?.clearRoute();
+    }
+
+    function fetchConnections(stopId: string) {
+        setConnectionsLoading((prev) => ({ ...prev, [stopId]: true }));
+        const currentLine = routeDetail?.segments?.find((s) => s.type === 'transit')?.line ?? '';
+        const params = new URLSearchParams({
+            stop_id: stopId,
+            current_line: currentLine,
+            destination_name: routeDest?.name ?? '',
+        });
+        fetch(`/api/transfer-connections?${params}`, { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => setConnectionsByStop((prev) => ({ ...prev, [stopId]: data.connections ?? [] })))
+            .catch(() => setConnectionsByStop((prev) => ({ ...prev, [stopId]: [] })))
+            .finally(() => setConnectionsLoading((prev) => ({ ...prev, [stopId]: false })));
+    }
+
+    function selectConnection(stopId: string, connection: ConnectionOption) {
+        if (!routeDetail?.segments || !routeDest) return;
+        setRouteLoading(true);
+
+        // Find segments before the transfer point
+        const transferIdx = routeDetail.segments.findIndex((s) => s.alighting_stop_id === stopId || s.boarding_stop_id === stopId);
+        const segmentsBefore = transferIdx >= 0 ? routeDetail.segments.slice(0, transferIdx + 1) : [];
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        fetch('/api/transfer-select', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({
+                stop_id: stopId,
+                departure_time: connection.departure_time,
+                to_lat: routeDest.lat,
+                to_lng: routeDest.lng,
+                to_name: routeDest.name,
+                segments_before: segmentsBefore,
+            }),
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.error) return;
+                setRouteDetail(data);
+                setConnectionsByStop({});
+                if (data.segments?.length > 0) {
+                    const orig = data.from ?? { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                    mapRef.current?.drawTransitRoute(data.segments, { lat: orig.lat, lng: orig.lng }, routeDest);
+                }
+            })
+            .catch(() => {})
+            .finally(() => setRouteLoading(false));
     }
 
     // Tap-to-discover state
@@ -422,74 +513,97 @@ export default function Explore() {
                                 </div>
                             )}
 
-                            {/* ── Google Maps toggle ── */}
-                            {routeMode && (
-                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-2">
-                                    <button
-                                        onClick={() => {
-                                            const next = !showGoogleEmbed;
-                                            setShowGoogleEmbed(next);
-                                            if (next) {
-                                                mapRef.current?.clearRoute();
-                                            } else if (routeMode && routeMode !== 'transit' && routeDetail?.geometry) {
-                                                // Redraw Valhalla route when toggling back
-                                                mapRef.current?.drawRoute(routeDetail.geometry, routeMode, { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 }, routeDest!);
-                                            }
-                                        }}
-                                        className="flex w-full cursor-pointer items-center justify-between rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] transition-all hover:bg-[#EFEDE7]"
-                                        style={{ fontWeight: 500 }}
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <span style={{ fontSize: 14 }}>🗺️</span>
-                                            Show in Google Maps
-                                        </span>
-                                        <span style={{ fontSize: 16, color: showGoogleEmbed ? '#1A4CD4' : '#AAA89F' }}>
-                                            {showGoogleEmbed ? '●' : '○'}
-                                        </span>
-                                    </button>
-                                </div>
-                            )}
 
-                            {/* ── Steps ── */}
-                            <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
+                            {/* ── Steps / Transit trip list ── */}
+                            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                                 {routeLoading && <div className="py-12 text-center text-sm text-[#AAA89F]">Loading routes...</div>}
-                                {showGoogleEmbed ? (
-                                    <div className="py-4 text-center text-sm text-[#6B6860]">
-                                        Showing route in Google Maps on the right
+
+                                {/* Transit mode: trip list (Google Maps style) */}
+                                {routeMode === 'transit' && !routeLoading && transitTrips.length > 0 && selectedTripIdx === null && (
+                                    <div>
+                                        {transitTrips.map((trip, i) => (
+                                            <div
+                                                key={i}
+                                                onClick={() => selectTransitTrip(i)}
+                                                className="cursor-pointer border-b border-[#E2DFD6] px-5 py-4 transition-colors hover:bg-[#F5F4F0]"
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <div style={{ fontSize: 15, fontWeight: 600 }}>
+                                                            {trip.departure_time} — {trip.arrival_time}
+                                                        </div>
+                                                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                                                            {trip.legs.map((leg, j) => (
+                                                                <span key={j} className="flex items-center gap-1">
+                                                                    {j > 0 && <span style={{ fontSize: 10, color: '#AAA89F' }}>›</span>}
+                                                                    {leg.type === 'walk' ? (
+                                                                        <span style={{ fontSize: 13 }}>🚶</span>
+                                                                    ) : (
+                                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#1A4CD4', color: 'white', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 700, fontFamily: "'Geist Mono', monospace" }}>
+                                                                            {leg.mode === 'rail' ? '🚂' : '🚋'} {leg.line}
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <div style={{ fontSize: 11, color: '#6B6860', marginTop: 4 }}>
+                                                            {trip.first_line_departure && <><span style={{ color: '#0A7C52', fontWeight: 600 }}>{trip.first_line_departure}</span> from {trip.boarding_stop}</>}
+                                                            {trip.walk_min > 0 && <> · 🚶 {trip.walk_min} min</>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="shrink-0 text-right">
+                                                        <div style={{ fontSize: 15, fontWeight: 600 }}>{trip.total_duration_min} min</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ) : routeDetail && routeDetail.steps.length > 0 ? (
-                                    <RouteStepsPanel
-                                        mode={routeDetail.mode}
-                                        durationMin={routeDetail.duration_min}
-                                        distanceKm={routeDetail.distance_km}
-                                        steps={routeDetail.steps}
-                                        mapsUrl={routeMapsUrl ?? undefined}
-                                        departureTime={routeDetail.departure_time}
-                                        arrivalTime={routeDetail.arrival_time}
-                                        transfers={routeDetail.transfers}
-                                        routeLabel={routeDetail.route_label}
-                                        laterDepartures={routeDetail.later_departures}
-                                        tripAlternatives={routeDetail.trip_alternatives}
-                                        onSelectAlternative={(alt) => {
-                                            setRouteDetail({
-                                                ...routeDetail,
-                                                duration_min: alt.total_duration_min,
-                                                departure_time: alt.departure_time,
-                                                arrival_time: alt.arrival_time,
-                                                transfers: alt.transfers,
-                                                segments: alt.segments,
-                                                steps: alt.steps,
-                                                trip_alternatives: routeDetail.trip_alternatives,
-                                            });
-                                            if (alt.segments.length > 0 && routeDest) {
-                                                const orig = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
-                                                mapRef.current?.drawTransitRoute(alt.segments, orig, routeDest);
-                                            }
-                                        }}
-                                    />
-                                ) : !routeLoading && routeOptions.length > 0 ? (
+                                )}
+
+                                {/* Transit mode: selected trip detail (back button + steps) */}
+                                {routeMode === 'transit' && selectedTripIdx !== null && routeDetail && (
+                                    <div className="px-4 py-3">
+                                        <button
+                                            onClick={backToTripList}
+                                            className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:text-[#1541B8]"
+                                        >
+                                            ← Back to options
+                                        </button>
+                                        <RouteStepsPanel
+                                            mode={routeDetail.mode}
+                                            durationMin={routeDetail.duration_min}
+                                            distanceKm={routeDetail.distance_km}
+                                            steps={routeDetail.steps}
+                                            mapsUrl={routeMapsUrl ?? undefined}
+                                            departureTime={routeDetail.departure_time}
+                                            arrivalTime={routeDetail.arrival_time}
+                                            transfers={routeDetail.transfers}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Non-transit modes: route steps */}
+                                {routeMode !== 'transit' && routeDetail && routeDetail.steps.length > 0 && (
+                                    <div className="px-4 py-3">
+                                        <RouteStepsPanel
+                                            mode={routeDetail.mode}
+                                            durationMin={routeDetail.duration_min}
+                                            distanceKm={routeDetail.distance_km}
+                                            steps={routeDetail.steps}
+                                            mapsUrl={routeMapsUrl ?? undefined}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* No mode selected yet */}
+                                {!routeLoading && !routeMode && routeOptions.length > 0 && (
                                     <div className="py-8 text-center text-sm text-[#AAA89F]">Select a mode above to see directions</div>
-                                ) : null}
+                                )}
+
+                                {/* Transit: no trips found */}
+                                {routeMode === 'transit' && !routeLoading && transitTrips.length === 0 && (
+                                    <div className="py-8 text-center text-sm text-[#AAA89F]">No transit routes found</div>
+                                )}
                             </div>
                         </>
                     ) : (
@@ -632,24 +746,6 @@ export default function Explore() {
                         )}
                     </Suspense>
 
-                    {/* ═══ GOOGLE MAPS EMBED (transit + toggle) ═══ */}
-                    {showGoogleEmbed && routeDest && (() => {
-                        const gmMode = routeMode === 'transit' ? 'transit' : routeMode === 'bike' ? 'bicycling' : routeMode === 'drive' ? 'driving' : 'walking';
-                        const originStr = `${userLocation?.lat ?? 50.9375},${userLocation?.lng ?? 6.9603}`;
-                        const destStr = `${routeDest.lat},${routeDest.lng}`;
-                        return (
-                            <div className="absolute inset-0 z-[55] bg-white">
-                                <iframe
-                                    className="size-full border-0"
-                                    loading="lazy"
-                                    referrerPolicy="no-referrer-when-downgrade"
-                                    src={`https://www.google.com/maps?saddr=${originStr}&daddr=${destStr}&dirflg=${gmMode === 'transit' ? 'r' : gmMode === 'walking' ? 'w' : gmMode === 'bicycling' ? 'b' : 'd'}&output=embed`}
-                                    allow="geolocation"
-                                />
-                            </div>
-                        );
-                    })()}
-
                     {/* ═══ TAP-TO-DISCOVER TOAST ═══ */}
                     {tapPoint && !showPlaceForm && (
                         <div className="absolute right-4 bottom-[200px] left-4 z-[90] mx-auto max-w-[400px] md:bottom-8">
@@ -764,10 +860,6 @@ export default function Explore() {
                     {!routeDest && <MobileListSheet spots={filteredSpots} selectedId={selectedSpot?.id ?? null} onSelect={selectSpot} />}
                 </div>
 
-                {/* Tablet: overlay behind list to close it */}
-                {listOpen && (
-                    <div className="absolute inset-0 z-[70] hidden bg-black/20 md:block lg:hidden" onClick={() => setListOpen(false)} />
-                )}
             </div>
 
             {/* Spot detail bottom sheet — mobile only */}

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\RouteOptionsController;
 use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TrackEventController;
+use App\Http\Controllers\Api\TransferConnectionsController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
@@ -35,6 +36,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('api/track', TrackEventController::class)->name('api.track');
     Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
     Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
+    Route::get('api/transfer-connections', [TransferConnectionsController::class, 'getConnections'])->name('api.transfer-connections');
+    Route::post('api/transfer-select', [TransferConnectionsController::class, 'selectConnection'])->name('api.transfer-select');
 
     Route::inertia('onboarding', 'onboarding')->name('onboarding');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');

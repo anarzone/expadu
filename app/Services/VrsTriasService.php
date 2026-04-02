@@ -259,6 +259,56 @@ class VrsTriasService
     }
 
     /**
+     * Get real-time departures from a stop by its TRIAS GlobalID.
+     * Used for showing connection alternatives at transfer points.
+     *
+     * @return array<int, array{line: string, direction: string, departure_time: string, type: string}>|null
+     */
+    public function getDeparturesAtStop(string $globalId, int $limit = 10, ?string $afterTime = null): ?array
+    {
+        if (! config('services.vrs.enabled')) {
+            return null;
+        }
+
+        $cacheKey = "trias_stop_deps_{$globalId}_{$limit}";
+
+        return Cache::remember($cacheKey, 30, function () use ($globalId, $limit) {
+            return $this->fetchStopEvents($globalId, $limit);
+        });
+    }
+
+    /**
+     * Plan a journey from a specific stop (by GlobalID) to a destination.
+     * Used when user picks an alternative connection at a transfer point.
+     *
+     * @return array{source: string, trips: array}|null
+     */
+    public function planJourneyFromStop(string $fromStopId, float $toLat, float $toLng, string $departureTime, int $maxResults = 3): ?array
+    {
+        if (! config('services.vrs.enabled')) {
+            return null;
+        }
+
+        $cacheKey = "trias_trip_stop_{$fromStopId}_{$toLat}_{$toLng}_{$departureTime}";
+
+        return Cache::remember($cacheKey, 60, function () use ($fromStopId, $toLat, $toLng, $departureTime, $maxResults) {
+            $xml = $this->buildTripRequestFromStop($fromStopId, $toLat, $toLng, $departureTime, $maxResults);
+            $response = $this->post($xml);
+
+            if (! $response) {
+                return null;
+            }
+
+            $parsed = $this->parseXml($response);
+            if (! $parsed) {
+                return null;
+            }
+
+            return $this->parseTripResponse($parsed);
+        });
+    }
+
+    /**
      * Plan a transit journey from origin to destination using TRIAS TripRequest.
      * Returns multiple trip alternatives with walk/transit segments.
      *
@@ -360,6 +410,8 @@ class VrsTriasService
 
         $boardStop = (string) ($tl->LegBoard->StopPointName->Text ?? '');
         $alightStop = (string) ($tl->LegAlight->StopPointName->Text ?? '');
+        $boardStopId = (string) ($tl->LegBoard->StopPointRef ?? '');
+        $alightStopId = (string) ($tl->LegAlight->StopPointRef ?? '');
 
         // Strip city prefix for cleaner display (e.g. "Chorweiler (U) Gleis 3, Köln Chorweiler" → "Chorweiler")
         $boardShort = preg_replace('/\s*\(.*$|,.*$/', '', $boardStop);
@@ -400,6 +452,8 @@ class VrsTriasService
             'coordinates' => $coordinates,
             'boarding_stop' => $boardShort,
             'alighting_stop' => $alightShort,
+            'boarding_stop_id' => $boardStopId,
+            'alighting_stop_id' => $alightStopId,
             'departure_time' => $depTime ? Carbon::parse($depTime)->format('H:i') : '',
             'departure_time_scheduled' => $depSched ? Carbon::parse($depSched)->format('H:i') : '',
             'arrival_time' => $arrTime ? Carbon::parse($arrTime)->format('H:i') : '',
@@ -477,13 +531,26 @@ class VrsTriasService
         $durationIso = (string) ($il->WalkDuration ?? $il->Duration ?? '');
         $durationMin = $this->isoDurationToMinutes($durationIso);
 
-        if ($durationMin > 0) {
+        $startStopId = (string) ($il->LegStart->StopPointRef ?? '');
+        $endStopId = (string) ($il->LegEnd->StopPointRef ?? '');
+        $stopName = (string) ($il->LegEnd->LocationName->Text ?? '');
+        $stopShort = preg_replace('/\s*\(.*$|,.*$/', '', $stopName);
+
+        // Use the parent stop ID (strip platform suffix like :7:72 → keep de:05315:XXXXX)
+        $transferStopId = $endStopId ?: $startStopId;
+        if ($transferStopId && preg_match('/^(de:\d+:\d+)/', $transferStopId, $m)) {
+            $transferStopId = $m[1];
+        }
+
+        if ($durationMin >= 0) {
             $steps[] = [
-                'instruction' => "Transfer ({$durationMin} min)",
+                'instruction' => "Transfer at {$stopShort}".($durationMin > 0 ? " ({$durationMin} min)" : ''),
                 'distance_km' => 0,
                 'time_sec' => $durationMin * 60,
                 'type' => 'transfer',
                 'emoji' => '🔄',
+                'transfer_stop_id' => $transferStopId,
+                'transfer_stop_name' => $stopShort,
             ];
         }
     }
@@ -501,6 +568,45 @@ class VrsTriasService
         } catch (\Throwable) {
             return 0;
         }
+    }
+
+    private function buildTripRequestFromStop(string $fromStopId, float $toLat, float $toLng, string $departureTime, int $maxResults): string
+    {
+        $timestamp = now()->toIso8601String();
+        $ref = config('services.vrs.requestor_ref', 'expadu');
+        $depTime = Carbon::parse($departureTime)->toIso8601String();
+
+        return <<<XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Trias version="1.1" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+            <ServiceRequest>
+                <siri:RequestTimestamp>{$timestamp}</siri:RequestTimestamp>
+                <siri:RequestorRef>{$ref}</siri:RequestorRef>
+                <RequestPayload>
+                    <TripRequest>
+                        <Origin>
+                            <LocationRef>
+                                <StopPointRef>{$fromStopId}</StopPointRef>
+                            </LocationRef>
+                            <DepArrTime>{$depTime}</DepArrTime>
+                        </Origin>
+                        <Destination>
+                            <LocationRef>
+                                <GeoPosition>
+                                    <Longitude>{$toLng}</Longitude>
+                                    <Latitude>{$toLat}</Latitude>
+                                </GeoPosition>
+                            </LocationRef>
+                        </Destination>
+                        <Params>
+                            <NumberOfResults>{$maxResults}</NumberOfResults>
+                            <IncludeLegProjection>true</IncludeLegProjection>
+                        </Params>
+                    </TripRequest>
+                </RequestPayload>
+            </ServiceRequest>
+        </Trias>
+        XML;
     }
 
     private function buildTripRequest(float $fromLat, float $fromLng, float $toLat, float $toLng, int $maxResults): string
