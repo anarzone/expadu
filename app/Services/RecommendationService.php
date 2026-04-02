@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\Spot;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 
 class RecommendationService
@@ -71,12 +72,12 @@ class RecommendationService
      *
      * @return array{recommendations: array, weather: array, forecast: array, settlement: array, departures: array}
      */
-    public function buildDashboardFeed(User $user): array
+    public function buildDashboardFeed(User $user, ?Request $request = null): array
     {
-        $home = $user->places()->orderBy('sort_order')->first();
-        $homeLat = $home?->lat ? (float) $home->lat : 50.9375;
-        $homeLng = $home?->lng ? (float) $home->lng : 6.9603;
-        $homeStop = $home?->address ?? $home?->name ?? 'Ehrenfeld';
+        $location = app(UserLocationService::class)->resolve($user, $request);
+        $homeLat = $location['lat'];
+        $homeLng = $location['lng'];
+        $homeStop = $location['name'];
 
         $weather = app(WeatherService::class)->getCurrentWeather($homeLat, $homeLng);
         $forecast = app(WeatherService::class)->getForecast($homeLat, $homeLng);

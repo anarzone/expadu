@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\DisruptionService;
 use App\Services\GtfsDepartureService;
-use App\Services\LocationPatternService;
 use App\Services\NearbyStopService;
+use App\Services\UserLocationService;
 use App\Services\ValhallaRoutingService;
 use App\Services\VrsTriasService;
 use App\Services\WeatherService;
@@ -37,21 +37,11 @@ class RouteOptionsController extends Controller
         $toName = $validated['name'] ?? 'Destination';
         $toAddress = $validated['address'] ?? null;
 
-        // Determine user's current location: GPS ping → Home fallback
-        $locationService = app(LocationPatternService::class);
-        $currentLoc = $locationService->detectCurrentLocation($user);
-        $home = $user->places()->where('category', 'home')->first();
-
-        if ($currentLoc) {
-            $fromName = $currentLoc['place_name'];
-            $fromPlace = $user->places()->where('name', $fromName)->first();
-            $fromLat = $fromPlace?->lat ? (float) $fromPlace->lat : ($home?->lat ? (float) $home->lat : 50.9375);
-            $fromLng = $fromPlace?->lng ? (float) $fromPlace->lng : ($home?->lng ? (float) $home->lng : 6.9603);
-        } else {
-            $fromName = $home?->name ?? 'Home';
-            $fromLat = $home?->lat ? (float) $home->lat : 50.9375;
-            $fromLng = $home?->lng ? (float) $home->lng : 6.9603;
-        }
+        // Resolve user's current location: GPS → Redis ping → Home → default
+        $location = app(UserLocationService::class)->resolve($user, $request);
+        $fromName = $location['name'];
+        $fromLat = $location['lat'];
+        $fromLng = $location['lng'];
 
         // Single mode request — return full route with geometry + steps
         if (isset($validated['mode'])) {

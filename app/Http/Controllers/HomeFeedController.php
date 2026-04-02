@@ -14,7 +14,7 @@ class HomeFeedController extends Controller
         $user = $request->user();
 
         return Inertia::render('dashboard', [
-            'feed' => $recommendationService->buildDashboardFeed($user),
+            'feed' => $recommendationService->buildDashboardFeed($user, $request),
             'commuteRecommendation' => $recommendationService->getCommuteRecommendation($user),
         ]);
     }

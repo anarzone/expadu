@@ -7,6 +7,7 @@ import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
 import { JourneyTimeline } from '@/components/transit/journey-timeline';
+import { useGeolocation } from '@/hooks/use-geolocation';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
@@ -56,6 +57,11 @@ export default function Explore() {
     }>().props;
 
     const { track } = useTracker();
+    const { position: geoPos } = useGeolocation();
+
+    // Best known location: GPS → server-resolved → default
+    const myLat = geoPos?.lat ?? myLat;
+    const myLng = geoPos?.lng ?? myLng;
     const [category, setCategory] = useState(filters.category ?? '');
     const [selectedSpot, setSelectedSpot] = useState<SpotData | null>(null);
     const [search, setSearch] = useState('');
@@ -180,7 +186,7 @@ export default function Explore() {
         setRouteDetail(null);
 
         const dest = routeDest ?? to;
-        const origin = from ?? { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+        const origin = from ?? { lat: myLat, lng: myLng };
         const costing = mode === 'bike' ? 'bicycle' : mode === 'walk' ? 'pedestrian' : mode === 'drive' ? 'auto' : null;
 
         if (mode === 'transit') {
@@ -199,7 +205,7 @@ export default function Explore() {
                         setRouteLoading(false);
                         // Draw the first trip's route on the map immediately
                         if (trips.length > 0 && trips[0].segments?.length > 0 && dest) {
-                            const orig = data.from ?? { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                            const orig = data.from ?? { lat: myLat, lng: myLng };
                             mapRef.current?.drawTransitRoute(trips[0].segments, { lat: orig.lat, lng: orig.lng }, dest);
                         }
                     })
@@ -260,7 +266,7 @@ export default function Explore() {
             steps: trip.steps,
         });
         if (trip.segments?.length > 0) {
-            const orig = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+            const orig = { lat: myLat, lng: myLng };
             mapRef.current?.drawTransitRoute(trip.segments, orig, routeDest);
         }
     }
@@ -315,7 +321,7 @@ export default function Explore() {
                 setRouteDetail(data);
                 setConnectionsByStop({});
                 if (data.segments?.length > 0) {
-                    const orig = data.from ?? { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                    const orig = data.from ?? { lat: myLat, lng: myLng };
                     mapRef.current?.drawTransitRoute(data.segments, { lat: orig.lat, lng: orig.lng }, routeDest);
                 }
             })
@@ -518,7 +524,7 @@ export default function Explore() {
                                                 <button
                                                     key={opt.mode}
                                                     onClick={() => {
-                                                        const from = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                                                        const from = { lat: myLat, lng: myLng };
                                                         selectRouteMode(opt.mode, opt.geometry, from, routeDest);
                                                     }}
                                                     className="flex flex-1 cursor-pointer flex-col items-center gap-0.5 transition-all"
@@ -947,7 +953,7 @@ export default function Explore() {
                                 options={routeOptions}
                                 activeMode={routeMode}
                                 onSelectMode={(mode) => {
-                                    const from = { lat: userLocation?.lat ?? 50.9375, lng: userLocation?.lng ?? 6.9603 };
+                                    const from = { lat: myLat, lng: myLng };
                                     selectRouteMode(mode, undefined, from, routeDest);
                                 }}
                                 onClose={closeRoute}

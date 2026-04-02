@@ -9,6 +9,7 @@ use App\Services\KvbApiService;
 use App\Services\LocationPatternService;
 use App\Services\NearbyStopService;
 use App\Services\RecommendationService;
+use App\Services\UserLocationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,23 +19,17 @@ class TransitController extends Controller
     public function index(Request $request, GtfsDepartureService $gtfsService, RecommendationService $recommendationService, LocationPatternService $patternService, NearbyStopService $nearbyService): Response
     {
         $user = $request->user();
-        $homePlace = $user->places()->orderBy('sort_order')->first();
-        $homeLat = $homePlace?->lat ? (float) $homePlace->lat : null;
-        $homeLng = $homePlace?->lng ? (float) $homePlace->lng : null;
-        $defaultStop = $homePlace?->address ?? 'Ehrenfeld';
-        $stop = $request->query('stop', $defaultStop);
+        $location = app(UserLocationService::class)->resolve($user, $request);
+        $stop = $request->query('stop');
 
-        // Coordinates: use GPS (lat/lng params) first, then Home fallback
-        $nearbyLat = $request->has('lat') ? (float) $request->query('lat') : $homeLat;
-        $nearbyLng = $request->has('lng') ? (float) $request->query('lng') : $homeLng;
+        // Use resolved location for departures, or manual stop override
+        $nearbyLat = $location['lat'];
+        $nearbyLng = $location['lng'];
 
-        // Main departure board: GPS coords → nearest stop, else Home coords, else text search
-        if ($request->has('lat') && $request->has('lng')) {
-            $gtfsDepartures = $gtfsService->getDeparturesNearby((float) $request->query('lat'), (float) $request->query('lng'), 20);
-        } elseif ($homeLat && $homeLng && ! $request->has('stop')) {
-            $gtfsDepartures = $gtfsService->getDeparturesNearby($homeLat, $homeLng, 20);
-        } else {
+        if ($stop) {
             $gtfsDepartures = $gtfsService->getDepartures($stop, 20);
+        } else {
+            $gtfsDepartures = $gtfsService->getDeparturesNearby($nearbyLat, $nearbyLng, 20);
         }
 
         // Enrich routines with next GTFS departure
@@ -67,10 +62,11 @@ class TransitController extends Controller
                 ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')
                 ->get(),
             'gtfsDepartures' => $gtfsDepartures,
-            'gtfsStops' => fn () => $gtfsService->searchStops($stop, 20),
+            'gtfsStops' => fn () => $stop ? $gtfsService->searchStops($stop, 20) : [],
             'commuteRecommendation' => $recommendationService->getCommuteRecommendation($user),
-            'disruptions' => $this->buildDisruptionCards($user, $homeLat ?? 50.9375, $homeLng ?? 6.9603),
-            'nearbyDepartures' => fn () => $this->buildNearbyDepartures($user, $nearbyService, $nearbyLat ?? 50.9375, $nearbyLng ?? 6.9603),
+            'userLocation' => ['name' => $location['name'], 'address' => $location['name'], 'lat' => $nearbyLat, 'lng' => $nearbyLng],
+            'disruptions' => $this->buildDisruptionCards($user, $nearbyLat, $nearbyLng),
+            'nearbyDepartures' => fn () => $this->buildNearbyDepartures($user, $nearbyService, $nearbyLat, $nearbyLng),
         ]);
     }
 

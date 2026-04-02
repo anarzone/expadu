@@ -1,6 +1,6 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { IconCompass, IconFileText, IconLanguage, IconBell } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { RouteSheet } from '@/components/transit/route-sheet';
 import { ICON_STROKE } from '@/constants/icons';
@@ -74,17 +74,28 @@ export default function Dashboard() {
     const { track } = useTracker();
     const { position: geoPos } = useGeolocation();
 
-    // Track location for pattern detection — fires on each GPS update (every 5 min)
+    // Track location + reload dashboard when moved >200m
+    const lastDashReloadRef = useRef<string>('');
     useEffect(() => {
-        if (geoPos) {
-            track('location_ping', {
-                lat: geoPos.lat,
-                lng: geoPos.lng,
-                accuracy: geoPos.accuracy,
-                page: 'dashboard',
+        if (!geoPos) return;
+        track('location_ping', {
+            lat: geoPos.lat,
+            lng: geoPos.lng,
+            accuracy: geoPos.accuracy,
+            page: 'dashboard',
+        });
+
+        // Reload feed when moved significantly (~200m = 0.002 degree)
+        const key = `${geoPos.lat.toFixed(2)}_${geoPos.lng.toFixed(2)}`;
+        if (key !== lastDashReloadRef.current) {
+            lastDashReloadRef.current = key;
+            router.reload({
+                data: { lat: geoPos.lat, lng: geoPos.lng },
+                only: ['feed'],
+                preserveScroll: true,
             });
         }
-    }, [geoPos?.lat]);
+    }, [geoPos?.lat, geoPos?.lng]);
     const recs = feed?.recommendations ?? [];
     const settlement = feed?.settlement;
     const departures = feed?.departures;
