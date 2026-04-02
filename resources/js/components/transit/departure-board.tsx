@@ -58,37 +58,22 @@ export function DepartureBoard({
     const sorted = sortServices(visibleServices);
     const clock = useClock();
 
-    // Line pills for the header
     const pills = visibleServices;
 
     return (
-        <div
-            style={{
-                background: '#FFFFFF',
-                border: '1px solid #E2DFD6',
-                borderRadius: 14,
-                overflow: 'hidden',
-            }}
-        >
+        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
             {/* Header */}
-            <div
-                className="flex items-center justify-between"
-                style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid #E2DFD6',
-                    background: '#EFEDE7',
-                }}
-            >
+            <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 dark:border-[#3A3930] dark:bg-[#2A2920]">
                 <div className="flex items-center gap-2">
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                    <span className="text-[13px] font-bold dark:text-[#F5F4F0]">
                         {data.icon} {data.stop}
                     </span>
-                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 600, color: '#6B6860', background: '#DDDBD4', padding: '2px 8px', borderRadius: 6 }}>
+                    <span className="rounded-md bg-[#DDDBD4] px-2 py-[2px] font-mono text-xs font-semibold text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]">
                         {clock}
                     </span>
                     {isLive && (
-                        <span className="flex items-center gap-1" style={{ fontSize: 10, fontWeight: 700, color: '#0A7C52', background: '#D4F0E6', padding: '2px 7px', borderRadius: 20 }}>
-                            <span className="animate-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: '#0A7C52', display: 'inline-block' }} />
+                        <span className="flex items-center gap-1 rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[10px] font-bold text-[#0A7C52] dark:bg-[#0A7C52]/20">
+                            <span className="inline-block size-[5px] animate-pulse rounded-full bg-[#0A7C52]" />
                             Live
                         </span>
                     )}
@@ -97,15 +82,8 @@ export function DepartureBoard({
                     {pills.map((s) => (
                         <span
                             key={`${s.line}_${s.direction}`}
-                            style={{
-                                padding: '2px 8px',
-                                borderRadius: 20,
-                                fontSize: 11,
-                                fontWeight: 700,
-                                fontFamily: "'Geist Mono', monospace",
-                                background: s.bg,
-                                color: s.color,
-                            }}
+                            className="rounded-full px-2 py-[2px] font-mono text-[11px] font-bold"
+                            style={{ background: s.bg, color: s.color }}
                         >
                             {s.line}
                         </span>
@@ -122,41 +100,24 @@ export function DepartureBoard({
 }
 
 function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureService; onOpenRoute?: (key: string) => void; isLast?: boolean }) {
-    // Status tag
     let statusTag: React.ReactNode;
     let nextClass: string;
     let nextDisplay: string | number;
 
     if (s.cancelled) {
-        statusTag = (
-            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDE8E6', color: '#C4271A' }}>
-                Cancelled
-            </span>
-        );
+        statusTag = <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C4271A] dark:bg-[#C4271A]/20">Cancelled</span>;
         nextClass = 'cancelled';
         nextDisplay = '—';
     } else if (s.delay > 0) {
-        statusTag = (
-            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>
-                +{s.delay} min delay
-            </span>
-        );
+        statusTag = <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C47D0E] dark:bg-[#C47D0E]/20">+{s.delay} min delay</span>;
         nextClass = 'delayed';
         nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
     } else if (s.extra) {
-        statusTag = (
-            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#EBF0FD', color: '#1A4CD4' }}>
-                Extra service
-            </span>
-        );
+        statusTag = <span className="rounded-full bg-[#EBF0FD] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#1A4CD4] dark:bg-[#1A4CD4]/20">Extra service</span>;
         nextClass = 'on-time';
         nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
     } else {
-        statusTag = (
-            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#D4F0E6', color: '#0A7C52' }}>
-                On time
-            </span>
-        );
+        statusTag = <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#0A7C52] dark:bg-[#0A7C52]/20">On time</span>;
         nextClass = 'on-time';
         nextDisplay = s.departures[0] === 0 ? 'now' : s.departures[0];
     }
@@ -164,83 +125,55 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
     const following = s.departures.slice(1);
     const badgeFontSize = s.line.length > 1 ? 11 : 13;
 
-    const savedStyle: React.CSSProperties = s.savedDest ? { borderLeft: '3px solid #1A4CD4', paddingLeft: 13 } : {};
-
     return (
         <div
             onClick={() => s.routeKey && onOpenRoute?.(s.routeKey)}
-            className="flex items-center gap-3 transition-colors hover:bg-[#EFEDE7]"
+            className={`flex items-center gap-3 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${!isLast ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''} ${s.savedDest ? 'border-l-[3px] border-l-[#1A4CD4] pl-[13px]' : ''}`}
             style={{
-                padding: '12px 16px',
-                borderBottom: isLast ? 'none' : '1px solid #E2DFD6',
+                padding: s.savedDest ? '12px 16px 12px 13px' : '12px 16px',
                 cursor: s.routeKey ? 'pointer' : 'default',
                 opacity: s.cancelled ? 0.7 : 1,
-                ...savedStyle,
             }}
         >
             {/* Line badge */}
             <div
-                className="flex shrink-0 items-center justify-center"
-                style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 8,
-                    background: s.bg,
-                    color: s.color,
-                    fontFamily: "'Geist Mono', monospace",
-                    fontSize: badgeFontSize,
-                    fontWeight: 700,
-                }}
+                className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold"
+                style={{ width: 34, height: 34, background: s.bg, color: s.color, fontSize: badgeFontSize }}
             >
                 {s.line}
             </div>
 
             {/* Info */}
             <div className="min-w-0 flex-1">
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
+                <div className="mb-[2px] text-[13px] font-semibold dark:text-[#F5F4F0]">
                     {s.direction}
                     {s.savedDest && (
-                        <span
-                            style={{
-                                fontSize: 10,
-                                background: '#EBF0FD',
-                                color: '#1A4CD4',
-                                padding: '1px 6px',
-                                borderRadius: 20,
-                                fontWeight: 700,
-                                marginLeft: 5,
-                            }}
-                        >
+                        <span className="ml-[5px] rounded-full bg-[#EBF0FD] px-[6px] py-[1px] text-[10px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20">
                             Your route
                         </span>
                     )}
                 </div>
-                <div style={{ fontSize: 11, color: '#6B6860' }}>{s.via}</div>
-                <div style={{ fontSize: 11, marginTop: 2 }}>{statusTag}</div>
+                <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{s.via}</div>
+                <div className="mt-[2px] text-[11px]">{statusTag}</div>
             </div>
 
             {/* Times */}
             <div className="shrink-0 text-right">
                 {s.cancelled ? (
-                    <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: '#C4271A' }}>—</div>
+                    <div className="font-mono text-[22px] font-medium leading-none text-[#C4271A]">—</div>
                 ) : (
                     <>
                         <div
-                            style={{
-                                fontFamily: "'Geist Mono', monospace",
-                                fontSize: 22,
-                                fontWeight: 500,
-                                lineHeight: 1,
-                                color: nextClass === 'on-time' ? '#0A7C52' : nextClass === 'delayed' ? '#C47D0E' : '#18170F',
-                            }}
+                            className="font-mono text-[22px] font-medium leading-none"
+                            style={{ color: nextClass === 'on-time' ? '#0A7C52' : nextClass === 'delayed' ? '#C47D0E' : undefined }}
                         >
                             {nextDisplay}
                         </div>
-                        {nextDisplay !== 'now' && <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 1 }}>min</div>}
+                        {nextDisplay !== 'now' && <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>}
                     </>
                 )}
                 {following.length > 0 && (
-                    <div style={{ fontSize: 11, color: '#AAA89F', fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
+                    <div className="mt-[3px] font-mono text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
                         then {following.join(', ')} min
                     </div>
                 )}

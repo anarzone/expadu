@@ -46,17 +46,16 @@ export function ModePicker({
     return (
         <div
             className="absolute right-0 bottom-0 left-0 z-[9002]"
-            style={{ background: 'linear-gradient(transparent, rgba(255,255,255,0.95) 20%, white)', padding: '32px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}
+            style={{ background: 'linear-gradient(transparent, rgba(var(--background-rgb, 255,255,255),0.95) 20%, rgb(var(--background-rgb, 255,255,255)))', padding: '32px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}
         >
             {/* Destination label + close */}
             <div className="mb-2.5 flex items-center justify-between px-1">
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#18170F' }}>
+                <span className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
                     {destinationName ? `To ${destinationName}` : 'Route options'}
                 </span>
                 <button
                     onClick={onClose}
-                    className="flex cursor-pointer items-center justify-center border-none bg-transparent transition-colors hover:text-[#C4271A]"
-                    style={{ width: 28, height: 28, borderRadius: '50%', fontSize: 16, color: '#AAA89F', background: '#EFEDE7' }}
+                    className="flex size-7 cursor-pointer items-center justify-center rounded-full border-none bg-[#EFEDE7] text-[16px] text-[#AAA89F] transition-colors hover:text-[#C4271A] dark:bg-[#3A3930]"
                 >
                     ✕
                 </button>
@@ -73,15 +72,12 @@ export function ModePicker({
                             key={opt.mode}
                             onClick={() => onSelectMode(opt.mode)}
                             disabled={loading}
-                            className="flex flex-1 cursor-pointer flex-col items-center gap-0.5 transition-all"
-                            style={{
-                                padding: '10px 4px',
-                                borderRadius: 12,
-                                border: isActive ? '2px solid #1A4CD4' : '2px solid #E2DFD6',
-                                background: isActive ? '#EBF0FD' : 'white',
-                                opacity: loading && !isActive ? 0.5 : 1,
-                                position: 'relative',
-                            }}
+                            className={`relative flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-xl border-2 px-1 py-2.5 transition-all ${
+                                isActive
+                                    ? 'border-[#1A4CD4] bg-[#EBF0FD] dark:bg-[#1A4CD4]/20'
+                                    : 'border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                            }`}
+                            style={{ opacity: loading && !isActive ? 0.5 : 1 }}
                         >
                             {/* Best badge */}
                             {opt.best && (

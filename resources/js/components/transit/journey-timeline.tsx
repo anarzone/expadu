@@ -111,19 +111,16 @@ export function JourneyTimeline({ segments, departureTime }: { segments: Segment
 function StopNode({ time, name, isFirst, isLast }: { time: string; name: string; isFirst: boolean; isLast: boolean }) {
     return (
         <div className="flex items-center gap-3" style={{ minHeight: 40 }}>
-            <div style={{ width: 52, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#18170F', fontFamily: "'Geist Mono', monospace" }}>
+            <div className="w-[52px] text-right font-mono text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
                 {time}
             </div>
-            <div className="flex flex-col items-center" style={{ width: 20 }}>
-                <div style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    border: `3px solid ${isFirst ? '#0A7C52' : isLast ? '#C4271A' : '#18170F'}`,
-                    background: 'white',
-                }} />
+            <div className="flex w-5 flex-col items-center">
+                <div
+                    className="size-[14px] rounded-full bg-white dark:bg-[#1E1D15]"
+                    style={{ border: `3px solid ${isFirst ? '#0A7C52' : isLast ? '#C4271A' : 'currentColor'}` }}
+                />
             </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#18170F' }}>
+            <div className="text-[14px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
                 {name}
             </div>
         </div>
@@ -133,16 +130,15 @@ function StopNode({ time, name, isFirst, isLast }: { time: string; name: string;
 function WalkLeg({ duration }: { duration: number }) {
     return (
         <div className="flex gap-3" style={{ minHeight: 48 }}>
-            <div style={{ width: 52 }} />
-            <div className="flex flex-col items-center" style={{ width: 20 }}>
-                {/* Dotted line */}
-                <div style={{ flex: 1, width: 3, background: 'repeating-linear-gradient(to bottom, #1A4CD4 0px, #1A4CD4 4px, transparent 4px, transparent 10px)' }} />
+            <div className="w-[52px]" />
+            <div className="flex w-5 flex-col items-center">
+                <div className="flex-1" style={{ width: 3, background: 'repeating-linear-gradient(to bottom, #1A4CD4 0px, #1A4CD4 4px, transparent 4px, transparent 10px)' }} />
             </div>
             <div className="flex items-center gap-2 py-2">
-                <IconWalk size={16} stroke={ICON_STROKE} className="shrink-0 text-[#6B6860]" />
+                <IconWalk size={16} stroke={ICON_STROKE} className="shrink-0 text-[#6B6860] dark:text-[#AAA89F]" />
                 <div>
-                    <div style={{ fontSize: 13, color: '#6B6860' }}>Walk</div>
-                    <div style={{ fontSize: 12, color: '#AAA89F' }}>About {duration} min</div>
+                    <div className="text-[13px] text-[#6B6860] dark:text-[#AAA89F]">Walk</div>
+                    <div className="text-xs text-[#AAA89F] dark:text-[#6B6860]">About {duration} min</div>
                 </div>
             </div>
         </div>
@@ -156,25 +152,24 @@ function TransitLeg({ line, direction, mode, duration, platform, delay, color }:
 
     return (
         <div className="flex gap-3" style={{ minHeight: 56 }}>
-            <div style={{ width: 52 }} />
-            <div className="flex flex-col items-center" style={{ width: 20 }}>
-                {/* Colored solid line */}
-                <div style={{ flex: 1, width: 6, borderRadius: 3, background: color }} />
+            <div className="w-[52px]" />
+            <div className="flex w-5 flex-col items-center">
+                <div className="flex-1 rounded-[3px]" style={{ width: 6, background: color }} />
             </div>
             <div className="flex items-center gap-2 py-2">
                 <TransitIcon size={16} stroke={ICON_STROKE} className="shrink-0" style={{ color }} />
                 <div>
                     <div className="flex items-center gap-1.5">
-                        <span style={{ display: 'inline-flex', alignItems: 'center', background: color, color: 'white', borderRadius: 4, padding: '1px 6px', fontSize: 12, fontWeight: 700, fontFamily: "'Geist Mono', monospace" }}>
+                        <span className="inline-flex items-center rounded px-[6px] py-[1px] font-mono text-xs font-bold text-white" style={{ background: color }}>
                             {line}
                         </span>
-                        <span style={{ fontSize: 13, color: '#18170F' }}>{direction}</span>
+                        <span className="text-[13px] text-[#18170F] dark:text-[#F5F4F0]">{direction}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 2 }}>
+                    <div className="mt-[2px] text-xs text-[#AAA89F] dark:text-[#6B6860]">
                         {duration} min
                         {platform ? ` · Platform ${platform}` : ''}
                         {(delay ?? 0) > 0 && (
-                            <span style={{ color: '#C47D0E', fontWeight: 600 }}> · +{delay}min late</span>
+                            <span className="font-semibold text-[#C47D0E]"> · +{delay}min late</span>
                         )}
                     </div>
                 </div>
