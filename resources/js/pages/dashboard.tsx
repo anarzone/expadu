@@ -349,8 +349,20 @@ export default function Dashboard() {
                 {/* Live departures */}
                 {departures && (departures.departures?.length ?? 0) > 0 && (
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color, #E2DFD6)' }}>
-                        <div className="mb-3 flex items-baseline justify-between">
-                            <span style={{ fontSize: 16, fontWeight: 600 }}>Departures · {departures.stop_name}</span>
+                        <div className="mb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span style={{ fontSize: 16, fontWeight: 600 }}>Departures · {departures.stop_name}</span>
+                                {departures.source === 'trias_rt' || departures.source === 'gtfs_rt' ? (
+                                    <span className="flex items-center gap-1 rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold text-[#0A7C52] dark:bg-[#0A7C52]/20">
+                                        <span className="inline-block size-[4px] animate-pulse rounded-full bg-[#0A7C52]" />
+                                        Live
+                                    </span>
+                                ) : (
+                                    <span className="rounded-full bg-[#EBF0FD] px-[7px] py-[2px] text-[9px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20">
+                                        Timetable
+                                    </span>
+                                )}
+                            </div>
                             <a href="/transit" className="text-xs font-semibold text-[#1A4CD4]" style={{ textDecoration: 'none' }}>Full board →</a>
                         </div>
                         <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">

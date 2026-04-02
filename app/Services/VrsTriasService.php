@@ -750,6 +750,11 @@ class VrsTriasService
 
     private function post(string $xml): ?string
     {
+        // Circuit breaker: if TRIAS failed recently, skip it entirely
+        if (Cache::get('trias_circuit_open')) {
+            return null;
+        }
+
         try {
             $url = config('services.vrs.trias_url');
 
@@ -765,6 +770,7 @@ class VrsTriasService
 
             if (! $response->successful()) {
                 Log::warning('VRS TRIAS request failed', ['status' => $response->status()]);
+                Cache::put('trias_circuit_open', true, 60); // Skip TRIAS for 60s after failure
 
                 return null;
             }
@@ -772,6 +778,7 @@ class VrsTriasService
             return $response->body();
         } catch (\Throwable $e) {
             Log::warning('VRS TRIAS error', ['message' => $e->getMessage()]);
+            Cache::put('trias_circuit_open', true, 60); // Skip TRIAS for 60s after failure
 
             return null;
         }

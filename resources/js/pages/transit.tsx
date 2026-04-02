@@ -99,7 +99,7 @@ function gtfsToBoardData(
 function sourceLabel(source: string): string {
     switch (source) {
         case 'gtfs_static':
-            return 'Static timetable';
+            return 'Timetable';
         case 'gtfs_rt':
         case 'trias_rt':
             return 'Live';
