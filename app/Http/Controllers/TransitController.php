@@ -24,14 +24,18 @@ class TransitController extends Controller
         $defaultStop = $homePlace?->address ?? 'Ehrenfeld';
         $stop = $request->query('stop', $defaultStop);
 
-        // Coordinates for nearby departures: use explicit lat/lng params, else Home
+        // Coordinates: use GPS (lat/lng params) first, then Home fallback
         $nearbyLat = $request->has('lat') ? (float) $request->query('lat') : $homeLat;
         $nearbyLng = $request->has('lng') ? (float) $request->query('lng') : $homeLng;
 
-        // Use coordinates for nearest stop when available, text search as fallback
-        $gtfsDepartures = ($homeLat && $homeLng && ! $request->has('stop'))
-            ? $gtfsService->getDeparturesNearby($homeLat, $homeLng, 20)
-            : $gtfsService->getDepartures($stop, 20);
+        // Main departure board: GPS coords → nearest stop, else Home coords, else text search
+        if ($request->has('lat') && $request->has('lng')) {
+            $gtfsDepartures = $gtfsService->getDeparturesNearby((float) $request->query('lat'), (float) $request->query('lng'), 20);
+        } elseif ($homeLat && $homeLng && ! $request->has('stop')) {
+            $gtfsDepartures = $gtfsService->getDeparturesNearby($homeLat, $homeLng, 20);
+        } else {
+            $gtfsDepartures = $gtfsService->getDepartures($stop, 20);
+        }
 
         // Enrich routines with next GTFS departure
         $routines = $user->routines()->get()->map(function ($r) use ($gtfsService) {

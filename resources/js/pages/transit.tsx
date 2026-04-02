@@ -705,13 +705,24 @@ export default function Transit() {
             .catch(() => {});
     }, []);
 
-    // Fetch on GPS change
+    // Fetch on GPS change — update both nearby deps and main board
+    const geoReloadedRef = useRef(false);
     useEffect(() => {
         if (!geoPos || hasManualStop) return;
         const key = `${geoPos.lat.toFixed(3)}_${geoPos.lng.toFixed(3)}`;
         if (key === lastGeoFetch.current) return;
         lastGeoFetch.current = key;
         fetchNearbyDeps(geoPos.lat, geoPos.lng);
+
+        // Reload main departure board with GPS coords (once)
+        if (!geoReloadedRef.current) {
+            geoReloadedRef.current = true;
+            router.reload({
+                data: { lat: geoPos.lat, lng: geoPos.lng },
+                only: ['gtfsDepartures', 'currentStop', 'nearbyDepartures'],
+                preserveScroll: true,
+            });
+        }
     }, [geoPos?.lat, geoPos?.lng]);
 
     // Poll nearby departures every 30s for real-time updates
