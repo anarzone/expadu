@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Spot;
 use App\Models\User;
 use App\Models\UserEvent;
+use Illuminate\Support\Facades\Redis;
 
 class EventTrackingService
 {
@@ -23,8 +24,9 @@ class EventTrackingService
             'session_id' => session()->getId(),
         ]);
 
-        // Auto-detect nearby spots from GPS location
+        // Auto-detect nearby spots from GPS location + store in Redis for history
         if ($eventType === 'location_ping' && isset($payload['lat'], $payload['lng'])) {
+            $this->storeLocationInRedis($user, (float) $payload['lat'], (float) $payload['lng'], $payload['accuracy'] ?? null);
             $this->detectNearbySpots($user, (float) $payload['lat'], (float) $payload['lng']);
         }
     }
@@ -74,6 +76,43 @@ class EventTrackingService
                 'session_id' => session()->getId(),
             ]);
         }
+    }
+
+    /**
+     * Store location ping in Redis for 1-week history.
+     *
+     * NOTICE: Location data is stored in Redis (not database) with a 7-day TTL.
+     * This is intentional for:
+     * - Analyzing movement patterns to improve commute suggestions
+     * - Detecting frequently visited places for routine auto-detection
+     * - Debugging location-related issues (e.g. wrong stop shown)
+     *
+     * Data stored per entry: {lat, lng, accuracy, timestamp}
+     * Key format: location_history:{user_id} (Redis sorted set, scored by timestamp)
+     * Auto-expires: 7 days from last write via TTL refresh
+     *
+     * To query: Redis::zrangebyscore("location_history:{userId}", $from, $to)
+     */
+    private function storeLocationInRedis(User $user, float $lat, float $lng, ?float $accuracy): void
+    {
+        $key = "location_history:{$user->id}";
+        $timestamp = now()->timestamp;
+
+        $entry = json_encode([
+            'lat' => round($lat, 6),
+            'lng' => round($lng, 6),
+            'accuracy' => $accuracy ? round($accuracy) : null,
+            'at' => now()->toIso8601String(),
+        ]);
+
+        // Add to sorted set (scored by timestamp for range queries)
+        Redis::zadd($key, $timestamp, $entry);
+
+        // Remove entries older than 7 days
+        Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
+
+        // Refresh TTL to 7 days from now
+        Redis::expire($key, 604800); // 7 * 24 * 60 * 60
     }
 
     private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float

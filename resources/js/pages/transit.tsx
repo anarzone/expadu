@@ -705,8 +705,8 @@ export default function Transit() {
             .catch(() => {});
     }, []);
 
-    // Fetch on GPS change — update both nearby deps and main board
-    const geoReloadedRef = useRef(false);
+    // Fetch on GPS change — update nearby deps + reload main board when moved >200m
+    const lastBoardReloadRef = useRef<string>('');
     useEffect(() => {
         if (!geoPos || hasManualStop) return;
         const key = `${geoPos.lat.toFixed(3)}_${geoPos.lng.toFixed(3)}`;
@@ -714,9 +714,10 @@ export default function Transit() {
         lastGeoFetch.current = key;
         fetchNearbyDeps(geoPos.lat, geoPos.lng);
 
-        // Reload main departure board with GPS coords (once)
-        if (!geoReloadedRef.current) {
-            geoReloadedRef.current = true;
+        // Reload main departure board when moved significantly (~200m = 0.002 degree)
+        const boardKey = `${geoPos.lat.toFixed(2)}_${geoPos.lng.toFixed(2)}`;
+        if (boardKey !== lastBoardReloadRef.current) {
+            lastBoardReloadRef.current = boardKey;
             router.reload({
                 data: { lat: geoPos.lat, lng: geoPos.lng },
                 only: ['gtfsDepartures', 'currentStop', 'nearbyDepartures'],
