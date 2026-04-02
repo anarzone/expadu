@@ -40,10 +40,20 @@ type DisruptionItem = {
 };
 
 export function RightPanel() {
-    const { weather, forecast, todayEvents, rhineLevel, activeDisruptions } = usePage<{ weather?: WeatherData; forecast?: ForecastData; todayEvents?: TodayEvent[]; rhineLevel?: RhineData | null; activeDisruptions?: DisruptionItem[] }>().props;
+    const { weather, forecast, todayEvents, rhineLevel, activeDisruptions } =
+        usePage<{
+            weather?: WeatherData;
+            forecast?: ForecastData;
+            todayEvents?: TodayEvent[];
+            rhineLevel?: RhineData | null;
+            activeDisruptions?: DisruptionItem[];
+        }>().props;
 
     return (
-        <aside className="hidden w-[390px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
+        <aside
+            className="hidden w-[390px] shrink-0 overflow-y-auto p-5 lg:block"
+            style={{ scrollbarWidth: 'none' }}
+        >
             <WeatherWidget weather={weather} forecast={forecast} />
             <RhineWidget data={rhineLevel} />
             <DisruptionsWidget disruptions={activeDisruptions} />
@@ -55,7 +65,13 @@ export function RightPanel() {
     );
 }
 
-function WeatherWidget({ weather, forecast }: { weather?: WeatherData; forecast?: ForecastData }) {
+function WeatherWidget({
+    weather,
+    forecast,
+}: {
+    weather?: WeatherData;
+    forecast?: ForecastData;
+}) {
     const temp = weather?.temperature ?? 0;
     const feelsLike = weather?.feels_like ?? temp;
     const emoji = weather?.emoji ?? '⛅';
@@ -79,50 +95,100 @@ function WeatherWidget({ weather, forecast }: { weather?: WeatherData; forecast?
             </div>
             <div className="flex items-start justify-between px-4 py-4">
                 <div>
-                    <div className="font-display text-[44px] font-light leading-none tracking-tight">
-                        {temp}<sup className="text-lg align-super">°</sup>
+                    <div className="font-display text-[44px] leading-none font-light tracking-tight">
+                        {temp}
+                        <sup className="align-super text-lg">°</sup>
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">{condition}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                        {condition}
+                    </div>
                     <div className="text-[11px] text-muted-foreground">
-                        {rainStarts ? `Rain from ${rainStarts}` : 'No rain expected'}
+                        {rainStarts
+                            ? `Rain from ${rainStarts}`
+                            : 'No rain expected'}
                     </div>
                 </div>
                 <div className="text-[44px] opacity-85">{emoji}</div>
             </div>
             <div className="border-t border-border">
                 {feelsLike !== temp && (
-                    <WeatherRow emoji="🌡️" label="Feels like" value={`${feelsLike}°`} variant={feelsLike < 0 ? 'caution' : 'good'} />
+                    <WeatherRow
+                        emoji="🌡️"
+                        label="Feels like"
+                        value={`${feelsLike}°`}
+                        variant={feelsLike < 0 ? 'caution' : 'good'}
+                    />
                 )}
-                <WeatherRow emoji="🌬️" label="Wind" value={`${wind} km/h${gust && gust > wind ? ` (gusts ${gust})` : ''}`} variant={wind > 25 ? 'caution' : 'good'} />
-                <WeatherRow emoji="💧" label="Humidity" value={`${humidity}%`} />
-                <WeatherRow emoji="🚲" label="Bike score" value={bikeScore} variant="good" />
-                <WeatherRow emoji="🌧️" label="Rain arrives" value={rainLabel} variant={rainVariant} />
+                <WeatherRow
+                    emoji="🌬️"
+                    label="Wind"
+                    value={`${wind} km/h${gust && gust > wind ? ` (gusts ${gust})` : ''}`}
+                    variant={wind > 25 ? 'caution' : 'good'}
+                />
+                <WeatherRow
+                    emoji="💧"
+                    label="Humidity"
+                    value={`${humidity}%`}
+                />
+                <WeatherRow
+                    emoji="🚲"
+                    label="Bike score"
+                    value={bikeScore}
+                    variant="good"
+                />
+                <WeatherRow
+                    emoji="🌧️"
+                    label="Rain arrives"
+                    value={rainLabel}
+                    variant={rainVariant}
+                />
             </div>
         </div>
     );
 }
 
-function WeatherRow({ emoji, label, value, variant }: { emoji: string; label: string; value: string; variant?: 'good' | 'caution' }) {
-    const valueColor = variant === 'good' ? 'text-success' : variant === 'caution' ? 'text-warn' : 'text-foreground';
+function WeatherRow({
+    emoji,
+    label,
+    value,
+    variant,
+}: {
+    emoji: string;
+    label: string;
+    value: string;
+    variant?: 'good' | 'caution';
+}) {
+    const valueColor =
+        variant === 'good'
+            ? 'text-success'
+            : variant === 'caution'
+              ? 'text-warn'
+              : 'text-foreground';
     return (
         <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-xs last:border-b-0">
             <span className="flex items-center gap-[7px] text-muted-foreground">
                 <span className="text-sm">{emoji}</span>
                 {label}
             </span>
-            <span className={`font-mono font-medium ${valueColor}`}>{value}</span>
+            <span className={`font-mono font-medium ${valueColor}`}>
+                {value}
+            </span>
         </div>
     );
 }
 
 function RhineWidget({ data }: { data?: RhineData | null }) {
     const meters = data ? (data.level_cm / 100).toFixed(2) : null;
-    const statusLabel = data?.status === 'warning' || data?.status === 'high'
-        ? 'Rheinufer paths may flood'
-        : data?.status === 'low'
-            ? 'Low water level'
-            : 'Rheinufer paths open';
-    const valueColor = data?.status === 'warning' || data?.status === 'high' ? 'text-warn' : 'text-success';
+    const statusLabel =
+        data?.status === 'warning' || data?.status === 'high'
+            ? 'Rheinufer paths may flood'
+            : data?.status === 'low'
+              ? 'Low water level'
+              : 'Rheinufer paths open';
+    const valueColor =
+        data?.status === 'warning' || data?.status === 'high'
+            ? 'text-warn'
+            : 'text-success';
 
     return (
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
@@ -134,21 +200,35 @@ function RhineWidget({ data }: { data?: RhineData | null }) {
                         Live
                     </div>
                 ) : (
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">Unavailable</span>
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        Unavailable
+                    </span>
                 )}
             </div>
             <div className="flex items-center justify-between px-4 py-3.5">
                 <div className="flex items-center gap-2.5">
                     <span className="text-xl">🌊</span>
                     <div>
-                        <div className="text-[13px] font-semibold">Cologne Gauge</div>
-                        <div className="text-[11px] text-muted-foreground">{data ? statusLabel : 'Data temporarily unavailable'}</div>
+                        <div className="text-[13px] font-semibold">
+                            Cologne Gauge
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                            {data
+                                ? statusLabel
+                                : 'Data temporarily unavailable'}
+                        </div>
                     </div>
                 </div>
                 {meters && (
                     <div className="shrink-0 text-right">
-                        <div className={`font-mono text-[22px] font-medium leading-none ${valueColor}`}>{meters}</div>
-                        <div className="text-[10px] text-muted-foreground">metres</div>
+                        <div
+                            className={`font-mono text-[22px] leading-none font-medium ${valueColor}`}
+                        >
+                            {meters}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                            metres
+                        </div>
                     </div>
                 )}
             </div>
@@ -156,10 +236,20 @@ function RhineWidget({ data }: { data?: RhineData | null }) {
     );
 }
 
-function DisruptionsWidget({ disruptions }: { disruptions?: DisruptionItem[] }) {
+function DisruptionsWidget({
+    disruptions,
+}: {
+    disruptions?: DisruptionItem[];
+}) {
     const items = disruptions ?? [];
-    const severityEmoji = (s: string) => s === 'critical' ? '🚫' : s === 'major' ? '⚠️' : '🔧';
-    const severityColor = (s: string) => s === 'critical' ? 'text-danger' : s === 'major' ? 'text-warn' : 'text-muted-foreground';
+    const severityEmoji = (s: string) =>
+        s === 'critical' ? '🚫' : s === 'major' ? '⚠️' : '🔧';
+    const severityColor = (s: string) =>
+        s === 'critical'
+            ? 'text-danger'
+            : s === 'major'
+              ? 'text-warn'
+              : 'text-muted-foreground';
 
     return (
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
@@ -178,22 +268,40 @@ function DisruptionsWidget({ disruptions }: { disruptions?: DisruptionItem[] }) 
             {items.length === 0 ? (
                 <div className="flex items-center gap-2.5 px-4 py-3.5">
                     <span className="text-lg">✅</span>
-                    <span className="text-xs text-muted-foreground">No disruptions on KVB network</span>
+                    <span className="text-xs text-muted-foreground">
+                        No disruptions on KVB network
+                    </span>
                 </div>
             ) : (
                 items.slice(0, 4).map((d, i) => {
                     // Shorten title: remove date prefix like "29.03. - 10.04.2026: "
-                    const shortTitle = d.title.replace(/^\d{2}\.\d{2}\.?\s*[-–]\s*\d{2}\.\d{2}\.\d{4}:\s*/i, '').replace(/^(Linie|Bus)\s+\d+:\s*/i, '');
-                    const lineLabel = d.lines.length > 0 ? d.lines.join(', ') : null;
+                    const shortTitle = d.title
+                        .replace(
+                            /^\d{2}\.\d{2}\.?\s*[-–]\s*\d{2}\.\d{2}\.\d{4}:\s*/i,
+                            '',
+                        )
+                        .replace(/^(Linie|Bus)\s+\d+:\s*/i, '');
+                    const lineLabel =
+                        d.lines.length > 0 ? d.lines.join(', ') : null;
 
                     return (
                         <ExpandableRow key={i}>
-                            <span className="shrink-0 text-sm">{severityEmoji(d.severity)}</span>
+                            <span className="shrink-0 text-sm">
+                                {severityEmoji(d.severity)}
+                            </span>
                             <div className="event-text min-w-0 flex-1 text-xs font-medium">
-                                {lineLabel && <span className={`font-semibold ${severityColor(d.severity)}`}>{lineLabel} </span>}
+                                {lineLabel && (
+                                    <span
+                                        className={`font-semibold ${severityColor(d.severity)}`}
+                                    >
+                                        {lineLabel}{' '}
+                                    </span>
+                                )}
                                 {shortTitle || d.title}
                             </div>
-                            <span className={`shrink-0 text-[10px] font-semibold ${severityColor(d.severity)}`}>
+                            <span
+                                className={`shrink-0 text-[10px] font-semibold ${severityColor(d.severity)}`}
+                            >
                                 {d.severity}
                             </span>
                         </ExpandableRow>
@@ -215,13 +323,14 @@ function ExpandableRow({ children }: { children: React.ReactNode }) {
             style={{ overflow: 'hidden' }}
         >
             <style>{`.expandable-row-collapsed .event-text, .expandable-row-collapsed .disrupt-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`}</style>
-            <div className={`flex w-full items-center gap-2.5 ${expanded ? '' : 'expandable-row-collapsed'}`}>
+            <div
+                className={`flex w-full items-center gap-2.5 ${expanded ? '' : 'expandable-row-collapsed'}`}
+            >
                 {children}
             </div>
         </div>
     );
 }
-
 
 function TodayEventsWidget({ events }: { events?: TodayEvent[] }) {
     const badgeColor = (badge: string) => {
@@ -241,13 +350,21 @@ function TodayEventsWidget({ events }: { events?: TodayEvent[] }) {
                 <span className="text-[13px] font-bold">Today in Cologne</span>
             </div>
             {!events || events.length === 0 ? (
-                <div className="px-4 py-4 text-center text-xs text-muted-foreground">No events today</div>
+                <div className="px-4 py-4 text-center text-xs text-muted-foreground">
+                    No events today
+                </div>
             ) : (
                 events.map((e, i) => (
                     <ExpandableRow key={i}>
-                        <span className="w-10 shrink-0 font-mono text-xs font-semibold text-muted-foreground">{e.time}</span>
-                        <span className="event-text min-w-0 flex-1 text-xs font-medium">{e.title}</span>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${badgeColor(e.badge)}`}>
+                        <span className="w-10 shrink-0 font-mono text-xs font-semibold text-muted-foreground">
+                            {e.time}
+                        </span>
+                        <span className="event-text min-w-0 flex-1 text-xs font-medium">
+                            {e.title}
+                        </span>
+                        <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${badgeColor(e.badge)}`}
+                        >
                             {e.badge}
                         </span>
                     </ExpandableRow>

@@ -20,7 +20,10 @@ export function OnboardingProgress({
                 >
                     ‹
                 </button>
-                <div className="flex-1 overflow-hidden rounded-sm bg-border" style={{ height: 4 }}>
+                <div
+                    className="flex-1 overflow-hidden rounded-sm bg-border"
+                    style={{ height: 4 }}
+                >
                     <div
                         className="h-full rounded-sm bg-primary transition-all duration-400"
                         style={{ width: `${progress}%` }}

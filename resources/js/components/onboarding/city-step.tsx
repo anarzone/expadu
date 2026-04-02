@@ -8,8 +8,18 @@ const cities = [
 ];
 
 const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
 ];
 
 const currentYear = new Date().getFullYear();
@@ -38,7 +48,9 @@ export function CityStep({
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
-                <h2 className="mb-2 font-display text-[26px] font-medium">Your city & arrival</h2>
+                <h2 className="mb-2 font-display text-[26px] font-medium">
+                    Your city & arrival
+                </h2>
                 <p className="text-sm text-muted-foreground">
                     We'll show relevant local services, events, and transit.
                 </p>
@@ -46,7 +58,7 @@ export function CityStep({
 
             <div className="flex flex-col gap-4">
                 <div>
-                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+                    <div className="mb-2 text-[11px] font-bold tracking-[0.07em] text-muted-foreground uppercase">
                         City
                     </div>
                     <div className="flex flex-col gap-2">
@@ -62,10 +74,14 @@ export function CityStep({
                                 }`}
                             >
                                 <span className="text-lg">{c.emoji}</span>
-                                <span className="text-sm font-semibold">{c.label}</span>
+                                <span className="text-sm font-semibold">
+                                    {c.label}
+                                </span>
                                 <span
                                     className={`ml-auto text-base font-bold text-primary transition-opacity ${
-                                        city === c.value ? 'opacity-100' : 'opacity-0'
+                                        city === c.value
+                                            ? 'opacity-100'
+                                            : 'opacity-0'
                                     }`}
                                 >
                                     ✓
@@ -76,26 +92,37 @@ export function CityStep({
                 </div>
 
                 <div>
-                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+                    <div className="mb-2 text-[11px] font-bold tracking-[0.07em] text-muted-foreground uppercase">
                         Arrival date
                     </div>
                     <div className="flex gap-2.5">
                         <select
                             value={selectedMonth}
-                            onChange={(e) => updateDate(Number(e.target.value), selectedYear)}
+                            onChange={(e) =>
+                                updateDate(Number(e.target.value), selectedYear)
+                            }
                             className="flex-1 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
                         >
                             {months.map((m, i) => (
-                                <option key={m} value={i}>{m}</option>
+                                <option key={m} value={i}>
+                                    {m}
+                                </option>
                             ))}
                         </select>
                         <select
                             value={selectedYear}
-                            onChange={(e) => updateDate(selectedMonth, Number(e.target.value))}
+                            onChange={(e) =>
+                                updateDate(
+                                    selectedMonth,
+                                    Number(e.target.value),
+                                )
+                            }
                             className="w-[100px] rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
                         >
                             {years.map((y) => (
-                                <option key={y} value={y}>{y}</option>
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
                             ))}
                         </select>
                     </div>

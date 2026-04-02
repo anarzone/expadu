@@ -84,16 +84,27 @@ export default function Onboarding() {
         <>
             <Head title="Welcome to Expadu" />
             <div className="flex min-h-svh flex-col bg-background">
-                <OnboardingProgress step={step} total={TOTAL_STEPS} onBack={back} />
+                <OnboardingProgress
+                    step={step}
+                    total={TOTAL_STEPS}
+                    onBack={back}
+                />
 
                 <div className="relative flex-1 overflow-hidden">
                     {step === 1 && <WelcomeStep />}
-                    {step === 2 && <SituationStep value={form.data.situation} onChange={(v) => form.setData('situation', v)} />}
+                    {step === 2 && (
+                        <SituationStep
+                            value={form.data.situation}
+                            onChange={(v) => form.setData('situation', v)}
+                        />
+                    )}
                     {step === 3 && (
                         <LanguagesStep
                             germanLevel={form.data.german_level}
                             speaks={form.data.speaks}
-                            onGermanLevelChange={(v) => form.setData('german_level', v)}
+                            onGermanLevelChange={(v) =>
+                                form.setData('german_level', v)
+                            }
                             onSpeaksChange={(v) => form.setData('speaks', v)}
                         />
                     )}
@@ -102,7 +113,9 @@ export default function Onboarding() {
                             city={form.data.city}
                             arrivalDate={form.data.arrival_date}
                             onCityChange={(v) => form.setData('city', v)}
-                            onArrivalDateChange={(v) => form.setData('arrival_date', v)}
+                            onArrivalDateChange={(v) =>
+                                form.setData('arrival_date', v)
+                            }
                         />
                     )}
                     {step === 5 && <ConfirmationStep data={form.data} />}

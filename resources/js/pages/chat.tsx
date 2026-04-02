@@ -37,10 +37,26 @@ const initialConversations: Conversation[] = [
         online: true,
         unread: 2,
         msgs: [
-            { from: 'them', text: 'Hey! Are you free for a session this week?', time: '10:32' },
-            { from: 'them', text: 'I can do Wednesday evening or Saturday morning \u{1F60A}', time: '10:33' },
-            { from: 'me', text: 'Saturday works great for me! 10am?', time: '11:05' },
-            { from: 'them', text: "Perfect, let's do it. Caf\u00E9 Schmitz again?", time: '11:12' },
+            {
+                from: 'them',
+                text: 'Hey! Are you free for a session this week?',
+                time: '10:32',
+            },
+            {
+                from: 'them',
+                text: 'I can do Wednesday evening or Saturday morning \u{1F60A}',
+                time: '10:33',
+            },
+            {
+                from: 'me',
+                text: 'Saturday works great for me! 10am?',
+                time: '11:05',
+            },
+            {
+                from: 'them',
+                text: "Perfect, let's do it. Caf\u00E9 Schmitz again?",
+                time: '11:12',
+            },
         ],
     },
     {
@@ -54,10 +70,26 @@ const initialConversations: Conversation[] = [
         online: false,
         unread: 0,
         msgs: [
-            { from: 'me', text: 'Hallo Anna! Ich bin Anar aus Aserbaidschan.', time: 'Yesterday' },
-            { from: 'them', text: 'Hallo Anar! Dein Deutsch ist schon gut \u{1F604}', time: 'Yesterday' },
-            { from: 'me', text: 'Danke! I still have a lot to learn though.', time: 'Yesterday' },
-            { from: 'them', text: 'We can practice together \u2014 when are you free?', time: 'Yesterday' },
+            {
+                from: 'me',
+                text: 'Hallo Anna! Ich bin Anar aus Aserbaidschan.',
+                time: 'Yesterday',
+            },
+            {
+                from: 'them',
+                text: 'Hallo Anar! Dein Deutsch ist schon gut \u{1F604}',
+                time: 'Yesterday',
+            },
+            {
+                from: 'me',
+                text: 'Danke! I still have a lot to learn though.',
+                time: 'Yesterday',
+            },
+            {
+                from: 'them',
+                text: 'We can practice together \u2014 when are you free?',
+                time: 'Yesterday',
+            },
         ],
     },
     {
@@ -71,8 +103,16 @@ const initialConversations: Conversation[] = [
         online: false,
         unread: 1,
         msgs: [
-            { from: 'them', text: 'Hi! Thanks for joining the International Expat Mixer \u{1F389}', time: '2 days ago' },
-            { from: 'them', text: "We're planning the next one for April \u2014 any suggestions for venue?", time: '2 days ago' },
+            {
+                from: 'them',
+                text: 'Hi! Thanks for joining the International Expat Mixer \u{1F389}',
+                time: '2 days ago',
+            },
+            {
+                from: 'them',
+                text: "We're planning the next one for April \u2014 any suggestions for venue?",
+                time: '2 days ago',
+            },
         ],
     },
     {
@@ -86,13 +126,27 @@ const initialConversations: Conversation[] = [
         online: false,
         unread: 0,
         msgs: [
-            { from: 'them', text: 'Bonjour! I saw your profile on the language exchange \u{1F1EB}\u{1F1F7}', time: '3 days ago' },
-            { from: 'me', text: "Hi Lisa! I'd love to practice. What times work for you?", time: '3 days ago' },
+            {
+                from: 'them',
+                text: 'Bonjour! I saw your profile on the language exchange \u{1F1EB}\u{1F1F7}',
+                time: '3 days ago',
+            },
+            {
+                from: 'me',
+                text: "Hi Lisa! I'd love to practice. What times work for you?",
+                time: '3 days ago',
+            },
         ],
     },
 ];
 
-const autoReplies = ['That sounds great! \u{1F60A}', 'Perfect, see you then!', "I'll be there!", 'Sounds good to me \u{1F44D}', 'Great idea!'];
+const autoReplies = [
+    'That sounds great! \u{1F60A}',
+    'Perfect, see you then!',
+    "I'll be there!",
+    'Sounds good to me \u{1F44D}',
+    'Great idea!',
+];
 
 /* ─── Tabs ─── */
 const tabs = [
@@ -129,7 +183,10 @@ export default function Chat() {
     /* Filter conversations */
     const filteredConversations = conversations.filter((c) => {
         const tagLower = c.tag.toLowerCase();
-        const matchTab = activeTab === 'all' || tagLower === activeTab || tagLower + 's' === activeTab;
+        const matchTab =
+            activeTab === 'all' ||
+            tagLower === activeTab ||
+            tagLower + 's' === activeTab;
         const q = searchQuery.toLowerCase().trim();
         const matchQ =
             !q ||
@@ -139,18 +196,19 @@ export default function Chat() {
         return matchTab && matchQ;
     });
 
-    const activeConv = activeThreadId ? conversations.find((c) => c.id === activeThreadId) : null;
+    const activeConv = activeThreadId
+        ? conversations.find((c) => c.id === activeThreadId)
+        : null;
 
     /* Open thread */
-    const openThread = useCallback(
-        (id: string) => {
-            setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
-            setActiveThreadId(id);
-            setInputValue('');
-            setTimeout(() => inputRef.current?.focus(), 50);
-        },
-        [],
-    );
+    const openThread = useCallback((id: string) => {
+        setConversations((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)),
+        );
+        setActiveThreadId(id);
+        setInputValue('');
+        setTimeout(() => inputRef.current?.focus(), 50);
+    }, []);
 
     /* Close thread */
     function closeThread() {
@@ -164,17 +222,34 @@ export default function Chat() {
 
         const time = formatTime();
         setConversations((prev) =>
-            prev.map((c) => (c.id === activeThreadId ? { ...c, msgs: [...c.msgs, { from: 'me', text, time }] } : c)),
+            prev.map((c) =>
+                c.id === activeThreadId
+                    ? { ...c, msgs: [...c.msgs, { from: 'me', text, time }] }
+                    : c,
+            ),
         );
         setInputValue('');
 
         /* Auto-reply after 1.5s */
         const threadId = activeThreadId;
         setTimeout(() => {
-            const reply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
+            const reply =
+                autoReplies[Math.floor(Math.random() * autoReplies.length)];
             setConversations((prev) =>
                 prev.map((c) =>
-                    c.id === threadId ? { ...c, msgs: [...c.msgs, { from: 'them', text: reply, time: formatTime() }] } : c,
+                    c.id === threadId
+                        ? {
+                              ...c,
+                              msgs: [
+                                  ...c.msgs,
+                                  {
+                                      from: 'them',
+                                      text: reply,
+                                      time: formatTime(),
+                                  },
+                              ],
+                          }
+                        : c,
                 ),
             );
         }, 1500);
@@ -192,7 +267,10 @@ export default function Chat() {
     }
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Chat', href: '/chat' }]} rightPanel={<ChatRightPanel onOpenThread={openThread} />}>
+        <AppLayout
+            breadcrumbs={[{ title: 'Chat', href: '/chat' }]}
+            rightPanel={<ChatRightPanel onOpenThread={openThread} />}
+        >
             <Head title="Chat" />
 
             {/* ── Chat header ── */}
@@ -264,7 +342,9 @@ export default function Chat() {
                     }}
                     className="dark:bg-[#2A2920]"
                 >
-                    <span style={{ fontSize: 13, color: '#AAA89F' }}>{'\u{1F50D}'}</span>
+                    <span style={{ fontSize: 13, color: '#AAA89F' }}>
+                        {'\u{1F50D}'}
+                    </span>
                     <input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -273,7 +353,7 @@ export default function Chat() {
                             flex: 1,
                             border: 'none',
                             background: 'transparent',
-                            fontFamily: "Geist, sans-serif",
+                            fontFamily: 'Geist, sans-serif',
                             fontSize: 14,
                             outline: 'none',
                             color: '#18170F',
@@ -283,7 +363,11 @@ export default function Chat() {
                     {searchQuery && (
                         <span
                             onClick={() => setSearchQuery('')}
-                            style={{ fontSize: 13, color: '#AAA89F', cursor: 'pointer' }}
+                            style={{
+                                fontSize: 13,
+                                color: '#AAA89F',
+                                cursor: 'pointer',
+                            }}
                         >
                             {'\u2715'}
                         </span>
@@ -316,7 +400,10 @@ export default function Chat() {
                                     textAlign: 'center',
                                     fontSize: 12,
                                     fontWeight: 600,
-                                    color: activeTab === t.id ? '#1A4CD4' : '#6B6860',
+                                    color:
+                                        activeTab === t.id
+                                            ? '#1A4CD4'
+                                            : '#6B6860',
                                     cursor: 'pointer',
                                     borderBottom: `2px solid ${activeTab === t.id ? '#1A4CD4' : 'transparent'}`,
                                     transition: 'all .2s',
@@ -324,9 +411,13 @@ export default function Chat() {
                                     borderTop: 'none',
                                     borderLeft: 'none',
                                     borderRight: 'none',
-                                    fontFamily: "Geist, sans-serif",
+                                    fontFamily: 'Geist, sans-serif',
                                 }}
-                                className={activeTab !== t.id ? 'hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]' : ''}
+                                className={
+                                    activeTab !== t.id
+                                        ? 'hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]'
+                                        : ''
+                                }
                             >
                                 {t.label}
                             </button>
@@ -336,7 +427,14 @@ export default function Chat() {
                     {/* Conversation list */}
                     <div>
                         {filteredConversations.length === 0 ? (
-                            <div style={{ padding: '32px 20px', textAlign: 'center', color: '#AAA89F', fontSize: 14 }}>
+                            <div
+                                style={{
+                                    padding: '32px 20px',
+                                    textAlign: 'center',
+                                    color: '#AAA89F',
+                                    fontSize: 14,
+                                }}
+                            >
                                 No conversations found
                             </div>
                         ) : (
@@ -359,7 +457,12 @@ export default function Chat() {
                                         }}
                                     >
                                         {/* Avatar */}
-                                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                                        <div
+                                            style={{
+                                                position: 'relative',
+                                                flexShrink: 0,
+                                            }}
+                                        >
                                             <div
                                                 style={{
                                                     width: 46,
@@ -401,7 +504,11 @@ export default function Chat() {
                                                 }}
                                             >
                                                 <span
-                                                    style={{ fontSize: 14, fontWeight: 600, color: '#18170F' }}
+                                                    style={{
+                                                        fontSize: 14,
+                                                        fontWeight: 600,
+                                                        color: '#18170F',
+                                                    }}
                                                     className="dark:text-[#F6F5F1]"
                                                 >
                                                     {c.name}
@@ -430,7 +537,15 @@ export default function Chat() {
                                             >
                                                 {lastMsg.text}
                                             </div>
-                                            <div style={{ fontSize: 11, color: '#AAA89F', marginTop: 2 }}>{c.sub}</div>
+                                            <div
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#AAA89F',
+                                                    marginTop: 2,
+                                                }}
+                                            >
+                                                {c.sub}
+                                            </div>
                                         </div>
 
                                         {/* Time + unread badge */}
@@ -443,7 +558,14 @@ export default function Chat() {
                                                 flexShrink: 0,
                                             }}
                                         >
-                                            <span style={{ fontSize: 11, color: '#AAA89F' }}>{lastMsg.time}</span>
+                                            <span
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#AAA89F',
+                                                }}
+                                            >
+                                                {lastMsg.time}
+                                            </span>
                                             {c.unread > 0 && (
                                                 <span
                                                     style={{
@@ -456,7 +578,8 @@ export default function Chat() {
                                                         fontWeight: 700,
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        justifyContent: 'center',
+                                                        justifyContent:
+                                                            'center',
                                                     }}
                                                 >
                                                     {c.unread}
@@ -473,7 +596,13 @@ export default function Chat() {
 
             {/* ── Thread view ── */}
             {activeThreadId && activeConv && (
-                <div style={{ display: 'flex', flex: 1, flexDirection: 'column' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        flex: 1,
+                        flexDirection: 'column',
+                    }}
+                >
                     {/* Thread header */}
                     <div
                         style={{
@@ -530,10 +659,15 @@ export default function Chat() {
 
                         {/* Name + sub */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 14, fontWeight: 600 }} className="dark:text-[#F6F5F1]">
+                            <div
+                                style={{ fontSize: 14, fontWeight: 600 }}
+                                className="dark:text-[#F6F5F1]"
+                            >
                                 {activeConv.name}
                             </div>
-                            <div style={{ fontSize: 11, color: '#AAA89F' }}>{activeConv.sub}</div>
+                            <div style={{ fontSize: 11, color: '#AAA89F' }}>
+                                {activeConv.sub}
+                            </div>
                         </div>
 
                         {/* Tag badge */}
@@ -572,7 +706,9 @@ export default function Chat() {
                                     style={{
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        alignItems: isMe ? 'flex-end' : 'flex-start',
+                                        alignItems: isMe
+                                            ? 'flex-end'
+                                            : 'flex-start',
                                         gap: 2,
                                     }}
                                 >
@@ -580,12 +716,18 @@ export default function Chat() {
                                         style={{
                                             maxWidth: '75%',
                                             padding: '10px 14px',
-                                            borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                                            background: isMe ? '#1A4CD4' : 'white',
+                                            borderRadius: isMe
+                                                ? '16px 16px 4px 16px'
+                                                : '16px 16px 16px 4px',
+                                            background: isMe
+                                                ? '#1A4CD4'
+                                                : 'white',
                                             color: isMe ? 'white' : '#18170F',
                                             fontSize: 14,
                                             lineHeight: 1.4,
-                                            border: isMe ? 'none' : '1px solid #E2DFD6',
+                                            border: isMe
+                                                ? 'none'
+                                                : '1px solid #E2DFD6',
                                         }}
                                         className={
                                             isMe
@@ -595,7 +737,15 @@ export default function Chat() {
                                     >
                                         {m.text}
                                     </div>
-                                    <span style={{ fontSize: 10, color: '#AAA89F', padding: '0 4px' }}>{m.time}</span>
+                                    <span
+                                        style={{
+                                            fontSize: 10,
+                                            color: '#AAA89F',
+                                            padding: '0 4px',
+                                        }}
+                                    >
+                                        {m.time}
+                                    </span>
                                 </div>
                             );
                         })}

@@ -21,12 +21,16 @@ export function TaskCard({
                 opacity: task.done ? 0.55 : 1,
             }}
             onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.background = '#EFEDE7';
-                if (task.done) (e.currentTarget as HTMLDivElement).style.opacity = '0.7';
+                (e.currentTarget as HTMLDivElement).style.background =
+                    '#EFEDE7';
+                if (task.done)
+                    (e.currentTarget as HTMLDivElement).style.opacity = '0.7';
             }}
             onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-                if (task.done) (e.currentTarget as HTMLDivElement).style.opacity = '0.55';
+                (e.currentTarget as HTMLDivElement).style.background =
+                    'transparent';
+                if (task.done)
+                    (e.currentTarget as HTMLDivElement).style.opacity = '0.55';
             }}
         >
             {/* Checkbox */}
@@ -40,21 +44,35 @@ export function TaskCard({
                     width: 22,
                     height: 22,
                     borderRadius: 6,
-                    border: task.done ? '2px solid #0A7C52' : '2px solid #E2DFD6',
+                    border: task.done
+                        ? '2px solid #0A7C52'
+                        : '2px solid #E2DFD6',
                     background: task.done ? '#0A7C52' : 'transparent',
                     marginTop: 1,
                     transition: 'all .25s cubic-bezier(.32,1,.4,1)',
                     cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => {
-                    if (!task.done) (e.currentTarget as HTMLDivElement).style.borderColor = '#1A4CD4';
+                    if (!task.done)
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                            '#1A4CD4';
                 }}
                 onMouseLeave={(e) => {
-                    if (!task.done) (e.currentTarget as HTMLDivElement).style.borderColor = '#E2DFD6';
+                    if (!task.done)
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                            '#E2DFD6';
                 }}
             >
                 {task.done && (
-                    <span style={{ color: 'white', fontSize: 12, fontWeight: 700 }}>✓</span>
+                    <span
+                        style={{
+                            color: 'white',
+                            fontSize: 12,
+                            fontWeight: 700,
+                        }}
+                    >
+                        ✓
+                    </span>
                 )}
             </div>
 
@@ -71,10 +89,24 @@ export function TaskCard({
                 >
                     {task.title}
                 </div>
-                <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5, marginBottom: 6 }}>
+                <div
+                    style={{
+                        fontSize: 13,
+                        color: '#6B6860',
+                        lineHeight: 1.5,
+                        marginBottom: 6,
+                    }}
+                >
                     {task.desc}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                    }}
+                >
                     <span
                         style={{
                             fontSize: 10,
@@ -120,9 +152,27 @@ export function TaskCard({
                         }}
                     >
                         {/* Steps */}
-                        <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10, padding: 0 }}>
+                        <ol
+                            style={{
+                                listStyle: 'none',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 6,
+                                marginBottom: 10,
+                                padding: 0,
+                            }}
+                        >
                             {task.steps.map((step, i) => (
-                                <li key={i} style={{ fontSize: 13, color: '#6B6860', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                                <li
+                                    key={i}
+                                    style={{
+                                        fontSize: 13,
+                                        color: '#6B6860',
+                                        display: 'flex',
+                                        gap: 8,
+                                        alignItems: 'flex-start',
+                                    }}
+                                >
                                     <span
                                         style={{
                                             width: 18,
@@ -149,10 +199,23 @@ export function TaskCard({
                         {/* Documents needed */}
                         {task.docs.length > 0 && (
                             <>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: '#6B6860', marginBottom: 6 }}>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        color: '#6B6860',
+                                        marginBottom: 6,
+                                    }}
+                                >
                                     📄 Documents needed:
                                 </div>
-                                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        gap: 5,
+                                        flexWrap: 'wrap',
+                                    }}
+                                >
                                     {task.docs.map((doc, i) => (
                                         <span
                                             key={i}
@@ -173,7 +236,16 @@ export function TaskCard({
                         )}
 
                         {/* Time estimate */}
-                        <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                color: '#AAA89F',
+                                marginTop: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 5,
+                            }}
+                        >
                             ⏱ {task.time}
                         </div>
 

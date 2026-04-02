@@ -2,7 +2,11 @@ export function LanguageHero() {
     return (
         <div
             className="relative overflow-hidden px-6 pt-6 pb-[22px]"
-            style={{ background: 'linear-gradient(135deg, #0F4C8A 0%, #1A4CD4 60%, #7C3AED 100%)', color: 'white' }}
+            style={{
+                background:
+                    'linear-gradient(135deg, #0F4C8A 0%, #1A4CD4 60%, #7C3AED 100%)',
+                color: 'white',
+            }}
         >
             {/* Decorative circles */}
             <div
@@ -17,7 +21,13 @@ export function LanguageHero() {
             {/* Eyebrow */}
             <div
                 className="mb-1.5"
-                style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', opacity: 0.65 }}
+                style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.10em',
+                    opacity: 0.65,
+                }}
             >
                 Language Exchange &middot; Cologne
             </div>
@@ -25,7 +35,12 @@ export function LanguageHero() {
             {/* Title */}
             <div
                 className="relative z-[1] mb-4"
-                style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 400, lineHeight: 1.2 }}
+                style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: 24,
+                    fontWeight: 400,
+                    lineHeight: 1.2,
+                }}
             >
                 Meet someone, help each other.
                 <br />
@@ -45,8 +60,19 @@ export function LanguageHero() {
 function StatItem({ num, label }: { num: string; label: string }) {
     return (
         <div className="text-center">
-            <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1 }}>{num}</div>
-            <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>{label}</div>
+            <div
+                style={{
+                    fontFamily: "'Geist Mono', monospace",
+                    fontSize: 22,
+                    fontWeight: 500,
+                    lineHeight: 1,
+                }}
+            >
+                {num}
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
+                {label}
+            </div>
         </div>
     );
 }

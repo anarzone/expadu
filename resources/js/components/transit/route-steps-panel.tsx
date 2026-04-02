@@ -23,15 +23,16 @@ import { IconWalk, IconBike, IconCar, IconTrain } from '@tabler/icons-react';
 import { ICON_STROKE } from '@/constants/icons';
 import type { ComponentType } from 'react';
 
-const MODE_LABELS: Record<string, { icon: ComponentType<any>; label: string }> = {
-    pedestrian: { icon: IconWalk, label: 'Walk' },
-    bicycle: { icon: IconBike, label: 'Bike' },
-    auto: { icon: IconCar, label: 'Drive' },
-    bike: { icon: IconBike, label: 'Bike' },
-    walk: { icon: IconWalk, label: 'Walk' },
-    drive: { icon: IconCar, label: 'Drive' },
-    transit: { icon: IconTrain, label: 'Transit' },
-};
+const MODE_LABELS: Record<string, { icon: ComponentType<any>; label: string }> =
+    {
+        pedestrian: { icon: IconWalk, label: 'Walk' },
+        bicycle: { icon: IconBike, label: 'Bike' },
+        auto: { icon: IconCar, label: 'Drive' },
+        bike: { icon: IconBike, label: 'Bike' },
+        walk: { icon: IconWalk, label: 'Walk' },
+        drive: { icon: IconCar, label: 'Drive' },
+        transit: { icon: IconTrain, label: 'Transit' },
+    };
 
 function formatDist(km: number): string {
     return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)} km`;
@@ -79,15 +80,23 @@ export function RouteStepsPanel({
             {/* Summary header */}
             <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
                 <div className="flex items-center gap-2">
-                    <ModeIcon size={22} stroke={ICON_STROKE} className="text-[#1A4CD4]" />
-                    <span className="text-[15px] font-semibold dark:text-[#F5F4F0]">{modeInfo.label}</span>
+                    <ModeIcon
+                        size={22}
+                        stroke={ICON_STROKE}
+                        className="text-[#1A4CD4]"
+                    />
+                    <span className="text-[15px] font-semibold dark:text-[#F5F4F0]">
+                        {modeInfo.label}
+                    </span>
                 </div>
                 {isTransit && departureTime && arrivalTime ? (
                     <div className="flex items-center gap-2">
                         <span className="font-mono text-[16px] font-semibold text-[#1A4CD4]">
                             {departureTime} → {arrivalTime}
                         </span>
-                        <span className="text-[11px] text-[#AAA89F]">{durationMin} min</span>
+                        <span className="text-[11px] text-[#AAA89F]">
+                            {durationMin} min
+                        </span>
                         {(transfers ?? 0) > 0 && (
                             <span className="rounded-full bg-[#EFEDE7] px-[7px] py-[2px] text-[10px] font-bold text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]">
                                 {transfers} transfer{transfers !== 1 ? 's' : ''}
@@ -96,10 +105,16 @@ export function RouteStepsPanel({
                     </div>
                 ) : (
                     <div className="flex items-center gap-3">
-                        <span className="font-mono text-[22px] font-medium text-[#1A4CD4]">{durationMin}</span>
+                        <span className="font-mono text-[22px] font-medium text-[#1A4CD4]">
+                            {durationMin}
+                        </span>
                         <span className="text-[11px] text-[#AAA89F]">min</span>
-                        <span className="text-[13px] text-[#6B6860] dark:text-[#AAA89F]">·</span>
-                        <span className="text-[13px] text-[#6B6860] dark:text-[#AAA89F]">{distanceKm} km</span>
+                        <span className="text-[13px] text-[#6B6860] dark:text-[#AAA89F]">
+                            ·
+                        </span>
+                        <span className="text-[13px] text-[#6B6860] dark:text-[#AAA89F]">
+                            {distanceKm} km
+                        </span>
                     </div>
                 )}
             </div>
@@ -108,24 +123,42 @@ export function RouteStepsPanel({
             {steps.length > 0 && (
                 <div className="mb-3 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
                     <div className="border-b border-[#E2DFD6] bg-[#EFEDE7] px-4 py-2.5 dark:border-[#3A3930] dark:bg-[#2A2920]">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
-                            {isTransit ? 'Journey' : 'Directions'} · {steps.length} steps
+                        <span className="text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
+                            {isTransit ? 'Journey' : 'Directions'} ·{' '}
+                            {steps.length} steps
                         </span>
                     </div>
                     {steps.map((step, i) => {
-                        const isTransferWithConnections = step.type === 'transfer' && step.transfer_stop_id && onFetchConnections;
-                        const stopConns = step.transfer_stop_id ? connectionsByStop?.[step.transfer_stop_id] : undefined;
-                        const isLoading = step.transfer_stop_id ? connectionsLoading?.[step.transfer_stop_id] : false;
+                        const isTransferWithConnections =
+                            step.type === 'transfer' &&
+                            step.transfer_stop_id &&
+                            onFetchConnections;
+                        const stopConns = step.transfer_stop_id
+                            ? connectionsByStop?.[step.transfer_stop_id]
+                            : undefined;
+                        const isLoading = step.transfer_stop_id
+                            ? connectionsLoading?.[step.transfer_stop_id]
+                            : false;
 
                         return (
                             <div key={i}>
                                 <div
                                     className={`flex items-start gap-3 px-4 py-3 ${isTransferWithConnections ? 'cursor-pointer bg-[#FAFAF8] dark:bg-[#252418]' : ''} ${
-                                        (!stopConns || stopConns.length === 0) && i < steps.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''
+                                        (!stopConns ||
+                                            stopConns.length === 0) &&
+                                        i < steps.length - 1
+                                            ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]'
+                                            : ''
                                     } ${step.type === 'board' ? 'border-l-[3px] border-l-[#1A4CD4] pl-[13px]' : ''}`}
                                     onClick={() => {
-                                        if (isTransferWithConnections && !stopConns && !isLoading) {
-                                            onFetchConnections(step.transfer_stop_id!);
+                                        if (
+                                            isTransferWithConnections &&
+                                            !stopConns &&
+                                            !isLoading
+                                        ) {
+                                            onFetchConnections(
+                                                step.transfer_stop_id!,
+                                            );
                                         }
                                     }}
                                 >
@@ -133,45 +166,75 @@ export function RouteStepsPanel({
                                         {step.emoji}
                                     </span>
                                     <div className="min-w-0 flex-1">
-                                        <div className="text-[13px] font-medium leading-[1.4] dark:text-[#F5F4F0]">
+                                        <div className="text-[13px] leading-[1.4] font-medium dark:text-[#F5F4F0]">
                                             {step.instruction}
-                                            {isTransferWithConnections && !stopConns && (
-                                                <span className="ml-1.5 text-[11px] text-[#1A4CD4]">
-                                                    {isLoading ? 'Loading...' : 'Tap for alternatives'}
-                                                </span>
-                                            )}
+                                            {isTransferWithConnections &&
+                                                !stopConns && (
+                                                    <span className="ml-1.5 text-[11px] text-[#1A4CD4]">
+                                                        {isLoading
+                                                            ? 'Loading...'
+                                                            : 'Tap for alternatives'}
+                                                    </span>
+                                                )}
                                         </div>
                                         {step.detail && (
-                                            <div className="mt-[2px] text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{step.detail}</div>
-                                        )}
-                                        {!step.detail && step.distance_km > 0 && (
-                                            <div className="mt-[2px] font-mono text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
-                                                {formatDist(step.distance_km)} · {formatTime(step.time_sec)}
+                                            <div className="mt-[2px] text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                                {step.detail}
                                             </div>
                                         )}
+                                        {!step.detail &&
+                                            step.distance_km > 0 && (
+                                                <div className="mt-[2px] font-mono text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
+                                                    {formatDist(
+                                                        step.distance_km,
+                                                    )}{' '}
+                                                    ·{' '}
+                                                    {formatTime(step.time_sec)}
+                                                </div>
+                                            )}
                                     </div>
                                 </div>
 
                                 {/* Connection alternatives at this transfer */}
                                 {stopConns && stopConns.length > 0 && (
-                                    <div className={`bg-[#FAFAF8] px-4 pt-2 pb-3 dark:bg-[#252418] ${i < steps.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}>
-                                        <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[#AAA89F]">
-                                            Connections from {step.transfer_stop_name ?? 'here'}
+                                    <div
+                                        className={`bg-[#FAFAF8] px-4 pt-2 pb-3 dark:bg-[#252418] ${i < steps.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
+                                    >
+                                        <div className="mb-1.5 text-[10px] font-bold tracking-[0.06em] text-[#AAA89F] uppercase">
+                                            Connections from{' '}
+                                            {step.transfer_stop_name ?? 'here'}
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {stopConns.map((conn, j) => (
                                                 <button
                                                     key={j}
-                                                    onClick={() => onSelectConnection?.(step.transfer_stop_id!, conn)}
+                                                    onClick={() =>
+                                                        onSelectConnection?.(
+                                                            step.transfer_stop_id!,
+                                                            conn,
+                                                        )
+                                                    }
                                                     className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#3A3930]"
                                                     style={{
-                                                        borderColor: conn.is_current ? '#1A4CD4' : '#E2DFD6',
-                                                        background: conn.is_current ? '#EBF0FD' : 'white',
+                                                        borderColor:
+                                                            conn.is_current
+                                                                ? '#1A4CD4'
+                                                                : '#E2DFD6',
+                                                        background:
+                                                            conn.is_current
+                                                                ? '#EBF0FD'
+                                                                : 'white',
                                                     }}
                                                 >
-                                                    <span className="font-mono text-xs font-bold text-[#1A4CD4]">{conn.line}</span>
-                                                    <span className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{conn.direction}</span>
-                                                    <span className="font-mono text-[11px] font-semibold text-[#0A7C52]">{conn.departure_time}</span>
+                                                    <span className="font-mono text-xs font-bold text-[#1A4CD4]">
+                                                        {conn.line}
+                                                    </span>
+                                                    <span className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                                        {conn.direction}
+                                                    </span>
+                                                    <span className="font-mono text-[11px] font-semibold text-[#0A7C52]">
+                                                        {conn.departure_time}
+                                                    </span>
                                                 </button>
                                             ))}
                                         </div>

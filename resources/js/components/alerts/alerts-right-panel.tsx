@@ -8,12 +8,42 @@ type AlertCounts = {
 };
 
 const notificationSettings = [
-    { id: 'transit', label: 'Transit disruptions', sub: 'Delays on your saved routes', defaultOn: true },
-    { id: 'burgeramt', label: 'Bürgeramt slots', sub: 'New appointments available', defaultOn: true },
-    { id: 'language', label: 'Language partner requests', sub: 'New connections and messages', defaultOn: true },
-    { id: 'events', label: 'Event reminders', sub: '1 day before events you\'re attending', defaultOn: true },
-    { id: 'digest', label: 'Weekly digest', sub: 'Monday morning events roundup', defaultOn: false },
-    { id: 'rhine', label: 'Rhine flood alerts', sub: 'When water level exceeds threshold', defaultOn: true },
+    {
+        id: 'transit',
+        label: 'Transit disruptions',
+        sub: 'Delays on your saved routes',
+        defaultOn: true,
+    },
+    {
+        id: 'burgeramt',
+        label: 'Bürgeramt slots',
+        sub: 'New appointments available',
+        defaultOn: true,
+    },
+    {
+        id: 'language',
+        label: 'Language partner requests',
+        sub: 'New connections and messages',
+        defaultOn: true,
+    },
+    {
+        id: 'events',
+        label: 'Event reminders',
+        sub: "1 day before events you're attending",
+        defaultOn: true,
+    },
+    {
+        id: 'digest',
+        label: 'Weekly digest',
+        sub: 'Monday morning events roundup',
+        defaultOn: false,
+    },
+    {
+        id: 'rhine',
+        label: 'Rhine flood alerts',
+        sub: 'When water level exceeds threshold',
+        defaultOn: true,
+    },
 ];
 
 export function AlertsRightPanel({ counts }: { counts: AlertCounts }) {
@@ -27,7 +57,9 @@ export function AlertsRightPanel({ counts }: { counts: AlertCounts }) {
 
 function NotificationSettings() {
     const [toggles, setToggles] = useState<Record<string, boolean>>(
-        Object.fromEntries(notificationSettings.map((s) => [s.id, s.defaultOn])),
+        Object.fromEntries(
+            notificationSettings.map((s) => [s.id, s.defaultOn]),
+        ),
     );
 
     function toggle(id: string) {
@@ -37,7 +69,9 @@ function NotificationSettings() {
     return (
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
             <div className="border-b border-border px-4 py-3">
-                <span className="text-[13px] font-bold">Notification settings</span>
+                <span className="text-[13px] font-bold">
+                    Notification settings
+                </span>
             </div>
             {notificationSettings.map((setting) => (
                 <div
@@ -45,8 +79,12 @@ function NotificationSettings() {
                     className="flex items-center justify-between border-b border-border px-4 py-[11px] last:border-b-0"
                 >
                     <div>
-                        <div className="text-[13px] font-medium">{setting.label}</div>
-                        <div className="mt-px text-[11px] text-muted-foreground">{setting.sub}</div>
+                        <div className="text-[13px] font-medium">
+                            {setting.label}
+                        </div>
+                        <div className="mt-px text-[11px] text-muted-foreground">
+                            {setting.sub}
+                        </div>
                     </div>
                     <button
                         onClick={() => toggle(setting.id)}
@@ -56,9 +94,14 @@ function NotificationSettings() {
                     >
                         <span
                             className={`absolute top-[2px] left-[2px] size-[18px] rounded-full bg-white shadow-sm transition-transform duration-250 ${
-                                toggles[setting.id] ? 'translate-x-[18px]' : 'translate-x-0'
+                                toggles[setting.id]
+                                    ? 'translate-x-[18px]'
+                                    : 'translate-x-0'
                             }`}
-                            style={{ transitionTimingFunction: 'cubic-bezier(0.32, 1, 0.4, 1)' }}
+                            style={{
+                                transitionTimingFunction:
+                                    'cubic-bezier(0.32, 1, 0.4, 1)',
+                            }}
                         />
                     </button>
                 </div>

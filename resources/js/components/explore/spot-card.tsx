@@ -11,7 +11,12 @@ type SpotData = {
     distance_km?: number;
 };
 
-const categoryEmoji: Record<string, string> = { cafe: '☕', coworking: '🏢', library: '📚', park: '🌳' };
+const categoryEmoji: Record<string, string> = {
+    cafe: '☕',
+    coworking: '🏢',
+    library: '📚',
+    park: '🌳',
+};
 
 import { getTag, type TagDef } from '@/constants/tags';
 import { ICON_STROKE } from '@/constants/icons';
@@ -21,11 +26,17 @@ function getAttrs(spot: SpotData): string[] {
     if (spot.wifi_speed) attrs.push('wifi');
     if (spot.noise_level === 'quiet') attrs.push('quiet');
     if (spot.category === 'coworking') attrs.push('cowork');
-    if (spot.time_limit_mins === null && spot.category === 'library') attrs.push('free');
+    if (spot.time_limit_mins === null && spot.category === 'library')
+        attrs.push('free');
     return attrs;
 }
 
-export function SpotCard({ spot, selected, onSelect, onNavigate }: {
+export function SpotCard({
+    spot,
+    selected,
+    onSelect,
+    onNavigate,
+}: {
     spot: SpotData;
     selected: boolean;
     onSelect: () => void;
@@ -45,12 +56,22 @@ export function SpotCard({ spot, selected, onSelect, onNavigate }: {
         >
             {/* Top: emoji 28px, name/area, distance mono */}
             <div className="mb-2.5 flex items-start gap-3">
-                <span className="shrink-0 text-[28px] leading-none">{categoryEmoji[spot.category] || '📍'}</span>
+                <span className="shrink-0 text-[28px] leading-none">
+                    {categoryEmoji[spot.category] || '📍'}
+                </span>
                 <div className="min-w-0 flex-1">
-                    <div className="mb-0.5 text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{spot.name}</div>
-                    <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">{area}</div>
+                    <div className="mb-0.5 text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                        {spot.name}
+                    </div>
+                    <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                        {area}
+                    </div>
                 </div>
-                <span className="shrink-0 font-mono text-xs text-[#AAA89F]">{spot.distance_km != null ? `${Math.round(spot.distance_km * 10) / 10} km` : ''}</span>
+                <span className="shrink-0 font-mono text-xs text-[#AAA89F]">
+                    {spot.distance_km != null
+                        ? `${Math.round(spot.distance_km * 10) / 10} km`
+                        : ''}
+                </span>
             </div>
 
             {/* Attrs: chips with gap 6px */}
@@ -60,7 +81,10 @@ export function SpotCard({ spot, selected, onSelect, onNavigate }: {
                     if (!tag) return null;
                     const TagIcon = tag.icon;
                     return (
-                        <span key={a} className={`flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium ${tag.cls}`}>
+                        <span
+                            key={a}
+                            className={`flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-medium ${tag.cls}`}
+                        >
                             <TagIcon size={12} stroke={ICON_STROKE} />
                             {tag.label}
                         </span>
@@ -74,17 +98,25 @@ export function SpotCard({ spot, selected, onSelect, onNavigate }: {
                     <span className="inline-block size-[7px] rounded-full bg-[#0A7C52]" />
                     <span className="text-[#0A7C52]">Open</span>
                     <span className="text-[#AAA89F]">07:00–22:00</span>
-                    <span className="text-[11px] text-[#AAA89F]">· 👥 {spot.active_checkins_count} here</span>
+                    <span className="text-[11px] text-[#AAA89F]">
+                        · 👥 {spot.active_checkins_count} here
+                    </span>
                 </div>
                 <div className="flex gap-1.5">
                     <button
-                        onClick={(e) => { e.stopPropagation(); onNavigate?.(); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate?.();
+                        }}
                         className="rounded-full border border-[#E2DFD6] bg-[#EFEDE7] px-[11px] py-[5px] text-[11px] font-semibold text-[#6B6860] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]"
                     >
                         Navigate ↗
                     </button>
                     <button
-                        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelect();
+                        }}
                         className="rounded-full border border-[#1A4CD4] bg-[#1A4CD4] px-[11px] py-[5px] text-[11px] font-semibold text-white transition-all hover:bg-[#1541B8]"
                     >
                         Details

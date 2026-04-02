@@ -1,5 +1,12 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import {
+    lazy,
+    Suspense,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { ExploreFilterBar } from '@/components/explore/filter-bar';
 import type { MapBounds, MapViewHandle } from '@/components/explore/map-view';
 import { ModePicker } from '@/components/explore/mode-picker';
@@ -29,7 +36,11 @@ type PersonalPlace = {
     lng: number | null;
 };
 
-const MapViewLazy = lazy(() => import('@/components/explore/map-view').then((m) => ({ default: m.MapView as any })));
+const MapViewLazy = lazy(() =>
+    import('@/components/explore/map-view').then((m) => ({
+        default: m.MapView as any,
+    })),
+);
 
 type SpotData = {
     id: number;
@@ -47,7 +58,24 @@ type SpotData = {
 };
 
 // Common emojis for the place picker
-const PLACE_EMOJIS = ['⭐', '🏠', '💼', '📚', '☕', '🏋️', '🛒', '🏥', '🎵', '🍕', '🌳', '🚉', '❤️', '📍', '🎯', '🔖'];
+const PLACE_EMOJIS = [
+    '⭐',
+    '🏠',
+    '💼',
+    '📚',
+    '☕',
+    '🏋️',
+    '🛒',
+    '🏥',
+    '🎵',
+    '🍕',
+    '🌳',
+    '🚉',
+    '❤️',
+    '📍',
+    '🎯',
+    '🔖',
+];
 
 export default function Explore() {
     const { spots, filters, personalPlaces, userLocation } = usePage<{
@@ -71,36 +99,41 @@ export default function Explore() {
 
     // Viewport-based spots — fetched from /api/spots as the map moves
     const [mapSpots, setMapSpots] = useState<SpotData[]>([]);
-    const handleBoundsChange = useCallback((bounds: MapBounds) => {
-        lastBoundsRef.current = bounds;
-        const params = new URLSearchParams({
-            sw_lat: String(bounds.sw_lat),
-            sw_lng: String(bounds.sw_lng),
-            ne_lat: String(bounds.ne_lat),
-            ne_lng: String(bounds.ne_lng),
-            limit: '100',
-        });
-        if (category) params.set('category', category);
-        fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
-            .then((r) => r.ok ? r.json() : [])
-            .then((data: any[]) => {
-                // Map API response to SpotData shape
-                setMapSpots(data.map((s) => ({
-                    id: s.id,
-                    name: s.name,
-                    category: s.category,
-                    address: s.address,
-                    wifi_speed: s.wifi_speed,
-                    noise_level: s.noise_level,
-                    time_limit_mins: s.time_limit_mins,
-                    rating: s.rating,
-                    active_checkins_count: s.active_checkins_count ?? 0,
-                    lat: s.lat,
-                    lng: s.lng,
-                })));
-            })
-            .catch(() => {});
-    }, [category]);
+    const handleBoundsChange = useCallback(
+        (bounds: MapBounds) => {
+            lastBoundsRef.current = bounds;
+            const params = new URLSearchParams({
+                sw_lat: String(bounds.sw_lat),
+                sw_lng: String(bounds.sw_lng),
+                ne_lat: String(bounds.ne_lat),
+                ne_lng: String(bounds.ne_lng),
+                limit: '100',
+            });
+            if (category) params.set('category', category);
+            fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
+                .then((r) => (r.ok ? r.json() : []))
+                .then((data: any[]) => {
+                    // Map API response to SpotData shape
+                    setMapSpots(
+                        data.map((s) => ({
+                            id: s.id,
+                            name: s.name,
+                            category: s.category,
+                            address: s.address,
+                            wifi_speed: s.wifi_speed,
+                            noise_level: s.noise_level,
+                            time_limit_mins: s.time_limit_mins,
+                            rating: s.rating,
+                            active_checkins_count: s.active_checkins_count ?? 0,
+                            lat: s.lat,
+                            lng: s.lng,
+                        })),
+                    );
+                })
+                .catch(() => {});
+        },
+        [category],
+    );
 
     // When viewport spots are loaded, use them as the primary list (they match what's visible on map)
     // Fall back to initial server spots before first map move
@@ -111,32 +144,98 @@ export default function Explore() {
     const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Routing state
-    type RouteOption = { mode: string; emoji: string; time: number; distance_km: number | null; detail: string; best: boolean; disrupted?: boolean; recommendation_reason?: string; geometry?: string | null };
+    type RouteOption = {
+        mode: string;
+        emoji: string;
+        time: number;
+        distance_km: number | null;
+        detail: string;
+        best: boolean;
+        disrupted?: boolean;
+        recommendation_reason?: string;
+        geometry?: string | null;
+    };
     type FullRoute = {
-        mode: string; duration_min: number; distance_km: number; geometry: string;
-        source?: string; departure_time?: string; arrival_time?: string; transfers?: number;
-        segments?: Array<{ type: string; geometry?: string; coordinates?: [number, number][]; color?: string; line?: string; direction?: string; boarding_stop?: string; alighting_stop?: string; alighting_stop_id?: string; boarding_stop_id?: string; departure_time?: string; arrival_time?: string; delay_min?: number; duration_min?: number; mode?: string }>;
-        steps: Array<{ instruction: string; distance_km: number; time_sec: number; type: string; emoji: string; detail?: string; transfer_stop_id?: string; transfer_stop_name?: string }>;
+        mode: string;
+        duration_min: number;
+        distance_km: number;
+        geometry: string;
+        source?: string;
+        departure_time?: string;
+        arrival_time?: string;
+        transfers?: number;
+        segments?: Array<{
+            type: string;
+            geometry?: string;
+            coordinates?: [number, number][];
+            color?: string;
+            line?: string;
+            direction?: string;
+            boarding_stop?: string;
+            alighting_stop?: string;
+            alighting_stop_id?: string;
+            boarding_stop_id?: string;
+            departure_time?: string;
+            arrival_time?: string;
+            delay_min?: number;
+            duration_min?: number;
+            mode?: string;
+        }>;
+        steps: Array<{
+            instruction: string;
+            distance_km: number;
+            time_sec: number;
+            type: string;
+            emoji: string;
+            detail?: string;
+            transfer_stop_id?: string;
+            transfer_stop_name?: string;
+        }>;
     };
     type TransitTrip = {
-        departure_time: string; arrival_time: string; total_duration_min: number; transfers: number;
+        departure_time: string;
+        arrival_time: string;
+        total_duration_min: number;
+        transfers: number;
         legs: Array<{ type: string; line?: string; mode?: string }>;
-        walk_min: number; boarding_stop: string; first_line_departure: string;
-        segments: any[]; steps: any[];
+        walk_min: number;
+        boarding_stop: string;
+        first_line_departure: string;
+        segments: any[];
+        steps: any[];
     };
-    const [routeDest, setRouteDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
+    const [routeDest, setRouteDest] = useState<{
+        lat: number;
+        lng: number;
+        name: string;
+    } | null>(null);
     const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
     const [routeMode, setRouteMode] = useState<string | null>(null);
     const [routeDetail, setRouteDetail] = useState<FullRoute | null>(null);
     const [transitTrips, setTransitTrips] = useState<TransitTrip[]>([]);
     const [selectedTripIdx, setSelectedTripIdx] = useState<number | null>(null);
     const [routeLoading, setRouteLoading] = useState(false);
-    const [routeMapsUrl, setRouteMapsUrl] = useState<{ google: string; apple: string } | null>(null);
+    const [routeMapsUrl, setRouteMapsUrl] = useState<{
+        google: string;
+        apple: string;
+    } | null>(null);
 
     // Connection alternatives at transfer points
-    type ConnectionOption = { line: string; direction: string; departure_time: string; minutes: number | null; type: string; is_current: boolean; toward_destination: boolean };
-    const [connectionsByStop, setConnectionsByStop] = useState<Record<string, ConnectionOption[]>>({});
-    const [connectionsLoading, setConnectionsLoading] = useState<Record<string, boolean>>({});
+    type ConnectionOption = {
+        line: string;
+        direction: string;
+        departure_time: string;
+        minutes: number | null;
+        type: string;
+        is_current: boolean;
+        toward_destination: boolean;
+    };
+    const [connectionsByStop, setConnectionsByStop] = useState<
+        Record<string, ConnectionOption[]>
+    >({});
+    const [connectionsLoading, setConnectionsLoading] = useState<
+        Record<string, boolean>
+    >({});
 
     // Restore directions from URL params on mount (survives refresh)
     const dirRestoredRef = useRef(false);
@@ -167,28 +266,50 @@ export default function Explore() {
         url.searchParams.set('dir_name', name);
         window.history.replaceState({}, '', url.toString());
 
-        fetch(`/api/route-options?to_lat=${lat}&to_lng=${lng}&name=${encodeURIComponent(name)}`, { credentials: 'same-origin' })
+        fetch(
+            `/api/route-options?to_lat=${lat}&to_lng=${lng}&name=${encodeURIComponent(name)}`,
+            { credentials: 'same-origin' },
+        )
             .then((r) => r.json())
             .then((data) => {
                 setRouteOptions(data.options ?? []);
                 setRouteMapsUrl(data.maps_url ?? null);
                 setRouteLoading(false);
                 // Always start with bike mode
-                const bikeOpt = (data.options ?? []).find((o: RouteOption) => o.mode === 'bike');
+                const bikeOpt = (data.options ?? []).find(
+                    (o: RouteOption) => o.mode === 'bike',
+                );
                 if (bikeOpt) {
-                    selectRouteMode('bike', bikeOpt.geometry, { lat: data.from.lat, lng: data.from.lng }, { lat, lng });
+                    selectRouteMode(
+                        'bike',
+                        bikeOpt.geometry,
+                        { lat: data.from.lat, lng: data.from.lng },
+                        { lat, lng },
+                    );
                 }
             })
             .catch(() => setRouteLoading(false));
     }
 
-    function selectRouteMode(mode: string, _geometry?: string | null, from?: { lat: number; lng: number }, to?: { lat: number; lng: number }) {
+    function selectRouteMode(
+        mode: string,
+        _geometry?: string | null,
+        from?: { lat: number; lng: number },
+        to?: { lat: number; lng: number },
+    ) {
         setRouteMode(mode);
         setRouteDetail(null);
 
         const dest = routeDest ?? to;
         const origin = from ?? { lat: myLat, lng: myLng };
-        const costing = mode === 'bike' ? 'bicycle' : mode === 'walk' ? 'pedestrian' : mode === 'drive' ? 'auto' : null;
+        const costing =
+            mode === 'bike'
+                ? 'bicycle'
+                : mode === 'walk'
+                  ? 'pedestrian'
+                  : mode === 'drive'
+                    ? 'auto'
+                    : null;
 
         if (mode === 'transit') {
             setTransitTrips([]);
@@ -198,16 +319,30 @@ export default function Explore() {
             const dest = routeDest ?? to;
             if (dest) {
                 setRouteLoading(true);
-                fetch(`/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=transit`, { credentials: 'same-origin' })
+                fetch(
+                    `/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=transit`,
+                    { credentials: 'same-origin' },
+                )
                     .then((r) => r.json())
                     .then((data) => {
                         const trips = data.trips ?? [];
                         setTransitTrips(trips);
                         setRouteLoading(false);
                         // Draw the first trip's route on the map immediately
-                        if (trips.length > 0 && trips[0].segments?.length > 0 && dest) {
-                            const orig = data.from ?? { lat: myLat, lng: myLng };
-                            mapRef.current?.drawTransitRoute(trips[0].segments, { lat: orig.lat, lng: orig.lng }, dest);
+                        if (
+                            trips.length > 0 &&
+                            trips[0].segments?.length > 0 &&
+                            dest
+                        ) {
+                            const orig = data.from ?? {
+                                lat: myLat,
+                                lng: myLng,
+                            };
+                            mapRef.current?.drawTransitRoute(
+                                trips[0].segments,
+                                { lat: orig.lat, lng: orig.lng },
+                                dest,
+                            );
                         }
                     })
                     .catch(() => setRouteLoading(false));
@@ -216,11 +351,19 @@ export default function Explore() {
         }
 
         if (costing && dest) {
-            fetch(`/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=${costing}`, { credentials: 'same-origin' })
+            fetch(
+                `/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=${costing}`,
+                { credentials: 'same-origin' },
+            )
                 .then((r) => r.json())
                 .then((data) => {
                     if (data.geometry) {
-                        mapRef.current?.drawRoute(data.geometry, mode, { lat: data.from.lat, lng: data.from.lng }, dest);
+                        mapRef.current?.drawRoute(
+                            data.geometry,
+                            mode,
+                            { lat: data.from.lat, lng: data.from.lng },
+                            dest,
+                        );
                     }
                     if (data.steps) {
                         setRouteDetail(data);
@@ -281,17 +424,30 @@ export default function Explore() {
 
     function fetchConnections(stopId: string) {
         setConnectionsLoading((prev) => ({ ...prev, [stopId]: true }));
-        const currentLine = routeDetail?.segments?.find((s) => s.type === 'transit')?.line ?? '';
+        const currentLine =
+            routeDetail?.segments?.find((s) => s.type === 'transit')?.line ??
+            '';
         const params = new URLSearchParams({
             stop_id: stopId,
             current_line: currentLine,
             destination_name: routeDest?.name ?? '',
         });
-        fetch(`/api/transfer-connections?${params}`, { credentials: 'same-origin' })
+        fetch(`/api/transfer-connections?${params}`, {
+            credentials: 'same-origin',
+        })
             .then((r) => r.json())
-            .then((data) => setConnectionsByStop((prev) => ({ ...prev, [stopId]: data.connections ?? [] })))
-            .catch(() => setConnectionsByStop((prev) => ({ ...prev, [stopId]: [] })))
-            .finally(() => setConnectionsLoading((prev) => ({ ...prev, [stopId]: false })));
+            .then((data) =>
+                setConnectionsByStop((prev) => ({
+                    ...prev,
+                    [stopId]: data.connections ?? [],
+                })),
+            )
+            .catch(() =>
+                setConnectionsByStop((prev) => ({ ...prev, [stopId]: [] })),
+            )
+            .finally(() =>
+                setConnectionsLoading((prev) => ({ ...prev, [stopId]: false })),
+            );
     }
 
     function selectConnection(stopId: string, connection: ConnectionOption) {
@@ -299,14 +455,26 @@ export default function Explore() {
         setRouteLoading(true);
 
         // Find segments before the transfer point
-        const transferIdx = routeDetail.segments.findIndex((s) => s.alighting_stop_id === stopId || s.boarding_stop_id === stopId);
-        const segmentsBefore = transferIdx >= 0 ? routeDetail.segments.slice(0, transferIdx + 1) : [];
+        const transferIdx = routeDetail.segments.findIndex(
+            (s) =>
+                s.alighting_stop_id === stopId || s.boarding_stop_id === stopId,
+        );
+        const segmentsBefore =
+            transferIdx >= 0
+                ? routeDetail.segments.slice(0, transferIdx + 1)
+                : [];
 
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        const csrfToken =
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') ?? '';
         fetch('/api/transfer-select', {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
             body: JSON.stringify({
                 stop_id: stopId,
                 departure_time: connection.departure_time,
@@ -323,7 +491,11 @@ export default function Explore() {
                 setConnectionsByStop({});
                 if (data.segments?.length > 0) {
                     const orig = data.from ?? { lat: myLat, lng: myLng };
-                    mapRef.current?.drawTransitRoute(data.segments, { lat: orig.lat, lng: orig.lng }, routeDest);
+                    mapRef.current?.drawTransitRoute(
+                        data.segments,
+                        { lat: orig.lat, lng: orig.lng },
+                        routeDest,
+                    );
                 }
             })
             .catch(() => {})
@@ -331,7 +503,11 @@ export default function Explore() {
     }
 
     // Tap-to-discover state
-    const [tapPoint, setTapPoint] = useState<{ lat: number; lng: number; address: string } | null>(null);
+    const [tapPoint, setTapPoint] = useState<{
+        lat: number;
+        lng: number;
+        address: string;
+    } | null>(null);
     const [showPlaceForm, setShowPlaceForm] = useState(false);
     const [placeEmoji, setPlaceEmoji] = useState('⭐');
     const [placeName, setPlaceName] = useState('');
@@ -357,18 +533,26 @@ export default function Explore() {
         }
 
         fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
-            .then((r) => r.ok ? r.json() : [])
+            .then((r) => (r.ok ? r.json() : []))
             .then((data: any[]) => {
                 let mapped = data.map((s: any) => ({
-                    id: s.id, name: s.name, category: s.category, address: s.address,
-                    wifi_speed: s.wifi_speed, noise_level: s.noise_level,
-                    time_limit_mins: s.time_limit_mins, rating: s.rating,
+                    id: s.id,
+                    name: s.name,
+                    category: s.category,
+                    address: s.address,
+                    wifi_speed: s.wifi_speed,
+                    noise_level: s.noise_level,
+                    time_limit_mins: s.time_limit_mins,
+                    rating: s.rating,
                     active_checkins_count: s.active_checkins_count ?? 0,
                     distance_km: s.distance_km ?? undefined,
-                    lat: s.lat, lng: s.lng,
+                    lat: s.lat,
+                    lng: s.lng,
                 }));
-                if (cat === 'wifi') mapped = mapped.filter((s) => s.wifi_speed === 'fast');
-                if (cat === 'quiet') mapped = mapped.filter((s) => s.noise_level === 'quiet');
+                if (cat === 'wifi')
+                    mapped = mapped.filter((s) => s.wifi_speed === 'fast');
+                if (cat === 'quiet')
+                    mapped = mapped.filter((s) => s.noise_level === 'quiet');
                 setMapSpots(mapped);
             })
             .catch(() => {});
@@ -377,14 +561,21 @@ export default function Explore() {
     const filteredSpots = allSpots.filter((s) => {
         if (!search) return true;
         const q = search.toLowerCase();
-        return s.name.toLowerCase().includes(q) || s.address?.toLowerCase().includes(q);
+        return (
+            s.name.toLowerCase().includes(q) ||
+            s.address?.toLowerCase().includes(q)
+        );
     });
 
     // When search has results, clear geo suggestions. When no results, fetch geocode.
     useEffect(() => {
         if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
 
-        if (!search.trim() || search.trim().length < 2 || filteredSpots.length > 0) {
+        if (
+            !search.trim() ||
+            search.trim().length < 2 ||
+            filteredSpots.length > 0
+        ) {
             setGeoSuggestions([]);
             mapRef.current?.clearSearchPin();
             return;
@@ -392,7 +583,9 @@ export default function Explore() {
 
         geoTimerRef.current = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/geocode?q=${encodeURIComponent(search.trim())}`);
+                const res = await fetch(
+                    `/api/geocode?q=${encodeURIComponent(search.trim())}`,
+                );
                 if (res.ok) {
                     const data: GeoResult[] = await res.json();
                     setGeoSuggestions(data);
@@ -408,7 +601,12 @@ export default function Explore() {
     }, [search, filteredSpots.length]);
 
     function selectSpot(spot: SpotData) {
-        track('spot_viewed', { spot_id: spot.id, spot_name: spot.name, lat: spot.lat, lng: spot.lng });
+        track('spot_viewed', {
+            spot_id: spot.id,
+            spot_name: spot.name,
+            lat: spot.lat,
+            lng: spot.lng,
+        });
         setSelectedSpot({
             ...spot,
             lat: spot.lat ?? 50.9375,
@@ -422,7 +620,9 @@ export default function Explore() {
         setShowPlaceForm(false);
 
         try {
-            const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&limit=1&lang=en`);
+            const res = await fetch(
+                `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&limit=1&lang=en`,
+            );
             if (res.ok) {
                 const data = await res.json();
                 const feature = data?.features?.[0];
@@ -432,7 +632,11 @@ export default function Explore() {
                 if (props) {
                     const parts: string[] = [];
                     if (props.street) {
-                        parts.push(props.housenumber ? `${props.street} ${props.housenumber}` : props.street);
+                        parts.push(
+                            props.housenumber
+                                ? `${props.street} ${props.housenumber}`
+                                : props.street,
+                        );
                     } else if (props.name) {
                         parts.push(props.name);
                     }
@@ -446,10 +650,18 @@ export default function Explore() {
 
                 setTapPoint({ lat, lng, address });
             } else {
-                setTapPoint({ lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
+                setTapPoint({
+                    lat,
+                    lng,
+                    address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                });
             }
         } catch {
-            setTapPoint({ lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
+            setTapPoint({
+                lat,
+                lng,
+                address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+            });
         }
     }, []);
 
@@ -464,24 +676,28 @@ export default function Explore() {
         if (!tapPoint || savingPlace) return;
         setSavingPlace(true);
 
-        router.post('/user-places', {
-            emoji: placeEmoji,
-            name: placeName || tapPoint.address,
-            address: tapPoint.address,
-            lat: tapPoint.lat,
-            lng: tapPoint.lng,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                setTapPoint(null);
-                setShowPlaceForm(false);
-                setSavingPlace(false);
+        router.post(
+            '/user-places',
+            {
+                emoji: placeEmoji,
+                name: placeName || tapPoint.address,
+                address: tapPoint.address,
+                lat: tapPoint.lat,
+                lng: tapPoint.lng,
             },
-            onError: () => {
-                setSavingPlace(false);
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setTapPoint(null);
+                    setShowPlaceForm(false);
+                    setSavingPlace(false);
+                },
+                onError: () => {
+                    setSavingPlace(false);
+                },
             },
-        });
+        );
     }
 
     return (
@@ -489,17 +705,13 @@ export default function Explore() {
             <Head title="Explore" />
 
             <div className="relative flex h-svh overflow-hidden md:h-[calc(100vh-52px)]">
-
                 {/* ═══ LEFT LIST PANEL ═══
                     Desktop (lg+): 420px, always visible, border-right
                     Tablet (md–lg): absolute overlay, slides from left
                     Mobile (<md): hidden — uses bottom sheet instead */}
-                <div className={`
-                    flex w-[420px] shrink-0 flex-col overflow-hidden border-r border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]
-                    max-md:hidden
-                    max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-[80] max-lg:shadow-[4px_0_32px_rgba(0,0,0,0.1)] max-lg:transition-transform max-lg:duration-300
-                    ${listOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'}
-                `}>
+                <div
+                    className={`flex w-[420px] shrink-0 flex-col overflow-hidden border-r border-[#E2DFD6] bg-white max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-[80] max-lg:shadow-[4px_0_32px_rgba(0,0,0,0.1)] max-lg:transition-transform max-lg:duration-300 max-md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15] ${listOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'} `}
+                >
                     {routeDest ? (
                         <>
                             {/* ── Directions mode header ── */}
@@ -508,10 +720,17 @@ export default function Explore() {
                                     onClick={closeRoute}
                                     className="mb-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
                                 >
-                                    ← {selectedSpot ? `Back to ${selectedSpot.name}` : 'Back to spots'}
+                                    ←{' '}
+                                    {selectedSpot
+                                        ? `Back to ${selectedSpot.name}`
+                                        : 'Back to spots'}
                                 </button>
-                                <div className="font-display text-xl font-medium tracking-tight">Directions</div>
-                                <div className="mt-1 text-sm text-[#6B6860] dark:text-[#AAA89F]">To {routeDest.name}</div>
+                                <div className="font-display text-xl font-medium tracking-tight">
+                                    Directions
+                                </div>
+                                <div className="mt-1 text-sm text-[#6B6860] dark:text-[#AAA89F]">
+                                    To {routeDest.name}
+                                </div>
                             </div>
 
                             {/* ── Mode picker inside panel ── */}
@@ -519,13 +738,22 @@ export default function Explore() {
                                 <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
                                     <div className="flex gap-2">
                                         {routeOptions.map((opt) => {
-                                            const isActive = routeMode === opt.mode;
+                                            const isActive =
+                                                routeMode === opt.mode;
                                             return (
                                                 <button
                                                     key={opt.mode}
                                                     onClick={() => {
-                                                        const from = { lat: myLat, lng: myLng };
-                                                        selectRouteMode(opt.mode, opt.geometry, from, routeDest);
+                                                        const from = {
+                                                            lat: myLat,
+                                                            lng: myLng,
+                                                        };
+                                                        selectRouteMode(
+                                                            opt.mode,
+                                                            opt.geometry,
+                                                            from,
+                                                            routeDest,
+                                                        );
                                                     }}
                                                     className={`relative flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-[10px] px-[2px] py-2 transition-all ${
                                                         isActive
@@ -533,141 +761,292 @@ export default function Explore() {
                                                             : 'border-2 border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'
                                                     }`}
                                                 >
-                                                    {opt.best && <span className="absolute -top-[5px] -right-[3px] rounded-full bg-[#FEF9EC] px-1 py-[1px] text-[7px] font-bold uppercase text-[#C47D0E]">Best</span>}
-                                                    {opt.disrupted && <span className="absolute -top-[5px] -right-[3px] text-[9px]">⚠️</span>}
-                                                    <span className="text-[16px]">{opt.emoji}</span>
-                                                    <span className={`font-mono text-[14px] font-semibold leading-none ${isActive ? 'text-[#1A4CD4]' : 'text-[#18170F] dark:text-[#F5F4F0]'}`}>
-                                                        {opt.time}<span className="text-[8px] text-[#AAA89F]">m</span>
+                                                    {opt.best && (
+                                                        <span className="absolute -top-[5px] -right-[3px] rounded-full bg-[#FEF9EC] px-1 py-[1px] text-[7px] font-bold text-[#C47D0E] uppercase">
+                                                            Best
+                                                        </span>
+                                                    )}
+                                                    {opt.disrupted && (
+                                                        <span className="absolute -top-[5px] -right-[3px] text-[9px]">
+                                                            ⚠️
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[16px]">
+                                                        {opt.emoji}
+                                                    </span>
+                                                    <span
+                                                        className={`font-mono text-[14px] leading-none font-semibold ${isActive ? 'text-[#1A4CD4]' : 'text-[#18170F] dark:text-[#F5F4F0]'}`}
+                                                    >
+                                                        {opt.time}
+                                                        <span className="text-[8px] text-[#AAA89F]">
+                                                            m
+                                                        </span>
                                                     </span>
                                                 </button>
                                             );
                                         })}
                                     </div>
-                                    {routeOptions.find((o) => o.best)?.recommendation_reason && (
+                                    {routeOptions.find((o) => o.best)
+                                        ?.recommendation_reason && (
                                         <div className="mt-2 text-center text-[11px] text-[#0A7C52]">
-                                            {routeOptions.find((o) => o.best)?.recommendation_reason}
+                                            {
+                                                routeOptions.find((o) => o.best)
+                                                    ?.recommendation_reason
+                                            }
                                         </div>
                                     )}
                                 </div>
                             )}
 
-
                             {/* ── Steps / Transit trip list ── */}
-                            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                                {routeLoading && <div className="py-12 text-center text-sm text-[#AAA89F]">Loading routes...</div>}
+                            <div
+                                className="flex-1 overflow-y-auto"
+                                style={{ scrollbarWidth: 'thin' }}
+                            >
+                                {routeLoading && (
+                                    <div className="py-12 text-center text-sm text-[#AAA89F]">
+                                        Loading routes...
+                                    </div>
+                                )}
 
                                 {/* Transit mode: trip list (Google Maps style) */}
-                                {routeMode === 'transit' && !routeLoading && transitTrips.length > 0 && selectedTripIdx === null && (
-                                    <div>
-                                        {transitTrips.map((trip, i) => (
-                                            <div
-                                                key={i}
-                                                onClick={() => selectTransitTrip(i)}
-                                                className="cursor-pointer border-b border-[#E2DFD6] px-5 py-4 transition-colors hover:bg-[#F5F4F0] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                                            >
-                                                <div className="flex items-start justify-between">
-                                                    <div>
-                                                        <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
-                                                            {trip.departure_time} — {trip.arrival_time}
-                                                        </div>
-                                                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                                                            {trip.legs.map((leg, j) => (
-                                                                <span key={j} className="flex items-center gap-1">
-                                                                    {j > 0 && <span className="text-[10px] text-[#AAA89F]">›</span>}
-                                                                    {leg.type === 'walk' ? (
-                                                                        <span className="text-[13px]">🚶</span>
-                                                                    ) : (
-                                                                        <span className="inline-flex items-center gap-0.5 rounded bg-[#1A4CD4] px-1.5 py-[1px] font-mono text-[11px] font-bold text-white">
-                                                                            {leg.mode === 'rail' ? '🚂' : '🚋'} {leg.line}
+                                {routeMode === 'transit' &&
+                                    !routeLoading &&
+                                    transitTrips.length > 0 &&
+                                    selectedTripIdx === null && (
+                                        <div>
+                                            {transitTrips.map((trip, i) => (
+                                                <div
+                                                    key={i}
+                                                    onClick={() =>
+                                                        selectTransitTrip(i)
+                                                    }
+                                                    className="cursor-pointer border-b border-[#E2DFD6] px-5 py-4 transition-colors hover:bg-[#F5F4F0] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                                                >
+                                                    <div className="flex items-start justify-between">
+                                                        <div>
+                                                            <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                                {
+                                                                    trip.departure_time
+                                                                }{' '}
+                                                                —{' '}
+                                                                {
+                                                                    trip.arrival_time
+                                                                }
+                                                            </div>
+                                                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                                                                {trip.legs.map(
+                                                                    (
+                                                                        leg,
+                                                                        j,
+                                                                    ) => (
+                                                                        <span
+                                                                            key={
+                                                                                j
+                                                                            }
+                                                                            className="flex items-center gap-1"
+                                                                        >
+                                                                            {j >
+                                                                                0 && (
+                                                                                <span className="text-[10px] text-[#AAA89F]">
+                                                                                    ›
+                                                                                </span>
+                                                                            )}
+                                                                            {leg.type ===
+                                                                            'walk' ? (
+                                                                                <span className="text-[13px]">
+                                                                                    🚶
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="inline-flex items-center gap-0.5 rounded bg-[#1A4CD4] px-1.5 py-[1px] font-mono text-[11px] font-bold text-white">
+                                                                                    {leg.mode ===
+                                                                                    'rail'
+                                                                                        ? '🚂'
+                                                                                        : '🚋'}{' '}
+                                                                                    {
+                                                                                        leg.line
+                                                                                    }
+                                                                                </span>
+                                                                            )}
                                                                         </span>
-                                                                    )}
-                                                                </span>
-                                                            ))}
+                                                                    ),
+                                                                )}
+                                                            </div>
+                                                            <div className="mt-1 text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                                                {trip.first_line_departure && (
+                                                                    <>
+                                                                        <span className="font-semibold text-[#0A7C52]">
+                                                                            {
+                                                                                trip.first_line_departure
+                                                                            }
+                                                                        </span>{' '}
+                                                                        from{' '}
+                                                                        {
+                                                                            trip.boarding_stop
+                                                                        }
+                                                                    </>
+                                                                )}
+                                                                {trip.walk_min >
+                                                                    0 && (
+                                                                    <>
+                                                                        {' '}
+                                                                        · 🚶{' '}
+                                                                        {
+                                                                            trip.walk_min
+                                                                        }{' '}
+                                                                        min
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-1 text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
-                                                            {trip.first_line_departure && <><span className="font-semibold text-[#0A7C52]">{trip.first_line_departure}</span> from {trip.boarding_stop}</>}
-                                                            {trip.walk_min > 0 && <> · 🚶 {trip.walk_min} min</>}
+                                                        <div className="shrink-0 text-right">
+                                                            <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                                {
+                                                                    trip.total_duration_min
+                                                                }{' '}
+                                                                min
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="shrink-0 text-right">
-                                                        <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{trip.total_duration_min} min</div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    )}
 
                                 {/* Transit mode: selected trip detail (timeline view) */}
-                                {routeMode === 'transit' && selectedTripIdx !== null && routeDetail && (
-                                    <div className="px-4 py-3">
-                                        <button
-                                            onClick={backToTripList}
-                                            className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:text-[#1541B8]"
-                                        >
-                                            ← Back to options
-                                        </button>
+                                {routeMode === 'transit' &&
+                                    selectedTripIdx !== null &&
+                                    routeDetail && (
+                                        <div className="px-4 py-3">
+                                            <button
+                                                onClick={backToTripList}
+                                                className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:text-[#1541B8]"
+                                            >
+                                                ← Back to options
+                                            </button>
 
-                                        {/* Summary */}
-                                        <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[20px]">🚋</span>
-                                                <span className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">Transit</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-mono text-[16px] font-semibold text-[#1A4CD4]">
-                                                    {routeDetail.departure_time} → {routeDetail.arrival_time}
-                                                </span>
-                                                <span className="text-[11px] text-[#AAA89F]">{routeDetail.duration_min} min</span>
-                                                {(routeDetail.transfers ?? 0) > 0 && (
-                                                    <span className="rounded-full bg-[#EFEDE7] px-[7px] py-[2px] text-[10px] font-bold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
-                                                        {routeDetail.transfers} transfer{routeDetail.transfers !== 1 ? 's' : ''}
+                                            {/* Summary */}
+                                            <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[20px]">
+                                                        🚋
                                                     </span>
-                                                )}
+                                                    <span className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                        Transit
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-[16px] font-semibold text-[#1A4CD4]">
+                                                        {
+                                                            routeDetail.departure_time
+                                                        }{' '}
+                                                        →{' '}
+                                                        {
+                                                            routeDetail.arrival_time
+                                                        }
+                                                    </span>
+                                                    <span className="text-[11px] text-[#AAA89F]">
+                                                        {
+                                                            routeDetail.duration_min
+                                                        }{' '}
+                                                        min
+                                                    </span>
+                                                    {(routeDetail.transfers ??
+                                                        0) > 0 && (
+                                                        <span className="rounded-full bg-[#EFEDE7] px-[7px] py-[2px] text-[10px] font-bold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                                                            {
+                                                                routeDetail.transfers
+                                                            }{' '}
+                                                            transfer
+                                                            {routeDetail.transfers !==
+                                                            1
+                                                                ? 's'
+                                                                : ''}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        {/* Timeline */}
-                                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white px-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                            <JourneyTimeline segments={routeDetail.segments ?? []} departureTime={routeDetail.departure_time} />
-                                        </div>
-
-                                        {/* Maps buttons */}
-                                        {routeMapsUrl && (
-                                            <div className="mt-3 flex gap-2">
-                                                <a href={routeMapsUrl.google} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-[#1541B8]">
-                                                    Google Maps
-                                                </a>
-                                                <a href={routeMapsUrl.apple} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] no-underline transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]">
-                                                    Apple Maps
-                                                </a>
+                                            {/* Timeline */}
+                                            <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white px-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                <JourneyTimeline
+                                                    segments={
+                                                        routeDetail.segments ??
+                                                        []
+                                                    }
+                                                    departureTime={
+                                                        routeDetail.departure_time
+                                                    }
+                                                />
                                             </div>
-                                        )}
-                                    </div>
-                                )}
+
+                                            {/* Maps buttons */}
+                                            {routeMapsUrl && (
+                                                <div className="mt-3 flex gap-2">
+                                                    <a
+                                                        href={
+                                                            routeMapsUrl.google
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-[#1541B8]"
+                                                    >
+                                                        Google Maps
+                                                    </a>
+                                                    <a
+                                                        href={
+                                                            routeMapsUrl.apple
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] no-underline transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
+                                                    >
+                                                        Apple Maps
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                 {/* Non-transit modes: route steps */}
-                                {routeMode !== 'transit' && routeDetail && routeDetail.steps.length > 0 && (
-                                    <div className="px-4 py-3">
-                                        <RouteStepsPanel
-                                            mode={routeDetail.mode}
-                                            durationMin={routeDetail.duration_min}
-                                            distanceKm={routeDetail.distance_km}
-                                            steps={routeDetail.steps}
-                                            mapsUrl={routeMapsUrl ?? undefined}
-                                        />
-                                    </div>
-                                )}
+                                {routeMode !== 'transit' &&
+                                    routeDetail &&
+                                    routeDetail.steps.length > 0 && (
+                                        <div className="px-4 py-3">
+                                            <RouteStepsPanel
+                                                mode={routeDetail.mode}
+                                                durationMin={
+                                                    routeDetail.duration_min
+                                                }
+                                                distanceKm={
+                                                    routeDetail.distance_km
+                                                }
+                                                steps={routeDetail.steps}
+                                                mapsUrl={
+                                                    routeMapsUrl ?? undefined
+                                                }
+                                            />
+                                        </div>
+                                    )}
 
                                 {/* No mode selected yet */}
-                                {!routeLoading && !routeMode && routeOptions.length > 0 && (
-                                    <div className="py-8 text-center text-sm text-[#AAA89F]">Select a mode above to see directions</div>
-                                )}
+                                {!routeLoading &&
+                                    !routeMode &&
+                                    routeOptions.length > 0 && (
+                                        <div className="py-8 text-center text-sm text-[#AAA89F]">
+                                            Select a mode above to see
+                                            directions
+                                        </div>
+                                    )}
 
                                 {/* Transit: no trips found */}
-                                {routeMode === 'transit' && !routeLoading && transitTrips.length === 0 && (
-                                    <div className="py-8 text-center text-sm text-[#AAA89F]">No transit routes found</div>
-                                )}
+                                {routeMode === 'transit' &&
+                                    !routeLoading &&
+                                    transitTrips.length === 0 && (
+                                        <div className="py-8 text-center text-sm text-[#AAA89F]">
+                                            No transit routes found
+                                        </div>
+                                    )}
                             </div>
                         </>
                     ) : selectedSpot && !routeDest ? (
@@ -681,11 +1060,25 @@ export default function Explore() {
                                     >
                                         ← Back to spots
                                     </button>
-                                    <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Work Spot</div>
+                                    <div className="text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
+                                        Work Spot
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                                <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} inline onDirections={(s) => s.lat && s.lng && startDirections(s.lat, s.lng, s.name)} />
+                            <div
+                                className="flex-1 overflow-y-auto"
+                                style={{ scrollbarWidth: 'thin' }}
+                            >
+                                <SpotDetailSheet
+                                    spot={selectedSpot}
+                                    onClose={() => setSelectedSpot(null)}
+                                    inline
+                                    onDirections={(s) =>
+                                        s.lat &&
+                                        s.lng &&
+                                        startDirections(s.lat, s.lng, s.name)
+                                    }
+                                />
                             </div>
                         </>
                     ) : (
@@ -693,43 +1086,78 @@ export default function Explore() {
                             {/* ── Normal spots mode ── */}
                             <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <span className="font-display text-xl font-medium tracking-tight">Explore Cologne</span>
-                                    <span className="font-mono text-xs text-[#AAA89F]">{filteredSpots.length} spots</span>
+                                    <span className="font-display text-xl font-medium tracking-tight">
+                                        Explore Cologne
+                                    </span>
+                                    <span className="font-mono text-xs text-[#AAA89F]">
+                                        {filteredSpots.length} spots
+                                    </span>
                                 </div>
-                                <SearchBar search={search} setSearch={setSearch} />
-                                <ExploreFilterBar active={category} onChange={filterByCategory} />
+                                <SearchBar
+                                    search={search}
+                                    setSearch={setSearch}
+                                />
+                                <ExploreFilterBar
+                                    active={category}
+                                    onChange={filterByCategory}
+                                />
                             </div>
 
-                            <div className="flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: 'thin' }}>
-                                {filteredSpots.length === 0 && geoSuggestions.length > 0 && (
-                                    <div className="mb-3">
-                                        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
-                                            Search nearby
-                                        </div>
-                                        {geoSuggestions.map((g, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                                onClick={() => {
-                                                    const label = [g.name, g.city].filter(Boolean).join(', ');
-                                                    setSearch(label);
-                                                    mapRef.current?.flyTo(g.lat, g.lng, 16);
-                                                    mapRef.current?.addSearchPin(g.lat, g.lng, g.name);
-                                                }}
-                                            >
-                                                <span className="shrink-0 text-base text-[#AAA89F]">📍</span>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{g.name}</div>
-                                                    <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
-                                                        {[g.street, g.city].filter(Boolean).join(', ')}
+                            <div
+                                className="flex-1 overflow-y-auto px-4 py-3"
+                                style={{ scrollbarWidth: 'thin' }}
+                            >
+                                {filteredSpots.length === 0 &&
+                                    geoSuggestions.length > 0 && (
+                                        <div className="mb-3">
+                                            <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
+                                                Search nearby
+                                            </div>
+                                            {geoSuggestions.map((g, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                    onClick={() => {
+                                                        const label = [
+                                                            g.name,
+                                                            g.city,
+                                                        ]
+                                                            .filter(Boolean)
+                                                            .join(', ');
+                                                        setSearch(label);
+                                                        mapRef.current?.flyTo(
+                                                            g.lat,
+                                                            g.lng,
+                                                            16,
+                                                        );
+                                                        mapRef.current?.addSearchPin(
+                                                            g.lat,
+                                                            g.lng,
+                                                            g.name,
+                                                        );
+                                                    }}
+                                                >
+                                                    <span className="shrink-0 text-base text-[#AAA89F]">
+                                                        📍
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
+                                                            {g.name}
+                                                        </div>
+                                                        <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                                            {[g.street, g.city]
+                                                                .filter(Boolean)
+                                                                .join(', ')}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    )}
                                 {filteredSpots.length === 0 ? (
-                                    <div className="py-12 text-center text-sm text-[#AAA89F]">No spots found.</div>
+                                    <div className="py-12 text-center text-sm text-[#AAA89F]">
+                                        No spots found.
+                                    </div>
                                 ) : (
                                     filteredSpots.map((s) => (
                                         <SpotCard
@@ -745,23 +1173,23 @@ export default function Explore() {
                     )}
                 </div>
 
-
                 {/* ═══ MAP PANEL ═══ flex:1, always visible */}
                 <div className="relative flex-1 overflow-hidden bg-[#E8E4DC]">
-
                     {/* Tablet: ☰ toggle button — md visible, lg hidden */}
                     <button
                         onClick={() => setListOpen(!listOpen)}
-                        className="absolute top-5 left-5 z-[60] hidden items-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-2.5 text-[13px] font-semibold shadow-md transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920] md:flex lg:hidden"
+                        className="absolute top-5 left-5 z-[60] hidden items-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-2.5 text-[13px] font-semibold shadow-md transition-all hover:bg-[#EFEDE7] md:flex lg:hidden dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920]"
                     >
                         <span>☰</span>
                         <span>{listOpen ? 'Hide list' : 'Show list'}</span>
                     </button>
 
                     {/* Mobile: floating search + filters over map */}
-                    <div className="absolute top-4 left-1/2 z-[85] w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97] md:hidden">
+                    <div className="absolute top-4 left-1/2 z-[85] w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97]">
                         <div className="flex items-center gap-2.5 border-b border-[#E2DFD6] px-3.5 py-[11px] dark:border-[#3A3930]">
-                            <span className="text-[15px] text-[#AAA89F]">🔍</span>
+                            <span className="text-[15px] text-[#AAA89F]">
+                                🔍
+                            </span>
                             <input
                                 type="text"
                                 placeholder="Search work spots…"
@@ -769,10 +1197,20 @@ export default function Explore() {
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F5F4F0]"
                             />
-                            {search && <button onClick={() => setSearch('')} className="text-[13px] text-[#AAA89F]">✕</button>}
+                            {search && (
+                                <button
+                                    onClick={() => setSearch('')}
+                                    className="text-[13px] text-[#AAA89F]"
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
                         <div className="px-3.5 py-2">
-                            <ExploreFilterBar active={category} onChange={filterByCategory} />
+                            <ExploreFilterBar
+                                active={category}
+                                onChange={filterByCategory}
+                            />
                         </div>
                         {/* Search results dropdown on mobile */}
                         {search && filteredSpots.length > 0 && (
@@ -780,48 +1218,85 @@ export default function Explore() {
                                 {filteredSpots.slice(0, 8).map((s) => (
                                     <div
                                         key={s.id}
-                                        onClick={() => { selectSpot(s); setSearch(''); if (s.lat && s.lng) mapRef.current?.flyTo(s.lat, s.lng, 15); }}
+                                        onClick={() => {
+                                            selectSpot(s);
+                                            setSearch('');
+                                            if (s.lat && s.lng)
+                                                mapRef.current?.flyTo(
+                                                    s.lat,
+                                                    s.lng,
+                                                    15,
+                                                );
+                                        }}
                                         className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                     >
-                                        <span className="text-lg">{s.category === 'cafe' ? '☕' : s.category === 'coworking' ? '🏢' : s.category === 'library' ? '📚' : '📍'}</span>
+                                        <span className="text-lg">
+                                            {s.category === 'cafe'
+                                                ? '☕'
+                                                : s.category === 'coworking'
+                                                  ? '🏢'
+                                                  : s.category === 'library'
+                                                    ? '📚'
+                                                    : '📍'}
+                                        </span>
                                         <div>
-                                            <div className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{s.name}</div>
-                                            <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{s.address}</div>
+                                            <div className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                {s.name}
+                                            </div>
+                                            <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                                {s.address}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         )}
                         {/* Geocode suggestions when no spot matches */}
-                        {search && filteredSpots.length === 0 && geoSuggestions.length > 0 && (
-                            <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6] dark:border-[#3A3930]">
-                                {geoSuggestions.map((g, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => {
-                                            mapRef.current?.flyTo(g.lat, g.lng, 15);
-                                            setSearch('');
-                                        }}
-                                        className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                                    >
-                                        <span className="text-lg">📍</span>
-                                        <div>
-                                            <div className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{g.name}</div>
-                                            <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{[g.street, g.city].filter(Boolean).join(', ')}</div>
+                        {search &&
+                            filteredSpots.length === 0 &&
+                            geoSuggestions.length > 0 && (
+                                <div className="max-h-[300px] overflow-y-auto border-t border-[#E2DFD6] dark:border-[#3A3930]">
+                                    {geoSuggestions.map((g, i) => (
+                                        <div
+                                            key={i}
+                                            onClick={() => {
+                                                mapRef.current?.flyTo(
+                                                    g.lat,
+                                                    g.lng,
+                                                    15,
+                                                );
+                                                setSearch('');
+                                            }}
+                                            className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                                        >
+                                            <span className="text-lg">📍</span>
+                                            <div>
+                                                <div className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                    {g.name}
+                                                </div>
+                                                <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                                    {[g.street, g.city]
+                                                        .filter(Boolean)
+                                                        .join(', ')}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
                     </div>
 
                     {/* MapLibre map */}
-                    <Suspense fallback={
-                        <div className="flex h-full flex-col items-center justify-center text-center">
-                            <span className="mb-3 text-5xl">🗺️</span>
-                            <div className="text-sm text-[#AAA89F]">Loading map…</div>
-                        </div>
-                    }>
+                    <Suspense
+                        fallback={
+                            <div className="flex h-full flex-col items-center justify-center text-center">
+                                <span className="mb-3 text-5xl">🗺️</span>
+                                <div className="text-sm text-[#AAA89F]">
+                                    Loading map…
+                                </div>
+                            </div>
+                        }
+                    >
                         {typeof window !== 'undefined' && (
                             <MapViewLazy
                                 ref={mapRef}
@@ -835,7 +1310,9 @@ export default function Explore() {
                                 personalPlaces={personalPlaces ?? []}
                                 selectedId={selectedSpot?.id ?? null}
                                 onSelectSpot={(id) => {
-                                    const spot = allSpots.find((s) => s.id === id);
+                                    const spot = allSpots.find(
+                                        (s) => s.id === id,
+                                    );
                                     if (spot) selectSpot(spot);
                                 }}
                                 onMapTap={handleMapTap}
@@ -854,10 +1331,19 @@ export default function Explore() {
                             <div className="flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97]">
                                 <span className="shrink-0 text-lg">📍</span>
                                 <div className="min-w-0 flex-1">
-                                    <div className="truncate text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">{tapPoint.address}</div>
+                                    <div className="truncate text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
+                                        {tapPoint.address}
+                                    </div>
                                 </div>
                                 <button
-                                    onClick={() => { startDirections(tapPoint.lat, tapPoint.lng, tapPoint.address); setTapPoint(null); }}
+                                    onClick={() => {
+                                        startDirections(
+                                            tapPoint.lat,
+                                            tapPoint.lng,
+                                            tapPoint.address,
+                                        );
+                                        setTapPoint(null);
+                                    }}
                                     className="shrink-0 rounded-[8px] bg-[#1A4CD4] px-3 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[#1541B8]"
                                 >
                                     Directions
@@ -883,9 +1369,14 @@ export default function Explore() {
                         <div className="absolute right-4 bottom-[200px] left-4 z-[90] mx-auto max-w-[400px] md:bottom-8">
                             <div className="rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97]">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">Save Place</span>
+                                    <span className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
+                                        Save Place
+                                    </span>
                                     <button
-                                        onClick={() => { setShowPlaceForm(false); setTapPoint(null); }}
+                                        onClick={() => {
+                                            setShowPlaceForm(false);
+                                            setTapPoint(null);
+                                        }}
                                         className="text-[13px] text-[#AAA89F] hover:text-[#6B6860] dark:hover:text-[#F5F4F0]"
                                     >
                                         ✕
@@ -894,12 +1385,16 @@ export default function Explore() {
 
                                 {/* Emoji picker */}
                                 <div className="mb-3">
-                                    <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Emoji</div>
+                                    <div className="mb-1.5 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
+                                        Emoji
+                                    </div>
                                     <div className="flex flex-wrap gap-1.5">
                                         {PLACE_EMOJIS.map((emoji) => (
                                             <button
                                                 key={emoji}
-                                                onClick={() => setPlaceEmoji(emoji)}
+                                                onClick={() =>
+                                                    setPlaceEmoji(emoji)
+                                                }
                                                 className={`flex h-8 w-8 items-center justify-center rounded-[8px] text-base transition-all ${
                                                     placeEmoji === emoji
                                                         ? 'bg-[#F5C518] shadow-[0_0_0_2px_#E6B800]'
@@ -914,13 +1409,17 @@ export default function Explore() {
 
                                 {/* Name field */}
                                 <div className="mb-3">
-                                    <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">Name</div>
+                                    <div className="mb-1.5 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
+                                        Name
+                                    </div>
                                     <input
                                         type="text"
                                         placeholder={tapPoint.address}
                                         value={placeName}
-                                        onChange={(e) => setPlaceName(e.target.value)}
-                                        className="w-full rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-2 text-sm text-[#18170F] outline-none transition-all placeholder:text-[#AAA89F] focus:border-[#1A4CD4] focus:bg-white focus:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F6F5F1]"
+                                        onChange={(e) =>
+                                            setPlaceName(e.target.value)
+                                        }
+                                        className="w-full rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-2 text-sm text-[#18170F] transition-all outline-none placeholder:text-[#AAA89F] focus:border-[#1A4CD4] focus:bg-white focus:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F6F5F1]"
                                     />
                                 </div>
 
@@ -949,7 +1448,12 @@ export default function Explore() {
                                 activeMode={routeMode}
                                 onSelectMode={(mode) => {
                                     const from = { lat: myLat, lng: myLng };
-                                    selectRouteMode(mode, undefined, from, routeDest);
+                                    selectRouteMode(
+                                        mode,
+                                        undefined,
+                                        from,
+                                        routeDest,
+                                    );
                                 }}
                                 onClose={closeRoute}
                                 loading={routeLoading}
@@ -959,21 +1463,38 @@ export default function Explore() {
                     )}
 
                     {/* ═══ MOBILE: Draggable bottom sheet list ═══ */}
-                    {!routeDest && <MobileListSheet spots={filteredSpots} selectedId={selectedSpot?.id ?? null} onSelect={selectSpot} />}
+                    {!routeDest && (
+                        <MobileListSheet
+                            spots={filteredSpots}
+                            selectedId={selectedSpot?.id ?? null}
+                            onSelect={selectSpot}
+                        />
+                    )}
                 </div>
-
             </div>
 
             {/* Spot detail bottom sheet — mobile only */}
             <div className="md:hidden">
-                <SpotDetailSheet spot={selectedSpot} onClose={() => setSelectedSpot(null)} onDirections={(s) => s.lat && s.lng && startDirections(s.lat, s.lng, s.name)} />
+                <SpotDetailSheet
+                    spot={selectedSpot}
+                    onClose={() => setSelectedSpot(null)}
+                    onDirections={(s) =>
+                        s.lat && s.lng && startDirections(s.lat, s.lng, s.name)
+                    }
+                />
             </div>
         </AppLayout>
     );
 }
 
 /* ═══ SEARCH BAR ═══ matching prototype: #EFEDE7 bg, #E2DFD6 border, focus: #1A4CD4 border + white bg + #EBF0FD ring */
-function SearchBar({ search, setSearch }: { search: string; setSearch: (v: string) => void }) {
+function SearchBar({
+    search,
+    setSearch,
+}: {
+    search: string;
+    setSearch: (v: string) => void;
+}) {
     return (
         <div className="mb-3 flex cursor-text items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
             <span className="text-[15px] text-[#AAA89F]">🔍</span>
@@ -984,7 +1505,14 @@ function SearchBar({ search, setSearch }: { search: string; setSearch: (v: strin
                 onChange={(e) => setSearch(e.target.value)}
                 className="flex-1 border-none bg-transparent font-sans text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F6F5F1]"
             />
-            {search && <button onClick={() => setSearch('')} className="text-[13px] text-[#AAA89F]">✕</button>}
+            {search && (
+                <button
+                    onClick={() => setSearch('')}
+                    className="text-[13px] text-[#AAA89F]"
+                >
+                    ✕
+                </button>
+            )}
         </div>
     );
 }
@@ -996,7 +1524,15 @@ function SearchBar({ search, setSearch }: { search: string; setSearch: (v: strin
    - Min 80px, max 92% of container
    - Non-passive touch/mouse on document level
    - cursor/userSelect toggling during drag */
-function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; selectedId: number | null; onSelect: (s: SpotData) => void }) {
+function MobileListSheet({
+    spots,
+    selectedId,
+    onSelect,
+}: {
+    spots: SpotData[];
+    selectedId: number | null;
+    onSelect: (s: SpotData) => void;
+}) {
     const sheetRef = useRef<HTMLDivElement>(null);
     const handleRef = useRef<HTMLDivElement>(null);
 
@@ -1005,7 +1541,7 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
         const sheet = sheetRef.current;
         if (!handle || !sheet) return;
 
-        const SNAP_POINTS = [0.18, 0.44, 0.80];
+        const SNAP_POINTS = [0.18, 0.44, 0.8];
         const MIN_H = 80;
         let dragging = false;
         let startY = 0;
@@ -1030,9 +1566,9 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
 
         function snapTo(h: number) {
             const containerH = getContainerH();
-            const snapPx = SNAP_POINTS.map(p => containerH * p);
+            const snapPx = SNAP_POINTS.map((p) => containerH * p);
             const nearest = snapPx.reduce((prev, curr) =>
-                Math.abs(curr - h) < Math.abs(prev - h) ? curr : prev
+                Math.abs(curr - h) < Math.abs(prev - h) ? curr : prev,
             );
             sheet.style.transition = 'height .3s cubic-bezier(.32,1,.4,1)';
             sheet.style.height = nearest + 'px';
@@ -1080,7 +1616,12 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
         };
     }, []);
 
-    const categoryEmoji: Record<string, string> = { cafe: '☕', coworking: '🏢', library: '📚', park: '🌳' };
+    const categoryEmoji: Record<string, string> = {
+        cafe: '☕',
+        coworking: '🏢',
+        library: '📚',
+        park: '🌳',
+    };
 
     return (
         <div
@@ -1100,7 +1641,9 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between px-4 pb-2.5">
                 <span className="text-sm font-semibold">Work Spots</span>
-                <span className="font-mono text-[11px] text-[#AAA89F]">{spots.length} nearby</span>
+                <span className="font-mono text-[11px] text-[#AAA89F]">
+                    {spots.length} nearby
+                </span>
             </div>
 
             {/* Scrollable compact cards */}
@@ -1110,19 +1653,57 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
                         key={s.id}
                         onClick={() => onSelect(s)}
                         className={`mb-[9px] flex cursor-pointer items-center gap-3 rounded-[14px] border bg-white p-[13px] transition-all dark:bg-[#1E1D15] ${
-                            selectedId === s.id ? 'border-[#1A4CD4]' : 'border-[#E2DFD6] hover:border-[#1A4CD4] dark:border-[#3A3930]'
+                            selectedId === s.id
+                                ? 'border-[#1A4CD4]'
+                                : 'border-[#E2DFD6] hover:border-[#1A4CD4] dark:border-[#3A3930]'
                         }`}
                     >
-                        <span className="shrink-0 text-2xl">{categoryEmoji[s.category] || '📍'}</span>
+                        <span className="shrink-0 text-2xl">
+                            {categoryEmoji[s.category] || '📍'}
+                        </span>
                         <div className="min-w-0 flex-1">
-                            <div className="mb-0.5 text-sm font-semibold">{s.name}</div>
-                            <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">{s.address?.split(',')[1]?.trim() || s.address}</div>
+                            <div className="mb-0.5 text-sm font-semibold">
+                                {s.name}
+                            </div>
+                            <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                {s.address?.split(',')[1]?.trim() || s.address}
+                            </div>
                             <div className="mt-1 flex gap-1">
-                                {s.wifi_speed && (() => { const t = getTag('wifi'); return t ? <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}><t.icon size={10} stroke={1.5} /> WiFi</span> : null; })()}
-                                {s.noise_level === 'quiet' && (() => { const t = getTag('quiet'); return t ? <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}><t.icon size={10} stroke={1.5} /> Quiet</span> : null; })()}
+                                {s.wifi_speed &&
+                                    (() => {
+                                        const t = getTag('wifi');
+                                        return t ? (
+                                            <span
+                                                className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}
+                                            >
+                                                <t.icon
+                                                    size={10}
+                                                    stroke={1.5}
+                                                />{' '}
+                                                WiFi
+                                            </span>
+                                        ) : null;
+                                    })()}
+                                {s.noise_level === 'quiet' &&
+                                    (() => {
+                                        const t = getTag('quiet');
+                                        return t ? (
+                                            <span
+                                                className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}
+                                            >
+                                                <t.icon
+                                                    size={10}
+                                                    stroke={1.5}
+                                                />{' '}
+                                                Quiet
+                                            </span>
+                                        ) : null;
+                                    })()}
                             </div>
                         </div>
-                        <span className="shrink-0 font-mono text-xs text-[#AAA89F]">0.3 km</span>
+                        <span className="shrink-0 font-mono text-xs text-[#AAA89F]">
+                            0.3 km
+                        </span>
                     </div>
                 ))}
             </div>

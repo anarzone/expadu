@@ -7,7 +7,10 @@ type GeoPosition = {
     timestamp: number;
 };
 
-const CSRF = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+const CSRF = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') || '';
 
 /** Send a location ping to the server (fire-and-forget) */
 function sendPing(lat: number, lng: number, accuracy: number) {
@@ -15,7 +18,10 @@ function sendPing(lat: number, lng: number, accuracy: number) {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF() },
-        body: JSON.stringify({ event_type: 'location_ping', payload: { lat, lng, accuracy } }),
+        body: JSON.stringify({
+            event_type: 'location_ping',
+            payload: { lat, lng, accuracy },
+        }),
     }).catch(() => {});
 }
 
@@ -31,7 +37,11 @@ function sendPing(lat: number, lng: number, accuracy: number) {
 export function useGeolocation(pingIntervalMs = 300_000) {
     const [position, setPosition] = useState<GeoPosition | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const lastPingRef = useRef<{ lat: number; lng: number; time: number }>({ lat: 0, lng: 0, time: 0 });
+    const lastPingRef = useRef<{ lat: number; lng: number; time: number }>({
+        lat: 0,
+        lng: 0,
+        time: 0,
+    });
     const watchIdRef = useRef<number | null>(null);
 
     function handlePosition(pos: GeolocationPosition) {
@@ -48,7 +58,12 @@ export function useGeolocation(pingIntervalMs = 300_000) {
         const last = lastPingRef.current;
         const dist = Math.sqrt(
             Math.pow((p.lat - last.lat) * 111320, 2) +
-            Math.pow((p.lng - last.lng) * 111320 * Math.cos(p.lat * Math.PI / 180), 2),
+                Math.pow(
+                    (p.lng - last.lng) *
+                        111320 *
+                        Math.cos((p.lat * Math.PI) / 180),
+                    2,
+                ),
         );
         const elapsed = Date.now() - last.time;
 
@@ -86,7 +101,11 @@ export function useGeolocation(pingIntervalMs = 300_000) {
                     // Fall back to polling if watch fails
                     fetchOnce();
                 },
-                { enableHighAccuracy: false, timeout: 15_000, maximumAge: 60_000 },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 15_000,
+                    maximumAge: 60_000,
+                },
             );
         } catch {
             // watchPosition not supported — fall back to polling
@@ -106,7 +125,10 @@ export function useGeolocation(pingIntervalMs = 300_000) {
 
         return () => {
             clearInterval(timer);
-            document.removeEventListener('visibilitychange', onVisibilityChange);
+            document.removeEventListener(
+                'visibilitychange',
+                onVisibilityChange,
+            );
             if (watchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(watchIdRef.current);
             }

@@ -45,14 +45,16 @@ export function LanguagesStep({
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
-                <h2 className="mb-2 font-display text-[26px] font-medium">Your languages</h2>
+                <h2 className="mb-2 font-display text-[26px] font-medium">
+                    Your languages
+                </h2>
                 <p className="text-sm text-muted-foreground">
                     We'll match you with the best language exchange partners.
                 </p>
             </div>
 
             <div className="mb-5">
-                <div className="mb-2.5 text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground">
+                <div className="mb-2.5 text-xs font-bold tracking-[0.07em] text-muted-foreground uppercase">
                     Your German level
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -74,7 +76,7 @@ export function LanguagesStep({
             </div>
 
             <div>
-                <div className="mb-2.5 text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground">
+                <div className="mb-2.5 text-xs font-bold tracking-[0.07em] text-muted-foreground uppercase">
                     Languages you speak (for exchange)
                 </div>
                 <div className="flex flex-wrap gap-2">

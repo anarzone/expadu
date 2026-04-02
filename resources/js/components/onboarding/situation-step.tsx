@@ -1,11 +1,46 @@
 const situations = [
-    { value: 'non_eu_employee', emoji: '💼', title: 'Non-EU employee', subtitle: 'Work visa · Blue Card · Work permit' },
-    { value: 'eu_employee', emoji: '🇪🇺', title: 'EU employee', subtitle: 'Freedom of movement · Registration only' },
-    { value: 'student', emoji: '🎓', title: 'Student', subtitle: 'Student visa · Blocked account · Health insurance' },
-    { value: 'freelancer', emoji: '🖥️', title: 'Freelancer', subtitle: 'Freiberufler · Tax registration · Clients' },
-    { value: 'family_reunification', emoji: '👨‍👩‍👧', title: 'Family reunification', subtitle: 'Spouse/partner · Dependent visa' },
-    { value: 'digital_nomad', emoji: '🌍', title: 'Digital nomad', subtitle: 'Remote work · Temporary stay' },
-    { value: 'other', emoji: '✈️', title: 'Something else', subtitle: 'Retirement · Long-stay · Other purpose' },
+    {
+        value: 'non_eu_employee',
+        emoji: '💼',
+        title: 'Non-EU employee',
+        subtitle: 'Work visa · Blue Card · Work permit',
+    },
+    {
+        value: 'eu_employee',
+        emoji: '🇪🇺',
+        title: 'EU employee',
+        subtitle: 'Freedom of movement · Registration only',
+    },
+    {
+        value: 'student',
+        emoji: '🎓',
+        title: 'Student',
+        subtitle: 'Student visa · Blocked account · Health insurance',
+    },
+    {
+        value: 'freelancer',
+        emoji: '🖥️',
+        title: 'Freelancer',
+        subtitle: 'Freiberufler · Tax registration · Clients',
+    },
+    {
+        value: 'family_reunification',
+        emoji: '👨‍👩‍👧',
+        title: 'Family reunification',
+        subtitle: 'Spouse/partner · Dependent visa',
+    },
+    {
+        value: 'digital_nomad',
+        emoji: '🌍',
+        title: 'Digital nomad',
+        subtitle: 'Remote work · Temporary stay',
+    },
+    {
+        value: 'other',
+        emoji: '✈️',
+        title: 'Something else',
+        subtitle: 'Retirement · Long-stay · Other purpose',
+    },
 ];
 
 export function SituationStep({
@@ -18,7 +53,9 @@ export function SituationStep({
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
-                <h2 className="mb-2 font-display text-[26px] font-medium">What's your situation?</h2>
+                <h2 className="mb-2 font-display text-[26px] font-medium">
+                    What's your situation?
+                </h2>
                 <p className="text-sm text-muted-foreground">
                     This shapes your personalised checklist and visa guidance.
                 </p>
@@ -38,8 +75,12 @@ export function SituationStep({
                     >
                         <span className="text-[22px]">{s.emoji}</span>
                         <div className="flex-1">
-                            <div className="text-sm font-semibold">{s.title}</div>
-                            <div className="mt-0.5 text-xs text-muted-foreground">{s.subtitle}</div>
+                            <div className="text-sm font-semibold">
+                                {s.title}
+                            </div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">
+                                {s.subtitle}
+                            </div>
                         </div>
                         <span
                             className={`text-base font-bold text-primary transition-opacity ${

@@ -2,7 +2,9 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
 
 const RoutePreviewMapLazy = lazy(() =>
-    import('@/components/transit/route-preview-map').then((m) => ({ default: m.RoutePreviewMap })),
+    import('@/components/transit/route-preview-map').then((m) => ({
+        default: m.RoutePreviewMap,
+    })),
 );
 
 type RouteOption = {
@@ -34,7 +36,13 @@ type FullRoute = {
     duration_min: number;
     distance_km: number;
     geometry: string;
-    steps: Array<{ instruction: string; distance_km: number; time_sec: number; type: string; emoji: string }>;
+    steps: Array<{
+        instruction: string;
+        distance_km: number;
+        time_sec: number;
+        type: string;
+        emoji: string;
+    }>;
 };
 
 const VALHALLA_COSTING: Record<string, string> = {
@@ -47,7 +55,13 @@ export function RouteSheet({
     destination,
     onClose,
 }: {
-    destination: { name: string; emoji: string; lat: number; lng: number; address?: string };
+    destination: {
+        name: string;
+        emoji: string;
+        lat: number;
+        lng: number;
+        address?: string;
+    };
     onClose: () => void;
 }) {
     const [data, setData] = useState<RouteData | null>(null);
@@ -63,9 +77,12 @@ export function RouteSheet({
         setData(null);
         setError(null);
         setSelectedRoute(null);
-        fetch(`/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}&address=${encodeURIComponent(destination.address ?? '')}`, {
-            credentials: 'same-origin',
-        })
+        fetch(
+            `/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}&address=${encodeURIComponent(destination.address ?? '')}`,
+            {
+                credentials: 'same-origin',
+            },
+        )
             .then((res) => res.json())
             .then((json) => {
                 setData(json);
@@ -86,9 +103,12 @@ export function RouteSheet({
         if (!costing) return;
 
         setLoadingRoute(true);
-        fetch(`/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}&mode=${costing}`, {
-            credentials: 'same-origin',
-        })
+        fetch(
+            `/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}&mode=${costing}`,
+            {
+                credentials: 'same-origin',
+            },
+        )
             .then((r) => r.json())
             .then((json: FullRoute) => {
                 if (json.geometry) {
@@ -111,7 +131,10 @@ export function RouteSheet({
                 </div>
                 <div className="flex flex-col gap-2">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-[72px] rounded-[14px] bg-[#EFEDE7]" />
+                        <div
+                            key={i}
+                            className="h-[72px] rounded-[14px] bg-[#EFEDE7]"
+                        />
                     ))}
                 </div>
                 <div className="mt-4 flex gap-2">
@@ -123,7 +146,11 @@ export function RouteSheet({
     }
 
     if (error) {
-        return <div className="rounded-[9px] bg-[#FDE8E6] p-4 text-center text-sm text-[#C4271A]">{error}</div>;
+        return (
+            <div className="rounded-[9px] bg-[#FDE8E6] p-4 text-center text-sm text-[#C4271A]">
+                {error}
+            </div>
+        );
     }
 
     // Full route detail view (after clicking an option)
@@ -133,18 +160,41 @@ export function RouteSheet({
                 <button
                     onClick={() => setSelectedRoute(null)}
                     className="mb-3 flex cursor-pointer items-center gap-1 border-none bg-transparent transition-colors hover:text-[#1A4CD4]"
-                    style={{ fontSize: 13, fontWeight: 600, color: '#6B6860', padding: 0 }}
+                    style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#6B6860',
+                        padding: 0,
+                    }}
                 >
                     ← Back to options
                 </button>
 
                 {/* Route map */}
                 <div className="mb-3">
-                    <Suspense fallback={<div className="h-[220px] animate-pulse rounded-[14px] bg-[#EFEDE7]" />}>
+                    <Suspense
+                        fallback={
+                            <div className="h-[220px] animate-pulse rounded-[14px] bg-[#EFEDE7]" />
+                        }
+                    >
                         <RoutePreviewMapLazy
-                            origin={{ lat: selectedRoute.from.lat, lng: selectedRoute.from.lng }}
-                            destination={{ lat: selectedRoute.to.lat, lng: selectedRoute.to.lng }}
-                            mode={selectedRoute.mode === 'bicycle' ? 'bike' : selectedRoute.mode === 'pedestrian' ? 'walk' : selectedRoute.mode === 'auto' ? 'drive' : 'walk'}
+                            origin={{
+                                lat: selectedRoute.from.lat,
+                                lng: selectedRoute.from.lng,
+                            }}
+                            destination={{
+                                lat: selectedRoute.to.lat,
+                                lng: selectedRoute.to.lng,
+                            }}
+                            mode={
+                                selectedRoute.mode === 'bicycle'
+                                    ? 'bike'
+                                    : selectedRoute.mode === 'pedestrian'
+                                      ? 'walk'
+                                      : selectedRoute.mode === 'auto'
+                                        ? 'drive'
+                                        : 'walk'
+                            }
                             geometry={selectedRoute.geometry}
                         />
                     </Suspense>
@@ -166,7 +216,9 @@ export function RouteSheet({
                         className="mt-2 w-full cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white py-2.5 text-center text-[13px] font-semibold transition-all hover:bg-[#EFEDE7]"
                         style={{ color: '#1A4CD4' }}
                     >
-                        {showSteps ? 'Hide directions' : `Show directions (${selectedRoute.steps.length} steps)`}
+                        {showSteps
+                            ? 'Hide directions'
+                            : `Show directions (${selectedRoute.steps.length} steps)`}
                     </button>
                 )}
             </div>
@@ -181,12 +233,30 @@ export function RouteSheet({
                     {destination.emoji}
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500 }}>{destination.name}</div>
-                    <div style={{ fontSize: 13, color: '#6B6860', marginTop: 2 }}>
+                    <div
+                        style={{
+                            fontFamily: "'Fraunces', serif",
+                            fontSize: 20,
+                            fontWeight: 500,
+                        }}
+                    >
+                        {destination.name}
+                    </div>
+                    <div
+                        style={{ fontSize: 13, color: '#6B6860', marginTop: 2 }}
+                    >
                         {destination.address ?? data?.to?.address ?? ''}
                         {data && ` · ${data.distance_km} km`}
                         {data?.routing_source === 'valhalla' && (
-                            <span style={{ fontSize: 10, color: '#0A7C52', marginLeft: 4 }}>real routes</span>
+                            <span
+                                style={{
+                                    fontSize: 10,
+                                    color: '#0A7C52',
+                                    marginLeft: 4,
+                                }}
+                            >
+                                real routes
+                            </span>
                         )}
                     </div>
                 </div>
@@ -202,34 +272,77 @@ export function RouteSheet({
                                 onClick={() => selectMode(opt)}
                                 className={`flex items-center gap-3 rounded-[14px] border bg-white p-3.5 transition-all hover:border-[rgba(26,76,212,.25)] hover:shadow-sm ${opt.mode !== 'transit' ? 'cursor-pointer' : ''}`}
                                 style={{
-                                    borderColor: opt.best ? 'rgba(26,76,212,.3)' : '#E2DFD6',
+                                    borderColor: opt.best
+                                        ? 'rgba(26,76,212,.3)'
+                                        : '#E2DFD6',
                                     background: opt.best ? '#FAFBFF' : 'white',
                                 }}
                             >
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg" style={{ background: '#EFEDE7' }}>
+                                <div
+                                    className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg"
+                                    style={{ background: '#EFEDE7' }}
+                                >
                                     {opt.emoji}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2" style={{ fontSize: 14, fontWeight: 600 }}>
-                                        {opt.mode === 'transit' && opt.line ? `Line ${opt.line}` : opt.mode === 'bike' ? 'Bike' : opt.mode === 'drive' ? 'Drive' : 'Walk'}
+                                    <div
+                                        className="flex items-center gap-2"
+                                        style={{
+                                            fontSize: 14,
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        {opt.mode === 'transit' && opt.line
+                                            ? `Line ${opt.line}`
+                                            : opt.mode === 'bike'
+                                              ? 'Bike'
+                                              : opt.mode === 'drive'
+                                                ? 'Drive'
+                                                : 'Walk'}
                                         {opt.best && (
-                                            <span className="rounded-full bg-[#FEF9EC] px-1.5 py-px text-[9px] font-bold uppercase text-[#C47D0E]">
+                                            <span className="rounded-full bg-[#FEF9EC] px-1.5 py-px text-[9px] font-bold text-[#C47D0E] uppercase">
                                                 Best
                                             </span>
                                         )}
                                         {opt.disrupted && (
-                                            <span className="rounded-full bg-[#FDE8E6] px-1.5 py-px text-[9px] font-bold uppercase text-[#C4271A]">
+                                            <span className="rounded-full bg-[#FDE8E6] px-1.5 py-px text-[9px] font-bold text-[#C4271A] uppercase">
                                                 Disrupted
                                             </span>
                                         )}
                                     </div>
-                                    <div style={{ fontSize: 12, color: '#6B6860', marginTop: 1 }}>{opt.detail}</div>
+                                    <div
+                                        style={{
+                                            fontSize: 12,
+                                            color: '#6B6860',
+                                            marginTop: 1,
+                                        }}
+                                    >
+                                        {opt.detail}
+                                    </div>
                                 </div>
                                 <div className="shrink-0 text-right">
-                                    <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: opt.best ? '#1A4CD4' : '#18170F' }}>
+                                    <div
+                                        style={{
+                                            fontFamily:
+                                                "'Geist Mono', monospace",
+                                            fontSize: 22,
+                                            fontWeight: 500,
+                                            lineHeight: 1,
+                                            color: opt.best
+                                                ? '#1A4CD4'
+                                                : '#18170F',
+                                        }}
+                                    >
                                         {opt.time}
                                     </div>
-                                    <div style={{ fontSize: 10, color: '#AAA89F' }}>min</div>
+                                    <div
+                                        style={{
+                                            fontSize: 10,
+                                            color: '#AAA89F',
+                                        }}
+                                    >
+                                        min
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -243,10 +356,22 @@ export function RouteSheet({
 
                     {/* Fallback maps buttons */}
                     <div className="flex gap-2">
-                        <a href={data.maps_url.google} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]" style={{ textDecoration: 'none' }}>
+                        <a
+                            href={data.maps_url.google}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
+                            style={{ textDecoration: 'none' }}
+                        >
                             Google Maps
                         </a>
-                        <a href={data.maps_url.apple} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]" style={{ textDecoration: 'none' }}>
+                        <a
+                            href={data.maps_url.apple}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
+                            style={{ textDecoration: 'none' }}
+                        >
                             Apple Maps
                         </a>
                     </div>

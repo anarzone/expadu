@@ -43,7 +43,14 @@ export function StepCard({
 
     useEffect(() => {
         if (expanded && ref.current) {
-            setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+            setTimeout(
+                () =>
+                    ref.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                    }),
+                50,
+            );
         }
     }, [expanded]);
 
@@ -69,14 +76,21 @@ export function StepCard({
             }}
             className="step-card-row"
             onMouseEnter={(e) => {
-                if (!step.upcoming) (e.currentTarget as HTMLDivElement).style.background = '#EFEDE7';
+                if (!step.upcoming)
+                    (e.currentTarget as HTMLDivElement).style.background =
+                        '#EFEDE7';
             }}
             onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                (e.currentTarget as HTMLDivElement).style.background =
+                    'transparent';
             }}
         >
             {/* Checkbox */}
-            <Checkbox state={cbClass} upcoming={step.upcoming} onClick={onCheckbox} />
+            <Checkbox
+                state={cbClass}
+                upcoming={step.upcoming}
+                onClick={onCheckbox}
+            />
 
             {/* Body */}
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -92,8 +106,24 @@ export function StepCard({
                 >
                     {step.title}
                 </div>
-                <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5, marginBottom: 6 }}>{step.desc}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div
+                    style={{
+                        fontSize: 13,
+                        color: '#6B6860',
+                        lineHeight: 1.5,
+                        marginBottom: 6,
+                    }}
+                >
+                    {step.desc}
+                </div>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                    }}
+                >
                     <span
                         style={{
                             fontSize: 10,
@@ -108,7 +138,15 @@ export function StepCard({
                     >
                         {step.tag.label}
                     </span>
-                    <span style={{ fontSize: 11, color: '#AAA89F', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span
+                        style={{
+                            fontSize: 11,
+                            color: '#AAA89F',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                        }}
+                    >
                         ⏱ {step.timing}
                     </span>
                     {step.link && !step.done && (
@@ -117,12 +155,22 @@ export function StepCard({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            style={{ fontSize: 12, color: '#1A4CD4', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}
+                            style={{
+                                fontSize: 12,
+                                color: '#1A4CD4',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                textDecoration: 'none',
+                            }}
                             onMouseEnter={(e) => {
-                                (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline';
+                                (
+                                    e.currentTarget as HTMLAnchorElement
+                                ).style.textDecoration = 'underline';
                             }}
                             onMouseLeave={(e) => {
-                                (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none';
+                                (
+                                    e.currentTarget as HTMLAnchorElement
+                                ).style.textDecoration = 'none';
                             }}
                         >
                             Book now ↗
@@ -132,13 +180,26 @@ export function StepCard({
 
                 {/* Expanded details */}
                 {expanded && !step.upcoming && (
-                    <ExpandedDetails step={step} onMarkDone={onMarkDone} onSkip={onSkip} />
+                    <ExpandedDetails
+                        step={step}
+                        onMarkDone={onMarkDone}
+                        onSkip={onSkip}
+                    />
                 )}
             </div>
 
             {/* Arrow or lock */}
             {step.upcoming ? (
-                <span style={{ fontSize: 14, color: '#AAA89F', flexShrink: 0, marginTop: 2 }}>🔒</span>
+                <span
+                    style={{
+                        fontSize: 14,
+                        color: '#AAA89F',
+                        flexShrink: 0,
+                        marginTop: 2,
+                    }}
+                >
+                    🔒
+                </span>
             ) : (
                 <span
                     style={{
@@ -157,7 +218,15 @@ export function StepCard({
     );
 }
 
-function Checkbox({ state, upcoming, onClick }: { state: string; upcoming: boolean; onClick: (e: MouseEvent) => void }) {
+function Checkbox({
+    state,
+    upcoming,
+    onClick,
+}: {
+    state: string;
+    upcoming: boolean;
+    onClick: (e: MouseEvent) => void;
+}) {
     const baseStyle: React.CSSProperties = {
         width: 22,
         height: 22,
@@ -187,21 +256,47 @@ function Checkbox({ state, upcoming, onClick }: { state: string; upcoming: boole
                 if (!upcoming) onClick(e);
             }}
             onMouseEnter={(e) => {
-                if (!upcoming && state !== 'done') (e.currentTarget as HTMLDivElement).style.borderColor = '#1A4CD4';
+                if (!upcoming && state !== 'done')
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                        '#1A4CD4';
             }}
             onMouseLeave={(e) => {
-                if (state === 'done') (e.currentTarget as HTMLDivElement).style.borderColor = '#0A7C52';
-                else if (state === 'skipped') (e.currentTarget as HTMLDivElement).style.borderColor = '#E2DFD6';
-                else (e.currentTarget as HTMLDivElement).style.borderColor = '#E2DFD6';
+                if (state === 'done')
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                        '#0A7C52';
+                else if (state === 'skipped')
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                        '#E2DFD6';
+                else
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                        '#E2DFD6';
             }}
         >
-            {state === 'done' && <span style={{ color: 'white', fontSize: 12, fontWeight: 700 }}>✓</span>}
-            {state === 'skipped' && <span style={{ color: '#AAA89F', fontSize: 11, fontWeight: 700 }}>—</span>}
+            {state === 'done' && (
+                <span style={{ color: 'white', fontSize: 12, fontWeight: 700 }}>
+                    ✓
+                </span>
+            )}
+            {state === 'skipped' && (
+                <span
+                    style={{ color: '#AAA89F', fontSize: 11, fontWeight: 700 }}
+                >
+                    —
+                </span>
+            )}
         </div>
     );
 }
 
-function ExpandedDetails({ step, onMarkDone, onSkip }: { step: StepData; onMarkDone: () => void; onSkip: () => void }) {
+function ExpandedDetails({
+    step,
+    onMarkDone,
+    onSkip,
+}: {
+    step: StepData;
+    onMarkDone: () => void;
+    onSkip: () => void;
+}) {
     return (
         <div
             style={{
@@ -224,9 +319,28 @@ function ExpandedDetails({ step, onMarkDone, onSkip }: { step: StepData; onMarkD
             >
                 How to do this
             </div>
-            <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 10, padding: 0 }}>
+            <ol
+                style={{
+                    listStyle: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 7,
+                    marginBottom: 10,
+                    padding: 0,
+                }}
+            >
                 {step.instructions.map((inst, i) => (
-                    <li key={i} style={{ fontSize: 13, color: '#6B6860', display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.5 }}>
+                    <li
+                        key={i}
+                        style={{
+                            fontSize: 13,
+                            color: '#6B6860',
+                            display: 'flex',
+                            gap: 8,
+                            alignItems: 'flex-start',
+                            lineHeight: 1.5,
+                        }}
+                    >
                         <span
                             style={{
                                 width: 18,
@@ -264,7 +378,14 @@ function ExpandedDetails({ step, onMarkDone, onSkip }: { step: StepData; onMarkD
                     >
                         Documents needed
                     </div>
-                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            gap: 5,
+                            flexWrap: 'wrap',
+                            marginBottom: 10,
+                        }}
+                    >
                         {step.docs.map((doc, i) => (
                             <span
                                 key={i}
@@ -299,13 +420,37 @@ function ExpandedDetails({ step, onMarkDone, onSkip }: { step: StepData; onMarkD
                 >
                     <span style={{ fontSize: 14, flexShrink: 0 }}>💬</span>
                     <div>
-                        <div style={{ fontSize: 12, color: '#6B6860', lineHeight: 1.5, flex: 1 }}>{step.tip.text}</div>
-                        <div style={{ fontSize: 10, color: '#AAA89F', marginTop: 3 }}>{step.tip.author} · Community tip</div>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                color: '#6B6860',
+                                lineHeight: 1.5,
+                                flex: 1,
+                            }}
+                        >
+                            {step.tip.text}
+                        </div>
+                        <div
+                            style={{
+                                fontSize: 10,
+                                color: '#AAA89F',
+                                marginTop: 3,
+                            }}
+                        >
+                            {step.tip.author} · Community tip
+                        </div>
                     </div>
                 </div>
             )}
 
-            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 10 }}>
+            <div
+                style={{
+                    display: 'flex',
+                    gap: 7,
+                    flexWrap: 'wrap',
+                    marginTop: 10,
+                }}
+            >
                 {step.actions.map((a, i) => (
                     <button
                         key={i}
@@ -326,10 +471,14 @@ function ExpandedDetails({ step, onMarkDone, onSkip }: { step: StepData; onMarkD
                             color: 'white',
                         }}
                         onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#1540B8';
+                            (
+                                e.currentTarget as HTMLButtonElement
+                            ).style.background = '#1540B8';
                         }}
                         onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.background = '#1A4CD4';
+                            (
+                                e.currentTarget as HTMLButtonElement
+                            ).style.background = '#1A4CD4';
                         }}
                     >
                         {a.label} ↗
@@ -355,10 +504,14 @@ function ExpandedDetails({ step, onMarkDone, onSkip }: { step: StepData; onMarkD
                                 color: '#6B6860',
                             }}
                             onMouseEnter={(e) => {
-                                (e.currentTarget as HTMLButtonElement).style.background = '#EFEDE7';
+                                (
+                                    e.currentTarget as HTMLButtonElement
+                                ).style.background = '#EFEDE7';
                             }}
                             onMouseLeave={(e) => {
-                                (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF';
+                                (
+                                    e.currentTarget as HTMLButtonElement
+                                ).style.background = '#FFFFFF';
                             }}
                         >
                             Mark done ✓
@@ -381,10 +534,14 @@ function ExpandedDetails({ step, onMarkDone, onSkip }: { step: StepData; onMarkD
                                 color: '#6B6860',
                             }}
                             onMouseEnter={(e) => {
-                                (e.currentTarget as HTMLButtonElement).style.background = '#EFEDE7';
+                                (
+                                    e.currentTarget as HTMLButtonElement
+                                ).style.background = '#EFEDE7';
                             }}
                             onMouseLeave={(e) => {
-                                (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF';
+                                (
+                                    e.currentTarget as HTMLButtonElement
+                                ).style.background = '#FFFFFF';
                             }}
                         >
                             Skip

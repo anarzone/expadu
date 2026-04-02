@@ -7,11 +7,11 @@
 
 /** Standard icon sizes matching our design system */
 export const ICON_SIZE = {
-    xs: 14,   // inline text, tags
-    sm: 16,   // buttons, list items
-    md: 20,   // sidebar nav, card headers
-    lg: 24,   // page headers, hero
-    xl: 32,   // empty states, large features
+    xs: 14, // inline text, tags
+    sm: 16, // buttons, list items
+    md: 20, // sidebar nav, card headers
+    lg: 24, // page headers, hero
+    xl: 32, // empty states, large features
 } as const;
 
 /** Standard stroke width — slightly thinner than default for elegance */

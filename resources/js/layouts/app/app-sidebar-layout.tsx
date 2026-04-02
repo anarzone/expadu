@@ -28,9 +28,7 @@ export default function AppSidebarLayout({
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 {!fullWidth && <MobileTopBar />}
                 {fullWidth ? (
-                    <div className="flex-1 overflow-hidden">
-                        {children}
-                    </div>
+                    <div className="flex-1 overflow-hidden">{children}</div>
                 ) : (
                     /* Prototype layout: justify-content:center, centre 600px fixed, right 300px fixed.
                        On mobile: centre fills full width, no right panel, top padding for mobile bar. */
@@ -39,7 +37,10 @@ export default function AppSidebarLayout({
                             {children}
                         </div>
                         {rightPanel !== undefined ? (
-                            <aside className="hidden w-[390px] shrink-0 overflow-y-auto p-5 lg:block" style={{ scrollbarWidth: 'none' }}>
+                            <aside
+                                className="hidden w-[390px] shrink-0 overflow-y-auto p-5 lg:block"
+                                style={{ scrollbarWidth: 'none' }}
+                            >
                                 {rightPanel}
                             </aside>
                         ) : (

@@ -29,7 +29,9 @@ export function ServiceCard({
     onClick: () => void;
     index?: number;
 }) {
-    const stars = '★'.repeat(Math.round(service.rating)) + '☆'.repeat(5 - Math.round(service.rating));
+    const stars =
+        '★'.repeat(Math.round(service.rating)) +
+        '☆'.repeat(5 - Math.round(service.rating));
 
     return (
         <div
@@ -42,15 +44,36 @@ export function ServiceCard({
                 {/* Avatar */}
                 <div
                     className="flex shrink-0 items-center justify-center rounded-[9px]"
-                    style={{ width: 46, height: 46, background: service.avatarBg, fontSize: 22 }}
+                    style={{
+                        width: 46,
+                        height: 46,
+                        background: service.avatarBg,
+                        fontSize: 22,
+                    }}
                 >
                     {service.emoji}
                 </div>
 
                 {/* Info */}
                 <div className="min-w-0 flex-1">
-                    <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{service.name}</div>
-                    <div style={{ fontSize: 12, color: '#6B6860', marginBottom: 5 }}>{service.type}</div>
+                    <div
+                        style={{
+                            fontSize: 15,
+                            fontWeight: 600,
+                            marginBottom: 2,
+                        }}
+                    >
+                        {service.name}
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#6B6860',
+                            marginBottom: 5,
+                        }}
+                    >
+                        {service.type}
+                    </div>
                     <div className="flex flex-wrap gap-[5px]">
                         {service.verified && (
                             <span
@@ -120,16 +143,25 @@ export function ServiceCard({
                 {/* Rating — only show if we have data */}
                 {service.rating > 0 && (
                     <div className="flex shrink-0 flex-col items-end gap-[3px]">
-                        <div style={{ fontSize: 12, color: '#C47D0E' }}>{stars}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{service.rating}</div>
-                        <div style={{ fontSize: 10, color: '#AAA89F' }}>{service.reviews} reviews</div>
+                        <div style={{ fontSize: 12, color: '#C47D0E' }}>
+                            {stars}
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>
+                            {service.rating}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#AAA89F' }}>
+                            {service.reviews} reviews
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* Bottom row: meta + actions */}
             <div className="flex items-center justify-between border-t border-[#E2DFD6] pt-2.5">
-                <div className="flex flex-wrap gap-2.5" style={{ fontSize: 12, color: '#6B6860' }}>
+                <div
+                    className="flex flex-wrap gap-2.5"
+                    style={{ fontSize: 12, color: '#6B6860' }}
+                >
                     {service.address && <span>📍 {service.address}</span>}
                     {service.distance && <span>· {service.distance}</span>}
                 </div>

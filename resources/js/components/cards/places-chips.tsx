@@ -18,9 +18,13 @@ export function PlacesChips({ data }: { data: YourPlacesData }) {
                 >
                     <span className="text-sm">{place.emoji || '📍'}</span>
                     <div>
-                        <div className="text-[13px] font-semibold">{place.name}</div>
+                        <div className="text-[13px] font-semibold">
+                            {place.name}
+                        </div>
                         {place.address && (
-                            <div className="text-[11px] font-mono text-muted-foreground">{place.address}</div>
+                            <div className="font-mono text-[11px] text-muted-foreground">
+                                {place.address}
+                            </div>
                         )}
                     </div>
                 </div>

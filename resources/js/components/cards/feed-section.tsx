@@ -13,11 +13,14 @@ export function FeedSection({
         <div className="border-b border-border px-6 py-5 last:border-b-0">
             {label && (
                 <div className="mb-3 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                         {label}
                     </span>
                     {action && (
-                        <a href={action.href} className="text-[11px] font-semibold text-primary">
+                        <a
+                            href={action.href}
+                            className="text-[11px] font-semibold text-primary"
+                        >
                             {action.label} ›
                         </a>
                     )}

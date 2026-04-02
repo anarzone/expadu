@@ -54,7 +54,8 @@ type TaskProgress = {
 function deadlineLabel(t: DbTask): string {
     if (t.completed_at) return 'Completed';
     if (t.days_remaining === null) return 'No deadline';
-    if (t.days_remaining < 0) return `Overdue by ${Math.abs(t.days_remaining)} days`;
+    if (t.days_remaining < 0)
+        return `Overdue by ${Math.abs(t.days_remaining)} days`;
     if (t.days_remaining === 0) return 'Due today';
     if (t.days_remaining <= 3) return `${t.days_remaining} days left — urgent`;
     if (t.days_remaining <= 7) return `${t.days_remaining} days left`;
@@ -66,17 +67,26 @@ function deadlineLabel(t: DbTask): string {
 }
 
 function urgencyTagFromDeadline(t: DbTask): TaskTag {
-    if (t.completed_at) return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
-    if (t.deadline_urgency === 'overdue') return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
-    if (t.deadline_urgency === 'critical') return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
-    if (t.deadline_urgency === 'urgent') return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
-    if (t.urgency === 'critical' || t.urgency === 'high') return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
+    if (t.completed_at)
+        return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
+    if (t.deadline_urgency === 'overdue')
+        return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
+    if (t.deadline_urgency === 'critical')
+        return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
+    if (t.deadline_urgency === 'urgent')
+        return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
+    if (t.urgency === 'critical' || t.urgency === 'high')
+        return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
     return { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' };
 }
 
 function dbTaskToTaskData(t: DbTask): TaskData {
     const done = !!t.completed_at;
-    const urgent = t.urgency === 'critical' || t.urgency === 'high' || t.deadline_urgency === 'overdue' || t.deadline_urgency === 'critical';
+    const urgent =
+        t.urgency === 'critical' ||
+        t.urgency === 'high' ||
+        t.deadline_urgency === 'overdue' ||
+        t.deadline_urgency === 'critical';
     return {
         id: t.id,
         done,
@@ -142,75 +152,113 @@ type AiResponse = {
 
 const SEED_DOCS: DocData[] = [
     {
-        emoji: '📋', de: 'Meldebescheinigung', en: 'Address Registration Certificate',
+        emoji: '📋',
+        de: 'Meldebescheinigung',
+        en: 'Address Registration Certificate',
         desc: 'Proof that you have registered your address in Germany. Required for almost everything: bank accounts, Ausländerbehörde, tax office.',
-        where: 'Issued at the Bürgeramt after Anmeldung', validity: 'Unlimited (content may go out of date)',
-        tags: [{ l: 'Essential', bg: '#FDE8E6', c: '#C4271A' }, { l: 'Free', bg: '#D4F0E6', c: '#0A7C52' }],
+        where: 'Issued at the Bürgeramt after Anmeldung',
+        validity: 'Unlimited (content may go out of date)',
+        tags: [
+            { l: 'Essential', bg: '#FDE8E6', c: '#C4271A' },
+            { l: 'Free', bg: '#D4F0E6', c: '#0A7C52' },
+        ],
         detail: {
             what: 'A simple A4 document with your name, address, and registration date. Stamped by the Bürgeramt.',
             when: 'Any time you need to prove your German address to a third party.',
-            howToGet: 'Automatically issued after Anmeldung. Extra copies cost ~€5 at the Bürgeramt.',
+            howToGet:
+                'Automatically issued after Anmeldung. Extra copies cost ~€5 at the Bürgeramt.',
             watchOut: 'Some services require it to be less than 3 months old.',
         },
     },
     {
-        emoji: '🆔', de: 'Steuer-Identifikationsnummer', en: 'Tax Identification Number',
+        emoji: '🆔',
+        de: 'Steuer-Identifikationsnummer',
+        en: 'Tax Identification Number',
         desc: 'Your permanent 11-digit German tax number. Never changes, even if you move. Required by employers for payroll.',
-        where: 'Sent by post from Bundeszentralamt für Steuern after Anmeldung', validity: 'Permanent — never expires',
-        tags: [{ l: 'Essential', bg: '#FDE8E6', c: '#C4271A' }, { l: 'Automatic', bg: '#EBF0FD', c: '#1A4CD4' }],
+        where: 'Sent by post from Bundeszentralamt für Steuern after Anmeldung',
+        validity: 'Permanent — never expires',
+        tags: [
+            { l: 'Essential', bg: '#FDE8E6', c: '#C4271A' },
+            { l: 'Automatic', bg: '#EBF0FD', c: '#1A4CD4' },
+        ],
         detail: {
             what: 'An 11-digit number uniquely identifying you for tax purposes in Germany. Different from your Steuernummer (which is employer-specific).',
             when: 'Give it to your employer before your first payslip. Needed for tax returns.',
-            howToGet: 'Arrives automatically 2–4 weeks after Anmeldung. If lost, request at bundeszentralamt.de.',
-            watchOut: 'Do not confuse with Steuernummer (changes when you move) or USt-ID (for businesses).',
+            howToGet:
+                'Arrives automatically 2–4 weeks after Anmeldung. If lost, request at bundeszentralamt.de.',
+            watchOut:
+                'Do not confuse with Steuernummer (changes when you move) or USt-ID (for businesses).',
         },
     },
     {
-        emoji: '🏥', de: 'Versicherungskarte', en: 'Health Insurance Card',
+        emoji: '🏥',
+        de: 'Versicherungskarte',
+        en: 'Health Insurance Card',
         desc: 'Your electronic health insurance card. Show it at every doctor visit, pharmacy, and hospital in Germany.',
-        where: 'Sent by your health insurer after enrolment', validity: 'Renewed annually by insurer',
+        where: 'Sent by your health insurer after enrolment',
+        validity: 'Renewed annually by insurer',
         tags: [{ l: 'Essential', bg: '#FDE8E6', c: '#C4271A' }],
         detail: {
             what: 'A chip card issued by your public health insurer (Krankenkasse). Contains your insurance data electronically.',
             when: 'Required at every healthcare appointment. Without it, you may be billed privately.',
-            howToGet: 'Automatically sent after enrolling with a Krankenkasse. Allow 1–2 weeks.',
-            watchOut: 'If you change insurers, your old card becomes invalid immediately.',
+            howToGet:
+                'Automatically sent after enrolling with a Krankenkasse. Allow 1–2 weeks.',
+            watchOut:
+                'If you change insurers, your old card becomes invalid immediately.',
         },
     },
     {
-        emoji: '📄', de: 'Lohnsteuerbescheinigung', en: 'Annual Payroll Tax Certificate',
+        emoji: '📄',
+        de: 'Lohnsteuerbescheinigung',
+        en: 'Annual Payroll Tax Certificate',
         desc: 'Issued by your employer every January for the previous year. Needed for your tax return and proof of income.',
-        where: 'Issued by your employer annually', validity: 'Annual document',
+        where: 'Issued by your employer annually',
+        validity: 'Annual document',
         tags: [{ l: 'Tax', bg: '#FDF0D4', c: '#C47D0E' }],
         detail: {
             what: 'A detailed breakdown of your gross pay, tax paid, social security contributions, and other deductions for the whole year.',
             when: 'Needed when filing a Steuererklärung (tax return). Also useful as proof of income for rental applications.',
-            howToGet: 'Your employer sends it electronically to the Finanzamt and gives you a copy in January/February.',
-            watchOut: 'Check it carefully — errors in the document affect your tax calculation.',
+            howToGet:
+                'Your employer sends it electronically to the Finanzamt and gives you a copy in January/February.',
+            watchOut:
+                'Check it carefully — errors in the document affect your tax calculation.',
         },
     },
     {
-        emoji: '📝', de: 'Wohnungsgeberbestätigung', en: 'Landlord Registration Confirmation',
+        emoji: '📝',
+        de: 'Wohnungsgeberbestätigung',
+        en: 'Landlord Registration Confirmation',
         desc: 'A form your landlord must sign confirming you live at their property. Required for Anmeldung.',
-        where: 'Provided by your landlord', validity: 'One-time use for Anmeldung',
+        where: 'Provided by your landlord',
+        validity: 'One-time use for Anmeldung',
         tags: [{ l: 'Required for Anmeldung', bg: '#EBF0FD', c: '#1A4CD4' }],
         detail: {
             what: 'A standardised form (Formular 18) that confirms your landlord has accepted you as a tenant at the registered address.',
             when: 'Must be presented at the Bürgeramt for Anmeldung. Without it, registration is impossible.',
-            howToGet: 'Download the form from the Bürgeramt website and ask your landlord to sign it. Some landlords provide it directly.',
-            watchOut: 'Your landlord is legally required to provide this within 2 weeks of you moving in.',
+            howToGet:
+                'Download the form from the Bürgeramt website and ask your landlord to sign it. Some landlords provide it directly.',
+            watchOut:
+                'Your landlord is legally required to provide this within 2 weeks of you moving in.',
         },
     },
     {
-        emoji: '🛂', de: 'Aufenthaltstitel', en: 'Residence Permit',
+        emoji: '🛂',
+        de: 'Aufenthaltstitel',
+        en: 'Residence Permit',
         desc: 'For non-EU citizens: official permit to live and work in Germany. Contains your visa conditions.',
-        where: 'Issued by Ausländerbehörde', validity: 'Varies — typically 1–3 years initially',
-        tags: [{ l: 'Non-EU only', bg: '#EDE9FE', c: '#7C3AED' }, { l: 'Critical', bg: '#FDE8E6', c: '#C4271A' }],
+        where: 'Issued by Ausländerbehörde',
+        validity: 'Varies — typically 1–3 years initially',
+        tags: [
+            { l: 'Non-EU only', bg: '#EDE9FE', c: '#7C3AED' },
+            { l: 'Critical', bg: '#FDE8E6', c: '#C4271A' },
+        ],
         detail: {
             what: 'A physical card (since 2011) that serves as your official permission to reside in Germany. Contains biometric data and specifies what you are allowed to do.',
             when: 'Required to prove your legal right to work and live in Germany to employers, landlords, and authorities.',
-            howToGet: 'Apply at the Ausländerbehörde with extensive documentation. Allow 4–8 weeks for the card to be produced.',
-            watchOut: 'Apply before your current visa or entry stamp expires. Overstaying has serious consequences.',
+            howToGet:
+                'Apply at the Ausländerbehörde with extensive documentation. Allow 4–8 weeks for the card to be produced.',
+            watchOut:
+                'Apply before your current visa or entry stamp expires. Overstaying has serious consequences.',
         },
     },
 ];
@@ -241,13 +289,21 @@ function slotsToOffices(
         if (slot.next_slot) {
             const d = new Date(slot.next_slot);
             const now = new Date();
-            const diffDays = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            const diffDays = Math.round(
+                (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+            );
             if (diffDays === 0) {
                 nextSlot = `Today ${d.toLocaleTimeString('en-DE', { hour: '2-digit', minute: '2-digit' })}`;
             } else if (diffDays === 1) {
                 nextSlot = `Tomorrow ${d.toLocaleTimeString('en-DE', { hour: '2-digit', minute: '2-digit' })}`;
             } else if (diffDays <= 7) {
-                nextSlot = d.toLocaleDateString('en-DE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                nextSlot = d.toLocaleDateString('en-DE', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
             } else {
                 nextSlot = `In ${Math.ceil(diffDays / 7)} weeks`;
             }
@@ -256,12 +312,19 @@ function slotsToOffices(
         let statusLabel = 'Fully booked';
         let color = '#C4271A';
         let colorS = '#FDE8E6';
-        if (slot.status === 'check_online' || slot.status === 'unavailable' || slot.status === 'checking') {
+        if (
+            slot.status === 'check_online' ||
+            slot.status === 'unavailable' ||
+            slot.status === 'checking'
+        ) {
             statusLabel = 'Check online →';
             color = '#1A4CD4';
             colorS = '#EBF0FD';
         } else if (isAvailable) {
-            statusLabel = slot.slots_today === 1 ? '1 slot available' : `${slot.slots_today} slots available`;
+            statusLabel =
+                slot.slots_today === 1
+                    ? '1 slot available'
+                    : `${slot.slots_today} slots available`;
             color = '#0A7C52';
             colorS = '#D4F0E6';
         } else if (isMostlyBooked) {
@@ -284,7 +347,9 @@ function slotsToOffices(
             color,
             colorS,
             statusLabel,
-            bookingUrl: slot.booking_url || 'https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071',
+            bookingUrl:
+                slot.booking_url ||
+                'https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071',
             mapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`,
         };
     });
@@ -344,35 +409,40 @@ Jobcenter Köln`,
 const AI_RESPONSES: Record<string, AiResponse> = {
     finanzamt: {
         type: 'Finanzamt (Tax Office)',
-        summary: 'The tax office has received your 2023 tax return and is processing it. They say it may take up to 8 weeks due to high volume. You will receive your tax assessment (Steuerbescheid) by post once complete.',
-        action: 'No action required right now. Wait for the Steuerbescheid letter by post. If you haven\'t received anything in 8 weeks, call Finanzamt Köln-West on 0221 / 965 04-0.',
+        summary:
+            'The tax office has received your 2023 tax return and is processing it. They say it may take up to 8 weeks due to high volume. You will receive your tax assessment (Steuerbescheid) by post once complete.',
+        action: "No action required right now. Wait for the Steuerbescheid letter by post. If you haven't received anything in 8 weeks, call Finanzamt Köln-West on 0221 / 965 04-0.",
         deadline: null,
         urgency: 'low',
     },
     krankenkasse: {
         type: 'Health Insurance (Krankenkasse)',
-        summary: 'Your monthly health insurance contribution is changing to €285.50 from 1 April 2024. This is calculated from the standard rate of 14.6% plus your insurer\'s additional contribution of 1.3%. The payment will continue to be taken by direct debit from your bank account.',
+        summary:
+            "Your monthly health insurance contribution is changing to €285.50 from 1 April 2024. This is calculated from the standard rate of 14.6% plus your insurer's additional contribution of 1.3%. The payment will continue to be taken by direct debit from your bank account.",
         action: 'Make sure your bank account has enough funds on the first of each month. No other action needed — this change is automatic.',
         deadline: 'Effective from 1 April 2024',
         urgency: 'low',
     },
     vermieter: {
         type: 'Warning letter from landlord (Abmahnung)',
-        summary: 'This is a formal warning (Abmahnung) from your landlord or property management. They are warning you about two specific violations: parking bikes in the stairwell and making noise after 10pm. They are threatening to terminate your tenancy if this continues.',
+        summary:
+            'This is a formal warning (Abmahnung) from your landlord or property management. They are warning you about two specific violations: parking bikes in the stairwell and making noise after 10pm. They are threatening to terminate your tenancy if this continues.',
         action: 'Stop the behaviours mentioned immediately. Move your bike from the stairwell today. Be quiet after 22:00. An Abmahnung is a legal document — a second one can be grounds for eviction. Consider writing a brief reply acknowledging receipt.',
         deadline: 'Immediate — stop today',
         urgency: 'high',
     },
     auslaender: {
         type: 'Ausländerbehörde (Immigration Office)',
-        summary: 'The immigration office is requesting additional documents to process your residence permit renewal. They need: your current work contract, your last 3 payslips, and proof of health insurance coverage.',
+        summary:
+            'The immigration office is requesting additional documents to process your residence permit renewal. They need: your current work contract, your last 3 payslips, and proof of health insurance coverage.',
         action: 'Gather all three documents within 4 weeks and submit them to the Ausländerbehörde. Good news: your current residence status is legally valid while they process your application (§ 81 AufenthG), so you can continue working.',
         deadline: 'Within 4 weeks of letter date',
         urgency: 'medium',
     },
     jobcenter: {
         type: 'Jobcenter (Social Benefits Office)',
-        summary: 'This is a benefits decision letter. You have been approved for Bürgergeld (citizen\'s allowance) of €563 per month starting 1 March 2024. The money will be transferred to your bank account at the start of each month.',
+        summary:
+            "This is a benefits decision letter. You have been approved for Bürgergeld (citizen's allowance) of €563 per month starting 1 March 2024. The money will be transferred to your bank account at the start of each month.",
         action: 'No action needed to receive the payments. However, you must immediately report any changes to your income or assets to the Jobcenter — failure to do so can result in repayment demands.',
         deadline: 'Report any income changes immediately',
         urgency: 'low',
@@ -402,21 +472,35 @@ const TABS = [
 
 export default function Bureaucracy() {
     const { track } = useTracker();
-    type BookingService = { key: string; name: string; name_en: string; emoji: string; duration: number; url: string };
+    type BookingService = {
+        key: string;
+        name: string;
+        name_en: string;
+        emoji: string;
+        duration: number;
+        url: string;
+    };
 
-    const { slots, monitors, dbTasks, taskProgress, bookingServices } = usePage<{
-        slots: Record<string, SlotData>;
-        monitors: string[];
-        dbTasks: DbTask[];
-        taskProgress: TaskProgress;
-        bookingServices?: BookingService[];
-    }>().props;
+    const { slots, monitors, dbTasks, taskProgress, bookingServices } =
+        usePage<{
+            slots: Record<string, SlotData>;
+            monitors: string[];
+            dbTasks: DbTask[];
+            taskProgress: TaskProgress;
+            bookingServices?: BookingService[];
+        }>().props;
 
-    const offices = useMemo(() => slotsToOffices(slots ?? {}, monitors ?? []), [slots, monitors]);
+    const offices = useMemo(
+        () => slotsToOffices(slots ?? {}, monitors ?? []),
+        [slots, monitors],
+    );
     const monitoringCount = offices.filter((o) => o.monitoring).length;
 
     // Map backend tasks to frontend shape
-    const tasks = useMemo(() => (dbTasks ?? []).map(dbTaskToTaskData), [dbTasks]);
+    const tasks = useMemo(
+        () => (dbTasks ?? []).map(dbTaskToTaskData),
+        [dbTasks],
+    );
 
     const FILTERS = useMemo(() => {
         const pending = tasks.filter((t) => !t.done).length;
@@ -442,18 +526,23 @@ export default function Bureaucracy() {
     const [pasteText, setPasteText] = useState('');
     const [currentExample, setCurrentExample] = useState<string | null>(null);
     const [translating, setTranslating] = useState(false);
-    const [translationResult, setTranslationResult] = useState<AiResponse | null>(null);
+    const [translationResult, setTranslationResult] =
+        useState<AiResponse | null>(null);
     const resultRef = useRef<HTMLDivElement>(null);
 
     // Derived from backend progress
-    const doneCount = taskProgress?.completed ?? tasks.filter((t) => t.done).length;
+    const doneCount =
+        taskProgress?.completed ?? tasks.filter((t) => t.done).length;
     const totalCount = taskProgress?.total ?? tasks.length;
-    const progressPct = taskProgress?.percent ?? (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
+    const progressPct =
+        taskProgress?.percent ??
+        (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
 
     const filteredTasks = useMemo(() => {
         if (taskFilter === 'done') return tasks.filter((t) => t.done);
         if (taskFilter === 'pending') return tasks.filter((t) => !t.done);
-        if (taskFilter === 'urgent') return tasks.filter((t) => t.urgent && !t.done);
+        if (taskFilter === 'urgent')
+            return tasks.filter((t) => t.urgent && !t.done);
         return tasks;
     }, [tasks, taskFilter]);
 
@@ -461,7 +550,10 @@ export default function Bureaucracy() {
         const q = docSearch.toLowerCase().trim();
         if (!q) return SEED_DOCS;
         return SEED_DOCS.filter(
-            (d) => d.de.toLowerCase().includes(q) || d.en.toLowerCase().includes(q) || d.desc.toLowerCase().includes(q),
+            (d) =>
+                d.de.toLowerCase().includes(q) ||
+                d.en.toLowerCase().includes(q) ||
+                d.desc.toLowerCase().includes(q),
         );
     }, [docSearch]);
 
@@ -471,10 +563,14 @@ export default function Bureaucracy() {
         if (task && !task.done) {
             track('task_completed', { task_id: id });
         }
-        router.post(`/tasks/${id}/toggle`, {}, {
-            preserveScroll: true,
-            preserveState: true,
-        });
+        router.post(
+            `/tasks/${id}/toggle`,
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+            },
+        );
     }
 
     function loadExample(key: string) {
@@ -496,7 +592,8 @@ export default function Bureaucracy() {
                 ? AI_RESPONSES[currentExample]
                 : {
                       type: 'German Official Document',
-                      summary: 'This appears to be an official German document. The sender is requesting your attention to an administrative matter. The document outlines specific requirements or changes that affect you.',
+                      summary:
+                          'This appears to be an official German document. The sender is requesting your attention to an administrative matter. The document outlines specific requirements or changes that affect you.',
                       action: 'Read the document carefully and note any deadlines. If unsure, contact the issuing office directly or seek advice from a local expat support organisation.',
                       deadline: null,
                       urgency: 'medium' as const,
@@ -507,7 +604,10 @@ export default function Bureaucracy() {
 
         // Scroll into view
         setTimeout(() => {
-            resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            resultRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+            });
         }, 100);
     }
 
@@ -525,12 +625,20 @@ export default function Bureaucracy() {
                 {/* ── Sticky header: title + tabs ── */}
                 <div
                     className="sticky top-0 z-50 border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{ background: 'rgba(246,245,241,.94)', backdropFilter: 'blur(16px)' }}
+                    style={{
+                        background: 'rgba(246,245,241,.94)',
+                        backdropFilter: 'blur(16px)',
+                    }}
                 >
                     <div className="flex items-center justify-between">
                         <span
                             className="shrink-0"
-                            style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}
+                            style={{
+                                fontFamily: "'Fraunces', serif",
+                                fontSize: 20,
+                                fontWeight: 500,
+                                letterSpacing: '-0.01em',
+                            }}
                         >
                             Bureaucracy Helper
                         </span>
@@ -545,8 +653,14 @@ export default function Bureaucracy() {
                                     fontFamily: "'Geist', sans-serif",
                                     fontSize: 13,
                                     fontWeight: 600,
-                                    color: activeTab === t.id ? '#1A4CD4' : '#6B6860',
-                                    borderBottom: activeTab === t.id ? '2px solid #1A4CD4' : '2px solid transparent',
+                                    color:
+                                        activeTab === t.id
+                                            ? '#1A4CD4'
+                                            : '#6B6860',
+                                    borderBottom:
+                                        activeTab === t.id
+                                            ? '2px solid #1A4CD4'
+                                            : '2px solid transparent',
                                 }}
                             >
                                 {t.label}
@@ -607,7 +721,9 @@ export default function Bureaucracy() {
                                 >
                                     {doneCount} of {totalCount} tasks complete —
                                     <br />
-                                    {doneCount === totalCount ? 'all done!' : "you're making good progress."}
+                                    {doneCount === totalCount
+                                        ? 'all done!'
+                                        : "you're making good progress."}
                                 </div>
                                 {/* Progress bar */}
                                 <div
@@ -624,7 +740,8 @@ export default function Bureaucracy() {
                                             borderRadius: 20,
                                             height: 6,
                                             width: `${progressPct}%`,
-                                            transition: 'width .6s cubic-bezier(.32,1,.4,1)',
+                                            transition:
+                                                'width .6s cubic-bezier(.32,1,.4,1)',
                                         }}
                                     />
                                 </div>
@@ -638,7 +755,9 @@ export default function Bureaucracy() {
                                     }}
                                 >
                                     <span>{doneCount} done</span>
-                                    <span>{totalCount - doneCount} remaining</span>
+                                    <span>
+                                        {totalCount - doneCount} remaining
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -646,7 +765,10 @@ export default function Bureaucracy() {
                         {/* Filter pills */}
                         <div
                             className="flex gap-1.5 overflow-x-auto border-b border-[#E2DFD6]"
-                            style={{ padding: '16px 24px 12px', scrollbarWidth: 'none' }}
+                            style={{
+                                padding: '16px 24px 12px',
+                                scrollbarWidth: 'none',
+                            }}
                         >
                             {FILTERS.map((f) => (
                                 <button
@@ -658,9 +780,18 @@ export default function Bureaucracy() {
                                         fontWeight: 500,
                                         fontFamily: "'Geist', sans-serif",
                                         whiteSpace: 'nowrap',
-                                        background: taskFilter === f.id ? '#1A4CD4' : 'white',
-                                        color: taskFilter === f.id ? 'white' : '#6B6860',
-                                        borderColor: taskFilter === f.id ? '#1A4CD4' : '#E2DFD6',
+                                        background:
+                                            taskFilter === f.id
+                                                ? '#1A4CD4'
+                                                : 'white',
+                                        color:
+                                            taskFilter === f.id
+                                                ? 'white'
+                                                : '#6B6860',
+                                        borderColor:
+                                            taskFilter === f.id
+                                                ? '#1A4CD4'
+                                                : '#E2DFD6',
                                     }}
                                 >
                                     {f.label}
@@ -675,7 +806,13 @@ export default function Bureaucracy() {
                                     key={task.id}
                                     task={task}
                                     expanded={expandedTask === task.id}
-                                    onToggleExpand={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
+                                    onToggleExpand={() =>
+                                        setExpandedTask(
+                                            expandedTask === task.id
+                                                ? null
+                                                : task.id,
+                                        )
+                                    }
                                     onToggleDone={() => toggleTaskDone(task.id)}
                                 />
                             ))}
@@ -688,22 +825,30 @@ export default function Bureaucracy() {
                     <div style={{ padding: '20px 24px' }}>
                         {/* Section header */}
                         <div className="mb-3 flex items-center justify-between">
-                            <span style={{ fontSize: 15, fontWeight: 700 }}>Document Library</span>
-                            <span style={{ fontSize: 12, color: '#6B6860' }}>32 documents</span>
+                            <span style={{ fontSize: 15, fontWeight: 700 }}>
+                                Document Library
+                            </span>
+                            <span style={{ fontSize: 12, color: '#6B6860' }}>
+                                32 documents
+                            </span>
                         </div>
 
                         {/* Search */}
-                        <div
-                            className="mb-4 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                        >
-                            <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
+                        <div className="mb-4 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
+                            <span style={{ fontSize: 15, color: '#AAA89F' }}>
+                                🔍
+                            </span>
                             <input
                                 type="text"
                                 placeholder="Search German documents…"
                                 value={docSearch}
                                 onChange={(e) => setDocSearch(e.target.value)}
                                 className="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-[#AAA89F]"
-                                style={{ fontFamily: "'Geist', sans-serif", fontSize: 14, color: '#18170F' }}
+                                style={{
+                                    fontFamily: "'Geist', sans-serif",
+                                    fontSize: 14,
+                                    color: '#18170F',
+                                }}
                             />
                             {docSearch && (
                                 <button
@@ -721,15 +866,35 @@ export default function Bureaucracy() {
                                 key={doc.de}
                                 doc={doc}
                                 expanded={expandedDoc === doc.de}
-                                onToggle={() => setExpandedDoc(expandedDoc === doc.de ? null : doc.de)}
+                                onToggle={() =>
+                                    setExpandedDoc(
+                                        expandedDoc === doc.de ? null : doc.de,
+                                    )
+                                }
                             />
                         ))}
 
                         {filteredDocs.length === 0 && (
-                            <div className="py-12 text-center" style={{ color: '#AAA89F' }}>
-                                <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-                                <div style={{ fontSize: 15, fontWeight: 600, color: '#6B6860', marginBottom: 6 }}>No documents found</div>
-                                <div style={{ fontSize: 13 }}>Try a different search term</div>
+                            <div
+                                className="py-12 text-center"
+                                style={{ color: '#AAA89F' }}
+                            >
+                                <div style={{ fontSize: 36, marginBottom: 12 }}>
+                                    🔍
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 15,
+                                        fontWeight: 600,
+                                        color: '#6B6860',
+                                        marginBottom: 6,
+                                    }}
+                                >
+                                    No documents found
+                                </div>
+                                <div style={{ fontSize: 13 }}>
+                                    Try a different search term
+                                </div>
                             </div>
                         )}
                     </div>
@@ -750,53 +915,117 @@ export default function Bureaucracy() {
                                 marginBottom: 16,
                             }}
                         >
-                            <div className="pointer-events-none absolute" style={{ bottom: -40, right: -40, width: 140, height: 140, background: 'rgba(255,255,255,.06)', borderRadius: '50%' }} />
-                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', opacity: 0.65, marginBottom: 5 }}>
+                            <div
+                                className="pointer-events-none absolute"
+                                style={{
+                                    bottom: -40,
+                                    right: -40,
+                                    width: 140,
+                                    height: 140,
+                                    background: 'rgba(255,255,255,.06)',
+                                    borderRadius: '50%',
+                                }}
+                            />
+                            <div
+                                style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.10em',
+                                    opacity: 0.65,
+                                    marginBottom: 5,
+                                }}
+                            >
                                 Appointments · Cologne
                             </div>
-                            <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 400, marginBottom: 12, position: 'relative', zIndex: 1 }}>
+                            <div
+                                style={{
+                                    fontFamily: "'Fraunces', serif",
+                                    fontSize: 20,
+                                    fontWeight: 400,
+                                    marginBottom: 12,
+                                    position: 'relative',
+                                    zIndex: 1,
+                                }}
+                            >
                                 Government offices &amp; locations
                             </div>
-                            <div style={{ fontSize: 13, opacity: 0.8, position: 'relative', zIndex: 1, marginBottom: 14 }}>
-                                Book online — select your service, then the system shows available offices and times.
+                            <div
+                                style={{
+                                    fontSize: 13,
+                                    opacity: 0.8,
+                                    position: 'relative',
+                                    zIndex: 1,
+                                    marginBottom: 14,
+                                }}
+                            >
+                                Book online — select your service, then the
+                                system shows available offices and times.
                             </div>
                             <a
                                 href="https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="relative z-[1] inline-flex items-center gap-2 rounded-[9px] px-5 py-[10px] text-sm font-semibold transition-all hover:bg-white"
-                                style={{ background: 'rgba(255,255,255,.9)', color: '#1A4CD4', textDecoration: 'none' }}
+                                style={{
+                                    background: 'rgba(255,255,255,.9)',
+                                    color: '#1A4CD4',
+                                    textDecoration: 'none',
+                                }}
                             >
                                 🏛️ Book Bürgeramt appointment →
                             </a>
                         </div>
 
                         {/* Search */}
-                        <div
-                            className="mb-3 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                        >
-                            <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
+                        <div className="mb-3 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
+                            <span style={{ fontSize: 15, color: '#AAA89F' }}>
+                                🔍
+                            </span>
                             <input
                                 type="text"
                                 placeholder="Search offices…"
                                 value={slotSearch}
                                 onChange={(e) => setSlotSearch(e.target.value)}
                                 className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
-                                style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
+                                style={{
+                                    fontFamily: "'Geist', sans-serif",
+                                    fontSize: 14,
+                                }}
                             />
                             {slotSearch && (
-                                <button onClick={() => setSlotSearch('')} className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]">✕</button>
+                                <button
+                                    onClick={() => setSlotSearch('')}
+                                    className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]"
+                                >
+                                    ✕
+                                </button>
                             )}
                         </div>
 
                         {/* Category filter pills */}
-                        <div className="mb-4 flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                        <div
+                            className="mb-4 flex gap-1.5 overflow-x-auto"
+                            style={{ scrollbarWidth: 'none' }}
+                        >
                             {[
                                 { id: 'all', label: `All (${offices.length})` },
-                                { id: 'buergeramt', label: `🏛️ Bürgeramt (${offices.filter(o => o.category === 'buergeramt').length})` },
-                                { id: 'auslaenderbehoerde', label: `🛂 Ausländerb. (${offices.filter(o => o.category === 'auslaenderbehoerde').length})` },
-                                { id: 'finanzamt', label: `📋 Finanzamt (${offices.filter(o => o.category === 'finanzamt').length})` },
-                                { id: 'kfz', label: `🚗 KFZ (${offices.filter(o => o.category === 'kfz').length})` },
+                                {
+                                    id: 'buergeramt',
+                                    label: `🏛️ Bürgeramt (${offices.filter((o) => o.category === 'buergeramt').length})`,
+                                },
+                                {
+                                    id: 'auslaenderbehoerde',
+                                    label: `🛂 Ausländerb. (${offices.filter((o) => o.category === 'auslaenderbehoerde').length})`,
+                                },
+                                {
+                                    id: 'finanzamt',
+                                    label: `📋 Finanzamt (${offices.filter((o) => o.category === 'finanzamt').length})`,
+                                },
+                                {
+                                    id: 'kfz',
+                                    label: `🚗 KFZ (${offices.filter((o) => o.category === 'kfz').length})`,
+                                },
                             ].map((f) => (
                                 <button
                                     key={f.id}
@@ -807,9 +1036,18 @@ export default function Bureaucracy() {
                                         fontWeight: 500,
                                         fontFamily: "'Geist', sans-serif",
                                         whiteSpace: 'nowrap',
-                                        background: slotFilter === f.id ? '#1A4CD4' : 'white',
-                                        color: slotFilter === f.id ? 'white' : '#6B6860',
-                                        borderColor: slotFilter === f.id ? '#1A4CD4' : '#E2DFD6',
+                                        background:
+                                            slotFilter === f.id
+                                                ? '#1A4CD4'
+                                                : 'white',
+                                        color:
+                                            slotFilter === f.id
+                                                ? 'white'
+                                                : '#6B6860',
+                                        borderColor:
+                                            slotFilter === f.id
+                                                ? '#1A4CD4'
+                                                : '#E2DFD6',
                                     }}
                                 >
                                     {f.label}
@@ -821,36 +1059,86 @@ export default function Bureaucracy() {
                         {(() => {
                             const q = slotSearch.toLowerCase().trim();
                             const filtered = offices.filter((o) => {
-                                const matchCategory = slotFilter === 'all' || o.category === slotFilter;
-                                const matchSearch = !q || o.name.toLowerCase().includes(q) || o.address.toLowerCase().includes(q);
+                                const matchCategory =
+                                    slotFilter === 'all' ||
+                                    o.category === slotFilter;
+                                const matchSearch =
+                                    !q ||
+                                    o.name.toLowerCase().includes(q) ||
+                                    o.address.toLowerCase().includes(q);
                                 return matchCategory && matchSearch;
                             });
 
                             if (filtered.length === 0) {
                                 return (
-                                    <div className="py-12 text-center" style={{ color: '#AAA89F' }}>
-                                        <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-                                        <div style={{ fontSize: 15, fontWeight: 600, color: '#6B6860', marginBottom: 6 }}>No offices found</div>
-                                        <div style={{ fontSize: 13 }}>Try a different filter or search term</div>
+                                    <div
+                                        className="py-12 text-center"
+                                        style={{ color: '#AAA89F' }}
+                                    >
+                                        <div
+                                            style={{
+                                                fontSize: 36,
+                                                marginBottom: 12,
+                                            }}
+                                        >
+                                            🔍
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: 15,
+                                                fontWeight: 600,
+                                                color: '#6B6860',
+                                                marginBottom: 6,
+                                            }}
+                                        >
+                                            No offices found
+                                        </div>
+                                        <div style={{ fontSize: 13 }}>
+                                            Try a different filter or search
+                                            term
+                                        </div>
                                     </div>
                                 );
                             }
 
                             const GROUPS = [
-                                { key: 'buergeramt', label: 'Bürgeramt', emoji: '🏛️' },
-                                { key: 'auslaenderbehoerde', label: 'Ausländerbehörde', emoji: '🛂' },
-                                { key: 'finanzamt', label: 'Finanzamt', emoji: '📋' },
-                                { key: 'kfz', label: 'KFZ-Zulassungsstelle', emoji: '🚗' },
+                                {
+                                    key: 'buergeramt',
+                                    label: 'Bürgeramt',
+                                    emoji: '🏛️',
+                                },
+                                {
+                                    key: 'auslaenderbehoerde',
+                                    label: 'Ausländerbehörde',
+                                    emoji: '🛂',
+                                },
+                                {
+                                    key: 'finanzamt',
+                                    label: 'Finanzamt',
+                                    emoji: '📋',
+                                },
+                                {
+                                    key: 'kfz',
+                                    label: 'KFZ-Zulassungsstelle',
+                                    emoji: '🚗',
+                                },
                             ];
 
                             return GROUPS.map((group) => {
-                                const groupOffices = filtered.filter((o) => o.category === group.key);
+                                const groupOffices = filtered.filter(
+                                    (o) => o.category === group.key,
+                                );
                                 if (groupOffices.length === 0) return null;
                                 const bookingUrl = groupOffices[0]?.bookingUrl;
                                 return (
                                     <div key={group.key} className="mb-5">
                                         <div className="mb-2 flex items-center justify-between">
-                                            <span style={{ fontSize: 14, fontWeight: 700 }}>
+                                            <span
+                                                style={{
+                                                    fontSize: 14,
+                                                    fontWeight: 700,
+                                                }}
+                                            >
                                                 {group.emoji} {group.label}
                                             </span>
                                             {bookingUrl && (
@@ -859,16 +1147,34 @@ export default function Bureaucracy() {
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="transition-colors hover:text-[#1540B8]"
-                                                    style={{ fontSize: 12, color: '#1A4CD4', fontWeight: 600, textDecoration: 'none' }}
+                                                    style={{
+                                                        fontSize: 12,
+                                                        color: '#1A4CD4',
+                                                        fontWeight: 600,
+                                                        textDecoration: 'none',
+                                                    }}
                                                 >
                                                     Book appointment →
                                                 </a>
                                             )}
                                         </div>
                                         {groupOffices.map((office) => (
-                                            <OfficeCard key={office.id} office={office} onToggleMonitor={() => {
-                                                router.post('/slots/toggle', { office_id: office.id }, { preserveScroll: true });
-                                            }} />
+                                            <OfficeCard
+                                                key={office.id}
+                                                office={office}
+                                                onToggleMonitor={() => {
+                                                    router.post(
+                                                        '/slots/toggle',
+                                                        {
+                                                            office_id:
+                                                                office.id,
+                                                        },
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    );
+                                                }}
+                                            />
                                         ))}
                                     </div>
                                 );
@@ -890,12 +1196,29 @@ export default function Bureaucracy() {
                                 border: '1px solid #E2DFD6',
                             }}
                         >
-                            <div style={{ fontSize: 32, marginBottom: 10 }}>🤖</div>
-                            <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, marginBottom: 4 }}>
+                            <div style={{ fontSize: 32, marginBottom: 10 }}>
+                                🤖
+                            </div>
+                            <div
+                                style={{
+                                    fontFamily: "'Fraunces', serif",
+                                    fontSize: 20,
+                                    fontWeight: 500,
+                                    marginBottom: 4,
+                                }}
+                            >
                                 AI Letter Translator
                             </div>
-                            <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5 }}>
-                                Paste any German official letter or document. Anker will explain what it means in plain English and tell you exactly what to do next.
+                            <div
+                                style={{
+                                    fontSize: 13,
+                                    color: '#6B6860',
+                                    lineHeight: 1.5,
+                                }}
+                            >
+                                Paste any German official letter or document.
+                                Anker will explain what it means in plain
+                                English and tell you exactly what to do next.
                             </div>
                         </div>
 
@@ -946,8 +1269,18 @@ export default function Bureaucracy() {
                                     minHeight: 100,
                                 }}
                             />
-                            <div style={{ fontSize: 11, color: '#AAA89F', marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-                                🔒 Your text is never stored or used for training
+                            <div
+                                style={{
+                                    fontSize: 11,
+                                    color: '#AAA89F',
+                                    marginTop: 8,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                }}
+                            >
+                                🔒 Your text is never stored or used for
+                                training
                             </div>
                         </div>
 
@@ -965,7 +1298,14 @@ export default function Bureaucracy() {
                             >
                                 Or try an example
                             </div>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    gap: 6,
+                                    flexWrap: 'wrap',
+                                    marginBottom: 12,
+                                }}
+                            >
                                 {EXAMPLE_PILLS.map((pill) => (
                                     <button
                                         key={pill.key}
@@ -1008,7 +1348,8 @@ export default function Bureaucracy() {
                                 justifyContent: 'center',
                                 gap: 8,
                                 marginBottom: 16,
-                                opacity: translating || !pasteText.trim() ? 0.5 : 1,
+                                opacity:
+                                    translating || !pasteText.trim() ? 0.5 : 1,
                             }}
                         >
                             {translating ? (
@@ -1020,7 +1361,8 @@ export default function Bureaucracy() {
                                             border: '2px solid rgba(255,255,255,.3)',
                                             borderTopColor: 'white',
                                             borderRadius: '50%',
-                                            animation: 'spin .7s linear infinite',
+                                            animation:
+                                                'spin .7s linear infinite',
                                         }}
                                     />
                                     <span>Translating…</span>
@@ -1050,7 +1392,8 @@ export default function Bureaucracy() {
                                     style={{
                                         padding: '14px 16px',
                                         background: '#D4F0E6',
-                                        borderBottom: '1px solid rgba(10,124,82,.15)',
+                                        borderBottom:
+                                            '1px solid rgba(10,124,82,.15)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: 10,
@@ -1058,8 +1401,24 @@ export default function Bureaucracy() {
                                 >
                                     <span style={{ fontSize: 18 }}>✅</span>
                                     <div>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0A7C52' }}>Translation complete</div>
-                                        <div style={{ fontSize: 12, color: '#0A7C52', opacity: 0.8 }}>{translationResult.type}</div>
+                                        <div
+                                            style={{
+                                                fontSize: 14,
+                                                fontWeight: 700,
+                                                color: '#0A7C52',
+                                            }}
+                                        >
+                                            Translation complete
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: 12,
+                                                color: '#0A7C52',
+                                                opacity: 0.8,
+                                            }}
+                                        >
+                                            {translationResult.type}
+                                        </div>
                                     </div>
                                     <span
                                         style={{
@@ -1071,15 +1430,19 @@ export default function Bureaucracy() {
                                             textTransform: 'uppercase',
                                             letterSpacing: '0.05em',
                                             background:
-                                                translationResult.urgency === 'high'
+                                                translationResult.urgency ===
+                                                'high'
                                                     ? '#FDE8E6'
-                                                    : translationResult.urgency === 'medium'
+                                                    : translationResult.urgency ===
+                                                        'medium'
                                                       ? '#FDF0D4'
                                                       : '#D4F0E6',
                                             color:
-                                                translationResult.urgency === 'high'
+                                                translationResult.urgency ===
+                                                'high'
                                                     ? '#C4271A'
-                                                    : translationResult.urgency === 'medium'
+                                                    : translationResult.urgency ===
+                                                        'medium'
                                                       ? '#C47D0E'
                                                       : '#0A7C52',
                                         }}
@@ -1104,7 +1467,13 @@ export default function Bureaucracy() {
                                         >
                                             What this letter says
                                         </div>
-                                        <div style={{ fontSize: 14, color: '#18170F', lineHeight: 1.6 }}>
+                                        <div
+                                            style={{
+                                                fontSize: 14,
+                                                color: '#18170F',
+                                                lineHeight: 1.6,
+                                            }}
+                                        >
                                             {translationResult.summary}
                                         </div>
                                     </div>
@@ -1133,8 +1502,22 @@ export default function Bureaucracy() {
                                                 gap: 10,
                                             }}
                                         >
-                                            <span style={{ fontSize: 18, flexShrink: 0 }}>👉</span>
-                                            <div style={{ fontSize: 13, color: '#1A4CD4', lineHeight: 1.5, fontWeight: 500 }}>
+                                            <span
+                                                style={{
+                                                    fontSize: 18,
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                👉
+                                            </span>
+                                            <div
+                                                style={{
+                                                    fontSize: 13,
+                                                    color: '#1A4CD4',
+                                                    lineHeight: 1.5,
+                                                    fontWeight: 500,
+                                                }}
+                                            >
                                                 {translationResult.action}
                                             </div>
                                         </div>
@@ -1152,16 +1535,36 @@ export default function Bureaucracy() {
                                                     marginTop: 10,
                                                 }}
                                             >
-                                                <span style={{ fontSize: 16, flexShrink: 0 }}>⏰</span>
-                                                <span style={{ fontSize: 13, color: '#C47D0E', fontWeight: 600 }}>
-                                                    Deadline: {translationResult.deadline}
+                                                <span
+                                                    style={{
+                                                        fontSize: 16,
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    ⏰
+                                                </span>
+                                                <span
+                                                    style={{
+                                                        fontSize: 13,
+                                                        color: '#C47D0E',
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    Deadline:{' '}
+                                                    {translationResult.deadline}
                                                 </span>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Action buttons */}
-                                    <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            gap: 8,
+                                            marginTop: 14,
+                                        }}
+                                    >
                                         <button
                                             className="cursor-pointer transition-all hover:bg-[#E2DFD6]"
                                             style={{
@@ -1170,7 +1573,8 @@ export default function Bureaucracy() {
                                                 borderRadius: 9,
                                                 border: '1px solid #E2DFD6',
                                                 background: '#EFEDE7',
-                                                fontFamily: "'Geist', sans-serif",
+                                                fontFamily:
+                                                    "'Geist', sans-serif",
                                                 fontSize: 13,
                                                 fontWeight: 600,
                                             }}
@@ -1185,7 +1589,8 @@ export default function Bureaucracy() {
                                                 borderRadius: 9,
                                                 border: '1px solid #E2DFD6',
                                                 background: '#EFEDE7',
-                                                fontFamily: "'Geist', sans-serif",
+                                                fontFamily:
+                                                    "'Geist', sans-serif",
                                                 fontSize: 13,
                                                 fontWeight: 600,
                                             }}
@@ -1193,7 +1598,9 @@ export default function Bureaucracy() {
                                             📋 Copy
                                         </button>
                                         <button
-                                            onClick={() => setActiveTab('checklist')}
+                                            onClick={() =>
+                                                setActiveTab('checklist')
+                                            }
                                             className="cursor-pointer transition-all hover:bg-[#1540B8]"
                                             style={{
                                                 flex: 1,
@@ -1202,7 +1609,8 @@ export default function Bureaucracy() {
                                                 border: 'none',
                                                 background: '#1A4CD4',
                                                 color: 'white',
-                                                fontFamily: "'Geist', sans-serif",
+                                                fontFamily:
+                                                    "'Geist', sans-serif",
                                                 fontSize: 13,
                                                 fontWeight: 600,
                                             }}

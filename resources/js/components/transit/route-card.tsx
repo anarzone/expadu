@@ -10,16 +10,26 @@ export type RouteCardData = {
     best?: boolean;
 };
 
-export function RouteCard({ route, onClick }: { route: RouteCardData; onClick?: () => void }) {
+export function RouteCard({
+    route,
+    onClick,
+}: {
+    route: RouteCardData;
+    onClick?: () => void;
+}) {
     return (
         <div
             onClick={onClick}
             className="flex cursor-pointer items-center gap-3 transition-all"
             style={{
-                background: route.best ? 'rgba(255,255,255,.20)' : 'rgba(255,255,255,.12)',
+                background: route.best
+                    ? 'rgba(255,255,255,.20)'
+                    : 'rgba(255,255,255,.12)',
                 borderRadius: 9,
                 padding: '12px 14px',
-                border: route.best ? '2px solid rgba(255,255,255,.4)' : '2px solid transparent',
+                border: route.best
+                    ? '2px solid rgba(255,255,255,.4)'
+                    : '2px solid transparent',
             }}
         >
             {/* Badge */}
@@ -31,7 +41,9 @@ export function RouteCard({ route, onClick }: { route: RouteCardData; onClick?: 
                     borderRadius: 8,
                     background: 'rgba(255,255,255,.2)',
                     fontSize: route.badgeMono ? 13 : 16,
-                    fontFamily: route.badgeMono ? "'Geist Mono', monospace" : undefined,
+                    fontFamily: route.badgeMono
+                        ? "'Geist Mono', monospace"
+                        : undefined,
                     fontWeight: route.badgeMono ? 700 : undefined,
                 }}
             >
@@ -59,14 +71,27 @@ export function RouteCard({ route, onClick }: { route: RouteCardData; onClick?: 
                         </span>
                     )}
                 </div>
-                <div style={{ fontSize: 11, opacity: 0.75 }}>{route.detail}</div>
+                <div style={{ fontSize: 11, opacity: 0.75 }}>
+                    {route.detail}
+                </div>
             </div>
 
             {/* Time */}
             {route.showTime !== false && (
                 <div className="shrink-0 text-right">
-                    <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1 }}>{route.time}</div>
-                    <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>min</div>
+                    <div
+                        style={{
+                            fontFamily: "'Geist Mono', monospace",
+                            fontSize: 22,
+                            fontWeight: 500,
+                            lineHeight: 1,
+                        }}
+                    >
+                        {route.time}
+                    </div>
+                    <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>
+                        min
+                    </div>
                 </div>
             )}
 

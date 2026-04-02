@@ -12,8 +12,12 @@ export function QuickAccessGrid({ data }: { data: QuickAccessData }) {
                     className="rounded-xl border border-border bg-card p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md"
                 >
                     <span className="mb-2 block text-xl">{item.emoji}</span>
-                    <div className="text-[13px] font-semibold">{item.label}</div>
-                    <div className="text-[11px] text-muted-foreground">{item.subtitle}</div>
+                    <div className="text-[13px] font-semibold">
+                        {item.label}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                        {item.subtitle}
+                    </div>
                 </Link>
             ))}
         </div>

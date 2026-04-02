@@ -5,10 +5,29 @@ export type HomeCard = {
 };
 
 export type BlueHighlightData = {
-    urgent_task: { id: number; title: string; urgency: string; deadline_days: number | null; documents_required: string[] } | null;
-    appointment: { id: number; office_name: string; scheduled_at: string; notes: string | null; is_tomorrow: boolean; time: string } | null;
+    urgent_task: {
+        id: number;
+        title: string;
+        urgency: string;
+        deadline_days: number | null;
+        documents_required: string[];
+    } | null;
+    appointment: {
+        id: number;
+        office_name: string;
+        scheduled_at: string;
+        notes: string | null;
+        is_tomorrow: boolean;
+        time: string;
+    } | null;
     headline: string;
-    timeline_rows: { emoji: string; title: string; subtitle: string; value: string; unit: string }[];
+    timeline_rows: {
+        emoji: string;
+        title: string;
+        subtitle: string;
+        value: string;
+        unit: string;
+    }[];
 };
 
 export type SettlementProgressData = {
@@ -20,7 +39,12 @@ export type SettlementProgressData = {
 };
 
 export type YourPlacesData = {
-    places: { id: number; emoji: string | null; name: string; address: string | null }[];
+    places: {
+        id: number;
+        emoji: string | null;
+        name: string;
+        address: string | null;
+    }[];
 };
 
 export type QuickAccessData = {

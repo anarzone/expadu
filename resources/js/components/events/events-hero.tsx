@@ -2,7 +2,10 @@ export function EventsHero() {
     return (
         <div
             className="relative overflow-hidden px-6 pt-6 pb-5"
-            style={{ background: 'linear-gradient(135deg, #18170F 0%, #2D1B69 100%)', color: 'white' }}
+            style={{
+                background: 'linear-gradient(135deg, #18170F 0%, #2D1B69 100%)',
+                color: 'white',
+            }}
         >
             {/* Decorative circles */}
             <div
@@ -17,7 +20,13 @@ export function EventsHero() {
             {/* Eyebrow */}
             <div
                 className="mb-1.5"
-                style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', opacity: 0.55 }}
+                style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.10em',
+                    opacity: 0.55,
+                }}
             >
                 Events &middot; Cologne &middot; March 2026
             </div>
@@ -25,7 +34,12 @@ export function EventsHero() {
             {/* Title */}
             <div
                 className="relative z-[1] mb-4"
-                style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 400, lineHeight: 1.2 }}
+                style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: 24,
+                    fontWeight: 400,
+                    lineHeight: 1.2,
+                }}
             >
                 What's on this week
                 <br />
@@ -45,8 +59,19 @@ export function EventsHero() {
 function StatItem({ num, label }: { num: string; label: string }) {
     return (
         <div>
-            <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1 }}>{num}</div>
-            <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>{label}</div>
+            <div
+                style={{
+                    fontFamily: "'Geist Mono', monospace",
+                    fontSize: 22,
+                    fontWeight: 500,
+                    lineHeight: 1,
+                }}
+            >
+                {num}
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>
+                {label}
+            </div>
         </div>
     );
 }

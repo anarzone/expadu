@@ -1,6 +1,11 @@
 import type { OfficeData } from '@/pages/bureaucracy';
 
-export function OfficeCard({ office }: { office: OfficeData; onToggleMonitor?: () => void }) {
+export function OfficeCard({
+    office,
+}: {
+    office: OfficeData;
+    onToggleMonitor?: () => void;
+}) {
     return (
         <div
             style={{
@@ -14,8 +19,12 @@ export function OfficeCard({ office }: { office: OfficeData; onToggleMonitor?: (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 18, flexShrink: 0 }}>🏛️</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{office.name}</div>
-                    <div style={{ fontSize: 12, color: '#6B6860' }}>{office.address}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>
+                        {office.name}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6B6860' }}>
+                        {office.address}
+                    </div>
                 </div>
                 <a
                     href={office.mapsUrl}

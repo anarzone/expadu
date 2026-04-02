@@ -4,7 +4,10 @@
  *
  * @see https://valhalla.github.io/valhalla/decoding/
  */
-export function decodePolyline(encoded: string, precision = 6): [number, number][] {
+export function decodePolyline(
+    encoded: string,
+    precision = 6,
+): [number, number][] {
     const factor = Math.pow(10, precision);
     const coordinates: [number, number][] = [];
     let index = 0;
@@ -45,7 +48,10 @@ export function decodePolyline(encoded: string, precision = 6): [number, number]
 /**
  * Convert decoded coordinates to a GeoJSON LineString feature.
  */
-export function polylineToGeoJSON(encoded: string, precision = 6): GeoJSON.Feature<GeoJSON.LineString> {
+export function polylineToGeoJSON(
+    encoded: string,
+    precision = 6,
+): GeoJSON.Feature<GeoJSON.LineString> {
     return {
         type: 'Feature',
         properties: {},

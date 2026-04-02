@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
 
 /** Format departure minutes: 0 → "now", 1-60 → "5", >60 → "05:13" */
-export function formatDepartureTime(mins: number): { display: string; isClockTime: boolean } {
+export function formatDepartureTime(mins: number): {
+    display: string;
+    isClockTime: boolean;
+} {
     if (mins === 0) return { display: 'now', isClockTime: false };
     if (mins <= 60) return { display: String(mins), isClockTime: false };
     const d = new Date(Date.now() + mins * 60_000);
-    return { display: d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), isClockTime: true };
+    return {
+        display: d.toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit',
+        }),
+        isClockTime: true,
+    };
 }
 
 export type DepartureService = {
@@ -43,9 +52,25 @@ function sortServices(services: DepartureService[]) {
 
 /** Live digital clock that ticks every second */
 export function useClock(): string {
-    const [time, setTime] = useState(() => new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    const [time, setTime] = useState(() =>
+        new Date().toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        }),
+    );
     useEffect(() => {
-        const id = setInterval(() => setTime(new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })), 1000);
+        const id = setInterval(
+            () =>
+                setTime(
+                    new Date().toLocaleTimeString('de-DE', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                    }),
+                ),
+            1000,
+        );
         return () => clearInterval(id);
     }, []);
     return time;
@@ -101,31 +126,60 @@ export function DepartureBoard({
 
             {/* Rows */}
             {sorted.map((s, i) => (
-                <ServiceRow key={`${s.line}_${s.direction}`} service={s} onOpenRoute={onOpenRoute} isLast={i === sorted.length - 1} />
+                <ServiceRow
+                    key={`${s.line}_${s.direction}`}
+                    service={s}
+                    onOpenRoute={onOpenRoute}
+                    isLast={i === sorted.length - 1}
+                />
             ))}
         </div>
     );
 }
 
-function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureService; onOpenRoute?: (key: string) => void; isLast?: boolean }) {
+function ServiceRow({
+    service: s,
+    onOpenRoute,
+    isLast,
+}: {
+    service: DepartureService;
+    onOpenRoute?: (key: string) => void;
+    isLast?: boolean;
+}) {
     let statusTag: React.ReactNode;
     let nextClass: string;
     let nextDisplay: string | number;
 
     if (s.cancelled) {
-        statusTag = <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C4271A] dark:bg-[#C4271A]/20">Cancelled</span>;
+        statusTag = (
+            <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C4271A] uppercase dark:bg-[#C4271A]/20">
+                Cancelled
+            </span>
+        );
         nextClass = 'cancelled';
         nextDisplay = '—';
     } else if (s.delay > 0) {
-        statusTag = <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C47D0E] dark:bg-[#C47D0E]/20">+{s.delay} min delay</span>;
+        statusTag = (
+            <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C47D0E] uppercase dark:bg-[#C47D0E]/20">
+                +{s.delay} min delay
+            </span>
+        );
         nextClass = 'delayed';
         nextDisplay = formatDepartureTime(s.departures[0]).display;
     } else if (s.extra) {
-        statusTag = <span className="rounded-full bg-[#EBF0FD] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#1A4CD4] dark:bg-[#1A4CD4]/20">Extra service</span>;
+        statusTag = (
+            <span className="rounded-full bg-[#EBF0FD] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#1A4CD4] uppercase dark:bg-[#1A4CD4]/20">
+                Extra service
+            </span>
+        );
         nextClass = 'on-time';
         nextDisplay = formatDepartureTime(s.departures[0]).display;
     } else {
-        statusTag = <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#0A7C52] dark:bg-[#0A7C52]/20">On time</span>;
+        statusTag = (
+            <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20">
+                On time
+            </span>
+        );
         nextClass = 'on-time';
         nextDisplay = formatDepartureTime(s.departures[0]).display;
     }
@@ -146,7 +200,13 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
             {/* Line badge */}
             <div
                 className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold"
-                style={{ width: 34, height: 34, background: s.bg, color: s.color, fontSize: badgeFontSize }}
+                style={{
+                    width: 34,
+                    height: 34,
+                    background: s.bg,
+                    color: s.color,
+                    fontSize: badgeFontSize,
+                }}
             >
                 {s.line}
             </div>
@@ -161,28 +221,52 @@ function ServiceRow({ service: s, onOpenRoute, isLast }: { service: DepartureSer
                         </span>
                     )}
                 </div>
-                <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{s.via}</div>
+                <div className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                    {s.via}
+                </div>
                 <div className="mt-[2px] text-[11px]">{statusTag}</div>
             </div>
 
             {/* Times */}
             <div className="shrink-0 text-right">
                 {s.cancelled ? (
-                    <div className="font-mono text-[22px] font-medium leading-none text-[#C4271A]">—</div>
+                    <div className="font-mono text-[22px] leading-none font-medium text-[#C4271A]">
+                        —
+                    </div>
                 ) : (
                     <>
                         <div
-                            className="font-mono text-[22px] font-medium leading-none"
-                            style={{ color: nextClass === 'on-time' ? '#0A7C52' : nextClass === 'delayed' ? '#C47D0E' : undefined }}
+                            className="font-mono text-[22px] leading-none font-medium"
+                            style={{
+                                color:
+                                    nextClass === 'on-time'
+                                        ? '#0A7C52'
+                                        : nextClass === 'delayed'
+                                          ? '#C47D0E'
+                                          : undefined,
+                            }}
                         >
                             {nextDisplay}
                         </div>
-                        {!formatDepartureTime(s.departures[0]).isClockTime && nextDisplay !== 'now' && <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>}
+                        {!formatDepartureTime(s.departures[0]).isClockTime &&
+                            nextDisplay !== 'now' && (
+                                <div className="mt-[1px] text-[10px] text-[#AAA89F]">
+                                    min
+                                </div>
+                            )}
                     </>
                 )}
                 {following.length > 0 && (
                     <div className="mt-[3px] font-mono text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
-                        then {following.map((m) => { const f = formatDepartureTime(m); return f.isClockTime ? f.display : `${m}`; }).join(', ')}{!formatDepartureTime(following[0]).isClockTime && ' min'}
+                        then{' '}
+                        {following
+                            .map((m) => {
+                                const f = formatDepartureTime(m);
+                                return f.isClockTime ? f.display : `${m}`;
+                            })
+                            .join(', ')}
+                        {!formatDepartureTime(following[0]).isClockTime &&
+                            ' min'}
                     </div>
                 )}
             </div>

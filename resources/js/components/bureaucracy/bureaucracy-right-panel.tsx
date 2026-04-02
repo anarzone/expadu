@@ -2,9 +2,21 @@ import type { ReactNode } from 'react';
 
 const quickActions = [
     { emoji: '🤖', label: 'Translate a letter', action: 'translator' as const },
-    { emoji: '📋', label: 'Book Bürgeramt', url: 'https://termine.stadt-koeln.de/m/buergeramt/' },
-    { emoji: '📞', label: 'Ausländerbehörde Cologne', url: 'https://www.stadt-koeln.de/service/aemter/ordnungsamt-auslaenderangelegenheiten' },
-    { emoji: '🌐', label: 'Cologne city portal', url: 'https://www.stadt-koeln.de' },
+    {
+        emoji: '📋',
+        label: 'Book Bürgeramt',
+        url: 'https://termine.stadt-koeln.de/m/buergeramt/',
+    },
+    {
+        emoji: '📞',
+        label: 'Ausländerbehörde Cologne',
+        url: 'https://www.stadt-koeln.de/service/aemter/ordnungsamt-auslaenderangelegenheiten',
+    },
+    {
+        emoji: '🌐',
+        label: 'Cologne city portal',
+        url: 'https://www.stadt-koeln.de',
+    },
 ];
 
 const deadlines = [
@@ -45,7 +57,11 @@ const communityTips = [
     },
 ];
 
-export function BureaucracyRightPanel({ onSwitchTab }: { onSwitchTab?: (tab: string) => void }) {
+export function BureaucracyRightPanel({
+    onSwitchTab,
+}: {
+    onSwitchTab?: (tab: string) => void;
+}) {
     return (
         <>
             {/* Quick actions */}
@@ -62,11 +78,20 @@ export function BureaucracyRightPanel({ onSwitchTab }: { onSwitchTab?: (tab: str
                         }}
                         className="flex cursor-pointer items-center gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors last:border-b-0 hover:bg-[#EFEDE7]"
                     >
-                        <span className="w-6 shrink-0 text-center" style={{ fontSize: 16 }}>
+                        <span
+                            className="w-6 shrink-0 text-center"
+                            style={{ fontSize: 16 }}
+                        >
                             {qa.emoji}
                         </span>
-                        <span style={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{qa.label}</span>
-                        <span style={{ fontSize: 14, color: '#AAA89F' }}>›</span>
+                        <span
+                            style={{ fontSize: 13, fontWeight: 500, flex: 1 }}
+                        >
+                            {qa.label}
+                        </span>
+                        <span style={{ fontSize: 14, color: '#AAA89F' }}>
+                            ›
+                        </span>
                     </div>
                 ))}
             </RpBlock>
@@ -78,12 +103,25 @@ export function BureaucracyRightPanel({ onSwitchTab }: { onSwitchTab?: (tab: str
                         key={i}
                         className="flex cursor-pointer items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors last:border-b-0 hover:bg-[#EFEDE7]"
                     >
-                        <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
+                        <span
+                            className="mt-px shrink-0"
+                            style={{ fontSize: 16 }}
+                        >
                             {d.emoji}
                         </span>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{d.title}</div>
-                            <div style={{ fontSize: 11, color: '#6B6860' }}>{d.sub}</div>
+                            <div
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    marginBottom: 2,
+                                }}
+                            >
+                                {d.title}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#6B6860' }}>
+                                {d.sub}
+                            </div>
                         </div>
                         <span
                             className="mt-px shrink-0 rounded-[20px] px-1.5 py-0.5"
@@ -109,12 +147,25 @@ export function BureaucracyRightPanel({ onSwitchTab }: { onSwitchTab?: (tab: str
                         key={i}
                         className="flex cursor-pointer items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors last:border-b-0 hover:bg-[#EFEDE7]"
                     >
-                        <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
+                        <span
+                            className="mt-px shrink-0"
+                            style={{ fontSize: 16 }}
+                        >
                             💬
                         </span>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{tip.text}</div>
-                            <div style={{ fontSize: 11, color: '#6B6860' }}>{tip.author}</div>
+                            <div
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    marginBottom: 2,
+                                }}
+                            >
+                                {tip.text}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#6B6860' }}>
+                                {tip.author}
+                            </div>
                         </div>
                     </div>
                 ))}

@@ -1,6 +1,14 @@
 import type { NeighborhoodData } from '@/pages/neighborhoods';
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
+function ScoreBar({
+    label,
+    value,
+    color,
+}: {
+    label: string;
+    value: number;
+    color: string;
+}) {
     return (
         <div className="flex flex-col gap-1">
             <div
@@ -15,7 +23,10 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
                 {label}
             </div>
             <div className="flex items-center gap-1.5">
-                <div className="flex-1 overflow-hidden rounded-[20px]" style={{ height: 5, background: '#EFEDE7' }}>
+                <div
+                    className="flex-1 overflow-hidden rounded-[20px]"
+                    style={{ height: 5, background: '#EFEDE7' }}
+                >
                     <div
                         className="rounded-[20px]"
                         style={{
@@ -66,12 +77,18 @@ export function NeighborhoodCard({
             }}
         >
             {/* Header */}
-            <div className="flex items-start gap-3.5" style={{ padding: '16px 18px 12px' }}>
+            <div
+                className="flex items-start gap-3.5"
+                style={{ padding: '16px 18px 12px' }}
+            >
                 <span className="shrink-0" style={{ fontSize: 32 }}>
                     {n.emoji}
                 </span>
                 <div className="min-w-0 flex-1">
-                    <div className="mb-[3px] flex items-center gap-2" style={{ fontSize: 17, fontWeight: 600 }}>
+                    <div
+                        className="mb-[3px] flex items-center gap-2"
+                        style={{ fontSize: 17, fontWeight: 600 }}
+                    >
                         {n.name}
                         {n.current && (
                             <span
@@ -90,7 +107,15 @@ export function NeighborhoodCard({
                             </span>
                         )}
                     </div>
-                    <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.4 }}>{n.tagline}</div>
+                    <div
+                        style={{
+                            fontSize: 13,
+                            color: '#6B6860',
+                            lineHeight: 1.4,
+                        }}
+                    >
+                        {n.tagline}
+                    </div>
                 </div>
                 <button
                     onClick={(e) => {
@@ -101,7 +126,9 @@ export function NeighborhoodCard({
                     style={{
                         width: 32,
                         height: 32,
-                        border: n.saved ? '1px solid #C4271A' : '1px solid #E2DFD6',
+                        border: n.saved
+                            ? '1px solid #C4271A'
+                            : '1px solid #E2DFD6',
                         background: n.saved ? '#FDE8E6' : 'transparent',
                         fontSize: 15,
                     }}
@@ -111,15 +138,37 @@ export function NeighborhoodCard({
             </div>
 
             {/* Score bars - 2 column grid */}
-            <div className="grid grid-cols-2 gap-2" style={{ padding: '0 18px 14px' }}>
-                <ScoreBar label="Expat-friendly" value={n.scores.expat} color="#1A4CD4" />
-                <ScoreBar label="English" value={n.scores.english} color="#0A7C52" />
-                <ScoreBar label="Transport" value={n.scores.transport} color="#7C3AED" />
-                <ScoreBar label="Affordable" value={n.scores.affordable} color="#C47D0E" />
+            <div
+                className="grid grid-cols-2 gap-2"
+                style={{ padding: '0 18px 14px' }}
+            >
+                <ScoreBar
+                    label="Expat-friendly"
+                    value={n.scores.expat}
+                    color="#1A4CD4"
+                />
+                <ScoreBar
+                    label="English"
+                    value={n.scores.english}
+                    color="#0A7C52"
+                />
+                <ScoreBar
+                    label="Transport"
+                    value={n.scores.transport}
+                    color="#7C3AED"
+                />
+                <ScoreBar
+                    label="Affordable"
+                    value={n.scores.affordable}
+                    color="#C47D0E"
+                />
             </div>
 
             {/* Tags */}
-            <div className="flex flex-wrap gap-[5px]" style={{ padding: '0 18px 14px' }}>
+            <div
+                className="flex flex-wrap gap-[5px]"
+                style={{ padding: '0 18px 14px' }}
+            >
                 {n.tags.map((tag, i) => (
                     <span
                         key={tag}
@@ -147,17 +196,57 @@ export function NeighborhoodCard({
                 }}
             >
                 <div className="flex gap-3.5">
-                    <div className="flex items-center gap-1" style={{ fontSize: 11, color: '#6B6860' }}>
-                        <span style={{ fontFamily: "'Geist Mono', monospace", fontWeight: 600, color: '#18170F' }}>{n.rent}</span> avg rent
+                    <div
+                        className="flex items-center gap-1"
+                        style={{ fontSize: 11, color: '#6B6860' }}
+                    >
+                        <span
+                            style={{
+                                fontFamily: "'Geist Mono', monospace",
+                                fontWeight: 600,
+                                color: '#18170F',
+                            }}
+                        >
+                            {n.rent}
+                        </span>{' '}
+                        avg rent
                     </div>
-                    <div className="flex items-center gap-1" style={{ fontSize: 11, color: '#6B6860' }}>
-                        <span style={{ fontFamily: "'Geist Mono', monospace", fontWeight: 600, color: '#18170F' }}>{n.expats}</span> expats
+                    <div
+                        className="flex items-center gap-1"
+                        style={{ fontSize: 11, color: '#6B6860' }}
+                    >
+                        <span
+                            style={{
+                                fontFamily: "'Geist Mono', monospace",
+                                fontWeight: 600,
+                                color: '#18170F',
+                            }}
+                        >
+                            {n.expats}
+                        </span>{' '}
+                        expats
                     </div>
-                    <div className="flex items-center gap-1" style={{ fontSize: 11, color: '#6B6860' }}>
-                        ★ <span style={{ fontFamily: "'Geist Mono', monospace", fontWeight: 600, color: '#18170F' }}>{n.rating}</span>
+                    <div
+                        className="flex items-center gap-1"
+                        style={{ fontSize: 11, color: '#6B6860' }}
+                    >
+                        ★{' '}
+                        <span
+                            style={{
+                                fontFamily: "'Geist Mono', monospace",
+                                fontWeight: 600,
+                                color: '#18170F',
+                            }}
+                        >
+                            {n.rating}
+                        </span>
                     </div>
                 </div>
-                <span style={{ fontSize: 12, color: '#1A4CD4', fontWeight: 600 }}>View details ›</span>
+                <span
+                    style={{ fontSize: 12, color: '#1A4CD4', fontWeight: 600 }}
+                >
+                    View details ›
+                </span>
             </div>
         </div>
     );

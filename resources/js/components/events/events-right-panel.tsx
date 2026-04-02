@@ -34,7 +34,11 @@ function toRpEvent(ev: EventData): RightPanelEvent {
     };
 }
 
-export function EventsRightPanel({ onSelectEvent }: { onSelectEvent?: (id: number) => void }) {
+export function EventsRightPanel({
+    onSelectEvent,
+}: {
+    onSelectEvent?: (id: number) => void;
+}) {
     const { dbEvents } = usePage<{ dbEvents?: { data: EventData[] } }>().props;
     const allEvents = dbEvents?.data ?? [];
     const [digestSubscribed, setDigestSubscribed] = useState(false);
@@ -45,8 +49,12 @@ export function EventsRightPanel({ onSelectEvent }: { onSelectEvent?: (id: numbe
         const dayOfWeek = now.getDay(); // 0=Sun
         const daysUntilSat = dayOfWeek === 0 ? 6 : 6 - dayOfWeek;
         const daysUntilSun = daysUntilSat + 1;
-        const satDate = new Date(now); satDate.setDate(now.getDate() + daysUntilSat); satDate.setHours(0, 0, 0, 0);
-        const sunEnd = new Date(now); sunEnd.setDate(now.getDate() + daysUntilSun); sunEnd.setHours(23, 59, 59, 999);
+        const satDate = new Date(now);
+        satDate.setDate(now.getDate() + daysUntilSat);
+        satDate.setHours(0, 0, 0, 0);
+        const sunEnd = new Date(now);
+        sunEnd.setDate(now.getDate() + daysUntilSun);
+        sunEnd.setHours(23, 59, 59, 999);
 
         const weekend: RightPanelEvent[] = [];
         const coming: RightPanelEvent[] = [];
@@ -72,7 +80,11 @@ export function EventsRightPanel({ onSelectEvent }: { onSelectEvent?: (id: numbe
             {weekendEvents.length > 0 && (
                 <RpBlock title="This weekend">
                     {weekendEvents.map((ev) => (
-                        <RpRow key={ev.id} event={ev} onClick={() => onSelectEvent?.(ev.id)} />
+                        <RpRow
+                            key={ev.id}
+                            event={ev}
+                            onClick={() => onSelectEvent?.(ev.id)}
+                        />
                     ))}
                 </RpBlock>
             )}
@@ -81,7 +93,11 @@ export function EventsRightPanel({ onSelectEvent }: { onSelectEvent?: (id: numbe
             {comingUpEvents.length > 0 && (
                 <RpBlock title="Coming up">
                     {comingUpEvents.map((ev) => (
-                        <RpRow key={ev.id} event={ev} onClick={() => onSelectEvent?.(ev.id)} />
+                        <RpRow
+                            key={ev.id}
+                            event={ev}
+                            onClick={() => onSelectEvent?.(ev.id)}
+                        />
                     ))}
                 </RpBlock>
             )}
@@ -89,24 +105,38 @@ export function EventsRightPanel({ onSelectEvent }: { onSelectEvent?: (id: numbe
             {/* Weekly digest */}
             <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
                 <div className="border-b border-[#E2DFD6] px-[15px] py-3">
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>Weekly digest</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                        Weekly digest
+                    </span>
                 </div>
                 <div className="px-[15px] py-3.5">
-                    <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.6, marginBottom: 10 }}>
-                        Get a Monday morning roundup of the best events that week.
+                    <div
+                        style={{
+                            fontSize: 13,
+                            color: '#6B6860',
+                            lineHeight: 1.6,
+                            marginBottom: 10,
+                        }}
+                    >
+                        Get a Monday morning roundup of the best events that
+                        week.
                     </div>
                     <button
                         onClick={() => setDigestSubscribed(!digestSubscribed)}
                         className="w-full cursor-pointer rounded-[9px] border-none py-[9px] transition-all"
                         style={{
-                            background: digestSubscribed ? '#D4F0E6' : '#1A4CD4',
+                            background: digestSubscribed
+                                ? '#D4F0E6'
+                                : '#1A4CD4',
                             color: digestSubscribed ? '#0A7C52' : 'white',
                             fontFamily: "'Geist', sans-serif",
                             fontSize: 13,
                             fontWeight: 600,
                         }}
                     >
-                        {digestSubscribed ? '✓ Subscribed' : 'Subscribe to digest'}
+                        {digestSubscribed
+                            ? '✓ Subscribed'
+                            : 'Subscribe to digest'}
                     </button>
                 </div>
             </div>
@@ -125,7 +155,13 @@ function RpBlock({ title, children }: { title: string; children: ReactNode }) {
     );
 }
 
-function RpRow({ event, onClick }: { event: RightPanelEvent; onClick?: () => void }) {
+function RpRow({
+    event,
+    onClick,
+}: {
+    event: RightPanelEvent;
+    onClick?: () => void;
+}) {
     return (
         <div
             onClick={onClick}
@@ -135,8 +171,12 @@ function RpRow({ event, onClick }: { event: RightPanelEvent; onClick?: () => voi
                 {event.emoji}
             </span>
             <div className="min-w-0 flex-1">
-                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>{event.title}</div>
-                <div style={{ fontSize: 11, color: '#6B6860' }}>{event.sub}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>
+                    {event.title}
+                </div>
+                <div style={{ fontSize: 11, color: '#6B6860' }}>
+                    {event.sub}
+                </div>
             </div>
             <span
                 className="mt-px shrink-0 rounded-[20px] px-1.5 py-0.5"

@@ -5,21 +5,28 @@ const features = [
     {
         emoji: '\u{1F687}',
         title: 'Transit',
-        description: 'Live departures, disruption alerts, and daily commute routines — all in one place.',
+        description:
+            'Live departures, disruption alerts, and daily commute routines — all in one place.',
     },
     {
         emoji: '\u{1F5FA}\uFE0F',
         title: 'Discover',
-        description: 'Find hidden gems, local spots, and events happening near you right now.',
+        description:
+            'Find hidden gems, local spots, and events happening near you right now.',
     },
     {
         emoji: '\u{1F3DB}\uFE0F',
         title: 'Settle',
-        description: 'Navigate bureaucracy, find services, and get settled in your new city with confidence.',
+        description:
+            'Navigate bureaucracy, find services, and get settled in your new city with confidence.',
     },
 ];
 
-export default function Welcome({ canRegister = true }: { canRegister?: boolean }) {
+export default function Welcome({
+    canRegister = true,
+}: {
+    canRegister?: boolean;
+}) {
     const { auth } = usePage().props;
 
     return (
@@ -69,12 +76,14 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
                 {/* Hero */}
                 <main className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center lg:py-24">
-                    <h1 className="font-display text-5xl font-bold leading-tight tracking-tight text-foreground md:text-6xl lg:text-7xl">
+                    <h1 className="font-display text-5xl leading-tight font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl">
                         Your city.{' '}
                         <span className="text-primary">Your guide.</span>
                     </h1>
                     <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground md:text-xl">
-                        The smart city companion for expats in Germany. Transit, events, local tips — everything you need to feel at home.
+                        The smart city companion for expats in Germany. Transit,
+                        events, local tips — everything you need to feel at
+                        home.
                     </p>
                     <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
                         {canRegister && (
@@ -90,7 +99,9 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                             className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
                         >
                             Already have an account?{' '}
-                            <span className="underline underline-offset-4">Log in</span>
+                            <span className="underline underline-offset-4">
+                                Log in
+                            </span>
                         </Link>
                     </div>
 
@@ -101,7 +112,9 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                 key={feature.title}
                                 className="rounded-2xl border border-border bg-card p-8 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
                             >
-                                <span className="text-4xl">{feature.emoji}</span>
+                                <span className="text-4xl">
+                                    {feature.emoji}
+                                </span>
                                 <h3 className="mt-4 font-display text-lg font-semibold tracking-tight text-foreground">
                                     {feature.title}
                                 </h3>

@@ -71,7 +71,20 @@ const TABS = [
     { id: 'saved', label: 'Saved' },
 ];
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_NAMES = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+];
 const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // ============================================================
@@ -83,7 +96,9 @@ export default function Events() {
     const { dbEvents } = usePage<{ dbEvents: { data: EventData[] } }>().props;
 
     // Derive events from backend data
-    const [localOverrides, setLocalOverrides] = useState<Record<number, { going?: boolean; saved?: boolean; attending?: number }>>({});
+    const [localOverrides, setLocalOverrides] = useState<
+        Record<number, { going?: boolean; saved?: boolean; attending?: number }>
+    >({});
     const events = useMemo(() => {
         return (dbEvents?.data ?? []).map((e) => ({
             ...e,
@@ -154,7 +169,11 @@ export default function Events() {
         if (selectedCalDay === null) return [];
         return events.filter((e) => {
             const d = new Date(e.fullDate);
-            return d.getFullYear() === calYear && d.getMonth() === calMonth && parseInt(e.date) === selectedCalDay;
+            return (
+                d.getFullYear() === calYear &&
+                d.getMonth() === calMonth &&
+                parseInt(e.date) === selectedCalDay
+            );
         });
     }, [events, calYear, calMonth, selectedCalDay]);
 
@@ -175,9 +194,16 @@ export default function Events() {
             },
         }));
         if (ev.going) {
-            router.delete(`/events/${id}/join`, { preserveScroll: true, preserveState: true });
+            router.delete(`/events/${id}/join`, {
+                preserveScroll: true,
+                preserveState: true,
+            });
         } else {
-            router.post(`/events/${id}/join`, {}, { preserveScroll: true, preserveState: true });
+            router.post(
+                `/events/${id}/join`,
+                {},
+                { preserveScroll: true, preserveState: true },
+            );
         }
     }
 
@@ -201,15 +227,23 @@ export default function Events() {
     function changeMonth(dir: number) {
         let m = calMonth + dir;
         let y = calYear;
-        if (m > 11) { m = 0; y++; }
-        if (m < 0) { m = 11; y--; }
+        if (m > 11) {
+            m = 0;
+            y++;
+        }
+        if (m < 0) {
+            m = 11;
+            y--;
+        }
         setCalMonth(m);
         setCalYear(y);
         setSelectedCalDay(null);
     }
 
     // Keep sheet event in sync with events state
-    const sheetEvent = selectedEvent ? events.find((e) => e.id === selectedEvent.id) ?? selectedEvent : null;
+    const sheetEvent = selectedEvent
+        ? (events.find((e) => e.id === selectedEvent.id) ?? selectedEvent)
+        : null;
 
     return (
         <AppLayout
@@ -221,15 +255,26 @@ export default function Events() {
                 {/* ── Sticky header: title + pill tabs ── */}
                 <div
                     className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{ background: 'rgba(246,245,241,.94)', backdropFilter: 'blur(16px)' }}
+                    style={{
+                        background: 'rgba(246,245,241,.94)',
+                        backdropFilter: 'blur(16px)',
+                    }}
                 >
                     <span
                         className="shrink-0"
-                        style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}
+                        style={{
+                            fontFamily: "'Fraunces', serif",
+                            fontSize: 20,
+                            fontWeight: 500,
+                            letterSpacing: '-0.01em',
+                        }}
                     >
                         Events
                     </span>
-                    <div className="flex gap-1 rounded-full p-[3px]" style={{ background: '#EFEDE7' }}>
+                    <div
+                        className="flex gap-1 rounded-full p-[3px]"
+                        style={{ background: '#EFEDE7' }}
+                    >
                         {TABS.map((t) => (
                             <button
                                 key={t.id}
@@ -239,9 +284,18 @@ export default function Events() {
                                     fontSize: 12,
                                     fontWeight: 600,
                                     fontFamily: "'Geist', sans-serif",
-                                    color: activeTab === t.id ? '#18170F' : '#6B6860',
-                                    background: activeTab === t.id ? 'white' : 'transparent',
-                                    boxShadow: activeTab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                                    color:
+                                        activeTab === t.id
+                                            ? '#18170F'
+                                            : '#6B6860',
+                                    background:
+                                        activeTab === t.id
+                                            ? 'white'
+                                            : 'transparent',
+                                    boxShadow:
+                                        activeTab === t.id
+                                            ? '0 1px 4px rgba(0,0,0,0.08)'
+                                            : 'none',
                                 }}
                             >
                                 {t.label}
@@ -258,27 +312,38 @@ export default function Events() {
                         {/* Search + Filters */}
                         <div className="border-b border-[#E2DFD6] px-6 pt-3.5 pb-3">
                             {/* Search bar */}
-                            <div
-                                className="mb-2.5 flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                            >
-                                <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
+                            <div className="mb-2.5 flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
+                                <span
+                                    style={{ fontSize: 15, color: '#AAA89F' }}
+                                >
+                                    🔍
+                                </span>
                                 <input
                                     type="text"
                                     placeholder="Search events…"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
-                                    style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
+                                    style={{
+                                        fontFamily: "'Geist', sans-serif",
+                                        fontSize: 14,
+                                    }}
                                 />
                                 {search && (
-                                    <button onClick={() => setSearch('')} className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]">
+                                    <button
+                                        onClick={() => setSearch('')}
+                                        className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]"
+                                    >
                                         ✕
                                     </button>
                                 )}
                             </div>
 
                             {/* Filter pills */}
-                            <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                            <div
+                                className="flex gap-1.5 overflow-x-auto"
+                                style={{ scrollbarWidth: 'none' }}
+                            >
                                 {FILTERS.map((f) => (
                                     <button
                                         key={f.id}
@@ -289,9 +354,18 @@ export default function Events() {
                                             fontWeight: 500,
                                             fontFamily: "'Geist', sans-serif",
                                             whiteSpace: 'nowrap',
-                                            background: activeFilter === f.id ? '#1A4CD4' : 'white',
-                                            color: activeFilter === f.id ? 'white' : '#6B6860',
-                                            borderColor: activeFilter === f.id ? '#1A4CD4' : '#E2DFD6',
+                                            background:
+                                                activeFilter === f.id
+                                                    ? '#1A4CD4'
+                                                    : 'white',
+                                            color:
+                                                activeFilter === f.id
+                                                    ? 'white'
+                                                    : '#6B6860',
+                                            borderColor:
+                                                activeFilter === f.id
+                                                    ? '#1A4CD4'
+                                                    : '#E2DFD6',
                                         }}
                                     >
                                         {f.label}
@@ -303,51 +377,97 @@ export default function Events() {
                         {/* Events feed */}
                         <div className="px-6 py-4">
                             {filtered.length === 0 ? (
-                                <div className="py-12 text-center" style={{ color: '#AAA89F' }}>
-                                    <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-                                    <div style={{ fontSize: 15, fontWeight: 600, color: '#6B6860', marginBottom: 6 }}>No events found</div>
-                                    <div style={{ fontSize: 13 }}>Try a different filter or search term</div>
+                                <div
+                                    className="py-12 text-center"
+                                    style={{ color: '#AAA89F' }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: 36,
+                                            marginBottom: 12,
+                                        }}
+                                    >
+                                        🔍
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: 15,
+                                            fontWeight: 600,
+                                            color: '#6B6860',
+                                            marginBottom: 6,
+                                        }}
+                                    >
+                                        No events found
+                                    </div>
+                                    <div style={{ fontSize: 13 }}>
+                                        Try a different filter or search term
+                                    </div>
                                 </div>
                             ) : (
-                                Object.entries(groupedByDate).map(([label, evs], gi) => {
-                                    const now = new Date();
-                                    const todayDate = String(now.getDate()).padStart(2, '0');
-                                    const todayMonth = now.toLocaleString('en', { month: 'short' });
-                                    const isToday = label.includes(todayDate) && label.includes(todayMonth);
-                                    return (
-                                        <div key={label}>
-                                            {/* Day label with line */}
-                                            <div className="mb-2.5 flex items-center gap-2" style={{ marginTop: gi === 0 ? 0 : 16 }}>
-                                                <span
+                                Object.entries(groupedByDate).map(
+                                    ([label, evs], gi) => {
+                                        const now = new Date();
+                                        const todayDate = String(
+                                            now.getDate(),
+                                        ).padStart(2, '0');
+                                        const todayMonth = now.toLocaleString(
+                                            'en',
+                                            { month: 'short' },
+                                        );
+                                        const isToday =
+                                            label.includes(todayDate) &&
+                                            label.includes(todayMonth);
+                                        return (
+                                            <div key={label}>
+                                                {/* Day label with line */}
+                                                <div
+                                                    className="mb-2.5 flex items-center gap-2"
                                                     style={{
-                                                        fontSize: 11,
-                                                        fontWeight: 700,
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.08em',
-                                                        color: '#AAA89F',
+                                                        marginTop:
+                                                            gi === 0 ? 0 : 16,
                                                     }}
                                                 >
-                                                    {isToday ? 'Today — ' : ''}
-                                                    {label}
-                                                </span>
-                                                <div className="h-px flex-1 bg-[#E2DFD6]" />
-                                            </div>
+                                                    <span
+                                                        style={{
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            textTransform:
+                                                                'uppercase',
+                                                            letterSpacing:
+                                                                '0.08em',
+                                                            color: '#AAA89F',
+                                                        }}
+                                                    >
+                                                        {isToday
+                                                            ? 'Today — '
+                                                            : ''}
+                                                        {label}
+                                                    </span>
+                                                    <div className="h-px flex-1 bg-[#E2DFD6]" />
+                                                </div>
 
-                                            {evs.map((ev, i) => (
-                                                <EventCard
-                                                    key={ev.id}
-                                                    event={ev}
-                                                    going={ev.going}
-                                                    saved={ev.saved}
-                                                    onRsvp={() => toggleRsvp(ev.id)}
-                                                    onSave={() => toggleSave(ev.id)}
-                                                    onClick={() => openEvent(ev.id)}
-                                                    index={i}
-                                                />
-                                            ))}
-                                        </div>
-                                    );
-                                })
+                                                {evs.map((ev, i) => (
+                                                    <EventCard
+                                                        key={ev.id}
+                                                        event={ev}
+                                                        going={ev.going}
+                                                        saved={ev.saved}
+                                                        onRsvp={() =>
+                                                            toggleRsvp(ev.id)
+                                                        }
+                                                        onSave={() =>
+                                                            toggleSave(ev.id)
+                                                        }
+                                                        onClick={() =>
+                                                            openEvent(ev.id)
+                                                        }
+                                                        index={i}
+                                                    />
+                                                ))}
+                                            </div>
+                                        );
+                                    },
+                                )
                             )}
                         </div>
                     </>
@@ -358,12 +478,24 @@ export default function Events() {
                     <div className="px-6 py-5">
                         {/* Month header */}
                         <div className="mb-4 flex items-center justify-between">
-                            <span style={{ fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 500 }}>
+                            <span
+                                style={{
+                                    fontFamily: "'Fraunces', serif",
+                                    fontSize: 18,
+                                    fontWeight: 500,
+                                }}
+                            >
                                 {MONTH_NAMES[calMonth]} {calYear}
                             </span>
                             <div className="flex gap-1.5">
-                                <CalNavBtn label="‹" onClick={() => changeMonth(-1)} />
-                                <CalNavBtn label="›" onClick={() => changeMonth(1)} />
+                                <CalNavBtn
+                                    label="‹"
+                                    onClick={() => changeMonth(-1)}
+                                />
+                                <CalNavBtn
+                                    label="›"
+                                    onClick={() => changeMonth(1)}
+                                />
                             </div>
                         </div>
 
@@ -389,7 +521,8 @@ export default function Events() {
                                         color: '#AAA89F',
                                     }}
                                 >
-                                    Events on {selectedCalDay} {MONTH_NAMES[calMonth]}
+                                    Events on {selectedCalDay}{' '}
+                                    {MONTH_NAMES[calMonth]}
                                 </div>
                                 {calDayEvents.map((ev) => (
                                     <EventCard
@@ -412,10 +545,28 @@ export default function Events() {
                     <div className="px-6 py-5">
                         {savedEvents.length === 0 ? (
                             <div className="py-12 text-center">
-                                <div style={{ fontSize: 40, marginBottom: 12 }}>🔖</div>
-                                <div style={{ fontSize: 16, fontWeight: 600, color: '#6B6860', marginBottom: 6 }}>No saved events yet</div>
-                                <div style={{ fontSize: 13, color: '#AAA89F', lineHeight: 1.6 }}>
-                                    Tap the ♡ on any event to save it here for later.
+                                <div style={{ fontSize: 40, marginBottom: 12 }}>
+                                    🔖
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 16,
+                                        fontWeight: 600,
+                                        color: '#6B6860',
+                                        marginBottom: 6,
+                                    }}
+                                >
+                                    No saved events yet
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 13,
+                                        color: '#AAA89F',
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    Tap the ♡ on any event to save it here for
+                                    later.
                                 </div>
                             </div>
                         ) : (
@@ -436,7 +587,10 @@ export default function Events() {
             </div>
 
             {/* ── Detail bottom sheet ── */}
-            <BottomSheet open={sheetEvent !== null} onClose={() => setSelectedEvent(null)}>
+            <BottomSheet
+                open={sheetEvent !== null}
+                onClose={() => setSelectedEvent(null)}
+            >
                 {sheetEvent && (
                     <EventDetailContent
                         event={sheetEvent}
@@ -486,7 +640,8 @@ function CalendarGrid({
     const daysInPrev = new Date(year, month, 0).getDate();
 
     const today = new Date();
-    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const isCurrentMonth =
+        today.getFullYear() === year && today.getMonth() === month;
 
     // Next-month fill
     const total = startOffset + daysInMonth;
@@ -499,7 +654,13 @@ function CalendarGrid({
                 <div
                     key={d}
                     className="py-1.5 text-center"
-                    style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#AAA89F' }}
+                    style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: '#AAA89F',
+                    }}
                 >
                     {d}
                 </div>
@@ -542,7 +703,12 @@ function CalendarGrid({
                         key={`day-${d}`}
                         onClick={() => onSelectDay(d)}
                         className="relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[9px] transition-all hover:bg-[#EFEDE7]"
-                        style={{ fontSize: 13, fontWeight, background: bg, color }}
+                        style={{
+                            fontSize: 13,
+                            fontWeight,
+                            background: bg,
+                            color,
+                        }}
                     >
                         {d}
                         {hasEvents && (
@@ -551,7 +717,9 @@ function CalendarGrid({
                                 style={{
                                     width: 4,
                                     height: 4,
-                                    background: isSelected ? 'white' : '#1A4CD4',
+                                    background: isSelected
+                                        ? 'white'
+                                        : '#1A4CD4',
                                 }}
                             />
                         )}

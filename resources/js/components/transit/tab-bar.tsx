@@ -1,6 +1,14 @@
 import { cn } from '@/lib/utils';
 
-export function TabBar({ tabs, active, onChange }: { tabs: { id: string; label: string }[]; active: string; onChange: (id: string) => void }) {
+export function TabBar({
+    tabs,
+    active,
+    onChange,
+}: {
+    tabs: { id: string; label: string }[];
+    active: string;
+    onChange: (id: string) => void;
+}) {
     return (
         <div className="flex border-b border-border">
             {tabs.map((tab) => (

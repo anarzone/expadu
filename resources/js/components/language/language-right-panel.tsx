@@ -1,6 +1,10 @@
 import { useState, type ReactNode } from 'react';
 
-export function LanguageRightPanel({ onOpenPartner }: { onOpenPartner?: (id: string) => void }) {
+export function LanguageRightPanel({
+    onOpenPartner,
+}: {
+    onOpenPartner?: (id: string) => void;
+}) {
     const [meetupGoing, setMeetupGoing] = useState(false);
 
     return (
@@ -11,7 +15,12 @@ export function LanguageRightPanel({ onOpenPartner }: { onOpenPartner?: (id: str
                 badge={
                     <span
                         className="rounded-[20px] px-2 py-0.5"
-                        style={{ fontSize: 11, fontWeight: 600, color: '#0A7C52', background: '#D4F0E6' }}
+                        style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#0A7C52',
+                            background: '#D4F0E6',
+                        }}
                     >
                         2 new
                     </span>
@@ -40,11 +49,29 @@ export function LanguageRightPanel({ onOpenPartner }: { onOpenPartner?: (id: str
             {/* Next meetup */}
             <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
                 <div className="flex items-center justify-between border-b border-[#E2DFD6] px-[15px] py-3">
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>Next meetup</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                        Next meetup
+                    </span>
                 </div>
                 <div className="px-[15px] py-3.5">
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Language Evening · Cafe Schmitz</div>
-                    <div style={{ fontSize: 12, color: '#6B6860', marginBottom: 10 }}>Tomorrow 19:00 · 14 attending</div>
+                    <div
+                        style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            marginBottom: 4,
+                        }}
+                    >
+                        Language Evening · Cafe Schmitz
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#6B6860',
+                            marginBottom: 10,
+                        }}
+                    >
+                        Tomorrow 19:00 · 14 attending
+                    </div>
                     <button
                         onClick={() => setMeetupGoing(!meetupGoing)}
                         className="w-full cursor-pointer rounded-[9px] border-none py-[9px] transition-all"
@@ -56,7 +83,7 @@ export function LanguageRightPanel({ onOpenPartner }: { onOpenPartner?: (id: str
                             color: meetupGoing ? '#0A7C52' : 'white',
                         }}
                     >
-                        {meetupGoing ? '✓ You\'re going' : '🎉 I\'m going'}
+                        {meetupGoing ? "✓ You're going" : "🎉 I'm going"}
                     </button>
                 </div>
             </div>
@@ -64,20 +91,62 @@ export function LanguageRightPanel({ onOpenPartner }: { onOpenPartner?: (id: str
             {/* Tips */}
             <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
                 <div className="flex items-center justify-between border-b border-[#E2DFD6] px-[15px] py-3">
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>Tips for great sessions</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                        Tips for great sessions
+                    </span>
                 </div>
                 <div className="flex flex-col gap-2.5 px-[15px] py-3.5">
-                    <div style={{ fontSize: 12, color: '#6B6860', lineHeight: 1.5 }}>💡 Split the time equally — 30 min each language</div>
-                    <div style={{ fontSize: 12, color: '#6B6860', lineHeight: 1.5 }}>📝 Bring a topic or article to discuss</div>
-                    <div style={{ fontSize: 12, color: '#6B6860', lineHeight: 1.5 }}>☕ Meet at a quiet cafe — Cafe Schmitz is popular</div>
-                    <div style={{ fontSize: 12, color: '#6B6860', lineHeight: 1.5 }}>🔄 Be patient — everyone starts somewhere</div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#6B6860',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        💡 Split the time equally — 30 min each language
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#6B6860',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        📝 Bring a topic or article to discuss
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#6B6860',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        ☕ Meet at a quiet cafe — Cafe Schmitz is popular
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: '#6B6860',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        🔄 Be patient — everyone starts somewhere
+                    </div>
                 </div>
             </div>
         </>
     );
 }
 
-function RpBlock({ title, badge, children }: { title: string; badge?: ReactNode; children: ReactNode }) {
+function RpBlock({
+    title,
+    badge,
+    children,
+}: {
+    title: string;
+    badge?: ReactNode;
+    children: ReactNode;
+}) {
     return (
         <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
             <div className="flex items-center justify-between border-b border-[#E2DFD6] px-[15px] py-3">
@@ -89,7 +158,17 @@ function RpBlock({ title, badge, children }: { title: string; badge?: ReactNode;
     );
 }
 
-function RpRow({ icon, title, sub, onClick }: { icon: string; title: string; sub: string; onClick?: () => void }) {
+function RpRow({
+    icon,
+    title,
+    sub,
+    onClick,
+}: {
+    icon: string;
+    title: string;
+    sub: string;
+    onClick?: () => void;
+}) {
     return (
         <div
             onClick={onClick}
@@ -99,7 +178,9 @@ function RpRow({ icon, title, sub, onClick }: { icon: string; title: string; sub
                 {icon}
             </span>
             <div>
-                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>{title}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>
+                    {title}
+                </div>
                 <div style={{ fontSize: 11, color: '#6B6860' }}>{sub}</div>
             </div>
         </div>

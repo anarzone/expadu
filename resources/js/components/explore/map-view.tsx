@@ -25,8 +25,23 @@ export type MapViewHandle = {
     addSearchPin: (lat: number, lng: number, label: string) => void;
     clearSearchPin: () => void;
     locateUser: () => void;
-    drawRoute: (geometry: string, mode: string, origin: { lat: number; lng: number }, destination: { lat: number; lng: number }) => void;
-    drawTransitRoute: (segments: Array<{ type: string; geometry?: string; coordinates?: [number, number][]; color?: string; line?: string }>, origin: { lat: number; lng: number }, destination: { lat: number; lng: number }) => void;
+    drawRoute: (
+        geometry: string,
+        mode: string,
+        origin: { lat: number; lng: number },
+        destination: { lat: number; lng: number },
+    ) => void;
+    drawTransitRoute: (
+        segments: Array<{
+            type: string;
+            geometry?: string;
+            coordinates?: [number, number][];
+            color?: string;
+            line?: string;
+        }>,
+        origin: { lat: number; lng: number },
+        destination: { lat: number; lng: number },
+    ) => void;
     clearRoute: () => void;
 };
 
@@ -37,18 +52,38 @@ const categoryEmoji: Record<string, string> = {
     park: '🌳',
 };
 
-export type MapBounds = { sw_lat: number; sw_lng: number; ne_lat: number; ne_lng: number };
+export type MapBounds = {
+    sw_lat: number;
+    sw_lng: number;
+    ne_lat: number;
+    ne_lng: number;
+};
 
-export const MapView = forwardRef<MapViewHandle, {
-    spots: SpotPin[];
-    personalPlaces?: PersonalPlace[];
-    selectedId: number | null;
-    onSelectSpot: (id: number) => void;
-    onMapTap?: (lat: number, lng: number) => void;
-    onBoundsChange?: (bounds: MapBounds) => void;
-    onSearchPinClick?: (lat: number, lng: number, label: string) => void;
-    hideMarkers?: boolean;
-}>(function MapView({ spots, personalPlaces = [], selectedId, onSelectSpot, onMapTap, onBoundsChange, onSearchPinClick, hideMarkers = false }, ref) {
+export const MapView = forwardRef<
+    MapViewHandle,
+    {
+        spots: SpotPin[];
+        personalPlaces?: PersonalPlace[];
+        selectedId: number | null;
+        onSelectSpot: (id: number) => void;
+        onMapTap?: (lat: number, lng: number) => void;
+        onBoundsChange?: (bounds: MapBounds) => void;
+        onSearchPinClick?: (lat: number, lng: number, label: string) => void;
+        hideMarkers?: boolean;
+    }
+>(function MapView(
+    {
+        spots,
+        personalPlaces = [],
+        selectedId,
+        onSelectSpot,
+        onMapTap,
+        onBoundsChange,
+        onSearchPinClick,
+        hideMarkers = false,
+    },
+    ref,
+) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
     const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -93,7 +128,10 @@ export const MapView = forwardRef<MapViewHandle, {
                 onSearchPinClickRef.current?.(lat, lng, label);
             });
 
-            searchPinRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            searchPinRef.current = new maplibregl.Marker({
+                element: el,
+                anchor: 'bottom',
+            })
                 .setLngLat([lng, lat])
                 .addTo(map);
 
@@ -106,7 +144,12 @@ export const MapView = forwardRef<MapViewHandle, {
         locateUser() {
             geolocateRef.current?.trigger();
         },
-        drawRoute(geometry: string, mode: string, origin: { lat: number; lng: number }, destination: { lat: number; lng: number }) {
+        drawRoute(
+            geometry: string,
+            mode: string,
+            origin: { lat: number; lng: number },
+            destination: { lat: number; lng: number },
+        ) {
             const map = mapRef.current;
             if (!map || !map.isStyleLoaded()) return;
 
@@ -116,7 +159,10 @@ export const MapView = forwardRef<MapViewHandle, {
             const coordinates = geometry ? decodePolyline(geometry, 6) : [];
             // Fall back to straight line if no geometry (e.g. transit)
             if (coordinates.length === 0) {
-                coordinates.push([origin.lng, origin.lat], [destination.lng, destination.lat]);
+                coordinates.push(
+                    [origin.lng, origin.lat],
+                    [destination.lng, destination.lat],
+                );
             }
 
             const isWalk = mode === 'walk' || mode === 'pedestrian';
@@ -126,7 +172,11 @@ export const MapView = forwardRef<MapViewHandle, {
             // Add route source + layers
             map.addSource('explore-route', {
                 type: 'geojson',
-                data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } },
+                data: {
+                    type: 'Feature',
+                    properties: {},
+                    geometry: { type: 'LineString', coordinates },
+                },
             });
 
             map.addLayer({
@@ -134,7 +184,11 @@ export const MapView = forwardRef<MapViewHandle, {
                 type: 'line',
                 source: 'explore-route',
                 layout: { 'line-join': 'round', 'line-cap': 'round' },
-                paint: { 'line-color': color, 'line-width': 7, 'line-opacity': 0.2 },
+                paint: {
+                    'line-color': color,
+                    'line-width': 7,
+                    'line-opacity': 0.2,
+                },
             });
 
             map.addLayer({
@@ -151,17 +205,25 @@ export const MapView = forwardRef<MapViewHandle, {
 
             // Origin marker (green)
             const originEl = document.createElement('div');
-            originEl.style.cssText = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0A7C52;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
+            originEl.style.cssText =
+                'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0A7C52;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
             originEl.textContent = '\uD83D\uDCCD';
-            const originMarker = new maplibregl.Marker({ element: originEl, anchor: 'center' })
+            const originMarker = new maplibregl.Marker({
+                element: originEl,
+                anchor: 'center',
+            })
                 .setLngLat([origin.lng, origin.lat])
                 .addTo(map);
 
             // Destination marker (red)
             const destEl = document.createElement('div');
-            destEl.style.cssText = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#C4271A;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
+            destEl.style.cssText =
+                'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#C4271A;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
             destEl.textContent = '\uD83C\uDFC1';
-            const destMarker = new maplibregl.Marker({ element: destEl, anchor: 'center' })
+            const destMarker = new maplibregl.Marker({
+                element: destEl,
+                anchor: 'center',
+            })
                 .setLngLat([destination.lng, destination.lat])
                 .addTo(map);
 
@@ -173,14 +235,31 @@ export const MapView = forwardRef<MapViewHandle, {
                 bounds.extend(coord as [number, number]);
             }
             (map as any)._skipBounds?.(true);
-            map.fitBounds(bounds, { padding: { top: 60, bottom: 200, left: 60, right: 60 }, maxZoom: 16, duration: 800 });
+            map.fitBounds(bounds, {
+                padding: { top: 60, bottom: 200, left: 60, right: 60 },
+                maxZoom: 16,
+                duration: 800,
+            });
         },
-        drawTransitRoute(segments: Array<{ type: string; geometry?: string; coordinates?: [number, number][]; color?: string; line?: string }>, origin: { lat: number; lng: number }, destination: { lat: number; lng: number }) {
+        drawTransitRoute(
+            segments: Array<{
+                type: string;
+                geometry?: string;
+                coordinates?: [number, number][];
+                color?: string;
+                line?: string;
+            }>,
+            origin: { lat: number; lng: number },
+            destination: { lat: number; lng: number },
+        ) {
             const map = mapRef.current;
             if (!map || !map.isStyleLoaded()) return;
             this.clearRoute();
 
-            const allBoundsCoords: [number, number][] = [[origin.lng, origin.lat], [destination.lng, destination.lat]];
+            const allBoundsCoords: [number, number][] = [
+                [origin.lng, origin.lat],
+                [destination.lng, destination.lat],
+            ];
 
             segments.forEach((seg, i) => {
                 const srcId = `transit-seg-${i}`;
@@ -197,18 +276,29 @@ export const MapView = forwardRef<MapViewHandle, {
 
                 map.addSource(srcId, {
                     type: 'geojson',
-                    data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } },
+                    data: {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: { type: 'LineString', coordinates: coords },
+                    },
                 });
 
                 const isWalk = seg.type === 'walk';
-                const color = seg.type === 'transit' ? (seg.color ?? '#1A4CD4') : '#1A4CD4';
+                const color =
+                    seg.type === 'transit'
+                        ? (seg.color ?? '#1A4CD4')
+                        : '#1A4CD4';
 
                 map.addLayer({
                     id: `${srcId}-bg`,
                     type: 'line',
                     source: srcId,
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
-                    paint: { 'line-color': color, 'line-width': isWalk ? 5 : 7, 'line-opacity': 0.2 },
+                    paint: {
+                        'line-color': color,
+                        'line-width': isWalk ? 5 : 7,
+                        'line-opacity': 0.2,
+                    },
                 });
                 map.addLayer({
                     id: `${srcId}-line`,
@@ -228,34 +318,58 @@ export const MapView = forwardRef<MapViewHandle, {
                     boardEl.style.cssText = `display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color};box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:9px;font-weight:700;color:white;font-family:'Geist Mono',monospace;`;
                     boardEl.textContent = seg.line ?? '🚋';
                     routeMarkersRef.current.push(
-                        new maplibregl.Marker({ element: boardEl, anchor: 'center' }).setLngLat(coords[0]).addTo(map)
+                        new maplibregl.Marker({
+                            element: boardEl,
+                            anchor: 'center',
+                        })
+                            .setLngLat(coords[0])
+                            .addTo(map),
                     );
 
                     const alightEl = document.createElement('div');
                     alightEl.style.cssText = boardEl.style.cssText;
                     alightEl.textContent = seg.line ?? '🚋';
                     routeMarkersRef.current.push(
-                        new maplibregl.Marker({ element: alightEl, anchor: 'center' }).setLngLat(coords[coords.length - 1]).addTo(map)
+                        new maplibregl.Marker({
+                            element: alightEl,
+                            anchor: 'center',
+                        })
+                            .setLngLat(coords[coords.length - 1])
+                            .addTo(map),
                     );
                 }
             });
 
             // Origin + destination markers
             const originEl = document.createElement('div');
-            originEl.style.cssText = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0A7C52;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
+            originEl.style.cssText =
+                'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0A7C52;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
             originEl.textContent = '\uD83D\uDCCD';
-            routeMarkersRef.current.push(new maplibregl.Marker({ element: originEl, anchor: 'center' }).setLngLat([origin.lng, origin.lat]).addTo(map));
+            routeMarkersRef.current.push(
+                new maplibregl.Marker({ element: originEl, anchor: 'center' })
+                    .setLngLat([origin.lng, origin.lat])
+                    .addTo(map),
+            );
 
             const destEl = document.createElement('div');
-            destEl.style.cssText = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#C4271A;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
+            destEl.style.cssText =
+                'display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#C4271A;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-size:14px;line-height:1;';
             destEl.textContent = '\uD83C\uDFC1';
-            routeMarkersRef.current.push(new maplibregl.Marker({ element: destEl, anchor: 'center' }).setLngLat([destination.lng, destination.lat]).addTo(map));
+            routeMarkersRef.current.push(
+                new maplibregl.Marker({ element: destEl, anchor: 'center' })
+                    .setLngLat([destination.lng, destination.lat])
+                    .addTo(map),
+            );
 
             // Fit bounds
             const bounds = new maplibregl.LngLatBounds();
             for (const c of allBoundsCoords) bounds.extend(c);
             (map as any)._skipBounds?.(true);
-            map.fitBounds(bounds, { padding: { top: 60, bottom: 200, left: 60, right: 60 }, maxZoom: 15, duration: 800 });
+            map.fitBounds(bounds, {
+                padding: { top: 60, bottom: 200, left: 60, right: 60 },
+                maxZoom: 15,
+                duration: 800,
+            });
         },
         clearRoute() {
             const map = mapRef.current;
@@ -266,17 +380,23 @@ export const MapView = forwardRef<MapViewHandle, {
 
             try {
                 // Single route layers
-                if (map.getLayer('explore-route-line')) map.removeLayer('explore-route-line');
-                if (map.getLayer('explore-route-bg')) map.removeLayer('explore-route-bg');
-                if (map.getSource('explore-route')) map.removeSource('explore-route');
+                if (map.getLayer('explore-route-line'))
+                    map.removeLayer('explore-route-line');
+                if (map.getLayer('explore-route-bg'))
+                    map.removeLayer('explore-route-bg');
+                if (map.getSource('explore-route'))
+                    map.removeSource('explore-route');
                 // Multi-segment transit layers
                 for (let i = 0; i < 10; i++) {
                     const id = `transit-seg-${i}`;
-                    if (map.getLayer(`${id}-line`)) map.removeLayer(`${id}-line`);
+                    if (map.getLayer(`${id}-line`))
+                        map.removeLayer(`${id}-line`);
                     if (map.getLayer(`${id}-bg`)) map.removeLayer(`${id}-bg`);
                     if (map.getSource(id)) map.removeSource(id);
                 }
-            } catch { /* layers may not exist */ }
+            } catch {
+                /* layers may not exist */
+            }
         },
     }));
 
@@ -303,82 +423,104 @@ export const MapView = forwardRef<MapViewHandle, {
                 map.on('error', () => {});
                 map.on('styleimagemissing', () => {});
 
-        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+                map.addControl(
+                    new maplibregl.NavigationControl({ showCompass: false }),
+                    'bottom-right',
+                );
 
-        const geolocate = new maplibregl.GeolocateControl({
-            positionOptions: { enableHighAccuracy: true },
-            trackUserLocation: true,
-            showUserHeading: false,
-        });
-        map.addControl(geolocate, 'bottom-right');
-        geolocateRef.current = geolocate;
-
-        // Resize markers on zoom — emoji circle at low zoom, pill with name at high zoom
-        function updateMarkerSize() {
-            const zoom = map.getZoom();
-            const showLabels = zoom >= 16;
-
-            document.querySelectorAll('.spot-marker-pill').forEach((el) => {
-                const htmlEl = el as HTMLElement;
-                const emojiEl = htmlEl.querySelector('.spot-emoji') as HTMLElement;
-                const label = htmlEl.querySelector('.spot-label') as HTMLElement;
-
-                if (showLabels) {
-                    // Pill with name
-                    htmlEl.style.width = 'auto';
-                    htmlEl.style.height = 'auto';
-                    htmlEl.style.borderRadius = '20px';
-                    htmlEl.style.padding = '4px 8px';
-                    if (emojiEl) emojiEl.style.fontSize = '13px';
-                    if (label) label.style.display = '';
-                } else {
-                    // Emoji-only circle
-                    const size = zoom >= 14 ? '28px' : zoom >= 12 ? '24px' : '20px';
-                    htmlEl.style.width = size;
-                    htmlEl.style.height = size;
-                    htmlEl.style.borderRadius = '50%';
-                    htmlEl.style.padding = '0';
-                    if (emojiEl) emojiEl.style.fontSize = zoom >= 14 ? '14px' : zoom >= 12 ? '12px' : '10px';
-                    if (label) label.style.display = 'none';
-                }
-            });
-        }
-        map.on('zoomend', updateMarkerSize);
-
-        // Auto-trigger geolocation on map load
-        map.on('load', () => {
-            geolocate.trigger();
-        });
-
-        // Tap-to-discover: click on empty map area
-        map.on('click', (e) => {
-            const target = e.originalEvent.target as HTMLElement;
-            if (target.closest('.maplibregl-marker')) return;
-            onMapTapRef.current?.(e.lngLat.lat, e.lngLat.lng);
-        });
-
-        // Emit bounds on pan/zoom so parent can fetch viewport spots
-        // Skip when movement is from spot selection (programmatic flyTo)
-        let boundsTimer: ReturnType<typeof setTimeout> | null = null;
-        let skipNextBoundsChange = false;
-        (map as any)._skipBounds = (skip: boolean) => { skipNextBoundsChange = skip; };
-
-        map.on('moveend', () => {
-            if (skipNextBoundsChange) {
-                skipNextBoundsChange = false;
-                return;
-            }
-            if (boundsTimer) clearTimeout(boundsTimer);
-            boundsTimer = setTimeout(() => {
-                const bounds = map.getBounds();
-                onBoundsChangeRef.current?.({
-                    sw_lat: bounds.getSouth(),
-                    sw_lng: bounds.getWest(),
-                    ne_lat: bounds.getNorth(),
-                    ne_lng: bounds.getEast(),
+                const geolocate = new maplibregl.GeolocateControl({
+                    positionOptions: { enableHighAccuracy: true },
+                    trackUserLocation: true,
+                    showUserHeading: false,
                 });
-            }, 500); // debounce 500ms to reduce API calls
-        });
+                map.addControl(geolocate, 'bottom-right');
+                geolocateRef.current = geolocate;
+
+                // Resize markers on zoom — emoji circle at low zoom, pill with name at high zoom
+                function updateMarkerSize() {
+                    const zoom = map.getZoom();
+                    const showLabels = zoom >= 16;
+
+                    document
+                        .querySelectorAll('.spot-marker-pill')
+                        .forEach((el) => {
+                            const htmlEl = el as HTMLElement;
+                            const emojiEl = htmlEl.querySelector(
+                                '.spot-emoji',
+                            ) as HTMLElement;
+                            const label = htmlEl.querySelector(
+                                '.spot-label',
+                            ) as HTMLElement;
+
+                            if (showLabels) {
+                                // Pill with name
+                                htmlEl.style.width = 'auto';
+                                htmlEl.style.height = 'auto';
+                                htmlEl.style.borderRadius = '20px';
+                                htmlEl.style.padding = '4px 8px';
+                                if (emojiEl) emojiEl.style.fontSize = '13px';
+                                if (label) label.style.display = '';
+                            } else {
+                                // Emoji-only circle
+                                const size =
+                                    zoom >= 14
+                                        ? '28px'
+                                        : zoom >= 12
+                                          ? '24px'
+                                          : '20px';
+                                htmlEl.style.width = size;
+                                htmlEl.style.height = size;
+                                htmlEl.style.borderRadius = '50%';
+                                htmlEl.style.padding = '0';
+                                if (emojiEl)
+                                    emojiEl.style.fontSize =
+                                        zoom >= 14
+                                            ? '14px'
+                                            : zoom >= 12
+                                              ? '12px'
+                                              : '10px';
+                                if (label) label.style.display = 'none';
+                            }
+                        });
+                }
+                map.on('zoomend', updateMarkerSize);
+
+                // Auto-trigger geolocation on map load
+                map.on('load', () => {
+                    geolocate.trigger();
+                });
+
+                // Tap-to-discover: click on empty map area
+                map.on('click', (e) => {
+                    const target = e.originalEvent.target as HTMLElement;
+                    if (target.closest('.maplibregl-marker')) return;
+                    onMapTapRef.current?.(e.lngLat.lat, e.lngLat.lng);
+                });
+
+                // Emit bounds on pan/zoom so parent can fetch viewport spots
+                // Skip when movement is from spot selection (programmatic flyTo)
+                let boundsTimer: ReturnType<typeof setTimeout> | null = null;
+                let skipNextBoundsChange = false;
+                (map as any)._skipBounds = (skip: boolean) => {
+                    skipNextBoundsChange = skip;
+                };
+
+                map.on('moveend', () => {
+                    if (skipNextBoundsChange) {
+                        skipNextBoundsChange = false;
+                        return;
+                    }
+                    if (boundsTimer) clearTimeout(boundsTimer);
+                    boundsTimer = setTimeout(() => {
+                        const bounds = map.getBounds();
+                        onBoundsChangeRef.current?.({
+                            sw_lat: bounds.getSouth(),
+                            sw_lng: bounds.getWest(),
+                            ne_lat: bounds.getNorth(),
+                            ne_lng: bounds.getEast(),
+                        });
+                    }, 500); // debounce 500ms to reduce API calls
+                });
 
                 mapRef.current = map;
             });
@@ -426,7 +568,10 @@ export const MapView = forwardRef<MapViewHandle, {
                 onSelectSpot(spot.id);
             });
 
-            const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            const marker = new maplibregl.Marker({
+                element: el,
+                anchor: 'bottom',
+            })
                 .setLngLat([spot.lng, spot.lat])
                 .addTo(map);
 
@@ -439,7 +584,10 @@ export const MapView = forwardRef<MapViewHandle, {
             if (selected) {
                 lastFlyToId.current = selectedId;
                 (map as any)._skipBounds?.(true);
-                map.flyTo({ center: [selected.lng, selected.lat], duration: 600 });
+                map.flyTo({
+                    center: [selected.lng, selected.lat],
+                    duration: 600,
+                });
             }
         }
         if (!selectedId) lastFlyToId.current = null;
@@ -475,7 +623,9 @@ export const MapView = forwardRef<MapViewHandle, {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 // Remove any existing personal place popup
-                document.querySelectorAll('.personal-place-popup').forEach((p) => p.remove());
+                document
+                    .querySelectorAll('.personal-place-popup')
+                    .forEach((p) => p.remove());
 
                 const popup = document.createElement('div');
                 popup.className = 'personal-place-popup';
@@ -500,10 +650,16 @@ export const MapView = forwardRef<MapViewHandle, {
                         document.removeEventListener('click', closePopup);
                     }
                 };
-                setTimeout(() => document.addEventListener('click', closePopup), 0);
+                setTimeout(
+                    () => document.addEventListener('click', closePopup),
+                    0,
+                );
             });
 
-            const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            const marker = new maplibregl.Marker({
+                element: el,
+                anchor: 'bottom',
+            })
                 .setLngLat([place.lng, place.lat])
                 .addTo(map);
 

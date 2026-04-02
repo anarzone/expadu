@@ -8,7 +8,15 @@ import { useEffect, useRef, type ReactNode } from 'react';
  * - Spring: cubic-bezier(.32,1,.4,1)
  * - Overlay backdrop, body scroll lock
  */
-export function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+export function BottomSheet({
+    open,
+    onClose,
+    children,
+}: {
+    open: boolean;
+    onClose: () => void;
+    children: ReactNode;
+}) {
     const sheetRef = useRef<HTMLDivElement>(null);
     const handleRef = useRef<HTMLDivElement>(null);
     const onCloseRef = useRef(onClose);
@@ -42,7 +50,10 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
             if (!dragging) return;
             lastY = 'touches' in e ? e.touches[0].clientY : e.clientY;
             const delta = startY - lastY; // up = positive = taller
-            const newH = Math.max(100, Math.min(window.innerHeight, startH + delta));
+            const newH = Math.max(
+                100,
+                Math.min(window.innerHeight, startH + delta),
+            );
             sheet!.style.height = newH + 'px';
             e.preventDefault();
         }
@@ -109,7 +120,8 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
         if (!sheet) return;
         if (open) {
             // Reset to default height and slide up
-            sheet.style.transition = 'transform .35s cubic-bezier(.32,1,.4,1), height .35s cubic-bezier(.32,1,.4,1)';
+            sheet.style.transition =
+                'transform .35s cubic-bezier(.32,1,.4,1), height .35s cubic-bezier(.32,1,.4,1)';
             sheet.style.height = '72vh';
             sheet.style.transform = 'translateX(-50%) translateY(0)';
         } else {
@@ -145,7 +157,10 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
                 </div>
 
                 {/* Scrollable content — pb-24 ensures content clears the dock */}
-                <div className="flex-1 overflow-y-auto px-5 pt-1 pb-24" style={{ scrollbarWidth: 'none' }}>
+                <div
+                    className="flex-1 overflow-y-auto px-5 pt-1 pb-24"
+                    style={{ scrollbarWidth: 'none' }}
+                >
                     {children}
                 </div>
             </div>

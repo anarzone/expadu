@@ -8,35 +8,73 @@ export function ServicesRightPanel() {
             {/* Quick links */}
             <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
                 <div className="border-b border-[#E2DFD6] px-[15px] py-3">
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>Quick links</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                        Quick links
+                    </span>
                 </div>
-                <div
-                    className="flex cursor-pointer items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors hover:bg-[#EFEDE7]"
-                >
-                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>🚑</span>
+                <div className="flex cursor-pointer items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors hover:bg-[#EFEDE7]">
+                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
+                        🚑
+                    </span>
                     <div className="min-w-0 flex-1">
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>Emergency: 112</div>
-                        <div style={{ fontSize: 11, color: '#6B6860' }}>Police: 110 · Poison: 0800 192 0087</div>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                marginBottom: 1,
+                            }}
+                        >
+                            Emergency: 112
+                        </div>
+                        <div style={{ fontSize: 11, color: '#6B6860' }}>
+                            Police: 110 · Poison: 0800 192 0087
+                        </div>
                     </div>
                 </div>
                 <div
                     className="flex cursor-pointer items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors hover:bg-[#EFEDE7]"
-                    onClick={() => window.open('https://www.doctolib.de', '_blank')}
+                    onClick={() =>
+                        window.open('https://www.doctolib.de', '_blank')
+                    }
                 >
-                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>🩺</span>
+                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
+                        🩺
+                    </span>
                     <div className="min-w-0 flex-1">
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>Find a doctor on Doctolib</div>
-                        <div style={{ fontSize: 11, color: '#6B6860' }}>Book online, filter by English</div>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                marginBottom: 1,
+                            }}
+                        >
+                            Find a doctor on Doctolib
+                        </div>
+                        <div style={{ fontSize: 11, color: '#6B6860' }}>
+                            Book online, filter by English
+                        </div>
                     </div>
                 </div>
                 <div
                     className="flex cursor-pointer items-start gap-2.5 px-[15px] py-[11px] transition-colors hover:bg-[#EFEDE7]"
                     onClick={() => window.open('https://n26.com', '_blank')}
                 >
-                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>🏦</span>
+                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
+                        🏦
+                    </span>
                     <div className="min-w-0 flex-1">
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>Open N26 account</div>
-                        <div style={{ fontSize: 11, color: '#6B6860' }}>English-first online bank</div>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                marginBottom: 1,
+                            }}
+                        >
+                            Open N26 account
+                        </div>
+                        <div style={{ fontSize: 11, color: '#6B6860' }}>
+                            English-first online bank
+                        </div>
                     </div>
                 </div>
             </div>
@@ -44,11 +82,21 @@ export function ServicesRightPanel() {
             {/* Suggest a service */}
             <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
                 <div className="border-b border-[#E2DFD6] px-[15px] py-3">
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>Suggest a service</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                        Suggest a service
+                    </span>
                 </div>
                 <div className="px-[15px] py-3.5">
-                    <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5, marginBottom: 10 }}>
-                        Know a great English-friendly doctor, lawyer, or advisor? Add them to Expadu.
+                    <div
+                        style={{
+                            fontSize: 13,
+                            color: '#6B6860',
+                            lineHeight: 1.5,
+                            marginBottom: 10,
+                        }}
+                    >
+                        Know a great English-friendly doctor, lawyer, or
+                        advisor? Add them to Expadu.
                     </div>
                     <button
                         onMouseEnter={() => setSuggestHover(true)}

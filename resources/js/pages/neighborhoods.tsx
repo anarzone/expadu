@@ -65,7 +65,8 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
         name: 'Ehrenfeld',
         emoji: '🎨',
         current: true,
-        tagline: 'Creative, diverse, and full of life. The expat heartland of Cologne.',
+        tagline:
+            'Creative, diverse, and full of life. The expat heartland of Cologne.',
         tags: ['Creative', 'Diverse', 'Expat hub', 'Mid-range'],
         tagStyles: [
             { bg: '#EDE9FE', c: '#7C3AED' },
@@ -73,7 +74,16 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             { bg: '#D4F0E6', c: '#0A7C52' },
             { bg: '#EFEDE7', c: '#6B6860' },
         ],
-        scores: { expat: 92, english: 85, transport: 88, nightlife: 80, quiet: 40, affordable: 62, green: 50, family: 55 },
+        scores: {
+            expat: 92,
+            english: 85,
+            transport: 88,
+            nightlife: 80,
+            quiet: 40,
+            affordable: 62,
+            green: 50,
+            family: 55,
+        },
         rent: '€14/m²',
         expats: '~35%',
         transit: 'Line 3, 4, 13',
@@ -87,18 +97,34 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             'Good transit connections to city centre',
             'Lower rents than Innenstadt or Belgisches Viertel',
         ],
-        cons: ['Can be noisy on weekends — active nightlife', 'Less green space than Nippes or Sülz', 'Gentrifying — rents rising year by year'],
-        bestFor: ['Young professionals', 'First-time Cologne expats', 'Language exchange seekers', 'Remote workers'],
+        cons: [
+            'Can be noisy on weekends — active nightlife',
+            'Less green space than Nippes or Sülz',
+            'Gentrifying — rents rising year by year',
+        ],
+        bestFor: [
+            'Young professionals',
+            'First-time Cologne expats',
+            'Language exchange seekers',
+            'Remote workers',
+        ],
         tips: [
-            { text: '"The Saturday market on Venloer Str. is unmissable — best bread in Cologne."', author: 'Sarah K.' },
-            { text: '"Neptunbad swimming pool is a hidden gem — locals only know about it."', author: 'Anna B.' },
+            {
+                text: '"The Saturday market on Venloer Str. is unmissable — best bread in Cologne."',
+                author: 'Sarah K.',
+            },
+            {
+                text: '"Neptunbad swimming pool is a hidden gem — locals only know about it."',
+                author: 'Anna B.',
+            },
         ],
     },
     {
         id: 'belgisches',
         name: 'Belgisches Viertel',
         emoji: '🌿',
-        tagline: "Cologne's most stylish quarter. Boutiques, cafés, and beautiful Gründerzeit buildings.",
+        tagline:
+            "Cologne's most stylish quarter. Boutiques, cafés, and beautiful Gründerzeit buildings.",
         tags: ['Trendy', 'Cafés', 'Upmarket', 'Central'],
         tagStyles: [
             { bg: '#FDF0D4', c: '#C47D0E' },
@@ -106,29 +132,53 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             { bg: '#EDE9FE', c: '#7C3AED' },
             { bg: '#EBF0FD', c: '#1A4CD4' },
         ],
-        scores: { expat: 78, english: 80, transport: 85, nightlife: 75, quiet: 55, affordable: 30, green: 60, family: 60 },
+        scores: {
+            expat: 78,
+            english: 80,
+            transport: 85,
+            nightlife: 75,
+            quiet: 55,
+            affordable: 30,
+            green: 60,
+            family: 60,
+        },
         rent: '€16/m²',
         expats: '~25%',
         transit: 'Line 1, 7, 9',
         rating: 4.6,
         saved: false,
         filters: ['expat', 'lively', 'central'],
-        desc: "The most aesthetically striking neighborhood in Cologne — wide tree-lined streets, Art Nouveau architecture, and independent boutiques. A little pricier, but the quality of life is exceptional. Great base if you work in the city centre.",
+        desc: 'The most aesthetically striking neighborhood in Cologne — wide tree-lined streets, Art Nouveau architecture, and independent boutiques. A little pricier, but the quality of life is exceptional. Great base if you work in the city centre.',
         pros: [
             'Beautiful architecture and streets',
             'Excellent restaurant and café scene',
             'Very walkable to city centre',
             'Strong English-speaking community',
         ],
-        cons: ['Most expensive rents in the guide', 'Very little parking', 'Can feel a bit bubble-like'],
-        bestFor: ['Professionals with higher budgets', 'Culture lovers', 'Foodies', 'Short-term rentals'],
-        tips: [{ text: '"Hallmackenreuther on Brüsseler Platz is the best terrace in Cologne."', author: 'Claire D.' }],
+        cons: [
+            'Most expensive rents in the guide',
+            'Very little parking',
+            'Can feel a bit bubble-like',
+        ],
+        bestFor: [
+            'Professionals with higher budgets',
+            'Culture lovers',
+            'Foodies',
+            'Short-term rentals',
+        ],
+        tips: [
+            {
+                text: '"Hallmackenreuther on Brüsseler Platz is the best terrace in Cologne."',
+                author: 'Claire D.',
+            },
+        ],
     },
     {
         id: 'nippes',
         name: 'Nippes',
         emoji: '🏡',
-        tagline: 'Residential, leafy, and genuinely local. A real Cologne neighborhood without the tourist gloss.',
+        tagline:
+            'Residential, leafy, and genuinely local. A real Cologne neighborhood without the tourist gloss.',
         tags: ['Residential', 'Family', 'Affordable', 'Green'],
         tagStyles: [
             { bg: '#D4F0E6', c: '#0A7C52' },
@@ -136,29 +186,53 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             { bg: '#EFEDE7', c: '#6B6860' },
             { bg: '#D4F0E6', c: '#0A7C52' },
         ],
-        scores: { expat: 55, english: 60, transport: 80, nightlife: 45, quiet: 75, affordable: 80, green: 82, family: 88 },
+        scores: {
+            expat: 55,
+            english: 60,
+            transport: 80,
+            nightlife: 45,
+            quiet: 75,
+            affordable: 80,
+            green: 82,
+            family: 88,
+        },
         rent: '€13/m²',
         expats: '~15%',
         transit: 'Line 12, 15, 16',
         rating: 4.4,
         saved: false,
         filters: ['affordable', 'quiet'],
-        desc: "Nippes is where Cologne locals actually live. Less polished than Belgisches Viertel but more authentic — local butchers, Turkish bakeries, and community gardens. Great for families and anyone who wants to feel genuinely embedded in German city life.",
+        desc: 'Nippes is where Cologne locals actually live. Less polished than Belgisches Viertel but more authentic — local butchers, Turkish bakeries, and community gardens. Great for families and anyone who wants to feel genuinely embedded in German city life.',
         pros: [
             'Most affordable rents of central areas',
             'Very family-friendly with parks and schools',
             'Authentic local character — few tourists',
             'Good S-Bahn and tram connections',
         ],
-        cons: ['Fewer English speakers than Ehrenfeld', 'Less expat community to connect with', 'Quieter nightlife — better for families'],
-        bestFor: ['Families with children', 'Budget-conscious expats', 'Those wanting authentic German experience', 'Long-term settlers'],
-        tips: [{ text: '"The Nippes market on Saturday morning is the most local experience in the city."', author: 'Mehmet A.' }],
+        cons: [
+            'Fewer English speakers than Ehrenfeld',
+            'Less expat community to connect with',
+            'Quieter nightlife — better for families',
+        ],
+        bestFor: [
+            'Families with children',
+            'Budget-conscious expats',
+            'Those wanting authentic German experience',
+            'Long-term settlers',
+        ],
+        tips: [
+            {
+                text: '"The Nippes market on Saturday morning is the most local experience in the city."',
+                author: 'Mehmet A.',
+            },
+        ],
     },
     {
         id: 'deutz',
         name: 'Deutz',
         emoji: '🌉',
-        tagline: 'Across the Rhine with stunning Dom views. Up-and-coming and more affordable.',
+        tagline:
+            'Across the Rhine with stunning Dom views. Up-and-coming and more affordable.',
         tags: ['Up-and-coming', 'Views', 'Affordable', 'Convenient'],
         tagStyles: [
             { bg: '#EBF0FD', c: '#1A4CD4' },
@@ -166,7 +240,16 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             { bg: '#EFEDE7', c: '#6B6860' },
             { bg: '#D4F0E6', c: '#0A7C52' },
         ],
-        scores: { expat: 45, english: 55, transport: 88, nightlife: 40, quiet: 65, affordable: 78, green: 55, family: 60 },
+        scores: {
+            expat: 45,
+            english: 55,
+            transport: 88,
+            nightlife: 40,
+            quiet: 65,
+            affordable: 78,
+            green: 55,
+            family: 60,
+        },
         rent: '€13/m²',
         expats: '~12%',
         transit: 'S-Bahn, Line 1 direct',
@@ -180,15 +263,30 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             'Lower rents than west-bank areas',
             'Improving restaurant and café scene',
         ],
-        cons: ['Still developing — fewer amenities', 'Smaller expat community', 'Less vibrant street life currently'],
-        bestFor: ['Budget-conscious professionals', 'Airport commuters', 'Those who work in Koelnmesse area', 'Anyone who values views'],
-        tips: [{ text: '"Watch the sunset from the Deutzer Bridge — best free view in Cologne."', author: 'Carlos M.' }],
+        cons: [
+            'Still developing — fewer amenities',
+            'Smaller expat community',
+            'Less vibrant street life currently',
+        ],
+        bestFor: [
+            'Budget-conscious professionals',
+            'Airport commuters',
+            'Those who work in Koelnmesse area',
+            'Anyone who values views',
+        ],
+        tips: [
+            {
+                text: '"Watch the sunset from the Deutzer Bridge — best free view in Cologne."',
+                author: 'Carlos M.',
+            },
+        ],
     },
     {
         id: 'suelz',
         name: 'Sülz',
         emoji: '🌳',
-        tagline: 'Green, student-friendly, and calm. Ideal for university expats and families.',
+        tagline:
+            'Green, student-friendly, and calm. Ideal for university expats and families.',
         tags: ['Student', 'Green', 'Calm', 'University'],
         tagStyles: [
             { bg: '#D4F0E6', c: '#0A7C52' },
@@ -196,7 +294,16 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             { bg: '#EBF0FD', c: '#1A4CD4' },
             { bg: '#EDE9FE', c: '#7C3AED' },
         ],
-        scores: { expat: 60, english: 72, transport: 70, nightlife: 50, quiet: 80, affordable: 72, green: 90, family: 85 },
+        scores: {
+            expat: 60,
+            english: 72,
+            transport: 70,
+            nightlife: 50,
+            quiet: 80,
+            affordable: 72,
+            green: 90,
+            family: 85,
+        },
         rent: '€13/m²',
         expats: '~20%',
         transit: 'Line 9, 18',
@@ -210,15 +317,30 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             'Quiet and safe — great for families',
             'Proximity to University of Cologne',
         ],
-        cons: ['Further from nightlife and social scene', 'Less vibrant than Ehrenfeld or Belgisches Viertel', 'Fewer coworking options'],
-        bestFor: ['University students and academics', 'Families with young children', 'Nature lovers', 'Those who work from home'],
-        tips: [{ text: '"The Stadtwald is Cologne\'s best-kept secret — 4km² of forest 10 min from centre."', author: 'Yuki T.' }],
+        cons: [
+            'Further from nightlife and social scene',
+            'Less vibrant than Ehrenfeld or Belgisches Viertel',
+            'Fewer coworking options',
+        ],
+        bestFor: [
+            'University students and academics',
+            'Families with young children',
+            'Nature lovers',
+            'Those who work from home',
+        ],
+        tips: [
+            {
+                text: '"The Stadtwald is Cologne\'s best-kept secret — 4km² of forest 10 min from centre."',
+                author: 'Yuki T.',
+            },
+        ],
     },
     {
         id: 'innenstadt',
         name: 'Innenstadt',
         emoji: '🏛️',
-        tagline: 'Right in the heart of it all. Highest rents, maximum convenience.',
+        tagline:
+            'Right in the heart of it all. Highest rents, maximum convenience.',
         tags: ['Central', 'Tourist', 'Expensive', 'Convenient'],
         tagStyles: [
             { bg: '#EBF0FD', c: '#1A4CD4' },
@@ -226,23 +348,47 @@ const SEED_NEIGHBORHOODS: NeighborhoodData[] = [
             { bg: '#FDE8E6', c: '#C4271A' },
             { bg: '#D4F0E6', c: '#0A7C52' },
         ],
-        scores: { expat: 50, english: 88, transport: 95, nightlife: 85, quiet: 25, affordable: 15, green: 30, family: 35 },
+        scores: {
+            expat: 50,
+            english: 88,
+            transport: 95,
+            nightlife: 85,
+            quiet: 25,
+            affordable: 15,
+            green: 30,
+            family: 35,
+        },
         rent: '€17/m²',
         expats: '~18%',
         transit: 'All lines',
         rating: 4.0,
         saved: false,
         filters: ['central', 'lively'],
-        desc: "Living in the Innenstadt means maximum convenience and the Dom on your doorstep — but also maximum cost and noise. Best for short stays or executives on corporate housing budgets. Most long-term expats end up preferring the character of surrounding districts.",
-        pros: ['Unbeatable central location', 'All transit lines', 'Walking distance to everything', 'Best English-language services'],
+        desc: 'Living in the Innenstadt means maximum convenience and the Dom on your doorstep — but also maximum cost and noise. Best for short stays or executives on corporate housing budgets. Most long-term expats end up preferring the character of surrounding districts.',
+        pros: [
+            'Unbeatable central location',
+            'All transit lines',
+            'Walking distance to everything',
+            'Best English-language services',
+        ],
         cons: [
             'Most expensive rents in Cologne',
             'Very touristy — can feel impersonal',
             'Noisy, especially on weekends and Karneval',
             'Small apartments for the price',
         ],
-        bestFor: ['Short-term residents', 'Corporate relocations', 'Those who travel frequently', 'Absolute city-centre lifestyle'],
-        tips: [{ text: '"Stay for 3 months, then move to Ehrenfeld. Everyone does this."', author: 'Anna B.' }],
+        bestFor: [
+            'Short-term residents',
+            'Corporate relocations',
+            'Those who travel frequently',
+            'Absolute city-centre lifestyle',
+        ],
+        tips: [
+            {
+                text: '"Stay for 3 months, then move to Ehrenfeld. Everyone does this."',
+                author: 'Anna B.',
+            },
+        ],
     },
 ];
 
@@ -250,37 +396,117 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
     {
         q: 'What matters most to you day-to-day?',
         opts: [
-            { ico: '☕', text: 'Great cafés and social scene', sub: 'Meeting people, working remotely', val: { lively: 2, expat: 1 } },
-            { ico: '🌳', text: 'Green space and quiet streets', sub: 'Parks, running, calm evenings', val: { quiet: 2, affordable: 1 } },
-            { ico: '🚇', text: 'Fast commute to work', sub: 'Near transit, central location', val: { central: 2 } },
-            { ico: '💶', text: 'Keeping costs down', sub: 'Affordable rent is the priority', val: { affordable: 2 } },
+            {
+                ico: '☕',
+                text: 'Great cafés and social scene',
+                sub: 'Meeting people, working remotely',
+                val: { lively: 2, expat: 1 },
+            },
+            {
+                ico: '🌳',
+                text: 'Green space and quiet streets',
+                sub: 'Parks, running, calm evenings',
+                val: { quiet: 2, affordable: 1 },
+            },
+            {
+                ico: '🚇',
+                text: 'Fast commute to work',
+                sub: 'Near transit, central location',
+                val: { central: 2 },
+            },
+            {
+                ico: '💶',
+                text: 'Keeping costs down',
+                sub: 'Affordable rent is the priority',
+                val: { affordable: 2 },
+            },
         ],
     },
     {
         q: 'What kind of expat experience are you looking for?',
         opts: [
-            { ico: '🌍', text: 'Big expat community', sub: 'English everywhere, easy to connect', val: { expat: 2 } },
-            { ico: '🇩🇪', text: 'Authentic German life', sub: 'Few tourists, real local feel', val: { quiet: 1, affordable: 1 } },
-            { ico: '⚖️', text: 'A balance of both', sub: 'Some expats, some locals', val: { expat: 1, lively: 1 } },
-            { ico: '🏡', text: 'Family-oriented area', sub: 'Safe, schools, parks', val: { quiet: 2, affordable: 1 } },
+            {
+                ico: '🌍',
+                text: 'Big expat community',
+                sub: 'English everywhere, easy to connect',
+                val: { expat: 2 },
+            },
+            {
+                ico: '🇩🇪',
+                text: 'Authentic German life',
+                sub: 'Few tourists, real local feel',
+                val: { quiet: 1, affordable: 1 },
+            },
+            {
+                ico: '⚖️',
+                text: 'A balance of both',
+                sub: 'Some expats, some locals',
+                val: { expat: 1, lively: 1 },
+            },
+            {
+                ico: '🏡',
+                text: 'Family-oriented area',
+                sub: 'Safe, schools, parks',
+                val: { quiet: 2, affordable: 1 },
+            },
         ],
     },
     {
         q: 'How important is nightlife and going out?',
         opts: [
-            { ico: '🎵', text: 'Very — I want to be out most evenings', sub: 'Bars, concerts, late nights', val: { lively: 2, central: 1 } },
-            { ico: '🍷', text: 'Occasionally — weekends mostly', sub: 'Good restaurants, some bars', val: { lively: 1, expat: 1 } },
-            { ico: '📚', text: 'Not much — I prefer quiet evenings', sub: 'Restaurants, cinema, early nights', val: { quiet: 2 } },
-            { ico: '👶', text: 'Not at all — I have kids', sub: 'Playgrounds over pubs', val: { quiet: 2, affordable: 1 } },
+            {
+                ico: '🎵',
+                text: 'Very — I want to be out most evenings',
+                sub: 'Bars, concerts, late nights',
+                val: { lively: 2, central: 1 },
+            },
+            {
+                ico: '🍷',
+                text: 'Occasionally — weekends mostly',
+                sub: 'Good restaurants, some bars',
+                val: { lively: 1, expat: 1 },
+            },
+            {
+                ico: '📚',
+                text: 'Not much — I prefer quiet evenings',
+                sub: 'Restaurants, cinema, early nights',
+                val: { quiet: 2 },
+            },
+            {
+                ico: '👶',
+                text: 'Not at all — I have kids',
+                sub: 'Playgrounds over pubs',
+                val: { quiet: 2, affordable: 1 },
+            },
         ],
     },
     {
         q: "What's your rent budget per month?",
         opts: [
-            { ico: '💸', text: 'Under €700 cold', sub: 'Very budget-conscious', val: { affordable: 3 } },
-            { ico: '💶', text: '€700–€1,100', sub: 'Reasonable budget', val: { affordable: 2, quiet: 1 } },
-            { ico: '💰', text: '€1,100–€1,600', sub: 'Mid-range', val: { lively: 1, expat: 1 } },
-            { ico: '🏆', text: 'No strong preference', sub: 'Location beats price', val: { central: 1, lively: 1 } },
+            {
+                ico: '💸',
+                text: 'Under €700 cold',
+                sub: 'Very budget-conscious',
+                val: { affordable: 3 },
+            },
+            {
+                ico: '💶',
+                text: '€700–€1,100',
+                sub: 'Reasonable budget',
+                val: { affordable: 2, quiet: 1 },
+            },
+            {
+                ico: '💰',
+                text: '€1,100–€1,600',
+                sub: 'Mid-range',
+                val: { lively: 1, expat: 1 },
+            },
+            {
+                ico: '🏆',
+                text: 'No strong preference',
+                sub: 'Location beats price',
+                val: { central: 1, lively: 1 },
+            },
         ],
     },
 ];
@@ -314,13 +540,17 @@ const TABS = [
 // ============================================================
 
 export default function Neighborhoods() {
-    const [neighborhoods, setNeighborhoods] = useState<NeighborhoodData[]>(SEED_NEIGHBORHOODS);
+    const [neighborhoods, setNeighborhoods] =
+        useState<NeighborhoodData[]>(SEED_NEIGHBORHOODS);
     const [activeTab, setActiveTab] = useTabState('explore');
     const [activeFilter, setActiveFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [sheetOpen, setSheetOpen] = useState(false);
-    const [sheetContent, setSheetContent] = useState<'detail' | 'picker'>('detail');
-    const [selectedNeighborhood, setSelectedNeighborhood] = useState<NeighborhoodData | null>(null);
+    const [sheetContent, setSheetContent] = useState<'detail' | 'picker'>(
+        'detail',
+    );
+    const [selectedNeighborhood, setSelectedNeighborhood] =
+        useState<NeighborhoodData | null>(null);
 
     // Compare state
     const [compareA, setCompareA] = useState<string | null>(null);
@@ -335,7 +565,8 @@ export default function Neighborhoods() {
     // ── Filtering ──
     const filtered = useMemo(() => {
         return neighborhoods.filter((n) => {
-            const matchFilter = activeFilter === 'all' || n.filters.includes(activeFilter);
+            const matchFilter =
+                activeFilter === 'all' || n.filters.includes(activeFilter);
             const q = search.toLowerCase().trim();
             const matchSearch =
                 !q ||
@@ -348,7 +579,9 @@ export default function Neighborhoods() {
 
     // ── Handlers ──
     function toggleSave(id: string) {
-        setNeighborhoods((prev) => prev.map((n) => (n.id === id ? { ...n, saved: !n.saved } : n)));
+        setNeighborhoods((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, saved: !n.saved } : n)),
+        );
     }
 
     function openDetail(id: string) {
@@ -431,11 +664,18 @@ export default function Neighborhoods() {
     }, [quizStep, quizScores, neighborhoods]);
 
     // Keep sheet detail in sync
-    const sheetNeighborhood = selectedNeighborhood ? (neighborhoods.find((n) => n.id === selectedNeighborhood.id) ?? selectedNeighborhood) : null;
+    const sheetNeighborhood = selectedNeighborhood
+        ? (neighborhoods.find((n) => n.id === selectedNeighborhood.id) ??
+          selectedNeighborhood)
+        : null;
 
     // Compare neighborhoods
-    const compA = compareA ? neighborhoods.find((n) => n.id === compareA) : null;
-    const compB = compareB ? neighborhoods.find((n) => n.id === compareB) : null;
+    const compA = compareA
+        ? neighborhoods.find((n) => n.id === compareA)
+        : null;
+    const compB = compareB
+        ? neighborhoods.find((n) => n.id === compareB)
+        : null;
 
     return (
         <AppLayout
@@ -447,15 +687,26 @@ export default function Neighborhoods() {
                 {/* ── Sticky header: title + pill tabs ── */}
                 <div
                     className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{ background: 'rgba(246,245,241,.94)', backdropFilter: 'blur(16px)' }}
+                    style={{
+                        background: 'rgba(246,245,241,.94)',
+                        backdropFilter: 'blur(16px)',
+                    }}
                 >
                     <span
                         className="shrink-0"
-                        style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}
+                        style={{
+                            fontFamily: "'Fraunces', serif",
+                            fontSize: 20,
+                            fontWeight: 500,
+                            letterSpacing: '-0.01em',
+                        }}
                     >
                         Neighborhoods
                     </span>
-                    <div className="flex gap-1 rounded-full p-[3px]" style={{ background: '#EFEDE7' }}>
+                    <div
+                        className="flex gap-1 rounded-full p-[3px]"
+                        style={{ background: '#EFEDE7' }}
+                    >
                         {TABS.map((t) => (
                             <button
                                 key={t.id}
@@ -465,9 +716,18 @@ export default function Neighborhoods() {
                                     fontSize: 12,
                                     fontWeight: 600,
                                     fontFamily: "'Geist', sans-serif",
-                                    color: activeTab === t.id ? '#18170F' : '#6B6860',
-                                    background: activeTab === t.id ? 'white' : 'transparent',
-                                    boxShadow: activeTab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                                    color:
+                                        activeTab === t.id
+                                            ? '#18170F'
+                                            : '#6B6860',
+                                    background:
+                                        activeTab === t.id
+                                            ? 'white'
+                                            : 'transparent',
+                                    boxShadow:
+                                        activeTab === t.id
+                                            ? '0 1px 4px rgba(0,0,0,0.08)'
+                                            : 'none',
                                 }}
                             >
                                 {t.label}
@@ -482,22 +742,35 @@ export default function Neighborhoods() {
                         {/* Search + Filters */}
                         <div className="border-b border-[#E2DFD6] px-6 pt-3.5 pb-3">
                             <div className="mb-2.5 flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
-                                <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
+                                <span
+                                    style={{ fontSize: 15, color: '#AAA89F' }}
+                                >
+                                    🔍
+                                </span>
                                 <input
                                     type="text"
                                     placeholder="Search neighborhoods…"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
-                                    style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
+                                    style={{
+                                        fontFamily: "'Geist', sans-serif",
+                                        fontSize: 14,
+                                    }}
                                 />
                                 {search && (
-                                    <button onClick={() => setSearch('')} className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]">
+                                    <button
+                                        onClick={() => setSearch('')}
+                                        className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]"
+                                    >
                                         ✕
                                     </button>
                                 )}
                             </div>
-                            <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                            <div
+                                className="flex gap-1.5 overflow-x-auto"
+                                style={{ scrollbarWidth: 'none' }}
+                            >
                                 {FILTERS.map((f) => (
                                     <button
                                         key={f.id}
@@ -508,9 +781,18 @@ export default function Neighborhoods() {
                                             fontWeight: 500,
                                             fontFamily: "'Geist', sans-serif",
                                             whiteSpace: 'nowrap',
-                                            background: activeFilter === f.id ? '#1A4CD4' : 'white',
-                                            color: activeFilter === f.id ? 'white' : '#6B6860',
-                                            borderColor: activeFilter === f.id ? '#1A4CD4' : '#E2DFD6',
+                                            background:
+                                                activeFilter === f.id
+                                                    ? '#1A4CD4'
+                                                    : 'white',
+                                            color:
+                                                activeFilter === f.id
+                                                    ? 'white'
+                                                    : '#6B6860',
+                                            borderColor:
+                                                activeFilter === f.id
+                                                    ? '#1A4CD4'
+                                                    : '#E2DFD6',
                                         }}
                                     >
                                         {f.label}
@@ -522,9 +804,27 @@ export default function Neighborhoods() {
                         {/* Neighborhood cards */}
                         <div className="px-6 py-4">
                             {filtered.length === 0 ? (
-                                <div className="py-10 text-center" style={{ color: '#AAA89F' }}>
-                                    <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: '#6B6860' }}>No neighborhoods found</div>
+                                <div
+                                    className="py-10 text-center"
+                                    style={{ color: '#AAA89F' }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: 36,
+                                            marginBottom: 12,
+                                        }}
+                                    >
+                                        🔍
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: 14,
+                                            fontWeight: 600,
+                                            color: '#6B6860',
+                                        }}
+                                    >
+                                        No neighborhoods found
+                                    </div>
                                 </div>
                             ) : (
                                 filtered.map((n, i) => (
@@ -563,18 +863,36 @@ export default function Neighborhoods() {
 
                         {/* Picker slots */}
                         <div className="mb-5 flex gap-2.5">
-                            <CompareSlot neighborhood={compA} onClick={() => openPicker('a')} onClear={() => clearSlot('a')} />
-                            <div className="flex items-center" style={{ fontSize: 20, color: '#AAA89F', fontWeight: 300 }}>
+                            <CompareSlot
+                                neighborhood={compA}
+                                onClick={() => openPicker('a')}
+                                onClear={() => clearSlot('a')}
+                            />
+                            <div
+                                className="flex items-center"
+                                style={{
+                                    fontSize: 20,
+                                    color: '#AAA89F',
+                                    fontWeight: 300,
+                                }}
+                            >
                                 vs
                             </div>
-                            <CompareSlot neighborhood={compB} onClick={() => openPicker('b')} onClear={() => clearSlot('b')} />
+                            <CompareSlot
+                                neighborhood={compB}
+                                onClick={() => openPicker('b')}
+                                onClear={() => clearSlot('b')}
+                            />
                         </div>
 
                         {/* Compare table */}
                         {compareA && compareB && compA && compB ? (
                             <CompareTable a={compA} b={compB} />
-                        ) : (compareA || compareB) ? (
-                            <div className="py-6 text-center" style={{ fontSize: 13, color: '#AAA89F' }}>
+                        ) : compareA || compareB ? (
+                            <div
+                                className="py-6 text-center"
+                                style={{ fontSize: 13, color: '#AAA89F' }}
+                            >
                                 Pick a second neighborhood to compare
                             </div>
                         ) : null}
@@ -589,7 +907,10 @@ export default function Neighborhoods() {
                                 {/* Hero */}
                                 <div
                                     className="relative mb-5 overflow-hidden rounded-[20px] p-6 text-white"
-                                    style={{ background: 'linear-gradient(135deg, #1B3A8A, #1A4CD4)' }}
+                                    style={{
+                                        background:
+                                            'linear-gradient(135deg, #1B3A8A, #1A4CD4)',
+                                    }}
                                 >
                                     <div
                                         className="pointer-events-none absolute rounded-full"
@@ -603,12 +924,27 @@ export default function Neighborhoods() {
                                     />
                                     <div
                                         className="relative z-[1]"
-                                        style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, marginBottom: 6 }}
+                                        style={{
+                                            fontFamily: "'Fraunces', serif",
+                                            fontSize: 20,
+                                            fontWeight: 500,
+                                            marginBottom: 6,
+                                        }}
                                     >
                                         Find your neighborhood
                                     </div>
-                                    <div className="relative z-[1]" style={{ fontSize: 13, opacity: 0.8, marginBottom: 16, lineHeight: 1.5 }}>
-                                        Answer 4 quick questions and we'll match you to the Cologne neighborhood that fits your lifestyle best.
+                                    <div
+                                        className="relative z-[1]"
+                                        style={{
+                                            fontSize: 13,
+                                            opacity: 0.8,
+                                            marginBottom: 16,
+                                            lineHeight: 1.5,
+                                        }}
+                                    >
+                                        Answer 4 quick questions and we'll match
+                                        you to the Cologne neighborhood that
+                                        fits your lifestyle best.
                                     </div>
                                     <button
                                         onClick={startQuiz}
@@ -624,9 +960,16 @@ export default function Neighborhoods() {
                                         Start quiz →
                                     </button>
                                 </div>
-                                <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.6 }}>
-                                    We'll consider your priorities — budget, nightlife, family needs, expat community, and more — to find the
-                                    right area for you.
+                                <div
+                                    style={{
+                                        fontSize: 13,
+                                        color: '#6B6860',
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    We'll consider your priorities — budget,
+                                    nightlife, family needs, expat community,
+                                    and more — to find the right area for you.
                                 </div>
                             </>
                         )}
@@ -643,23 +986,30 @@ export default function Neighborhoods() {
                             />
                         )}
 
-                        {quizStep === 4 && quizResults.top && quizResults.runner && (
-                            <QuizResult
-                                top={quizResults.top}
-                                runner={quizResults.runner}
-                                onExplore={(id) => openDetail(id)}
-                                onRetake={startQuiz}
-                            />
-                        )}
+                        {quizStep === 4 &&
+                            quizResults.top &&
+                            quizResults.runner && (
+                                <QuizResult
+                                    top={quizResults.top}
+                                    runner={quizResults.runner}
+                                    onExplore={(id) => openDetail(id)}
+                                    onRetake={startQuiz}
+                                />
+                            )}
                     </div>
                 )}
             </div>
 
             {/* ── Bottom Sheet ── */}
             <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
-                {sheetContent === 'detail' && sheetNeighborhood && <DetailContent neighborhood={sheetNeighborhood} />}
+                {sheetContent === 'detail' && sheetNeighborhood && (
+                    <DetailContent neighborhood={sheetNeighborhood} />
+                )}
                 {sheetContent === 'picker' && (
-                    <PickerContent neighborhoods={neighborhoods} onSelect={selectForCompare} />
+                    <PickerContent
+                        neighborhoods={neighborhoods}
+                        onSelect={selectForCompare}
+                    />
                 )}
             </BottomSheet>
         </AppLayout>
@@ -693,14 +1043,21 @@ function CompareSlot({
                 }}
             >
                 <span style={{ fontSize: 24 }}>{neighborhood.emoji}</span>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{neighborhood.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>
+                    {neighborhood.name}
+                </span>
                 <span
                     onClick={(e) => {
                         e.stopPropagation();
                         onClear();
                     }}
                     className="cursor-pointer"
-                    style={{ fontSize: 10, color: '#C4271A', fontWeight: 600, marginTop: 2 }}
+                    style={{
+                        fontSize: 10,
+                        color: '#C4271A',
+                        fontWeight: 600,
+                        marginTop: 2,
+                    }}
                 >
                     ✕ Remove
                 </span>
@@ -721,7 +1078,9 @@ function CompareSlot({
             }}
         >
             <span style={{ fontSize: 24 }}>＋</span>
-            <span style={{ fontSize: 12, color: '#AAA89F' }}>Pick a neighborhood</span>
+            <span style={{ fontSize: 12, color: '#AAA89F' }}>
+                Pick a neighborhood
+            </span>
         </div>
     );
 }
@@ -738,20 +1097,66 @@ type CompareRow = {
 };
 
 const COMPARE_ROWS: CompareRow[] = [
-    { label: '⭐ Rating', keyA: 'rating', format: (v) => `★ ${v}`, higher: true },
-    { label: '💶 Avg rent', keyA: 'rent', format: (v) => String(v), higher: false },
-    { label: '👥 Expats', keyA: 'expats', format: (v) => String(v), higher: true },
-    { label: '🌍 Expat score', keyA: 'scores.expat', format: (v) => `${v}/100`, higher: true },
-    { label: '🇬🇧 English', keyA: 'scores.english', format: (v) => `${v}/100`, higher: true },
-    { label: '🚇 Transport', keyA: 'scores.transport', format: (v) => `${v}/100`, higher: true },
-    { label: '🔇 Quiet', keyA: 'scores.quiet', format: (v) => `${v}/100`, higher: true },
-    { label: '🌿 Green', keyA: 'scores.green', format: (v) => `${v}/100`, higher: true },
-    { label: '💰 Affordable', keyA: 'scores.affordable', format: (v) => `${v}/100`, higher: true },
+    {
+        label: '⭐ Rating',
+        keyA: 'rating',
+        format: (v) => `★ ${v}`,
+        higher: true,
+    },
+    {
+        label: '💶 Avg rent',
+        keyA: 'rent',
+        format: (v) => String(v),
+        higher: false,
+    },
+    {
+        label: '👥 Expats',
+        keyA: 'expats',
+        format: (v) => String(v),
+        higher: true,
+    },
+    {
+        label: '🌍 Expat score',
+        keyA: 'scores.expat',
+        format: (v) => `${v}/100`,
+        higher: true,
+    },
+    {
+        label: '🇬🇧 English',
+        keyA: 'scores.english',
+        format: (v) => `${v}/100`,
+        higher: true,
+    },
+    {
+        label: '🚇 Transport',
+        keyA: 'scores.transport',
+        format: (v) => `${v}/100`,
+        higher: true,
+    },
+    {
+        label: '🔇 Quiet',
+        keyA: 'scores.quiet',
+        format: (v) => `${v}/100`,
+        higher: true,
+    },
+    {
+        label: '🌿 Green',
+        keyA: 'scores.green',
+        format: (v) => `${v}/100`,
+        higher: true,
+    },
+    {
+        label: '💰 Affordable',
+        keyA: 'scores.affordable',
+        format: (v) => `${v}/100`,
+        higher: true,
+    },
 ];
 
 function getNestedVal(obj: Record<string, unknown>, path: string): unknown {
     return path.split('.').reduce((o: unknown, k: string) => {
-        if (o && typeof o === 'object') return (o as Record<string, unknown>)[k];
+        if (o && typeof o === 'object')
+            return (o as Record<string, unknown>)[k];
         return undefined;
     }, obj);
 }
@@ -762,23 +1167,41 @@ function CompareTable({ a, b }: { a: NeighborhoodData; b: NeighborhoodData }) {
             {/* Header */}
             <div
                 className="grid border-b border-[#E2DFD6]"
-                style={{ gridTemplateColumns: '120px 1fr 1fr', background: '#EFEDE7' }}
+                style={{
+                    gridTemplateColumns: '120px 1fr 1fr',
+                    background: '#EFEDE7',
+                }}
             >
-                <div className="px-3.5 py-3" style={{ fontSize: 11, color: '#AAA89F' }}>
+                <div
+                    className="px-3.5 py-3"
+                    style={{ fontSize: 11, color: '#AAA89F' }}
+                >
                     Metric
                 </div>
-                <div className="px-3.5 py-3" style={{ fontSize: 12, fontWeight: 700 }}>
+                <div
+                    className="px-3.5 py-3"
+                    style={{ fontSize: 12, fontWeight: 700 }}
+                >
                     {a.emoji} {a.name}
                 </div>
-                <div className="px-3.5 py-3" style={{ fontSize: 12, fontWeight: 700 }}>
+                <div
+                    className="px-3.5 py-3"
+                    style={{ fontSize: 12, fontWeight: 700 }}
+                >
                     {b.emoji} {b.name}
                 </div>
             </div>
 
             {/* Rows */}
             {COMPARE_ROWS.map((row, i) => {
-                const av = getNestedVal(a as unknown as Record<string, unknown>, row.keyA);
-                const bv = getNestedVal(b as unknown as Record<string, unknown>, row.keyA);
+                const av = getNestedVal(
+                    a as unknown as Record<string, unknown>,
+                    row.keyA,
+                );
+                const bv = getNestedVal(
+                    b as unknown as Record<string, unknown>,
+                    row.keyA,
+                );
                 const aNum = parseFloat(String(av).replace(/[^0-9.]/g, ''));
                 const bNum = parseFloat(String(bv).replace(/[^0-9.]/g, ''));
                 const aWins = row.higher ? aNum > bNum : aNum < bNum;
@@ -790,12 +1213,19 @@ function CompareTable({ a, b }: { a: NeighborhoodData; b: NeighborhoodData }) {
                         className="grid transition-colors hover:bg-[#EFEDE7]"
                         style={{
                             gridTemplateColumns: '120px 1fr 1fr',
-                            borderBottom: i < COMPARE_ROWS.length - 1 ? '1px solid #E2DFD6' : 'none',
+                            borderBottom:
+                                i < COMPARE_ROWS.length - 1
+                                    ? '1px solid #E2DFD6'
+                                    : 'none',
                         }}
                     >
                         <div
                             className="flex items-center gap-1.5 px-3.5 py-[11px]"
-                            style={{ fontSize: 12, fontWeight: 600, color: '#6B6860' }}
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#6B6860',
+                            }}
                         >
                             {row.label}
                         </div>
@@ -857,7 +1287,12 @@ function QuizStep({
                         className="flex-1 rounded-[2px]"
                         style={{
                             height: 4,
-                            background: i < step ? '#1A4CD4' : i === step ? '#EBF0FD' : '#E2DFD6',
+                            background:
+                                i < step
+                                    ? '#1A4CD4'
+                                    : i === step
+                                      ? '#EBF0FD'
+                                      : '#E2DFD6',
                             border: i === step ? '1px solid #1A4CD4' : 'none',
                             transition: 'background 0.3s',
                         }}
@@ -899,7 +1334,10 @@ function QuizStep({
                         className="flex cursor-pointer items-center gap-3 rounded-[14px] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD]"
                         style={{
                             padding: '13px 16px',
-                            border: selectedIdx === i ? '1.5px solid #1A4CD4' : '1.5px solid #E2DFD6',
+                            border:
+                                selectedIdx === i
+                                    ? '1.5px solid #1A4CD4'
+                                    : '1.5px solid #E2DFD6',
                             background: selectedIdx === i ? '#EBF0FD' : 'white',
                         }}
                     >
@@ -907,8 +1345,12 @@ function QuizStep({
                             {o.ico}
                         </span>
                         <div>
-                            <div style={{ fontSize: 14, fontWeight: 500 }}>{o.text}</div>
-                            <div style={{ fontSize: 12, color: '#6B6860' }}>{o.sub}</div>
+                            <div style={{ fontSize: 14, fontWeight: 500 }}>
+                                {o.text}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#6B6860' }}>
+                                {o.sub}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -921,7 +1363,11 @@ function QuizStep({
                         <button
                             onClick={onBack}
                             className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-[11px] transition-all"
-                            style={{ fontFamily: "'Geist', sans-serif", fontSize: 13, fontWeight: 600 }}
+                            style={{
+                                fontFamily: "'Geist', sans-serif",
+                                fontSize: 13,
+                                fontWeight: 600,
+                            }}
                         >
                             ← Back
                         </button>
@@ -964,7 +1410,9 @@ function QuizResult({
             {/* Match hero */}
             <div
                 className="mb-4 rounded-[20px] p-5 text-center text-white"
-                style={{ background: 'linear-gradient(135deg, #0A7C52, #059669)' }}
+                style={{
+                    background: 'linear-gradient(135deg, #0A7C52, #059669)',
+                }}
             >
                 <div style={{ fontSize: 40, marginBottom: 8 }}>{top.emoji}</div>
                 <div
@@ -979,15 +1427,29 @@ function QuizResult({
                 >
                     Your best match
                 </div>
-                <div style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 500, marginBottom: 4 }}>
+                <div
+                    style={{
+                        fontFamily: "'Fraunces', serif",
+                        fontSize: 24,
+                        fontWeight: 500,
+                        marginBottom: 4,
+                    }}
+                >
                     {top.name}
                 </div>
                 <div style={{ fontSize: 13, opacity: 0.85 }}>{top.tagline}</div>
             </div>
 
-            <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.65, marginBottom: 16 }}>
-                Based on your priorities, <strong>{top.name}</strong> is your best fit in Cologne.{' '}
-                {top.desc.split('.')[0]}.
+            <div
+                style={{
+                    fontSize: 13,
+                    color: '#6B6860',
+                    lineHeight: 1.65,
+                    marginBottom: 16,
+                }}
+            >
+                Based on your priorities, <strong>{top.name}</strong> is your
+                best fit in Cologne. {top.desc.split('.')[0]}.
             </div>
 
             {/* Also consider */}
@@ -1010,8 +1472,12 @@ function QuizResult({
             >
                 <span style={{ fontSize: 24 }}>{runner.emoji}</span>
                 <div className="min-w-0 flex-1">
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{runner.name}</div>
-                    <div style={{ fontSize: 12, color: '#6B6860' }}>{runner.tagline.substring(0, 55)}…</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>
+                        {runner.name}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6B6860' }}>
+                        {runner.tagline.substring(0, 55)}…
+                    </div>
                 </div>
                 <span style={{ fontSize: 13, color: '#1A4CD4' }}>›</span>
             </div>
@@ -1021,14 +1487,23 @@ function QuizResult({
                 <button
                     onClick={() => onExplore(top.id)}
                     className="flex-1 cursor-pointer rounded-[9px] border-none py-3 text-white transition-all"
-                    style={{ background: '#1A4CD4', fontFamily: "'Geist', sans-serif", fontSize: 13, fontWeight: 600 }}
+                    style={{
+                        background: '#1A4CD4',
+                        fontFamily: "'Geist', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 600,
+                    }}
                 >
                     Explore {top.name} →
                 </button>
                 <button
                     onClick={onRetake}
                     className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 transition-all"
-                    style={{ fontFamily: "'Geist', sans-serif", fontSize: 13, fontWeight: 600 }}
+                    style={{
+                        fontFamily: "'Geist', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 600,
+                    }}
                 >
                     Retake
                 </button>
@@ -1041,7 +1516,15 @@ function QuizResult({
 // Detail Sheet Content
 // ============================================================
 
-function DetailScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
+function DetailScoreBar({
+    label,
+    value,
+    color,
+}: {
+    label: string;
+    value: number;
+    color: string;
+}) {
     return (
         <div className="flex flex-col gap-1">
             <div
@@ -1056,7 +1539,10 @@ function DetailScoreBar({ label, value, color }: { label: string; value: number;
                 {label}
             </div>
             <div className="flex items-center gap-1.5">
-                <div className="flex-1 overflow-hidden rounded-[20px]" style={{ height: 5, background: '#EFEDE7' }}>
+                <div
+                    className="flex-1 overflow-hidden rounded-[20px]"
+                    style={{ height: 5, background: '#EFEDE7' }}
+                >
                     <div
                         className="rounded-[20px]"
                         style={{
@@ -1067,7 +1553,14 @@ function DetailScoreBar({ label, value, color }: { label: string; value: number;
                         }}
                     />
                 </div>
-                <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 10, color: '#6B6860', fontWeight: 500 }}>
+                <span
+                    style={{
+                        fontFamily: "'Geist Mono', monospace",
+                        fontSize: 10,
+                        color: '#6B6860',
+                        fontWeight: 500,
+                    }}
+                >
                     {value}
                 </span>
             </div>
@@ -1075,7 +1568,11 @@ function DetailScoreBar({ label, value, color }: { label: string; value: number;
     );
 }
 
-function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) {
+function DetailContent({
+    neighborhood: n,
+}: {
+    neighborhood: NeighborhoodData;
+}) {
     return (
         <div>
             {/* Header */}
@@ -1084,7 +1581,11 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
                 <div>
                     <div
                         className="flex items-center gap-2"
-                        style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 500 }}
+                        style={{
+                            fontFamily: "'Fraunces', serif",
+                            fontSize: 22,
+                            fontWeight: 500,
+                        }}
                     >
                         {n.name}
                         {n.current && (
@@ -1104,23 +1605,58 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
                             </span>
                         )}
                     </div>
-                    <div style={{ fontSize: 13, color: '#6B6860', marginTop: 3 }}>
+                    <div
+                        style={{ fontSize: 13, color: '#6B6860', marginTop: 3 }}
+                    >
                         ★ {n.rating} · {n.rent} avg rent · {n.expats} expats
                     </div>
                 </div>
             </div>
 
             {/* Description */}
-            <div style={{ fontSize: 14, color: '#6B6860', lineHeight: 1.65, marginBottom: 16 }}>{n.desc}</div>
+            <div
+                style={{
+                    fontSize: 14,
+                    color: '#6B6860',
+                    lineHeight: 1.65,
+                    marginBottom: 16,
+                }}
+            >
+                {n.desc}
+            </div>
 
             {/* Score bars — 2 column */}
             <div className="mb-4 grid grid-cols-2 gap-2">
-                <DetailScoreBar label="Expat-friendly" value={n.scores.expat} color="#1A4CD4" />
-                <DetailScoreBar label="English" value={n.scores.english} color="#0A7C52" />
-                <DetailScoreBar label="Transport" value={n.scores.transport} color="#7C3AED" />
-                <DetailScoreBar label="Affordable" value={n.scores.affordable} color="#C47D0E" />
-                <DetailScoreBar label="Quiet" value={n.scores.quiet} color="#0891B2" />
-                <DetailScoreBar label="Green" value={n.scores.green} color="#16A34A" />
+                <DetailScoreBar
+                    label="Expat-friendly"
+                    value={n.scores.expat}
+                    color="#1A4CD4"
+                />
+                <DetailScoreBar
+                    label="English"
+                    value={n.scores.english}
+                    color="#0A7C52"
+                />
+                <DetailScoreBar
+                    label="Transport"
+                    value={n.scores.transport}
+                    color="#7C3AED"
+                />
+                <DetailScoreBar
+                    label="Affordable"
+                    value={n.scores.affordable}
+                    color="#C47D0E"
+                />
+                <DetailScoreBar
+                    label="Quiet"
+                    value={n.scores.quiet}
+                    color="#0891B2"
+                />
+                <DetailScoreBar
+                    label="Green"
+                    value={n.scores.green}
+                    color="#16A34A"
+                />
             </div>
 
             {/* Tags */}
@@ -1155,7 +1691,9 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
             >
                 Transit
             </div>
-            <div style={{ fontSize: 13, color: '#6B6860', marginBottom: 16 }}>🚇 {n.transit}</div>
+            <div style={{ fontSize: 13, color: '#6B6860', marginBottom: 16 }}>
+                🚇 {n.transit}
+            </div>
 
             {/* Pros */}
             <div
@@ -1172,7 +1710,11 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
             </div>
             <div className="mb-3.5 flex flex-col gap-[5px]">
                 {n.pros.map((p, i) => (
-                    <div key={i} className="flex gap-2" style={{ fontSize: 13, color: '#6B6860' }}>
+                    <div
+                        key={i}
+                        className="flex gap-2"
+                        style={{ fontSize: 13, color: '#6B6860' }}
+                    >
                         <span style={{ color: '#0A7C52' }}>✓</span>
                         {p}
                     </div>
@@ -1194,7 +1736,11 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
             </div>
             <div className="mb-3.5 flex flex-col gap-[5px]">
                 {n.cons.map((c, i) => (
-                    <div key={i} className="flex gap-2" style={{ fontSize: 13, color: '#6B6860' }}>
+                    <div
+                        key={i}
+                        className="flex gap-2"
+                        style={{ fontSize: 13, color: '#6B6860' }}
+                    >
                         <span style={{ color: '#C47D0E' }}>•</span>
                         {c}
                     </div>
@@ -1252,12 +1798,29 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
                         <div
                             key={i}
                             className="mb-2 flex items-start gap-[9px] rounded-[9px]"
-                            style={{ background: '#EFEDE7', padding: '11px 13px' }}
+                            style={{
+                                background: '#EFEDE7',
+                                padding: '11px 13px',
+                            }}
                         >
                             <span style={{ fontSize: 14 }}>💬</span>
                             <div>
-                                <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5 }}>{t.text}</div>
-                                <div style={{ fontSize: 11, color: '#AAA89F', marginTop: 4 }}>
+                                <div
+                                    style={{
+                                        fontSize: 13,
+                                        color: '#6B6860',
+                                        lineHeight: 1.5,
+                                    }}
+                                >
+                                    {t.text}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 11,
+                                        color: '#AAA89F',
+                                        marginTop: 4,
+                                    }}
+                                >
                                     {t.author} · Community tip
                                 </div>
                             </div>
@@ -1270,10 +1833,19 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
             <div className="mt-2 flex gap-[9px]">
                 <button
                     onClick={() =>
-                        window.open(`https://www.google.com/maps/search/${encodeURIComponent(n.name + ' Cologne')}`, '_blank', 'noopener')
+                        window.open(
+                            `https://www.google.com/maps/search/${encodeURIComponent(n.name + ' Cologne')}`,
+                            '_blank',
+                            'noopener',
+                        )
                     }
                     className="flex-1 cursor-pointer rounded-[9px] border-none py-3 text-white"
-                    style={{ background: '#1A4CD4', fontFamily: "'Geist', sans-serif", fontSize: 13, fontWeight: 600 }}
+                    style={{
+                        background: '#1A4CD4',
+                        fontFamily: "'Geist', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 600,
+                    }}
                 >
                     View on map ↗
                 </button>
@@ -1286,7 +1858,11 @@ function DetailContent({ neighborhood: n }: { neighborhood: NeighborhoodData }) 
                         )
                     }
                     className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3"
-                    style={{ fontFamily: "'Geist', sans-serif", fontSize: 13, fontWeight: 600 }}
+                    style={{
+                        fontFamily: "'Geist', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 600,
+                    }}
                 >
                     Find flats ↗
                 </button>
@@ -1308,7 +1884,14 @@ function PickerContent({
 }) {
     return (
         <div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 500, marginBottom: 16 }}>
+            <div
+                style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: 20,
+                    fontWeight: 500,
+                    marginBottom: 16,
+                }}
+            >
                 Pick a neighborhood
             </div>
             {neighborhoods.map((n) => (
@@ -1319,10 +1902,16 @@ function PickerContent({
                 >
                     <span style={{ fontSize: 24 }}>{n.emoji}</span>
                     <div className="min-w-0 flex-1">
-                        <div style={{ fontSize: 14, fontWeight: 600 }}>{n.name}</div>
-                        <div style={{ fontSize: 12, color: '#6B6860' }}>{n.tagline.substring(0, 50)}…</div>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>
+                            {n.name}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#6B6860' }}>
+                            {n.tagline.substring(0, 50)}…
+                        </div>
                     </div>
-                    <span style={{ fontSize: 12, color: '#AAA89F' }}>★ {n.rating}</span>
+                    <span style={{ fontSize: 12, color: '#AAA89F' }}>
+                        ★ {n.rating}
+                    </span>
                 </div>
             ))}
         </div>

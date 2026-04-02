@@ -21,16 +21,26 @@ export function DocumentCard({
                 marginBottom: 10,
             }}
             onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(26,76,212,.25)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(0,0,0,.06)';
+                (e.currentTarget as HTMLDivElement).style.borderColor =
+                    'rgba(26,76,212,.25)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow =
+                    '0 4px 16px rgba(0,0,0,.06)';
             }}
             onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = '#E2DFD6';
+                (e.currentTarget as HTMLDivElement).style.borderColor =
+                    '#E2DFD6';
                 (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
             }}
         >
             {/* Top row: emoji + info */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 8 }}>
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    marginBottom: 8,
+                }}
+            >
                 <span style={{ fontSize: 26, flexShrink: 0 }}>{doc.emoji}</span>
                 <div style={{ flex: 1 }}>
                     <div
@@ -45,8 +55,24 @@ export function DocumentCard({
                     >
                         {doc.de}
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 3 }}>{doc.en}</div>
-                    <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.5 }}>{doc.desc}</div>
+                    <div
+                        style={{
+                            fontSize: 15,
+                            fontWeight: 600,
+                            marginBottom: 3,
+                        }}
+                    >
+                        {doc.en}
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 13,
+                            color: '#6B6860',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        {doc.desc}
+                    </div>
                 </div>
             </div>
 
@@ -93,9 +119,18 @@ export function DocumentCard({
                     }}
                 >
                     <DetailSection label="What it is" text={doc.detail.what} />
-                    <DetailSection label="When you need it" text={doc.detail.when} />
-                    <DetailSection label="How to get it" text={doc.detail.howToGet} />
-                    <DetailSection label="⚠️ Watch out" text={doc.detail.watchOut} />
+                    <DetailSection
+                        label="When you need it"
+                        text={doc.detail.when}
+                    />
+                    <DetailSection
+                        label="How to get it"
+                        text={doc.detail.howToGet}
+                    />
+                    <DetailSection
+                        label="⚠️ Watch out"
+                        text={doc.detail.watchOut}
+                    />
                     <DetailSection label="Validity" text={doc.validity} last />
                 </div>
             )}
@@ -103,7 +138,15 @@ export function DocumentCard({
     );
 }
 
-function DetailSection({ label, text, last = false }: { label: string; text: string; last?: boolean }) {
+function DetailSection({
+    label,
+    text,
+    last = false,
+}: {
+    label: string;
+    text: string;
+    last?: boolean;
+}) {
     return (
         <div style={{ marginBottom: last ? 0 : 12 }}>
             <div
@@ -118,7 +161,9 @@ function DetailSection({ label, text, last = false }: { label: string; text: str
             >
                 {label}
             </div>
-            <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.55 }}>{text}</div>
+            <div style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.55 }}>
+                {text}
+            </div>
         </div>
     );
 }

@@ -17,7 +17,12 @@ import {
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+} from '@/components/ui/sidebar';
 import { ICON_STROKE } from '@/constants/icons';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
@@ -37,15 +42,29 @@ const navGroups: NavGroup[] = [
         items: [
             { title: 'Transit', href: '/transit', icon: IconTrain },
             { title: 'Events', href: '/events', icon: IconCalendarEvent },
-            { title: 'Language Exchange', href: '/language-exchange', icon: IconLanguage },
-            { title: 'Neighborhoods', href: '/neighborhoods', icon: IconBuildingCommunity },
+            {
+                title: 'Language Exchange',
+                href: '/language-exchange',
+                icon: IconLanguage,
+            },
+            {
+                title: 'Neighborhoods',
+                href: '/neighborhoods',
+                icon: IconBuildingCommunity,
+            },
             { title: 'Services', href: '/services', icon: IconFirstAidKit },
         ],
     },
     {
         label: 'Personal',
         items: [
-            { title: 'Bureaucracy', href: '/bureaucracy', icon: IconFileText, badge: 3, badgeVariant: 'warn' },
+            {
+                title: 'Bureaucracy',
+                href: '/bureaucracy',
+                icon: IconFileText,
+                badge: 3,
+                badgeVariant: 'warn',
+            },
             { title: 'Just Arrived', href: '/just-arrived', icon: IconPackage },
         ],
     },
@@ -76,7 +95,10 @@ export function AppSidebar() {
                     className="flex items-center gap-[11px] px-2 pb-5"
                 >
                     <AppLogoIcon />
-                    <span data-sidebar-text className="whitespace-nowrap font-display text-[22px] font-medium tracking-tight text-[#18170F] dark:text-[#F6F5F1]">
+                    <span
+                        data-sidebar-text
+                        className="font-display text-[22px] font-medium tracking-tight whitespace-nowrap text-[#18170F] dark:text-[#F6F5F1]"
+                    >
                         Expadu
                     </span>
                 </Link>
@@ -96,16 +118,23 @@ export function AppSidebar() {
                         {getInitials(user?.name ?? '')}
                     </div>
                     <div data-sidebar-text className="overflow-hidden">
-                        <div className="truncate text-sm font-semibold whitespace-nowrap">{user?.name ?? 'User'}</div>
-                        <div className="truncate text-[11px] whitespace-nowrap text-[#AAA89F]">Cologne · Expat</div>
+                        <div className="truncate text-sm font-semibold whitespace-nowrap">
+                            {user?.name ?? 'User'}
+                        </div>
+                        <div className="truncate text-[11px] whitespace-nowrap text-[#AAA89F]">
+                            Cologne · Expat
+                        </div>
                     </div>
                 </button>
 
                 {/* Dropdown menu */}
                 {dropdownOpen && (
                     <>
-                        <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                        <div className="absolute bottom-full left-4 right-4 z-50 mb-2 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-lg dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                        <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setDropdownOpen(false)}
+                        />
+                        <div className="absolute right-4 bottom-full left-4 z-50 mb-2 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-lg dark:border-[#3A3930] dark:bg-[#1E1D15]">
                             {dropdownItems.map((item) => (
                                 <Link
                                     key={item.label}
@@ -114,7 +143,11 @@ export function AppSidebar() {
                                     onClick={() => setDropdownOpen(false)}
                                     className="flex items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7] dark:text-[#F6F5F1] dark:hover:bg-[#2A2920]"
                                 >
-                                    <item.icon size={16} stroke={ICON_STROKE} className="shrink-0 opacity-60" />
+                                    <item.icon
+                                        size={16}
+                                        stroke={ICON_STROKE}
+                                        className="shrink-0 opacity-60"
+                                    />
                                     {item.label}
                                 </Link>
                             ))}
@@ -123,7 +156,11 @@ export function AppSidebar() {
                                 onClick={handleLogout}
                                 className="flex w-full items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#C4271A] transition-colors hover:bg-[#FDECEA] dark:hover:bg-[#2E1A1A]"
                             >
-                                <IconLogout size={16} stroke={ICON_STROKE} className="shrink-0" />
+                                <IconLogout
+                                    size={16}
+                                    stroke={ICON_STROKE}
+                                    className="shrink-0"
+                                />
                                 Log out
                             </button>
                         </div>

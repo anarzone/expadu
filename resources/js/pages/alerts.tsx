@@ -42,10 +42,20 @@ function groupAlerts(alerts: AlertData[]): Record<string, AlertData[]> {
 }
 
 export default function Alerts() {
-    const { alerts, unreadCount, counts, tab: activeTab } = usePage<{
+    const {
+        alerts,
+        unreadCount,
+        counts,
+        tab: activeTab,
+    } = usePage<{
         alerts: { data: AlertData[] };
         unreadCount: number;
-        counts: { unread: number; system: number; social: number; reminder: number };
+        counts: {
+            unread: number;
+            system: number;
+            social: number;
+            reminder: number;
+        };
         tab: string;
     }>().props;
 
@@ -58,7 +68,9 @@ export default function Alerts() {
     }
 
     function switchTab(t: string) {
-        router.get('/alerts', t !== 'all' ? { tab: t } : {}, { preserveState: true });
+        router.get('/alerts', t !== 'all' ? { tab: t } : {}, {
+            preserveState: true,
+        });
     }
 
     function markAllRead() {
@@ -69,22 +81,32 @@ export default function Alerts() {
     const groupOrder = ['Just now', 'Today', 'Yesterday', 'Earlier'];
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]} rightPanel={<AlertsRightPanel counts={counts} />}>
+        <AppLayout
+            breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}
+            rightPanel={<AlertsRightPanel counts={counts} />}
+        >
             <Head title="Alerts" />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* Sticky header */}
                 <div className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/[0.92] px-6 py-4 backdrop-blur-2xl">
-                    <span className="font-display text-xl font-medium tracking-tight">Alerts</span>
+                    <span className="font-display text-xl font-medium tracking-tight">
+                        Alerts
+                    </span>
                     <div className="flex items-center gap-3">
                         <span
                             className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white ${
                                 unreadCount > 0 ? 'bg-danger' : 'bg-success'
                             }`}
                         >
-                            {unreadCount > 0 ? `${unreadCount} new` : 'All read'}
+                            {unreadCount > 0
+                                ? `${unreadCount} new`
+                                : 'All read'}
                         </span>
                         {unreadCount > 0 && (
-                            <button onClick={markAllRead} className="text-xs font-semibold text-[#1A4CD4]">
+                            <button
+                                onClick={markAllRead}
+                                className="text-xs font-semibold text-[#1A4CD4]"
+                            >
                                 Mark all read
                             </button>
                         )}
@@ -112,7 +134,9 @@ export default function Alerts() {
                 {alerts.data.length === 0 ? (
                     <div className="py-16 text-center">
                         <div className="mb-3 text-[40px]">🔔</div>
-                        <div className="text-base font-semibold text-muted-foreground">No alerts here</div>
+                        <div className="text-base font-semibold text-muted-foreground">
+                            No alerts here
+                        </div>
                         <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
                             You're all caught up in this category.
                         </div>
@@ -125,7 +149,7 @@ export default function Alerts() {
                             return (
                                 <div key={groupName}>
                                     <div className="flex items-center gap-2 px-6 pt-3.5 pb-1.5">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                                        <span className="text-[10px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
                                             {groupName}
                                         </span>
                                         <div className="h-px flex-1 bg-border" />
@@ -134,7 +158,9 @@ export default function Alerts() {
                                         <AlertRow
                                             key={alert.id}
                                             alert={alert}
-                                            indexInType={getTypeIndex(alert.type)}
+                                            indexInType={getTypeIndex(
+                                                alert.type,
+                                            )}
                                         />
                                     ))}
                                 </div>

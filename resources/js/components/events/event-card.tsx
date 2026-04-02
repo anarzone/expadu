@@ -39,12 +39,19 @@ export function EventCard({
                 animationDelay: `${index * 0.04}s`,
             }}
             onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(26,76,212,.25)';
+                (e.currentTarget as HTMLDivElement).style.borderColor =
+                    'rgba(26,76,212,.25)';
             }}
             onMouseLeave={(e) => {
-                if (event.featured) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,58,237,.3)';
-                else if (event.karneval) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(196,39,26,.3)';
-                else (e.currentTarget as HTMLDivElement).style.borderColor = '#E2DFD6';
+                if (event.featured)
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                        'rgba(124,58,237,.3)';
+                else if (event.karneval)
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                        'rgba(196,39,26,.3)';
+                else
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                        '#E2DFD6';
             }}
         >
             {/* Color bar */}
@@ -56,7 +63,14 @@ export function EventCard({
                 {event.featured && (
                     <div
                         className="mb-1.5 inline-flex items-center gap-1 rounded-[20px] px-2 py-0.5"
-                        style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: '#EDE9FE', color: '#7C3AED' }}
+                        style={{
+                            fontSize: 9,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            background: '#EDE9FE',
+                            color: '#7C3AED',
+                        }}
                     >
                         <span>{'⭐'}</span> Featured
                     </div>
@@ -66,7 +80,14 @@ export function EventCard({
                 {event.karneval && (
                     <div
                         className="mb-1.5 inline-flex items-center gap-1 rounded-[20px] px-2 py-0.5"
-                        style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: '#FDE8E6', color: '#C4271A' }}
+                        style={{
+                            fontSize: 9,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            background: '#FDE8E6',
+                            color: '#C4271A',
+                        }}
                     >
                         <span>🎭</span> Karneval
                     </div>
@@ -77,20 +98,55 @@ export function EventCard({
                     {/* Date block */}
                     <div
                         className="shrink-0 text-center"
-                        style={{ background: '#EFEDE7', borderRadius: 9, padding: '7px 10px', minWidth: 46 }}
+                        style={{
+                            background: '#EFEDE7',
+                            borderRadius: 9,
+                            padding: '7px 10px',
+                            minWidth: 46,
+                        }}
                     >
-                        <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 20, fontWeight: 500, lineHeight: 1 }}>{event.date}</div>
-                        <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#AAA89F', fontWeight: 700, marginTop: 2 }}>
+                        <div
+                            style={{
+                                fontFamily: "'Geist Mono', monospace",
+                                fontSize: 20,
+                                fontWeight: 500,
+                                lineHeight: 1,
+                            }}
+                        >
+                            {event.date}
+                        </div>
+                        <div
+                            style={{
+                                fontSize: 9,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.07em',
+                                color: '#AAA89F',
+                                fontWeight: 700,
+                                marginTop: 2,
+                            }}
+                        >
                             {event.month}
                         </div>
                     </div>
 
                     {/* Info */}
                     <div className="min-w-0 flex-1">
-                        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 3, lineHeight: 1.3 }}>{event.title}</div>
+                        <div
+                            style={{
+                                fontSize: 15,
+                                fontWeight: 600,
+                                marginBottom: 3,
+                                lineHeight: 1.3,
+                            }}
+                        >
+                            {event.title}
+                        </div>
 
                         {/* Meta row */}
-                        <div className="mb-1.5 flex flex-wrap items-center gap-[5px]" style={{ fontSize: 12, color: '#6B6860' }}>
+                        <div
+                            className="mb-1.5 flex flex-wrap items-center gap-[5px]"
+                            style={{ fontSize: 12, color: '#6B6860' }}
+                        >
                             <span>📍 {event.venue}</span>
                             <Dot />
                             <span>
@@ -124,7 +180,13 @@ export function EventCard({
                             {event.englishFriendly && (
                                 <span
                                     className="inline-flex items-center gap-1 rounded-[20px]"
-                                    style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', background: '#D4F0E6', color: '#0A7C52' }}
+                                    style={{
+                                        fontSize: 9,
+                                        fontWeight: 700,
+                                        padding: '2px 8px',
+                                        background: '#D4F0E6',
+                                        color: '#0A7C52',
+                                    }}
                                 >
                                     🇬🇧 English-friendly
                                 </span>
@@ -155,7 +217,10 @@ export function EventCard({
                 {/* Bottom row */}
                 <div className="flex items-center justify-between border-t border-[#E2DFD6] pt-2.5">
                     {/* Attendees */}
-                    <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: '#6B6860' }}>
+                    <div
+                        className="flex items-center gap-1.5"
+                        style={{ fontSize: 12, color: '#6B6860' }}
+                    >
                         <div className="flex">
                             {event.attendees.slice(0, 4).map((flag, i) => (
                                 <div
@@ -173,7 +238,9 @@ export function EventCard({
                                 </div>
                             ))}
                         </div>
-                        <span style={{ marginLeft: 6 }}>{attendStr} attending</span>
+                        <span style={{ marginLeft: 6 }}>
+                            {attendStr} attending
+                        </span>
                     </div>
 
                     {/* RSVP button */}
@@ -200,5 +267,10 @@ export function EventCard({
 }
 
 function Dot() {
-    return <span className="inline-block rounded-full" style={{ width: 3, height: 3, background: '#AAA89F' }} />;
+    return (
+        <span
+            className="inline-block rounded-full"
+            style={{ width: 3, height: 3, background: '#AAA89F' }}
+        />
+    );
 }
