@@ -7,6 +7,7 @@ import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
 import { JourneyTimeline } from '@/components/transit/journey-timeline';
+import { getTag } from '@/constants/tags';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
@@ -1123,8 +1124,8 @@ function MobileListSheet({ spots, selectedId, onSelect }: { spots: SpotData[]; s
                             <div className="mb-0.5 text-sm font-semibold">{s.name}</div>
                             <div className="text-xs text-[#6B6860]">{s.address?.split(',')[1]?.trim() || s.address}</div>
                             <div className="mt-1 flex gap-1">
-                                {s.wifi_speed && <span className="rounded-full bg-[#EFEDE7] px-1.5 py-[2px] text-[10px] font-medium text-[#6B6860]">📶 WiFi</span>}
-                                {s.noise_level === 'quiet' && <span className="rounded-full bg-[#EFEDE7] px-1.5 py-[2px] text-[10px] font-medium text-[#6B6860]">🤫 Quiet</span>}
+                                {s.wifi_speed && (() => { const t = getTag('wifi'); return t ? <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}><t.icon size={10} stroke={1.5} /> WiFi</span> : null; })()}
+                                {s.noise_level === 'quiet' && (() => { const t = getTag('quiet'); return t ? <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}><t.icon size={10} stroke={1.5} /> Quiet</span> : null; })()}
                             </div>
                         </div>
                         <span className="shrink-0 font-mono text-xs text-[#AAA89F]">0.3 km</span>
