@@ -6,6 +6,7 @@ import { ModePicker } from '@/components/explore/mode-picker';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
+import { JourneyTimeline } from '@/components/transit/journey-timeline';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
@@ -179,7 +180,6 @@ export default function Explore() {
             }
             return;
         }
-        setShowGoogleEmbed(false);
 
         if (costing && dest) {
             fetch(`/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=${costing}`, { credentials: 'same-origin' })
@@ -560,7 +560,7 @@ export default function Explore() {
                                     </div>
                                 )}
 
-                                {/* Transit mode: selected trip detail (back button + steps) */}
+                                {/* Transit mode: selected trip detail (timeline view) */}
                                 {routeMode === 'transit' && selectedTripIdx !== null && routeDetail && (
                                     <div className="px-4 py-3">
                                         <button
@@ -569,16 +569,42 @@ export default function Explore() {
                                         >
                                             ← Back to options
                                         </button>
-                                        <RouteStepsPanel
-                                            mode={routeDetail.mode}
-                                            durationMin={routeDetail.duration_min}
-                                            distanceKm={routeDetail.distance_km}
-                                            steps={routeDetail.steps}
-                                            mapsUrl={routeMapsUrl ?? undefined}
-                                            departureTime={routeDetail.departure_time}
-                                            arrivalTime={routeDetail.arrival_time}
-                                            transfers={routeDetail.transfers}
-                                        />
+
+                                        {/* Summary */}
+                                        <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4">
+                                            <div className="flex items-center gap-2">
+                                                <span style={{ fontSize: 20 }}>🚋</span>
+                                                <span style={{ fontSize: 15, fontWeight: 600 }}>Transit</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 600, color: '#1A4CD4' }}>
+                                                    {routeDetail.departure_time} → {routeDetail.arrival_time}
+                                                </span>
+                                                <span style={{ fontSize: 11, color: '#AAA89F' }}>{routeDetail.duration_min} min</span>
+                                                {(routeDetail.transfers ?? 0) > 0 && (
+                                                    <span style={{ fontSize: 10, fontWeight: 700, color: '#6B6860', background: '#EFEDE7', padding: '2px 7px', borderRadius: 20 }}>
+                                                        {routeDetail.transfers} transfer{routeDetail.transfers !== 1 ? 's' : ''}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Timeline */}
+                                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white px-4">
+                                            <JourneyTimeline segments={routeDetail.segments ?? []} departureTime={routeDetail.departure_time} />
+                                        </div>
+
+                                        {/* Maps buttons */}
+                                        {routeMapsUrl && (
+                                            <div className="mt-3 flex gap-2">
+                                                <a href={routeMapsUrl.google} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]" style={{ textDecoration: 'none' }}>
+                                                    Google Maps
+                                                </a>
+                                                <a href={routeMapsUrl.apple} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]" style={{ textDecoration: 'none' }}>
+                                                    Apple Maps
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
