@@ -116,8 +116,8 @@ class VrsRealtimeService
             $caCert = config('services.vrs.ca_cert');
 
             $options = [
-                'timeout' => 10,
-                'connect_timeout' => 5,
+                'timeout' => 3,
+                'connect_timeout' => 2,
             ];
 
             // Test endpoints use self-signed certs — disable SSL verify

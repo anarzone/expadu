@@ -753,7 +753,7 @@ class VrsTriasService
         try {
             $url = config('services.vrs.trias_url');
 
-            $options = ['timeout' => 10, 'connect_timeout' => 5];
+            $options = ['timeout' => 3, 'connect_timeout' => 2];
             if (str_contains($url, 'apitest.vrs.de') || str_contains($url, '-test.vrs.de')) {
                 $options['verify'] = false;
             }
