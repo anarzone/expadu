@@ -131,13 +131,34 @@ export default function Explore() {
     const [connectionsByStop, setConnectionsByStop] = useState<Record<string, ConnectionOption[]>>({});
     const [connectionsLoading, setConnectionsLoading] = useState<Record<string, boolean>>({});
 
+    // Restore directions from URL params on mount (survives refresh)
+    const dirRestoredRef = useRef(false);
+    useEffect(() => {
+        if (dirRestoredRef.current) return;
+        dirRestoredRef.current = true;
+        const params = new URLSearchParams(window.location.search);
+        const lat = params.get('dir_lat');
+        const lng = params.get('dir_lng');
+        const name = params.get('dir_name');
+        if (lat && lng && name) {
+            startDirections(parseFloat(lat), parseFloat(lng), name);
+        }
+    }, []);
+
     function startDirections(lat: number, lng: number, name: string) {
         setRouteDest({ lat, lng, name });
         setRouteMode(null);
         setRouteDetail(null);
         setRouteLoading(true);
         setSelectedSpot(null);
-        setListOpen(true); // Ensure panel is open on tablet
+        setListOpen(true);
+
+        // Persist in URL so refresh restores directions
+        const url = new URL(window.location.href);
+        url.searchParams.set('dir_lat', String(lat));
+        url.searchParams.set('dir_lng', String(lng));
+        url.searchParams.set('dir_name', name);
+        window.history.replaceState({}, '', url.toString());
 
         fetch(`/api/route-options?to_lat=${lat}&to_lng=${lng}&name=${encodeURIComponent(name)}`, { credentials: 'same-origin' })
             .then((r) => r.json())
@@ -207,6 +228,13 @@ export default function Explore() {
         setConnectionsByStop({});
         setConnectionsLoading({});
         mapRef.current?.clearRoute();
+
+        // Clear URL params
+        const url = new URL(window.location.href);
+        url.searchParams.delete('dir_lat');
+        url.searchParams.delete('dir_lng');
+        url.searchParams.delete('dir_name');
+        window.history.replaceState({}, '', url.toString());
     }
 
     function selectTransitTrip(idx: number) {

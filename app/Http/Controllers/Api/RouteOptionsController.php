@@ -365,10 +365,30 @@ class RouteOptionsController extends Controller
                     }
                 }
 
+                // Calculate departure: first transit dep - walk time before it
+                $firstSeg = collect($trip['segments'])->first();
+                $walkBeforeMin = ($firstSeg && ($firstSeg['type'] ?? '') === 'walk') ? ($firstSeg['duration_min'] ?? 0) : 0;
+                $depTime = ($firstTransit && ! empty($firstTransit['departure_time']))
+                    ? Carbon::parse($firstTransit['departure_time'])->subMinutes($walkBeforeMin)->format('H:i')
+                    : ($trip['departure_time'] ?? '');
+
+                // Calculate arrival: last transit arrival + walk time after it
+                $lastSeg = collect($trip['segments'])->last();
+                $walkAfterMin = ($lastSeg && ($lastSeg['type'] ?? '') === 'walk') ? ($lastSeg['duration_min'] ?? 0) : 0;
+                $lastTransit = $transitSegs->last();
+                $arrTime = ($lastTransit && ! empty($lastTransit['arrival_time']))
+                    ? Carbon::parse($lastTransit['arrival_time'])->addMinutes($walkAfterMin)->format('H:i')
+                    : ($trip['arrival_time'] ?? '');
+
+                // Total duration from our calculated dep to arr
+                $totalMin = ($depTime && $arrTime)
+                    ? max(1, (int) round((Carbon::parse($arrTime)->timestamp - Carbon::parse($depTime)->timestamp) / 60))
+                    : ($trip['total_duration_min'] ?? 0);
+
                 $tripOptions[] = [
-                    'departure_time' => $trip['departure_time'],
-                    'arrival_time' => $trip['arrival_time'],
-                    'total_duration_min' => $trip['total_duration_min'],
+                    'departure_time' => $depTime,
+                    'arrival_time' => $arrTime,
+                    'total_duration_min' => $totalMin,
                     'transfers' => $trip['transfers'],
                     'legs' => $legIcons,
                     'walk_min' => $walkMin,
