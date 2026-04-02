@@ -1,3 +1,6 @@
+import { IconWalk, IconTrain, IconBus } from '@tabler/icons-react';
+import { ICON_STROKE } from '@/constants/icons';
+
 type Segment = {
     type: string;
     line?: string;
@@ -136,7 +139,7 @@ function WalkLeg({ duration }: { duration: number }) {
                 <div style={{ flex: 1, width: 3, background: 'repeating-linear-gradient(to bottom, #1A4CD4 0px, #1A4CD4 4px, transparent 4px, transparent 10px)' }} />
             </div>
             <div className="flex items-center gap-2 py-2">
-                <span style={{ fontSize: 14 }}>🚶</span>
+                <IconWalk size={16} stroke={ICON_STROKE} className="shrink-0 text-[#6B6860]" />
                 <div>
                     <div style={{ fontSize: 13, color: '#6B6860' }}>Walk</div>
                     <div style={{ fontSize: 12, color: '#AAA89F' }}>About {duration} min</div>
@@ -149,7 +152,7 @@ function WalkLeg({ duration }: { duration: number }) {
 function TransitLeg({ line, direction, mode, duration, platform, delay, color }: {
     line: string; direction: string; mode: string; duration: number; platform?: string; delay?: number; color: string;
 }) {
-    const emoji = mode === 'rail' ? '🚂' : mode === 'bus' ? '🚌' : '🚋';
+    const TransitIcon = mode === 'rail' ? IconTrain : mode === 'bus' ? IconBus : IconTrain;
 
     return (
         <div className="flex gap-3" style={{ minHeight: 56 }}>
@@ -159,7 +162,7 @@ function TransitLeg({ line, direction, mode, duration, platform, delay, color }:
                 <div style={{ flex: 1, width: 6, borderRadius: 3, background: color }} />
             </div>
             <div className="flex items-center gap-2 py-2">
-                <span style={{ fontSize: 14 }}>{emoji}</span>
+                <TransitIcon size={16} stroke={ICON_STROKE} className="shrink-0" style={{ color }} />
                 <div>
                     <div className="flex items-center gap-1.5">
                         <span style={{ display: 'inline-flex', alignItems: 'center', background: color, color: 'white', borderRadius: 4, padding: '1px 6px', fontSize: 12, fontWeight: 700, fontFamily: "'Geist Mono', monospace" }}>

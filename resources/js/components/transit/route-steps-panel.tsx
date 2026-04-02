@@ -19,14 +19,18 @@ export type ConnectionOption = {
     toward_destination: boolean;
 };
 
-const MODE_LABELS: Record<string, { emoji: string; label: string }> = {
-    pedestrian: { emoji: '🚶', label: 'Walk' },
-    bicycle: { emoji: '🚲', label: 'Bike' },
-    auto: { emoji: '🚗', label: 'Drive' },
-    bike: { emoji: '🚲', label: 'Bike' },
-    walk: { emoji: '🚶', label: 'Walk' },
-    drive: { emoji: '🚗', label: 'Drive' },
-    transit: { emoji: '🚋', label: 'Transit' },
+import { IconWalk, IconBike, IconCar, IconTrain } from '@tabler/icons-react';
+import { ICON_STROKE } from '@/constants/icons';
+import type { ComponentType } from 'react';
+
+const MODE_LABELS: Record<string, { icon: ComponentType<any>; label: string }> = {
+    pedestrian: { icon: IconWalk, label: 'Walk' },
+    bicycle: { icon: IconBike, label: 'Bike' },
+    auto: { icon: IconCar, label: 'Drive' },
+    bike: { icon: IconBike, label: 'Bike' },
+    walk: { icon: IconWalk, label: 'Walk' },
+    drive: { icon: IconCar, label: 'Drive' },
+    transit: { icon: IconTrain, label: 'Transit' },
 };
 
 function formatDist(km: number): string {
@@ -66,7 +70,8 @@ export function RouteStepsPanel({
     connectionsLoading?: Record<string, boolean>;
     onSelectConnection?: (stopId: string, connection: ConnectionOption) => void;
 }) {
-    const modeInfo = MODE_LABELS[mode] ?? { emoji: '📍', label: 'Route' };
+    const modeInfo = MODE_LABELS[mode] ?? { icon: IconTrain, label: 'Route' };
+    const ModeIcon = modeInfo.icon;
     const isTransit = mode === 'transit';
 
     return (
@@ -74,7 +79,7 @@ export function RouteStepsPanel({
             {/* Summary header */}
             <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4">
                 <div className="flex items-center gap-2">
-                    <span style={{ fontSize: 20 }}>{modeInfo.emoji}</span>
+                    <ModeIcon size={22} stroke={ICON_STROKE} className="text-[#1A4CD4]" />
                     <span style={{ fontSize: 15, fontWeight: 600 }}>{modeInfo.label}</span>
                 </div>
                 {isTransit && departureTime && arrivalTime ? (

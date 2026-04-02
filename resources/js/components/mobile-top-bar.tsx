@@ -1,12 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { IconUser, IconPalette, IconLogout } from '@tabler/icons-react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { useAppearance } from '@/hooks/use-appearance';
+import { ICON_STROKE } from '@/constants/icons';
 
 export function MobileTopBar({ title }: { title?: string }) {
     const { auth } = usePage().props as any;
     const [menuOpen, setMenuOpen] = useState(false);
-    const { appearance, updateAppearance } = useAppearance();
 
     const initials = auth?.user?.name
         ? auth.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -51,7 +51,7 @@ export function MobileTopBar({ title }: { title?: string }) {
                             onClick={() => setMenuOpen(false)}
                             className="flex w-full items-center gap-2.5 border-b border-[#E2DFD6] px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                         >
-                            <span style={{ fontSize: 14 }}>👤</span>
+                            <IconUser size={16} stroke={ICON_STROKE} className="text-[#6B6860]" />
                             <span style={{ fontSize: 13, fontWeight: 500 }}>Profile</span>
                         </a>
                         <a
@@ -59,14 +59,14 @@ export function MobileTopBar({ title }: { title?: string }) {
                             onClick={() => setMenuOpen(false)}
                             className="flex w-full items-center gap-2.5 border-b border-[#E2DFD6] px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                         >
-                            <span style={{ fontSize: 14 }}>🎨</span>
+                            <IconPalette size={16} stroke={ICON_STROKE} className="text-[#6B6860]" />
                             <span style={{ fontSize: 13, fontWeight: 500 }}>Appearance</span>
                         </a>
                         <button
                             onClick={() => { setMenuOpen(false); router.post('/logout'); }}
                             className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
                         >
-                            <span style={{ fontSize: 14 }}>🚪</span>
+                            <IconLogout size={16} stroke={ICON_STROKE} className="text-[#C4271A]" />
                             <span style={{ fontSize: 13, fontWeight: 500, color: '#C4271A' }}>Log out</span>
                         </button>
                     </div>

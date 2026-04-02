@@ -1,3 +1,14 @@
+import { IconBike, IconTrain, IconWalk, IconCar, IconAlertTriangle } from '@tabler/icons-react';
+import { ICON_STROKE } from '@/constants/icons';
+import type { ComponentType } from 'react';
+
+const MODE_ICONS: Record<string, ComponentType<any>> = {
+    bike: IconBike,
+    transit: IconTrain,
+    walk: IconWalk,
+    drive: IconCar,
+};
+
 type RouteOption = {
     mode: string;
     emoji: string;
@@ -83,12 +94,11 @@ export function ModePicker({
                             )}
                             {/* Disrupted badge */}
                             {opt.disrupted && (
-                                <span style={{
-                                    position: 'absolute', top: -6, right: -4,
-                                    fontSize: 10,
-                                }}>⚠️</span>
+                                <span style={{ position: 'absolute', top: -6, right: -4 }}>
+                                    <IconAlertTriangle size={12} stroke={2} className="text-[#C47D0E]" />
+                                </span>
                             )}
-                            <span style={{ fontSize: 20 }}>{opt.emoji}</span>
+                            {(() => { const Icon = MODE_ICONS[opt.mode] ?? IconTrain; return <Icon size={22} stroke={ICON_STROKE} className={isActive ? 'text-[#1A4CD4]' : 'text-[#6B6860]'} />; })()}
                             <span style={{
                                 fontFamily: "'Geist Mono', monospace",
                                 fontSize: 16, fontWeight: 600,

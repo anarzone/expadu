@@ -1,43 +1,51 @@
 import { Link } from '@inertiajs/react';
-import { X } from 'lucide-react';
+import {
+    IconHome, IconCompass, IconTrain, IconCalendarEvent,
+    IconLanguage, IconMessageCircle,
+    IconBuildingCommunity, IconFirstAidKit,
+    IconBuildingBank, IconPackage,
+    IconBell, IconUser, IconX,
+} from '@tabler/icons-react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { ICON_STROKE } from '@/constants/icons';
+import type { ComponentType } from 'react';
 
-const menuGroups = [
+const menuGroups: Array<{ label: string; items: Array<{ title: string; href: string; icon: ComponentType<any> }> }> = [
     {
         label: 'Main',
         items: [
-            { title: 'Home', href: '/dashboard', emoji: '🏠' },
-            { title: 'Explore', href: '/explore', emoji: '🗺️' },
-            { title: 'Transit', href: '/transit', emoji: '🚇' },
-            { title: 'Events', href: '/events', emoji: '📅' },
+            { title: 'Home', href: '/dashboard', icon: IconHome },
+            { title: 'Explore', href: '/explore', icon: IconCompass },
+            { title: 'Transit', href: '/transit', icon: IconTrain },
+            { title: 'Events', href: '/events', icon: IconCalendarEvent },
         ],
     },
     {
         label: 'Community',
         items: [
-            { title: 'Language Exchange', href: '/language-exchange', emoji: '🗣️' },
-            { title: 'Chat', href: '/chat', emoji: '💬' },
+            { title: 'Language Exchange', href: '/language-exchange', icon: IconLanguage },
+            { title: 'Chat', href: '/chat', icon: IconMessageCircle },
         ],
     },
     {
         label: 'City',
         items: [
-            { title: 'Neighborhoods', href: '/neighborhoods', emoji: '🏘️' },
-            { title: 'Services', href: '/services', emoji: '🏥' },
+            { title: 'Neighborhoods', href: '/neighborhoods', icon: IconBuildingCommunity },
+            { title: 'Services', href: '/services', icon: IconFirstAidKit },
         ],
     },
     {
         label: 'Settle',
         items: [
-            { title: 'Bureaucracy', href: '/bureaucracy', emoji: '🏛️' },
-            { title: 'Just Arrived', href: '/just-arrived', emoji: '📦' },
+            { title: 'Bureaucracy', href: '/bureaucracy', icon: IconBuildingBank },
+            { title: 'Just Arrived', href: '/just-arrived', icon: IconPackage },
         ],
     },
     {
         label: 'Account',
         items: [
-            { title: 'Alerts', href: '/alerts', emoji: '🔔' },
-            { title: 'Profile', href: '/profile', emoji: '👤' },
+            { title: 'Alerts', href: '/alerts', icon: IconBell },
+            { title: 'Profile', href: '/profile', icon: IconUser },
         ],
     },
 ];
@@ -58,7 +66,7 @@ export function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void
                     onClick={onClose}
                     className="flex size-9 items-center justify-center rounded-full bg-secondary text-foreground transition-colors hover:bg-border"
                 >
-                    <X className="size-4" />
+                    <IconX size={16} stroke={ICON_STROKE} />
                 </button>
             </div>
 
@@ -70,6 +78,7 @@ export function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void
                         </div>
                         {group.items.map((item) => {
                             const active = isCurrentUrl(item.href);
+                            const Icon = item.icon;
                             return (
                                 <Link
                                     key={item.title}
@@ -80,7 +89,7 @@ export function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void
                                         active ? 'bg-accent-soft' : ''
                                     }`}
                                 >
-                                    <span className="w-7 text-center text-[22px]">{item.emoji}</span>
+                                    <Icon size={22} stroke={ICON_STROKE} className={active ? 'text-primary' : 'text-muted-foreground'} />
                                     <span
                                         className={`text-base font-medium ${active ? 'font-semibold text-primary' : 'text-foreground'}`}
                                     >
