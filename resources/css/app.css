@@ -2,6 +2,19 @@
 
 @import 'tw-animate-css';
 
+/* PWA: prevent zoom on iOS (double-tap + pinch) for native app feel */
+html {
+    touch-action: manipulation; /* disables double-tap zoom */
+    -webkit-text-size-adjust: 100%; /* prevents text auto-resize */
+}
+
+/* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px) */
+@media screen and (max-width: 767px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+}
+
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
