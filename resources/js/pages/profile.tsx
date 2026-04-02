@@ -536,19 +536,17 @@ export default function Profile() {
 
                 {/* ── Profile Tabs ── */}
                 <div
-                    className="sticky top-0 z-40 flex overflow-x-auto border-b border-[#E2DFD6] bg-white"
+                    className="sticky top-0 z-40 flex overflow-x-auto border-b border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]"
                     style={{ scrollbarWidth: 'none' }}
                 >
                     {PROFILE_TABS.map((t) => (
                         <button
                             key={t.id}
                             onClick={() => setActiveTab(t.id)}
-                            className="shrink-0 cursor-pointer whitespace-nowrap bg-transparent px-4 py-3 transition-all hover:bg-[#EFEDE7]"
+                            className={`shrink-0 cursor-pointer whitespace-nowrap bg-transparent px-4 py-3 transition-all hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${activeTab === t.id ? 'text-[#1A4CD4]' : 'text-[#6B6860] dark:text-[#AAA89F]'}`}
                             style={{
                                 fontSize: 12,
                                 fontWeight: 600,
-                                color: activeTab === t.id ? '#1A4CD4' : '#6B6860',
-                                borderBottom: `2px solid ${activeTab === t.id ? '#1A4CD4' : 'transparent'}`,
                                 border: 'none',
                                 borderBottomWidth: 2,
                                 borderBottomStyle: 'solid',
@@ -572,7 +570,7 @@ export default function Profile() {
                             {ACTIVITY.map((a, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-start gap-3 border-b border-[#E2DFD6] py-3 last:border-b-0"
+                                    className="flex items-start gap-3 border-b border-[#E2DFD6] py-3 last:border-b-0 dark:border-[#3A3930]"
                                 >
                                     <div
                                         className="flex shrink-0 items-center justify-center rounded-[9px]"
@@ -582,11 +580,11 @@ export default function Profile() {
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{a.title}</div>
-                                        <div style={{ fontSize: 12, color: '#6B6860' }}>{a.sub}</div>
+                                        <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>{a.sub}</div>
                                     </div>
                                     <div
-                                        className="mt-0.5 shrink-0"
-                                        style={{ fontSize: 11, color: '#AAA89F', fontFamily: "'Geist Mono', monospace" }}
+                                        className="mt-0.5 shrink-0 text-[#AAA89F]"
+                                        style={{ fontSize: 11, fontFamily: "'Geist Mono', monospace" }}
                                     >
                                         {a.time}
                                     </div>
@@ -597,12 +595,12 @@ export default function Profile() {
                         {/* Settlement progress */}
                         <FeedSection>
                             <SectionHeader title="Settlement progress" action="View checklist" onAction={() => showToast('Opening Bureaucracy checklist...')} />
-                            <div className="rounded-[14px] bg-[#EFEDE7] p-4">
+                            <div className="rounded-[14px] bg-[#EFEDE7] p-4 dark:bg-[#2A2920]">
                                 <div className="mb-2 flex justify-between">
                                     <span style={{ fontSize: 13, fontWeight: 600 }}>3 of 11 tasks complete</span>
                                     <span style={{ fontSize: 13, fontWeight: 700, color: '#1A4CD4' }}>27%</span>
                                 </div>
-                                <div className="mb-3 overflow-hidden rounded-[20px]" style={{ height: 6, background: '#E2DFD6' }}>
+                                <div className="mb-3 overflow-hidden rounded-[20px] bg-[#E2DFD6] dark:bg-[#3A3930]" style={{ height: 6 }}>
                                     <div style={{ width: '27%', height: 6, background: '#1A4CD4', borderRadius: 20, transition: 'width .6s' }} />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
@@ -649,7 +647,7 @@ export default function Profile() {
                                         value={newInterest}
                                         onChange={(e) => setNewInterest(e.target.value)}
                                         placeholder="Add an interest..."
-                                        className="flex-1 rounded-lg border-[1.5px] border-[#1A4CD4] bg-white px-3 py-2 text-[13px] outline-none"
+                                        className="flex-1 rounded-lg border-[1.5px] border-[#1A4CD4] bg-white px-3 py-2 text-[13px] outline-none dark:bg-[#1E1D15]"
                                         style={{ fontFamily: "'Geist', sans-serif" }}
                                         autoFocus
                                         onKeyDown={(e) => {
@@ -693,7 +691,7 @@ export default function Profile() {
                                     <CompactCard key={ev.id} barColor="#0A7C52" title={ev.title} sub={`${ev.date} · ${ev.time}${ev.venue ? ` · ${ev.venue}` : ''}`} badge="✓ Going" badgeBg="#D4F0E6" badgeColor="#0A7C52" />
                                 ))
                             ) : (
-                                <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F]">
+                                <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
                                     No upcoming events. Browse the <a href="/events" className="text-[#1A4CD4] underline">Events</a> page to find something.
                                 </div>
                             )}
@@ -705,7 +703,7 @@ export default function Profile() {
                                     <CompactCard key={ev.id} barColor="#E2DFD6" title={ev.title} titleColor="#6B6860" sub={`${ev.date}${ev.venue ? ` · ${ev.venue}` : ''}`} badge="Attended" badgeBg="#EFEDE7" badgeColor="#AAA89F" />
                                 ))
                             ) : (
-                                <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F]">
+                                <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
                                     No past events yet
                                 </div>
                             )}
@@ -720,7 +718,7 @@ export default function Profile() {
                     <>
                         <FeedSection>
                             <SectionHeader title="Connected" />
-                            <div className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all hover:border-[rgba(26,76,212,0.2)] hover:bg-[#EFEDE7]">
+                            <div className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all hover:border-[rgba(26,76,212,0.2)] hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920]">
                                 <div
                                     className="flex shrink-0 items-center justify-center rounded-full text-white"
                                     style={{ width: 38, height: 38, background: '#1A4CD4', fontSize: 15, fontWeight: 700 }}
@@ -729,7 +727,7 @@ export default function Profile() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Sarah K. 🇬🇧</div>
-                                    <div style={{ fontSize: 12, color: '#6B6860' }}>English ↔ German · Last session: 3 days ago</div>
+                                    <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>English ↔ German · Last session: 3 days ago</div>
                                 </div>
                                 <span
                                     className="shrink-0 rounded-[20px]"
@@ -742,7 +740,7 @@ export default function Profile() {
                         <FeedSection>
                             <SectionHeader title="Pending requests" />
                             {/* Mehmet */}
-                            <div className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all hover:border-[rgba(26,76,212,0.2)] hover:bg-[#EFEDE7]">
+                            <div className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all hover:border-[rgba(26,76,212,0.2)] hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920]">
                                 <div
                                     className="flex shrink-0 items-center justify-center rounded-full text-white"
                                     style={{ width: 38, height: 38, background: '#C4271A', fontSize: 15, fontWeight: 700 }}
@@ -751,7 +749,7 @@ export default function Profile() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Mehmet A. 🇹🇷</div>
-                                    <div style={{ fontSize: 12, color: '#6B6860' }}>Turkish ↔ German · Request sent 2 days ago</div>
+                                    <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>Turkish ↔ German · Request sent 2 days ago</div>
                                 </div>
                                 <span
                                     className="shrink-0 rounded-[20px]"
@@ -762,7 +760,7 @@ export default function Profile() {
                             </div>
                             {/* Anna */}
                             <div
-                                className="mb-2 flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all"
+                                className="mb-2 flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                 style={{ opacity: annaDeclined ? 0.4 : 1, pointerEvents: annaDeclined ? 'none' : 'auto' }}
                             >
                                 <div
@@ -773,7 +771,7 @@ export default function Profile() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Anna B. 🇩🇪</div>
-                                    <div style={{ fontSize: 12, color: '#6B6860' }}>German ↔ English · New match — wants to connect</div>
+                                    <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>German ↔ English · New match — wants to connect</div>
                                 </div>
                                 <div className="flex shrink-0 gap-1.5">
                                     <button
@@ -798,8 +796,8 @@ export default function Profile() {
                                                 setAnnaDeclined(true);
                                                 showToast('Request from Anna declined');
                                             }}
-                                            className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[11px] py-[5px]"
-                                            style={{ fontFamily: "'Geist', sans-serif", fontSize: 11, fontWeight: 600, color: '#6B6860' }}
+                                            className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[11px] py-[5px] text-[#6B6860] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]"
+                                            style={{ fontFamily: "'Geist', sans-serif", fontSize: 11, fontWeight: 600 }}
                                         >
                                             Decline
                                         </button>
@@ -815,11 +813,11 @@ export default function Profile() {
                                     { num: '18h', lbl: 'Practice', color: '#1A4CD4' },
                                     { num: 'A2', lbl: 'German', color: '#0A7C52' },
                                 ].map((s) => (
-                                    <div key={s.lbl} className="rounded-[9px] bg-[#EFEDE7] p-3.5 text-center">
+                                    <div key={s.lbl} className="rounded-[9px] bg-[#EFEDE7] p-3.5 text-center dark:bg-[#2A2920]">
                                         <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, color: s.color }}>
                                             {s.num}
                                         </div>
-                                        <div style={{ fontSize: 11, color: '#AAA89F', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>
+                                        <div className="text-[#AAA89F]" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>
                                             {s.lbl}
                                         </div>
                                     </div>
@@ -879,16 +877,16 @@ export default function Profile() {
                         <FeedSection>
                             <SectionHeader title="Your Places" />
                             {places.map((p) => (
-                                <div key={p.id} className="flex items-center justify-between border-b border-[#E2DFD6] py-3.5 last:border-b-0" style={{ gap: 12 }}>
+                                <div key={p.id} className="flex items-center justify-between border-b border-[#E2DFD6] py-3.5 last:border-b-0 dark:border-[#3A3930]" style={{ gap: 12 }}>
                                     <span style={{ fontSize: 22, flexShrink: 0 }}>{p.emoji}</span>
                                     <div className="min-w-0 flex-1">
                                         <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
-                                        <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 2 }}>{p.addr}</div>
+                                        <div className="text-[#AAA89F]" style={{ fontSize: 12, marginTop: 2 }}>{p.addr}</div>
                                     </div>
                                     <button
                                         onClick={() => openPlaceForm(p)}
-                                        className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-2.5 py-1 transition-all hover:bg-[#EFEDE7]"
-                                        style={{ fontFamily: "'Geist', sans-serif", fontSize: 11, fontWeight: 600, color: '#6B6860', marginRight: 4 }}
+                                        className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-2.5 py-1 text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                                        style={{ fontFamily: "'Geist', sans-serif", fontSize: 11, fontWeight: 600, marginRight: 4 }}
                                     >
                                         Edit
                                     </button>
@@ -904,11 +902,11 @@ export default function Profile() {
                                 </div>
                             ))}
                             {showPlaceForm && (
-                                <div className="mt-2.5 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] p-3.5">
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: '#6B6860', marginBottom: 10 }}>
+                                <div className="mt-2.5 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] p-3.5 dark:border-[#3A3930] dark:bg-[#2A2920]">
+                                    <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
                                         {editingPlaceId ? 'Edit place' : 'Add a place'}
                                     </div>
-                                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#AAA89F', marginBottom: 7 }}>
+                                    <div className="text-[#AAA89F]" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 7 }}>
                                         Choose an icon
                                     </div>
                                     <div className="mb-3 flex flex-wrap gap-1.5">
@@ -916,11 +914,9 @@ export default function Profile() {
                                             <div
                                                 key={ico}
                                                 onClick={() => setPlaceEmoji(ico)}
-                                                className="flex cursor-pointer items-center justify-center rounded-[9px] transition-all"
+                                                className={`flex cursor-pointer items-center justify-center rounded-[9px] transition-all ${placeEmoji === ico ? 'bg-[#EBF0FD] border-2 border-[#1A4CD4]' : 'bg-white border-2 border-transparent dark:bg-[#1E1D15]'}`}
                                                 style={{
                                                     width: 40, height: 40, fontSize: 20,
-                                                    background: placeEmoji === ico ? '#EBF0FD' : 'white',
-                                                    border: `2px solid ${placeEmoji === ico ? '#1A4CD4' : 'transparent'}`,
                                                 }}
                                             >
                                                 {ico}
@@ -938,7 +934,7 @@ export default function Profile() {
                                             value={placeName}
                                             onChange={(e) => setPlaceName(e.target.value)}
                                             placeholder="Name (e.g. Home)"
-                                            className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none"
+                                            className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                             style={{ fontFamily: "'Geist', sans-serif" }}
                                         />
                                     </div>
@@ -953,12 +949,12 @@ export default function Profile() {
                                                     }}
                                                     onBlur={() => setTimeout(() => addrTimerRef.clear(), 200)}
                                                     placeholder="Address or area (e.g. Ehrenfeld)"
-                                                    className="w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none"
+                                                    className="w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                                     style={{ fontFamily: "'Geist', sans-serif" }}
                                                 />
                                                 {/* Address autocomplete dropdown */}
                                                 {addrSuggestions.length > 0 && (
-                                                    <div className="absolute top-full left-0 right-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+                                                    <div className="absolute top-full left-0 right-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#3A3930] dark:bg-[#1E1D15]">
                                                         {addrSuggestions.map((s, i) => (
                                                             <div
                                                                 key={i}
@@ -969,11 +965,11 @@ export default function Profile() {
                                                                     setPlaceLng(s.lng);
                                                                     addrTimerRef.clear();
                                                                 }}
-                                                                className="cursor-pointer px-3 py-2.5 transition-colors hover:bg-[#EFEDE7]"
+                                                                className="cursor-pointer px-3 py-2.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
                                                                 style={{ borderBottom: i < addrSuggestions.length - 1 ? '1px solid #F0EDE7' : 'none' }}
                                                             >
-                                                                <div className="text-sm font-medium text-[#18170F]">{s.name}</div>
-                                                                <div className="text-xs text-[#6B6860]">{s.address}</div>
+                                                                <div className="text-sm font-medium text-[#18170F] dark:text-[#F5F4F0]">{s.name}</div>
+                                                                <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">{s.address}</div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -984,7 +980,7 @@ export default function Profile() {
                                                 type="button"
                                                 onClick={useMyLocation}
                                                 disabled={locating}
-                                                className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] disabled:opacity-50"
+                                                className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] disabled:opacity-50 dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                                 style={{ width: 40, height: 40 }}
                                                 title="Use my current location"
                                             >
@@ -998,16 +994,16 @@ export default function Profile() {
                                     </div>
                                     {/* Arrive by time (optional) */}
                                     <div className="mb-2.5 flex items-center gap-2">
-                                        <span style={{ fontSize: 12, color: '#6B6860', whiteSpace: 'nowrap' }}>Arrive by</span>
+                                        <span className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>Arrive by</span>
                                         <input
                                             type="time"
                                             value={placeArriveBy}
                                             onChange={(e) => setPlaceArriveBy(e.target.value)}
-                                            className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none"
+                                            className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                             style={{ fontFamily: "'Geist Mono', monospace", color: placeArriveBy ? '#1A4CD4' : '#AAA89F' }}
                                             placeholder="--:--"
                                         />
-                                        <span style={{ fontSize: 11, color: '#AAA89F' }}>For smart commute</span>
+                                        <span className="text-[#AAA89F]" style={{ fontSize: 11 }}>For smart commute</span>
                                     </div>
                                     {/* Active days */}
                                     <div className="mb-2.5">
@@ -1022,13 +1018,10 @@ export default function Profile() {
                                                     key={m.id}
                                                     type="button"
                                                     onClick={() => setPlaceDayMode(m.id)}
-                                                    className="cursor-pointer rounded-full border px-2.5 py-[4px] transition-all"
+                                                    className={`cursor-pointer rounded-full border px-2.5 py-[4px] transition-all ${placeDayMode === m.id ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white' : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'}`}
                                                     style={{
                                                         fontSize: 11,
                                                         fontWeight: 600,
-                                                        background: placeDayMode === m.id ? '#1A4CD4' : 'white',
-                                                        color: placeDayMode === m.id ? 'white' : '#6B6860',
-                                                        borderColor: placeDayMode === m.id ? '#1A4CD4' : '#E2DFD6',
                                                     }}
                                                 >
                                                     {m.label}
@@ -1042,16 +1035,13 @@ export default function Profile() {
                                                         key={d}
                                                         type="button"
                                                         onClick={() => setPlaceActiveDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d])}
-                                                        className="flex cursor-pointer items-center justify-center transition-all"
+                                                        className={`flex cursor-pointer items-center justify-center transition-all ${placeActiveDays.includes(d) ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4]' : 'border-2 border-transparent bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920]'}`}
                                                         style={{
                                                             width: 32,
                                                             height: 32,
                                                             borderRadius: '50%',
                                                             fontSize: 11,
                                                             fontWeight: 700,
-                                                            background: placeActiveDays.includes(d) ? '#EBF0FD' : '#EFEDE7',
-                                                            color: placeActiveDays.includes(d) ? '#1A4CD4' : '#AAA89F',
-                                                            border: placeActiveDays.includes(d) ? '2px solid #1A4CD4' : '2px solid transparent',
                                                         }}
                                                     >
                                                         {d.charAt(0).toUpperCase() + d.slice(1, 2)}
@@ -1070,8 +1060,8 @@ export default function Profile() {
                                         </button>
                                         <button
                                             onClick={() => setShowPlaceForm(false)}
-                                            className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-[9px] text-[13px]"
-                                            style={{ fontFamily: "'Geist', sans-serif", color: '#6B6860' }}
+                                            className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-[9px] text-[13px] text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
+                                            style={{ fontFamily: "'Geist', sans-serif" }}
                                         >
                                             Cancel
                                         </button>
@@ -1081,7 +1071,7 @@ export default function Profile() {
                             {!showPlaceForm && (
                                 <button
                                     onClick={() => openPlaceForm()}
-                                    className="mt-2.5 w-full cursor-pointer rounded-[9px] border-[1.5px] border-dashed border-[#E2DFD6] bg-transparent py-2.5 text-[13px] font-medium text-[#1A4CD4] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD]"
+                                    className="mt-2.5 w-full cursor-pointer rounded-[9px] border-[1.5px] border-dashed border-[#E2DFD6] bg-transparent py-2.5 text-[13px] font-medium text-[#1A4CD4] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930]"
                                     style={{ fontFamily: "'Geist', sans-serif" }}
                                 >
                                     + Add a place
@@ -1155,8 +1145,8 @@ export default function Profile() {
                             <SettingNavRow label="Privacy policy" onClick={() => showToast('Opening privacy policy...')} />
                             <SettingNavRow label="Terms of service" onClick={() => showToast('Opening terms...')} />
                             <div className="flex items-center justify-between py-3.5">
-                                <div style={{ fontSize: 14, fontWeight: 500, color: '#AAA89F' }}>Version</div>
-                                <span style={{ fontSize: 13, color: '#AAA89F' }}>1.0.0 (prototype)</span>
+                                <div className="text-[#AAA89F]" style={{ fontSize: 14, fontWeight: 500 }}>Version</div>
+                                <span className="text-[#AAA89F]" style={{ fontSize: 13 }}>1.0.0 (prototype)</span>
                             </div>
                         </FeedSection>
 
@@ -1166,7 +1156,7 @@ export default function Profile() {
                             <SettingNavRow label="Restart welcome setup" sub="Re-run the onboarding flow" onClick={() => showToast('Welcome flow reset — restarting onboarding')} />
                             <SettingNavRow label="Export my data" sub="Download everything Expadu holds about you" onClick={() => showToast('📦 Preparing your data export — you\'ll receive an email shortly')} />
                             <div
-                                className="flex cursor-pointer items-center justify-between border-b-0 py-3.5 transition-colors hover:bg-[#EFEDE7]"
+                                className="flex cursor-pointer items-center justify-between border-b-0 py-3.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
                                 onClick={() => {
                                     if (deleteConfirming) {
                                         setDeleteConfirming(false);
@@ -1181,7 +1171,7 @@ export default function Profile() {
                                     <div style={{ fontSize: 14, fontWeight: 500, color: '#C4271A' }}>
                                         {deleteConfirming ? 'Tap again to confirm' : 'Delete account'}
                                     </div>
-                                    <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 2 }}>Permanently remove your account and data</div>
+                                    <div className="text-[#AAA89F]" style={{ fontSize: 12, marginTop: 2 }}>Permanently remove your account and data</div>
                                 </div>
                                 <span style={{ fontSize: 16, color: '#C4271A' }}>›</span>
                             </div>
@@ -1193,8 +1183,8 @@ export default function Profile() {
             {/* Toast */}
             {toastMsg && (
                 <div
-                    className="pointer-events-none fixed bottom-20 left-1/2 z-[9000] -translate-x-1/2 whitespace-nowrap rounded-[14px] px-[18px] py-[11px] text-[13px] font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.15)]"
-                    style={{ background: '#18170F', maxWidth: '90vw', textAlign: 'center' }}
+                    className="pointer-events-none fixed bottom-20 left-1/2 z-[9000] -translate-x-1/2 whitespace-nowrap rounded-[14px] bg-[#18170F] px-[18px] py-[11px] text-[13px] font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] dark:bg-[#F5F4F0] dark:text-[#18170F]"
+                    style={{ maxWidth: '90vw', textAlign: 'center' }}
                 >
                     {toastMsg}
                 </div>
@@ -1209,7 +1199,7 @@ export default function Profile() {
 
 function FeedSection({ children }: { children: React.ReactNode }) {
     return (
-        <div className="border-b border-[#E2DFD6] px-6 py-5 last:border-b-0">
+        <div className="border-b border-[#E2DFD6] px-6 py-5 last:border-b-0 dark:border-[#3A3930]">
             {children}
         </div>
     );
@@ -1239,7 +1229,7 @@ function SectionHeader({
                 </span>
             )}
             {badge && (
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F' }}>
+                <span className="text-[#AAA89F]" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     {badge}
                 </span>
             )}
@@ -1268,13 +1258,13 @@ function CompactCard({
 }) {
     return (
         <div
-            className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all last:mb-0 hover:border-[rgba(26,76,212,0.2)] hover:bg-[#EFEDE7]"
+            className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all last:mb-0 hover:border-[rgba(26,76,212,0.2)] hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920]"
             style={style}
         >
             <div className="shrink-0 rounded-sm" style={{ width: 4, height: 40, borderRadius: 2, background: barColor }} />
             <div className="min-w-0 flex-1">
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2, color: titleColor || 'inherit' }}>{title}</div>
-                <div style={{ fontSize: 12, color: '#6B6860' }}>{sub}</div>
+                <div className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 12 }}>{sub}</div>
             </div>
             <span
                 className="shrink-0 rounded-[20px]"
@@ -1301,12 +1291,11 @@ function SettingToggle({
 }) {
     return (
         <div
-            className="flex items-center justify-between py-3.5 transition-colors"
-            style={{ borderBottom: isLast ? 'none' : '1px solid #E2DFD6' }}
+            className={`flex items-center justify-between py-3.5 transition-colors ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
         >
             <div>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{label}</div>
-                {sub && <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 2 }}>{sub}</div>}
+                {sub && <div className="text-[#AAA89F]" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>}
             </div>
             <div
                 onClick={onToggle}
@@ -1342,16 +1331,15 @@ function SettingValueRow({
 }) {
     return (
         <div
-            className="flex items-center justify-between py-3.5"
-            style={{ borderBottom: isLast ? 'none' : '1px solid #E2DFD6' }}
+            className={`flex items-center justify-between py-3.5 ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
         >
             <div>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{label}</div>
-                {sub && <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 2 }}>{sub}</div>}
+                {sub && <div className="text-[#AAA89F]" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>}
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <span style={{ fontSize: 13, color: '#6B6860' }}>{value}</span>
-                <span style={{ fontSize: 16, color: '#AAA89F' }}>›</span>
+                <span className="text-[#6B6860] dark:text-[#AAA89F]" style={{ fontSize: 13 }}>{value}</span>
+                <span className="text-[#AAA89F]" style={{ fontSize: 16 }}>›</span>
             </div>
         </div>
     );
@@ -1370,15 +1358,14 @@ function SettingNavRow({
 }) {
     return (
         <div
-            className="flex cursor-pointer items-center justify-between py-3.5 transition-colors hover:bg-[#EFEDE7]"
-            style={{ borderBottom: isLast ? 'none' : '1px solid #E2DFD6' }}
+            className={`flex cursor-pointer items-center justify-between py-3.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
             onClick={onClick}
         >
             <div>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{label}</div>
-                {sub && <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 2 }}>{sub}</div>}
+                {sub && <div className="text-[#AAA89F]" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>}
             </div>
-            <span style={{ fontSize: 16, color: '#AAA89F' }}>›</span>
+            <span className="text-[#AAA89F]" style={{ fontSize: 16 }}>›</span>
         </div>
     );
 }
@@ -1416,15 +1403,15 @@ function InlineEditRow({
 
     if (isEditing) {
         return (
-            <div className="py-3.5" style={{ borderBottom: isLast ? 'none' : '1px solid #E2DFD6' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#AAA89F', marginBottom: 8 }}>
+            <div className={`py-3.5 ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}>
+                <div className="text-[#AAA89F]" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                     {label}
                 </div>
                 {selectOptions ? (
                     <select
                         value={editValue}
                         onChange={(e) => onEditValue(e.target.value)}
-                        className="w-full rounded-lg border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-[11px] text-[15px] text-[#18170F] outline-none focus:border-[#1A4CD4]"
+                        className="w-full rounded-lg border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-[11px] text-[15px] text-[#18170F] outline-none focus:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F5F4F0]"
                         style={{ fontFamily: "'Geist', sans-serif", boxSizing: 'border-box', transition: 'border-color .2s' }}
                     >
                         {selectOptions.map((opt) => (
@@ -1436,13 +1423,13 @@ function InlineEditRow({
                         type={inputType || 'text'}
                         value={editValue}
                         onChange={(e) => onEditValue(e.target.value)}
-                        className="w-full rounded-lg border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-[11px] text-[15px] text-[#18170F] outline-none focus:border-[#1A4CD4]"
+                        className="w-full rounded-lg border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-[11px] text-[15px] text-[#18170F] outline-none focus:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F5F4F0]"
                         style={{ fontFamily: "'Geist', sans-serif", boxSizing: 'border-box', transition: 'border-color .2s' }}
                         autoFocus
                         onKeyDown={(e) => { if (e.key === 'Enter') onSave(field); if (e.key === 'Escape') onCancel(); }}
                     />
                 )}
-                {subText && <div style={{ fontSize: 12, color: '#AAA89F', marginTop: 6 }}>{subText}</div>}
+                {subText && <div className="text-[#AAA89F]" style={{ fontSize: 12, marginTop: 6 }}>{subText}</div>}
                 <div className="mt-2.5 flex gap-2">
                     <button
                         onClick={() => onSave(field)}
@@ -1453,8 +1440,8 @@ function InlineEditRow({
                     </button>
                     <button
                         onClick={onCancel}
-                        className="cursor-pointer rounded-lg border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-[9px] text-[13px] transition-all hover:bg-[#E2DFD6]"
-                        style={{ fontFamily: "'Geist', sans-serif", color: '#6B6860' }}
+                        className="cursor-pointer rounded-lg border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-[9px] text-[13px] text-[#6B6860] transition-all hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F] dark:hover:bg-[#3A3930]"
+                        style={{ fontFamily: "'Geist', sans-serif" }}
                     >
                         Cancel
                     </button>
@@ -1465,19 +1452,18 @@ function InlineEditRow({
 
     return (
         <div
-            className="flex cursor-pointer items-center justify-between py-3.5"
-            style={{ borderBottom: isLast ? 'none' : '1px solid #E2DFD6' }}
+            className={`flex cursor-pointer items-center justify-between py-3.5 ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
             onClick={() => onStartEdit(field, value)}
         >
             <div className="min-w-0 flex-1">
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#AAA89F', marginBottom: 3 }}>
+                <div className="text-[#AAA89F]" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
                     {label}
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: '#18170F' }}>{value}</div>
+                <div className="text-[#18170F] dark:text-[#F5F4F0]" style={{ fontSize: 15, fontWeight: 500 }}>{value}</div>
             </div>
             <span
-                className="ml-3 shrink-0 transition-colors hover:text-[#1A4CD4]"
-                style={{ fontSize: 13, fontWeight: 600, color: '#AAA89F' }}
+                className="ml-3 shrink-0 text-[#AAA89F] transition-colors hover:text-[#1A4CD4]"
+                style={{ fontSize: 13, fontWeight: 600 }}
             >
                 Edit
             </span>

@@ -47,8 +47,8 @@ export function SpotCard({ spot, selected, onSelect, onNavigate }: {
             <div className="mb-2.5 flex items-start gap-3">
                 <span className="shrink-0 text-[28px] leading-none">{categoryEmoji[spot.category] || '📍'}</span>
                 <div className="min-w-0 flex-1">
-                    <div className="mb-0.5 text-[15px] font-semibold">{spot.name}</div>
-                    <div className="text-xs text-[#6B6860]">{area}</div>
+                    <div className="mb-0.5 text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">{spot.name}</div>
+                    <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">{area}</div>
                 </div>
                 <span className="shrink-0 font-mono text-xs text-[#AAA89F]">{spot.distance_km != null ? `${Math.round(spot.distance_km * 10) / 10} km` : ''}</span>
             </div>
@@ -79,7 +79,7 @@ export function SpotCard({ spot, selected, onSelect, onNavigate }: {
                 <div className="flex gap-1.5">
                     <button
                         onClick={(e) => { e.stopPropagation(); onNavigate?.(); }}
-                        className="rounded-full border border-[#E2DFD6] bg-[#EFEDE7] px-[11px] py-[5px] text-[11px] font-semibold text-[#6B6860] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4]"
+                        className="rounded-full border border-[#E2DFD6] bg-[#EFEDE7] px-[11px] py-[5px] text-[11px] font-semibold text-[#6B6860] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]"
                     >
                         Navigate ↗
                     </button>
