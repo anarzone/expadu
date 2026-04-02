@@ -1191,12 +1191,12 @@ export default function Transit() {
                                             <div
                                                 key={d.id}
                                                 className="flex items-start rounded-[9px]"
-                                                style={{
-                                                    padding: '12px 14px',
-                                                    gap: 10,
-                                                    background: isDanger ? '#FDE8E6' : isWarning ? '#FDF0D4' : '#EFEDE7',
-                                                    border: `1px solid ${isDanger ? 'rgba(196,39,26,.15)' : isWarning ? 'rgba(196,125,14,.2)' : '#E2DFD6'}`,
-                                                }}
+                                                className={`flex items-start rounded-[9px] ${
+                                                    isDanger ? 'border border-[rgba(196,39,26,.15)] bg-[#FDE8E6] dark:border-[#C4271A]/30 dark:bg-[#C4271A]/10'
+                                                    : isWarning ? 'border border-[rgba(196,125,14,.2)] bg-[#FDF0D4] dark:border-[#C47D0E]/30 dark:bg-[#C47D0E]/10'
+                                                    : 'border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]'
+                                                }`}
+                                                style={{ padding: '12px 14px', gap: 10 }}
                                             >
                                                 <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>
                                                     {isDanger ? '🚧' : '⚠️'}
@@ -1205,7 +1205,7 @@ export default function Transit() {
                                                     <div className={isDanger ? '' : 'text-[#18170F] dark:text-[#F5F4F0]'} style={{ fontSize: 13, fontWeight: 700, color: isDanger ? '#C4271A' : undefined, marginBottom: 2 }}>
                                                         {d.title}
                                                     </div>
-                                                    <div style={{ fontSize: 12, color: isDanger ? '#7C2015' : '#7C4A00', lineHeight: 1.4 }}>
+                                                    <div className={isDanger ? 'text-[#7C2015] dark:text-[#FCA5A0]' : 'text-[#7C4A00] dark:text-[#FCD68C]'} style={{ fontSize: 12, lineHeight: 1.4 }}>
                                                         {d.description}
                                                     </div>
                                                     {d.is_personal && (
@@ -1310,7 +1310,7 @@ export default function Transit() {
                                             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
                                                 {dep.direction}
                                                 {dep.towards_dest && (
-                                                    <span style={{ fontSize: 10, background: '#EBF0FD', color: '#1A4CD4', padding: '1px 6px', borderRadius: 20, fontWeight: 700, marginLeft: 5 }}>
+                                                    <span className="ml-[5px] rounded-full bg-[#EBF0FD] px-[6px] py-[1px] text-[10px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20">
                                                         Your route
                                                     </span>
                                                 )}
@@ -1320,25 +1320,25 @@ export default function Transit() {
                                             </div>
                                             {/* Status badge */}
                                             {isCancelled ? (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDE8E6', color: '#C4271A' }}>Cancelled</span>
+                                                <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C4271A] dark:bg-[#C4271A]/20">Cancelled</span>
                                             ) : (dep.delay ?? 0) > 0 ? (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>+{dep.delay} min delay</span>
+                                                <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C47D0E] dark:bg-[#C47D0E]/20">+{dep.delay} min delay</span>
                                             ) : isDelayed ? (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>Disrupted</span>
+                                                <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C47D0E] dark:bg-[#C47D0E]/20">Disrupted</span>
                                             ) : (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#D4F0E6', color: '#0A7C52' }}>On time</span>
+                                                <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#0A7C52] dark:bg-[#0A7C52]/20">On time</span>
                                             )}
                                         </div>
                                         {/* Times */}
                                         <div className="shrink-0 text-right">
                                             {isCancelled ? (
-                                                <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 500, lineHeight: 1, color: '#C4271A' }}>—</div>
+                                                <div className="font-mono text-[16px] font-medium leading-none text-[#C4271A]">—</div>
                                             ) : (
                                                 <>
-                                                    <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
+                                                    <div className="font-mono text-[22px] font-medium leading-none" style={{ color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
                                                         {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
                                                     </div>
-                                                    <div className="text-[#AAA89F]" style={{ fontSize: 10, marginTop: 1 }}>min</div>
+                                                    <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>
                                                     {dep.departures.length > 1 && (
                                                         <div className="text-[#AAA89F]" style={{ fontSize: 11, fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
                                                             then {dep.departures.slice(1, 3).join(', ')} min
@@ -1410,26 +1410,26 @@ export default function Transit() {
                                                 via {dep.stop_name}
                                             </div>
                                             {isCancelled ? (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDE8E6', color: '#C4271A' }}>Cancelled</span>
+                                                <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C4271A] dark:bg-[#C4271A]/20">Cancelled</span>
                                             ) : (dep.delay ?? 0) > 0 ? (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>+{dep.delay} min delay</span>
+                                                <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C47D0E] dark:bg-[#C47D0E]/20">+{dep.delay} min delay</span>
                                             ) : isDelayed ? (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#FDF0D4', color: '#C47D0E' }}>Disrupted</span>
+                                                <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#C47D0E] dark:bg-[#C47D0E]/20">Disrupted</span>
                                             ) : (
-                                                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#D4F0E6', color: '#0A7C52' }}>On time</span>
+                                                <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-wider text-[#0A7C52] dark:bg-[#0A7C52]/20">On time</span>
                                             )}
                                         </div>
                                         <div className="shrink-0 text-right">
                                             {isCancelled ? (
-                                                <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 500, lineHeight: 1, color: '#C4271A' }}>—</div>
+                                                <div className="font-mono text-[16px] font-medium leading-none text-[#C4271A]">—</div>
                                             ) : (
                                                 <>
-                                                    <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, lineHeight: 1, color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
+                                                    <div className="font-mono text-[22px] font-medium leading-none" style={{ color: isDelayed ? '#C47D0E' : '#0A7C52' }}>
                                                         {dep.departures[0] === 0 ? 'now' : (dep.departures[0] ?? '—')}
                                                     </div>
-                                                    <div className="text-[#AAA89F]" style={{ fontSize: 10, marginTop: 1 }}>min</div>
+                                                    <div className="mt-[1px] text-[10px] text-[#AAA89F]">min</div>
                                                     {dep.departures.length > 1 && (
-                                                        <div className="text-[#AAA89F]" style={{ fontSize: 11, fontFamily: "'Geist Mono', monospace", marginTop: 3 }}>
+                                                        <div className="mt-[3px] font-mono text-[11px] text-[#AAA89F]">
                                                             then {dep.departures.slice(1, 3).join(', ')} min
                                                         </div>
                                                     )}
