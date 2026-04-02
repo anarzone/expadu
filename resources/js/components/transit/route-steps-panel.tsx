@@ -77,40 +77,38 @@ export function RouteStepsPanel({
     return (
         <div>
             {/* Summary header */}
-            <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4">
+            <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
                 <div className="flex items-center gap-2">
                     <ModeIcon size={22} stroke={ICON_STROKE} className="text-[#1A4CD4]" />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>{modeInfo.label}</span>
+                    <span className="text-[15px] font-semibold dark:text-[#F5F4F0]">{modeInfo.label}</span>
                 </div>
                 {isTransit && departureTime && arrivalTime ? (
                     <div className="flex items-center gap-2">
-                        <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 16, fontWeight: 600, color: '#1A4CD4' }}>
+                        <span className="font-mono text-[16px] font-semibold text-[#1A4CD4]">
                             {departureTime} → {arrivalTime}
                         </span>
-                        <span style={{ fontSize: 11, color: '#AAA89F' }}>{durationMin} min</span>
+                        <span className="text-[11px] text-[#AAA89F]">{durationMin} min</span>
                         {(transfers ?? 0) > 0 && (
-                            <span style={{ fontSize: 10, fontWeight: 700, color: '#6B6860', background: '#EFEDE7', padding: '2px 7px', borderRadius: 20 }}>
+                            <span className="rounded-full bg-[#EFEDE7] px-[7px] py-[2px] text-[10px] font-bold text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]">
                                 {transfers} transfer{transfers !== 1 ? 's' : ''}
                             </span>
                         )}
                     </div>
                 ) : (
                     <div className="flex items-center gap-3">
-                        <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 22, fontWeight: 500, color: '#1A4CD4' }}>
-                            {durationMin}
-                        </span>
-                        <span style={{ fontSize: 11, color: '#AAA89F' }}>min</span>
-                        <span style={{ fontSize: 13, color: '#6B6860' }}>·</span>
-                        <span style={{ fontSize: 13, color: '#6B6860' }}>{distanceKm} km</span>
+                        <span className="font-mono text-[22px] font-medium text-[#1A4CD4]">{durationMin}</span>
+                        <span className="text-[11px] text-[#AAA89F]">min</span>
+                        <span className="text-[13px] text-[#6B6860] dark:text-[#AAA89F]">·</span>
+                        <span className="text-[13px] text-[#6B6860] dark:text-[#AAA89F]">{distanceKm} km</span>
                     </div>
                 )}
             </div>
 
             {/* Steps list */}
             {steps.length > 0 && (
-                <div className="mb-3 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
-                    <div className="border-b border-[#E2DFD6] bg-[#EFEDE7] px-4 py-2.5">
-                        <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#AAA89F' }}>
+                <div className="mb-3 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                    <div className="border-b border-[#E2DFD6] bg-[#EFEDE7] px-4 py-2.5 dark:border-[#3A3930] dark:bg-[#2A2920]">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#AAA89F]">
                             {isTransit ? 'Journey' : 'Directions'} · {steps.length} steps
                         </span>
                     </div>
@@ -122,36 +120,32 @@ export function RouteStepsPanel({
                         return (
                             <div key={i}>
                                 <div
-                                    className={`flex items-start gap-3 ${isTransferWithConnections ? 'cursor-pointer' : ''}`}
-                                    style={{
-                                        padding: '12px 16px',
-                                        borderBottom: (!stopConns || stopConns.length === 0) && i < steps.length - 1 ? '1px solid #E2DFD6' : 'none',
-                                        ...(step.type === 'board' ? { borderLeft: '3px solid #1A4CD4', paddingLeft: 13 } : {}),
-                                        ...(isTransferWithConnections ? { background: '#FAFAF8' } : {}),
-                                    }}
+                                    className={`flex items-start gap-3 px-4 py-3 ${isTransferWithConnections ? 'cursor-pointer bg-[#FAFAF8] dark:bg-[#252418]' : ''} ${
+                                        (!stopConns || stopConns.length === 0) && i < steps.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''
+                                    } ${step.type === 'board' ? 'border-l-[3px] border-l-[#1A4CD4] pl-[13px]' : ''}`}
                                     onClick={() => {
                                         if (isTransferWithConnections && !stopConns && !isLoading) {
                                             onFetchConnections(step.transfer_stop_id!);
                                         }
                                     }}
                                 >
-                                    <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1, width: 24, textAlign: 'center' }}>
+                                    <span className="mt-[1px] w-6 shrink-0 text-center text-[16px]">
                                         {step.emoji}
                                     </span>
                                     <div className="min-w-0 flex-1">
-                                        <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>
+                                        <div className="text-[13px] font-medium leading-[1.4] dark:text-[#F5F4F0]">
                                             {step.instruction}
                                             {isTransferWithConnections && !stopConns && (
-                                                <span style={{ fontSize: 11, color: '#1A4CD4', marginLeft: 6 }}>
+                                                <span className="ml-1.5 text-[11px] text-[#1A4CD4]">
                                                     {isLoading ? 'Loading...' : 'Tap for alternatives'}
                                                 </span>
                                             )}
                                         </div>
                                         {step.detail && (
-                                            <div style={{ fontSize: 11, color: '#6B6860', marginTop: 2 }}>{step.detail}</div>
+                                            <div className="mt-[2px] text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{step.detail}</div>
                                         )}
                                         {!step.detail && step.distance_km > 0 && (
-                                            <div style={{ fontSize: 11, color: '#AAA89F', marginTop: 2, fontFamily: "'Geist Mono', monospace" }}>
+                                            <div className="mt-[2px] font-mono text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
                                                 {formatDist(step.distance_km)} · {formatTime(step.time_sec)}
                                             </div>
                                         )}
@@ -160,8 +154,8 @@ export function RouteStepsPanel({
 
                                 {/* Connection alternatives at this transfer */}
                                 {stopConns && stopConns.length > 0 && (
-                                    <div style={{ padding: '8px 16px 12px', borderBottom: i < steps.length - 1 ? '1px solid #E2DFD6' : 'none', background: '#FAFAF8' }}>
-                                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#AAA89F', marginBottom: 6 }}>
+                                    <div className={`bg-[#FAFAF8] px-4 pt-2 pb-3 dark:bg-[#252418] ${i < steps.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}>
+                                        <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[#AAA89F]">
                                             Connections from {step.transfer_stop_name ?? 'here'}
                                         </div>
                                         <div className="flex flex-wrap gap-2">
@@ -169,15 +163,15 @@ export function RouteStepsPanel({
                                                 <button
                                                     key={j}
                                                     onClick={() => onSelectConnection?.(step.transfer_stop_id!, conn)}
-                                                    className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-[#EFEDE7]"
+                                                    className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#3A3930]"
                                                     style={{
                                                         borderColor: conn.is_current ? '#1A4CD4' : '#E2DFD6',
                                                         background: conn.is_current ? '#EBF0FD' : 'white',
                                                     }}
                                                 >
-                                                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, fontWeight: 700, color: '#1A4CD4' }}>{conn.line}</span>
-                                                    <span style={{ fontSize: 11, color: '#6B6860' }}>{conn.direction}</span>
-                                                    <span style={{ fontFamily: "'Geist Mono', monospace", fontSize: 11, fontWeight: 600, color: '#0A7C52' }}>{conn.departure_time}</span>
+                                                    <span className="font-mono text-xs font-bold text-[#1A4CD4]">{conn.line}</span>
+                                                    <span className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">{conn.direction}</span>
+                                                    <span className="font-mono text-[11px] font-semibold text-[#0A7C52]">{conn.departure_time}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -205,7 +199,7 @@ export function RouteStepsPanel({
                         href={mapsUrl.apple}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                         style={{ textDecoration: 'none' }}
                     >
                         Apple Maps
