@@ -2029,9 +2029,12 @@ export default function Transit() {
                                     <span
                                         className="cursor-pointer text-xs font-semibold text-[#1A4CD4] hover:underline"
                                         onClick={() =>
-                                            setDismissedDisruptions(
-                                                visible.map((d) => d.id),
-                                            )
+                                            setDismissedDisruptions((prev) => [
+                                                ...prev,
+                                                ...(disruptions ?? []).map(
+                                                    (d) => d.id,
+                                                ),
+                                            ])
                                         }
                                     >
                                         Dismiss all
