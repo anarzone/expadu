@@ -1,13 +1,9 @@
 import { Head } from '@inertiajs/react';
-import { useState, useCallback, useEffect  } from 'react';
-import type {MouseEvent} from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import type { MouseEvent } from 'react';
 import { JourneyRightPanel } from '@/components/journey/journey-right-panel';
-import {
-    StepCard
-    
-    
-} from '@/components/journey/step-card';
-import type {StepData, StepTag} from '@/components/journey/step-card';
+import { StepCard } from '@/components/journey/step-card';
+import type { StepData, StepTag } from '@/components/journey/step-card';
 import AppLayout from '@/layouts/app-layout';
 
 // ════════════════════════════════════════
@@ -501,8 +497,8 @@ function groupByPhase(steps: StepData[]): Record<string, StepData[]> {
 
     for (const s of steps) {
         if (!groups[s.phase]) {
-groups[s.phase] = [];
-}
+            groups[s.phase] = [];
+        }
 
         groups[s.phase].push(s);
     }
@@ -563,10 +559,10 @@ export default function JustArrived() {
 
         for (const s of steps) {
             if (s.done) {
-state[s.id] = 'done';
-} else if (s.skipped) {
-state[s.id] = 'skipped';
-}
+                state[s.id] = 'done';
+            } else if (s.skipped) {
+                state[s.id] = 'skipped';
+            }
         }
 
         localStorage.setItem('journey_steps', JSON.stringify(state));
@@ -607,8 +603,8 @@ state[s.id] = 'skipped';
         setSteps((prev) =>
             prev.map((s) => {
                 if (s.id !== id) {
-return s;
-}
+                    return s;
+                }
 
                 const tag: StepTag = s.urgent
                     ? { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' }
@@ -650,8 +646,8 @@ return s;
             const step = steps.find((s) => s.id === id);
 
             if (!step || step.upcoming) {
-return;
-}
+                return;
+            }
 
             if (step.done) {
                 undoStep(id);
@@ -682,20 +678,20 @@ return;
         const isSelected = activePhaseFilters.has(phaseId);
 
         if (isSelected) {
-return 'active';
-}
+            return 'active';
+        }
 
         const isDone =
             defaultDonePhases.has(phaseId) &&
             (byPhase[phaseId] ?? []).every((s) => s.done);
 
         if (isDone) {
-return 'done';
-}
+            return 'done';
+        }
 
         if (phaseId === curPhase && activePhaseFilters.size === 0) {
-return 'active';
-}
+            return 'active';
+        }
 
         return 'upcoming';
     }
@@ -735,12 +731,12 @@ return 'active';
 
     function dotColor(state: 'done' | 'active' | 'upcoming'): string {
         if (state === 'active') {
-return 'white';
-}
+            return 'white';
+        }
 
         if (state === 'done') {
-return '#0A7C52';
-}
+            return '#0A7C52';
+        }
 
         return '#AAA89F';
     }
@@ -882,16 +878,16 @@ return '#0A7C52';
                     const phaseSteps = byPhase[phase.id] ?? [];
 
                     if (phaseSteps.length === 0) {
-return null;
-}
+                        return null;
+                    }
 
                     const visible =
                         activePhaseFilters.size === 0 ||
                         activePhaseFilters.has(phase.id);
 
                     if (!visible) {
-return null;
-}
+                        return null;
+                    }
 
                     const allDone = phaseSteps.every((s) => s.done);
                     const doneCnt = phaseSteps.filter((s) => s.done).length;

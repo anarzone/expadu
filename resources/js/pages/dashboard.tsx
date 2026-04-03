@@ -130,8 +130,8 @@ export default function Dashboard() {
     const lastDashReloadRef = useRef<string>('');
     useEffect(() => {
         if (!geoPos) {
-return;
-}
+            return;
+        }
 
         track('location_ping', {
             lat: geoPos.lat,
@@ -1103,12 +1103,12 @@ function getGreeting(name?: string): string {
     const display = name ? `, ${name}` : '';
 
     if (hour < 12) {
-return `Good morning${display}`;
-}
+        return `Good morning${display}`;
+    }
 
     if (hour < 18) {
-return `Good afternoon${display}`;
-}
+        return `Good afternoon${display}`;
+    }
 
     return `Good evening${display}`;
 }
@@ -1125,8 +1125,8 @@ function RotatingCardSlot({
 
     useEffect(() => {
         if (!pool || pool.length <= 1) {
-return;
-}
+            return;
+        }
 
         let timer: ReturnType<typeof setTimeout>;
         function scheduleNext() {
@@ -1148,8 +1148,8 @@ return;
     const card = pool?.[index] ?? pool?.[0];
 
     if (!card) {
-return null;
-}
+        return null;
+    }
 
     return (
         <div

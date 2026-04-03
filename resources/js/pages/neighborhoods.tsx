@@ -589,8 +589,8 @@ export default function Neighborhoods() {
         const n = neighborhoods.find((x) => x.id === id);
 
         if (!n) {
-return;
-}
+            return;
+        }
 
         setSelectedNeighborhood(n);
         setSheetContent('detail');
@@ -605,20 +605,20 @@ return;
 
     function selectForCompare(id: string) {
         if (pickerSlot === 'a') {
-setCompareA(id);
-} else {
-setCompareB(id);
-}
+            setCompareA(id);
+        } else {
+            setCompareB(id);
+        }
 
         setSheetOpen(false);
     }
 
     function clearSlot(slot: 'a' | 'b') {
         if (slot === 'a') {
-setCompareA(null);
-} else {
-setCompareB(null);
-}
+            setCompareA(null);
+        } else {
+            setCompareB(null);
+        }
     }
 
     // ── Quiz handlers ──
@@ -636,8 +636,8 @@ setCompareB(null);
 
     function quizNext() {
         if (quizAnswers[quizStep] === undefined) {
-return;
-}
+            return;
+        }
 
         if (quizStep < QUIZ_QUESTIONS.length - 1) {
             setQuizStep(quizStep + 1);
@@ -646,8 +646,8 @@ return;
             const scores: Record<string, number> = {};
             quizAnswers.forEach((ansIdx, stepIdx) => {
                 if (ansIdx === undefined) {
-return;
-}
+                    return;
+                }
 
                 const vals = QUIZ_QUESTIONS[stepIdx].opts[ansIdx].val;
                 Object.entries(vals).forEach(([k, v]) => {
@@ -661,15 +661,15 @@ return;
 
     function quizBack() {
         if (quizStep > 0) {
-setQuizStep(quizStep - 1);
-}
+            setQuizStep(quizStep - 1);
+        }
     }
 
     // ── Quiz result computation ──
     const quizResults = useMemo(() => {
         if (quizStep !== 4) {
-return { top: null, runner: null };
-}
+            return { top: null, runner: null };
+        }
 
         const scored = Object.entries(FILTER_WEIGHTS)
             .map(([id, weights]) => {
@@ -1181,8 +1181,8 @@ const COMPARE_ROWS: CompareRow[] = [
 function getNestedVal(obj: Record<string, unknown>, path: string): unknown {
     return path.split('.').reduce((o: unknown, k: string) => {
         if (o && typeof o === 'object') {
-return (o as Record<string, unknown>)[k];
-}
+            return (o as Record<string, unknown>)[k];
+        }
 
         return undefined;
     }, obj);

@@ -28,12 +28,12 @@ export function EventCard({
     let borderStyle = '1px solid #E2DFD6';
 
     if (event.featured) {
-borderStyle = '1.5px solid rgba(124,58,237,.3)';
-}
+        borderStyle = '1.5px solid rgba(124,58,237,.3)';
+    }
 
     if (event.karneval) {
-borderStyle = '1.5px solid rgba(196,39,26,.3)';
-}
+        borderStyle = '1.5px solid rgba(196,39,26,.3)';
+    }
 
     return (
         <div
@@ -50,15 +50,15 @@ borderStyle = '1.5px solid rgba(196,39,26,.3)';
             }}
             onMouseLeave={(e) => {
                 if (event.featured) {
-(e.currentTarget as HTMLDivElement).style.borderColor =
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
                         'rgba(124,58,237,.3)';
-} else if (event.karneval) {
-(e.currentTarget as HTMLDivElement).style.borderColor =
+                } else if (event.karneval) {
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
                         'rgba(196,39,26,.3)';
-} else {
-(e.currentTarget as HTMLDivElement).style.borderColor =
+                } else {
+                    (e.currentTarget as HTMLDivElement).style.borderColor =
                         '#E2DFD6';
-}
+                }
             }}
         >
             {/* Color bar */}

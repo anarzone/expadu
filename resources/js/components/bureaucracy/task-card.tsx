@@ -25,16 +25,16 @@ export function TaskCard({
                     '#EFEDE7';
 
                 if (task.done) {
-(e.currentTarget as HTMLDivElement).style.opacity = '0.7';
-}
+                    (e.currentTarget as HTMLDivElement).style.opacity = '0.7';
+                }
             }}
             onMouseLeave={(e) => {
                 (e.currentTarget as HTMLDivElement).style.background =
                     'transparent';
 
                 if (task.done) {
-(e.currentTarget as HTMLDivElement).style.opacity = '0.55';
-}
+                    (e.currentTarget as HTMLDivElement).style.opacity = '0.55';
+                }
             }}
         >
             {/* Checkbox */}
@@ -58,15 +58,15 @@ export function TaskCard({
                 }}
                 onMouseEnter={(e) => {
                     if (!task.done) {
-(e.currentTarget as HTMLDivElement).style.borderColor =
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
                             '#1A4CD4';
-}
+                    }
                 }}
                 onMouseLeave={(e) => {
                     if (!task.done) {
-(e.currentTarget as HTMLDivElement).style.borderColor =
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
                             '#E2DFD6';
-}
+                    }
                 }}
             >
                 {task.done && (

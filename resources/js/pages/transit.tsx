@@ -4,21 +4,17 @@ import { lazy, Suspense } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import {
     DepartureBoard,
-    
     useClock,
-    formatDepartureTime
+    formatDepartureTime,
 } from '@/components/transit/departure-board';
-import type {BoardData} from '@/components/transit/departure-board';
+import type { BoardData } from '@/components/transit/departure-board';
 import { DepartureDetailSheet } from '@/components/transit/departure-detail-sheet';
 import { GeocodeInput } from '@/components/transit/geocode-input';
 
 import { LineDetailSheet } from '@/components/transit/line-detail-sheet';
 import { RouteSheet } from '@/components/transit/route-sheet';
-import {
-    RoutineCard
-    
-} from '@/components/transit/routine-card';
-import type {RoutineCardData} from '@/components/transit/routine-card';
+import { RoutineCard } from '@/components/transit/routine-card';
+import type { RoutineCardData } from '@/components/transit/routine-card';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
@@ -149,8 +145,8 @@ function dbRoutineToCard(r: DbRoutine): RoutineCardData {
     const days = [false, false, false, false, false, false, false];
     (r.days ?? []).forEach((d) => {
         if (DAY_MAP[d] !== undefined) {
-days[DAY_MAP[d]] = true;
-}
+            days[DAY_MAP[d]] = true;
+        }
     });
 
     return {
@@ -277,8 +273,8 @@ function JourneyRoutePanel({
                     .then((r) => r.json())
                     .then((data) => {
                         if (data.geometry) {
-setSelectedGeometry(data.geometry);
-}
+                            setSelectedGeometry(data.geometry);
+                        }
                     })
                     .catch(() => {});
             } else {
@@ -818,8 +814,8 @@ function RoutineDetailContent({
                 <button
                     onClick={() => {
                         if (!confirm('Delete this routine?')) {
-return;
-}
+                            return;
+                        }
 
                         fetch(`/routines/${er.id}`, {
                             method: 'DELETE',
@@ -883,8 +879,8 @@ function StopInput({
         onChange(q);
 
         if (timer.current) {
-clearTimeout(timer.current);
-}
+            clearTimeout(timer.current);
+        }
 
         // Show matching user places instantly
         const placeMatches = (places ?? [])
@@ -910,8 +906,8 @@ clearTimeout(timer.current);
                     setResults(
                         merged.filter((r) => {
                             if (seen.has(r.name)) {
-return false;
-}
+                                return false;
+                            }
 
                             seen.add(r.name);
 
@@ -1277,14 +1273,14 @@ export default function Transit() {
     const lastBoardReloadRef = useRef<string>('');
     useEffect(() => {
         if (!geoPos || hasManualStop) {
-return;
-}
+            return;
+        }
 
         const key = `${geoPos.lat.toFixed(3)}_${geoPos.lng.toFixed(3)}`;
 
         if (key === lastGeoFetch.current) {
-return;
-}
+            return;
+        }
 
         lastGeoFetch.current = key;
         fetchNearbyDeps(geoPos.lat, geoPos.lng);
@@ -1305,8 +1301,8 @@ return;
     // Poll nearby departures every 30s for real-time updates
     useEffect(() => {
         if (!geoPos || hasManualStop) {
-return;
-}
+            return;
+        }
 
         const interval = setInterval(() => {
             fetchNearbyDeps(geoPos.lat, geoPos.lng);
@@ -1492,8 +1488,8 @@ return;
     const seenLabels = new Set<string>();
     const uniqueChips = allChips.filter((c) => {
         if (seenLabels.has(c.label)) {
-return false;
-}
+            return false;
+        }
 
         seenLabels.add(c.label);
 
@@ -1567,12 +1563,12 @@ return false;
 
     function saveNewRoutine() {
         if (!rFrom.trim() || !rTo.trim()) {
-return;
-}
+            return;
+        }
 
         if (!rDays.some(Boolean)) {
-return;
-}
+            return;
+        }
 
         const dayNames = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         router.post(
@@ -1607,8 +1603,8 @@ return;
         setStopSearch(query);
 
         if (stopSearchTimer.current) {
-clearTimeout(stopSearchTimer.current);
-}
+            clearTimeout(stopSearchTimer.current);
+        }
 
         if (!query.trim() || query.trim().length < 2) {
             setStopSearchResults([]);
@@ -2007,8 +2003,8 @@ clearTimeout(stopSearchTimer.current);
                             .slice(0, 3);
 
                         if (visible.length === 0) {
-return null;
-}
+                            return null;
+                        }
 
                         return (
                             <div
@@ -2958,8 +2954,8 @@ return null;
                                                             [])[0];
 
                                                     if (!det) {
-return;
-}
+                                                        return;
+                                                    }
 
                                                     const dayNames = [
                                                         'sun',
@@ -3663,8 +3659,8 @@ function RotatingCardSlot({
 
     useEffect(() => {
         if (!pool || pool.length <= 1) {
-return;
-}
+            return;
+        }
 
         let timer: ReturnType<typeof setTimeout>;
 
@@ -3689,8 +3685,8 @@ return;
     const card = pool?.[index] ?? pool?.[0];
 
     if (!card) {
-return null;
-}
+        return null;
+    }
 
     return (
         <div
@@ -3766,8 +3762,8 @@ function RouteOptionCard({
         }
 
         if (!hasCoords) {
-return;
-}
+            return;
+        }
 
         // Determine costing from badge/name
         const isBike = name.toLowerCase().includes('bike') || badge === '🚲';

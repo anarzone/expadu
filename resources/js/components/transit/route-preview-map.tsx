@@ -21,19 +21,19 @@ export function RoutePreviewMap({
 
     useEffect(() => {
         if (typeof window === 'undefined') {
-return;
-}
+            return;
+        }
 
         if (!containerRef.current) {
-return;
-}
+            return;
+        }
 
         let cancelled = false;
 
         import('maplibre-gl').then((maplibregl) => {
             if (cancelled || !containerRef.current) {
-return;
-}
+                return;
+            }
 
             if (mapRef.current) {
                 (
@@ -47,12 +47,12 @@ return;
                 .then((r) => r.json())
                 .then((style) => {
                     if (cancelled || !containerRef.current) {
-return;
-}
+                        return;
+                    }
 
                     if (!style.projection) {
-style.projection = { type: 'mercator' };
-}
+                        style.projection = { type: 'mercator' };
+                    }
 
                     const map = new maplibregl.Map({
                         container: containerRef.current!,
@@ -70,8 +70,8 @@ style.projection = { type: 'mercator' };
 
                     map.on('load', () => {
                         if (cancelled) {
-return;
-}
+                            return;
+                        }
 
                         // Build coordinates: Valhalla polyline or straight line fallback
                         const coordinates: [number, number][] = geometry

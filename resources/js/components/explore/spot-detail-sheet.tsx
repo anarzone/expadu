@@ -75,8 +75,8 @@ export function SpotDetailSheet({
     const [navMenuOpen, setNavMenuOpen] = useState(false);
 
     if (!spot) {
-return null;
-}
+        return null;
+    }
 
     const emoji = categoryEmoji[spot.category] || '📍';
     const area = spot.address?.split(',')[1]?.trim() || spot.address || '';
@@ -93,16 +93,16 @@ return null;
     const attrs: string[] = [];
 
     if (spot.wifi_speed) {
-attrs.push('wifi');
-}
+        attrs.push('wifi');
+    }
 
     if (spot.noise_level === 'quiet') {
-attrs.push('quiet');
-}
+        attrs.push('quiet');
+    }
 
     if (spot.category === 'coworking') {
-attrs.push('cowork');
-}
+        attrs.push('cowork');
+    }
 
     const reviews = mockReviews[spot.id] || [
         {
@@ -173,8 +173,8 @@ attrs.push('cowork');
                     const tag = getTag(a);
 
                     if (!tag) {
-return null;
-}
+                        return null;
+                    }
 
                     const TagIcon = tag.icon;
 

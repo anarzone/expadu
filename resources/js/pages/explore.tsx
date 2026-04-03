@@ -111,8 +111,8 @@ export default function Explore() {
             });
 
             if (category) {
-params.set('category', category);
-}
+                params.set('category', category);
+            }
 
             fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
                 .then((r) => (r.ok ? r.json() : []))
@@ -245,8 +245,8 @@ params.set('category', category);
     const dirRestoredRef = useRef(false);
     useEffect(() => {
         if (dirRestoredRef.current) {
-return;
-}
+            return;
+        }
 
         dirRestoredRef.current = true;
         const params = new URLSearchParams(window.location.search);
@@ -410,8 +410,8 @@ return;
         const trip = transitTrips[idx];
 
         if (!trip || !routeDest) {
-return;
-}
+            return;
+        }
 
         setSelectedTripIdx(idx);
         setRouteDetail({
@@ -470,8 +470,8 @@ return;
 
     function selectConnection(stopId: string, connection: ConnectionOption) {
         if (!routeDetail?.segments || !routeDest) {
-return;
-}
+            return;
+        }
 
         setRouteLoading(true);
 
@@ -508,8 +508,8 @@ return;
             .then((r) => r.json())
             .then((data) => {
                 if (data.error) {
-return;
-}
+                    return;
+                }
 
                 setRouteDetail(data);
                 setConnectionsByStop({});
@@ -577,12 +577,12 @@ return;
                 }));
 
                 if (cat === 'wifi') {
-mapped = mapped.filter((s) => s.wifi_speed === 'fast');
-}
+                    mapped = mapped.filter((s) => s.wifi_speed === 'fast');
+                }
 
                 if (cat === 'quiet') {
-mapped = mapped.filter((s) => s.noise_level === 'quiet');
-}
+                    mapped = mapped.filter((s) => s.noise_level === 'quiet');
+                }
 
                 setMapSpots(mapped);
             })
@@ -591,8 +591,8 @@ mapped = mapped.filter((s) => s.noise_level === 'quiet');
 
     const filteredSpots = allSpots.filter((s) => {
         if (!search) {
-return true;
-}
+            return true;
+        }
 
         const q = search.toLowerCase();
 
@@ -605,8 +605,8 @@ return true;
     // When search has results, clear geo suggestions. When no results, fetch geocode.
     useEffect(() => {
         if (geoTimerRef.current) {
-clearTimeout(geoTimerRef.current);
-}
+            clearTimeout(geoTimerRef.current);
+        }
 
         if (
             !search.trim() ||
@@ -636,8 +636,8 @@ clearTimeout(geoTimerRef.current);
 
         return () => {
             if (geoTimerRef.current) {
-clearTimeout(geoTimerRef.current);
-}
+                clearTimeout(geoTimerRef.current);
+            }
         };
     }, [search, filteredSpots.length]);
 
@@ -713,8 +713,8 @@ clearTimeout(geoTimerRef.current);
 
     function openPlaceForm() {
         if (!tapPoint) {
-return;
-}
+            return;
+        }
 
         setPlaceEmoji('⭐');
         setPlaceName('');
@@ -723,8 +723,8 @@ return;
 
     function savePlace() {
         if (!tapPoint || savingPlace) {
-return;
-}
+            return;
+        }
 
         setSavingPlace(true);
 
@@ -1276,12 +1276,12 @@ return;
                                             setSearch('');
 
                                             if (s.lat && s.lng) {
-mapRef.current?.flyTo(
+                                                mapRef.current?.flyTo(
                                                     s.lat,
                                                     s.lng,
                                                     15,
                                                 );
-}
+                                            }
                                         }}
                                         className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                     >
@@ -1370,8 +1370,8 @@ mapRef.current?.flyTo(
                                     );
 
                                     if (spot) {
-selectSpot(spot);
-}
+                                        selectSpot(spot);
+                                    }
                                 }}
                                 onMapTap={handleMapTap}
                                 onBoundsChange={handleBoundsChange}
@@ -1599,8 +1599,8 @@ function MobileListSheet({
         const sheet = sheetRef.current;
 
         if (!handle || !sheet) {
-return;
-}
+            return;
+        }
 
         const SNAP_POINTS = [0.18, 0.44, 0.8];
         const MIN_H = 80;
@@ -1647,8 +1647,8 @@ return;
 
         function onMove(e: MouseEvent | TouchEvent) {
             if (!dragging) {
-return;
-}
+                return;
+            }
 
             const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
             const delta = startY - y; // drag up = positive = taller
@@ -1658,8 +1658,8 @@ return;
 
         function onEnd() {
             if (!dragging) {
-return;
-}
+                return;
+            }
 
             dragging = false;
             handle.style.cursor = 'grab';

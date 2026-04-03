@@ -19,27 +19,27 @@ const categoryEmoji: Record<string, string> = {
 };
 
 import { ICON_STROKE } from '@/constants/icons';
-import { getTag  } from '@/constants/tags';
-import type {TagDef} from '@/constants/tags';
+import { getTag } from '@/constants/tags';
+import type { TagDef } from '@/constants/tags';
 
 function getAttrs(spot: SpotData): string[] {
     const attrs: string[] = [];
 
     if (spot.wifi_speed) {
-attrs.push('wifi');
-}
+        attrs.push('wifi');
+    }
 
     if (spot.noise_level === 'quiet') {
-attrs.push('quiet');
-}
+        attrs.push('quiet');
+    }
 
     if (spot.category === 'coworking') {
-attrs.push('cowork');
-}
+        attrs.push('cowork');
+    }
 
     if (spot.time_limit_mins === null && spot.category === 'library') {
-attrs.push('free');
-}
+        attrs.push('free');
+    }
 
     return attrs;
 }
@@ -93,8 +93,8 @@ export function SpotCard({
                     const tag = getTag(a);
 
                     if (!tag) {
-return null;
-}
+                        return null;
+                    }
 
                     const TagIcon = tag.icon;
 

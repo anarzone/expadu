@@ -148,8 +148,8 @@ export default function Events() {
             const key = `${e.day} ${e.date} ${e.month}`;
 
             if (!map[key]) {
-map[key] = [];
-}
+                map[key] = [];
+            }
 
             map[key].push(e);
         }
@@ -176,8 +176,8 @@ map[key] = [];
 
     const calDayEvents = useMemo(() => {
         if (selectedCalDay === null) {
-return [];
-}
+            return [];
+        }
 
         return events.filter((e) => {
             const d = new Date(e.fullDate);
@@ -195,8 +195,8 @@ return [];
         const ev = events.find((e) => e.id === id);
 
         if (!ev) {
-return;
-}
+            return;
+        }
 
         if (!ev.going) {
             track('event_rsvp', { event_id: id, event_title: ev.title });
@@ -230,8 +230,8 @@ return;
         const ev = events.find((e) => e.id === id);
 
         if (!ev) {
-return;
-}
+            return;
+        }
 
         if (!ev.saved) {
             track('event_saved', { event_id: id });
@@ -247,8 +247,8 @@ return;
         const ev = events.find((e) => e.id === id);
 
         if (ev) {
-setSelectedEvent(ev);
-}
+            setSelectedEvent(ev);
+        }
     }
 
     function changeMonth(dir: number) {

@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { useMemo, useState  } from 'react';
-import type {ReactNode} from 'react';
+import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { EventData } from '@/pages/events';
 
 type RightPanelEvent = {

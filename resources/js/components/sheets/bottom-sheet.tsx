@@ -1,5 +1,5 @@
-import { useEffect, useRef  } from 'react';
-import type {ReactNode} from 'react';
+import { useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 
 /**
  * Bottom sheet ported from prototype's drag logic:
@@ -29,8 +29,8 @@ export function BottomSheet({
         const sheet = sheetRef.current;
 
         if (!handle || !sheet) {
-return;
-}
+            return;
+        }
 
         let dragging = false;
         let startY = 0;
@@ -52,8 +52,8 @@ return;
 
         function onMove(e: MouseEvent | TouchEvent) {
             if (!dragging) {
-return;
-}
+                return;
+            }
 
             lastY = 'touches' in e ? e.touches[0].clientY : e.clientY;
             const delta = startY - lastY; // up = positive = taller
@@ -67,8 +67,8 @@ return;
 
         function onEnd() {
             if (!dragging) {
-return;
-}
+                return;
+            }
 
             dragging = false;
             handle!.style.cursor = 'grab';
@@ -132,8 +132,8 @@ return;
         const sheet = sheetRef.current;
 
         if (!sheet) {
-return;
-}
+            return;
+        }
 
         if (open) {
             // Reset to default height and slide up

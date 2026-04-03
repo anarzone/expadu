@@ -53,28 +53,28 @@ type TaskProgress = {
 
 function deadlineLabel(t: DbTask): string {
     if (t.completed_at) {
-return 'Completed';
-}
+        return 'Completed';
+    }
 
     if (t.days_remaining === null) {
-return 'No deadline';
-}
+        return 'No deadline';
+    }
 
     if (t.days_remaining < 0) {
-return `Overdue by ${Math.abs(t.days_remaining)} days`;
-}
+        return `Overdue by ${Math.abs(t.days_remaining)} days`;
+    }
 
     if (t.days_remaining === 0) {
-return 'Due today';
-}
+        return 'Due today';
+    }
 
     if (t.days_remaining <= 3) {
-return `${t.days_remaining} days left — urgent`;
-}
+        return `${t.days_remaining} days left — urgent`;
+    }
 
     if (t.days_remaining <= 7) {
-return `${t.days_remaining} days left`;
-}
+        return `${t.days_remaining} days left`;
+    }
 
     if (t.absolute_deadline) {
         const d = new Date(t.absolute_deadline);
@@ -87,24 +87,24 @@ return `${t.days_remaining} days left`;
 
 function urgencyTagFromDeadline(t: DbTask): TaskTag {
     if (t.completed_at) {
-return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
-}
+        return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
+    }
 
     if (t.deadline_urgency === 'overdue') {
-return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
-}
+        return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
+    }
 
     if (t.deadline_urgency === 'critical') {
-return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
-}
+        return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
+    }
 
     if (t.deadline_urgency === 'urgent') {
-return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
-}
+        return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
+    }
 
     if (t.urgency === 'critical' || t.urgency === 'high') {
-return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
-}
+        return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
+    }
 
     return { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' };
 }
@@ -574,16 +574,16 @@ export default function Bureaucracy() {
 
     const filteredTasks = useMemo(() => {
         if (taskFilter === 'done') {
-return tasks.filter((t) => t.done);
-}
+            return tasks.filter((t) => t.done);
+        }
 
         if (taskFilter === 'pending') {
-return tasks.filter((t) => !t.done);
-}
+            return tasks.filter((t) => !t.done);
+        }
 
         if (taskFilter === 'urgent') {
-return tasks.filter((t) => t.urgent && !t.done);
-}
+            return tasks.filter((t) => t.urgent && !t.done);
+        }
 
         return tasks;
     }, [tasks, taskFilter]);
@@ -592,8 +592,8 @@ return tasks.filter((t) => t.urgent && !t.done);
         const q = docSearch.toLowerCase().trim();
 
         if (!q) {
-return SEED_DOCS;
-}
+            return SEED_DOCS;
+        }
 
         return SEED_DOCS.filter(
             (d) =>
@@ -629,8 +629,8 @@ return SEED_DOCS;
 
     async function translateLetter() {
         if (!pasteText.trim()) {
-return;
-}
+            return;
+        }
 
         setTranslating(true);
         setTranslationResult(null);
@@ -1182,8 +1182,8 @@ return;
                                 );
 
                                 if (groupOffices.length === 0) {
-return null;
-}
+                                    return null;
+                                }
 
                                 const bookingUrl = groupOffices[0]?.bookingUrl;
 

@@ -6,12 +6,12 @@ export function formatDepartureTime(mins: number): {
     isClockTime: boolean;
 } {
     if (mins === 0) {
-return { display: 'now', isClockTime: false };
-}
+        return { display: 'now', isClockTime: false };
+    }
 
     if (mins <= 60) {
-return { display: String(mins), isClockTime: false };
-}
+        return { display: String(mins), isClockTime: false };
+    }
 
     const d = new Date(Date.now() + mins * 60_000);
 
@@ -48,20 +48,20 @@ export type BoardData = {
 function sortServices(services: DepartureService[]) {
     return [...services].sort((a, b) => {
         if (a.cancelled && !b.cancelled) {
-return 1;
-}
+            return 1;
+        }
 
         if (!a.cancelled && b.cancelled) {
-return -1;
-}
+            return -1;
+        }
 
         if (a.savedDest && !b.savedDest) {
-return -1;
-}
+            return -1;
+        }
 
         if (!a.savedDest && b.savedDest) {
-return 1;
-}
+            return 1;
+        }
 
         const aNext = a.departures[0] ?? 999;
         const bNext = b.departures[0] ?? 999;

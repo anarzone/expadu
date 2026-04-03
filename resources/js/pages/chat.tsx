@@ -222,8 +222,8 @@ export default function Chat() {
         const text = inputValue.trim();
 
         if (!text || !activeThreadId) {
-return;
-}
+            return;
+        }
 
         const time = formatTime();
         setConversations((prev) =>
@@ -791,8 +791,8 @@ return;
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-sendMessage();
-}
+                                        sendMessage();
+                                    }
                                 }}
                                 placeholder="Message\u2026"
                                 style={{

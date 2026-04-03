@@ -113,8 +113,8 @@ export const MapView = forwardRef<
             const map = mapRef.current;
 
             if (!map) {
-return;
-}
+                return;
+            }
 
             const el = document.createElement('div');
             el.style.cssText = `
@@ -156,8 +156,8 @@ return;
             const map = mapRef.current;
 
             if (!map || !map.isStyleLoaded()) {
-return;
-}
+                return;
+            }
 
             // Clear previous route
             this.clearRoute();
@@ -264,8 +264,8 @@ return;
             const map = mapRef.current;
 
             if (!map || !map.isStyleLoaded()) {
-return;
-}
+                return;
+            }
 
             this.clearRoute();
 
@@ -285,8 +285,8 @@ return;
                 }
 
                 if (coords.length < 2) {
-return;
-}
+                    return;
+                }
 
                 allBoundsCoords.push(...coords);
 
@@ -381,8 +381,8 @@ return;
             const bounds = new maplibregl.LngLatBounds();
 
             for (const c of allBoundsCoords) {
-bounds.extend(c);
-}
+                bounds.extend(c);
+            }
 
             (map as any)._skipBounds?.(true);
             map.fitBounds(bounds, {
@@ -395,8 +395,8 @@ bounds.extend(c);
             const map = mapRef.current;
 
             if (!map || !map.isStyleLoaded()) {
-return;
-}
+                return;
+            }
 
             routeMarkersRef.current.forEach((m) => m.remove());
             routeMarkersRef.current = [];
@@ -404,32 +404,32 @@ return;
             try {
                 // Single route layers
                 if (map.getLayer('explore-route-line')) {
-map.removeLayer('explore-route-line');
-}
+                    map.removeLayer('explore-route-line');
+                }
 
                 if (map.getLayer('explore-route-bg')) {
-map.removeLayer('explore-route-bg');
-}
+                    map.removeLayer('explore-route-bg');
+                }
 
                 if (map.getSource('explore-route')) {
-map.removeSource('explore-route');
-}
+                    map.removeSource('explore-route');
+                }
 
                 // Multi-segment transit layers
                 for (let i = 0; i < 10; i++) {
                     const id = `transit-seg-${i}`;
 
                     if (map.getLayer(`${id}-line`)) {
-map.removeLayer(`${id}-line`);
-}
+                        map.removeLayer(`${id}-line`);
+                    }
 
                     if (map.getLayer(`${id}-bg`)) {
-map.removeLayer(`${id}-bg`);
-}
+                        map.removeLayer(`${id}-bg`);
+                    }
 
                     if (map.getSource(id)) {
-map.removeSource(id);
-}
+                        map.removeSource(id);
+                    }
                 }
             } catch {
                 /* layers may not exist */
@@ -440,8 +440,8 @@ map.removeSource(id);
     // Initialize map — fetch style first to patch missing projection field (MapLibre v5 bug)
     useEffect(() => {
         if (!containerRef.current || mapRef.current) {
-return;
-}
+            return;
+        }
 
         let cancelled = false;
 
@@ -449,12 +449,12 @@ return;
             .then((r) => r.json())
             .then((style) => {
                 if (cancelled || !containerRef.current) {
-return;
-}
+                    return;
+                }
 
                 if (!style.projection) {
-style.projection = { type: 'mercator' };
-}
+                    style.projection = { type: 'mercator' };
+                }
 
                 const map = new maplibregl.Map({
                     container: containerRef.current!,
@@ -505,12 +505,12 @@ style.projection = { type: 'mercator' };
                                 htmlEl.style.padding = '4px 8px';
 
                                 if (emojiEl) {
-emojiEl.style.fontSize = '13px';
-}
+                                    emojiEl.style.fontSize = '13px';
+                                }
 
                                 if (label) {
-label.style.display = '';
-}
+                                    label.style.display = '';
+                                }
                             } else {
                                 // Emoji-only circle
                                 const size =
@@ -525,17 +525,17 @@ label.style.display = '';
                                 htmlEl.style.padding = '0';
 
                                 if (emojiEl) {
-emojiEl.style.fontSize =
+                                    emojiEl.style.fontSize =
                                         zoom >= 14
                                             ? '14px'
                                             : zoom >= 12
                                               ? '12px'
                                               : '10px';
-}
+                                }
 
                                 if (label) {
-label.style.display = 'none';
-}
+                                    label.style.display = 'none';
+                                }
                             }
                         });
                 }
@@ -551,8 +551,8 @@ label.style.display = 'none';
                     const target = e.originalEvent.target as HTMLElement;
 
                     if (target.closest('.maplibregl-marker')) {
-return;
-}
+                        return;
+                    }
 
                     onMapTapRef.current?.(e.lngLat.lat, e.lngLat.lng);
                 });
@@ -573,8 +573,8 @@ return;
                     }
 
                     if (boundsTimer) {
-clearTimeout(boundsTimer);
-}
+                        clearTimeout(boundsTimer);
+                    }
 
                     boundsTimer = setTimeout(() => {
                         const bounds = map.getBounds();
@@ -605,20 +605,20 @@ clearTimeout(boundsTimer);
         const map = mapRef.current;
 
         if (!map) {
-return;
-}
+            return;
+        }
 
         markersRef.current.forEach((m) => m.remove());
         markersRef.current = [];
 
         if (hideMarkers) {
-return;
-} // navigation mode — no spot pins
+            return;
+        } // navigation mode — no spot pins
 
         spots.forEach((spot) => {
             if (!spot.lat || !spot.lng) {
-return;
-}
+                return;
+            }
 
             const emoji = categoryEmoji[spot.category] || '📍';
             const isSelected = spot.id === selectedId;
@@ -666,8 +666,8 @@ return;
         }
 
         if (!selectedId) {
-lastFlyToId.current = null;
-}
+            lastFlyToId.current = null;
+        }
     }, [spots, selectedId, onSelectSpot, hideMarkers]);
 
     // Update personal place markers (hide in navigation mode)
@@ -675,20 +675,20 @@ lastFlyToId.current = null;
         const map = mapRef.current;
 
         if (!map) {
-return;
-}
+            return;
+        }
 
         placeMarkersRef.current.forEach((m) => m.remove());
         placeMarkersRef.current = [];
 
         if (hideMarkers) {
-return;
-}
+            return;
+        }
 
         personalPlaces.forEach((place) => {
             if (!place.lat || !place.lng) {
-return;
-}
+                return;
+            }
 
             const el = document.createElement('div');
             el.className = 'maplibregl-marker';

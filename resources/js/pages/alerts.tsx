@@ -25,20 +25,20 @@ function getTimeGroup(dateStr: string): string {
     const mins = Math.floor(diff / 60000);
 
     if (mins < 60) {
-return 'Just now';
-}
+        return 'Just now';
+    }
 
     const hours = Math.floor(mins / 60);
 
     if (hours < 24) {
-return 'Today';
-}
+        return 'Today';
+    }
 
     const days = Math.floor(hours / 24);
 
     if (days === 1) {
-return 'Yesterday';
-}
+        return 'Yesterday';
+    }
 
     return 'Earlier';
 }
@@ -50,8 +50,8 @@ function groupAlerts(alerts: AlertData[]): Record<string, AlertData[]> {
         const group = getTimeGroup(alert.created_at);
 
         if (!groups[group]) {
-groups[group] = [];
-}
+            groups[group] = [];
+        }
 
         groups[group].push(alert);
     }
@@ -82,8 +82,8 @@ export default function Alerts() {
 
     function getTypeIndex(type: string): number {
         if (!(type in typeCounters)) {
-typeCounters[type] = 0;
-}
+            typeCounters[type] = 0;
+        }
 
         return typeCounters[type]++;
     }
@@ -168,8 +168,8 @@ typeCounters[type] = 0;
                             const items = grouped[groupName];
 
                             if (!items || items.length === 0) {
-return null;
-}
+                                return null;
+                            }
 
                             return (
                                 <div key={groupName}>

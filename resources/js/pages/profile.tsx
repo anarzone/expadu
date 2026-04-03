@@ -339,8 +339,8 @@ export default function Profile() {
         const val = editValue.trim();
 
         if (!val) {
-return;
-}
+            return;
+        }
 
         // Update local state immediately
         switch (field) {
@@ -624,8 +624,8 @@ return;
         return {
             search(query: string) {
                 if (timer) {
-clearTimeout(timer);
-}
+                    clearTimeout(timer);
+                }
 
                 if (query.trim().length < 3) {
                     setAddrSuggestions([]);
@@ -659,8 +659,8 @@ clearTimeout(timer);
             },
             clear() {
                 if (timer) {
-clearTimeout(timer);
-}
+                    clearTimeout(timer);
+                }
 
                 setAddrSuggestions([]);
             },
@@ -2579,12 +2579,12 @@ function InlineEditRow({
                         autoFocus
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-onSave(field);
-}
+                                onSave(field);
+                            }
 
                             if (e.key === 'Escape') {
-onCancel();
-}
+                                onCancel();
+                            }
                         }}
                     />
                 )}

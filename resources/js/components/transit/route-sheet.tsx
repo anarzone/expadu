@@ -99,14 +99,14 @@ export function RouteSheet({
         setShowSteps(false);
 
         if (!data || opt.mode === 'transit') {
-return;
-} // transit has no Valhalla routing yet
+            return;
+        } // transit has no Valhalla routing yet
 
         const costing = VALHALLA_COSTING[opt.mode];
 
         if (!costing) {
-return;
-}
+            return;
+        }
 
         setLoadingRoute(true);
         fetch(

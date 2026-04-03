@@ -79,8 +79,8 @@ export function useGeolocation(pingIntervalMs = 300_000) {
 
     function fetchOnce() {
         if (!navigator.geolocation) {
-return;
-}
+            return;
+        }
 
         navigator.geolocation.getCurrentPosition(handlePosition, handleError, {
             enableHighAccuracy: false,

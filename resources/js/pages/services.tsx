@@ -1,10 +1,7 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import {
-    ServiceCard
-    
-} from '@/components/services/service-card';
-import type {ServiceData} from '@/components/services/service-card';
+import { ServiceCard } from '@/components/services/service-card';
+import type { ServiceData } from '@/components/services/service-card';
 import { ServicesRightPanel } from '@/components/services/services-right-panel';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';

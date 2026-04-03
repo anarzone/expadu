@@ -289,16 +289,16 @@ function getLineColor(line: string, mode: string): string {
     };
 
     if (colors[line]) {
-return colors[line];
-}
+        return colors[line];
+    }
 
     if (mode === 'rail') {
-return '#C4271A';
-}
+        return '#C4271A';
+    }
 
     if (mode === 'bus') {
-return '#E8914A';
-}
+        return '#E8914A';
+    }
 
     return '#1A4CD4';
 }
@@ -307,8 +307,8 @@ function addMinutes(time: string, mins: number): string {
     const [h, m] = time.split(':').map(Number);
 
     if (isNaN(h) || isNaN(m)) {
-return '';
-}
+        return '';
+    }
 
     const total = h * 60 + m + mins;
 

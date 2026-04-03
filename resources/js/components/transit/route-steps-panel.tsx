@@ -40,8 +40,8 @@ function formatDist(km: number): string {
 
 function formatTime(sec: number): string {
     if (sec < 60) {
-return `${sec}s`;
-}
+        return `${sec}s`;
+    }
 
     const min = Math.round(sec / 60);
 

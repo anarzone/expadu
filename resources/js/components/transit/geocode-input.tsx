@@ -35,8 +35,8 @@ export function GeocodeInput({
 
     const search = useCallback((query: string) => {
         if (timerRef.current) {
-clearTimeout(timerRef.current);
-}
+            clearTimeout(timerRef.current);
+        }
 
         if (query.trim().length < 2) {
             setResults([]);
@@ -68,8 +68,8 @@ clearTimeout(timerRef.current);
     useEffect(() => {
         return () => {
             if (timerRef.current) {
-clearTimeout(timerRef.current);
-}
+                clearTimeout(timerRef.current);
+            }
         };
     }, []);
 
@@ -100,8 +100,8 @@ clearTimeout(timerRef.current);
                         onFocusProp?.();
 
                         if (results.length > 0) {
-setDropdownOpen(true);
-}
+                            setDropdownOpen(true);
+                        }
                     }}
                     onBlur={() => {
                         setTimeout(() => setDropdownOpen(false), 200);

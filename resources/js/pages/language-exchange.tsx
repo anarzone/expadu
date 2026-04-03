@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
-import { useMemo, useState  } from 'react';
-import type {MouseEvent} from 'react';
+import { useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { LanguageHero } from '@/components/language/language-hero';
 import { LanguageRightPanel } from '@/components/language/language-right-panel';
 import { PartnerCard } from '@/components/language/partner-card';
@@ -572,8 +572,8 @@ export default function LanguageExchange() {
 
     function toggleSavePartner(id: string, e?: MouseEvent) {
         if (e) {
-e.stopPropagation();
-}
+            e.stopPropagation();
+        }
 
         setPartners((prev) =>
             prev.map((p) => (p.id === id ? { ...p, saved: !p.saved } : p)),
@@ -592,14 +592,14 @@ e.stopPropagation();
     // ── Meetup handlers ──
     function toggleJoinMeetup(id: number, e?: MouseEvent) {
         if (e) {
-e.stopPropagation();
-}
+            e.stopPropagation();
+        }
 
         setMeetups((prev) =>
             prev.map((m) => {
                 if (m.id !== id) {
-return m;
-}
+                    return m;
+                }
 
                 const newJoined = !m.joined;
 
@@ -637,8 +637,8 @@ return m;
         setDropinOn(newState);
 
         if (!newState) {
-setSelectedDropinSpot(null);
-}
+            setSelectedDropinSpot(null);
+        }
     }
 
     function selectDropinSpot(name: string) {
@@ -651,8 +651,8 @@ setSelectedDropinSpot(null);
         setEditMode(!editMode);
 
         if (editMode) {
-setShowAddLangForm(false);
-}
+            setShowAddLangForm(false);
+        }
     }
 
     function saveProfile() {
@@ -663,16 +663,16 @@ setShowAddLangForm(false);
 
     function removeLang(index: number) {
         if (profileLangs[index].name === 'Azerbaijani') {
-return;
-}
+            return;
+        }
 
         setProfileLangs((prev) => prev.filter((_, i) => i !== index));
     }
 
     function toggleAvailDay(index: number) {
         if (!editMode) {
-return;
-}
+            return;
+        }
 
         setActiveDays((prev) => prev.map((v, i) => (i === index ? !v : v)));
     }
@@ -742,8 +742,8 @@ return;
 
     function confirmRequest() {
         if (!selectedPartner) {
-return;
-}
+            return;
+        }
 
         track('partner_connect', { partner_id: selectedPartner.id });
         setPartners((prev) =>
@@ -1754,10 +1754,10 @@ return;
                                                                 role ===
                                                                 'native'
                                                             ) {
-setNewLangLevel(
+                                                                setNewLangLevel(
                                                                     'Native',
                                                                 );
-}
+                                                            }
                                                         }}
                                                         className="flex-1 cursor-pointer rounded-[9px] border-[1.5px] py-2 text-center transition-all"
                                                         style={{
@@ -2026,10 +2026,10 @@ setNewLangLevel(
                                 const next = new Set(prev);
 
                                 if (next.has(day)) {
-next.delete(day);
-} else {
-next.add(day);
-}
+                                    next.delete(day);
+                                } else {
+                                    next.add(day);
+                                }
 
                                 return next;
                             });
@@ -2039,10 +2039,10 @@ next.add(day);
                                 const next = new Set(prev);
 
                                 if (next.has(time)) {
-next.delete(time);
-} else {
-next.add(time);
-}
+                                    next.delete(time);
+                                } else {
+                                    next.add(time);
+                                }
 
                                 return next;
                             });
@@ -2252,8 +2252,8 @@ function SendRequestView({
             <button
                 onClick={() => {
                     if (!msg.trim()) {
-return;
-}
+                        return;
+                    }
 
                     onConfirm();
                 }}
