@@ -147,15 +147,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Coolify Deployment
-        run: |
-          curl --request POST \
-            --header "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            --header "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
-            --header "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
-            --header "Content-Type: application/json" \
-            --data '{"uuid": "${{ secrets.COOLIFY_APP_UUID }}", "force": true}' \
-            --retry 3 \
-            --retry-delay 5 \
-            --silent --show-error \
-            "${{ secrets.COOLIFY_URL }}/api/v1/deploy"
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
+            docker pull ghcr.io/anarzone/expadu/app:latest
+            docker compose up -d app
