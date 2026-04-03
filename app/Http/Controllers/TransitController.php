@@ -32,6 +32,8 @@ class TransitController extends Controller
             $gtfsDepartures = $gtfsService->getDeparturesNearby($nearbyLat, $nearbyLng, 20);
         }
 
+        GtfsDepartureService::logDepartureDebug($user->id, 'transit', $gtfsDepartures, $nearbyLat, $nearbyLng);
+
         // Enrich routines with next GTFS departure
         $routines = $user->routines()->get()->map(function ($r) use ($gtfsService) {
             $data = [

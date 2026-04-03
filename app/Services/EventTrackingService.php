@@ -98,6 +98,20 @@ class EventTrackingService
         $key = "location_history:{$user->id}";
         $timestamp = now()->timestamp;
 
+        // Deduplicate: skip if last entry was <60s ago and <50m away
+        $lastEntries = Redis::zrevrange($key, 0, 0, 'WITHSCORES');
+        if (! empty($lastEntries)) {
+            $lastJson = array_key_first($lastEntries);
+            $lastScore = (int) $lastEntries[$lastJson];
+
+            if ($timestamp - $lastScore < 60) {
+                $last = json_decode($lastJson, true);
+                if ($last && $this->distanceMeters($lat, $lng, (float) $last['lat'], (float) $last['lng']) < 50) {
+                    return; // Skip duplicate ping
+                }
+            }
+        }
+
         $entry = json_encode([
             'lat' => round($lat, 6),
             'lng' => round($lng, 6),

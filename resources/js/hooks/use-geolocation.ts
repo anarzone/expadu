@@ -67,6 +67,11 @@ export function useGeolocation(pingIntervalMs = 300_000) {
         );
         const elapsed = Date.now() - last.time;
 
+        // Skip if less than 60s since last ping (prevents burst on page load/refresh)
+        if (elapsed < 60_000) {
+            return;
+        }
+
         if (dist > 50 || elapsed > pingIntervalMs) {
             sendPing(p.lat, p.lng, p.accuracy);
             lastPingRef.current = { lat: p.lat, lng: p.lng, time: Date.now() };

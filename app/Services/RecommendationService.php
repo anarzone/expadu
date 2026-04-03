@@ -97,6 +97,8 @@ class RecommendationService
             ? $gtfs->getDeparturesNearby($homeLat, $homeLng, 6)
             : $gtfs->getDepartures($homeStop, 6);
 
+        GtfsDepartureService::logDepartureDebug($user->id, 'home', $deptResult, $homeLat, $homeLng);
+
         // User places
         $places = $user->places()
             ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END")

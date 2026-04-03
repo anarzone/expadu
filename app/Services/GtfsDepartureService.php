@@ -6,6 +6,7 @@ use App\Models\Gtfs\GtfsStop;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 
 class GtfsDepartureService
 {
@@ -406,5 +407,32 @@ class GtfsDepartureService
             'source' => 'unavailable',
             'departures' => [],
         ];
+    }
+
+    /**
+     * Log departure response to Redis for debugging (7-day TTL).
+     * Key: departure_debug:{user_id}, sorted set scored by timestamp.
+     */
+    public static function logDepartureDebug(int $userId, string $page, array $result, ?float $lat = null, ?float $lng = null): void
+    {
+        $key = "departure_debug:{$userId}";
+        $timestamp = now()->timestamp;
+
+        $lines = collect($result['departures'] ?? [])->pluck('line')->all();
+
+        $entry = json_encode([
+            'page' => $page,
+            'stop' => $result['stop_name'] ?? null,
+            'source' => $result['source'] ?? null,
+            'lines' => $lines,
+            'count' => count($result['departures'] ?? []),
+            'lat' => $lat ? round($lat, 6) : null,
+            'lng' => $lng ? round($lng, 6) : null,
+            'at' => now()->toIso8601String(),
+        ]);
+
+        Redis::zadd($key, $timestamp, $entry);
+        Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
+        Redis::expire($key, 604800);
     }
 }
