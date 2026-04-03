@@ -596,7 +596,8 @@ export default function Explore() {
             return true;
         }
 
-        const q = search.toLowerCase();
+        const q = search.trim().toLowerCase();
+        if (!q) return true;
 
         return (
             s.name.toLowerCase().includes(q) ||
@@ -604,20 +605,15 @@ export default function Explore() {
         );
     });
 
-    // When search has results, clear geo suggestions. When no results, fetch geocode.
+    // Always fetch geocode suggestions when searching (shown after DB results)
     useEffect(() => {
         if (geoTimerRef.current) {
             clearTimeout(geoTimerRef.current);
         }
 
-        if (
-            !search.trim() ||
-            search.trim().length < 2 ||
-            filteredSpots.length > 0
-        ) {
+        if (!search.trim() || search.trim().length < 2) {
             setGeoSuggestions([]);
             mapRef.current?.clearSearchPin();
-
             return;
         }
 
@@ -641,7 +637,7 @@ export default function Explore() {
                 clearTimeout(geoTimerRef.current);
             }
         };
-    }, [search, filteredSpots.length]);
+    }, [search]);
 
     function selectSpot(spot: SpotData) {
         track('spot_viewed', {
@@ -1146,14 +1142,58 @@ export default function Explore() {
                                     className="flex-1 overflow-y-auto px-3.5 py-2 pb-20 md:px-4 md:py-3 md:pb-3"
                                     style={{ scrollbarWidth: 'thin' }}
                                 >
-                                    {filteredSpots.length === 0 &&
-                                        geoSuggestions.length > 0 && (
-                                            <div className="mb-3">
+                                    {/* DB spots first */}
+                                    {filteredSpots.length > 0 ? (
+                                        filteredSpots.map((s) => (
+                                            <SpotCard
+                                                key={s.id}
+                                                spot={s}
+                                                selected={
+                                                    selectedSpot?.id === s.id
+                                                }
+                                                onSelect={() => selectSpot(s)}
+                                                onNavigate={() =>
+                                                    s.lat &&
+                                                    s.lng &&
+                                                    startDirections(
+                                                        s.lat,
+                                                        s.lng,
+                                                        s.name,
+                                                    )
+                                                }
+                                            />
+                                        ))
+                                    ) : !search.trim() ? null : geoSuggestions.length ===
+                                      0 ? (
+                                        <div className="py-12 text-center text-sm text-[#AAA89F]">
+                                            No spots found.
+                                        </div>
+                                    ) : null}
+
+                                    {/* Geocode suggestions after DB results — exclude duplicates */}
+                                    {search.trim() &&
+                                        geoSuggestions.filter(
+                                            (g) =>
+                                                !allSpots.some(
+                                                    (s) =>
+                                                        s.name.toLowerCase() ===
+                                                        g.name.toLowerCase(),
+                                                ),
+                                        ).length > 0 && (
+                                            <div className="mt-2 mb-3">
                                                 <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
-                                                    Search nearby
+                                                    Other places
                                                 </div>
-                                                {geoSuggestions.map(
-                                                    (g, idx) => (
+                                                {geoSuggestions
+                                                    .filter(
+                                                        (g) =>
+                                                            !allSpots.some(
+                                                                (s) =>
+                                                                    s.name.toLowerCase() ===
+                                                                    g.name.toLowerCase(),
+                                                            ),
+                                                    )
+                                                    .map((g, idx) => (
                                                         <div
                                                             key={idx}
                                                             className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
@@ -1202,26 +1242,9 @@ export default function Explore() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ),
-                                                )}
+                                                    ))}
                                             </div>
                                         )}
-                                    {filteredSpots.length === 0 ? (
-                                        <div className="py-12 text-center text-sm text-[#AAA89F]">
-                                            No spots found.
-                                        </div>
-                                    ) : (
-                                        filteredSpots.map((s) => (
-                                            <SpotCard
-                                                key={s.id}
-                                                spot={s}
-                                                selected={
-                                                    selectedSpot?.id === s.id
-                                                }
-                                                onSelect={() => selectSpot(s)}
-                                            />
-                                        ))
-                                    )}
                                 </div>
                             </>
                         )}
