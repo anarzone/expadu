@@ -10,7 +10,9 @@ html {
 
 /* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px) */
 @media screen and (max-width: 767px) {
-    input, select, textarea {
+    input,
+    select,
+    textarea {
         font-size: 16px !important;
     }
 }
@@ -23,9 +25,8 @@ html {
 @theme {
     /* Typography */
     --font-sans:
-        'Geist', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-display: 'Fraunces', ui-serif, Georgia, serif;
     --font-mono: 'Geist Mono', ui-monospace, monospace;
 
@@ -95,128 +96,128 @@ html {
 /* ─── Light Theme (Expadu) ─── */
 :root {
     /* Core surfaces */
-    --background: #F6F5F1;
-    --foreground: #18170F;
-    --card: #FFFFFF;
-    --card-foreground: #18170F;
-    --popover: #FFFFFF;
-    --popover-foreground: #18170F;
+    --background: #f6f5f1;
+    --foreground: #18170f;
+    --card: #ffffff;
+    --card-foreground: #18170f;
+    --popover: #ffffff;
+    --popover-foreground: #18170f;
 
     /* Primary = Expadu accent blue */
-    --primary: #1A4CD4;
-    --primary-foreground: #FFFFFF;
+    --primary: #1a4cd4;
+    --primary-foreground: #ffffff;
 
     /* Secondary = surface-2 */
-    --secondary: #EFEDE7;
-    --secondary-foreground: #18170F;
+    --secondary: #efede7;
+    --secondary-foreground: #18170f;
 
     /* Muted */
-    --muted: #EFEDE7;
-    --muted-foreground: #6B6860;
+    --muted: #efede7;
+    --muted-foreground: #6b6860;
 
     /* Accent (shadcn) = surface-2 for hover states */
-    --accent: #EFEDE7;
-    --accent-foreground: #18170F;
+    --accent: #efede7;
+    --accent-foreground: #18170f;
 
     /* Destructive */
-    --destructive: #C4271A;
-    --destructive-foreground: #FFFFFF;
+    --destructive: #c4271a;
+    --destructive-foreground: #ffffff;
 
     /* Borders & inputs */
-    --border: #E2DFD6;
-    --input: #E2DFD6;
-    --ring: #1A4CD4;
+    --border: #e2dfd6;
+    --input: #e2dfd6;
+    --ring: #1a4cd4;
 
     /* Chart colors */
-    --chart-1: #1A4CD4;
-    --chart-2: #0A7C52;
-    --chart-3: #C47D0E;
-    --chart-4: #7C3AED;
-    --chart-5: #C4271A;
+    --chart-1: #1a4cd4;
+    --chart-2: #0a7c52;
+    --chart-3: #c47d0e;
+    --chart-4: #7c3aed;
+    --chart-5: #c4271a;
 
     /* Sidebar */
-    --sidebar: #F6F5F1;
-    --sidebar-foreground: #18170F;
-    --sidebar-primary: #1A4CD4;
-    --sidebar-primary-foreground: #FFFFFF;
-    --sidebar-accent: #EBF0FD;
-    --sidebar-accent-foreground: #1A4CD4;
-    --sidebar-border: #E2DFD6;
-    --sidebar-ring: #1A4CD4;
+    --sidebar: #f6f5f1;
+    --sidebar-foreground: #18170f;
+    --sidebar-primary: #1a4cd4;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #ebf0fd;
+    --sidebar-accent-foreground: #1a4cd4;
+    --sidebar-border: #e2dfd6;
+    --sidebar-ring: #1a4cd4;
 
     /* Expadu-specific */
-    --surface-2: #EFEDE7;
-    --success: #0A7C52;
-    --success-soft: #EDFAF4;
-    --warn: #C47D0E;
-    --warn-soft: #FEF9EC;
-    --danger: #C4271A;
-    --danger-soft: #FDECEA;
-    --accent-soft: #EBF0FD;
-    --accent-hover: #1541B8;
+    --surface-2: #efede7;
+    --success: #0a7c52;
+    --success-soft: #edfaf4;
+    --warn: #c47d0e;
+    --warn-soft: #fef9ec;
+    --danger: #c4271a;
+    --danger-soft: #fdecea;
+    --accent-soft: #ebf0fd;
+    --accent-hover: #1541b8;
 
     /* Text hierarchy */
-    --text-1: #18170F;
-    --text-2: #6B6860;
-    --text-3: #AAA89F;
+    --text-1: #18170f;
+    --text-2: #6b6860;
+    --text-3: #aaa89f;
 }
 
 /* ─── Dark Theme (Expadu) ─── */
 .dark {
-    --background: #18170F;
-    --foreground: #F6F5F1;
-    --card: #1E1D15;
-    --card-foreground: #F6F5F1;
-    --popover: #1E1D15;
-    --popover-foreground: #F6F5F1;
+    --background: #18170f;
+    --foreground: #f6f5f1;
+    --card: #1e1d15;
+    --card-foreground: #f6f5f1;
+    --popover: #1e1d15;
+    --popover-foreground: #f6f5f1;
 
-    --primary: #5B8AF5;
-    --primary-foreground: #18170F;
+    --primary: #5b8af5;
+    --primary-foreground: #18170f;
 
-    --secondary: #2A2920;
-    --secondary-foreground: #F6F5F1;
+    --secondary: #2a2920;
+    --secondary-foreground: #f6f5f1;
 
-    --muted: #2A2920;
-    --muted-foreground: #AAA89F;
+    --muted: #2a2920;
+    --muted-foreground: #aaa89f;
 
-    --accent: #2A2920;
-    --accent-foreground: #F6F5F1;
+    --accent: #2a2920;
+    --accent-foreground: #f6f5f1;
 
-    --destructive: #E5534B;
-    --destructive-foreground: #FFFFFF;
+    --destructive: #e5534b;
+    --destructive-foreground: #ffffff;
 
-    --border: #3A3930;
-    --input: #3A3930;
-    --ring: #5B8AF5;
+    --border: #3a3930;
+    --input: #3a3930;
+    --ring: #5b8af5;
 
-    --chart-1: #5B8AF5;
-    --chart-2: #34D399;
-    --chart-3: #FBBF24;
-    --chart-4: #A78BFA;
-    --chart-5: #F87171;
+    --chart-1: #5b8af5;
+    --chart-2: #34d399;
+    --chart-3: #fbbf24;
+    --chart-4: #a78bfa;
+    --chart-5: #f87171;
 
-    --sidebar: #1E1D15;
-    --sidebar-foreground: #F6F5F1;
-    --sidebar-primary: #5B8AF5;
-    --sidebar-primary-foreground: #18170F;
-    --sidebar-accent: #2A2920;
-    --sidebar-accent-foreground: #5B8AF5;
-    --sidebar-border: #3A3930;
-    --sidebar-ring: #5B8AF5;
+    --sidebar: #1e1d15;
+    --sidebar-foreground: #f6f5f1;
+    --sidebar-primary: #5b8af5;
+    --sidebar-primary-foreground: #18170f;
+    --sidebar-accent: #2a2920;
+    --sidebar-accent-foreground: #5b8af5;
+    --sidebar-border: #3a3930;
+    --sidebar-ring: #5b8af5;
 
-    --surface-2: #2A2920;
-    --success: #34D399;
-    --success-soft: #1A2E26;
-    --warn: #FBBF24;
-    --warn-soft: #2E2810;
-    --danger: #F87171;
-    --danger-soft: #2E1A1A;
-    --accent-soft: #1A2440;
-    --accent-hover: #7BA3F7;
+    --surface-2: #2a2920;
+    --success: #34d399;
+    --success-soft: #1a2e26;
+    --warn: #fbbf24;
+    --warn-soft: #2e2810;
+    --danger: #f87171;
+    --danger-soft: #2e1a1a;
+    --accent-soft: #1a2440;
+    --accent-hover: #7ba3f7;
 
-    --text-1: #F6F5F1;
-    --text-2: #AAA89F;
-    --text-3: #6B6860;
+    --text-1: #f6f5f1;
+    --text-2: #aaa89f;
+    --text-3: #6b6860;
 }
 
 @layer base {
@@ -231,11 +232,17 @@ html {
 
 /* Card entrance animation — prototype fadeUp */
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 .animate-fade-up {
-    animation: fadeUp .3s ease both;
+    animation: fadeUp 0.3s ease both;
 }
 
 /*
@@ -245,38 +252,38 @@ html {
  */
 
 /* Hover expand when collapsed (via button) */
-.group.peer[data-state="collapsed"]:hover > nav[data-sidebar="sidebar"] {
+.group.peer[data-state='collapsed']:hover > nav[data-sidebar='sidebar'] {
     width: var(--sidebar-width) !important;
-    box-shadow: 4px 0 32px rgba(0,0,0,.08);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.08);
     z-index: 200;
 }
 
 /* Text hidden when collapsed, visible on hover */
-.group.peer[data-state="collapsed"]:not(:hover) [data-sidebar-text] {
+.group.peer[data-state='collapsed']:not(:hover) [data-sidebar-text] {
     opacity: 0;
-    transition: opacity .1s;
+    transition: opacity 0.1s;
 }
-.group.peer[data-state="collapsed"]:hover [data-sidebar-text] {
+.group.peer[data-state='collapsed']:hover [data-sidebar-text] {
     opacity: 1;
-    transition: opacity .15s .08s;
+    transition: opacity 0.15s 0.08s;
 }
 
 /* Auto-collapse below 1280px — same behavior regardless of data-state */
 @media (max-width: 1280px) {
-    .group.peer[data-state="expanded"] > nav[data-sidebar="sidebar"] {
+    .group.peer[data-state='expanded'] > nav[data-sidebar='sidebar'] {
         width: var(--sidebar-width-icon) !important;
     }
-    .group.peer[data-state="expanded"]:hover > nav[data-sidebar="sidebar"] {
+    .group.peer[data-state='expanded']:hover > nav[data-sidebar='sidebar'] {
         width: var(--sidebar-width) !important;
-        box-shadow: 4px 0 32px rgba(0,0,0,.08);
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.08);
         z-index: 200;
     }
-    .group.peer[data-state="expanded"]:not(:hover) [data-sidebar-text] {
+    .group.peer[data-state='expanded']:not(:hover) [data-sidebar-text] {
         opacity: 0;
-        transition: opacity .1s;
+        transition: opacity 0.1s;
     }
-    .group.peer[data-state="expanded"]:hover [data-sidebar-text] {
+    .group.peer[data-state='expanded']:hover [data-sidebar-text] {
         opacity: 1;
-        transition: opacity .15s .08s;
+        transition: opacity 0.15s 0.08s;
     }
 }
