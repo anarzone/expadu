@@ -95,38 +95,41 @@ class EventTrackingService
      */
     private function storeLocationInRedis(User $user, float $lat, float $lng, ?float $accuracy): void
     {
-        $key = "location_history:{$user->id}";
-        $timestamp = now()->timestamp;
+        try {
+            $key = "location_history:{$user->id}";
+            $timestamp = now()->timestamp;
 
-        // Deduplicate: skip if last entry was <60s ago and <50m away
-        $lastEntries = Redis::zrevrange($key, 0, 0, 'WITHSCORES');
-        if (! empty($lastEntries)) {
-            $lastJson = array_key_first($lastEntries);
-            $lastScore = (int) $lastEntries[$lastJson];
+            // Deduplicate: skip if last entry was <60s ago and <50m away
+            $lastEntries = Redis::zrevrange($key, 0, 0, 'WITHSCORES');
+            if (! empty($lastEntries)) {
+                $lastJson = array_key_first($lastEntries);
+                $lastScore = (int) $lastEntries[$lastJson];
 
-            if ($timestamp - $lastScore < 60) {
-                $last = json_decode($lastJson, true);
-                if ($last && $this->distanceMeters($lat, $lng, (float) $last['lat'], (float) $last['lng']) < 50) {
-                    return; // Skip duplicate ping
+                if ($timestamp - $lastScore < 60) {
+                    $last = json_decode($lastJson, true);
+                    if ($last && $this->distanceMeters($lat, $lng, (float) $last['lat'], (float) $last['lng']) < 50) {
+                        return;
+                    }
                 }
             }
+
+            $entry = json_encode([
+                'lat' => round($lat, 6),
+                'lng' => round($lng, 6),
+                'accuracy' => $accuracy ? round($accuracy) : null,
+                'at' => now()->toIso8601String(),
+            ]);
+
+            Redis::zadd($key, $timestamp, $entry);
+
+            // Remove entries older than 7 days
+            Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
+
+            // Refresh TTL to 7 days from now
+            Redis::expire($key, 604800); // 7 * 24 * 60 * 60
+        } catch (\Throwable) {
+            // Redis unavailable — skip location storage silently
         }
-
-        $entry = json_encode([
-            'lat' => round($lat, 6),
-            'lng' => round($lng, 6),
-            'accuracy' => $accuracy ? round($accuracy) : null,
-            'at' => now()->toIso8601String(),
-        ]);
-
-        // Add to sorted set (scored by timestamp for range queries)
-        Redis::zadd($key, $timestamp, $entry);
-
-        // Remove entries older than 7 days
-        Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
-
-        // Refresh TTL to 7 days from now
-        Redis::expire($key, 604800); // 7 * 24 * 60 * 60
     }
 
     private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float

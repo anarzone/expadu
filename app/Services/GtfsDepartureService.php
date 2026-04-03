@@ -415,24 +415,28 @@ class GtfsDepartureService
      */
     public static function logDepartureDebug(int $userId, string $page, array $result, ?float $lat = null, ?float $lng = null): void
     {
-        $key = "departure_debug:{$userId}";
-        $timestamp = now()->timestamp;
+        try {
+            $key = "departure_debug:{$userId}";
+            $timestamp = now()->timestamp;
 
-        $lines = collect($result['departures'] ?? [])->pluck('line')->all();
+            $lines = collect($result['departures'] ?? [])->pluck('line')->all();
 
-        $entry = json_encode([
-            'page' => $page,
-            'stop' => $result['stop_name'] ?? null,
-            'source' => $result['source'] ?? null,
-            'lines' => $lines,
-            'count' => count($result['departures'] ?? []),
-            'lat' => $lat ? round($lat, 6) : null,
-            'lng' => $lng ? round($lng, 6) : null,
-            'at' => now()->toIso8601String(),
-        ]);
+            $entry = json_encode([
+                'page' => $page,
+                'stop' => $result['stop_name'] ?? null,
+                'source' => $result['source'] ?? null,
+                'lines' => $lines,
+                'count' => count($result['departures'] ?? []),
+                'lat' => $lat ? round($lat, 6) : null,
+                'lng' => $lng ? round($lng, 6) : null,
+                'at' => now()->toIso8601String(),
+            ]);
 
-        Redis::zadd($key, $timestamp, $entry);
-        Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
-        Redis::expire($key, 604800);
+            Redis::zadd($key, $timestamp, $entry);
+            Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
+            Redis::expire($key, 604800);
+        } catch (\Throwable) {
+            // Redis unavailable — skip debug logging silently
+        }
     }
 }
