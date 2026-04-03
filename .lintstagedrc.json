@@ -1,0 +1,4 @@
+{
+    "resources/js/**/*.{ts,tsx}": ["prettier --write"],
+    "resources/css/**/*.css": ["prettier --write"]
+}

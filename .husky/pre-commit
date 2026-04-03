@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Pre-commit hook for Expadu
+# Runs Pint (PHP) + Prettier (JS/TS) on staged files only
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+echo ""
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+run_check() {
+    local name=$1
+    local command=$2
+    echo -e "${YELLOW}▶ Running $name...${NC}"
+    if eval "$command"; then
+        echo -e "${GREEN}✓ $name passed${NC}"
+        echo ""
+        return 0
+    else
+        echo -e "${RED}✗ $name failed${NC}"
+        echo ""
+        return 1
+    fi
+}
+
+# PHP: Run Pint on dirty files
+run_check "PHP Code Style (Pint)" "vendor/bin/pint --dirty"
+
+# JS/TS: Run lint-staged (Prettier on staged files)
+run_check "Frontend Format (staged)" "npx lint-staged"
+
+echo -e "${GREEN}✅ All checks passed!${NC}"
+echo "Proceeding with commit..."

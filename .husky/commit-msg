@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Commit-msg hook for Expadu
+# Validates commit message format using commitlint
+
+npx --no -- commitlint --edit "$1"
