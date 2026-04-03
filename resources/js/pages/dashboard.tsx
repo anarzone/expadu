@@ -196,9 +196,9 @@ export default function Dashboard() {
         <AppLayout>
             <Head title="Home" />
             <div className="mx-auto w-full max-w-[680px]">
-                {/* Header */}
+                {/* Header — hidden on mobile (top bar handles it) */}
                 <div
-                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] bg-[rgba(246,245,241,.94)] px-6 backdrop-blur-2xl dark:border-[#3A3930] dark:bg-[rgba(30,29,21,.94)]"
+                    className="sticky top-0 z-50 hidden items-center justify-between border-b border-[#E2DFD6] bg-[rgba(246,245,241,.94)] px-6 backdrop-blur-2xl md:flex dark:border-[#3A3930] dark:bg-[rgba(30,29,21,.94)]"
                     style={{ padding: '16px 24px 14px' }}
                 >
                     <span
@@ -229,15 +229,12 @@ export default function Dashboard() {
 
                 {/* Blue highlight — Today's Highlights */}
                 {weather && (
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div
                             className="relative overflow-hidden"
                             style={{
                                 background: '#1A4CD4',
-                                borderRadius: 20,
+                                borderRadius: 9,
                                 padding: '20px 22px',
                                 color: 'white',
                             }}
@@ -279,7 +276,7 @@ export default function Dashboard() {
                                     style={{ marginBottom: 14 }}
                                 >
                                     <div
-                                        className="flex cursor-pointer items-center gap-3 rounded-[9px] transition-all hover:bg-[rgba(255,255,255,.22)]"
+                                        className="flex cursor-pointer items-center gap-3 rounded-[14px] transition-all hover:bg-[rgba(255,255,255,.22)]"
                                         style={{
                                             background: 'rgba(255,255,255,.15)',
                                             border: '1px solid rgba(255,255,255,.2)',
@@ -401,7 +398,7 @@ export default function Dashboard() {
                             {needsSetup && (
                                 <a
                                     href="/profile#settings"
-                                    className="relative z-[1] mb-3 flex items-center gap-3 rounded-[9px] p-3 transition-all hover:bg-[rgba(255,255,255,.22)]"
+                                    className="relative z-[1] mb-3 flex items-center gap-3 rounded-[14px] p-3 transition-all hover:bg-[rgba(255,255,255,.22)]"
                                     style={{
                                         background: 'rgba(255,255,255,.15)',
                                         border: '1px dashed rgba(255,255,255,.3)',
@@ -520,18 +517,12 @@ export default function Dashboard() {
 
                 {/* Warnings section removed — handled by commute recommendation cards now */}
                 {false && warnings.length > 0 && (
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    ></div>
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]"></div>
                 )}
 
                 {/* Settlement progress */}
                 {settlement && settlement.total > 0 && (
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Settlement Progress
@@ -579,10 +570,7 @@ export default function Dashboard() {
 
                 {/* Your places */}
                 {places.length > 0 && (
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div
                             className="mb-3"
                             style={{ fontSize: 16, fontWeight: 600 }}
@@ -604,10 +592,7 @@ export default function Dashboard() {
 
                 {/* Work spots nearby */}
                 {nearbySpots.length > 0 && (
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-3 flex items-baseline justify-between">
                             <span
                                 className="text-[#AAA89F] dark:text-[#6B6860]"
@@ -640,7 +625,7 @@ export default function Dashboard() {
                                             lng: spot.lng,
                                         })
                                     }
-                                    className="flex cursor-pointer items-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:translate-x-0.5 hover:border-[rgba(26,76,212,.25)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                    className="flex cursor-pointer items-center rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:translate-x-0.5 hover:border-[rgba(26,76,212,.25)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                     style={{ padding: '10px 14px', gap: 12 }}
                                 >
                                     <span
@@ -737,10 +722,7 @@ export default function Dashboard() {
 
                 {/* This week events */}
                 {thisWeek.length > 0 && (
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-3 flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 This Week
@@ -804,10 +786,7 @@ export default function Dashboard() {
 
                 {/* Live departures */}
                 {departures && (departures.departures?.length ?? 0) > 0 && (
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span style={{ fontSize: 16, fontWeight: 600 }}>
@@ -923,7 +902,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Quick access */}
-                <div style={{ padding: '20px 24px' }}>
+                <div className="section-pad">
                     <div className="grid grid-cols-4 gap-2">
                         {[
                             {

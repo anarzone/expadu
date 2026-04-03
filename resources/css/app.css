@@ -220,6 +220,13 @@ html {
     --text-3: #6b6860;
 }
 
+@layer utilities {
+    /* Standard section padding: 24px vertical, 10px horizontal on mobile, 24px on desktop */
+    .section-pad {
+        @apply px-2.5 py-6 md:px-6;
+    }
+}
+
 @layer base {
     * {
         @apply border-border;

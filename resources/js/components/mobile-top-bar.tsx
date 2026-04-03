@@ -18,8 +18,8 @@ export function MobileTopBar({ title }: { title?: string }) {
         : '?';
 
     return (
-        <>
-            <header className="fixed top-0 right-0 left-0 z-50 flex items-center justify-between border-b border-border bg-background/96 px-5 py-[11px] backdrop-blur-2xl md:hidden">
+        <div className="relative md:hidden">
+            <header className="flex items-center justify-between border-b border-border bg-background px-5 py-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
                 <div className="flex items-center gap-2.5">
                     <AppLogoIcon className="!size-7 !rounded-lg !text-sm" />
                     <span className="font-display text-[21px] font-medium tracking-tight">
@@ -48,7 +48,7 @@ export function MobileTopBar({ title }: { title?: string }) {
                         className="fixed inset-0 z-[9998] md:hidden"
                         onClick={() => setMenuOpen(false)}
                     />
-                    <div className="fixed top-[52px] right-4 z-[9999] w-56 overflow-hidden rounded-[12px] border border-[#E2DFD6] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                    <div className="absolute right-4 z-[9999] mt-1 w-56 overflow-hidden rounded-[12px] border border-[#E2DFD6] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
                         {/* User info */}
                         <div className="border-b border-[#E2DFD6] px-4 py-3 dark:border-[#3A3930]">
                             <div style={{ fontSize: 13, fontWeight: 600 }}>
@@ -113,6 +113,6 @@ export function MobileTopBar({ title }: { title?: string }) {
                     </div>
                 </>
             )}
-        </>
+        </div>
     );
 }

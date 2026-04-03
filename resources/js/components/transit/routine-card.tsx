@@ -28,7 +28,7 @@ export function RoutineCard({
             style={{
                 background: '#FFFFFF',
                 border: '1px solid #E2DFD6',
-                borderRadius: 14,
+                borderRadius: 9,
                 padding: 16,
                 marginBottom: 10,
             }}

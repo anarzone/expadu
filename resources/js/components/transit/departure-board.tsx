@@ -111,7 +111,6 @@ export function DepartureBoard({
 }) {
     const visibleServices = data.services.filter((s) => showMore || !s.hidden);
     const sorted = sortServices(visibleServices);
-    const clock = useClock();
 
     const pills = visibleServices;
 
@@ -119,20 +118,9 @@ export function DepartureBoard({
         <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 dark:border-[#3A3930] dark:bg-[#2A2920]">
-                <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-bold dark:text-[#F5F4F0]">
-                        {data.icon} {data.stop}
-                    </span>
-                    <span className="rounded-md bg-[#DDDBD4] px-2 py-[2px] font-mono text-xs font-semibold text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]">
-                        {clock}
-                    </span>
-                    {isLive && (
-                        <span className="flex items-center gap-1 rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[10px] font-bold text-[#0A7C52] dark:bg-[#0A7C52]/20">
-                            <span className="inline-block size-[5px] animate-pulse rounded-full bg-[#0A7C52]" />
-                            Live
-                        </span>
-                    )}
-                </div>
+                <span className="text-[13px] font-bold dark:text-[#F5F4F0]">
+                    {data.icon} {data.stop}
+                </span>
                 <div className="flex gap-[5px]">
                     {pills.map((s) => (
                         <span
@@ -207,7 +195,14 @@ function ServiceRow({
     }
 
     const following = s.departures.slice(1);
-    const badgeFontSize = s.line.length > 1 ? 11 : 13;
+    const badgeFontSize =
+        s.line.length > 4
+            ? 9
+            : s.line.length > 2
+              ? 10
+              : s.line.length > 1
+                ? 11
+                : 13;
 
     return (
         <div
@@ -221,10 +216,11 @@ function ServiceRow({
         >
             {/* Line badge */}
             <div
-                className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold"
+                className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold whitespace-nowrap"
                 style={{
-                    width: 34,
+                    minWidth: 34,
                     height: 34,
+                    padding: s.line.length > 2 ? '0 6px' : undefined,
                     background: s.bg,
                     color: s.color,
                     fontSize: badgeFontSize,

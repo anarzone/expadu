@@ -296,8 +296,8 @@ function JourneyRoutePanel({
         return (
             <div className="mt-4 animate-pulse">
                 <div className="mb-2 h-4 w-1/3 rounded bg-[#EFEDE7]" />
-                <div className="h-16 rounded-[9px] bg-[#EFEDE7]" />
-                <div className="mt-2 h-16 rounded-[9px] bg-[#EFEDE7]" />
+                <div className="h-16 rounded-[14px] bg-[#EFEDE7]" />
+                <div className="mt-2 h-16 rounded-[14px] bg-[#EFEDE7]" />
             </div>
         );
     }
@@ -405,7 +405,7 @@ function JourneyRoutePanel({
                     }
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
                     style={{ textDecoration: 'none' }}
                 >
                     🗺️ Start navigation
@@ -414,7 +414,7 @@ function JourneyRoutePanel({
                     href={`https://maps.apple.com/?saddr=${origin.lat},${origin.lng}&daddr=${destination.lat},${destination.lng}&dirflg=${gmMode === 'transit' ? 'r' : gmMode === 'walking' ? 'w' : gmMode === 'bicycling' ? 'b' : 'd'}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
+                    className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                     style={{ textDecoration: 'none' }}
                 >
                     🍎 Apple Maps
@@ -540,7 +540,7 @@ function RoutineDetailContent({
                     Departure time
                 </div>
                 <div
-                    className="mb-3 flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                    className="mb-3 flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
                     style={{ padding: '10px 14px' }}
                 >
                     <span style={{ fontSize: 15, color: '#AAA89F' }}>🕐</span>
@@ -801,7 +801,7 @@ function RoutineDetailContent({
                 </button>
                 <button
                     onClick={() => setMode('edit')}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                     style={{
                         padding: '13px',
                         fontSize: 15,
@@ -833,7 +833,7 @@ function RoutineDetailContent({
                             });
                         });
                     }}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#FDE8E6] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#FDE8E6] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                     style={{
                         padding: '13px',
                         fontSize: 15,
@@ -928,7 +928,7 @@ function StopInput({
     return (
         <div className="relative">
             <div
-                className="flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                className="flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
                 style={{ padding: '10px 14px' }}
             >
                 <span style={{ fontSize: 15, color: '#AAA89F' }}>{emoji}</span>
@@ -947,7 +947,7 @@ function StopInput({
                 />
             </div>
             {focused && results.length > 0 && (
-                <div className="absolute right-0 left-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-lg dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                <div className="absolute right-0 left-0 z-50 mt-1 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white shadow-lg dark:border-[#3A3930] dark:bg-[#1E1D15]">
                     {results.slice(0, 6).map((r) => (
                         <div
                             key={r.name}
@@ -1017,7 +1017,7 @@ function StopPickerContent({
                 Choose a stop
             </div>
             <div
-                className="mb-4 flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                className="mb-4 flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
                 style={{ padding: '10px 14px' }}
             >
                 <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
@@ -1632,9 +1632,9 @@ export default function Transit() {
         <AppLayout breadcrumbs={[{ title: 'Transit', href: '/transit' }]}>
             <Head title="Transit" />
             <div className="mx-auto w-full max-w-[680px]">
-                {/* ── Sticky header ── */}
+                {/* ── Sticky header — hidden on mobile (redundant with dock) ── */}
                 <div
-                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] bg-[rgba(246,245,241,.94)] px-6 backdrop-blur-[16px] dark:border-[#3A3930] dark:bg-[rgba(30,29,21,.94)]"
+                    className="hidden items-center justify-between border-b border-[#E2DFD6] bg-[rgba(246,245,241,.94)] px-6 md:flex dark:border-[#3A3930] dark:bg-[rgba(30,29,21,.94)]"
                     style={{ padding: '16px 24px 14px' }}
                 >
                     <span
@@ -1652,10 +1652,7 @@ export default function Transit() {
                 {/* ── Feed sections ── */}
                 <div>
                     {/* ═══ 1. Smart Commute Hero ═══ */}
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-[13px] flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Smart Commute
@@ -1686,7 +1683,7 @@ export default function Transit() {
                             className="relative overflow-hidden"
                             style={{
                                 background: '#1A4CD4',
-                                borderRadius: 20,
+                                borderRadius: 9,
                                 padding: '22px 24px',
                                 color: 'white',
                             }}
@@ -1725,7 +1722,7 @@ export default function Transit() {
                             {cr?.needs_setup && (
                                 <a
                                     href="/profile#settings"
-                                    className="relative z-[1] mb-3 flex items-center gap-3 rounded-[9px] p-3 transition-all hover:bg-[rgba(255,255,255,.22)]"
+                                    className="relative z-[1] mb-3 flex items-center gap-3 rounded-[14px] p-3 transition-all hover:bg-[rgba(255,255,255,.22)]"
                                     style={{
                                         background: 'rgba(255,255,255,.15)',
                                         border: '1px dashed rgba(255,255,255,.3)',
@@ -1891,10 +1888,7 @@ export default function Transit() {
                     </div>
 
                     {/* ═══ 2. Plan a Journey ═══ */}
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-[13px]">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Plan a Journey
@@ -1947,7 +1941,7 @@ export default function Transit() {
                                 />
                                 <button
                                     onClick={swapDestinations}
-                                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                     style={{
                                         width: 36,
                                         height: 36,
@@ -2007,10 +2001,7 @@ export default function Transit() {
                         }
 
                         return (
-                            <div
-                                className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                                style={{ padding: '20px 24px' }}
-                            >
+                            <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                                 <div className="mb-[13px] flex items-baseline justify-between">
                                     <span
                                         style={{
@@ -2041,8 +2032,8 @@ export default function Transit() {
                                         return (
                                             <div
                                                 key={d.id}
-                                                className="flex items-start rounded-[9px]"
-                                                className={`flex items-start rounded-[9px] ${
+                                                className="flex items-start rounded-[14px]"
+                                                className={`flex items-start rounded-[14px] ${
                                                     isDanger
                                                         ? 'border border-[rgba(196,39,26,.15)] bg-[#FDE8E6] dark:border-[#C4271A]/30 dark:bg-[#C4271A]/10'
                                                         : isWarning
@@ -2159,14 +2150,22 @@ export default function Transit() {
                     })()}
 
                     {/* ═══ 4. Departure Boards ═══ */}
-                    <div
-                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
-                        style={{ padding: '20px 24px' }}
-                    >
-                        <div className="mb-[13px] flex items-baseline justify-between">
+                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]">
+                        <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E2DFD6] bg-[#F6F5F1]/95 px-2.5 py-3 backdrop-blur-md md:px-6 dark:border-[#3A3930] dark:bg-[#18170F]/95">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Departures
                             </span>
+                            <div className="flex items-center gap-2">
+                                <span className="rounded-md bg-[#DDDBD4] px-2 py-[2px] font-mono text-xs font-semibold text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]">
+                                    {clock}
+                                </span>
+                                {isLive && (
+                                    <span className="flex items-center gap-1 rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[10px] font-bold text-[#0A7C52] dark:bg-[#0A7C52]/20">
+                                        <span className="inline-block size-[5px] animate-pulse rounded-full bg-[#0A7C52]" />
+                                        Live
+                                    </span>
+                                )}
+                            </div>
                             <span
                                 className="cursor-pointer"
                                 style={{
@@ -2180,391 +2179,51 @@ export default function Transit() {
                             </span>
                         </div>
 
-                        {/* KVB Board (Tram / Bus / U-Bahn) */}
-                        {(nearbyDepartures?.kvb ?? []).length > 0 &&
-                            (() => {
-                                // Warm color overrides matching prototype
-                                const warmColors: Record<string, string> = {
-                                    '1': '#E8914A',
-                                    '3': '#7C3AED',
-                                    '4': '#C4271A',
-                                    '5': '#B8562A',
-                                    '7': '#0A7C52',
-                                    '9': '#1A4CD4',
-                                    '12': '#0A7C52',
-                                    '13': '#C47D0E',
-                                    '15': '#1A4CD4',
-                                    '16': '#0A7C52',
-                                    '17': '#C4271A',
-                                    '18': '#1A4CD4',
-                                };
-                                const dbWarmColors: Record<string, string> = {
-                                    S11: '#C4271A',
-                                    S12: '#C4271A',
-                                    S13: '#C4271A',
-                                    S19: '#C4271A',
-                                    RE1: '#7C3AED',
-                                    RE5: '#E8914A',
-                                    RE6: '#0A7C52',
-                                    RE7: '#1A4CD4',
-                                    RB24: '#C47D0E',
-                                    RB25: '#0A7C52',
-                                    RB48: '#7C3AED',
-                                };
-                                const lineColor = (
-                                    line: string,
-                                    fallback: string,
-                                ) =>
-                                    warmColors[line] ??
-                                    dbWarmColors[line] ??
-                                    fallback;
+                        <div className="section-pad">
+                            {/* KVB Board (Tram / Bus / U-Bahn) */}
+                            {(nearbyDepartures?.kvb ?? []).length > 0 &&
+                                (() => {
+                                    // Warm color overrides matching prototype
+                                    const warmColors: Record<string, string> = {
+                                        '1': '#E8914A',
+                                        '3': '#7C3AED',
+                                        '4': '#C4271A',
+                                        '5': '#B8562A',
+                                        '7': '#0A7C52',
+                                        '9': '#1A4CD4',
+                                        '12': '#0A7C52',
+                                        '13': '#C47D0E',
+                                        '15': '#1A4CD4',
+                                        '16': '#0A7C52',
+                                        '17': '#C4271A',
+                                        '18': '#1A4CD4',
+                                    };
+                                    const dbWarmColors: Record<string, string> =
+                                        {
+                                            S11: '#C4271A',
+                                            S12: '#C4271A',
+                                            S13: '#C4271A',
+                                            S19: '#C4271A',
+                                            RE1: '#7C3AED',
+                                            RE5: '#E8914A',
+                                            RE6: '#0A7C52',
+                                            RE7: '#1A4CD4',
+                                            RB24: '#C47D0E',
+                                            RB25: '#0A7C52',
+                                            RB48: '#7C3AED',
+                                        };
+                                    const lineColor = (
+                                        line: string,
+                                        fallback: string,
+                                    ) =>
+                                        warmColors[line] ??
+                                        dbWarmColors[line] ??
+                                        fallback;
 
-                                return (
-                                    <>
-                                        <div className="mb-[14px] overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                            {/* Header */}
-                                            <div
-                                                className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
-                                                style={{ padding: '12px 16px' }}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <span
-                                                        style={{
-                                                            fontSize: 13,
-                                                            fontWeight: 700,
-                                                        }}
-                                                    >
-                                                        🚋{' '}
-                                                        {nearbyDepartures
-                                                            ?.stops_used?.[0]
-                                                            ?.name ??
-                                                            activeStopName}
-                                                    </span>
-                                                    <span
-                                                        className="rounded-[6px] bg-[#DDDBD4] text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]"
-                                                        style={{
-                                                            fontFamily:
-                                                                "'Geist Mono', monospace",
-                                                            fontSize: 12,
-                                                            fontWeight: 600,
-                                                            padding: '2px 8px',
-                                                        }}
-                                                    >
-                                                        {clock}
-                                                    </span>
-                                                    {isLive && (
-                                                        <span
-                                                            className="flex items-center gap-1"
-                                                            style={{
-                                                                fontSize: 10,
-                                                                fontWeight: 700,
-                                                                color: '#0A7C52',
-                                                                background:
-                                                                    '#D4F0E6',
-                                                                padding:
-                                                                    '2px 7px',
-                                                                borderRadius: 20,
-                                                            }}
-                                                        >
-                                                            <span
-                                                                className="animate-pulse"
-                                                                style={{
-                                                                    width: 5,
-                                                                    height: 5,
-                                                                    borderRadius:
-                                                                        '50%',
-                                                                    background:
-                                                                        '#0A7C52',
-                                                                    display:
-                                                                        'inline-block',
-                                                                }}
-                                                            />
-                                                            Live
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-[5px]">
-                                                    {[
-                                                        ...new Set(
-                                                            (
-                                                                nearbyDepartures?.kvb ??
-                                                                []
-                                                            ).map(
-                                                                (d) => d.line,
-                                                            ),
-                                                        ),
-                                                    ]
-                                                        .slice(0, 6)
-                                                        .map((line) => {
-                                                            const dep = (
-                                                                nearbyDepartures?.kvb ??
-                                                                []
-                                                            ).find(
-                                                                (d) =>
-                                                                    d.line ===
-                                                                    line,
-                                                            );
-
-                                                            return (
-                                                                <span
-                                                                    key={line}
-                                                                    style={{
-                                                                        padding:
-                                                                            '2px 8px',
-                                                                        borderRadius: 20,
-                                                                        fontSize: 11,
-                                                                        fontWeight: 700,
-                                                                        fontFamily:
-                                                                            "'Geist Mono', monospace",
-                                                                        background:
-                                                                            lineColor(
-                                                                                line,
-                                                                                dep?.color ??
-                                                                                    '#1A4CD4',
-                                                                            ),
-                                                                        color: 'white',
-                                                                    }}
-                                                                >
-                                                                    {line}
-                                                                </span>
-                                                            );
-                                                        })}
-                                                </div>
-                                            </div>
-                                            {/* Rows */}
-                                            {(nearbyDepartures?.kvb ?? [])
-                                                .slice(0, showMoreKvb ? 8 : 4)
-                                                .map((dep, i, arr) => {
-                                                    const bg = lineColor(
-                                                        dep.line,
-                                                        dep.color,
-                                                    );
-                                                    const isCancelled =
-                                                        dep.cancelled ||
-                                                        (dep.disrupted &&
-                                                            dep.disruption_severity ===
-                                                                'critical');
-                                                    const isDelayed =
-                                                        (dep.delay ?? 0) > 0 ||
-                                                        (dep.disrupted &&
-                                                            !isCancelled);
-
-                                                    return (
-                                                        <div
-                                                            key={`${dep.line}_${dep.direction}`}
-                                                            className={`flex cursor-pointer items-center gap-3 transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
-                                                            style={{
-                                                                padding:
-                                                                    '12px 16px',
-                                                                opacity:
-                                                                    isCancelled
-                                                                        ? 0.7
-                                                                        : 1,
-                                                                ...(dep.towards_dest
-                                                                    ? {
-                                                                          borderLeft:
-                                                                              '3px solid #1A4CD4',
-                                                                          paddingLeft: 13,
-                                                                      }
-                                                                    : {}),
-                                                            }}
-                                                            onClick={() =>
-                                                                setLineDetail(
-                                                                    dep,
-                                                                )
-                                                            }
-                                                        >
-                                                            {/* Line badge */}
-                                                            <div
-                                                                className="flex shrink-0 items-center justify-center"
-                                                                style={{
-                                                                    width: 34,
-                                                                    height: 34,
-                                                                    borderRadius: 8,
-                                                                    background:
-                                                                        bg,
-                                                                    color: 'white',
-                                                                    fontFamily:
-                                                                        "'Geist Mono', monospace",
-                                                                    fontSize:
-                                                                        dep.line
-                                                                            .length >
-                                                                        2
-                                                                            ? 11
-                                                                            : 13,
-                                                                    fontWeight: 700,
-                                                                }}
-                                                            >
-                                                                {dep.line}
-                                                            </div>
-                                                            {/* Info */}
-                                                            <div className="min-w-0 flex-1">
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: 13,
-                                                                        fontWeight: 600,
-                                                                        marginBottom: 2,
-                                                                    }}
-                                                                >
-                                                                    {
-                                                                        dep.direction
-                                                                    }
-                                                                    {dep.towards_dest && (
-                                                                        <span className="ml-[5px] rounded-full bg-[#EBF0FD] px-[6px] py-[1px] text-[10px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20">
-                                                                            Your
-                                                                            route
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div
-                                                                    className="text-[#6B6860] dark:text-[#AAA89F]"
-                                                                    style={{
-                                                                        fontSize: 11,
-                                                                        marginBottom: 3,
-                                                                    }}
-                                                                >
-                                                                    via{' '}
-                                                                    {
-                                                                        dep.stop_name
-                                                                    }{' '}
-                                                                    ·{' '}
-                                                                    {
-                                                                        dep.walk_min
-                                                                    }{' '}
-                                                                    min walk
-                                                                </div>
-                                                                {/* Status badge */}
-                                                                {isCancelled ? (
-                                                                    <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C4271A] uppercase dark:bg-[#C4271A]/20">
-                                                                        Cancelled
-                                                                    </span>
-                                                                ) : (dep.delay ??
-                                                                      0) > 0 ? (
-                                                                    <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C47D0E] uppercase dark:bg-[#C47D0E]/20">
-                                                                        +
-                                                                        {
-                                                                            dep.delay
-                                                                        }{' '}
-                                                                        min
-                                                                        delay
-                                                                    </span>
-                                                                ) : isDelayed ? (
-                                                                    <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C47D0E] uppercase dark:bg-[#C47D0E]/20">
-                                                                        Disrupted
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20">
-                                                                        On time
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {/* Times */}
-                                                            <div className="shrink-0 text-right">
-                                                                {isCancelled ? (
-                                                                    <div className="font-mono text-[16px] leading-none font-medium text-[#C4271A]">
-                                                                        —
-                                                                    </div>
-                                                                ) : (
-                                                                    <>
-                                                                        <div
-                                                                            className="font-mono text-[22px] leading-none font-medium"
-                                                                            style={{
-                                                                                color: isDelayed
-                                                                                    ? '#C47D0E'
-                                                                                    : '#0A7C52',
-                                                                            }}
-                                                                        >
-                                                                            {
-                                                                                formatDepartureTime(
-                                                                                    dep
-                                                                                        .departures[0] ??
-                                                                                        0,
-                                                                                )
-                                                                                    .display
-                                                                            }
-                                                                        </div>
-                                                                        {!formatDepartureTime(
-                                                                            dep
-                                                                                .departures[0] ??
-                                                                                0,
-                                                                        )
-                                                                            .isClockTime &&
-                                                                            formatDepartureTime(
-                                                                                dep
-                                                                                    .departures[0] ??
-                                                                                    0,
-                                                                            )
-                                                                                .display !==
-                                                                                'now' && (
-                                                                                <div className="mt-[1px] text-[10px] text-[#AAA89F]">
-                                                                                    min
-                                                                                </div>
-                                                                            )}
-                                                                        {dep
-                                                                            .departures
-                                                                            .length >
-                                                                            1 && (
-                                                                            <div className="mt-[3px] font-mono text-[11px] text-[#AAA89F]">
-                                                                                then{' '}
-                                                                                {dep.departures
-                                                                                    .slice(
-                                                                                        1,
-                                                                                        3,
-                                                                                    )
-                                                                                    .map(
-                                                                                        (
-                                                                                            m,
-                                                                                        ) =>
-                                                                                            formatDepartureTime(
-                                                                                                m,
-                                                                                            )
-                                                                                                .display,
-                                                                                    )
-                                                                                    .join(
-                                                                                        ', ',
-                                                                                    )}
-                                                                                {!formatDepartureTime(
-                                                                                    dep
-                                                                                        .departures[1],
-                                                                                )
-                                                                                    .isClockTime &&
-                                                                                    ' min'}
-                                                                            </div>
-                                                                        )}
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            {/* KVB show more toggle */}
-                                            {(nearbyDepartures?.kvb ?? [])
-                                                .length > 4 && (
-                                                <div
-                                                    className="cursor-pointer border-t border-[#E2DFD6] text-center transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                                                    style={{
-                                                        padding: '10px 16px',
-                                                        fontSize: 13,
-                                                        fontWeight: 600,
-                                                        color: '#1A4CD4',
-                                                    }}
-                                                    onClick={() =>
-                                                        setShowMoreKvb(
-                                                            !showMoreKvb,
-                                                        )
-                                                    }
-                                                >
-                                                    {showMoreKvb
-                                                        ? 'Show fewer'
-                                                        : `Show all ${(nearbyDepartures?.kvb ?? []).length} departures`}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* DB Board (S-Bahn / RE / RB) */}
-                                        {(nearbyDepartures?.db ?? []).length >
-                                            0 && (
-                                            <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                    return (
+                                        <>
+                                            <div className="mb-[14px] overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                {/* Header */}
                                                 <div
                                                     className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
                                                     style={{
@@ -2578,64 +2237,18 @@ export default function Transit() {
                                                                 fontWeight: 700,
                                                             }}
                                                         >
-                                                            🚂{' '}
-                                                            {nearbyDepartures?.stops_used?.find(
-                                                                (s) =>
-                                                                    s.name.includes(
-                                                                        'Bf',
-                                                                    ),
-                                                            )?.name ??
-                                                                'S-Bahn / Regional'}
+                                                            🚋{' '}
+                                                            {nearbyDepartures
+                                                                ?.stops_used?.[0]
+                                                                ?.name ??
+                                                                activeStopName}
                                                         </span>
-                                                        <span
-                                                            className="rounded-[6px] bg-[#DDDBD4] text-[#6B6860] dark:bg-[#3A3930] dark:text-[#AAA89F]"
-                                                            style={{
-                                                                fontFamily:
-                                                                    "'Geist Mono', monospace",
-                                                                fontSize: 12,
-                                                                fontWeight: 600,
-                                                                padding:
-                                                                    '2px 8px',
-                                                            }}
-                                                        >
-                                                            {clock}
-                                                        </span>
-                                                        {isLive && (
-                                                            <span
-                                                                className="flex items-center gap-1"
-                                                                style={{
-                                                                    fontSize: 10,
-                                                                    fontWeight: 700,
-                                                                    color: '#0A7C52',
-                                                                    background:
-                                                                        '#D4F0E6',
-                                                                    padding:
-                                                                        '2px 7px',
-                                                                    borderRadius: 20,
-                                                                }}
-                                                            >
-                                                                <span
-                                                                    className="animate-pulse"
-                                                                    style={{
-                                                                        width: 5,
-                                                                        height: 5,
-                                                                        borderRadius:
-                                                                            '50%',
-                                                                        background:
-                                                                            '#0A7C52',
-                                                                        display:
-                                                                            'inline-block',
-                                                                    }}
-                                                                />
-                                                                Live
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     <div className="flex gap-[5px]">
                                                         {[
                                                             ...new Set(
                                                                 (
-                                                                    nearbyDepartures?.db ??
+                                                                    nearbyDepartures?.kvb ??
                                                                     []
                                                                 ).map(
                                                                     (d) =>
@@ -2643,10 +2256,10 @@ export default function Transit() {
                                                                 ),
                                                             ),
                                                         ]
-                                                            .slice(0, 4)
+                                                            .slice(0, 6)
                                                             .map((line) => {
                                                                 const dep = (
-                                                                    nearbyDepartures?.db ??
+                                                                    nearbyDepartures?.kvb ??
                                                                     []
                                                                 ).find(
                                                                     (d) =>
@@ -2671,7 +2284,7 @@ export default function Transit() {
                                                                                 lineColor(
                                                                                     line,
                                                                                     dep?.color ??
-                                                                                        '#C4271A',
+                                                                                        '#1A4CD4',
                                                                                 ),
                                                                             color: 'white',
                                                                         }}
@@ -2682,10 +2295,11 @@ export default function Transit() {
                                                             })}
                                                     </div>
                                                 </div>
-                                                {(nearbyDepartures?.db ?? [])
+                                                {/* Rows */}
+                                                {(nearbyDepartures?.kvb ?? [])
                                                     .slice(
                                                         0,
-                                                        showMoreDb ? 6 : 3,
+                                                        showMoreKvb ? 8 : 4,
                                                     )
                                                     .map((dep, i, arr) => {
                                                         const bg = lineColor(
@@ -2714,6 +2328,13 @@ export default function Transit() {
                                                                         isCancelled
                                                                             ? 0.7
                                                                             : 1,
+                                                                    ...(dep.towards_dest
+                                                                        ? {
+                                                                              borderLeft:
+                                                                                  '3px solid #1A4CD4',
+                                                                              paddingLeft: 13,
+                                                                          }
+                                                                        : {}),
                                                                 }}
                                                                 onClick={() =>
                                                                     setLineDetail(
@@ -2721,29 +2342,44 @@ export default function Transit() {
                                                                     )
                                                                 }
                                                             >
+                                                                {/* Line badge */}
                                                                 <div
-                                                                    className="flex shrink-0 items-center justify-center"
+                                                                    className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold whitespace-nowrap"
                                                                     style={{
-                                                                        width: 34,
+                                                                        minWidth: 34,
                                                                         height: 34,
-                                                                        borderRadius: 8,
-                                                                        background:
-                                                                            bg,
-                                                                        color: 'white',
-                                                                        fontFamily:
-                                                                            "'Geist Mono', monospace",
-                                                                        fontSize:
+                                                                        padding:
                                                                             dep
                                                                                 .line
                                                                                 .length >
                                                                             2
-                                                                                ? 11
-                                                                                : 13,
-                                                                        fontWeight: 700,
+                                                                                ? '0 6px'
+                                                                                : undefined,
+                                                                        background:
+                                                                            bg,
+                                                                        color: 'white',
+                                                                        fontSize:
+                                                                            dep
+                                                                                .line
+                                                                                .length >
+                                                                            4
+                                                                                ? 9
+                                                                                : dep
+                                                                                        .line
+                                                                                        .length >
+                                                                                    2
+                                                                                  ? 10
+                                                                                  : dep
+                                                                                          .line
+                                                                                          .length >
+                                                                                      1
+                                                                                    ? 11
+                                                                                    : 13,
                                                                     }}
                                                                 >
                                                                     {dep.line}
                                                                 </div>
+                                                                {/* Info */}
                                                                 <div className="min-w-0 flex-1">
                                                                     <div
                                                                         style={{
@@ -2755,6 +2391,12 @@ export default function Transit() {
                                                                         {
                                                                             dep.direction
                                                                         }
+                                                                        {dep.towards_dest && (
+                                                                            <span className="ml-[5px] rounded-full bg-[#EBF0FD] px-[6px] py-[1px] text-[10px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20">
+                                                                                Your
+                                                                                route
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                     <div
                                                                         className="text-[#6B6860] dark:text-[#AAA89F]"
@@ -2766,8 +2408,14 @@ export default function Transit() {
                                                                         via{' '}
                                                                         {
                                                                             dep.stop_name
-                                                                        }
+                                                                        }{' '}
+                                                                        ·{' '}
+                                                                        {
+                                                                            dep.walk_min
+                                                                        }{' '}
+                                                                        min walk
                                                                     </div>
+                                                                    {/* Status badge */}
                                                                     {isCancelled ? (
                                                                         <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C4271A] uppercase dark:bg-[#C4271A]/20">
                                                                             Cancelled
@@ -2794,6 +2442,7 @@ export default function Transit() {
                                                                         </span>
                                                                     )}
                                                                 </div>
+                                                                {/* Times */}
                                                                 <div className="shrink-0 text-right">
                                                                     {isCancelled ? (
                                                                         <div className="font-mono text-[16px] leading-none font-medium text-[#C4271A]">
@@ -2818,9 +2467,23 @@ export default function Transit() {
                                                                                         .display
                                                                                 }
                                                                             </div>
-                                                                            <div className="mt-[1px] text-[10px] text-[#AAA89F]">
-                                                                                min
-                                                                            </div>
+                                                                            {!formatDepartureTime(
+                                                                                dep
+                                                                                    .departures[0] ??
+                                                                                    0,
+                                                                            )
+                                                                                .isClockTime &&
+                                                                                formatDepartureTime(
+                                                                                    dep
+                                                                                        .departures[0] ??
+                                                                                        0,
+                                                                                )
+                                                                                    .display !==
+                                                                                    'now' && (
+                                                                                    <div className="mt-[1px] text-[10px] text-[#AAA89F]">
+                                                                                        min
+                                                                                    </div>
+                                                                                )}
                                                                             {dep
                                                                                 .departures
                                                                                 .length >
@@ -2832,10 +2495,24 @@ export default function Transit() {
                                                                                             1,
                                                                                             3,
                                                                                         )
+                                                                                        .map(
+                                                                                            (
+                                                                                                m,
+                                                                                            ) =>
+                                                                                                formatDepartureTime(
+                                                                                                    m,
+                                                                                                )
+                                                                                                    .display,
+                                                                                        )
                                                                                         .join(
                                                                                             ', ',
-                                                                                        )}{' '}
-                                                                                    min
+                                                                                        )}
+                                                                                    {!formatDepartureTime(
+                                                                                        dep
+                                                                                            .departures[1],
+                                                                                    )
+                                                                                        .isClockTime &&
+                                                                                        ' min'}
                                                                                 </div>
                                                                             )}
                                                                         </>
@@ -2844,9 +2521,9 @@ export default function Transit() {
                                                             </div>
                                                         );
                                                     })}
-                                                {/* DB show more toggle */}
-                                                {(nearbyDepartures?.db ?? [])
-                                                    .length > 3 && (
+                                                {/* KVB show more toggle */}
+                                                {(nearbyDepartures?.kvb ?? [])
+                                                    .length > 4 && (
                                                     <div
                                                         className="cursor-pointer border-t border-[#E2DFD6] text-center transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                                         style={{
@@ -2857,32 +2534,325 @@ export default function Transit() {
                                                             color: '#1A4CD4',
                                                         }}
                                                         onClick={() =>
-                                                            setShowMoreDb(
-                                                                !showMoreDb,
+                                                            setShowMoreKvb(
+                                                                !showMoreKvb,
                                                             )
                                                         }
                                                     >
-                                                        {showMoreDb
+                                                        {showMoreKvb
                                                             ? 'Show fewer'
-                                                            : `Show all ${(nearbyDepartures?.db ?? []).length} departures`}
+                                                            : `Show all ${(nearbyDepartures?.kvb ?? []).length} departures`}
                                                     </div>
                                                 )}
                                             </div>
-                                        )}
-                                    </>
-                                );
-                            })()}
 
-                        {(nearbyDepartures?.kvb ?? []).length === 0 &&
-                            (nearbyDepartures?.db ?? []).length === 0 && (
-                                <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
-                                    No departures found nearby
-                                </div>
-                            )}
+                                            {/* DB Board (S-Bahn / RE / RB) */}
+                                            {(nearbyDepartures?.db ?? [])
+                                                .length > 0 && (
+                                                <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                    <div
+                                                        className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                                                        style={{
+                                                            padding:
+                                                                '12px 16px',
+                                                        }}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                style={{
+                                                                    fontSize: 13,
+                                                                    fontWeight: 700,
+                                                                }}
+                                                            >
+                                                                🚂{' '}
+                                                                {nearbyDepartures?.stops_used?.find(
+                                                                    (s) =>
+                                                                        s.name.includes(
+                                                                            'Bf',
+                                                                        ),
+                                                                )?.name ??
+                                                                    'S-Bahn / Regional'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex gap-[5px]">
+                                                            {[
+                                                                ...new Set(
+                                                                    (
+                                                                        nearbyDepartures?.db ??
+                                                                        []
+                                                                    ).map(
+                                                                        (d) =>
+                                                                            d.line,
+                                                                    ),
+                                                                ),
+                                                            ]
+                                                                .slice(0, 4)
+                                                                .map((line) => {
+                                                                    const dep =
+                                                                        (
+                                                                            nearbyDepartures?.db ??
+                                                                            []
+                                                                        ).find(
+                                                                            (
+                                                                                d,
+                                                                            ) =>
+                                                                                d.line ===
+                                                                                line,
+                                                                        );
+
+                                                                    return (
+                                                                        <span
+                                                                            key={
+                                                                                line
+                                                                            }
+                                                                            style={{
+                                                                                padding:
+                                                                                    '2px 8px',
+                                                                                borderRadius: 20,
+                                                                                fontSize: 11,
+                                                                                fontWeight: 700,
+                                                                                fontFamily:
+                                                                                    "'Geist Mono', monospace",
+                                                                                background:
+                                                                                    lineColor(
+                                                                                        line,
+                                                                                        dep?.color ??
+                                                                                            '#C4271A',
+                                                                                    ),
+                                                                                color: 'white',
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                line
+                                                                            }
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                        </div>
+                                                    </div>
+                                                    {(
+                                                        nearbyDepartures?.db ??
+                                                        []
+                                                    )
+                                                        .slice(
+                                                            0,
+                                                            showMoreDb ? 6 : 3,
+                                                        )
+                                                        .map((dep, i, arr) => {
+                                                            const bg =
+                                                                lineColor(
+                                                                    dep.line,
+                                                                    dep.color,
+                                                                );
+                                                            const isCancelled =
+                                                                dep.cancelled ||
+                                                                (dep.disrupted &&
+                                                                    dep.disruption_severity ===
+                                                                        'critical');
+                                                            const isDelayed =
+                                                                (dep.delay ??
+                                                                    0) > 0 ||
+                                                                (dep.disrupted &&
+                                                                    !isCancelled);
+
+                                                            return (
+                                                                <div
+                                                                    key={`${dep.line}_${dep.direction}`}
+                                                                    className={`flex cursor-pointer items-center gap-3 transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
+                                                                    style={{
+                                                                        padding:
+                                                                            '12px 16px',
+                                                                        opacity:
+                                                                            isCancelled
+                                                                                ? 0.7
+                                                                                : 1,
+                                                                    }}
+                                                                    onClick={() =>
+                                                                        setLineDetail(
+                                                                            dep,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <div
+                                                                        className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold whitespace-nowrap"
+                                                                        style={{
+                                                                            minWidth: 34,
+                                                                            height: 34,
+                                                                            padding:
+                                                                                dep
+                                                                                    .line
+                                                                                    .length >
+                                                                                2
+                                                                                    ? '0 6px'
+                                                                                    : undefined,
+                                                                            background:
+                                                                                bg,
+                                                                            color: 'white',
+                                                                            fontSize:
+                                                                                dep
+                                                                                    .line
+                                                                                    .length >
+                                                                                4
+                                                                                    ? 9
+                                                                                    : dep
+                                                                                            .line
+                                                                                            .length >
+                                                                                        2
+                                                                                      ? 10
+                                                                                      : dep
+                                                                                              .line
+                                                                                              .length >
+                                                                                          1
+                                                                                        ? 11
+                                                                                        : 13,
+                                                                        }}
+                                                                    >
+                                                                        {
+                                                                            dep.line
+                                                                        }
+                                                                    </div>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div
+                                                                            style={{
+                                                                                fontSize: 13,
+                                                                                fontWeight: 600,
+                                                                                marginBottom: 2,
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                dep.direction
+                                                                            }
+                                                                        </div>
+                                                                        <div
+                                                                            className="text-[#6B6860] dark:text-[#AAA89F]"
+                                                                            style={{
+                                                                                fontSize: 11,
+                                                                                marginBottom: 3,
+                                                                            }}
+                                                                        >
+                                                                            via{' '}
+                                                                            {
+                                                                                dep.stop_name
+                                                                            }
+                                                                        </div>
+                                                                        {isCancelled ? (
+                                                                            <span className="rounded-full bg-[#FDE8E6] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C4271A] uppercase dark:bg-[#C4271A]/20">
+                                                                                Cancelled
+                                                                            </span>
+                                                                        ) : (dep.delay ??
+                                                                              0) >
+                                                                          0 ? (
+                                                                            <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C47D0E] uppercase dark:bg-[#C47D0E]/20">
+                                                                                +
+                                                                                {
+                                                                                    dep.delay
+                                                                                }{' '}
+                                                                                min
+                                                                                delay
+                                                                            </span>
+                                                                        ) : isDelayed ? (
+                                                                            <span className="rounded-full bg-[#FDF0D4] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#C47D0E] uppercase dark:bg-[#C47D0E]/20">
+                                                                                Disrupted
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold tracking-wider text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20">
+                                                                                On
+                                                                                time
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="shrink-0 text-right">
+                                                                        {isCancelled ? (
+                                                                            <div className="font-mono text-[16px] leading-none font-medium text-[#C4271A]">
+                                                                                —
+                                                                            </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div
+                                                                                    className="font-mono text-[22px] leading-none font-medium"
+                                                                                    style={{
+                                                                                        color: isDelayed
+                                                                                            ? '#C47D0E'
+                                                                                            : '#0A7C52',
+                                                                                    }}
+                                                                                >
+                                                                                    {
+                                                                                        formatDepartureTime(
+                                                                                            dep
+                                                                                                .departures[0] ??
+                                                                                                0,
+                                                                                        )
+                                                                                            .display
+                                                                                    }
+                                                                                </div>
+                                                                                <div className="mt-[1px] text-[10px] text-[#AAA89F]">
+                                                                                    min
+                                                                                </div>
+                                                                                {dep
+                                                                                    .departures
+                                                                                    .length >
+                                                                                    1 && (
+                                                                                    <div className="mt-[3px] font-mono text-[11px] text-[#AAA89F]">
+                                                                                        then{' '}
+                                                                                        {dep.departures
+                                                                                            .slice(
+                                                                                                1,
+                                                                                                3,
+                                                                                            )
+                                                                                            .join(
+                                                                                                ', ',
+                                                                                            )}{' '}
+                                                                                        min
+                                                                                    </div>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    {/* DB show more toggle */}
+                                                    {(
+                                                        nearbyDepartures?.db ??
+                                                        []
+                                                    ).length > 3 && (
+                                                        <div
+                                                            className="cursor-pointer border-t border-[#E2DFD6] text-center transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                                                            style={{
+                                                                padding:
+                                                                    '10px 16px',
+                                                                fontSize: 13,
+                                                                fontWeight: 600,
+                                                                color: '#1A4CD4',
+                                                            }}
+                                                            onClick={() =>
+                                                                setShowMoreDb(
+                                                                    !showMoreDb,
+                                                                )
+                                                            }
+                                                        >
+                                                            {showMoreDb
+                                                                ? 'Show fewer'
+                                                                : `Show all ${(nearbyDepartures?.db ?? []).length} departures`}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+
+                            {(nearbyDepartures?.kvb ?? []).length === 0 &&
+                                (nearbyDepartures?.db ?? []).length === 0 && (
+                                    <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
+                                        No departures found nearby
+                                    </div>
+                                )}
+                        </div>
                     </div>
 
                     {/* ═══ 5. Your Routines ═══ */}
-                    <div style={{ padding: '20px 24px' }}>
+                    <div className="section-pad">
                         <div className="mb-[13px] flex items-baseline justify-between">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Your Routines
@@ -3020,7 +2990,7 @@ export default function Transit() {
                                                         String(Date.now()),
                                                     );
                                                 }}
-                                                className="cursor-pointer rounded-[9px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                                                className="cursor-pointer rounded-[14px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                                                 style={{
                                                     padding: '7px 14px',
                                                     fontSize: 13,
@@ -3173,7 +3143,7 @@ export default function Transit() {
                                     href={newsCard.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
+                                    className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                                     style={{ textDecoration: 'none' }}
                                 >
                                     Read more ↗
@@ -3356,7 +3326,7 @@ export default function Transit() {
                                         href={newsCard.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
+                                        className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                                         style={{ textDecoration: 'none' }}
                                     >
                                         Read more ↗
@@ -3429,7 +3399,7 @@ export default function Transit() {
                     <div className="flex items-center justify-center">
                         <button
                             onClick={swapRoutineRoute}
-                            className="flex cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                            className="flex cursor-pointer items-center justify-center rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                             style={{ width: 36, height: 36, fontSize: 16 }}
                             title="Swap"
                         >
@@ -3460,7 +3430,7 @@ export default function Transit() {
                     Arrive by
                 </div>
                 <div
-                    className="mb-5 flex items-center gap-[10px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
+                    className="mb-5 flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
                     style={{ padding: '10px 14px' }}
                 >
                     <span style={{ fontSize: 15, color: '#AAA89F' }}>🕐</span>
@@ -3627,7 +3597,7 @@ export default function Transit() {
                 </button>
                 <button
                     onClick={() => setAddRoutineOpen(false)}
-                    className="mt-2 w-full cursor-pointer rounded-[9px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                    className="mt-2 w-full cursor-pointer rounded-[14px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                     style={{
                         padding: '13px',
                         fontFamily: "'Geist', sans-serif",
