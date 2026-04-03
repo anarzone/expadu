@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\HtmlString;
 use Tests\TestCase;
 
 /*
@@ -18,6 +20,20 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function () {
+        // Mock Vite so tests don't need npm run build
+        app()->instance(Vite::class, new class extends Vite
+        {
+            public function __invoke($entrypoints, $buildDirectory = null): HtmlString
+            {
+                return new HtmlString('');
+            }
+
+            public function reactRefresh(): HtmlString
+            {
+                return new HtmlString('');
+            }
+        });
+
         Http::fake([
             'api.open-meteo.com/*' => Http::response([
                 'current' => [
