@@ -673,20 +673,7 @@ export default function Dashboard() {
                                                     return (
                                                         <span
                                                             key={tag}
-                                                            className="flex items-center gap-0.5"
-                                                            style={{
-                                                                fontSize: 10,
-                                                                padding:
-                                                                    '2px 6px',
-                                                                borderRadius: 20,
-                                                                fontWeight: 500,
-                                                                background:
-                                                                    t?.bg ??
-                                                                    '#EFEDE7',
-                                                                color:
-                                                                    t?.color ??
-                                                                    '#6B6860',
-                                                            }}
+                                                            className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t?.cls ?? 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#6B6860]/15 dark:text-[#AAA89F]'}`}
                                                         >
                                                             {TagIcon && (
                                                                 <TagIcon
@@ -774,7 +761,7 @@ export default function Dashboard() {
                                         </div>
                                     </div>
                                     {ev.is_free && (
-                                        <span className="shrink-0 rounded-full bg-[#D4F0E6] px-2 py-0.5 text-[9px] font-bold text-[#0A7C52] uppercase">
+                                        <span className="shrink-0 rounded-full bg-[#D4F0E6] px-2 py-0.5 text-[9px] font-bold text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20 dark:text-[#34D399]">
                                             Free
                                         </span>
                                     )}

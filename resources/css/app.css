@@ -8,6 +8,12 @@ html {
     -webkit-text-size-adjust: 100%; /* prevents text auto-resize */
 }
 
+/* Hide native time picker icon — we use our own IconClock */
+input[type='time']::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+}
+
 /* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px) */
 @media screen and (max-width: 767px) {
     input,

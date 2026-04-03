@@ -24,44 +24,25 @@ export function RoutineCard({
     return (
         <div
             onClick={onClick}
-            className="cursor-pointer transition-all hover:border-[rgba(26,76,212,0.3)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            style={{
-                background: '#FFFFFF',
-                border: '1px solid #E2DFD6',
-                borderRadius: 9,
-                padding: 16,
-                marginBottom: 10,
-            }}
+            className="mb-2.5 cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white p-4 transition-all hover:border-[rgba(26,76,212,0.3)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
         >
             {/* Top row */}
             <div className="mb-3 flex items-center gap-3">
-                <span style={{ fontSize: 24, flexShrink: 0 }}>
-                    {routine.emoji}
-                </span>
+                <span className="shrink-0 text-2xl">{routine.emoji}</span>
                 <div className="min-w-0 flex-1">
-                    <div
-                        style={{
-                            fontSize: 15,
-                            fontWeight: 600,
-                            marginBottom: 2,
-                        }}
-                    >
+                    <div className="mb-0.5 text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
                         {routine.name}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6B6860' }}>
+                    <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
                         {routine.subtitle}
                     </div>
                 </div>
                 <span
-                    className="shrink-0"
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '4px 10px',
-                        borderRadius: 20,
-                        background: routine.badgeBg,
-                        color: routine.badgeColor,
-                    }}
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        routine.badge === 'Active'
+                            ? 'bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20 dark:text-[#34D399]'
+                            : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'
+                    }`}
                 >
                     {routine.badge}
                 </span>
@@ -73,16 +54,11 @@ export function RoutineCard({
                     {routine.days.map((active, i) => (
                         <div
                             key={i}
-                            className="flex items-center justify-center"
-                            style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: '50%',
-                                fontSize: 10,
-                                fontWeight: 700,
-                                background: active ? '#EBF0FD' : '#EFEDE7',
-                                color: active ? '#1A4CD4' : '#AAA89F',
-                            }}
+                            className={`flex size-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                                active
+                                    ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]'
+                                    : 'bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920] dark:text-[#6B6860]'
+                            }`}
                         >
                             {DAY_LABELS[i]}
                         </div>
@@ -90,26 +66,14 @@ export function RoutineCard({
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                     {routine.nextDepartureMin != null && (
-                        <span
-                            style={{
-                                fontSize: 11,
-                                color: '#0A7C52',
-                                fontWeight: 600,
-                            }}
-                        >
+                        <span className="text-[11px] font-semibold text-[#0A7C52]">
                             {routine.nextDepartureLine
                                 ? `${routine.nextDepartureLine} in `
                                 : ''}
                             {routine.nextDepartureMin} min
                         </span>
                     )}
-                    <span
-                        style={{
-                            fontSize: 12,
-                            color: '#6B6860',
-                            fontFamily: "'Geist Mono', monospace",
-                        }}
-                    >
+                    <span className="font-mono text-xs text-[#6B6860] dark:text-[#AAA89F]">
                         {routine.leaveBy}
                     </span>
                 </div>

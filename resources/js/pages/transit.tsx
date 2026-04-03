@@ -1,4 +1,14 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import {
+    IconMapPin,
+    IconFlag,
+    IconArrowsUpDown,
+    IconClock,
+    IconBike,
+    IconTrain,
+    IconBus,
+    IconWalk,
+} from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
@@ -484,40 +494,24 @@ function RoutineDetailContent({
                     ← Back to details
                 </button>
 
-                <div
-                    style={{
-                        fontFamily: "'Fraunces', serif",
-                        fontSize: 20,
-                        fontWeight: 500,
-                        marginBottom: 16,
-                    }}
-                >
+                <div className="mb-4 font-display text-xl font-medium text-[#18170F] dark:text-[#F5F4F0]">
                     Edit Routine
                 </div>
 
                 {/* From */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                    }}
-                >
+                <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Route
                 </div>
                 <div className="mb-3 flex flex-col gap-1.5">
                     <StopInput
-                        emoji="📍"
+                        icon={<IconMapPin size={18} stroke={1.7} />}
                         placeholder="From"
                         value={eFrom}
                         onChange={setEFrom}
                         places={userPlaces}
                     />
                     <StopInput
-                        emoji="🏁"
+                        icon={<IconFlag size={18} stroke={1.7} />}
                         placeholder="To"
                         value={eTo}
                         onChange={setETo}
@@ -526,50 +520,37 @@ function RoutineDetailContent({
                 </div>
 
                 {/* Time */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                        marginTop: 16,
-                    }}
-                >
+                <div className="mt-4 mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Departure time
                 </div>
                 <div
-                    className="mb-3 flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
-                    style={{ padding: '10px 14px' }}
+                    className="mb-3 flex cursor-pointer items-center gap-2.5 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-3.5 py-2.5 dark:border-[#3A3930] dark:bg-[#2A2920]"
+                    onClick={(e) => {
+                        const inp = (
+                            e.currentTarget as HTMLElement
+                        ).querySelector('input');
+                        try {
+                            inp?.showPicker();
+                        } catch {
+                            inp?.focus();
+                        }
+                    }}
                 >
-                    <span style={{ fontSize: 15, color: '#AAA89F' }}>🕐</span>
+                    <IconClock
+                        size={18}
+                        stroke={1.7}
+                        className="shrink-0 text-[#AAA89F]"
+                    />
                     <input
                         type="time"
-                        className="flex-1 border-none bg-transparent outline-none"
-                        style={{
-                            fontFamily: "'Geist Mono', monospace",
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: '#1A4CD4',
-                        }}
+                        className="flex-1 cursor-pointer border-none bg-transparent font-mono text-sm font-medium text-[#1A4CD4] outline-none dark:text-[#6B9AFF]"
                         value={eTime}
                         onChange={(e) => setETime(e.target.value)}
                     />
                 </div>
 
                 {/* Days */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                        marginTop: 16,
-                    }}
-                >
+                <div className="mt-4 mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Active days
                 </div>
                 <div className="mb-5 flex gap-2">
@@ -581,19 +562,11 @@ function RoutineDetailContent({
                                     prev.map((v, j) => (j === i ? !v : v)),
                                 )
                             }
-                            className="flex cursor-pointer items-center justify-center transition-all"
-                            style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: '50%',
-                                fontSize: 13,
-                                fontWeight: 600,
-                                background: eDays[i] ? '#EBF0FD' : '#EFEDE7',
-                                color: eDays[i] ? '#1A4CD4' : '#AAA89F',
-                                border: eDays[i]
-                                    ? '2px solid #1A4CD4'
-                                    : '2px solid #E2DFD6',
-                            }}
+                            className={`flex size-9 cursor-pointer items-center justify-center rounded-full border-2 text-[13px] font-semibold transition-all ${
+                                eDays[i]
+                                    ? 'border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]'
+                                    : 'border-[#E2DFD6] bg-[#EFEDE7] text-[#AAA89F] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#6B6860]'
+                            }`}
                         >
                             {d}
                         </button>
@@ -636,16 +609,7 @@ function RoutineDetailContent({
                             })
                             .catch(() => setSaving(false));
                     }}
-                    className="w-full cursor-pointer border-none transition-all hover:opacity-90"
-                    style={{
-                        padding: '13px',
-                        borderRadius: 9,
-                        fontSize: 15,
-                        fontWeight: 600,
-                        background: '#1A4CD4',
-                        color: 'white',
-                        opacity: saving ? 0.6 : 1,
-                    }}
+                    className="w-full cursor-pointer rounded-[9px] border-none bg-[#1A4CD4] py-[13px] text-[15px] font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60"
                 >
                     {saving ? 'Saving...' : 'Save changes'}
                 </button>
@@ -656,72 +620,44 @@ function RoutineDetailContent({
     return (
         <div>
             <div className="mb-5 flex items-center gap-3">
-                <span style={{ fontSize: 28 }}>{er.emoji || '🚌'}</span>
+                <span className="shrink-0 text-[28px]">{er.emoji || '🚌'}</span>
                 <div className="min-w-0 flex-1">
-                    <div
-                        style={{
-                            fontFamily: "'Fraunces', serif",
-                            fontSize: 20,
-                            fontWeight: 500,
-                        }}
-                    >
+                    <div className="font-display text-xl font-medium text-[#18170F] dark:text-[#F5F4F0]">
                         {er.name}
                     </div>
-                    <div
-                        className="text-[#6B6860] dark:text-[#AAA89F]"
-                        style={{ fontSize: 13, marginTop: 2 }}
-                    >
+                    <div className="mt-0.5 text-[13px] text-[#6B6860] dark:text-[#AAA89F]">
                         {er.from_stop} → {er.to_stop}
                     </div>
                 </div>
                 <span
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '4px 10px',
-                        borderRadius: 20,
-                        background: isActive ? '#D4F0E6' : '#EFEDE7',
-                        color: isActive ? '#0A7C52' : '#6B6860',
-                    }}
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        isActive
+                            ? 'bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20'
+                            : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'
+                    }`}
                 >
                     {isActive ? 'Active' : 'Paused'}
                 </span>
             </div>
             <div className="mb-3 rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
                 <div className="mb-3 flex items-center justify-between">
-                    <span
-                        className="text-[#6B6860] dark:text-[#AAA89F]"
-                        style={{ fontSize: 12 }}
-                    >
+                    <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
                         Departure time
                     </span>
-                    <span
-                        style={{
-                            fontFamily: "'Geist Mono', monospace",
-                            fontSize: 16,
-                            fontWeight: 600,
-                            color: '#1A4CD4',
-                        }}
-                    >
+                    <span className="font-mono text-base font-semibold text-[#1A4CD4] dark:text-[#6B9AFF]">
                         {er.departure_time}
                     </span>
                 </div>
                 <div className="mb-3 flex items-center justify-between">
-                    <span
-                        className="text-[#6B6860] dark:text-[#AAA89F]"
-                        style={{ fontSize: 12 }}
-                    >
+                    <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
                         Next departure
                     </span>
                     <span
-                        style={{
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color:
-                                er.next_departure_min != null
-                                    ? '#0A7C52'
-                                    : '#AAA89F',
-                        }}
+                        className={`text-sm font-semibold ${
+                            er.next_departure_min != null
+                                ? 'text-[#0A7C52]'
+                                : 'text-[#AAA89F]'
+                        }`}
                     >
                         {er.next_departure_min != null
                             ? `${er.next_departure_line ? er.next_departure_line + ' in ' : ''}${er.next_departure_min} min`
@@ -729,28 +665,18 @@ function RoutineDetailContent({
                     </span>
                 </div>
                 <div className="flex items-center justify-between">
-                    <span
-                        className="text-[#6B6860] dark:text-[#AAA89F]"
-                        style={{ fontSize: 12 }}
-                    >
+                    <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
                         Active days
                     </span>
                     <div className="flex gap-1">
                         {dayLabels.map((d, i) => (
                             <div
                                 key={i}
-                                className="flex items-center justify-center"
-                                style={{
-                                    width: 22,
-                                    height: 22,
-                                    borderRadius: '50%',
-                                    fontSize: 9,
-                                    fontWeight: 700,
-                                    background: erDays[i]
-                                        ? '#EBF0FD'
-                                        : '#EFEDE7',
-                                    color: erDays[i] ? '#1A4CD4' : '#AAA89F',
-                                }}
+                                className={`flex size-[22px] items-center justify-center rounded-full text-[9px] font-bold ${
+                                    erDays[i]
+                                        ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]'
+                                        : 'bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920] dark:text-[#6B6860]'
+                                }`}
                             >
                                 {d}
                             </div>
@@ -781,35 +707,24 @@ function RoutineDetailContent({
                             })
                             .catch(() => setToggling(false));
                     }}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 transition-all hover:opacity-90"
-                    style={{
-                        padding: '13px',
-                        borderRadius: 9,
-                        fontSize: 15,
-                        fontWeight: 600,
-                        background: isActive ? '#FDF0D4' : '#D4F0E6',
-                        color: isActive ? '#C47D0E' : '#0A7C52',
-                        border: 'none',
-                        opacity: toggling ? 0.6 : 1,
-                    }}
+                    className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border-none py-[13px] text-[15px] font-semibold transition-all hover:opacity-90 ${
+                        isActive
+                            ? 'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#F5C518]'
+                            : 'bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20'
+                    }`}
+                    style={{ opacity: toggling ? 0.6 : 1 }}
                 >
                     {toggling
                         ? 'Updating...'
                         : isActive
-                          ? '⏸ Pause routine'
-                          : '▶️ Resume routine'}
+                          ? 'Pause routine'
+                          : 'Resume routine'}
                 </button>
                 <button
                     onClick={() => setMode('edit')}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                    style={{
-                        padding: '13px',
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: '#1A4CD4',
-                    }}
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white py-[13px] text-[15px] font-semibold text-[#1A4CD4] transition-all hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#6B9AFF] dark:hover:bg-[#1A4CD4]/20"
                 >
-                    ✏️ Edit routine
+                    Edit routine
                 </button>
                 <button
                     onClick={() => {
@@ -833,15 +748,9 @@ function RoutineDetailContent({
                             });
                         });
                     }}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:bg-[#FDE8E6] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                    style={{
-                        padding: '13px',
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: '#C4271A',
-                    }}
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-white py-[13px] text-[15px] font-semibold text-[#C4271A] transition-all hover:bg-[#FDE8E6] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#C4271A]/10"
                 >
-                    🗑 Delete routine
+                    Delete routine
                 </button>
             </div>
         </div>
@@ -853,12 +762,14 @@ function RoutineDetailContent({
 // ============================================================
 function StopInput({
     emoji,
+    icon,
     placeholder,
     value,
     onChange,
     places,
 }: {
-    emoji: string;
+    emoji?: string;
+    icon?: React.ReactNode;
     placeholder: string;
     value: string;
     onChange: (v: string) => void;
@@ -931,7 +842,9 @@ function StopInput({
                 className="flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
                 style={{ padding: '10px 14px' }}
             >
-                <span style={{ fontSize: 15, color: '#AAA89F' }}>{emoji}</span>
+                <span className="shrink-0 text-[15px] text-[#AAA89F]">
+                    {icon ?? emoji}
+                </span>
                 <input
                     className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F5F4F0]"
                     style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
@@ -2894,33 +2807,12 @@ export default function Transit() {
                             (detectedRoutines ?? [])[0]?.frequency >= 3 &&
                             routinePromptVisible &&
                             !routinePromptSaved && (
-                                <div
-                                    className="mb-3 flex items-start gap-3"
-                                    style={{
-                                        background: '#EBF0FD',
-                                        border: '1px solid rgba(26,76,212,.15)',
-                                        borderRadius: 14,
-                                        padding: 16,
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            fontSize: 22,
-                                            flexShrink: 0,
-                                            marginTop: 2,
-                                        }}
-                                    >
+                                <div className="mb-3 flex items-start gap-3 rounded-[14px] border border-[rgba(26,76,212,.15)] bg-[#EBF0FD] p-4 dark:border-[#1A4CD4]/30 dark:bg-[#1A4CD4]/10">
+                                    <span className="mt-0.5 shrink-0 text-[22px]">
                                         🧠
                                     </span>
                                     <div className="flex-1">
-                                        <div
-                                            style={{
-                                                fontSize: 14,
-                                                fontWeight: 600,
-                                                color: '#1A4CD4',
-                                                marginBottom: 4,
-                                            }}
-                                        >
+                                        <div className="mb-1 text-sm font-semibold text-[#1A4CD4] dark:text-[#6B9AFF]">
                                             Routine detected
                                         </div>
                                         <div
@@ -2986,15 +2878,7 @@ export default function Transit() {
                                                         },
                                                     );
                                                 }}
-                                                className="cursor-pointer border-none transition-all hover:opacity-90"
-                                                style={{
-                                                    padding: '7px 14px',
-                                                    borderRadius: 9,
-                                                    fontSize: 13,
-                                                    fontWeight: 600,
-                                                    background: '#1A4CD4',
-                                                    color: 'white',
-                                                }}
+                                                className="cursor-pointer rounded-[9px] border-none bg-[#1A4CD4] px-3.5 py-[7px] text-[13px] font-semibold text-white transition-all hover:opacity-90"
                                             >
                                                 Save routine
                                             </button>
@@ -3008,12 +2892,7 @@ export default function Transit() {
                                                         String(Date.now()),
                                                     );
                                                 }}
-                                                className="cursor-pointer rounded-[14px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
-                                                style={{
-                                                    padding: '7px 14px',
-                                                    fontSize: 13,
-                                                    fontWeight: 600,
-                                                }}
+                                                className="cursor-pointer rounded-[9px] border border-[#E2DFD6] px-3.5 py-[7px] text-[13px] font-semibold text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                                             >
                                                 Dismiss
                                             </button>
@@ -3024,38 +2903,15 @@ export default function Transit() {
 
                         {/* Routine saved confirmation */}
                         {routinePromptSaved && (
-                            <div
-                                className="mb-3 flex items-start gap-3"
-                                style={{
-                                    background: '#D4F0E6',
-                                    border: '1px solid rgba(10,124,82,.15)',
-                                    borderRadius: 14,
-                                    padding: 16,
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        fontSize: 22,
-                                        flexShrink: 0,
-                                        marginTop: 2,
-                                    }}
-                                >
+                            <div className="mb-3 flex items-start gap-3 rounded-[14px] border border-[rgba(10,124,82,.15)] bg-[#D4F0E6] p-4 dark:border-[#0A7C52]/30 dark:bg-[#0A7C52]/10">
+                                <span className="mt-0.5 shrink-0 text-[22px]">
                                     ✅
                                 </span>
                                 <div className="flex-1">
-                                    <div
-                                        style={{
-                                            fontSize: 14,
-                                            fontWeight: 600,
-                                            color: '#0A7C52',
-                                        }}
-                                    >
+                                    <div className="text-sm font-semibold text-[#0A7C52]">
                                         Routine saved!
                                     </div>
-                                    <div
-                                        className="text-[#6B6860] dark:text-[#AAA89F]"
-                                        style={{ fontSize: 13, marginTop: 2 }}
-                                    >
+                                    <div className="mt-0.5 text-[13px] text-[#6B6860] dark:text-[#AAA89F]">
                                         Expadu will use this to recommend the
                                         right route at the right time.
                                     </div>
@@ -3382,33 +3238,17 @@ export default function Transit() {
                 open={addRoutineOpen}
                 onClose={() => setAddRoutineOpen(false)}
             >
-                <div
-                    style={{
-                        fontFamily: "'Fraunces', serif",
-                        fontSize: 22,
-                        fontWeight: 500,
-                        marginBottom: 20,
-                    }}
-                >
+                <div className="mb-5 font-display text-[22px] font-medium text-[#18170F] dark:text-[#F5F4F0]">
                     New Routine
                 </div>
 
                 {/* Route */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                    }}
-                >
+                <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Route
                 </div>
                 <div className="mb-1 flex flex-col gap-1.5">
                     <StopInput
-                        emoji="📍"
+                        icon={<IconMapPin size={18} stroke={1.7} />}
                         placeholder="From (e.g. Home · Ehrenfeld)"
                         value={rFrom}
                         onChange={setRFrom}
@@ -3421,11 +3261,11 @@ export default function Transit() {
                             style={{ width: 36, height: 36, fontSize: 16 }}
                             title="Swap"
                         >
-                            ⇅
+                            <IconArrowsUpDown size={18} stroke={1.7} />
                         </button>
                     </div>
                     <StopInput
-                        emoji="🏁"
+                        icon={<IconFlag size={18} stroke={1.7} />}
                         placeholder="To (e.g. Work · Mediapark)"
                         value={rTo}
                         onChange={setRTo}
@@ -3434,33 +3274,30 @@ export default function Transit() {
                 </div>
 
                 {/* Arrive by */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                        marginTop: 20,
-                    }}
-                >
+                <div className="mt-5 mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Arrive by
                 </div>
                 <div
-                    className="mb-5 flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
-                    style={{ padding: '10px 14px' }}
+                    className="mb-5 flex cursor-pointer items-center gap-2.5 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-3.5 py-2.5 dark:border-[#3A3930] dark:bg-[#2A2920]"
+                    onClick={(e) => {
+                        const inp = (
+                            e.currentTarget as HTMLElement
+                        ).querySelector('input');
+                        try {
+                            inp?.showPicker();
+                        } catch {
+                            inp?.focus();
+                        }
+                    }}
                 >
-                    <span style={{ fontSize: 15, color: '#AAA89F' }}>🕐</span>
+                    <IconClock
+                        size={18}
+                        stroke={1.7}
+                        className="shrink-0 text-[#AAA89F]"
+                    />
                     <input
                         type="time"
-                        className="flex-1 border-none bg-transparent outline-none"
-                        style={{
-                            fontFamily: "'Geist Mono', monospace",
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: '#1A4CD4',
-                        }}
+                        className="flex-1 cursor-pointer border-none bg-transparent font-mono text-sm font-medium text-[#1A4CD4] outline-none dark:text-[#6B9AFF]"
                         value={rArrival}
                         onChange={(e) => setRArrival(e.target.value)}
                     />
@@ -3476,17 +3313,7 @@ export default function Transit() {
                 </div>
 
                 {/* Active days */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                        marginTop: 20,
-                    }}
-                >
+                <div className="mt-5 mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Active days
                 </div>
                 <div className="mb-1 flex gap-2">
@@ -3494,19 +3321,11 @@ export default function Transit() {
                         <button
                             key={i}
                             onClick={() => toggleRDay(i)}
-                            className="flex cursor-pointer items-center justify-center transition-all"
-                            style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: '50%',
-                                fontSize: 13,
-                                fontWeight: 600,
-                                background: rDays[i] ? '#EBF0FD' : '#EFEDE7',
-                                color: rDays[i] ? '#1A4CD4' : '#AAA89F',
-                                border: rDays[i]
-                                    ? '2px solid #1A4CD4'
-                                    : '2px solid #E2DFD6',
-                            }}
+                            className={`flex size-9 cursor-pointer items-center justify-center rounded-full border-2 text-[13px] font-semibold transition-all ${
+                                rDays[i]
+                                    ? 'border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]'
+                                    : 'border-[#E2DFD6] bg-[#EFEDE7] text-[#AAA89F] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#6B6860]'
+                            }`}
                         >
                             {d}
                         </button>
@@ -3514,62 +3333,33 @@ export default function Transit() {
                 </div>
 
                 {/* Preferred transport */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                        marginTop: 20,
-                    }}
-                >
+                <div className="mt-5 mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Preferred transport
                 </div>
                 <div className="mb-1 flex flex-wrap gap-2">
                     {[
-                        { id: 'bike', emoji: '🚲', label: 'Bike' },
-                        { id: 'tram', emoji: '🚋', label: 'Tram' },
-                        { id: 'bus', emoji: '🚌', label: 'Bus' },
-                        { id: 'walk', emoji: '🚶', label: 'Walk' },
+                        { id: 'bike', icon: IconBike, label: 'Bike' },
+                        { id: 'tram', icon: IconTrain, label: 'Tram' },
+                        { id: 'bus', icon: IconBus, label: 'Bus' },
+                        { id: 'walk', icon: IconWalk, label: 'Walk' },
                     ].map((m) => (
                         <button
                             key={m.id}
                             onClick={() => setRMode(m.id)}
-                            className="flex cursor-pointer items-center gap-1.5 transition-all"
-                            style={{
-                                padding: '8px 16px',
-                                borderRadius: 9,
-                                border:
-                                    rMode === m.id
-                                        ? '2px solid #1A4CD4'
-                                        : '2px solid #E2DFD6',
-                                background:
-                                    rMode === m.id ? '#EBF0FD' : '#FFFFFF',
-                                color: rMode === m.id ? '#1A4CD4' : '#6B6860',
-                                fontSize: 13,
-                                fontWeight: 600,
-                            }}
+                            className={`flex cursor-pointer items-center gap-1.5 rounded-[9px] border-2 px-4 py-2 text-[13px] font-semibold transition-all ${
+                                rMode === m.id
+                                    ? 'border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]'
+                                    : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'
+                            }`}
                         >
-                            <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                            <m.icon size={20} stroke={1.7} />
                             <span>{m.label}</span>
                         </button>
                     ))}
                 </div>
 
                 {/* Alert before */}
-                <div
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                        marginBottom: 8,
-                        marginTop: 20,
-                    }}
-                >
+                <div className="mt-5 mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                     Alert me before departure
                 </div>
                 <div className="mb-1 flex flex-wrap gap-2">
@@ -3577,20 +3367,11 @@ export default function Transit() {
                         <button
                             key={m}
                             onClick={() => setRAlert(m)}
-                            className="cursor-pointer transition-all"
-                            style={{
-                                padding: '7px 14px',
-                                borderRadius: 9,
-                                border:
-                                    rAlert === m
-                                        ? '2px solid #1A4CD4'
-                                        : '2px solid #E2DFD6',
-                                background:
-                                    rAlert === m ? '#EBF0FD' : '#FFFFFF',
-                                color: rAlert === m ? '#1A4CD4' : '#6B6860',
-                                fontSize: 13,
-                                fontWeight: 600,
-                            }}
+                            className={`cursor-pointer rounded-[9px] border-2 px-3.5 py-[7px] text-[13px] font-semibold transition-all ${
+                                rAlert === m
+                                    ? 'border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]'
+                                    : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'
+                            }`}
                         >
                             {m} min
                         </button>
@@ -3600,28 +3381,13 @@ export default function Transit() {
                 {/* Actions */}
                 <button
                     onClick={saveNewRoutine}
-                    className="mt-6 w-full cursor-pointer border-none transition-all hover:opacity-90"
-                    style={{
-                        padding: '13px',
-                        borderRadius: 9,
-                        background: '#1A4CD4',
-                        color: 'white',
-                        fontFamily: "'Geist', sans-serif",
-                        fontSize: 15,
-                        fontWeight: 600,
-                    }}
+                    className="mt-6 w-full cursor-pointer rounded-[9px] border-none bg-[#1A4CD4] py-[13px] text-[15px] font-semibold text-white transition-all hover:opacity-90"
                 >
                     Save Routine
                 </button>
                 <button
                     onClick={() => setAddRoutineOpen(false)}
-                    className="mt-2 w-full cursor-pointer rounded-[14px] border border-[#E2DFD6] text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
-                    style={{
-                        padding: '13px',
-                        fontFamily: "'Geist', sans-serif",
-                        fontSize: 15,
-                        fontWeight: 600,
-                    }}
+                    className="mt-2 w-full cursor-pointer rounded-[9px] border border-[#E2DFD6] py-[13px] text-[15px] font-semibold text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                 >
                     Cancel
                 </button>
