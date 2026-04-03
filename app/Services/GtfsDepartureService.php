@@ -35,18 +35,27 @@ class GtfsDepartureService
         $cacheKey = "gtfs_departures_nearby_{$lat}_{$lng}_{$limit}";
 
         return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
-            $nearestStop = GtfsStop::where('location_type', 0)
+            // Try up to 5 nearest stops until we find one with departures
+            $nearestStops = GtfsStop::where('location_type', 0)
                 ->whereNotNull('stop_lat')
                 ->whereNotNull('stop_lng')
                 ->selectRaw('*, (ABS(stop_lat - ?) + ABS(stop_lng - ?)) as dist', [$lat, $lng])
                 ->orderBy('dist')
-                ->first();
+                ->limit(5)
+                ->get();
 
-            if (! $nearestStop) {
+            if ($nearestStops->isEmpty()) {
                 return $this->fallbackDepartures('Nearby');
             }
 
-            return $this->getStaticDepartures($nearestStop->stop_name, $limit);
+            foreach ($nearestStops as $stop) {
+                $result = $this->getStaticDepartures($stop->stop_name, $limit);
+                if (! empty($result['departures'])) {
+                    return $result;
+                }
+            }
+
+            return $this->fallbackDepartures($nearestStops->first()->stop_name);
         });
     }
 
