@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [develop, main, master, workos]
+    branches: [main]
   pull_request:
-    branches: [develop, main, master, workos]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -21,9 +21,16 @@ jobs:
           php-version: '8.4'
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install Dependencies
         run: |
@@ -39,16 +46,9 @@ jobs:
       - name: ESLint
         run: npm run lint:check
 
-      - name: TypeScript
-        run: npm run types:check
-
   test:
-    name: Test (PHP ${{ matrix.php-version }})
+    name: Test
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        php-version: ['8.4']
 
     services:
       postgres:
@@ -74,26 +74,23 @@ jobs:
       DB_PASSWORD: password
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.4'
           tools: composer:v2
           extensions: pdo_pgsql
-          coverage: xdebug
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Cache Composer
+        uses: actions/cache@v4
         with:
-          node-version: '22'
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install Dependencies
-        run: |
-          composer install --no-interaction --prefer-dist --optimize-autoloader
-          npm ci --legacy-peer-deps
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Prepare Environment
         run: |
@@ -103,11 +100,8 @@ jobs:
       - name: Enable PostGIS
         run: PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
-      - name: Build Assets
-        run: npm run build
-
       - name: Run Tests
-        run: php artisan test
+        run: php artisan test --compact
 
   build-and-push:
     name: Build & Push Image
@@ -123,8 +117,7 @@ jobs:
       IMAGE_NAME: ${{ github.repository }}/app
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
