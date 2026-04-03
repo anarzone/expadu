@@ -1437,8 +1437,23 @@ export default function Transit() {
         link?: string;
     } | null>(null);
     const [dismissedDisruptions, setDismissedDisruptions] = useState<number[]>(
-        [],
+        () => {
+            try {
+                return JSON.parse(
+                    localStorage.getItem('dismissed_disruptions') || '[]',
+                );
+            } catch {
+                return [];
+            }
+        },
     );
+    // Persist dismissed disruptions to localStorage
+    useEffect(() => {
+        localStorage.setItem(
+            'dismissed_disruptions',
+            JSON.stringify(dismissedDisruptions),
+        );
+    }, [dismissedDisruptions]);
     type LineDep = NonNullable<typeof nearbyDepartures>['kvb'][0];
     const [lineDetail, setLineDetail] = useState<LineDep | null>(null);
     const blueCardRef = useRef<HTMLDivElement>(null);
