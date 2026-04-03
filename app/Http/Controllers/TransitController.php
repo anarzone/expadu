@@ -132,13 +132,24 @@ class TransitController extends Controller
             ];
         }
 
-        // Sort: critical first, then personal, then major, then minor
+        // Sort: personal first, then tram lines (1-18), then severity
         usort($cards, function ($a, $b) {
-            $severityOrder = ['critical' => 0, 'major' => 1, 'minor' => 2];
-            $aScore = ($severityOrder[$a['severity']] ?? 3) - ($a['is_personal'] ? 10 : 0);
-            $bScore = ($severityOrder[$b['severity']] ?? 3) - ($b['is_personal'] ? 10 : 0);
+            // Personal disruptions always first
+            if ($a['is_personal'] !== $b['is_personal']) {
+                return $b['is_personal'] <=> $a['is_personal'];
+            }
 
-            return $aScore <=> $bScore;
+            // Tram lines (1-18) before bus/other
+            $aHasTram = ! empty(array_filter($a['affected_lines'], fn ($l) => is_numeric($l) && (int) $l <= 18));
+            $bHasTram = ! empty(array_filter($b['affected_lines'], fn ($l) => is_numeric($l) && (int) $l <= 18));
+            if ($aHasTram !== $bHasTram) {
+                return $bHasTram <=> $aHasTram;
+            }
+
+            // Then by severity
+            $severityOrder = ['critical' => 0, 'major' => 1, 'minor' => 2];
+
+            return ($severityOrder[$a['severity']] ?? 3) <=> ($severityOrder[$b['severity']] ?? 3);
         });
 
         return array_slice($cards, 0, 5);
