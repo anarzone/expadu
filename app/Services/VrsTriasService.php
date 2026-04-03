@@ -27,22 +27,31 @@ class VrsTriasService
         $cacheKey = "trias_departures_{$stopName}_{$limit}";
 
         return Cache::remember($cacheKey, 30, function () use ($stopName, $limit) {
-            // Resolve stop name to TRIAS GlobalID
-            $globalId = $this->resolveStopGlobalId($stopName);
-            if (! $globalId) {
+            try {
+                $globalId = $this->resolveStopGlobalId($stopName);
+                if (! $globalId) {
+                    Log::warning('TRIAS getDepartures: resolveStopGlobalId returned null', ['stop' => $stopName]);
+
+                    return null;
+                }
+
+                $departures = $this->fetchStopEvents($globalId['id'], $limit);
+                if ($departures === null) {
+                    Log::warning('TRIAS getDepartures: fetchStopEvents returned null', ['stop' => $stopName, 'globalId' => $globalId['id']]);
+
+                    return null;
+                }
+
+                return [
+                    'stop_name' => $globalId['name'],
+                    'source' => 'trias_rt',
+                    'departures' => $departures,
+                ];
+            } catch (\Throwable $e) {
+                Log::error('TRIAS getDepartures exception', ['stop' => $stopName, 'error' => $e->getMessage()]);
+
                 return null;
             }
-
-            $departures = $this->fetchStopEvents($globalId['id'], $limit);
-            if ($departures === null) {
-                return null;
-            }
-
-            return [
-                'stop_name' => $globalId['name'],
-                'source' => 'trias_rt',
-                'departures' => $departures,
-            ];
         });
     }
 
