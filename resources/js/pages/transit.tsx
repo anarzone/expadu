@@ -1436,7 +1436,7 @@ export default function Transit() {
         detail: string;
         link?: string;
     } | null>(null);
-    const [dismissedDisruptions, setDismissedDisruptions] = useState<string[]>(
+    const [dismissedDisruptions, setDismissedDisruptions] = useState<number[]>(
         [],
     );
     type LineDep = NonNullable<typeof nearbyDepartures>['kvb'][0];
