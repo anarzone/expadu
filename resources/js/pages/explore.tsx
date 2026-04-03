@@ -95,6 +95,7 @@ export default function Explore() {
     const [selectedSpot, setSelectedSpot] = useState<SpotData | null>(null);
     const [search, setSearch] = useState('');
     const [listOpen, setListOpen] = useState(false);
+    const [panelExpanded, setPanelExpanded] = useState(true);
     const mapRef = useRef<MapViewHandle>(null);
 
     // Viewport-based spots — fetched from /api/spots as the map moves
@@ -308,6 +309,7 @@ export default function Explore() {
     ) {
         setRouteMode(mode);
         setRouteDetail(null);
+        setPanelExpanded(true);
 
         const dest = routeDest ?? to;
         const origin = from ?? { lat: myLat, lng: myLng };
@@ -757,473 +759,492 @@ export default function Explore() {
             <Head title="Explore" />
 
             <div className="relative flex h-svh overflow-hidden md:h-[calc(100vh-52px)]">
-                {/* ═══ LEFT LIST PANEL ═══
-                    Desktop (lg+): 420px, always visible, border-right
-                    Tablet (md–lg): absolute overlay, slides from left
-                    Mobile (<md): hidden — uses bottom sheet instead */}
+                {/* ═══ LIST PANEL WRAPPER ═══
+                    Mobile: column with panel + toggle arrow
+                    Desktop: just the panel as sidebar */}
                 <div
-                    className={`flex w-[420px] shrink-0 flex-col overflow-hidden border-r border-[#E2DFD6] bg-white max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-[80] max-lg:shadow-[4px_0_32px_rgba(0,0,0,0.1)] max-lg:transition-transform max-lg:duration-300 max-md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15] ${listOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'} `}
+                    className={`absolute inset-x-0 top-0 z-[85] flex flex-col md:relative md:inset-auto md:z-auto md:w-[420px] md:shrink-0 max-lg:md:absolute max-lg:md:inset-y-0 max-lg:md:left-0 max-lg:md:z-[80] max-lg:md:shadow-[4px_0_32px_rgba(0,0,0,0.1)] max-lg:md:transition-transform max-lg:md:duration-300 ${listOpen ? 'max-lg:md:translate-x-0' : 'max-lg:md:-translate-x-full'}`}
                 >
-                    {routeDest ? (
-                        <>
-                            {/* ── Directions mode header ── */}
-                            <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
-                                <button
-                                    onClick={closeRoute}
-                                    className="mb-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
-                                >
-                                    ←{' '}
-                                    {selectedSpot
-                                        ? `Back to ${selectedSpot.name}`
-                                        : 'Back to spots'}
-                                </button>
-                                <div className="font-display text-xl font-medium tracking-tight">
-                                    Directions
-                                </div>
-                                <div className="mt-1 text-sm text-[#6B6860] dark:text-[#AAA89F]">
-                                    To {routeDest.name}
-                                </div>
-                            </div>
-
-                            {/* ── Mode picker inside panel ── */}
-                            {routeOptions.length > 0 && (
-                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
-                                    <div className="flex gap-2">
-                                        {routeOptions.map((opt) => {
-                                            const isActive =
-                                                routeMode === opt.mode;
-
-                                            return (
-                                                <button
-                                                    key={opt.mode}
-                                                    onClick={() => {
-                                                        const from = {
-                                                            lat: myLat,
-                                                            lng: myLng,
-                                                        };
-                                                        selectRouteMode(
-                                                            opt.mode,
-                                                            opt.geometry,
-                                                            from,
-                                                            routeDest,
-                                                        );
-                                                    }}
-                                                    className={`relative flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-[10px] px-[2px] py-2 transition-all ${
-                                                        isActive
-                                                            ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] dark:bg-[#1A4CD4]/20'
-                                                            : 'border-2 border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'
-                                                    }`}
-                                                >
-                                                    {opt.best && (
-                                                        <span className="absolute -top-[5px] -right-[3px] rounded-full bg-[#FEF9EC] px-1 py-[1px] text-[7px] font-bold text-[#C47D0E] uppercase">
-                                                            Best
-                                                        </span>
-                                                    )}
-                                                    {opt.disrupted && (
-                                                        <span className="absolute -top-[5px] -right-[3px] text-[9px]">
-                                                            ⚠️
-                                                        </span>
-                                                    )}
-                                                    <span className="text-[16px]">
-                                                        {opt.emoji}
-                                                    </span>
-                                                    <span
-                                                        className={`font-mono text-[14px] leading-none font-semibold ${isActive ? 'text-[#1A4CD4]' : 'text-[#18170F] dark:text-[#F5F4F0]'}`}
-                                                    >
-                                                        {opt.time}
-                                                        <span className="text-[8px] text-[#AAA89F]">
-                                                            m
-                                                        </span>
-                                                    </span>
-                                                </button>
-                                            );
-                                        })}
+                    <div
+                        className={`flex flex-col overflow-hidden border-b border-[#E2DFD6] bg-white transition-[height] duration-300 ease-in-out md:!h-auto md:min-h-0 md:flex-1 md:border-r md:border-b-0 dark:border-[#3A3930] dark:bg-[#1E1D15] ${panelExpanded ? 'h-[70vh]' : 'h-[110px]'} `}
+                    >
+                        {routeDest ? (
+                            <>
+                                {/* ── Directions mode header ── */}
+                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
+                                    <button
+                                        onClick={closeRoute}
+                                        className="mb-2 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
+                                    >
+                                        ←{' '}
+                                        {selectedSpot
+                                            ? `Back to ${selectedSpot.name}`
+                                            : 'Back to spots'}
+                                    </button>
+                                    <div className="font-display text-xl font-medium tracking-tight">
+                                        Directions
                                     </div>
-                                    {routeOptions.find((o) => o.best)
-                                        ?.recommendation_reason && (
-                                        <div className="mt-2 text-center text-[11px] text-[#0A7C52]">
-                                            {
-                                                routeOptions.find((o) => o.best)
-                                                    ?.recommendation_reason
-                                            }
-                                        </div>
-                                    )}
+                                    <div className="mt-1 text-sm text-[#6B6860] dark:text-[#AAA89F]">
+                                        To {routeDest.name}
+                                    </div>
                                 </div>
-                            )}
 
-                            {/* ── Steps / Transit trip list ── */}
-                            <div
-                                className="flex-1 overflow-y-auto"
-                                style={{ scrollbarWidth: 'thin' }}
-                            >
-                                {routeLoading && (
-                                    <div className="py-12 text-center text-sm text-[#AAA89F]">
-                                        Loading routes...
+                                {/* ── Mode picker inside panel ── */}
+                                {routeOptions.length > 0 && (
+                                    <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
+                                        <div className="flex gap-2">
+                                            {routeOptions.map((opt) => {
+                                                const isActive =
+                                                    routeMode === opt.mode;
+
+                                                return (
+                                                    <button
+                                                        key={opt.mode}
+                                                        onClick={() => {
+                                                            const from = {
+                                                                lat: myLat,
+                                                                lng: myLng,
+                                                            };
+                                                            selectRouteMode(
+                                                                opt.mode,
+                                                                opt.geometry,
+                                                                from,
+                                                                routeDest,
+                                                            );
+                                                        }}
+                                                        className={`relative flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-[10px] px-[2px] py-2 transition-all ${
+                                                            isActive
+                                                                ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] dark:bg-[#1A4CD4]/20'
+                                                                : 'border-2 border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                                                        }`}
+                                                    >
+                                                        {opt.best && (
+                                                            <span className="absolute -top-[5px] -right-[3px] rounded-full bg-[#FEF9EC] px-1 py-[1px] text-[7px] font-bold text-[#C47D0E] uppercase">
+                                                                Best
+                                                            </span>
+                                                        )}
+                                                        {opt.disrupted && (
+                                                            <span className="absolute -top-[5px] -right-[3px] text-[9px]">
+                                                                ⚠️
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[16px]">
+                                                            {opt.emoji}
+                                                        </span>
+                                                        <span
+                                                            className={`font-mono text-[14px] leading-none font-semibold ${isActive ? 'text-[#1A4CD4]' : 'text-[#18170F] dark:text-[#F5F4F0]'}`}
+                                                        >
+                                                            {opt.time}
+                                                            <span className="text-[8px] text-[#AAA89F]">
+                                                                m
+                                                            </span>
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {routeOptions.find((o) => o.best)
+                                            ?.recommendation_reason && (
+                                            <div className="mt-2 text-center text-[11px] text-[#0A7C52]">
+                                                {
+                                                    routeOptions.find(
+                                                        (o) => o.best,
+                                                    )?.recommendation_reason
+                                                }
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
-                                {/* Transit mode: trip list (Google Maps style) */}
-                                {routeMode === 'transit' &&
-                                    !routeLoading &&
-                                    transitTrips.length > 0 &&
-                                    selectedTripIdx === null && (
-                                        <div>
-                                            {transitTrips.map((trip, i) => (
-                                                <div
-                                                    key={i}
-                                                    onClick={() =>
-                                                        selectTransitTrip(i)
-                                                    }
-                                                    className="cursor-pointer border-b border-[#E2DFD6] px-5 py-4 transition-colors hover:bg-[#F5F4F0] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                                                >
-                                                    <div className="flex items-start justify-between">
-                                                        <div>
-                                                            <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
-                                                                {
-                                                                    trip.departure_time
-                                                                }{' '}
-                                                                —{' '}
-                                                                {
-                                                                    trip.arrival_time
-                                                                }
-                                                            </div>
-                                                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                                                                {trip.legs.map(
-                                                                    (
-                                                                        leg,
-                                                                        j,
-                                                                    ) => (
-                                                                        <span
-                                                                            key={
-                                                                                j
-                                                                            }
-                                                                            className="flex items-center gap-1"
-                                                                        >
-                                                                            {j >
-                                                                                0 && (
-                                                                                <span className="text-[10px] text-[#AAA89F]">
-                                                                                    ›
-                                                                                </span>
-                                                                            )}
-                                                                            {leg.type ===
-                                                                            'walk' ? (
-                                                                                <span className="text-[13px]">
-                                                                                    🚶
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="inline-flex items-center gap-0.5 rounded bg-[#1A4CD4] px-1.5 py-[1px] font-mono text-[11px] font-bold text-white">
-                                                                                    {leg.mode ===
-                                                                                    'rail'
-                                                                                        ? '🚂'
-                                                                                        : '🚋'}{' '}
-                                                                                    {
-                                                                                        leg.line
-                                                                                    }
-                                                                                </span>
-                                                                            )}
-                                                                        </span>
-                                                                    ),
-                                                                )}
-                                                            </div>
-                                                            <div className="mt-1 text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
-                                                                {trip.first_line_departure && (
-                                                                    <>
-                                                                        <span className="font-semibold text-[#0A7C52]">
-                                                                            {
-                                                                                trip.first_line_departure
-                                                                            }
-                                                                        </span>{' '}
-                                                                        from{' '}
-                                                                        {
-                                                                            trip.boarding_stop
-                                                                        }
-                                                                    </>
-                                                                )}
-                                                                {trip.walk_min >
-                                                                    0 && (
-                                                                    <>
-                                                                        {' '}
-                                                                        · 🚶{' '}
-                                                                        {
-                                                                            trip.walk_min
-                                                                        }{' '}
-                                                                        min
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="shrink-0 text-right">
-                                                            <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
-                                                                {
-                                                                    trip.total_duration_min
-                                                                }{' '}
-                                                                min
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                {/* ── Steps / Transit trip list ── */}
+                                <div
+                                    className="flex-1 overflow-y-auto"
+                                    style={{ scrollbarWidth: 'thin' }}
+                                >
+                                    {routeLoading && (
+                                        <div className="py-12 text-center text-sm text-[#AAA89F]">
+                                            Loading routes...
                                         </div>
                                     )}
 
-                                {/* Transit mode: selected trip detail (timeline view) */}
-                                {routeMode === 'transit' &&
-                                    selectedTripIdx !== null &&
-                                    routeDetail && (
-                                        <div className="px-4 py-3">
-                                            <button
-                                                onClick={backToTripList}
-                                                className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:text-[#1541B8]"
-                                            >
-                                                ← Back to options
-                                            </button>
-
-                                            {/* Summary */}
-                                            <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[20px]">
-                                                        🚋
-                                                    </span>
-                                                    <span className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
-                                                        Transit
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-mono text-[16px] font-semibold text-[#1A4CD4]">
-                                                        {
-                                                            routeDetail.departure_time
-                                                        }{' '}
-                                                        →{' '}
-                                                        {
-                                                            routeDetail.arrival_time
+                                    {/* Transit mode: trip list (Google Maps style) */}
+                                    {routeMode === 'transit' &&
+                                        !routeLoading &&
+                                        transitTrips.length > 0 &&
+                                        selectedTripIdx === null && (
+                                            <div>
+                                                {transitTrips.map((trip, i) => (
+                                                    <div
+                                                        key={i}
+                                                        onClick={() =>
+                                                            selectTransitTrip(i)
                                                         }
-                                                    </span>
-                                                    <span className="text-[11px] text-[#AAA89F]">
-                                                        {
-                                                            routeDetail.duration_min
-                                                        }{' '}
-                                                        min
-                                                    </span>
-                                                    {(routeDetail.transfers ??
-                                                        0) > 0 && (
-                                                        <span className="rounded-full bg-[#EFEDE7] px-[7px] py-[2px] text-[10px] font-bold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
-                                                            {
-                                                                routeDetail.transfers
-                                                            }{' '}
-                                                            transfer
-                                                            {routeDetail.transfers !==
-                                                            1
-                                                                ? 's'
-                                                                : ''}
+                                                        className="cursor-pointer border-b border-[#E2DFD6] px-5 py-4 transition-colors hover:bg-[#F5F4F0] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                                                    >
+                                                        <div className="flex items-start justify-between">
+                                                            <div>
+                                                                <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                                    {
+                                                                        trip.departure_time
+                                                                    }{' '}
+                                                                    —{' '}
+                                                                    {
+                                                                        trip.arrival_time
+                                                                    }
+                                                                </div>
+                                                                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                                                                    {trip.legs.map(
+                                                                        (
+                                                                            leg,
+                                                                            j,
+                                                                        ) => (
+                                                                            <span
+                                                                                key={
+                                                                                    j
+                                                                                }
+                                                                                className="flex items-center gap-1"
+                                                                            >
+                                                                                {j >
+                                                                                    0 && (
+                                                                                    <span className="text-[10px] text-[#AAA89F]">
+                                                                                        ›
+                                                                                    </span>
+                                                                                )}
+                                                                                {leg.type ===
+                                                                                'walk' ? (
+                                                                                    <span className="text-[13px]">
+                                                                                        🚶
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="inline-flex items-center gap-0.5 rounded bg-[#1A4CD4] px-1.5 py-[1px] font-mono text-[11px] font-bold text-white">
+                                                                                        {leg.mode ===
+                                                                                        'rail'
+                                                                                            ? '🚂'
+                                                                                            : '🚋'}{' '}
+                                                                                        {
+                                                                                            leg.line
+                                                                                        }
+                                                                                    </span>
+                                                                                )}
+                                                                            </span>
+                                                                        ),
+                                                                    )}
+                                                                </div>
+                                                                <div className="mt-1 text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                                                    {trip.first_line_departure && (
+                                                                        <>
+                                                                            <span className="font-semibold text-[#0A7C52]">
+                                                                                {
+                                                                                    trip.first_line_departure
+                                                                                }
+                                                                            </span>{' '}
+                                                                            from{' '}
+                                                                            {
+                                                                                trip.boarding_stop
+                                                                            }
+                                                                        </>
+                                                                    )}
+                                                                    {trip.walk_min >
+                                                                        0 && (
+                                                                        <>
+                                                                            {' '}
+                                                                            · 🚶{' '}
+                                                                            {
+                                                                                trip.walk_min
+                                                                            }{' '}
+                                                                            min
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="shrink-0 text-right">
+                                                                <div className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                                    {
+                                                                        trip.total_duration_min
+                                                                    }{' '}
+                                                                    min
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                    {/* Transit mode: selected trip detail (timeline view) */}
+                                    {routeMode === 'transit' &&
+                                        selectedTripIdx !== null &&
+                                        routeDetail && (
+                                            <div className="px-4 py-3">
+                                                <button
+                                                    onClick={backToTripList}
+                                                    className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:text-[#1541B8]"
+                                                >
+                                                    ← Back to options
+                                                </button>
+
+                                                {/* Summary */}
+                                                <div className="mb-3 flex items-center justify-between rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[20px]">
+                                                            🚋
                                                         </span>
-                                                    )}
+                                                        <span className="text-[15px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                                            Transit
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-mono text-[16px] font-semibold text-[#1A4CD4]">
+                                                            {
+                                                                routeDetail.departure_time
+                                                            }{' '}
+                                                            →{' '}
+                                                            {
+                                                                routeDetail.arrival_time
+                                                            }
+                                                        </span>
+                                                        <span className="text-[11px] text-[#AAA89F]">
+                                                            {
+                                                                routeDetail.duration_min
+                                                            }{' '}
+                                                            min
+                                                        </span>
+                                                        {(routeDetail.transfers ??
+                                                            0) > 0 && (
+                                                            <span className="rounded-full bg-[#EFEDE7] px-[7px] py-[2px] text-[10px] font-bold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                                                                {
+                                                                    routeDetail.transfers
+                                                                }{' '}
+                                                                transfer
+                                                                {routeDetail.transfers !==
+                                                                1
+                                                                    ? 's'
+                                                                    : ''}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Timeline */}
+                                                <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white px-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                    <JourneyTimeline
+                                                        segments={
+                                                            routeDetail.segments ??
+                                                            []
+                                                        }
+                                                        departureTime={
+                                                            routeDetail.departure_time
+                                                        }
+                                                    />
                                                 </div>
                                             </div>
+                                        )}
 
-                                            {/* Timeline */}
-                                            <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white px-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                                <JourneyTimeline
-                                                    segments={
-                                                        routeDetail.segments ??
-                                                        []
+                                    {/* Non-transit modes: route steps */}
+                                    {routeMode !== 'transit' &&
+                                        routeDetail &&
+                                        routeDetail.steps.length > 0 && (
+                                            <div className="px-4 py-3">
+                                                <RouteStepsPanel
+                                                    mode={routeDetail.mode}
+                                                    durationMin={
+                                                        routeDetail.duration_min
                                                     }
-                                                    departureTime={
-                                                        routeDetail.departure_time
+                                                    distanceKm={
+                                                        routeDetail.distance_km
+                                                    }
+                                                    steps={routeDetail.steps}
+                                                    mapsUrl={
+                                                        routeMapsUrl ??
+                                                        undefined
                                                     }
                                                 />
                                             </div>
+                                        )}
 
-                                            {/* Maps buttons */}
-                                            {routeMapsUrl && (
-                                                <div className="mt-3 flex gap-2">
-                                                    <a
-                                                        href={
-                                                            routeMapsUrl.google
-                                                        }
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-[#1541B8]"
-                                                    >
-                                                        Google Maps
-                                                    </a>
-                                                    <a
-                                                        href={
-                                                            routeMapsUrl.apple
-                                                        }
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] no-underline transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
-                                                    >
-                                                        Apple Maps
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                {/* Non-transit modes: route steps */}
-                                {routeMode !== 'transit' &&
-                                    routeDetail &&
-                                    routeDetail.steps.length > 0 && (
-                                        <div className="px-4 py-3">
-                                            <RouteStepsPanel
-                                                mode={routeDetail.mode}
-                                                durationMin={
-                                                    routeDetail.duration_min
-                                                }
-                                                distanceKm={
-                                                    routeDetail.distance_km
-                                                }
-                                                steps={routeDetail.steps}
-                                                mapsUrl={
-                                                    routeMapsUrl ?? undefined
-                                                }
-                                            />
-                                        </div>
-                                    )}
-
-                                {/* No mode selected yet */}
-                                {!routeLoading &&
-                                    !routeMode &&
-                                    routeOptions.length > 0 && (
-                                        <div className="py-8 text-center text-sm text-[#AAA89F]">
-                                            Select a mode above to see
-                                            directions
-                                        </div>
-                                    )}
-
-                                {/* Transit: no trips found */}
-                                {routeMode === 'transit' &&
-                                    !routeLoading &&
-                                    transitTrips.length === 0 && (
-                                        <div className="py-8 text-center text-sm text-[#AAA89F]">
-                                            No transit routes found
-                                        </div>
-                                    )}
-                            </div>
-                        </>
-                    ) : selectedSpot && !routeDest ? (
-                        <>
-                            {/* ── Spot detail mode (in same panel) ── */}
-                            <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
-                                <div className="flex items-center justify-between">
-                                    <button
-                                        onClick={() => setSelectedSpot(null)}
-                                        className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
-                                    >
-                                        ← Back to spots
-                                    </button>
-                                    <div className="text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
-                                        Work Spot
-                                    </div>
-                                </div>
-                            </div>
-                            <div
-                                className="flex-1 overflow-y-auto"
-                                style={{ scrollbarWidth: 'thin' }}
-                            >
-                                <SpotDetailSheet
-                                    spot={selectedSpot}
-                                    onClose={() => setSelectedSpot(null)}
-                                    inline
-                                    onDirections={(s) =>
-                                        s.lat &&
-                                        s.lng &&
-                                        startDirections(s.lat, s.lng, s.name)
-                                    }
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* ── Normal spots mode ── */}
-                            <div className="shrink-0 border-b border-[#E2DFD6] px-5 pt-[18px] pb-3.5 dark:border-[#3A3930]">
-                                <div className="mb-3 flex items-center justify-between">
-                                    <span className="font-display text-xl font-medium tracking-tight">
-                                        Explore Cologne
-                                    </span>
-                                    <span className="font-mono text-xs text-[#AAA89F]">
-                                        {filteredSpots.length} spots
-                                    </span>
-                                </div>
-                                <SearchBar
-                                    search={search}
-                                    setSearch={setSearch}
-                                />
-                                <ExploreFilterBar
-                                    active={category}
-                                    onChange={filterByCategory}
-                                />
-                            </div>
-
-                            <div
-                                className="flex-1 overflow-y-auto px-4 py-3"
-                                style={{ scrollbarWidth: 'thin' }}
-                            >
-                                {filteredSpots.length === 0 &&
-                                    geoSuggestions.length > 0 && (
-                                        <div className="mb-3">
-                                            <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
-                                                Search nearby
+                                    {/* No mode selected yet */}
+                                    {!routeLoading &&
+                                        !routeMode &&
+                                        routeOptions.length > 0 && (
+                                            <div className="py-8 text-center text-sm text-[#AAA89F]">
+                                                Select a mode above to see
+                                                directions
                                             </div>
-                                            {geoSuggestions.map((g, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                                    onClick={() => {
-                                                        const label = [
-                                                            g.name,
-                                                            g.city,
-                                                        ]
-                                                            .filter(Boolean)
-                                                            .join(', ');
-                                                        setSearch(label);
-                                                        mapRef.current?.flyTo(
-                                                            g.lat,
-                                                            g.lng,
-                                                            16,
-                                                        );
-                                                        mapRef.current?.addSearchPin(
-                                                            g.lat,
-                                                            g.lng,
-                                                            g.name,
-                                                        );
-                                                    }}
-                                                >
-                                                    <span className="shrink-0 text-base text-[#AAA89F]">
-                                                        📍
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
-                                                            {g.name}
-                                                        </div>
-                                                        <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
-                                                            {[g.street, g.city]
-                                                                .filter(Boolean)
-                                                                .join(', ')}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                        )}
+
+                                    {/* Transit: no trips found */}
+                                    {routeMode === 'transit' &&
+                                        !routeLoading &&
+                                        transitTrips.length === 0 && (
+                                            <div className="py-8 text-center text-sm text-[#AAA89F]">
+                                                No transit routes found
+                                            </div>
+                                        )}
+                                </div>
+                            </>
+                        ) : selectedSpot && !routeDest ? (
+                            <>
+                                {/* ── Spot detail mode (in same panel) ── */}
+                                <div className="shrink-0 border-b border-[#E2DFD6] px-5 py-3 dark:border-[#3A3930]">
+                                    <div className="flex items-center justify-between">
+                                        <button
+                                            onClick={() =>
+                                                setSelectedSpot(null)
+                                            }
+                                            className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
+                                        >
+                                            ← Back to spots
+                                        </button>
+                                        <div className="text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
+                                            Work Spot
                                         </div>
-                                    )}
-                                {filteredSpots.length === 0 ? (
-                                    <div className="py-12 text-center text-sm text-[#AAA89F]">
-                                        No spots found.
                                     </div>
-                                ) : (
-                                    filteredSpots.map((s) => (
-                                        <SpotCard
-                                            key={s.id}
-                                            spot={s}
-                                            selected={selectedSpot?.id === s.id}
-                                            onSelect={() => selectSpot(s)}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </>
-                    )}
+                                </div>
+                                <div
+                                    className="flex-1 overflow-y-auto"
+                                    style={{ scrollbarWidth: 'thin' }}
+                                >
+                                    <SpotDetailSheet
+                                        spot={selectedSpot}
+                                        onClose={() => setSelectedSpot(null)}
+                                        inline
+                                        onDirections={(s) =>
+                                            s.lat &&
+                                            s.lng &&
+                                            startDirections(
+                                                s.lat,
+                                                s.lng,
+                                                s.name,
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* ── Normal spots mode ── */}
+                                <div className="shrink-0 border-b border-[#E2DFD6] px-3.5 pt-3 pb-2.5 md:px-5 md:pt-[18px] md:pb-3.5 dark:border-[#3A3930]">
+                                    <div className="mb-2 hidden items-center justify-between md:mb-3 md:flex">
+                                        <span className="font-display text-xl font-medium tracking-tight">
+                                            Explore Cologne
+                                        </span>
+                                        <span className="font-mono text-xs text-[#AAA89F]">
+                                            {filteredSpots.length} spots
+                                        </span>
+                                    </div>
+                                    <SearchBar
+                                        search={search}
+                                        setSearch={setSearch}
+                                    />
+                                    <ExploreFilterBar
+                                        active={category}
+                                        onChange={filterByCategory}
+                                    />
+                                </div>
+
+                                <div
+                                    className="flex-1 overflow-y-auto px-3.5 py-2 pb-20 md:px-4 md:py-3 md:pb-3"
+                                    style={{ scrollbarWidth: 'thin' }}
+                                >
+                                    {filteredSpots.length === 0 &&
+                                        geoSuggestions.length > 0 && (
+                                            <div className="mb-3">
+                                                <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
+                                                    Search nearby
+                                                </div>
+                                                {geoSuggestions.map(
+                                                    (g, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                            onClick={() => {
+                                                                const label = [
+                                                                    g.name,
+                                                                    g.city,
+                                                                ]
+                                                                    .filter(
+                                                                        Boolean,
+                                                                    )
+                                                                    .join(', ');
+                                                                setSearch(
+                                                                    label,
+                                                                );
+                                                                mapRef.current?.flyTo(
+                                                                    g.lat,
+                                                                    g.lng,
+                                                                    16,
+                                                                );
+                                                                mapRef.current?.addSearchPin(
+                                                                    g.lat,
+                                                                    g.lng,
+                                                                    g.name,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <span className="shrink-0 text-base text-[#AAA89F]">
+                                                                📍
+                                                            </span>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
+                                                                    {g.name}
+                                                                </div>
+                                                                <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                                                    {[
+                                                                        g.street,
+                                                                        g.city,
+                                                                    ]
+                                                                        .filter(
+                                                                            Boolean,
+                                                                        )
+                                                                        .join(
+                                                                            ', ',
+                                                                        )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ),
+                                                )}
+                                            </div>
+                                        )}
+                                    {filteredSpots.length === 0 ? (
+                                        <div className="py-12 text-center text-sm text-[#AAA89F]">
+                                            No spots found.
+                                        </div>
+                                    ) : (
+                                        filteredSpots.map((s) => (
+                                            <SpotCard
+                                                key={s.id}
+                                                spot={s}
+                                                selected={
+                                                    selectedSpot?.id === s.id
+                                                }
+                                                onSelect={() => selectSpot(s)}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    {/* Mobile toggle arrow — outside overflow-hidden panel */}
+                    <button
+                        onClick={() => setPanelExpanded((v) => !v)}
+                        className="flex w-full shrink-0 items-center justify-center border-b border-[#E2DFD6] bg-[#F6F5F1] py-1.5 md:hidden dark:border-[#3A3930] dark:bg-[#2A2920]"
+                    >
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`text-[#AAA89F] transition-transform duration-300 ${panelExpanded ? '' : 'rotate-180'}`}
+                        >
+                            <polyline points="18 15 12 9 6 15" />
+                        </svg>
+                    </button>
                 </div>
 
                 {/* ═══ MAP PANEL ═══ flex:1, always visible */}
@@ -1237,8 +1258,8 @@ export default function Explore() {
                         <span>{listOpen ? 'Hide list' : 'Show list'}</span>
                     </button>
 
-                    {/* Mobile: floating search + filters over map */}
-                    <div className="absolute top-4 left-1/2 z-[85] w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white/[0.97] shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]/[0.97]">
+                    {/* Mobile: floating search + filters over map — hidden, now in top panel */}
+                    <div className="hidden">
                         <div className="flex items-center gap-2.5 border-b border-[#E2DFD6] px-3.5 py-[11px] dark:border-[#3A3930]">
                             <span className="text-[15px] text-[#AAA89F]">
                                 🔍
@@ -1498,48 +1519,8 @@ export default function Explore() {
                         </div>
                     )}
 
-                    {/* ═══ ROUTE MODE PICKER — mobile only (desktop uses left panel) ═══ */}
-                    {routeDest && routeOptions.length > 0 && (
-                        <div className="md:hidden">
-                            <ModePicker
-                                options={routeOptions}
-                                activeMode={routeMode}
-                                onSelectMode={(mode) => {
-                                    const from = { lat: myLat, lng: myLng };
-                                    selectRouteMode(
-                                        mode,
-                                        undefined,
-                                        from,
-                                        routeDest,
-                                    );
-                                }}
-                                onClose={closeRoute}
-                                loading={routeLoading}
-                                destinationName={routeDest.name}
-                            />
-                        </div>
-                    )}
-
-                    {/* ═══ MOBILE: Draggable bottom sheet list ═══ */}
-                    {!routeDest && (
-                        <MobileListSheet
-                            spots={filteredSpots}
-                            selectedId={selectedSpot?.id ?? null}
-                            onSelect={selectSpot}
-                        />
-                    )}
+                    {/* ModePicker removed — directions now in top panel */}
                 </div>
-            </div>
-
-            {/* Spot detail bottom sheet — mobile only */}
-            <div className="md:hidden">
-                <SpotDetailSheet
-                    spot={selectedSpot}
-                    onClose={() => setSelectedSpot(null)}
-                    onDirections={(s) =>
-                        s.lat && s.lng && startDirections(s.lat, s.lng, s.name)
-                    }
-                />
             </div>
         </AppLayout>
     );
