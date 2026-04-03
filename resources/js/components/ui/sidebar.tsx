@@ -196,7 +196,7 @@ function Sidebar({
         data-sidebar="sidebar"
         className={cn(
           "bg-sidebar flex h-svh w-(--sidebar-width) shrink-0 flex-col overflow-x-hidden overflow-y-auto border-r border-sidebar-border sticky top-0",
-          "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+          "group-data-[collapsible=icon]:w-(--sidebar-width-icon)!",
           "group-data-[collapsible=offcanvas]:w-0 group-data-[collapsible=offcanvas]:border-r-0",
           className
         )}

@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
 
@@ -361,27 +362,17 @@ export function RouteSheet({
                         </div>
                     )}
 
-                    {/* Fallback maps buttons */}
-                    <div className="flex gap-2">
-                        <a
-                            href={data.maps_url.google}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
-                            style={{ textDecoration: 'none' }}
-                        >
-                            Google Maps
-                        </a>
-                        <a
-                            href={data.maps_url.apple}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6]"
-                            style={{ textDecoration: 'none' }}
-                        >
-                            Apple Maps
-                        </a>
-                    </div>
+                    {/* Navigate to explore directions */}
+                    <button
+                        onClick={() => {
+                            router.visit(
+                                `/explore?dir_lat=${destination.lat}&dir_lng=${destination.lng}&dir_name=${encodeURIComponent(destination.name)}`,
+                            );
+                        }}
+                        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
+                    >
+                        Start navigation
+                    </button>
                 </>
             )}
         </div>

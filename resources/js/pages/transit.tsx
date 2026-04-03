@@ -79,6 +79,33 @@ type GtfsDeparturesData = {
     departures: GtfsDeparture[];
 };
 
+/** Encode lat/lng pairs into Google polyline format (precision 6 for Valhalla) */
+function encodePolyline(coords: [number, number][], precision = 6): string {
+    const factor = Math.pow(10, precision);
+    let output = '';
+    let prevLat = 0;
+    let prevLng = 0;
+    for (const [lat, lng] of coords) {
+        const iLat = Math.round(lat * factor);
+        const iLng = Math.round(lng * factor);
+        output += encodeValue(iLat - prevLat);
+        output += encodeValue(iLng - prevLng);
+        prevLat = iLat;
+        prevLng = iLng;
+    }
+    return output;
+}
+function encodeValue(value: number): string {
+    let v = value < 0 ? ~(value << 1) : value << 1;
+    let result = '';
+    while (v >= 0x20) {
+        result += String.fromCharCode((0x20 | (v & 0x1f)) + 63);
+        v >>= 5;
+    }
+    result += String.fromCharCode(v + 63);
+    return result;
+}
+
 // API stop search result
 type StopSearchResult = {
     stop_id: string;
@@ -287,8 +314,37 @@ function JourneyRoutePanel({
                         }
                     })
                     .catch(() => {});
+            } else if (mode === 'transit') {
+                // Fetch transit route — extract geometry from first trip's segments
+                fetch(
+                    `/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}&mode=transit`,
+                    { credentials: 'same-origin' },
+                )
+                    .then((r) => r.json())
+                    .then((data) => {
+                        if (data.geometry) {
+                            setSelectedGeometry(data.geometry);
+                            return;
+                        }
+                        // Build geometry from first trip's segment coordinates
+                        const trip = data.trips?.[0];
+                        if (trip?.segments) {
+                            const coords: [number, number][] = [];
+                            for (const seg of trip.segments) {
+                                if (seg.from_lat && seg.from_lng)
+                                    coords.push([seg.from_lat, seg.from_lng]);
+                                if (seg.to_lat && seg.to_lng)
+                                    coords.push([seg.to_lat, seg.to_lng]);
+                            }
+                            if (coords.length >= 2) {
+                                // Encode as simple polyline (precision 6)
+                                setSelectedGeometry(encodePolyline(coords));
+                            }
+                        }
+                    })
+                    .catch(() => {});
             } else {
-                setSelectedGeometry(null); // transit
+                setSelectedGeometry(null);
             }
         }
     }
@@ -384,52 +440,44 @@ function JourneyRoutePanel({
                 })}
             </div>
 
-            {/* Route preview map */}
-            <Suspense
-                fallback={
-                    <div className="h-[200px] animate-pulse rounded-[14px] bg-[#EFEDE7]" />
-                }
-            >
-                <RoutePreviewMapLazy
-                    origin={origin}
-                    destination={{ lat: destination.lat, lng: destination.lng }}
-                    mode={
-                        selectedMode === 'bike'
-                            ? 'bike'
-                            : selectedMode === 'walk'
-                              ? 'walk'
-                              : selectedMode === 'drive'
-                                ? 'drive'
-                                : 'walk'
+            {/* Route preview map — hidden for transit (explore page handles it) */}
+            {selectedMode !== 'transit' && (
+                <Suspense
+                    fallback={
+                        <div className="h-[200px] animate-pulse rounded-[14px] bg-[#EFEDE7]" />
                     }
-                    geometry={selectedGeometry}
-                />
-            </Suspense>
+                >
+                    <RoutePreviewMapLazy
+                        origin={origin}
+                        destination={{
+                            lat: destination.lat,
+                            lng: destination.lng,
+                        }}
+                        mode={
+                            selectedMode === 'bike'
+                                ? 'bike'
+                                : selectedMode === 'walk'
+                                  ? 'walk'
+                                  : selectedMode === 'drive'
+                                    ? 'drive'
+                                    : 'walk'
+                        }
+                        geometry={selectedGeometry}
+                    />
+                </Suspense>
+            )}
 
-            {/* Navigation buttons */}
-            <div className="mt-3 flex gap-2">
-                <a
-                    href={
-                        mapsUrl?.google ??
-                        `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=${gmMode}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
-                    style={{ textDecoration: 'none' }}
-                >
-                    🗺️ Start navigation
-                </a>
-                <a
-                    href={`https://maps.apple.com/?saddr=${origin.lat},${origin.lng}&daddr=${destination.lat},${destination.lng}&dirflg=${gmMode === 'transit' ? 'r' : gmMode === 'walking' ? 'w' : gmMode === 'bicycling' ? 'b' : 'd'}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
-                    style={{ textDecoration: 'none' }}
-                >
-                    🍎 Apple Maps
-                </a>
-            </div>
+            {/* Navigate to explore directions */}
+            <button
+                onClick={() => {
+                    router.visit(
+                        `/explore?dir_lat=${destination.lat}&dir_lng=${destination.lng}&dir_name=${encodeURIComponent(destination.name)}&dir_mode=${selectedMode}`,
+                    );
+                }}
+                className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
+            >
+                Start navigation
+            </button>
 
             <button
                 onClick={onClear}

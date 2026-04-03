@@ -254,19 +254,26 @@ export default function Explore() {
         const lat = params.get('dir_lat');
         const lng = params.get('dir_lng');
         const name = params.get('dir_name');
+        const mode = params.get('dir_mode');
 
         if (lat && lng && name) {
-            startDirections(parseFloat(lat), parseFloat(lng), name);
+            startDirections(parseFloat(lat), parseFloat(lng), name, mode);
         }
     }, []);
 
-    function startDirections(lat: number, lng: number, name: string) {
+    function startDirections(
+        lat: number,
+        lng: number,
+        name: string,
+        preferredMode?: string | null,
+    ) {
         setRouteDest({ lat, lng, name });
         setRouteMode(null);
         setRouteDetail(null);
         setRouteLoading(true);
         // Keep selectedSpot so we can go back to detail view
         setListOpen(true);
+        setPanelExpanded(true);
 
         // Persist in URL so refresh restores directions
         const url = new URL(window.location.href);
@@ -284,15 +291,20 @@ export default function Explore() {
                 setRouteOptions(data.options ?? []);
                 setRouteMapsUrl(data.maps_url ?? null);
                 setRouteLoading(false);
-                // Always start with bike mode
-                const bikeOpt = (data.options ?? []).find(
-                    (o: RouteOption) => o.mode === 'bike',
-                );
+                // Use preferred mode if provided, otherwise default to bike
+                const mode = preferredMode ?? 'bike';
+                const opt =
+                    (data.options ?? []).find(
+                        (o: RouteOption) => o.mode === mode,
+                    ) ??
+                    (data.options ?? []).find(
+                        (o: RouteOption) => o.mode === 'bike',
+                    );
 
-                if (bikeOpt) {
+                if (opt) {
                     selectRouteMode(
-                        'bike',
-                        bikeOpt.geometry,
+                        opt.mode,
+                        opt.geometry,
                         { lat: data.from.lat, lng: data.from.lng },
                         { lat, lng },
                     );
@@ -405,6 +417,7 @@ export default function Explore() {
         url.searchParams.delete('dir_lat');
         url.searchParams.delete('dir_lng');
         url.searchParams.delete('dir_name');
+        url.searchParams.delete('dir_mode');
         window.history.replaceState({}, '', url.toString());
     }
 

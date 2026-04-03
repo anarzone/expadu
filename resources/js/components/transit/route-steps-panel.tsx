@@ -251,28 +251,6 @@ export function RouteStepsPanel({
             )}
 
             {/* Maps buttons */}
-            {mapsUrl && (
-                <div className="flex gap-2">
-                    <a
-                        href={mapsUrl.google}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
-                        style={{ textDecoration: 'none' }}
-                    >
-                        Google Maps
-                    </a>
-                    <a
-                        href={mapsUrl.apple}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex flex-1 items-center justify-center gap-2 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
-                        style={{ textDecoration: 'none' }}
-                    >
-                        Apple Maps
-                    </a>
-                </div>
-            )}
         </div>
     );
 }

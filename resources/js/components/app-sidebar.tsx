@@ -88,7 +88,7 @@ export function AppSidebar() {
     return (
         <Sidebar collapsible="icon" variant="sidebar">
             {/* Logo */}
-            <SidebarHeader className="px-4 pt-6 pb-0">
+            <SidebarHeader className="px-4 pt-6 pb-0 group-data-[collapsible=icon]:px-2">
                 <Link
                     href={dashboard()}
                     prefetch
@@ -97,7 +97,7 @@ export function AppSidebar() {
                     <AppLogoIcon />
                     <span
                         data-sidebar-text
-                        className="font-display text-[22px] font-medium tracking-tight whitespace-nowrap text-[#18170F] dark:text-[#F6F5F1]"
+                        className="font-display text-[22px] font-medium tracking-tight whitespace-nowrap text-[#18170F] group-data-[collapsible=icon]:hidden dark:text-[#F6F5F1]"
                     >
                         Expadu
                     </span>
@@ -109,15 +109,18 @@ export function AppSidebar() {
             </SidebarContent>
 
             {/* User chip with dropdown */}
-            <SidebarFooter className="relative px-4 pb-4">
+            <SidebarFooter className="relative px-4 pb-4 group-data-[collapsible=icon]:px-2">
                 <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="mt-2 flex w-full items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 py-2.5 pt-4 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                    className="mt-2 flex w-full items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 py-2.5 pt-4 text-left transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-2.5 hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                 >
                     <div className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1A4CD4] to-[#6366F1] text-sm font-semibold text-white">
                         {getInitials(user?.name ?? '')}
                     </div>
-                    <div data-sidebar-text className="overflow-hidden">
+                    <div
+                        data-sidebar-text
+                        className="overflow-hidden group-data-[collapsible=icon]:hidden"
+                    >
                         <div className="truncate text-sm font-semibold whitespace-nowrap">
                             {user?.name ?? 'User'}
                         </div>

@@ -8,7 +8,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
 
     return (
         <div
-            className="flex-1 overflow-x-hidden overflow-y-auto px-4"
+            className="flex-1 overflow-x-hidden overflow-y-auto px-4 group-data-[collapsible=icon]:px-2"
             style={{ scrollbarWidth: 'none' }}
         >
             {groups.map((group) => (
@@ -16,7 +16,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                     {/* Group label */}
                     <div
                         data-sidebar-text
-                        className="overflow-hidden px-2 pt-3.5 pb-[5px] text-[10px] font-bold tracking-[0.09em] whitespace-nowrap text-[#AAA89F] uppercase dark:text-[#6B6860]"
+                        className="overflow-hidden px-2 pt-3.5 pb-[5px] text-[10px] font-bold tracking-[0.09em] whitespace-nowrap text-[#AAA89F] uppercase group-data-[collapsible=icon]:hidden dark:text-[#6B6860]"
                     >
                         {group.label}
                     </div>
@@ -30,7 +30,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                 key={item.title}
                                 href={item.href}
                                 prefetch
-                                className={`mb-px flex items-center gap-[13px] overflow-hidden rounded-[9px] px-3 py-2.5 whitespace-nowrap transition-all duration-150 ${
+                                className={`mb-px flex items-center gap-[13px] overflow-hidden rounded-[9px] px-3 py-2.5 whitespace-nowrap transition-all duration-150 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 ${
                                     active
                                         ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A2440] dark:text-[#5B8AF5]'
                                         : 'text-[#6B6860] hover:bg-[#EFEDE7] hover:text-[#18170F] dark:text-[#AAA89F] dark:hover:bg-[#2A2920] dark:hover:text-[#F6F5F1]'
@@ -50,14 +50,14 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                 </span>
                                 <span
                                     data-sidebar-text
-                                    className="text-[15px] font-medium"
+                                    className="text-[15px] font-medium group-data-[collapsible=icon]:hidden"
                                 >
                                     {item.title}
                                 </span>
                                 {item.badge !== undefined && (
                                     <span
                                         data-sidebar-text
-                                        className={`ml-auto shrink-0 rounded-full px-[7px] py-[2px] text-[10px] font-bold text-white ${
+                                        className={`ml-auto shrink-0 rounded-full px-[7px] py-[2px] text-[10px] font-bold text-white group-data-[collapsible=icon]:hidden ${
                                             item.badgeVariant === 'warn'
                                                 ? 'bg-[#C47D0E]'
                                                 : 'bg-[#1A4CD4]'
