@@ -1820,64 +1820,62 @@ export default function Transit() {
                                 Plan a Journey
                             </span>
                         </div>
-                        <div className="mb-3 flex flex-col gap-2">
+                        <div className="mb-3 flex flex-col gap-1.5">
                             {/* From — with geocoding */}
-                            <div className="flex items-center gap-[10px]">
-                                <GeocodeInput
-                                    icon="📍"
-                                    placeholder="From — your current location"
-                                    value={fromValue}
-                                    onChange={setFromValue}
-                                    onFocus={() => setActiveInput('from')}
-                                    onSelect={(r) => {
-                                        setFromValue(r.label);
-                                        setJourneyOrigin({
-                                            lat: r.lat,
-                                            lng: r.lng,
-                                        });
-                                    }}
-                                />
-                            </div>
-                            {/* To — with geocoding + swap */}
-                            <div className="flex items-center gap-[10px]">
-                                <GeocodeInput
-                                    icon="🏁"
-                                    placeholder="To — destination"
-                                    value={toValue}
-                                    onChange={setToValue}
-                                    onFocus={() => setActiveInput('to')}
-                                    onSelect={(r) => {
-                                        setToValue(r.label);
-                                        track('journey_planned', {
-                                            from: fromValue,
-                                            to: r.name,
-                                            from_lat: journeyOrigin.lat,
-                                            from_lng: journeyOrigin.lng,
-                                            to_lat: r.lat,
-                                            to_lng: r.lng,
-                                            dow: new Date().getDay(),
-                                            hour: new Date().getHours(),
-                                        });
-                                        setJourneyDest({
-                                            lat: r.lat,
-                                            lng: r.lng,
-                                            name: r.name,
-                                        });
-                                    }}
-                                />
+                            <GeocodeInput
+                                icon="📍"
+                                placeholder="From — your current location"
+                                value={fromValue}
+                                onChange={setFromValue}
+                                onFocus={() => setActiveInput('from')}
+                                onSelect={(r) => {
+                                    setFromValue(r.label);
+                                    setJourneyOrigin({
+                                        lat: r.lat,
+                                        lng: r.lng,
+                                    });
+                                }}
+                            />
+                            {/* Swap button — between inputs */}
+                            <div className="flex justify-center">
                                 <button
                                     onClick={swapDestinations}
-                                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                    style={{
-                                        width: 36,
-                                        height: 36,
-                                        fontSize: 16,
-                                    }}
+                                    className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                     title="Swap origin/destination"
                                 >
-                                    ⇅
+                                    <IconArrowsUpDown
+                                        size={16}
+                                        stroke={1.7}
+                                        className="text-[#6B6860] dark:text-[#AAA89F]"
+                                    />
                                 </button>
                             </div>
+                            {/* To — with geocoding */}
+                            <GeocodeInput
+                                icon="🏁"
+                                placeholder="To — destination"
+                                value={toValue}
+                                onChange={setToValue}
+                                onFocus={() => setActiveInput('to')}
+                                onSelect={(r) => {
+                                    setToValue(r.label);
+                                    track('journey_planned', {
+                                        from: fromValue,
+                                        to: r.name,
+                                        from_lat: journeyOrigin.lat,
+                                        from_lng: journeyOrigin.lng,
+                                        to_lat: r.lat,
+                                        to_lng: r.lng,
+                                        dow: new Date().getDay(),
+                                        hour: new Date().getHours(),
+                                    });
+                                    setJourneyDest({
+                                        lat: r.lat,
+                                        lng: r.lng,
+                                        name: r.name,
+                                    });
+                                }}
+                            />
                         </div>
                         {/* Quick place chips — applies to whichever input is focused */}
                         <div className="mb-1 text-[10px] font-semibold tracking-[0.06em] text-[#AAA89F] uppercase">
