@@ -97,10 +97,16 @@ export function RouteSheet({
     // Fetch full route with geometry + steps when user clicks an option
     function selectMode(opt: RouteOption) {
         setShowSteps(false);
-        if (!data || opt.mode === 'transit') return; // transit has no Valhalla routing yet
+
+        if (!data || opt.mode === 'transit') {
+return;
+} // transit has no Valhalla routing yet
 
         const costing = VALHALLA_COSTING[opt.mode];
-        if (!costing) return;
+
+        if (!costing) {
+return;
+}
 
         setLoadingRoute(true);
         fetch(
@@ -114,6 +120,7 @@ export function RouteSheet({
                 if (json.geometry) {
                     setSelectedRoute(json);
                 }
+
                 setLoadingRoute(false);
             })
             .catch(() => setLoadingRoute(false));

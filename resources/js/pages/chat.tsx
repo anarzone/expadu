@@ -1,8 +1,8 @@
-import { ChatRightPanel } from '@/components/chat/chat-right-panel';
-import AppLayout from '@/layouts/app-layout';
-import { useTabState } from '@/hooks/use-tab-state';
 import { Head } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChatRightPanel } from '@/components/chat/chat-right-panel';
+import { useTabState } from '@/hooks/use-tab-state';
+import AppLayout from '@/layouts/app-layout';
 
 /* ─── Types ─── */
 type Message = {
@@ -158,6 +158,7 @@ const tabs = [
 /* ─── Helpers ─── */
 function formatTime(): string {
     const now = new Date();
+
     return now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
 }
 
@@ -193,6 +194,7 @@ export default function Chat() {
             c.name.toLowerCase().includes(q) ||
             c.sub.toLowerCase().includes(q) ||
             c.msgs.some((m) => m.text.toLowerCase().includes(q));
+
         return matchTab && matchQ;
     });
 
@@ -218,7 +220,10 @@ export default function Chat() {
     /* Send message */
     function sendMessage() {
         const text = inputValue.trim();
-        if (!text || !activeThreadId) return;
+
+        if (!text || !activeThreadId) {
+return;
+}
 
         const time = formatTime();
         setConversations((prev) =>
@@ -440,6 +445,7 @@ export default function Chat() {
                         ) : (
                             filteredConversations.map((c) => {
                                 const lastMsg = c.msgs[c.msgs.length - 1];
+
                                 return (
                                     <div
                                         key={c.id}
@@ -700,6 +706,7 @@ export default function Chat() {
                     >
                         {activeConv.msgs.map((m, i) => {
                             const isMe = m.from === 'me';
+
                             return (
                                 <div
                                     key={i}
@@ -783,7 +790,9 @@ export default function Chat() {
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter') sendMessage();
+                                    if (e.key === 'Enter') {
+sendMessage();
+}
                                 }}
                                 placeholder="Message\u2026"
                                 style={{

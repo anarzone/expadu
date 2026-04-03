@@ -74,7 +74,9 @@ export function SpotDetailSheet({
     const { track } = useTracker();
     const [navMenuOpen, setNavMenuOpen] = useState(false);
 
-    if (!spot) return null;
+    if (!spot) {
+return null;
+}
 
     const emoji = categoryEmoji[spot.category] || '📍';
     const area = spot.address?.split(',')[1]?.trim() || spot.address || '';
@@ -89,9 +91,18 @@ export function SpotDetailSheet({
         crowdPercent < 40 ? 'Quiet' : crowdPercent < 70 ? 'Moderate' : 'Busy';
 
     const attrs: string[] = [];
-    if (spot.wifi_speed) attrs.push('wifi');
-    if (spot.noise_level === 'quiet') attrs.push('quiet');
-    if (spot.category === 'coworking') attrs.push('cowork');
+
+    if (spot.wifi_speed) {
+attrs.push('wifi');
+}
+
+    if (spot.noise_level === 'quiet') {
+attrs.push('quiet');
+}
+
+    if (spot.category === 'coworking') {
+attrs.push('cowork');
+}
 
     const reviews = mockReviews[spot.id] || [
         {
@@ -160,8 +171,13 @@ export function SpotDetailSheet({
             <div className="mb-4 flex flex-wrap gap-[7px]">
                 {attrs.map((a) => {
                     const tag = getTag(a);
-                    if (!tag) return null;
+
+                    if (!tag) {
+return null;
+}
+
                     const TagIcon = tag.icon;
+
                     return (
                         <span
                             key={a}

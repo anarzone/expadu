@@ -80,6 +80,7 @@ export function CardRenderer({ cards }: { cards: HomeCard[] }) {
                                 </FeedSection>
                             );
                         }
+
                         return null;
                     case 'live_departures': {
                         const depData = card.data as {
@@ -93,6 +94,7 @@ export function CardRenderer({ cards }: { cards: HomeCard[] }) {
                             stop_name?: string;
                             placeholder?: boolean;
                         };
+
                         if (
                             depData.placeholder ||
                             !depData.departures?.length
@@ -108,12 +110,14 @@ export function CardRenderer({ cards }: { cards: HomeCard[] }) {
                                 </FeedSection>
                             );
                         }
+
                         const srcLabel =
                             depData.source === 'gtfs_static'
                                 ? 'Static timetable'
                                 : depData.source === 'gtfs_rt'
                                   ? 'Live'
                                   : 'Scheduled times';
+
                         return (
                             <FeedSection key={index} label="Live Departures">
                                 <div

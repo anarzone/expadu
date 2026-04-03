@@ -23,21 +23,39 @@ const tabs = [
 function getTimeGroup(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return 'Just now';
+
+    if (mins < 60) {
+return 'Just now';
+}
+
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return 'Today';
+
+    if (hours < 24) {
+return 'Today';
+}
+
     const days = Math.floor(hours / 24);
-    if (days === 1) return 'Yesterday';
+
+    if (days === 1) {
+return 'Yesterday';
+}
+
     return 'Earlier';
 }
 
 function groupAlerts(alerts: AlertData[]): Record<string, AlertData[]> {
     const groups: Record<string, AlertData[]> = {};
+
     for (const alert of alerts) {
         const group = getTimeGroup(alert.created_at);
-        if (!groups[group]) groups[group] = [];
+
+        if (!groups[group]) {
+groups[group] = [];
+}
+
         groups[group].push(alert);
     }
+
     return groups;
 }
 
@@ -63,7 +81,10 @@ export default function Alerts() {
     const typeCounters: Record<string, number> = {};
 
     function getTypeIndex(type: string): number {
-        if (!(type in typeCounters)) typeCounters[type] = 0;
+        if (!(type in typeCounters)) {
+typeCounters[type] = 0;
+}
+
         return typeCounters[type]++;
     }
 
@@ -145,7 +166,11 @@ export default function Alerts() {
                     <div>
                         {groupOrder.map((groupName) => {
                             const items = grouped[groupName];
-                            if (!items || items.length === 0) return null;
+
+                            if (!items || items.length === 0) {
+return null;
+}
+
                             return (
                                 <div key={groupName}>
                                     <div className="flex items-center gap-2 px-6 pt-3.5 pb-1.5">

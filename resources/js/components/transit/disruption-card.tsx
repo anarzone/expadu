@@ -19,6 +19,7 @@ export function DisruptionCard({
         disruption.severity === 'warning'
             ? 'text-amber-900 dark:text-amber-200'
             : 'text-foreground';
+
     return (
         <div className={`flex items-start gap-2.5 rounded-lg border p-3 ${bg}`}>
             <span className="shrink-0 text-sm">&#x26A0;&#xFE0F;</span>

@@ -1,9 +1,10 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import {
-    ServiceCard,
-    type ServiceData,
+    ServiceCard
+    
 } from '@/components/services/service-card';
+import type {ServiceData} from '@/components/services/service-card';
 import { ServicesRightPanel } from '@/components/services/services-right-panel';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
@@ -104,6 +105,7 @@ export default function Services() {
     // Filter services
     const filtered = useMemo(() => {
         const q = search.toLowerCase().trim();
+
         return services.filter((s) => {
             const matchCat = activeCat === 'all' || s.cat === activeCat;
             const matchQ =
@@ -112,6 +114,7 @@ export default function Services() {
                 s.type.toLowerCase().includes(q) ||
                 s.desc.toLowerCase().includes(q) ||
                 s.languages.some((l) => l.toLowerCase().includes(q));
+
             return matchCat && matchQ;
         });
     }, [services, activeCat, search]);

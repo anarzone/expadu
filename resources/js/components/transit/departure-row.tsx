@@ -18,6 +18,7 @@ export function DepartureRow({
     };
 }) {
     const isDelayed = departure.status === 'delayed';
+
     return (
         <div className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-b-0">
             <div

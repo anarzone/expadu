@@ -26,8 +26,14 @@ export function EventCard({
 
     // Card classes: featured = purple border, karneval = red border
     let borderStyle = '1px solid #E2DFD6';
-    if (event.featured) borderStyle = '1.5px solid rgba(124,58,237,.3)';
-    if (event.karneval) borderStyle = '1.5px solid rgba(196,39,26,.3)';
+
+    if (event.featured) {
+borderStyle = '1.5px solid rgba(124,58,237,.3)';
+}
+
+    if (event.karneval) {
+borderStyle = '1.5px solid rgba(196,39,26,.3)';
+}
 
     return (
         <div
@@ -43,15 +49,16 @@ export function EventCard({
                     'rgba(26,76,212,.25)';
             }}
             onMouseLeave={(e) => {
-                if (event.featured)
-                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                if (event.featured) {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                         'rgba(124,58,237,.3)';
-                else if (event.karneval)
-                    (e.currentTarget as HTMLDivElement).style.borderColor =
+} else if (event.karneval) {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                         'rgba(196,39,26,.3)';
-                else
-                    (e.currentTarget as HTMLDivElement).style.borderColor =
+} else {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                         '#E2DFD6';
+}
             }}
         >
             {/* Color bar */}

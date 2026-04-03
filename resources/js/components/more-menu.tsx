@@ -14,9 +14,9 @@ import {
     IconUser,
     IconX,
 } from '@tabler/icons-react';
-import { useCurrentUrl } from '@/hooks/use-current-url';
-import { ICON_STROKE } from '@/constants/icons';
 import type { ComponentType } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
+import { useCurrentUrl } from '@/hooks/use-current-url';
 
 const menuGroups: Array<{
     label: string;
@@ -110,6 +110,7 @@ export function MoreMenu({
                         {group.items.map((item) => {
                             const active = isCurrentUrl(item.href);
                             const Icon = item.icon;
+
                             return (
                                 <Link
                                     key={item.title}

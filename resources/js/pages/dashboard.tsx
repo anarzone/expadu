@@ -129,7 +129,10 @@ export default function Dashboard() {
     // Track location + reload dashboard when moved >200m
     const lastDashReloadRef = useRef<string>('');
     useEffect(() => {
-        if (!geoPos) return;
+        if (!geoPos) {
+return;
+}
+
         track('location_ping', {
             lat: geoPos.lat,
             lng: geoPos.lng,
@@ -139,6 +142,7 @@ export default function Dashboard() {
 
         // Reload feed when moved significantly (~200m = 0.002 degree)
         const key = `${geoPos.lat.toFixed(2)}_${geoPos.lng.toFixed(2)}`;
+
         if (key !== lastDashReloadRef.current) {
             lastDashReloadRef.current = key;
             router.reload({
@@ -454,6 +458,7 @@ export default function Dashboard() {
                             >
                                 {(cr?.route_cards ?? []).map((card, i) => {
                                     const pool = cr?.card_pools?.[i] ?? [card];
+
                                     return (
                                         <RotatingCardSlot
                                             key={i}
@@ -679,6 +684,7 @@ export default function Dashboard() {
                                                 {spot.tags.map((tag) => {
                                                     const t = getTag(tag);
                                                     const TagIcon = t?.icon;
+
                                                     return (
                                                         <span
                                                             key={tag}
@@ -1096,8 +1102,14 @@ function getGreeting(name?: string): string {
     const hour = new Date().getHours();
     const display = name ? `, ${name}` : '';
 
-    if (hour < 12) return `Good morning${display}`;
-    if (hour < 18) return `Good afternoon${display}`;
+    if (hour < 12) {
+return `Good morning${display}`;
+}
+
+    if (hour < 18) {
+return `Good afternoon${display}`;
+}
+
     return `Good evening${display}`;
 }
 
@@ -1112,7 +1124,10 @@ function RotatingCardSlot({
     const [flipping, setFlipping] = useState(false);
 
     useEffect(() => {
-        if (!pool || pool.length <= 1) return;
+        if (!pool || pool.length <= 1) {
+return;
+}
+
         let timer: ReturnType<typeof setTimeout>;
         function scheduleNext() {
             const delay = 30_000 + Math.random() * 30_000;
@@ -1126,11 +1141,15 @@ function RotatingCardSlot({
             }, delay);
         }
         scheduleNext();
+
         return () => clearTimeout(timer);
     }, [pool?.length]);
 
     const card = pool?.[index] ?? pool?.[0];
-    if (!card) return null;
+
+    if (!card) {
+return null;
+}
 
     return (
         <div

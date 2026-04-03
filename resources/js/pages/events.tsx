@@ -4,9 +4,9 @@ import { EventCard } from '@/components/events/event-card';
 import { EventDetailContent } from '@/components/events/event-detail-content';
 import { EventsHero } from '@/components/events/events-hero';
 import { EventsRightPanel } from '@/components/events/events-right-panel';
+import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { useTabState } from '@/hooks/use-tab-state';
 import { useTracker } from '@/hooks/use-tracker';
-import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
@@ -135,6 +135,7 @@ export default function Events() {
                 e.venue.toLowerCase().includes(q) ||
                 e.area.toLowerCase().includes(q) ||
                 e.categories.some((c) => c.includes(q));
+
             return matchFilter && matchSearch;
         });
     }, [events, activeFilter, search]);
@@ -142,11 +143,17 @@ export default function Events() {
     // ── Group events by date ──
     const groupedByDate = useMemo(() => {
         const map: Record<string, EventData[]> = {};
+
         for (const e of filtered) {
             const key = `${e.day} ${e.date} ${e.month}`;
-            if (!map[key]) map[key] = [];
+
+            if (!map[key]) {
+map[key] = [];
+}
+
             map[key].push(e);
         }
+
         return map;
     }, [filtered]);
 
@@ -158,17 +165,23 @@ export default function Events() {
         const set = new Set<number>();
         events.forEach((e) => {
             const d = new Date(e.fullDate);
+
             if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
                 set.add(parseInt(e.date));
             }
         });
+
         return set;
     }, [events, calYear, calMonth]);
 
     const calDayEvents = useMemo(() => {
-        if (selectedCalDay === null) return [];
+        if (selectedCalDay === null) {
+return [];
+}
+
         return events.filter((e) => {
             const d = new Date(e.fullDate);
+
             return (
                 d.getFullYear() === calYear &&
                 d.getMonth() === calMonth &&
@@ -180,10 +193,15 @@ export default function Events() {
     // ── Handlers ──
     function toggleRsvp(id: number) {
         const ev = events.find((e) => e.id === id);
-        if (!ev) return;
+
+        if (!ev) {
+return;
+}
+
         if (!ev.going) {
             track('event_rsvp', { event_id: id, event_title: ev.title });
         }
+
         const newGoing = !ev.going;
         setLocalOverrides((prev) => ({
             ...prev,
@@ -193,6 +211,7 @@ export default function Events() {
                 attending: newGoing ? ev.attending + 1 : ev.attending - 1,
             },
         }));
+
         if (ev.going) {
             router.delete(`/events/${id}/join`, {
                 preserveScroll: true,
@@ -209,10 +228,15 @@ export default function Events() {
 
     function toggleSave(id: number) {
         const ev = events.find((e) => e.id === id);
-        if (!ev) return;
+
+        if (!ev) {
+return;
+}
+
         if (!ev.saved) {
             track('event_saved', { event_id: id });
         }
+
         setLocalOverrides((prev) => ({
             ...prev,
             [id]: { ...prev[id], saved: !ev.saved },
@@ -221,20 +245,26 @@ export default function Events() {
 
     function openEvent(id: number) {
         const ev = events.find((e) => e.id === id);
-        if (ev) setSelectedEvent(ev);
+
+        if (ev) {
+setSelectedEvent(ev);
+}
     }
 
     function changeMonth(dir: number) {
         let m = calMonth + dir;
         let y = calYear;
+
         if (m > 11) {
             m = 0;
             y++;
         }
+
         if (m < 0) {
             m = 11;
             y--;
         }
+
         setCalMonth(m);
         setCalYear(y);
         setSelectedCalDay(null);
@@ -417,6 +447,7 @@ export default function Events() {
                                         const isToday =
                                             label.includes(todayDate) &&
                                             label.includes(todayMonth);
+
                                         return (
                                             <div key={label}>
                                                 {/* Day label with line */}

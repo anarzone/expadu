@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
 import { IconUser, IconPalette, IconLogout } from '@tabler/icons-react';
+import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { ICON_STROKE } from '@/constants/icons';
 

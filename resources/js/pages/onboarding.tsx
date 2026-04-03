@@ -5,8 +5,8 @@ import { ConfirmationStep } from '@/components/onboarding/confirmation-step';
 import { LanguagesStep } from '@/components/onboarding/languages-step';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
 import { SituationStep } from '@/components/onboarding/situation-step';
-import { useTracker } from '@/hooks/use-tracker';
 import { WelcomeStep } from '@/components/onboarding/welcome-step';
+import { useTracker } from '@/hooks/use-tracker';
 
 export type OnboardingData = {
     situation: string;

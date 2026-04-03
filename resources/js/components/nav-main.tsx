@@ -24,6 +24,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                     {group.items.map((item) => {
                         const active = isCurrentUrl(item.href);
                         const IconComp = item.icon;
+
                         return (
                             <Link
                                 key={item.title}

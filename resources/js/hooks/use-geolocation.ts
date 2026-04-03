@@ -78,7 +78,10 @@ export function useGeolocation(pingIntervalMs = 300_000) {
     }
 
     function fetchOnce() {
-        if (!navigator.geolocation) return;
+        if (!navigator.geolocation) {
+return;
+}
+
         navigator.geolocation.getCurrentPosition(handlePosition, handleError, {
             enableHighAccuracy: false,
             timeout: 10_000,
@@ -89,6 +92,7 @@ export function useGeolocation(pingIntervalMs = 300_000) {
     useEffect(() => {
         if (!navigator.geolocation) {
             setError('Geolocation not supported');
+
             return;
         }
 
@@ -129,6 +133,7 @@ export function useGeolocation(pingIntervalMs = 300_000) {
                 'visibilitychange',
                 onVisibilityChange,
             );
+
             if (watchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(watchIdRef.current);
             }

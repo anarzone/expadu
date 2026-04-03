@@ -156,11 +156,23 @@ const typeConfigs: Record<
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins} min ago`;
+
+    if (mins < 1) {
+return 'Just now';
+}
+
+    if (mins < 60) {
+return `${mins} min ago`;
+}
+
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+
+    if (hours < 24) {
+return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+}
+
     const days = Math.floor(hours / 24);
+
     if (days === 1) {
         return (
             'Yesterday ' +
@@ -170,6 +182,7 @@ function timeAgo(dateStr: string): string {
             })
         );
     }
+
     return `${days} days ago`;
 }
 
@@ -187,6 +200,7 @@ export function AlertRow({
 
     function markRead(e?: React.MouseEvent) {
         e?.stopPropagation();
+
         if (isUnread) {
             track('alert_read', { alert_id: alert.id });
             router.post(
@@ -200,6 +214,7 @@ export function AlertRow({
     function handleCtaClick(e: React.MouseEvent) {
         e.stopPropagation();
         markRead();
+
         if (alert.deep_link) {
             router.visit(alert.deep_link);
         }

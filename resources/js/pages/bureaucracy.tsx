@@ -1,10 +1,10 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useRef, useState } from 'react';
-import { useTabState } from '@/hooks/use-tab-state';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { DocumentCard } from '@/components/bureaucracy/document-card';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
 import { TaskCard } from '@/components/bureaucracy/task-card';
+import { useTabState } from '@/hooks/use-tab-state';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
@@ -52,31 +52,60 @@ type TaskProgress = {
 };
 
 function deadlineLabel(t: DbTask): string {
-    if (t.completed_at) return 'Completed';
-    if (t.days_remaining === null) return 'No deadline';
-    if (t.days_remaining < 0)
-        return `Overdue by ${Math.abs(t.days_remaining)} days`;
-    if (t.days_remaining === 0) return 'Due today';
-    if (t.days_remaining <= 3) return `${t.days_remaining} days left — urgent`;
-    if (t.days_remaining <= 7) return `${t.days_remaining} days left`;
+    if (t.completed_at) {
+return 'Completed';
+}
+
+    if (t.days_remaining === null) {
+return 'No deadline';
+}
+
+    if (t.days_remaining < 0) {
+return `Overdue by ${Math.abs(t.days_remaining)} days`;
+}
+
+    if (t.days_remaining === 0) {
+return 'Due today';
+}
+
+    if (t.days_remaining <= 3) {
+return `${t.days_remaining} days left — urgent`;
+}
+
+    if (t.days_remaining <= 7) {
+return `${t.days_remaining} days left`;
+}
+
     if (t.absolute_deadline) {
         const d = new Date(t.absolute_deadline);
+
         return `Due ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · ${t.days_remaining} days`;
     }
+
     return `${t.days_remaining} days left`;
 }
 
 function urgencyTagFromDeadline(t: DbTask): TaskTag {
-    if (t.completed_at)
-        return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
-    if (t.deadline_urgency === 'overdue')
-        return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
-    if (t.deadline_urgency === 'critical')
-        return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
-    if (t.deadline_urgency === 'urgent')
-        return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
-    if (t.urgency === 'critical' || t.urgency === 'high')
-        return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
+    if (t.completed_at) {
+return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
+}
+
+    if (t.deadline_urgency === 'overdue') {
+return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
+}
+
+    if (t.deadline_urgency === 'critical') {
+return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
+}
+
+    if (t.deadline_urgency === 'urgent') {
+return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
+}
+
+    if (t.urgency === 'critical' || t.urgency === 'high') {
+return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
+}
+
     return { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' };
 }
 
@@ -87,6 +116,7 @@ function dbTaskToTaskData(t: DbTask): TaskData {
         t.urgency === 'high' ||
         t.deadline_urgency === 'overdue' ||
         t.deadline_urgency === 'critical';
+
     return {
         id: t.id,
         done,
@@ -286,12 +316,14 @@ function slotsToOffices(
         const isMostlyBooked = slot.status === 'mostly_booked';
 
         let nextSlot = 'No slots';
+
         if (slot.next_slot) {
             const d = new Date(slot.next_slot);
             const now = new Date();
             const diffDays = Math.round(
                 (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
             );
+
             if (diffDays === 0) {
                 nextSlot = `Today ${d.toLocaleTimeString('en-DE', { hour: '2-digit', minute: '2-digit' })}`;
             } else if (diffDays === 1) {
@@ -312,6 +344,7 @@ function slotsToOffices(
         let statusLabel = 'Fully booked';
         let color = '#C4271A';
         let colorS = '#FDE8E6';
+
         if (
             slot.status === 'check_online' ||
             slot.status === 'unavailable' ||
@@ -506,6 +539,7 @@ export default function Bureaucracy() {
         const pending = tasks.filter((t) => !t.done).length;
         const done = tasks.filter((t) => t.done).length;
         const urgent = tasks.filter((t) => t.urgent && !t.done).length;
+
         return [
             { id: 'all', label: `All (${tasks.length})` },
             { id: 'pending', label: `Pending (${pending})` },
@@ -539,16 +573,28 @@ export default function Bureaucracy() {
         (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
 
     const filteredTasks = useMemo(() => {
-        if (taskFilter === 'done') return tasks.filter((t) => t.done);
-        if (taskFilter === 'pending') return tasks.filter((t) => !t.done);
-        if (taskFilter === 'urgent')
-            return tasks.filter((t) => t.urgent && !t.done);
+        if (taskFilter === 'done') {
+return tasks.filter((t) => t.done);
+}
+
+        if (taskFilter === 'pending') {
+return tasks.filter((t) => !t.done);
+}
+
+        if (taskFilter === 'urgent') {
+return tasks.filter((t) => t.urgent && !t.done);
+}
+
         return tasks;
     }, [tasks, taskFilter]);
 
     const filteredDocs = useMemo(() => {
         const q = docSearch.toLowerCase().trim();
-        if (!q) return SEED_DOCS;
+
+        if (!q) {
+return SEED_DOCS;
+}
+
         return SEED_DOCS.filter(
             (d) =>
                 d.de.toLowerCase().includes(q) ||
@@ -560,9 +606,11 @@ export default function Bureaucracy() {
     // Handlers — toggle calls backend
     function toggleTaskDone(id: number) {
         const task = tasks.find((t) => t.id === id);
+
         if (task && !task.done) {
             track('task_completed', { task_id: id });
         }
+
         router.post(
             `/tasks/${id}/toggle`,
             {},
@@ -580,7 +628,10 @@ export default function Bureaucracy() {
     }
 
     async function translateLetter() {
-        if (!pasteText.trim()) return;
+        if (!pasteText.trim()) {
+return;
+}
+
         setTranslating(true);
         setTranslationResult(null);
 
@@ -1066,6 +1117,7 @@ export default function Bureaucracy() {
                                     !q ||
                                     o.name.toLowerCase().includes(q) ||
                                     o.address.toLowerCase().includes(q);
+
                                 return matchCategory && matchSearch;
                             });
 
@@ -1128,8 +1180,13 @@ export default function Bureaucracy() {
                                 const groupOffices = filtered.filter(
                                     (o) => o.category === group.key,
                                 );
-                                if (groupOffices.length === 0) return null;
+
+                                if (groupOffices.length === 0) {
+return null;
+}
+
                                 const bookingUrl = groupOffices[0]?.bookingUrl;
+
                                 return (
                                     <div key={group.key} className="mb-5">
                                         <div className="mb-2 flex items-center justify-between">

@@ -11,11 +11,13 @@ export function useTabState(
         if (typeof window !== 'undefined' && window.location.hash) {
             return window.location.hash.slice(1) || defaultTab;
         }
+
         return defaultTab;
     });
 
     function setTab(newTab: string) {
         setTabState(newTab);
+
         if (typeof window !== 'undefined') {
             window.history.replaceState(null, '', `#${newTab}`);
         }

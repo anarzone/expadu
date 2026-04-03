@@ -34,18 +34,24 @@ export function GeocodeInput({
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const search = useCallback((query: string) => {
-        if (timerRef.current) clearTimeout(timerRef.current);
+        if (timerRef.current) {
+clearTimeout(timerRef.current);
+}
+
         if (query.trim().length < 2) {
             setResults([]);
             setDropdownOpen(false);
+
             return;
         }
+
         setLoading(true);
         timerRef.current = setTimeout(async () => {
             try {
                 const res = await fetch(
                     `/api/geocode?q=${encodeURIComponent(query.trim())}`,
                 );
+
                 if (res.ok) {
                     const data: GeoResult[] = await res.json();
                     setResults(data);
@@ -61,7 +67,9 @@ export function GeocodeInput({
 
     useEffect(() => {
         return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
+            if (timerRef.current) {
+clearTimeout(timerRef.current);
+}
         };
     }, []);
 
@@ -90,7 +98,10 @@ export function GeocodeInput({
                     }}
                     onFocus={() => {
                         onFocusProp?.();
-                        if (results.length > 0) setDropdownOpen(true);
+
+                        if (results.length > 0) {
+setDropdownOpen(true);
+}
                     }}
                     onBlur={() => {
                         setTimeout(() => setDropdownOpen(false), 200);

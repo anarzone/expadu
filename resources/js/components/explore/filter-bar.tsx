@@ -7,8 +7,8 @@ import {
     IconVolume3,
     IconCircleCheck,
 } from '@tabler/icons-react';
-import { ICON_STROKE } from '@/constants/icons';
 import type { ComponentType } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
 
 const filters: Array<{ id: string; label: string; icon: ComponentType<any> }> =
     [
@@ -35,6 +35,7 @@ export function ExploreFilterBar({
         >
             {filters.map((f) => {
                 const Icon = f.icon;
+
                 return (
                     <button
                         key={f.id}

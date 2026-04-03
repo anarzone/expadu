@@ -5,8 +5,8 @@ import {
     IconCar,
     IconAlertTriangle,
 } from '@tabler/icons-react';
-import { ICON_STROKE } from '@/constants/icons';
 import type { ComponentType } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
 
 const MODE_ICONS: Record<string, ComponentType<any>> = {
     bike: IconBike,
@@ -132,6 +132,7 @@ export function ModePicker({
                             )}
                             {(() => {
                                 const Icon = MODE_ICONS[opt.mode] ?? IconTrain;
+
                                 return (
                                     <Icon
                                         size={22}

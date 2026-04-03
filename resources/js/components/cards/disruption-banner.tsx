@@ -4,7 +4,9 @@ import type { DisruptionBannerData } from '@/types/home-feed';
 export function DisruptionBanner({ data }: { data: DisruptionBannerData }) {
     const [dismissed, setDismissed] = useState(false);
 
-    if (dismissed) return null;
+    if (dismissed) {
+return null;
+}
 
     return (
         <div className="flex items-start gap-2.5 rounded-lg border border-warn/20 bg-warn-soft p-3">

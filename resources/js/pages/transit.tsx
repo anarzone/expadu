@@ -1,24 +1,26 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
+import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import {
     DepartureBoard,
-    type BoardData,
+    
     useClock,
-    formatDepartureTime,
+    formatDepartureTime
 } from '@/components/transit/departure-board';
+import type {BoardData} from '@/components/transit/departure-board';
+import { DepartureDetailSheet } from '@/components/transit/departure-detail-sheet';
 import { GeocodeInput } from '@/components/transit/geocode-input';
 
-import {
-    RoutineCard,
-    type RoutineCardData,
-} from '@/components/transit/routine-card';
-import { useGeolocation } from '@/hooks/use-geolocation';
-import { useTracker } from '@/hooks/use-tracker';
-import { DepartureDetailSheet } from '@/components/transit/departure-detail-sheet';
 import { LineDetailSheet } from '@/components/transit/line-detail-sheet';
 import { RouteSheet } from '@/components/transit/route-sheet';
-import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import {
+    RoutineCard
+    
+} from '@/components/transit/routine-card';
+import type {RoutineCardData} from '@/components/transit/routine-card';
+import { useGeolocation } from '@/hooks/use-geolocation';
+import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
 const RoutePreviewMapLazy = lazy(() =>
@@ -146,8 +148,11 @@ const DAY_MAP: Record<string, number> = {
 function dbRoutineToCard(r: DbRoutine): RoutineCardData {
     const days = [false, false, false, false, false, false, false];
     (r.days ?? []).forEach((d) => {
-        if (DAY_MAP[d] !== undefined) days[DAY_MAP[d]] = true;
+        if (DAY_MAP[d] !== undefined) {
+days[DAY_MAP[d]] = true;
+}
     });
+
     return {
         id: String(r.id),
         emoji: r.emoji || '🚌',
@@ -238,6 +243,7 @@ function JourneyRoutePanel({
                 const bike = (data.options ?? []).find(
                     (o: JourneyOption) => o.mode === 'bike',
                 );
+
                 if (bike) {
                     setSelectedMode('bike');
                     setSelectedGeometry(bike.geometry ?? null);
@@ -249,6 +255,7 @@ function JourneyRoutePanel({
     function selectMode(mode: string) {
         setSelectedMode(mode);
         const opt = options.find((o) => o.mode === mode);
+
         if (opt?.geometry) {
             setSelectedGeometry(opt.geometry);
         } else {
@@ -261,6 +268,7 @@ function JourneyRoutePanel({
                       : mode === 'drive'
                         ? 'auto'
                         : null;
+
             if (costing) {
                 fetch(
                     `/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}&mode=${costing}`,
@@ -268,7 +276,9 @@ function JourneyRoutePanel({
                 )
                     .then((r) => r.json())
                     .then((data) => {
-                        if (data.geometry) setSelectedGeometry(data.geometry);
+                        if (data.geometry) {
+setSelectedGeometry(data.geometry);
+}
                     })
                     .catch(() => {});
             } else {
@@ -302,6 +312,7 @@ function JourneyRoutePanel({
             <div className="mb-3 flex gap-2">
                 {options.map((opt) => {
                     const active = selectedMode === opt.mode;
+
                     return (
                         <button
                             key={opt.mode}
@@ -806,7 +817,10 @@ function RoutineDetailContent({
                 </button>
                 <button
                     onClick={() => {
-                        if (!confirm('Delete this routine?')) return;
+                        if (!confirm('Delete this routine?')) {
+return;
+}
+
                         fetch(`/routines/${er.id}`, {
                             method: 'DELETE',
                             credentials: 'same-origin',
@@ -867,7 +881,10 @@ function StopInput({
 
     function search(q: string) {
         onChange(q);
-        if (timer.current) clearTimeout(timer.current);
+
+        if (timer.current) {
+clearTimeout(timer.current);
+}
 
         // Show matching user places instantly
         const placeMatches = (places ?? [])
@@ -876,6 +893,7 @@ function StopInput({
 
         if (q.trim().length < 2) {
             setResults(placeMatches);
+
             return;
         }
 
@@ -891,8 +909,12 @@ function StopInput({
                     const seen = new Set<string>();
                     setResults(
                         merged.filter((r) => {
-                            if (seen.has(r.name)) return false;
+                            if (seen.has(r.name)) {
+return false;
+}
+
                             seen.add(r.name);
+
                             return true;
                         }),
                     );
@@ -1254,14 +1276,22 @@ export default function Transit() {
     // Fetch on GPS change — update nearby deps + reload main board when moved >200m
     const lastBoardReloadRef = useRef<string>('');
     useEffect(() => {
-        if (!geoPos || hasManualStop) return;
+        if (!geoPos || hasManualStop) {
+return;
+}
+
         const key = `${geoPos.lat.toFixed(3)}_${geoPos.lng.toFixed(3)}`;
-        if (key === lastGeoFetch.current) return;
+
+        if (key === lastGeoFetch.current) {
+return;
+}
+
         lastGeoFetch.current = key;
         fetchNearbyDeps(geoPos.lat, geoPos.lng);
 
         // Reload main departure board when moved significantly (~200m = 0.002 degree)
         const boardKey = `${geoPos.lat.toFixed(2)}_${geoPos.lng.toFixed(2)}`;
+
         if (boardKey !== lastBoardReloadRef.current) {
             lastBoardReloadRef.current = boardKey;
             router.reload({
@@ -1274,10 +1304,14 @@ export default function Transit() {
 
     // Poll nearby departures every 30s for real-time updates
     useEffect(() => {
-        if (!geoPos || hasManualStop) return;
+        if (!geoPos || hasManualStop) {
+return;
+}
+
         const interval = setInterval(() => {
             fetchNearbyDeps(geoPos.lat, geoPos.lng);
         }, 30_000);
+
         return () => clearInterval(interval);
     }, [geoPos?.lat, geoPos?.lng, hasManualStop]);
 
@@ -1439,6 +1473,7 @@ export default function Transit() {
         const f = fromValue;
         setFromValue(toValue);
         setToValue(f);
+
         if (journeyDest) {
             const oldOrigin = { ...journeyOrigin };
             setJourneyOrigin({ lat: journeyDest.lat, lng: journeyDest.lng });
@@ -1456,8 +1491,12 @@ export default function Transit() {
     // Deduplicate by label
     const seenLabels = new Set<string>();
     const uniqueChips = allChips.filter((c) => {
-        if (seenLabels.has(c.label)) return false;
+        if (seenLabels.has(c.label)) {
+return false;
+}
+
         seenLabels.add(c.label);
+
         return true;
     });
 
@@ -1469,11 +1508,13 @@ export default function Transit() {
 
         if (activeInput === 'from') {
             setFromValue(val);
+
             if (coordLat && coordLng) {
                 setJourneyOrigin({ lat: coordLat, lng: coordLng });
             }
         } else {
             setToValue(val);
+
             if (coordLat && coordLng) {
                 track('journey_planned', {
                     from: fromValue,
@@ -1525,8 +1566,14 @@ export default function Transit() {
     }
 
     function saveNewRoutine() {
-        if (!rFrom.trim() || !rTo.trim()) return;
-        if (!rDays.some(Boolean)) return;
+        if (!rFrom.trim() || !rTo.trim()) {
+return;
+}
+
+        if (!rDays.some(Boolean)) {
+return;
+}
+
         const dayNames = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         router.post(
             '/routines',
@@ -1558,12 +1605,18 @@ export default function Transit() {
     // Debounced stop search via API
     function handleStopSearch(query: string) {
         setStopSearch(query);
-        if (stopSearchTimer.current) clearTimeout(stopSearchTimer.current);
+
+        if (stopSearchTimer.current) {
+clearTimeout(stopSearchTimer.current);
+}
+
         if (!query.trim() || query.trim().length < 2) {
             setStopSearchResults([]);
             setStopSearchLoading(false);
+
             return;
         }
+
         setStopSearchLoading(true);
         stopSearchTimer.current = setTimeout(() => {
             fetch(`/api/stops?q=${encodeURIComponent(query.trim())}`)
@@ -1952,7 +2005,11 @@ export default function Transit() {
                         const visible = (disruptions ?? [])
                             .filter((d) => !dismissedDisruptions.includes(d.id))
                             .slice(0, 3);
-                        if (visible.length === 0) return null;
+
+                        if (visible.length === 0) {
+return null;
+}
+
                         return (
                             <div
                                 className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
@@ -1984,6 +2041,7 @@ export default function Transit() {
                                             d.severity === 'critical';
                                         const isWarning =
                                             d.severity === 'major';
+
                                         return (
                                             <div
                                                 key={d.id}
@@ -2250,6 +2308,7 @@ export default function Transit() {
                                                                     d.line ===
                                                                     line,
                                                             );
+
                                                             return (
                                                                 <span
                                                                     key={line}
@@ -2293,6 +2352,7 @@ export default function Transit() {
                                                         (dep.delay ?? 0) > 0 ||
                                                         (dep.disrupted &&
                                                             !isCancelled);
+
                                                     return (
                                                         <div
                                                             key={`${dep.line}_${dep.direction}`}
@@ -2597,6 +2657,7 @@ export default function Transit() {
                                                                         d.line ===
                                                                         line,
                                                                 );
+
                                                                 return (
                                                                     <span
                                                                         key={
@@ -2645,6 +2706,7 @@ export default function Transit() {
                                                                 0 ||
                                                             (dep.disrupted &&
                                                                 !isCancelled);
+
                                                         return (
                                                             <div
                                                                 key={`${dep.line}_${dep.direction}`}
@@ -2894,7 +2956,11 @@ export default function Transit() {
                                                     const det =
                                                         (detectedRoutines ??
                                                             [])[0];
-                                                    if (!det) return;
+
+                                                    if (!det) {
+return;
+}
+
                                                     const dayNames = [
                                                         'sun',
                                                         'mon',
@@ -3018,6 +3084,7 @@ export default function Transit() {
                             const dbr = (dbRoutines ?? []).find(
                                 (dr) => String(dr.id) === r.id,
                             );
+
                             return (
                                 <RoutineCard
                                     key={r.id}
@@ -3595,7 +3662,9 @@ function RotatingCardSlot({
     const [flipping, setFlipping] = useState(false);
 
     useEffect(() => {
-        if (!pool || pool.length <= 1) return;
+        if (!pool || pool.length <= 1) {
+return;
+}
 
         let timer: ReturnType<typeof setTimeout>;
 
@@ -3613,11 +3682,15 @@ function RotatingCardSlot({
         }
 
         scheduleNext();
+
         return () => clearTimeout(timer);
     }, [pool?.length]);
 
     const card = pool?.[index] ?? pool?.[0];
-    if (!card) return null;
+
+    if (!card) {
+return null;
+}
 
     return (
         <div
@@ -3679,15 +3752,22 @@ function RouteOptionCard({
 
     function toggleSteps(e: React.MouseEvent) {
         e.stopPropagation();
+
         if (showSteps) {
             setShowSteps(false);
+
             return;
         }
+
         if (steps) {
             setShowSteps(true);
+
             return;
         }
-        if (!hasCoords) return;
+
+        if (!hasCoords) {
+return;
+}
 
         // Determine costing from badge/name
         const isBike = name.toLowerCase().includes('bike') || badge === '🚲';

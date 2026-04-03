@@ -213,6 +213,7 @@ export function PartnerDetailContent({
                         dist: 'nearby',
                         people: 0,
                     };
+
                     return (
                         <div
                             key={spotName}

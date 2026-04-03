@@ -12,8 +12,8 @@ import type { MapBounds, MapViewHandle } from '@/components/explore/map-view';
 import { ModePicker } from '@/components/explore/mode-picker';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
-import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
 import { JourneyTimeline } from '@/components/transit/journey-timeline';
+import { RouteStepsPanel } from '@/components/transit/route-steps-panel';
 import { getTag } from '@/constants/tags';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useTracker } from '@/hooks/use-tracker';
@@ -109,7 +109,11 @@ export default function Explore() {
                 ne_lng: String(bounds.ne_lng),
                 limit: '100',
             });
-            if (category) params.set('category', category);
+
+            if (category) {
+params.set('category', category);
+}
+
             fetch(`/api/spots?${params}`, { credentials: 'same-origin' })
                 .then((r) => (r.ok ? r.json() : []))
                 .then((data: any[]) => {
@@ -240,12 +244,16 @@ export default function Explore() {
     // Restore directions from URL params on mount (survives refresh)
     const dirRestoredRef = useRef(false);
     useEffect(() => {
-        if (dirRestoredRef.current) return;
+        if (dirRestoredRef.current) {
+return;
+}
+
         dirRestoredRef.current = true;
         const params = new URLSearchParams(window.location.search);
         const lat = params.get('dir_lat');
         const lng = params.get('dir_lng');
         const name = params.get('dir_name');
+
         if (lat && lng && name) {
             startDirections(parseFloat(lat), parseFloat(lng), name);
         }
@@ -279,6 +287,7 @@ export default function Explore() {
                 const bikeOpt = (data.options ?? []).find(
                     (o: RouteOption) => o.mode === 'bike',
                 );
+
                 if (bikeOpt) {
                     selectRouteMode(
                         'bike',
@@ -317,6 +326,7 @@ export default function Explore() {
             setRouteDetail(null);
             mapRef.current?.clearRoute();
             const dest = routeDest ?? to;
+
             if (dest) {
                 setRouteLoading(true);
                 fetch(
@@ -328,6 +338,7 @@ export default function Explore() {
                         const trips = data.trips ?? [];
                         setTransitTrips(trips);
                         setRouteLoading(false);
+
                         // Draw the first trip's route on the map immediately
                         if (
                             trips.length > 0 &&
@@ -347,6 +358,7 @@ export default function Explore() {
                     })
                     .catch(() => setRouteLoading(false));
             }
+
             return;
         }
 
@@ -365,6 +377,7 @@ export default function Explore() {
                             dest,
                         );
                     }
+
                     if (data.steps) {
                         setRouteDetail(data);
                     }
@@ -395,7 +408,11 @@ export default function Explore() {
 
     function selectTransitTrip(idx: number) {
         const trip = transitTrips[idx];
-        if (!trip || !routeDest) return;
+
+        if (!trip || !routeDest) {
+return;
+}
+
         setSelectedTripIdx(idx);
         setRouteDetail({
             mode: 'transit',
@@ -409,6 +426,7 @@ export default function Explore() {
             segments: trip.segments,
             steps: trip.steps,
         });
+
         if (trip.segments?.length > 0) {
             const orig = { lat: myLat, lng: myLng };
             mapRef.current?.drawTransitRoute(trip.segments, orig, routeDest);
@@ -451,7 +469,10 @@ export default function Explore() {
     }
 
     function selectConnection(stopId: string, connection: ConnectionOption) {
-        if (!routeDetail?.segments || !routeDest) return;
+        if (!routeDetail?.segments || !routeDest) {
+return;
+}
+
         setRouteLoading(true);
 
         // Find segments before the transfer point
@@ -486,9 +507,13 @@ export default function Explore() {
         })
             .then((r) => r.json())
             .then((data) => {
-                if (data.error) return;
+                if (data.error) {
+return;
+}
+
                 setRouteDetail(data);
                 setConnectionsByStop({});
+
                 if (data.segments?.length > 0) {
                     const orig = data.from ?? { lat: myLat, lng: myLng };
                     mapRef.current?.drawTransitRoute(
@@ -528,6 +553,7 @@ export default function Explore() {
             ne_lng: '7.17',
             limit: '100',
         });
+
         if (cat && ['cafe', 'coworking', 'library', 'park'].includes(cat)) {
             params.set('category', cat);
         }
@@ -549,18 +575,27 @@ export default function Explore() {
                     lat: s.lat,
                     lng: s.lng,
                 }));
-                if (cat === 'wifi')
-                    mapped = mapped.filter((s) => s.wifi_speed === 'fast');
-                if (cat === 'quiet')
-                    mapped = mapped.filter((s) => s.noise_level === 'quiet');
+
+                if (cat === 'wifi') {
+mapped = mapped.filter((s) => s.wifi_speed === 'fast');
+}
+
+                if (cat === 'quiet') {
+mapped = mapped.filter((s) => s.noise_level === 'quiet');
+}
+
                 setMapSpots(mapped);
             })
             .catch(() => {});
     }
 
     const filteredSpots = allSpots.filter((s) => {
-        if (!search) return true;
+        if (!search) {
+return true;
+}
+
         const q = search.toLowerCase();
+
         return (
             s.name.toLowerCase().includes(q) ||
             s.address?.toLowerCase().includes(q)
@@ -569,7 +604,9 @@ export default function Explore() {
 
     // When search has results, clear geo suggestions. When no results, fetch geocode.
     useEffect(() => {
-        if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
+        if (geoTimerRef.current) {
+clearTimeout(geoTimerRef.current);
+}
 
         if (
             !search.trim() ||
@@ -578,6 +615,7 @@ export default function Explore() {
         ) {
             setGeoSuggestions([]);
             mapRef.current?.clearSearchPin();
+
             return;
         }
 
@@ -586,6 +624,7 @@ export default function Explore() {
                 const res = await fetch(
                     `/api/geocode?q=${encodeURIComponent(search.trim())}`,
                 );
+
                 if (res.ok) {
                     const data: GeoResult[] = await res.json();
                     setGeoSuggestions(data);
@@ -596,7 +635,9 @@ export default function Explore() {
         }, 400);
 
         return () => {
-            if (geoTimerRef.current) clearTimeout(geoTimerRef.current);
+            if (geoTimerRef.current) {
+clearTimeout(geoTimerRef.current);
+}
         };
     }, [search, filteredSpots.length]);
 
@@ -623,14 +664,17 @@ export default function Explore() {
             const res = await fetch(
                 `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&limit=1&lang=en`,
             );
+
             if (res.ok) {
                 const data = await res.json();
                 const feature = data?.features?.[0];
                 const props = feature?.properties;
 
                 let address = 'Unknown location';
+
                 if (props) {
                     const parts: string[] = [];
+
                     if (props.street) {
                         parts.push(
                             props.housenumber
@@ -640,9 +684,11 @@ export default function Explore() {
                     } else if (props.name) {
                         parts.push(props.name);
                     }
+
                     if (props.city || props.locality) {
                         parts.push(props.city || props.locality);
                     }
+
                     if (parts.length > 0) {
                         address = parts.join(', ');
                     }
@@ -666,14 +712,20 @@ export default function Explore() {
     }, []);
 
     function openPlaceForm() {
-        if (!tapPoint) return;
+        if (!tapPoint) {
+return;
+}
+
         setPlaceEmoji('⭐');
         setPlaceName('');
         setShowPlaceForm(true);
     }
 
     function savePlace() {
-        if (!tapPoint || savingPlace) return;
+        if (!tapPoint || savingPlace) {
+return;
+}
+
         setSavingPlace(true);
 
         router.post(
@@ -740,6 +792,7 @@ export default function Explore() {
                                         {routeOptions.map((opt) => {
                                             const isActive =
                                                 routeMode === opt.mode;
+
                                             return (
                                                 <button
                                                     key={opt.mode}
@@ -1221,12 +1274,14 @@ export default function Explore() {
                                         onClick={() => {
                                             selectSpot(s);
                                             setSearch('');
-                                            if (s.lat && s.lng)
-                                                mapRef.current?.flyTo(
+
+                                            if (s.lat && s.lng) {
+mapRef.current?.flyTo(
                                                     s.lat,
                                                     s.lng,
                                                     15,
                                                 );
+}
                                         }}
                                         className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-4 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                     >
@@ -1313,7 +1368,10 @@ export default function Explore() {
                                     const spot = allSpots.find(
                                         (s) => s.id === id,
                                     );
-                                    if (spot) selectSpot(spot);
+
+                                    if (spot) {
+selectSpot(spot);
+}
                                 }}
                                 onMapTap={handleMapTap}
                                 onBoundsChange={handleBoundsChange}
@@ -1539,7 +1597,10 @@ function MobileListSheet({
     useEffect(() => {
         const handle = handleRef.current;
         const sheet = sheetRef.current;
-        if (!handle || !sheet) return;
+
+        if (!handle || !sheet) {
+return;
+}
 
         const SNAP_POINTS = [0.18, 0.44, 0.8];
         const MIN_H = 80;
@@ -1561,6 +1622,7 @@ function MobileListSheet({
             h = Math.max(MIN_H, Math.min(maxH, h));
             sheet.style.transition = 'none';
             sheet.style.height = h + 'px';
+
             return h;
         }
 
@@ -1584,7 +1646,10 @@ function MobileListSheet({
         }
 
         function onMove(e: MouseEvent | TouchEvent) {
-            if (!dragging) return;
+            if (!dragging) {
+return;
+}
+
             const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
             const delta = startY - y; // drag up = positive = taller
             setH(startH + delta);
@@ -1592,7 +1657,10 @@ function MobileListSheet({
         }
 
         function onEnd() {
-            if (!dragging) return;
+            if (!dragging) {
+return;
+}
+
             dragging = false;
             handle.style.cursor = 'grab';
             document.body.style.userSelect = '';
@@ -1672,6 +1740,7 @@ function MobileListSheet({
                                 {s.wifi_speed &&
                                     (() => {
                                         const t = getTag('wifi');
+
                                         return t ? (
                                             <span
                                                 className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}
@@ -1687,6 +1756,7 @@ function MobileListSheet({
                                 {s.noise_level === 'quiet' &&
                                     (() => {
                                         const t = getTag('quiet');
+
                                         return t ? (
                                             <span
                                                 className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t.cls}`}

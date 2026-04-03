@@ -1,12 +1,14 @@
-import { useState, useCallback, useEffect, type MouseEvent } from 'react';
 import { Head } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { useState, useCallback, useEffect  } from 'react';
+import type {MouseEvent} from 'react';
 import { JourneyRightPanel } from '@/components/journey/journey-right-panel';
 import {
-    StepCard,
-    type StepData,
-    type StepTag,
+    StepCard
+    
+    
 } from '@/components/journey/step-card';
+import type {StepData, StepTag} from '@/components/journey/step-card';
+import AppLayout from '@/layouts/app-layout';
 
 // ════════════════════════════════════════
 // DATA
@@ -469,6 +471,7 @@ function getStats(steps: StepData[]) {
     const total = steps.length;
     const done = steps.filter((s) => s.done).length;
     const pct = Math.round((done / total) * 100);
+
     return { total, done, pct };
 }
 
@@ -483,20 +486,27 @@ function getHeadline(pct: number): string {
         "You're settled! Keep exploring. 🎉",
     ];
     const idx = Math.min(Math.floor(pct / 17), headlines.length - 1);
+
     return headlines[idx];
 }
 
 function currentActivePhase(steps: StepData[]): string {
     const pending = steps.find((s) => !s.done && !s.upcoming);
+
     return pending ? pending.phase : 'month3';
 }
 
 function groupByPhase(steps: StepData[]): Record<string, StepData[]> {
     const groups: Record<string, StepData[]> = {};
+
     for (const s of steps) {
-        if (!groups[s.phase]) groups[s.phase] = [];
+        if (!groups[s.phase]) {
+groups[s.phase] = [];
+}
+
         groups[s.phase].push(s);
     }
+
     return groups;
 }
 
@@ -520,10 +530,12 @@ function showToast(msg: string) {
 export default function JustArrived() {
     const [steps, setSteps] = useState<StepData[]>(() => {
         const base = JSON.parse(JSON.stringify(initialSteps)) as StepData[];
+
         try {
             const saved = JSON.parse(
                 localStorage.getItem('journey_steps') ?? '{}',
             ) as Record<string, string>;
+
             for (const s of base) {
                 if (saved[s.id] === 'done') {
                     s.done = true;
@@ -541,16 +553,22 @@ export default function JustArrived() {
         } catch {
             /* ignore */
         }
+
         return base;
     });
 
     // Persist step state to localStorage
     useEffect(() => {
         const state: Record<string, string> = {};
+
         for (const s of steps) {
-            if (s.done) state[s.id] = 'done';
-            else if (s.skipped) state[s.id] = 'skipped';
+            if (s.done) {
+state[s.id] = 'done';
+} else if (s.skipped) {
+state[s.id] = 'skipped';
+}
         }
+
         localStorage.setItem('journey_steps', JSON.stringify(state));
     }, [steps]);
     const [expandedStep, setExpandedStep] = useState<number | null>(null);
@@ -588,10 +606,14 @@ export default function JustArrived() {
     const undoStep = useCallback((id: number) => {
         setSteps((prev) =>
             prev.map((s) => {
-                if (s.id !== id) return s;
+                if (s.id !== id) {
+return s;
+}
+
                 const tag: StepTag = s.urgent
                     ? { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' }
                     : { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' };
+
                 return { ...s, done: false, skipped: false, tag };
             }),
         );
@@ -626,7 +648,11 @@ export default function JustArrived() {
         (id: number, e: MouseEvent) => {
             e.stopPropagation();
             const step = steps.find((s) => s.id === id);
-            if (!step || step.upcoming) return;
+
+            if (!step || step.upcoming) {
+return;
+}
+
             if (step.done) {
                 undoStep(id);
             } else {
@@ -640,11 +666,13 @@ export default function JustArrived() {
     const togglePhaseFilter = useCallback((phaseId: string) => {
         setActivePhaseFilters((prev) => {
             const next = new Set(prev);
+
             if (next.has(phaseId)) {
                 next.delete(phaseId);
             } else {
                 next.add(phaseId);
             }
+
             return next;
         });
     }, []);
@@ -652,13 +680,23 @@ export default function JustArrived() {
     // ── Determine chip state per phase ──
     function getChipState(phaseId: string): 'done' | 'active' | 'upcoming' {
         const isSelected = activePhaseFilters.has(phaseId);
-        if (isSelected) return 'active';
+
+        if (isSelected) {
+return 'active';
+}
+
         const isDone =
             defaultDonePhases.has(phaseId) &&
             (byPhase[phaseId] ?? []).every((s) => s.done);
-        if (isDone) return 'done';
-        if (phaseId === curPhase && activePhaseFilters.size === 0)
-            return 'active';
+
+        if (isDone) {
+return 'done';
+}
+
+        if (phaseId === curPhase && activePhaseFilters.size === 0) {
+return 'active';
+}
+
         return 'upcoming';
     }
 
@@ -678,6 +716,7 @@ export default function JustArrived() {
             transition: 'all 0.2s',
             border: '1.5px solid transparent',
         };
+
         if (state === 'done') {
             base.background = '#D4F0E6';
             base.color = '#0A7C52';
@@ -690,12 +729,19 @@ export default function JustArrived() {
             base.color = '#AAA89F';
             base.borderColor = '#E2DFD6';
         }
+
         return base;
     }
 
     function dotColor(state: 'done' | 'active' | 'upcoming'): string {
-        if (state === 'active') return 'white';
-        if (state === 'done') return '#0A7C52';
+        if (state === 'active') {
+return 'white';
+}
+
+        if (state === 'done') {
+return '#0A7C52';
+}
+
         return '#AAA89F';
     }
 
@@ -802,6 +848,7 @@ export default function JustArrived() {
                     {phases.map((phase) => {
                         const state = getChipState(phase.id);
                         const isDone = state === 'done';
+
                         return (
                             <div
                                 key={phase.id}
@@ -833,12 +880,18 @@ export default function JustArrived() {
             <div>
                 {phases.map((phase) => {
                     const phaseSteps = byPhase[phase.id] ?? [];
-                    if (phaseSteps.length === 0) return null;
+
+                    if (phaseSteps.length === 0) {
+return null;
+}
 
                     const visible =
                         activePhaseFilters.size === 0 ||
                         activePhaseFilters.has(phase.id);
-                    if (!visible) return null;
+
+                    if (!visible) {
+return null;
+}
 
                     const allDone = phaseSteps.every((s) => s.done);
                     const doneCnt = phaseSteps.filter((s) => s.done).length;

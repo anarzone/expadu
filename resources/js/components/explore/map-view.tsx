@@ -1,5 +1,5 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { decodePolyline } from '@/utils/polyline';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -111,7 +111,10 @@ export const MapView = forwardRef<
         addSearchPin(lat: number, lng: number, label: string) {
             searchPinRef.current?.remove();
             const map = mapRef.current;
-            if (!map) return;
+
+            if (!map) {
+return;
+}
 
             const el = document.createElement('div');
             el.style.cssText = `
@@ -151,12 +154,16 @@ export const MapView = forwardRef<
             destination: { lat: number; lng: number },
         ) {
             const map = mapRef.current;
-            if (!map || !map.isStyleLoaded()) return;
+
+            if (!map || !map.isStyleLoaded()) {
+return;
+}
 
             // Clear previous route
             this.clearRoute();
 
             const coordinates = geometry ? decodePolyline(geometry, 6) : [];
+
             // Fall back to straight line if no geometry (e.g. transit)
             if (coordinates.length === 0) {
                 coordinates.push(
@@ -231,9 +238,11 @@ export const MapView = forwardRef<
 
             // Fit bounds to route
             const bounds = new maplibregl.LngLatBounds();
+
             for (const coord of coordinates) {
                 bounds.extend(coord as [number, number]);
             }
+
             (map as any)._skipBounds?.(true);
             map.fitBounds(bounds, {
                 padding: { top: 60, bottom: 200, left: 60, right: 60 },
@@ -253,7 +262,11 @@ export const MapView = forwardRef<
             destination: { lat: number; lng: number },
         ) {
             const map = mapRef.current;
-            if (!map || !map.isStyleLoaded()) return;
+
+            if (!map || !map.isStyleLoaded()) {
+return;
+}
+
             this.clearRoute();
 
             const allBoundsCoords: [number, number][] = [
@@ -271,7 +284,10 @@ export const MapView = forwardRef<
                     coords = seg.coordinates;
                 }
 
-                if (coords.length < 2) return;
+                if (coords.length < 2) {
+return;
+}
+
                 allBoundsCoords.push(...coords);
 
                 map.addSource(srcId, {
@@ -363,7 +379,11 @@ export const MapView = forwardRef<
 
             // Fit bounds
             const bounds = new maplibregl.LngLatBounds();
-            for (const c of allBoundsCoords) bounds.extend(c);
+
+            for (const c of allBoundsCoords) {
+bounds.extend(c);
+}
+
             (map as any)._skipBounds?.(true);
             map.fitBounds(bounds, {
                 padding: { top: 60, bottom: 200, left: 60, right: 60 },
@@ -373,26 +393,43 @@ export const MapView = forwardRef<
         },
         clearRoute() {
             const map = mapRef.current;
-            if (!map || !map.isStyleLoaded()) return;
+
+            if (!map || !map.isStyleLoaded()) {
+return;
+}
 
             routeMarkersRef.current.forEach((m) => m.remove());
             routeMarkersRef.current = [];
 
             try {
                 // Single route layers
-                if (map.getLayer('explore-route-line'))
-                    map.removeLayer('explore-route-line');
-                if (map.getLayer('explore-route-bg'))
-                    map.removeLayer('explore-route-bg');
-                if (map.getSource('explore-route'))
-                    map.removeSource('explore-route');
+                if (map.getLayer('explore-route-line')) {
+map.removeLayer('explore-route-line');
+}
+
+                if (map.getLayer('explore-route-bg')) {
+map.removeLayer('explore-route-bg');
+}
+
+                if (map.getSource('explore-route')) {
+map.removeSource('explore-route');
+}
+
                 // Multi-segment transit layers
                 for (let i = 0; i < 10; i++) {
                     const id = `transit-seg-${i}`;
-                    if (map.getLayer(`${id}-line`))
-                        map.removeLayer(`${id}-line`);
-                    if (map.getLayer(`${id}-bg`)) map.removeLayer(`${id}-bg`);
-                    if (map.getSource(id)) map.removeSource(id);
+
+                    if (map.getLayer(`${id}-line`)) {
+map.removeLayer(`${id}-line`);
+}
+
+                    if (map.getLayer(`${id}-bg`)) {
+map.removeLayer(`${id}-bg`);
+}
+
+                    if (map.getSource(id)) {
+map.removeSource(id);
+}
                 }
             } catch {
                 /* layers may not exist */
@@ -402,14 +439,22 @@ export const MapView = forwardRef<
 
     // Initialize map — fetch style first to patch missing projection field (MapLibre v5 bug)
     useEffect(() => {
-        if (!containerRef.current || mapRef.current) return;
+        if (!containerRef.current || mapRef.current) {
+return;
+}
+
         let cancelled = false;
 
         fetch('https://tiles.openfreemap.org/styles/bright')
             .then((r) => r.json())
             .then((style) => {
-                if (cancelled || !containerRef.current) return;
-                if (!style.projection) style.projection = { type: 'mercator' };
+                if (cancelled || !containerRef.current) {
+return;
+}
+
+                if (!style.projection) {
+style.projection = { type: 'mercator' };
+}
 
                 const map = new maplibregl.Map({
                     container: containerRef.current!,
@@ -458,8 +503,14 @@ export const MapView = forwardRef<
                                 htmlEl.style.height = 'auto';
                                 htmlEl.style.borderRadius = '20px';
                                 htmlEl.style.padding = '4px 8px';
-                                if (emojiEl) emojiEl.style.fontSize = '13px';
-                                if (label) label.style.display = '';
+
+                                if (emojiEl) {
+emojiEl.style.fontSize = '13px';
+}
+
+                                if (label) {
+label.style.display = '';
+}
                             } else {
                                 // Emoji-only circle
                                 const size =
@@ -472,14 +523,19 @@ export const MapView = forwardRef<
                                 htmlEl.style.height = size;
                                 htmlEl.style.borderRadius = '50%';
                                 htmlEl.style.padding = '0';
-                                if (emojiEl)
-                                    emojiEl.style.fontSize =
+
+                                if (emojiEl) {
+emojiEl.style.fontSize =
                                         zoom >= 14
                                             ? '14px'
                                             : zoom >= 12
                                               ? '12px'
                                               : '10px';
-                                if (label) label.style.display = 'none';
+}
+
+                                if (label) {
+label.style.display = 'none';
+}
                             }
                         });
                 }
@@ -493,7 +549,11 @@ export const MapView = forwardRef<
                 // Tap-to-discover: click on empty map area
                 map.on('click', (e) => {
                     const target = e.originalEvent.target as HTMLElement;
-                    if (target.closest('.maplibregl-marker')) return;
+
+                    if (target.closest('.maplibregl-marker')) {
+return;
+}
+
                     onMapTapRef.current?.(e.lngLat.lat, e.lngLat.lng);
                 });
 
@@ -508,9 +568,14 @@ export const MapView = forwardRef<
                 map.on('moveend', () => {
                     if (skipNextBoundsChange) {
                         skipNextBoundsChange = false;
+
                         return;
                     }
-                    if (boundsTimer) clearTimeout(boundsTimer);
+
+                    if (boundsTimer) {
+clearTimeout(boundsTimer);
+}
+
                     boundsTimer = setTimeout(() => {
                         const bounds = map.getBounds();
                         onBoundsChangeRef.current?.({
@@ -527,6 +592,7 @@ export const MapView = forwardRef<
 
         return () => {
             cancelled = true;
+
             if (mapRef.current) {
                 mapRef.current.remove();
                 mapRef.current = null;
@@ -537,15 +603,22 @@ export const MapView = forwardRef<
     // Update spot markers when spots change (hide in navigation mode)
     useEffect(() => {
         const map = mapRef.current;
-        if (!map) return;
+
+        if (!map) {
+return;
+}
 
         markersRef.current.forEach((m) => m.remove());
         markersRef.current = [];
 
-        if (hideMarkers) return; // navigation mode — no spot pins
+        if (hideMarkers) {
+return;
+} // navigation mode — no spot pins
 
         spots.forEach((spot) => {
-            if (!spot.lat || !spot.lng) return;
+            if (!spot.lat || !spot.lng) {
+return;
+}
 
             const emoji = categoryEmoji[spot.category] || '📍';
             const isSelected = spot.id === selectedId;
@@ -581,6 +654,7 @@ export const MapView = forwardRef<
         // Pan to selected spot — only on NEW selection, not on spot list refresh
         if (selectedId && selectedId !== lastFlyToId.current) {
             const selected = spots.find((s) => s.id === selectedId);
+
             if (selected) {
                 lastFlyToId.current = selectedId;
                 (map as any)._skipBounds?.(true);
@@ -590,21 +664,31 @@ export const MapView = forwardRef<
                 });
             }
         }
-        if (!selectedId) lastFlyToId.current = null;
+
+        if (!selectedId) {
+lastFlyToId.current = null;
+}
     }, [spots, selectedId, onSelectSpot, hideMarkers]);
 
     // Update personal place markers (hide in navigation mode)
     useEffect(() => {
         const map = mapRef.current;
-        if (!map) return;
+
+        if (!map) {
+return;
+}
 
         placeMarkersRef.current.forEach((m) => m.remove());
         placeMarkersRef.current = [];
 
-        if (hideMarkers) return;
+        if (hideMarkers) {
+return;
+}
 
         personalPlaces.forEach((place) => {
-            if (!place.lat || !place.lng) return;
+            if (!place.lat || !place.lng) {
+return;
+}
 
             const el = document.createElement('div');
             el.className = 'maplibregl-marker';

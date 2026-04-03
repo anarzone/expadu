@@ -1,4 +1,5 @@
-import { useRef, useEffect, type MouseEvent } from 'react';
+import { useRef, useEffect  } from 'react';
+import type {MouseEvent} from 'react';
 
 export type StepAction = { label: string; url: string };
 export type StepTip = { text: string; author: string };
@@ -61,7 +62,9 @@ export function StepCard({
         <div
             ref={ref}
             onClick={() => {
-                if (!step.upcoming) onToggle();
+                if (!step.upcoming) {
+onToggle();
+}
             }}
             style={{
                 display: 'flex',
@@ -76,9 +79,10 @@ export function StepCard({
             }}
             className="step-card-row"
             onMouseEnter={(e) => {
-                if (!step.upcoming)
-                    (e.currentTarget as HTMLDivElement).style.background =
+                if (!step.upcoming) {
+(e.currentTarget as HTMLDivElement).style.background =
                         '#EFEDE7';
+}
             }}
             onMouseLeave={(e) => {
                 (e.currentTarget as HTMLDivElement).style.background =
@@ -253,23 +257,27 @@ function Checkbox({
         <div
             style={baseStyle}
             onClick={(e) => {
-                if (!upcoming) onClick(e);
+                if (!upcoming) {
+onClick(e);
+}
             }}
             onMouseEnter={(e) => {
-                if (!upcoming && state !== 'done')
-                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                if (!upcoming && state !== 'done') {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                         '#1A4CD4';
+}
             }}
             onMouseLeave={(e) => {
-                if (state === 'done')
-                    (e.currentTarget as HTMLDivElement).style.borderColor =
+                if (state === 'done') {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                         '#0A7C52';
-                else if (state === 'skipped')
-                    (e.currentTarget as HTMLDivElement).style.borderColor =
+} else if (state === 'skipped') {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                         '#E2DFD6';
-                else
-                    (e.currentTarget as HTMLDivElement).style.borderColor =
+} else {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                         '#E2DFD6';
+}
             }}
         >
             {state === 'done' && (

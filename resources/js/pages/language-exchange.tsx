@@ -1,12 +1,13 @@
 import { Head } from '@inertiajs/react';
-import { useMemo, useState, type MouseEvent } from 'react';
-import { useTabState } from '@/hooks/use-tab-state';
+import { useMemo, useState  } from 'react';
+import type {MouseEvent} from 'react';
 import { LanguageHero } from '@/components/language/language-hero';
 import { LanguageRightPanel } from '@/components/language/language-right-panel';
 import { PartnerCard } from '@/components/language/partner-card';
 import { PartnerDetailContent } from '@/components/language/partner-detail-content';
-import { useTracker } from '@/hooks/use-tracker';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import { useTabState } from '@/hooks/use-tab-state';
+import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
@@ -554,6 +555,7 @@ export default function LanguageExchange() {
                 p.native.toLowerCase().includes(q) ||
                 p.learning.toLowerCase().includes(q) ||
                 p.interests.some((i) => i.toLowerCase().includes(q));
+
             return matchFilter && matchSearch;
         });
     }, [partners, activeFilter, search]);
@@ -561,6 +563,7 @@ export default function LanguageExchange() {
     // ── Partner handlers ──
     function openPartner(id: string) {
         const p = partners.find((x) => x.id === id);
+
         if (p) {
             setSelectedPartner(p);
             setSheetView('detail');
@@ -568,11 +571,15 @@ export default function LanguageExchange() {
     }
 
     function toggleSavePartner(id: string, e?: MouseEvent) {
-        if (e) e.stopPropagation();
+        if (e) {
+e.stopPropagation();
+}
+
         setPartners((prev) =>
             prev.map((p) => (p.id === id ? { ...p, saved: !p.saved } : p)),
         );
         const p = partners.find((x) => x.id === id);
+
         if (p) {
             showToast(
                 p.saved
@@ -584,11 +591,18 @@ export default function LanguageExchange() {
 
     // ── Meetup handlers ──
     function toggleJoinMeetup(id: number, e?: MouseEvent) {
-        if (e) e.stopPropagation();
+        if (e) {
+e.stopPropagation();
+}
+
         setMeetups((prev) =>
             prev.map((m) => {
-                if (m.id !== id) return m;
+                if (m.id !== id) {
+return m;
+}
+
                 const newJoined = !m.joined;
+
                 return {
                     ...m,
                     joined: newJoined,
@@ -597,6 +611,7 @@ export default function LanguageExchange() {
             }),
         );
         const m = meetups.find((x) => x.id === id);
+
         if (m) {
             showToast(
                 m.joined
@@ -608,6 +623,7 @@ export default function LanguageExchange() {
 
     function openMeetup(id: number) {
         const m = meetups.find((x) => x.id === id);
+
         if (m) {
             setSelectedMeetup(m);
             setSheetView('meetup-detail');
@@ -619,7 +635,10 @@ export default function LanguageExchange() {
     function toggleDropinMode() {
         const newState = !dropinOn;
         setDropinOn(newState);
-        if (!newState) setSelectedDropinSpot(null);
+
+        if (!newState) {
+setSelectedDropinSpot(null);
+}
     }
 
     function selectDropinSpot(name: string) {
@@ -630,7 +649,10 @@ export default function LanguageExchange() {
     // ── Profile handlers ──
     function toggleEditMode() {
         setEditMode(!editMode);
-        if (editMode) setShowAddLangForm(false);
+
+        if (editMode) {
+setShowAddLangForm(false);
+}
     }
 
     function saveProfile() {
@@ -640,12 +662,18 @@ export default function LanguageExchange() {
     }
 
     function removeLang(index: number) {
-        if (profileLangs[index].name === 'Azerbaijani') return;
+        if (profileLangs[index].name === 'Azerbaijani') {
+return;
+}
+
         setProfileLangs((prev) => prev.filter((_, i) => i !== index));
     }
 
     function toggleAvailDay(index: number) {
-        if (!editMode) return;
+        if (!editMode) {
+return;
+}
+
         setActiveDays((prev) => prev.map((v, i) => (i === index ? !v : v)));
     }
 
@@ -659,14 +687,19 @@ export default function LanguageExchange() {
     function saveNewLanguage() {
         if (!newLangName) {
             showToast('Please select a language');
+
             return;
         }
+
         if (!newLangRole) {
             showToast('Are you a native speaker or learning it?');
+
             return;
         }
+
         if (newLangRole === 'learner' && !newLangLevel) {
             showToast('Please select your level');
+
             return;
         }
 
@@ -708,7 +741,10 @@ export default function LanguageExchange() {
     }
 
     function confirmRequest() {
-        if (!selectedPartner) return;
+        if (!selectedPartner) {
+return;
+}
+
         track('partner_connect', { partner_id: selectedPartner.id });
         setPartners((prev) =>
             prev.map((p) =>
@@ -726,8 +762,10 @@ export default function LanguageExchange() {
     function confirmMeeting() {
         if (pickedDays.size === 0 && pickedTimes.size === 0) {
             showToast('Please pick at least one day or time preference');
+
             return;
         }
+
         closeSheet();
         showToast(
             `📅 Meeting suggested to ${selectedPartner?.name} at ${suggestSpotName}`,
@@ -1306,6 +1344,7 @@ export default function LanguageExchange() {
                             const partnerId =
                                 partners.find((p) => p.name === a.name)?.id ||
                                 'sarah';
+
                             return (
                                 <div
                                     key={a.name}
@@ -1710,13 +1749,15 @@ export default function LanguageExchange() {
                                                             setNewLangRole(
                                                                 role,
                                                             );
+
                                                             if (
                                                                 role ===
                                                                 'native'
-                                                            )
-                                                                setNewLangLevel(
+                                                            ) {
+setNewLangLevel(
                                                                     'Native',
                                                                 );
+}
                                                         }}
                                                         className="flex-1 cursor-pointer rounded-[9px] border-[1.5px] py-2 text-center transition-all"
                                                         style={{
@@ -1983,16 +2024,26 @@ export default function LanguageExchange() {
                         onPickDay={(day) => {
                             setPickedDays((prev) => {
                                 const next = new Set(prev);
-                                if (next.has(day)) next.delete(day);
-                                else next.add(day);
+
+                                if (next.has(day)) {
+next.delete(day);
+} else {
+next.add(day);
+}
+
                                 return next;
                             });
                         }}
                         onPickTime={(time) => {
                             setPickedTimes((prev) => {
                                 const next = new Set(prev);
-                                if (next.has(time)) next.delete(time);
-                                else next.add(time);
+
+                                if (next.has(time)) {
+next.delete(time);
+} else {
+next.add(time);
+}
+
                                 return next;
                             });
                         }}
@@ -2200,7 +2251,10 @@ function SendRequestView({
 
             <button
                 onClick={() => {
-                    if (!msg.trim()) return;
+                    if (!msg.trim()) {
+return;
+}
+
                     onConfirm();
                 }}
                 className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] border-none py-[13px] transition-all hover:bg-[#1540B8]"

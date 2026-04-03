@@ -164,6 +164,7 @@ function WeatherRow({
             : variant === 'caution'
               ? 'text-warn'
               : 'text-foreground';
+
     return (
         <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-xs last:border-b-0">
             <span className="flex items-center gap-[7px] text-muted-foreground">

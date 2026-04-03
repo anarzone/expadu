@@ -18,16 +18,29 @@ const categoryEmoji: Record<string, string> = {
     park: '🌳',
 };
 
-import { getTag, type TagDef } from '@/constants/tags';
 import { ICON_STROKE } from '@/constants/icons';
+import { getTag  } from '@/constants/tags';
+import type {TagDef} from '@/constants/tags';
 
 function getAttrs(spot: SpotData): string[] {
     const attrs: string[] = [];
-    if (spot.wifi_speed) attrs.push('wifi');
-    if (spot.noise_level === 'quiet') attrs.push('quiet');
-    if (spot.category === 'coworking') attrs.push('cowork');
-    if (spot.time_limit_mins === null && spot.category === 'library')
-        attrs.push('free');
+
+    if (spot.wifi_speed) {
+attrs.push('wifi');
+}
+
+    if (spot.noise_level === 'quiet') {
+attrs.push('quiet');
+}
+
+    if (spot.category === 'coworking') {
+attrs.push('cowork');
+}
+
+    if (spot.time_limit_mins === null && spot.category === 'library') {
+attrs.push('free');
+}
+
     return attrs;
 }
 
@@ -78,8 +91,13 @@ export function SpotCard({
             <div className="mb-2.5 flex flex-wrap gap-1.5">
                 {attrs.map((a) => {
                     const tag = getTag(a);
-                    if (!tag) return null;
+
+                    if (!tag) {
+return null;
+}
+
                     const TagIcon = tag.icon;
+
                     return (
                         <span
                             key={a}

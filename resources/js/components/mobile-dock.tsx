@@ -1,5 +1,4 @@
 import { Link } from '@inertiajs/react';
-import { useState } from 'react';
 import {
     IconHome,
     IconCompass,
@@ -7,9 +6,10 @@ import {
     IconUser,
     IconDots,
 } from '@tabler/icons-react';
+import { useState } from 'react';
 import { MoreMenu } from '@/components/more-menu';
-import { useCurrentUrl } from '@/hooks/use-current-url';
 import { ICON_STROKE } from '@/constants/icons';
+import { useCurrentUrl } from '@/hooks/use-current-url';
 
 const dockItems = [
     { title: 'Home', href: '/dashboard', icon: IconHome },
@@ -28,6 +28,7 @@ export function MobileDock() {
                 {dockItems.map((item) => {
                     const active = isCurrentUrl(item.href);
                     const Icon = item.icon;
+
                     return (
                         <Link
                             key={item.title}

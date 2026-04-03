@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef  } from 'react';
+import type {ReactNode} from 'react';
 
 /**
  * Bottom sheet ported from prototype's drag logic:
@@ -26,7 +27,10 @@ export function BottomSheet({
     useEffect(() => {
         const handle = handleRef.current;
         const sheet = sheetRef.current;
-        if (!handle || !sheet) return;
+
+        if (!handle || !sheet) {
+return;
+}
 
         let dragging = false;
         let startY = 0;
@@ -47,7 +51,10 @@ export function BottomSheet({
         }
 
         function onMove(e: MouseEvent | TouchEvent) {
-            if (!dragging) return;
+            if (!dragging) {
+return;
+}
+
             lastY = 'touches' in e ? e.touches[0].clientY : e.clientY;
             const delta = startY - lastY; // up = positive = taller
             const newH = Math.max(
@@ -59,7 +66,10 @@ export function BottomSheet({
         }
 
         function onEnd() {
-            if (!dragging) return;
+            if (!dragging) {
+return;
+}
+
             dragging = false;
             handle!.style.cursor = 'grab';
             document.body.style.userSelect = '';
@@ -70,6 +80,7 @@ export function BottomSheet({
             // Close if dragged down enough or fast enough
             if (currentH < 200 || vel < -0.3) {
                 onCloseRef.current();
+
                 return;
             }
 
@@ -79,6 +90,7 @@ export function BottomSheet({
             const snapDefault = fullH * 0.72;
 
             let target = snapDefault;
+
             if (currentH > fullH * 0.8) {
                 target = snapFull;
             }
@@ -111,13 +123,18 @@ export function BottomSheet({
         } else {
             document.body.classList.remove('overflow-hidden');
         }
+
         return () => document.body.classList.remove('overflow-hidden');
     }, [open]);
 
     // Open/close animation via height
     useEffect(() => {
         const sheet = sheetRef.current;
-        if (!sheet) return;
+
+        if (!sheet) {
+return;
+}
+
         if (open) {
             // Reset to default height and slide up
             sheet.style.transition =

@@ -52,12 +52,14 @@ export function JourneyTimeline({
                     name: 'Your location',
                 });
             }
+
             nodes.push({
                 type: 'leg',
                 legType: 'walk',
                 duration: seg.duration_min,
                 color: '#1A4CD4',
             });
+
             // After walk, if next is transit, the transit boarding stop will be added
             // If last segment, add destination
             if (i === segments.length - 1) {
@@ -115,9 +117,11 @@ export function JourneyTimeline({
                         />
                     );
                 }
+
                 if (node.legType === 'walk') {
                     return <WalkLeg key={i} duration={node.duration ?? 0} />;
                 }
+
                 if (node.legType === 'transit') {
                     return (
                         <TransitLeg
@@ -132,6 +136,7 @@ export function JourneyTimeline({
                         />
                     );
                 }
+
                 return null;
             })}
         </div>
@@ -282,15 +287,30 @@ function getLineColor(line: string, mode: string): string {
         '17': '#C4271A',
         '18': '#1A4CD4',
     };
-    if (colors[line]) return colors[line];
-    if (mode === 'rail') return '#C4271A';
-    if (mode === 'bus') return '#E8914A';
+
+    if (colors[line]) {
+return colors[line];
+}
+
+    if (mode === 'rail') {
+return '#C4271A';
+}
+
+    if (mode === 'bus') {
+return '#E8914A';
+}
+
     return '#1A4CD4';
 }
 
 function addMinutes(time: string, mins: number): string {
     const [h, m] = time.split(':').map(Number);
-    if (isNaN(h) || isNaN(m)) return '';
+
+    if (isNaN(h) || isNaN(m)) {
+return '';
+}
+
     const total = h * 60 + m + mins;
+
     return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }

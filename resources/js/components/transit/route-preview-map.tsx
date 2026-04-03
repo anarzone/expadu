@@ -20,13 +20,20 @@ export function RoutePreviewMap({
     const mapRef = useRef<unknown>(null);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        if (!containerRef.current) return;
+        if (typeof window === 'undefined') {
+return;
+}
+
+        if (!containerRef.current) {
+return;
+}
 
         let cancelled = false;
 
         import('maplibre-gl').then((maplibregl) => {
-            if (cancelled || !containerRef.current) return;
+            if (cancelled || !containerRef.current) {
+return;
+}
 
             if (mapRef.current) {
                 (
@@ -39,9 +46,13 @@ export function RoutePreviewMap({
             fetch('https://tiles.openfreemap.org/styles/bright')
                 .then((r) => r.json())
                 .then((style) => {
-                    if (cancelled || !containerRef.current) return;
-                    if (!style.projection)
-                        style.projection = { type: 'mercator' };
+                    if (cancelled || !containerRef.current) {
+return;
+}
+
+                    if (!style.projection) {
+style.projection = { type: 'mercator' };
+}
 
                     const map = new maplibregl.Map({
                         container: containerRef.current!,
@@ -58,7 +69,9 @@ export function RoutePreviewMap({
                     mapRef.current = map;
 
                     map.on('load', () => {
-                        if (cancelled) return;
+                        if (cancelled) {
+return;
+}
 
                         // Build coordinates: Valhalla polyline or straight line fallback
                         const coordinates: [number, number][] = geometry
@@ -138,9 +151,11 @@ export function RoutePreviewMap({
 
                         // Fit bounds to the route geometry
                         const bounds = new maplibregl.LngLatBounds();
+
                         for (const coord of coordinates) {
                             bounds.extend(coord as [number, number]);
                         }
+
                         map.fitBounds(bounds, {
                             padding: {
                                 top: 40,
@@ -157,6 +172,7 @@ export function RoutePreviewMap({
 
         return () => {
             cancelled = true;
+
             if (mapRef.current) {
                 (mapRef.current as any).remove();
                 mapRef.current = null;

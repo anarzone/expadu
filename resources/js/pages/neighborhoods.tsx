@@ -1,9 +1,9 @@
 import { Head } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import { useTabState } from '@/hooks/use-tab-state';
 import { NeighborhoodCard } from '@/components/neighborhoods/neighborhood-card';
 import { NeighborhoodsRightPanel } from '@/components/neighborhoods/neighborhoods-right-panel';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
@@ -573,6 +573,7 @@ export default function Neighborhoods() {
                 n.name.toLowerCase().includes(q) ||
                 n.tagline.toLowerCase().includes(q) ||
                 n.tags.some((t) => t.toLowerCase().includes(q));
+
             return matchFilter && matchSearch;
         });
     }, [neighborhoods, activeFilter, search]);
@@ -586,7 +587,11 @@ export default function Neighborhoods() {
 
     function openDetail(id: string) {
         const n = neighborhoods.find((x) => x.id === id);
-        if (!n) return;
+
+        if (!n) {
+return;
+}
+
         setSelectedNeighborhood(n);
         setSheetContent('detail');
         setSheetOpen(true);
@@ -599,14 +604,21 @@ export default function Neighborhoods() {
     }
 
     function selectForCompare(id: string) {
-        if (pickerSlot === 'a') setCompareA(id);
-        else setCompareB(id);
+        if (pickerSlot === 'a') {
+setCompareA(id);
+} else {
+setCompareB(id);
+}
+
         setSheetOpen(false);
     }
 
     function clearSlot(slot: 'a' | 'b') {
-        if (slot === 'a') setCompareA(null);
-        else setCompareB(null);
+        if (slot === 'a') {
+setCompareA(null);
+} else {
+setCompareB(null);
+}
     }
 
     // ── Quiz handlers ──
@@ -623,14 +635,20 @@ export default function Neighborhoods() {
     }
 
     function quizNext() {
-        if (quizAnswers[quizStep] === undefined) return;
+        if (quizAnswers[quizStep] === undefined) {
+return;
+}
+
         if (quizStep < QUIZ_QUESTIONS.length - 1) {
             setQuizStep(quizStep + 1);
         } else {
             // Compute scores
             const scores: Record<string, number> = {};
             quizAnswers.forEach((ansIdx, stepIdx) => {
-                if (ansIdx === undefined) return;
+                if (ansIdx === undefined) {
+return;
+}
+
                 const vals = QUIZ_QUESTIONS[stepIdx].opts[ansIdx].val;
                 Object.entries(vals).forEach(([k, v]) => {
                     scores[k] = (scores[k] || 0) + v;
@@ -642,21 +660,28 @@ export default function Neighborhoods() {
     }
 
     function quizBack() {
-        if (quizStep > 0) setQuizStep(quizStep - 1);
+        if (quizStep > 0) {
+setQuizStep(quizStep - 1);
+}
     }
 
     // ── Quiz result computation ──
     const quizResults = useMemo(() => {
-        if (quizStep !== 4) return { top: null, runner: null };
+        if (quizStep !== 4) {
+return { top: null, runner: null };
+}
+
         const scored = Object.entries(FILTER_WEIGHTS)
             .map(([id, weights]) => {
                 let score = 0;
                 Object.entries(weights).forEach(([factor, weight]) => {
                     score += (quizScores[factor] || 0) * weight;
                 });
+
                 return { id, score };
             })
             .sort((a, b) => b.score - a.score);
+
         return {
             top: neighborhoods.find((n) => n.id === scored[0].id) ?? null,
             runner: neighborhoods.find((n) => n.id === scored[1].id) ?? null,
@@ -1155,8 +1180,10 @@ const COMPARE_ROWS: CompareRow[] = [
 
 function getNestedVal(obj: Record<string, unknown>, path: string): unknown {
     return path.split('.').reduce((o: unknown, k: string) => {
-        if (o && typeof o === 'object')
-            return (o as Record<string, unknown>)[k];
+        if (o && typeof o === 'object') {
+return (o as Record<string, unknown>)[k];
+}
+
         return undefined;
     }, obj);
 }

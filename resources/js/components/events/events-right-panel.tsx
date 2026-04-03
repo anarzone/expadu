@@ -1,5 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react';
 import { usePage } from '@inertiajs/react';
+import { useMemo, useState  } from 'react';
+import type {ReactNode} from 'react';
 import type { EventData } from '@/pages/events';
 
 type RightPanelEvent = {
@@ -23,6 +24,7 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 
 function toRpEvent(ev: EventData): RightPanelEvent {
     const emoji = ev.emoji || CATEGORY_EMOJIS[ev.categories?.[0] ?? ''] || '📅';
+
     return {
         id: ev.id,
         emoji,
@@ -61,6 +63,7 @@ export function EventsRightPanel({
 
         for (const ev of allEvents) {
             const evDate = new Date(ev.fullDate);
+
             if (evDate >= satDate && evDate <= sunEnd) {
                 weekend.push(toRpEvent(ev));
             } else if (evDate > sunEnd) {

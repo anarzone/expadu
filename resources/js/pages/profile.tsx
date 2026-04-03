@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
-import { useTabState } from '@/hooks/use-tab-state';
 import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
+import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth } from '@/types';
 
@@ -337,7 +337,10 @@ export default function Profile() {
 
     function saveEdit(field: string) {
         const val = editValue.trim();
-        if (!val) return;
+
+        if (!val) {
+return;
+}
 
         // Update local state immediately
         switch (field) {
@@ -360,6 +363,7 @@ export default function Profile() {
                 setProfileOrigin(val);
                 break;
         }
+
         setEditingField(null);
 
         // Always send all required fields + the changed field
@@ -386,6 +390,7 @@ export default function Profile() {
 
         // Only send to backend for supported fields
         const backendFields = ['name', 'email', 'city', 'situation', 'german'];
+
         if (backendFields.includes(field)) {
             router.patch('/settings/profile', patchData, {
                 preserveScroll: true,
@@ -405,6 +410,7 @@ export default function Profile() {
                                 ? firstError
                                 : 'Could not save'),
                     );
+
                     switch (field) {
                         case 'name':
                             setProfileName(user?.name ?? '');
@@ -453,6 +459,7 @@ export default function Profile() {
             setPlaceDayMode('all');
             setPlaceActiveDays([]);
         }
+
         setShowPlaceForm(true);
     }
 
@@ -466,8 +473,10 @@ export default function Profile() {
     function savePlace() {
         if (!placeName.trim()) {
             showToast('Please enter a place name');
+
             return;
         }
+
         if (editingPlaceId) {
             // Update via backend
             router.put(
@@ -535,6 +544,7 @@ export default function Profile() {
                 },
             );
         }
+
         setShowPlaceForm(false);
     }
 
@@ -542,8 +552,10 @@ export default function Profile() {
     function useMyLocation() {
         if (!navigator.geolocation) {
             showToast('Geolocation not supported by your browser');
+
             return;
         }
+
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
@@ -551,14 +563,17 @@ export default function Profile() {
                 const lng = pos.coords.longitude;
                 setPlaceLat(lat);
                 setPlaceLng(lng);
+
                 // Reverse geocode via Photon
                 try {
                     const res = await fetch(
                         `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&limit=1&lang=en`,
                     );
+
                     if (res.ok) {
                         const data = await res.json();
                         const feature = data.features?.[0];
+
                         if (feature) {
                             const p = feature.properties;
                             const addr = [p.street, p.housenumber]
@@ -583,6 +598,7 @@ export default function Profile() {
                 } catch {
                     setPlaceAddr(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
                 }
+
                 setLocating(false);
                 showToast('📍 Location detected');
             },
@@ -604,18 +620,25 @@ export default function Profile() {
     >([]);
     const addrTimerRef = useCallback(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
+
         return {
             search(query: string) {
-                if (timer) clearTimeout(timer);
+                if (timer) {
+clearTimeout(timer);
+}
+
                 if (query.trim().length < 3) {
                     setAddrSuggestions([]);
+
                     return;
                 }
+
                 timer = setTimeout(async () => {
                     try {
                         const res = await fetch(
                             `/api/geocode?q=${encodeURIComponent(query.trim())}`,
                         );
+
                         if (res.ok) {
                             const data = await res.json();
                             setAddrSuggestions(
@@ -635,7 +658,10 @@ export default function Profile() {
                 }, 300);
             },
             clear() {
-                if (timer) clearTimeout(timer);
+                if (timer) {
+clearTimeout(timer);
+}
+
                 setAddrSuggestions([]);
             },
         };
@@ -646,6 +672,7 @@ export default function Profile() {
         if (id < 0) {
             setPlaces((prev) => prev.filter((p) => p.id !== id));
             showToast('Place removed');
+
             return;
         }
 
@@ -2551,8 +2578,13 @@ function InlineEditRow({
                         }}
                         autoFocus
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') onSave(field);
-                            if (e.key === 'Escape') onCancel();
+                            if (e.key === 'Enter') {
+onSave(field);
+}
+
+                            if (e.key === 'Escape') {
+onCancel();
+}
                         }}
                     />
                 )}

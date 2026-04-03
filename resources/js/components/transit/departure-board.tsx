@@ -5,9 +5,16 @@ export function formatDepartureTime(mins: number): {
     display: string;
     isClockTime: boolean;
 } {
-    if (mins === 0) return { display: 'now', isClockTime: false };
-    if (mins <= 60) return { display: String(mins), isClockTime: false };
+    if (mins === 0) {
+return { display: 'now', isClockTime: false };
+}
+
+    if (mins <= 60) {
+return { display: String(mins), isClockTime: false };
+}
+
     const d = new Date(Date.now() + mins * 60_000);
+
     return {
         display: d.toLocaleTimeString('de-DE', {
             hour: '2-digit',
@@ -40,12 +47,25 @@ export type BoardData = {
 
 function sortServices(services: DepartureService[]) {
     return [...services].sort((a, b) => {
-        if (a.cancelled && !b.cancelled) return 1;
-        if (!a.cancelled && b.cancelled) return -1;
-        if (a.savedDest && !b.savedDest) return -1;
-        if (!a.savedDest && b.savedDest) return 1;
+        if (a.cancelled && !b.cancelled) {
+return 1;
+}
+
+        if (!a.cancelled && b.cancelled) {
+return -1;
+}
+
+        if (a.savedDest && !b.savedDest) {
+return -1;
+}
+
+        if (!a.savedDest && b.savedDest) {
+return 1;
+}
+
         const aNext = a.departures[0] ?? 999;
         const bNext = b.departures[0] ?? 999;
+
         return aNext - bNext;
     });
 }
@@ -71,8 +91,10 @@ export function useClock(): string {
                 ),
             1000,
         );
+
         return () => clearInterval(id);
     }, []);
+
     return time;
 }
 
@@ -262,6 +284,7 @@ function ServiceRow({
                         {following
                             .map((m) => {
                                 const f = formatDepartureTime(m);
+
                                 return f.isClockTime ? f.display : `${m}`;
                             })
                             .join(', ')}

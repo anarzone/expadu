@@ -20,8 +20,8 @@ export type ConnectionOption = {
 };
 
 import { IconWalk, IconBike, IconCar, IconTrain } from '@tabler/icons-react';
-import { ICON_STROKE } from '@/constants/icons';
 import type { ComponentType } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
 
 const MODE_LABELS: Record<string, { icon: ComponentType<any>; label: string }> =
     {
@@ -39,8 +39,12 @@ function formatDist(km: number): string {
 }
 
 function formatTime(sec: number): string {
-    if (sec < 60) return `${sec}s`;
+    if (sec < 60) {
+return `${sec}s`;
+}
+
     const min = Math.round(sec / 60);
+
     return `${min} min`;
 }
 

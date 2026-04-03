@@ -23,14 +23,18 @@ export function TaskCard({
             onMouseEnter={(e) => {
                 (e.currentTarget as HTMLDivElement).style.background =
                     '#EFEDE7';
-                if (task.done)
-                    (e.currentTarget as HTMLDivElement).style.opacity = '0.7';
+
+                if (task.done) {
+(e.currentTarget as HTMLDivElement).style.opacity = '0.7';
+}
             }}
             onMouseLeave={(e) => {
                 (e.currentTarget as HTMLDivElement).style.background =
                     'transparent';
-                if (task.done)
-                    (e.currentTarget as HTMLDivElement).style.opacity = '0.55';
+
+                if (task.done) {
+(e.currentTarget as HTMLDivElement).style.opacity = '0.55';
+}
             }}
         >
             {/* Checkbox */}
@@ -53,14 +57,16 @@ export function TaskCard({
                     cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => {
-                    if (!task.done)
-                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                    if (!task.done) {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                             '#1A4CD4';
+}
                 }}
                 onMouseLeave={(e) => {
-                    if (!task.done)
-                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                    if (!task.done) {
+(e.currentTarget as HTMLDivElement).style.borderColor =
                             '#E2DFD6';
+}
                 }}
             >
                 {task.done && (
