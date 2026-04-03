@@ -804,13 +804,18 @@ export default function Dashboard() {
                                     </span>
                                 )}
                             </div>
-                            <a
-                                href="/transit"
+                            <button
+                                onClick={() => {
+                                    sessionStorage.setItem(
+                                        'transit_scroll',
+                                        'departures',
+                                    );
+                                    router.visit('/transit');
+                                }}
                                 className="text-xs font-semibold text-[#1A4CD4]"
-                                style={{ textDecoration: 'none' }}
                             >
                                 Full board →
-                            </a>
+                            </button>
                         </div>
                         <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
                             {departures.departures.slice(0, 4).map((dep, i) => (

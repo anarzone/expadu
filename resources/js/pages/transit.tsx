@@ -1327,6 +1327,19 @@ export default function Transit() {
         });
     }, []);
 
+    // Scroll to departures when navigated from home "Full board" link
+    useEffect(() => {
+        const target = sessionStorage.getItem('transit_scroll');
+        if (target) {
+            sessionStorage.removeItem('transit_scroll');
+            setTimeout(() => {
+                document
+                    .getElementById(target)
+                    ?.scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+    }, []);
+
     // Split GTFS departures into KVB (tram/bus) and DB (rail/subway) boards
     const kvbDepartures = (gtfsDepartures?.departures ?? []).filter(
         (d) => d.type === 'tram' || d.type === 'bus',
@@ -2035,7 +2048,6 @@ export default function Transit() {
                                         return (
                                             <div
                                                 key={d.id}
-                                                className="flex items-start rounded-[14px]"
                                                 className={`flex items-start rounded-[14px] ${
                                                     isDanger
                                                         ? 'border border-[rgba(196,39,26,.15)] bg-[#FDE8E6] dark:border-[#C4271A]/30 dark:bg-[#C4271A]/10'
@@ -2153,7 +2165,10 @@ export default function Transit() {
                     })()}
 
                     {/* ═══ 4. Departure Boards ═══ */}
-                    <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]">
+                    <div
+                        id="departures"
+                        className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
+                    >
                         <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E2DFD6] bg-[#F6F5F1]/95 px-2.5 py-3 backdrop-blur-md md:px-6 dark:border-[#3A3930] dark:bg-[#18170F]/95">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Departures
