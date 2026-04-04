@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -123,5 +124,20 @@ class User extends Authenticatable
     public function slotMonitors(): HasMany
     {
         return $this->hasMany(SlotMonitor::class);
+    }
+
+    /** @return HasOne<NotificationPreference, $this> */
+    public function notificationPreference(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
+    /** Check if user wants a specific notification type */
+    public function wantsNotification(string $type): bool
+    {
+        $prefs = $this->notificationPreference?->preferences
+            ?? NotificationPreference::defaults();
+
+        return $prefs[$type] ?? true;
     }
 }

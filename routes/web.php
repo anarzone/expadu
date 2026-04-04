@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\TransferConnectionsController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
+use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -71,6 +72,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Push subscriptions
     Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
     Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+
+    // Notification preferences
+    Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
+    Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
 
     // Slot monitoring
     Route::post('slots/toggle', [SlotMonitorController::class, 'toggle'])->name('slots.toggle');

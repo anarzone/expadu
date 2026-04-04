@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alert;
+use App\Models\NotificationPreference;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -32,6 +33,8 @@ class AlertController extends Controller
                 'reminder' => (clone $userAlerts)->where('type', 'reminder')->count(),
             ],
             'tab' => $request->query('tab', 'all'),
+            'notificationPreferences' => $request->user()->notificationPreference?->preferences
+                ?? NotificationPreference::defaults(),
         ]);
     }
 

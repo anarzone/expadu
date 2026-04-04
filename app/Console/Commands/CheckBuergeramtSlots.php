@@ -86,6 +86,11 @@ class CheckBuergeramtSlots extends Command
                 continue;
             }
 
+            // Respect user notification preferences
+            if (! $monitor->user->wantsNotification('burgeramt')) {
+                continue;
+            }
+
             // Build the available slots specific to this user's monitored office
             $userSlots = collect($newlyAvailable)
                 ->only($monitor->office_id)

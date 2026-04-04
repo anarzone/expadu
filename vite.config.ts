@@ -22,6 +22,9 @@ export default defineConfig({
             formVariants: true,
         }),
         VitePWA({
+            strategies: 'injectManifest',
+            srcDir: 'resources',
+            filename: 'sw.ts',
             registerType: 'autoUpdate',
             manifest: {
                 name: 'Expadu — Your City Guide',
@@ -33,30 +36,20 @@ export default defineConfig({
                 scope: '/',
                 start_url: '/dashboard',
                 icons: [
-                    { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
-                    { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+                    {
+                        src: '/favicon.svg',
+                        sizes: 'any',
+                        type: 'image/svg+xml',
+                    },
+                    {
+                        src: '/apple-touch-icon.png',
+                        sizes: '180x180',
+                        type: 'image/png',
+                    },
                 ],
             },
-            workbox: {
+            injectManifest: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-                runtimeCaching: [
-                    {
-                        urlPattern: /^https:\/\/api\.brightsky\.dev/,
-                        handler: 'StaleWhileRevalidate',
-                        options: {
-                            cacheName: 'weather-cache',
-                            expiration: { maxEntries: 10, maxAgeSeconds: 900 },
-                        },
-                    },
-                    {
-                        urlPattern: /^https:\/\/tiles\.openfreemap\.org/,
-                        handler: 'CacheFirst',
-                        options: {
-                            cacheName: 'map-tiles',
-                            expiration: { maxEntries: 500, maxAgeSeconds: 86400 * 7 },
-                        },
-                    },
-                ],
             },
         }),
     ],
