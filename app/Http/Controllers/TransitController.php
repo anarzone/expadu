@@ -21,15 +21,25 @@ class TransitController extends Controller
         $user = $request->user();
         $location = app(UserLocationService::class)->resolve($user, $request);
         $stop = $request->query('stop');
+        $errors = [];
 
         // Use resolved location for departures, or manual stop override
         $nearbyLat = $location['lat'];
         $nearbyLng = $location['lng'];
 
-        if ($stop) {
-            $gtfsDepartures = $gtfsService->getDepartures($stop, 20);
-        } else {
-            $gtfsDepartures = $gtfsService->getDeparturesNearby($nearbyLat, $nearbyLng, 20);
+        try {
+            if ($stop) {
+                $gtfsDepartures = $gtfsService->getDepartures($stop, 20);
+            } else {
+                $gtfsDepartures = $gtfsService->getDeparturesNearby($nearbyLat, $nearbyLng, 20);
+            }
+        } catch (\Throwable $e) {
+            $gtfsDepartures = ['stop_name' => $stop ?? 'Nearby', 'source' => 'unavailable', 'departures' => []];
+            $errors[] = 'Departure data temporarily unavailable';
+        }
+
+        if (! empty($errors)) {
+            session()->flash('serviceErrors', $errors);
         }
 
         GtfsDepartureService::logDepartureDebug($user->id, 'transit', $gtfsDepartures, $nearbyLat, $nearbyLng);

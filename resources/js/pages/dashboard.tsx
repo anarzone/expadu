@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { ServiceErrorBanner } from '@/components/service-error-banner';
 import {
     IconCompass,
     IconFileText,
@@ -195,6 +196,7 @@ export default function Dashboard() {
     return (
         <AppLayout>
             <Head title="Home" />
+            <ServiceErrorBanner />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* Header — hidden on mobile (top bar handles it) */}
                 <div

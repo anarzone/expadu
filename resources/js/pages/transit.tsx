@@ -11,6 +11,7 @@ import {
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
+import { ServiceErrorBanner } from '@/components/service-error-banner';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import {
     DepartureBoard,
@@ -1585,6 +1586,7 @@ export default function Transit() {
     return (
         <AppLayout breadcrumbs={[{ title: 'Transit', href: '/transit' }]}>
             <Head title="Transit" />
+            <ServiceErrorBanner />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* ── Sticky header — hidden on mobile (redundant with dock) ── */}
                 <div className="hidden" style={{ padding: '16px 24px 14px' }}>

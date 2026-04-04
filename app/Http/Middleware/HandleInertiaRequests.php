@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->whereNull('read_at')->count() ?? 0,
+            'serviceErrors' => fn () => session('serviceErrors', []),
             'userLocation' => function () use ($request) {
                 $user = $request->user();
                 if (! $user) {
