@@ -15,6 +15,7 @@ use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\SlotMonitorController;
@@ -76,6 +77,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Notification preferences
     Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
     Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+
+    // Spot reviews
+    Route::get('explore/{spot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::post('explore/{spot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
 
     // Slot monitoring
     Route::post('slots/toggle', [SlotMonitorController::class, 'toggle'])->name('slots.toggle');

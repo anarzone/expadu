@@ -44,6 +44,19 @@ class Spot extends Model
         return $this->hasMany(SpotCheckin::class)->whereNull('checked_out_at');
     }
 
+    /** @return HasMany<Review, $this> */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /** Recalculate average rating from reviews */
+    public function updateRating(): void
+    {
+        $avg = $this->reviews()->avg('rating');
+        $this->update(['rating' => $avg ? round($avg, 2) : null]);
+    }
+
     /**
      * Order by proximity to given coordinates.
      *

@@ -7,8 +7,10 @@ import {
     IconMapPin,
     IconHeart,
     IconLogin,
+    IconStar,
+    IconStarFilled,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { useTracker } from '@/hooks/use-tracker';
 
@@ -37,27 +39,12 @@ const categoryEmoji: Record<string, string> = {
 import { getTag } from '@/constants/tags';
 import { ICON_STROKE } from '@/constants/icons';
 
-// Mock reviews matching prototype
-const mockReviews: Record<
-    number,
-    { name: string; flag: string; stars: string; time: string; text: string }[]
-> = {
-    1: [
-        {
-            name: 'Sarah K.',
-            flag: '🇬🇧',
-            stars: '★★★★★',
-            time: '2 days ago',
-            text: 'Staff speak English, great for long work sessions. Never been asked to leave. The flat white is excellent.',
-        },
-        {
-            name: 'Marco L.',
-            flag: '🇮🇹',
-            stars: '★★★★☆',
-            time: '1 week ago',
-            text: 'Good WiFi, slightly busy on Friday afternoons but manageable. Power outlets near every seat.',
-        },
-    ],
+type ReviewData = {
+    id: number;
+    rating: number;
+    body: string | null;
+    created_at: string;
+    user: { id: number; name: string };
 };
 
 export function SpotDetailSheet({
@@ -104,15 +91,50 @@ export function SpotDetailSheet({
         attrs.push('cowork');
     }
 
-    const reviews = mockReviews[spot.id] || [
-        {
-            name: 'Expat User',
-            flag: '🇬🇧',
-            stars: '★★★★☆',
-            time: '1 week ago',
-            text: 'Nice spot for working. Would recommend to other expats.',
-        },
-    ];
+    // Fetch real reviews
+    const [reviews, setReviews] = useState<ReviewData[]>([]);
+    const [reviewRating, setReviewRating] = useState(0);
+    const [reviewBody, setReviewBody] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const fetchReviews = useCallback(() => {
+        fetch(`/explore/${spot.id}/reviews`, { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((data) => setReviews(data.data ?? []))
+            .catch(() => {});
+    }, [spot.id]);
+
+    useEffect(() => {
+        fetchReviews();
+    }, [fetchReviews]);
+
+    function submitReview() {
+        if (reviewRating === 0 || submitting) return;
+        setSubmitting(true);
+        const csrf =
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') || '';
+        fetch(`/explore/${spot.id}/reviews`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                Accept: 'application/json',
+            },
+            body: JSON.stringify({
+                rating: reviewRating,
+                body: reviewBody || null,
+            }),
+        })
+            .then(() => {
+                setReviewRating(0);
+                setReviewBody('');
+                fetchReviews();
+            })
+            .finally(() => setSubmitting(false));
+    }
 
     function handleCheckin() {
         track('spot_checkin', { spot_id: spot.id });
@@ -281,30 +303,77 @@ export function SpotDetailSheet({
 
             {/* Reviews */}
             <div className="mt-1 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
-                Expat Reviews
+                Reviews
             </div>
-            {reviews.map((r, i) => (
-                <div
-                    key={i}
-                    className="border-b border-[#E2DFD6] py-3 last:border-b-0 dark:border-[#3A3930]"
-                >
-                    <div className="mb-1.5 flex items-center gap-2">
-                        <div className="flex size-7 items-center justify-center rounded-full bg-[#1A4CD4] text-[11px] font-bold text-white">
-                            {r.flag}
-                        </div>
-                        <span className="text-[13px] font-semibold">
-                            {r.name}
-                        </span>
-                        <span className="ml-auto text-[11px] text-[#AAA89F]">
-                            {r.time}
-                        </span>
-                    </div>
-                    <div className="mb-1 text-xs">{r.stars}</div>
-                    <div className="text-[13px] leading-relaxed text-[#6B6860] dark:text-[#AAA89F]">
-                        {r.text}
-                    </div>
+
+            {/* Write a review */}
+            <div className="border-b border-[#E2DFD6] py-3 dark:border-[#3A3930]">
+                <div className="mb-2 flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                            key={star}
+                            onClick={() => setReviewRating(star)}
+                            className="cursor-pointer text-[#C47D0E]"
+                        >
+                            {star <= reviewRating ? (
+                                <IconStarFilled size={18} />
+                            ) : (
+                                <IconStar size={18} stroke={1.5} />
+                            )}
+                        </button>
+                    ))}
                 </div>
-            ))}
+                <textarea
+                    value={reviewBody}
+                    onChange={(e) => setReviewBody(e.target.value)}
+                    placeholder="Share your experience..."
+                    className="mb-2 w-full resize-none rounded-lg border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-2 text-[13px] text-[#18170F] outline-none placeholder:text-[#AAA89F] focus:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0]"
+                    rows={2}
+                />
+                <button
+                    onClick={submitReview}
+                    disabled={reviewRating === 0 || submitting}
+                    className="rounded-lg bg-[#1A4CD4] px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#1541B8] disabled:opacity-40"
+                >
+                    {submitting ? 'Submitting...' : 'Submit review'}
+                </button>
+            </div>
+
+            {/* Review list */}
+            {reviews.length === 0 ? (
+                <div className="py-4 text-center text-[13px] text-[#AAA89F]">
+                    No reviews yet — be the first!
+                </div>
+            ) : (
+                reviews.map((r) => (
+                    <div
+                        key={r.id}
+                        className="border-b border-[#E2DFD6] py-3 last:border-b-0 dark:border-[#3A3930]"
+                    >
+                        <div className="mb-1.5 flex items-center gap-2">
+                            <div className="flex size-7 items-center justify-center rounded-full bg-[#1A4CD4] text-[11px] font-bold text-white">
+                                {r.user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-[13px] font-semibold text-[#18170F] dark:text-[#F5F4F0]">
+                                {r.user.name}
+                            </span>
+                            <span className="ml-auto text-[11px] text-[#AAA89F]">
+                                {new Date(r.created_at).toLocaleDateString()}
+                            </span>
+                        </div>
+                        <div className="mb-1 flex gap-0.5 text-[#C47D0E]">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                                <span key={s}>{s <= r.rating ? '★' : '☆'}</span>
+                            ))}
+                        </div>
+                        {r.body && (
+                            <div className="text-[13px] leading-relaxed text-[#6B6860] dark:text-[#AAA89F]">
+                                {r.body}
+                            </div>
+                        )}
+                    </div>
+                ))
+            )}
         </>
     );
 
