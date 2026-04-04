@@ -7,6 +7,7 @@ use App\Models\Alert;
 use App\Notifications\BuergeramtSlotNotification;
 use App\Notifications\TransitDisruptionNotification;
 use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * When a notification is sent via the 'database' channel,
@@ -20,6 +21,13 @@ class CreateAlertFromNotification
         if ($event->channel !== 'database') {
             return;
         }
+
+        // Dedup: use notification ID + user to prevent double-firing
+        $dedupKey = 'alert_created:'.$event->notification->id.':'.$event->notifiable->id;
+        if (Cache::has($dedupKey)) {
+            return;
+        }
+        Cache::put($dedupKey, true, 60);
 
         $notification = $event->notification;
         $data = $notification->toArray($event->notifiable);
