@@ -86,7 +86,7 @@ export default function Explore() {
     }>().props;
 
     const { track } = useTracker();
-    const { position: geoPos } = useGeolocation();
+    const { position: geoPos, quality: geoQuality } = useGeolocation();
 
     // Best known location: GPS → server-resolved → default
     const myLat = geoPos?.lat ?? userLocation?.lat ?? 50.9375;

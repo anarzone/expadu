@@ -440,33 +440,6 @@ function JourneyRoutePanel({
                 })}
             </div>
 
-            {/* Route preview map — hidden for transit (explore page handles it) */}
-            {selectedMode !== 'transit' && (
-                <Suspense
-                    fallback={
-                        <div className="h-[200px] animate-pulse rounded-[14px] bg-[#EFEDE7]" />
-                    }
-                >
-                    <RoutePreviewMapLazy
-                        origin={origin}
-                        destination={{
-                            lat: destination.lat,
-                            lng: destination.lng,
-                        }}
-                        mode={
-                            selectedMode === 'bike'
-                                ? 'bike'
-                                : selectedMode === 'walk'
-                                  ? 'walk'
-                                  : selectedMode === 'drive'
-                                    ? 'drive'
-                                    : 'walk'
-                        }
-                        geometry={selectedGeometry}
-                    />
-                </Suspense>
-            )}
-
             {/* Navigate to explore directions */}
             <button
                 onClick={() => {
@@ -1202,7 +1175,7 @@ export default function Transit() {
     }>().props;
 
     const { track } = useTracker();
-    const { position: geoPos } = useGeolocation();
+    const { position: geoPos, quality: geoQuality } = useGeolocation();
     const homeName = userLocation?.name ?? 'Ehrenfeld';
     const homeAddress = userLocation?.address ?? 'Cologne';
     const homeLat = userLocation?.lat ?? 50.9478;
@@ -1231,9 +1204,16 @@ export default function Transit() {
     }, []);
 
     // Fetch on GPS change — update nearby deps + reload main board when moved >200m
+    // Skip when GPS quality is degraded to avoid jumping to wrong stops
     const lastBoardReloadRef = useRef<string>('');
     useEffect(() => {
-        if (!geoPos || hasManualStop) {
+        if (
+            !geoPos ||
+            hasManualStop ||
+            geoQuality === 'low' ||
+            geoQuality === 'stale' ||
+            geoQuality === 'estimated'
+        ) {
             return;
         }
 
@@ -2128,6 +2108,19 @@ export default function Transit() {
                         id="departures"
                         className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
                     >
+                        {(geoQuality === 'low' ||
+                            geoQuality === 'stale' ||
+                            geoQuality === 'estimated') &&
+                            geoPos && (
+                                <div className="flex items-center gap-2 border-b border-[#C47D0E]/20 bg-[#FDF0D4] px-3 py-2 text-[12px] text-[#C47D0E] dark:border-[#C47D0E]/30 dark:bg-[#C47D0E]/10">
+                                    <span className="shrink-0">⚠</span>
+                                    <span>
+                                        {geoQuality === 'stale'
+                                            ? 'Location not updated recently — showing last known stop'
+                                            : 'Location accuracy is low — stop may be approximate'}
+                                    </span>
+                                </div>
+                            )}
                         <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E2DFD6] bg-[#F6F5F1]/95 px-2.5 py-3 backdrop-blur-md md:px-6 dark:border-[#3A3930] dark:bg-[#18170F]/95">
                             <span style={{ fontSize: 16, fontWeight: 600 }}>
                                 Departures

@@ -124,7 +124,7 @@ export default function Dashboard() {
     const user = auth?.user as { name?: string } | undefined;
     const greeting = getGreeting(user?.name);
     const { track } = useTracker();
-    const { position: geoPos } = useGeolocation();
+    const { position: geoPos, quality: geoQuality } = useGeolocation();
 
     // Track location + reload dashboard when moved >200m
     const lastDashReloadRef = useRef<string>('');
