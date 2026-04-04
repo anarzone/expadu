@@ -380,54 +380,27 @@ function JourneyRoutePanel({
                         <button
                             key={opt.mode}
                             onClick={() => selectMode(opt.mode)}
-                            className={`flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-[10px] transition-all ${active ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'}`}
-                            style={{
-                                padding: '8px 2px',
-                                position: 'relative',
-                            }}
+                            className={`relative flex flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-[10px] px-[2px] py-2 transition-all ${active ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'}`}
                         >
                             {opt.best && (
-                                <span
-                                    style={{
-                                        position: 'absolute',
-                                        top: -5,
-                                        right: -3,
-                                        fontSize: 7,
-                                        fontWeight: 700,
-                                        padding: '1px 4px',
-                                        borderRadius: 20,
-                                        background: '#FEF9EC',
-                                        color: '#C47D0E',
-                                        textTransform: 'uppercase',
-                                    }}
-                                >
+                                <span className="absolute -top-[5px] -right-[3px] rounded-full bg-[#FEF9EC] px-1 py-[1px] text-[7px] font-bold text-[#C47D0E] uppercase">
                                     Best
                                 </span>
                             )}
-                            <span style={{ fontSize: 16 }}>{opt.emoji}</span>
+                            <span className="text-base">{opt.emoji}</span>
                             <span
-                                className={
+                                className={`font-mono text-sm leading-none font-semibold ${
                                     active
-                                        ? ''
+                                        ? 'text-[#1A4CD4]'
                                         : 'text-[#18170F] dark:text-[#F5F4F0]'
-                                }
-                                style={{
-                                    fontFamily: "'Geist Mono', monospace",
-                                    fontSize: 14,
-                                    fontWeight: 600,
-                                    color: active ? '#1A4CD4' : undefined,
-                                    lineHeight: 1,
-                                }}
+                                }`}
                             >
                                 {opt.time}
-                                <span style={{ fontSize: 8, color: '#AAA89F' }}>
+                                <span className="text-[8px] text-[#AAA89F]">
                                     m
                                 </span>
                             </span>
-                            <span
-                                className="text-[#6B6860] dark:text-[#AAA89F]"
-                                style={{ fontSize: 10 }}
-                            >
+                            <span className="text-[10px] text-[#6B6860] dark:text-[#AAA89F]">
                                 {opt.mode === 'bike'
                                     ? 'Bike'
                                     : opt.mode === 'walk'
@@ -510,8 +483,7 @@ function RoutineDetailContent({
                 {/* Back button */}
                 <button
                     onClick={() => setMode('view')}
-                    className="mb-4 flex cursor-pointer items-center gap-1 border-none bg-transparent text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
-                    style={{ fontSize: 13, fontWeight: 600, padding: 0 }}
+                    className="mb-4 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:text-[#AAA89F]"
                 >
                     ← Back to details
                 </button>
@@ -734,7 +706,7 @@ function RoutineDetailContent({
                             ? 'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#F5C518]'
                             : 'bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20'
                     }`}
-                    style={{ opacity: toggling ? 0.6 : 1 }}
+                    style={{ opacity: toggling ? 0.6 : undefined }}
                 >
                     {toggling
                         ? 'Updating...'
@@ -860,16 +832,12 @@ function StopInput({
 
     return (
         <div className="relative">
-            <div
-                className="flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
-                style={{ padding: '10px 14px' }}
-            >
+            <div className="flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-3.5 py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]">
                 <span className="shrink-0 text-[15px] text-[#AAA89F]">
                     {icon ?? emoji}
                 </span>
                 <input
                     className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F5F4F0]"
-                    style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
                     placeholder={placeholder}
                     value={value}
                     onChange={(e) => search(e.target.value)}
@@ -887,27 +855,22 @@ function StopInput({
                         <div
                             key={r.name}
                             onMouseDown={() => select(r.name)}
-                            className="flex cursor-pointer items-center gap-2 px-3 py-2.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
-                            style={{ fontSize: 13 }}
+                            className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-[13px] transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
                         >
-                            <span style={{ fontSize: 14 }}>
+                            <span className="text-sm">
                                 {r.type === 'place' ? '📍' : '🚏'}
                             </span>
                             <span
-                                style={{
-                                    fontWeight: r.type === 'place' ? 600 : 400,
-                                }}
+                                className={
+                                    r.type === 'place'
+                                        ? 'font-semibold'
+                                        : 'font-normal'
+                                }
                             >
                                 {r.name}
                             </span>
                             {r.type === 'place' && (
-                                <span
-                                    style={{
-                                        fontSize: 10,
-                                        color: '#AAA89F',
-                                        marginLeft: 'auto',
-                                    }}
-                                >
+                                <span className="ml-auto text-[10px] text-[#AAA89F]">
                                     Saved
                                 </span>
                             )}
@@ -941,24 +904,13 @@ function StopPickerContent({
 }) {
     return (
         <div>
-            <div
-                style={{
-                    fontFamily: "'Fraunces', serif",
-                    fontSize: 18,
-                    fontWeight: 500,
-                    marginBottom: 12,
-                }}
-            >
+            <div className="mb-3 font-display text-[18px] font-medium">
                 Choose a stop
             </div>
-            <div
-                className="mb-4 flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]"
-                style={{ padding: '10px 14px' }}
-            >
-                <span style={{ fontSize: 15, color: '#AAA89F' }}>🔍</span>
+            <div className="mb-4 flex items-center gap-[10px] rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-3.5 py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:shadow-[0_0_0_3px_#EBF0FD] dark:border-[#3A3930] dark:bg-[#2A2920]">
+                <span className="text-[15px] text-[#AAA89F]">🔍</span>
                 <input
                     className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F5F4F0]"
-                    style={{ fontFamily: "'Geist', sans-serif", fontSize: 14 }}
                     placeholder="Search stops (e.g. Neumarkt, Ehrenfeld)..."
                     value={stopSearch}
                     onChange={(e) => onSearch(e.target.value)}
@@ -966,8 +918,7 @@ function StopPickerContent({
                 />
                 {stopSearch && (
                     <span
-                        className="shrink-0 cursor-pointer"
-                        style={{ fontSize: 13, color: '#AAA89F' }}
+                        className="shrink-0 cursor-pointer text-[13px] text-[#AAA89F]"
                         onClick={onClear}
                     >
                         ✕
@@ -976,70 +927,45 @@ function StopPickerContent({
             </div>
 
             {!stopSearch.trim() && (
-                <div
-                    className="py-6 text-center"
-                    style={{ color: '#AAA89F', fontSize: 13 }}
-                >
+                <div className="py-6 text-center text-[13px] text-[#AAA89F]">
                     Type at least 2 characters to search for stops
                 </div>
             )}
 
             {stopSearch.trim() && loading && (
-                <div
-                    className="py-6 text-center"
-                    style={{ color: '#AAA89F', fontSize: 13 }}
-                >
+                <div className="py-6 text-center text-[13px] text-[#AAA89F]">
                     Searching...
                 </div>
             )}
 
             {stopSearch.trim() && !loading && results.length > 0 && (
                 <>
-                    <div
-                        style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                            color: '#AAA89F',
-                            padding: '8px 0 4px',
-                        }}
-                    >
+                    <div className="px-0 pt-2 pb-1 text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                         🔍 Results
                     </div>
                     {results.map((s) => (
                         <div
                             key={s.stop_id}
                             onClick={() => onSelect(s.name, s.lat, s.lng)}
-                            className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                            className="flex cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-1 py-3 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                             style={{
-                                padding: '12px 4px',
                                 background:
                                     activeStop === s.name
                                         ? '#EBF0FD'
                                         : 'transparent',
                             }}
                         >
-                            <span
-                                style={{
-                                    fontSize: 20,
-                                    flexShrink: 0,
-                                    width: 28,
-                                    textAlign: 'center',
-                                }}
-                            >
+                            <span className="w-7 shrink-0 text-center text-xl">
                                 🚏
                             </span>
                             <div className="flex-1">
-                                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                                <div className="text-sm font-semibold">
                                     {s.name}
                                 </div>
                             </div>
                             <span
-                                className="shrink-0"
+                                className="shrink-0 text-base text-[#1A4CD4]"
                                 style={{
-                                    fontSize: 16,
-                                    color: '#1A4CD4',
                                     opacity: activeStop === s.name ? 1 : 0,
                                 }}
                             >
@@ -1054,10 +980,7 @@ function StopPickerContent({
                 !loading &&
                 results.length === 0 &&
                 stopSearch.trim().length >= 2 && (
-                    <div
-                        className="py-8 text-center"
-                        style={{ color: '#AAA89F', fontSize: 14 }}
-                    >
+                    <div className="py-8 text-center text-sm text-[#AAA89F]">
                         No stops found for &ldquo;{stopSearch}&rdquo;
                     </div>
                 )}
@@ -1589,15 +1512,8 @@ export default function Transit() {
             <ServiceErrorBanner />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* ── Sticky header — hidden on mobile (redundant with dock) ── */}
-                <div className="hidden" style={{ padding: '16px 24px 14px' }}>
-                    <span
-                        style={{
-                            fontFamily: "'Fraunces', serif",
-                            fontSize: 20,
-                            fontWeight: 500,
-                            letterSpacing: '-0.01em',
-                        }}
-                    >
+                <div className="hidden px-6 pt-4 pb-3.5">
+                    <span className="font-display text-xl font-medium tracking-tight">
                         Transit & Commute
                     </span>
                 </div>
@@ -1607,18 +1523,10 @@ export default function Transit() {
                     {/* ═══ 1. Smart Commute Hero ═══ */}
                     <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-[13px] flex items-baseline justify-between">
-                            <span style={{ fontSize: 16, fontWeight: 600 }}>
+                            <span className="text-base font-semibold">
                                 Smart Commute
                             </span>
-                            <span
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.08em',
-                                    color: '#AAA89F',
-                                }}
-                            >
+                            <span className="text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                                 {new Date().toLocaleDateString('en-GB', {
                                     weekday: 'short',
                                     day: 'numeric',
@@ -1633,38 +1541,13 @@ export default function Transit() {
                         </div>
                         <div
                             ref={blueCardRef}
-                            className="relative overflow-hidden"
-                            style={{
-                                background: '#1A4CD4',
-                                borderRadius: 9,
-                                padding: '22px 24px',
-                                color: 'white',
-                            }}
+                            className="relative overflow-hidden rounded-[9px] bg-[#1A4CD4] px-6 py-[22px] text-white"
                         >
                             {/* Decorative circle */}
-                            <div
-                                className="pointer-events-none absolute"
-                                style={{
-                                    top: -60,
-                                    right: -60,
-                                    width: 220,
-                                    height: 220,
-                                    background: 'rgba(255,255,255,.05)',
-                                    borderRadius: '50%',
-                                }}
-                            />
+                            <div className="pointer-events-none absolute -top-[60px] -right-[60px] size-[220px] rounded-full bg-white/5" />
 
                             {/* Eyebrow */}
-                            <div
-                                style={{
-                                    fontSize: 10,
-                                    fontWeight: 600,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.10em',
-                                    opacity: 0.6,
-                                    marginBottom: 6,
-                                }}
-                            >
+                            <div className="mb-1.5 text-[10px] font-semibold tracking-[0.10em] uppercase opacity-60">
                                 {cr?.context === 'discovery' ||
                                 cr?.context === 'off_hours'
                                     ? `Discover · ${cr?.from ?? homeName}`
@@ -1675,31 +1558,15 @@ export default function Transit() {
                             {cr?.needs_setup && (
                                 <a
                                     href="/profile#settings"
-                                    className="relative z-[1] mb-3 flex items-center gap-3 rounded-[14px] p-3 transition-all hover:bg-[rgba(255,255,255,.22)]"
-                                    style={{
-                                        background: 'rgba(255,255,255,.15)',
-                                        border: '1px dashed rgba(255,255,255,.3)',
-                                        textDecoration: 'none',
-                                        color: 'inherit',
-                                    }}
+                                    className="relative z-[1] mb-3 flex items-center gap-3 rounded-[14px] border border-dashed border-[rgba(255,255,255,.3)] bg-[rgba(255,255,255,.15)] p-3 text-inherit no-underline transition-all hover:bg-[rgba(255,255,255,.22)]"
                                 >
-                                    <span style={{ fontSize: 18 }}>📍</span>
+                                    <span className="text-[18px]">📍</span>
                                     <div className="flex-1">
-                                        <div
-                                            style={{
-                                                fontSize: 13,
-                                                fontWeight: 600,
-                                            }}
-                                        >
+                                        <div className="text-[13px] font-semibold">
                                             Set Home &amp; Work for personalized
                                             routes
                                         </div>
-                                        <div
-                                            style={{
-                                                fontSize: 11,
-                                                opacity: 0.7,
-                                            }}
-                                        >
+                                        <div className="text-[11px] opacity-70">
                                             Tap to add your addresses in
                                             Settings
                                         </div>
@@ -1709,14 +1576,7 @@ export default function Transit() {
 
                             {/* Headline — from recommendation engine */}
                             <div
-                                className="relative z-[1]"
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 22,
-                                    fontWeight: 400,
-                                    lineHeight: 1.2,
-                                    marginBottom: 18,
-                                }}
+                                className="relative z-[1] mb-[18px] font-display text-[22px] leading-[1.2] font-normal"
                                 dangerouslySetInnerHTML={{
                                     __html: (
                                         cr?.headline ??
@@ -1729,10 +1589,7 @@ export default function Transit() {
                             />
 
                             {/* Route option cards — auto-rotating from pools */}
-                            <div
-                                className="relative z-[1] flex flex-col"
-                                style={{ gap: 8 }}
-                            >
+                            <div className="relative z-[1] flex flex-col gap-2">
                                 {(cr?.route_cards ?? []).map(
                                     (initialCard, i) => (
                                         <RotatingCardSlot
@@ -1786,28 +1643,13 @@ export default function Transit() {
                             </div>
 
                             {/* Leave-by callout */}
-                            <div
-                                className="relative z-[1] mt-[10px] flex items-center gap-[10px]"
-                                style={{
-                                    background: 'rgba(255,255,255,.15)',
-                                    borderRadius: 9,
-                                    padding: '11px 14px',
-                                }}
-                            >
-                                <span style={{ fontSize: 18, flexShrink: 0 }}>
-                                    ⏰
-                                </span>
-                                <div
-                                    style={{
-                                        fontSize: 13,
-                                        lineHeight: 1.4,
-                                        flex: 1,
-                                    }}
-                                >
+                            <div className="relative z-[1] mt-[10px] flex items-center gap-[10px] rounded-[9px] bg-[rgba(255,255,255,.15)] px-3.5 py-[11px]">
+                                <span className="shrink-0 text-[18px]">⏰</span>
+                                <div className="flex-1 text-[13px] leading-[1.4]">
                                     {cr?.leave_by ? (
                                         <>
                                             Leave by{' '}
-                                            <strong style={{ fontWeight: 700 }}>
+                                            <strong className="font-bold">
                                                 {cr.leave_by.time}
                                             </strong>{' '}
                                             to arrive at{' '}
@@ -1824,15 +1666,7 @@ export default function Transit() {
                                     )}
                                 </div>
                                 {cr?.leave_by && (
-                                    <div
-                                        style={{
-                                            fontFamily:
-                                                "'Geist Mono', monospace",
-                                            fontSize: 18,
-                                            fontWeight: 500,
-                                            flexShrink: 0,
-                                        }}
-                                    >
+                                    <div className="shrink-0 font-mono text-[18px] font-medium">
                                         {cr.leave_by.time}
                                     </div>
                                 )}
@@ -1843,7 +1677,7 @@ export default function Transit() {
                     {/* ═══ 2. Plan a Journey ═══ */}
                     <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div className="mb-[13px]">
-                            <span style={{ fontSize: 16, fontWeight: 600 }}>
+                            <span className="text-base font-semibold">
                                 Plan a Journey
                             </span>
                         </div>
@@ -1916,12 +1750,7 @@ export default function Transit() {
                                     onClick={() =>
                                         setDest(c.value, c.lat, c.lng)
                                     }
-                                    className="inline-flex cursor-pointer items-center gap-[5px] rounded-full border border-[#E2DFD6] bg-white whitespace-nowrap text-[#6B6860] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
-                                    style={{
-                                        padding: '6px 12px',
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                    }}
+                                    className="inline-flex cursor-pointer items-center gap-[5px] rounded-full border border-[#E2DFD6] bg-white px-3 py-1.5 text-xs font-medium whitespace-nowrap text-[#6B6860] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
                                 >
                                     {c.emoji} {c.label}
                                 </button>
@@ -1954,12 +1783,7 @@ export default function Transit() {
                         return (
                             <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                                 <div className="mb-[13px] flex items-baseline justify-between">
-                                    <span
-                                        style={{
-                                            fontSize: 16,
-                                            fontWeight: 600,
-                                        }}
-                                    >
+                                    <span className="text-base font-semibold">
                                         Live Disruptions
                                     </span>
                                     <span
@@ -1992,70 +1816,37 @@ export default function Transit() {
                                                         : isWarning
                                                           ? 'border border-[rgba(196,125,14,.2)] bg-[#FDF0D4] dark:border-[#C47D0E]/30 dark:bg-[#C47D0E]/10'
                                                           : 'border border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]'
-                                                }`}
-                                                style={{
-                                                    padding: '12px 14px',
-                                                    gap: 10,
-                                                }}
+                                                } gap-2.5 px-3.5 py-3`}
                                             >
-                                                <span
-                                                    style={{
-                                                        fontSize: 15,
-                                                        flexShrink: 0,
-                                                        marginTop: 1,
-                                                    }}
-                                                >
+                                                <span className="mt-[1px] shrink-0 text-[15px]">
                                                     {isDanger ? '🚧' : '⚠️'}
                                                 </span>
                                                 <div className="min-w-0 flex-1">
                                                     <div
-                                                        className={
+                                                        className={`mb-0.5 text-[13px] font-bold ${
                                                             isDanger
-                                                                ? ''
+                                                                ? 'text-[#C4271A]'
                                                                 : 'text-[#18170F] dark:text-[#F5F4F0]'
-                                                        }
-                                                        style={{
-                                                            fontSize: 13,
-                                                            fontWeight: 700,
-                                                            color: isDanger
-                                                                ? '#C4271A'
-                                                                : undefined,
-                                                            marginBottom: 2,
-                                                        }}
+                                                        }`}
                                                     >
                                                         {d.title}
                                                     </div>
                                                     <div
-                                                        className={
+                                                        className={`text-xs leading-[1.4] ${
                                                             isDanger
                                                                 ? 'text-[#7C2015] dark:text-[#FCA5A0]'
                                                                 : 'text-[#7C4A00] dark:text-[#FCD68C]'
-                                                        }
-                                                        style={{
-                                                            fontSize: 12,
-                                                            lineHeight: 1.4,
-                                                        }}
+                                                        }`}
                                                     >
                                                         {d.description}
                                                     </div>
                                                     {d.is_personal && (
                                                         <span
-                                                            className="mt-1.5 inline-block rounded-full px-2 py-0.5"
-                                                            style={{
-                                                                fontSize: 9,
-                                                                fontWeight: 700,
-                                                                textTransform:
-                                                                    'uppercase',
-                                                                letterSpacing:
-                                                                    '0.05em',
-                                                                background:
-                                                                    isDanger
-                                                                        ? 'rgba(196,39,26,.1)'
-                                                                        : 'rgba(196,125,14,.15)',
-                                                                color: isDanger
-                                                                    ? '#C4271A'
-                                                                    : '#C47D0E',
-                                                            }}
+                                                            className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-[0.05em] uppercase ${
+                                                                isDanger
+                                                                    ? 'bg-[rgba(196,39,26,.1)] text-[#C4271A]'
+                                                                    : 'bg-[rgba(196,125,14,.15)] text-[#C47D0E]'
+                                                            }`}
                                                         >
                                                             Affects your route ·
                                                             Line{' '}
@@ -2074,11 +1865,7 @@ export default function Transit() {
                                                             ],
                                                         )
                                                     }
-                                                    className="shrink-0 cursor-pointer border-none bg-transparent transition-colors"
-                                                    style={{
-                                                        fontSize: 14,
-                                                        color: '#AAA89F',
-                                                    }}
+                                                    className="shrink-0 cursor-pointer border-none bg-transparent text-sm text-[#AAA89F] transition-colors"
                                                     onMouseEnter={(e) => {
                                                         (
                                                             e.target as HTMLElement
@@ -2121,7 +1908,7 @@ export default function Transit() {
                                 </div>
                             )}
                         <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E2DFD6] bg-[#F6F5F1]/95 px-2.5 py-3 backdrop-blur-md md:px-6 dark:border-[#3A3930] dark:bg-[#18170F]/95">
-                            <span style={{ fontSize: 16, fontWeight: 600 }}>
+                            <span className="text-base font-semibold">
                                 Departures
                             </span>
                             <div className="flex items-center gap-2">
@@ -2136,12 +1923,7 @@ export default function Transit() {
                                 )}
                             </div>
                             <span
-                                className="cursor-pointer"
-                                style={{
-                                    fontSize: 13,
-                                    color: '#1A4CD4',
-                                    fontWeight: 500,
-                                }}
+                                className="cursor-pointer text-[13px] font-medium text-[#1A4CD4]"
                                 onClick={openStopPicker}
                             >
                                 Change stop
@@ -2193,19 +1975,9 @@ export default function Transit() {
                                         <>
                                             <div className="mb-[14px] overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
                                                 {/* Header */}
-                                                <div
-                                                    className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
-                                                    style={{
-                                                        padding: '12px 16px',
-                                                    }}
-                                                >
+                                                <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 dark:border-[#3A3930] dark:bg-[#2A2920]">
                                                     <div className="flex items-center gap-2">
-                                                        <span
-                                                            style={{
-                                                                fontSize: 13,
-                                                                fontWeight: 700,
-                                                            }}
-                                                        >
+                                                        <span className="text-[13px] font-bold">
                                                             🚋{' '}
                                                             {nearbyDepartures
                                                                 ?.stops_used?.[0]
@@ -2241,21 +2013,14 @@ export default function Transit() {
                                                                         key={
                                                                             line
                                                                         }
+                                                                        className="rounded-full px-2 py-[2px] font-mono text-[11px] font-bold text-white"
                                                                         style={{
-                                                                            padding:
-                                                                                '2px 8px',
-                                                                            borderRadius: 20,
-                                                                            fontSize: 11,
-                                                                            fontWeight: 700,
-                                                                            fontFamily:
-                                                                                "'Geist Mono', monospace",
                                                                             background:
                                                                                 lineColor(
                                                                                     line,
                                                                                     dep?.color ??
                                                                                         '#1A4CD4',
                                                                                 ),
-                                                                            color: 'white',
                                                                         }}
                                                                     >
                                                                         {line}
@@ -2289,14 +2054,12 @@ export default function Transit() {
                                                         return (
                                                             <div
                                                                 key={`${dep.line}_${dep.direction}`}
-                                                                className={`flex cursor-pointer items-center gap-3 transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
+                                                                className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
                                                                 style={{
-                                                                    padding:
-                                                                        '12px 16px',
                                                                     opacity:
                                                                         isCancelled
                                                                             ? 0.7
-                                                                            : 1,
+                                                                            : undefined,
                                                                     ...(dep.towards_dest
                                                                         ? {
                                                                               borderLeft:
@@ -2313,10 +2076,8 @@ export default function Transit() {
                                                             >
                                                                 {/* Line badge */}
                                                                 <div
-                                                                    className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold whitespace-nowrap"
+                                                                    className="flex h-[34px] min-w-[34px] shrink-0 items-center justify-center rounded-lg font-mono font-bold whitespace-nowrap text-white"
                                                                     style={{
-                                                                        minWidth: 34,
-                                                                        height: 34,
                                                                         padding:
                                                                             dep
                                                                                 .line
@@ -2326,7 +2087,6 @@ export default function Transit() {
                                                                                 : undefined,
                                                                         background:
                                                                             bg,
-                                                                        color: 'white',
                                                                         fontSize:
                                                                             dep
                                                                                 .line
@@ -2350,13 +2110,7 @@ export default function Transit() {
                                                                 </div>
                                                                 {/* Info */}
                                                                 <div className="min-w-0 flex-1">
-                                                                    <div
-                                                                        style={{
-                                                                            fontSize: 13,
-                                                                            fontWeight: 600,
-                                                                            marginBottom: 2,
-                                                                        }}
-                                                                    >
+                                                                    <div className="mb-0.5 text-[13px] font-semibold">
                                                                         {
                                                                             dep.direction
                                                                         }
@@ -2367,13 +2121,7 @@ export default function Transit() {
                                                                             </span>
                                                                         )}
                                                                     </div>
-                                                                    <div
-                                                                        className="text-[#6B6860] dark:text-[#AAA89F]"
-                                                                        style={{
-                                                                            fontSize: 11,
-                                                                            marginBottom: 3,
-                                                                        }}
-                                                                    >
+                                                                    <div className="mb-[3px] text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
                                                                         via{' '}
                                                                         {
                                                                             dep.stop_name
@@ -2420,12 +2168,7 @@ export default function Transit() {
                                                                     ) : (
                                                                         <>
                                                                             <div
-                                                                                className="font-mono text-[22px] leading-none font-medium"
-                                                                                style={{
-                                                                                    color: isDelayed
-                                                                                        ? '#C47D0E'
-                                                                                        : '#0A7C52',
-                                                                                }}
+                                                                                className={`font-mono text-[22px] leading-none font-medium ${isDelayed ? 'text-[#C47D0E]' : 'text-[#0A7C52]'}`}
                                                                             >
                                                                                 {
                                                                                     formatDepartureTime(
@@ -2494,14 +2237,7 @@ export default function Transit() {
                                                 {(nearbyDepartures?.kvb ?? [])
                                                     .length > 4 && (
                                                     <div
-                                                        className="cursor-pointer border-t border-[#E2DFD6] text-center transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                                                        style={{
-                                                            padding:
-                                                                '10px 16px',
-                                                            fontSize: 13,
-                                                            fontWeight: 600,
-                                                            color: '#1A4CD4',
-                                                        }}
+                                                        className="cursor-pointer border-t border-[#E2DFD6] px-4 py-2.5 text-center text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                                         onClick={() =>
                                                             setShowMoreKvb(
                                                                 !showMoreKvb,
@@ -2519,20 +2255,9 @@ export default function Transit() {
                                             {(nearbyDepartures?.db ?? [])
                                                 .length > 0 && (
                                                 <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                                    <div
-                                                        className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#2A2920]"
-                                                        style={{
-                                                            padding:
-                                                                '12px 16px',
-                                                        }}
-                                                    >
+                                                    <div className="flex items-center justify-between border-b border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 dark:border-[#3A3930] dark:bg-[#2A2920]">
                                                         <div className="flex items-center gap-2">
-                                                            <span
-                                                                style={{
-                                                                    fontSize: 13,
-                                                                    fontWeight: 700,
-                                                                }}
-                                                            >
+                                                            <span className="text-[13px] font-bold">
                                                                 🚂{' '}
                                                                 {nearbyDepartures?.stops_used?.find(
                                                                     (s) =>
@@ -2574,21 +2299,14 @@ export default function Transit() {
                                                                             key={
                                                                                 line
                                                                             }
+                                                                            className="rounded-full px-2 py-[2px] font-mono text-[11px] font-bold text-white"
                                                                             style={{
-                                                                                padding:
-                                                                                    '2px 8px',
-                                                                                borderRadius: 20,
-                                                                                fontSize: 11,
-                                                                                fontWeight: 700,
-                                                                                fontFamily:
-                                                                                    "'Geist Mono', monospace",
                                                                                 background:
                                                                                     lineColor(
                                                                                         line,
                                                                                         dep?.color ??
                                                                                             '#C4271A',
                                                                                     ),
-                                                                                color: 'white',
                                                                             }}
                                                                         >
                                                                             {
@@ -2627,14 +2345,12 @@ export default function Transit() {
                                                             return (
                                                                 <div
                                                                     key={`${dep.line}_${dep.direction}`}
-                                                                    className={`flex cursor-pointer items-center gap-3 transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
+                                                                    className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition-[background] duration-150 hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${i < arr.length - 1 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
                                                                     style={{
-                                                                        padding:
-                                                                            '12px 16px',
                                                                         opacity:
                                                                             isCancelled
                                                                                 ? 0.7
-                                                                                : 1,
+                                                                                : undefined,
                                                                     }}
                                                                     onClick={() =>
                                                                         setLineDetail(
@@ -2643,10 +2359,8 @@ export default function Transit() {
                                                                     }
                                                                 >
                                                                     <div
-                                                                        className="flex shrink-0 items-center justify-center rounded-lg font-mono font-bold whitespace-nowrap"
+                                                                        className="flex h-[34px] min-w-[34px] shrink-0 items-center justify-center rounded-lg font-mono font-bold whitespace-nowrap text-white"
                                                                         style={{
-                                                                            minWidth: 34,
-                                                                            height: 34,
                                                                             padding:
                                                                                 dep
                                                                                     .line
@@ -2656,7 +2370,6 @@ export default function Transit() {
                                                                                     : undefined,
                                                                             background:
                                                                                 bg,
-                                                                            color: 'white',
                                                                             fontSize:
                                                                                 dep
                                                                                     .line
@@ -2681,24 +2394,12 @@ export default function Transit() {
                                                                         }
                                                                     </div>
                                                                     <div className="min-w-0 flex-1">
-                                                                        <div
-                                                                            style={{
-                                                                                fontSize: 13,
-                                                                                fontWeight: 600,
-                                                                                marginBottom: 2,
-                                                                            }}
-                                                                        >
+                                                                        <div className="mb-0.5 text-[13px] font-semibold">
                                                                             {
                                                                                 dep.direction
                                                                             }
                                                                         </div>
-                                                                        <div
-                                                                            className="text-[#6B6860] dark:text-[#AAA89F]"
-                                                                            style={{
-                                                                                fontSize: 11,
-                                                                                marginBottom: 3,
-                                                                            }}
-                                                                        >
+                                                                        <div className="mb-[3px] text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
                                                                             via{' '}
                                                                             {
                                                                                 dep.stop_name
@@ -2738,12 +2439,7 @@ export default function Transit() {
                                                                         ) : (
                                                                             <>
                                                                                 <div
-                                                                                    className="font-mono text-[22px] leading-none font-medium"
-                                                                                    style={{
-                                                                                        color: isDelayed
-                                                                                            ? '#C47D0E'
-                                                                                            : '#0A7C52',
-                                                                                    }}
+                                                                                    className={`font-mono text-[22px] leading-none font-medium ${isDelayed ? 'text-[#C47D0E]' : 'text-[#0A7C52]'}`}
                                                                                 >
                                                                                     {
                                                                                         formatDepartureTime(
@@ -2786,14 +2482,7 @@ export default function Transit() {
                                                         []
                                                     ).length > 3 && (
                                                         <div
-                                                            className="cursor-pointer border-t border-[#E2DFD6] text-center transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                                                            style={{
-                                                                padding:
-                                                                    '10px 16px',
-                                                                fontSize: 13,
-                                                                fontWeight: 600,
-                                                                color: '#1A4CD4',
-                                                            }}
+                                                            className="cursor-pointer border-t border-[#E2DFD6] px-4 py-2.5 text-center text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                                             onClick={() =>
                                                                 setShowMoreDb(
                                                                     !showMoreDb,
@@ -2823,16 +2512,11 @@ export default function Transit() {
                     {/* ═══ 5. Your Routines ═══ */}
                     <div className="section-pad">
                         <div className="mb-[13px] flex items-baseline justify-between">
-                            <span style={{ fontSize: 16, fontWeight: 600 }}>
+                            <span className="text-base font-semibold">
                                 Your Routines
                             </span>
                             <span
-                                className="cursor-pointer"
-                                style={{
-                                    fontSize: 13,
-                                    color: '#1A4CD4',
-                                    fontWeight: 500,
-                                }}
+                                className="cursor-pointer text-[13px] font-medium text-[#1A4CD4]"
                                 onClick={() => setAddRoutineOpen(true)}
                             >
                                 + Add routine
@@ -2853,13 +2537,7 @@ export default function Transit() {
                                         <div className="mb-1 text-sm font-semibold text-[#1A4CD4] dark:text-[#6B9AFF]">
                                             Routine detected
                                         </div>
-                                        <div
-                                            className="text-[#6B6860] dark:text-[#AAA89F]"
-                                            style={{
-                                                fontSize: 13,
-                                                lineHeight: 1.5,
-                                            }}
-                                        >
+                                        <div className="text-[13px] leading-relaxed text-[#6B6860] dark:text-[#AAA89F]">
                                             {(detectedRoutines ?? [])[0]
                                                 ?.suggestion ??
                                                 'We noticed a regular pattern in your travels.'}
@@ -3030,24 +2708,11 @@ export default function Transit() {
                                 <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#EFEDE7] text-2xl dark:bg-[#2A2920]">
                                     {newsCard.emoji}
                                 </div>
-                                <div
-                                    style={{
-                                        fontFamily: "'Fraunces', serif",
-                                        fontSize: 20,
-                                        fontWeight: 500,
-                                    }}
-                                >
+                                <div className="font-display text-xl font-medium">
                                     {newsCard.name}
                                 </div>
                             </div>
-                            <div
-                                className="text-[#6B6860] dark:text-[#AAA89F]"
-                                style={{
-                                    fontSize: 14,
-                                    lineHeight: 1.65,
-                                    marginBottom: 16,
-                                }}
-                            >
+                            <div className="mb-4 text-sm leading-[1.65] text-[#6B6860] dark:text-[#AAA89F]">
                                 {newsCard.detail}
                             </div>
                             {newsCard.link && (
@@ -3055,8 +2720,7 @@ export default function Transit() {
                                     href={newsCard.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
-                                    style={{ textDecoration: 'none' }}
+                                    className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] no-underline transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                                 >
                                     Read more ↗
                                 </a>
@@ -3103,10 +2767,8 @@ export default function Transit() {
                         }}
                     />
                     <div
-                        className="fixed z-50 rounded-[20px] border border-[#E2DFD6] bg-white p-6 shadow-[0_16px_48px_rgba(0,0,0,0.15)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                        className="fixed top-1/2 z-50 max-h-[80vh] -translate-y-1/2 overflow-y-auto rounded-[20px] border border-[#E2DFD6] bg-white p-6 shadow-[0_16px_48px_rgba(0,0,0,0.15)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                         style={{
-                            top: '50%',
-                            transform: 'translateY(-50%)',
                             left: blueCardRef.current
                                 ? blueCardRef.current.getBoundingClientRect()
                                       .left
@@ -3114,20 +2776,10 @@ export default function Transit() {
                             width: blueCardRef.current
                                 ? blueCardRef.current.offsetWidth
                                 : 600,
-                            maxHeight: '80vh',
-                            overflowY: 'auto',
                         }}
                     >
                         <div className="mb-3 flex items-center justify-between">
-                            <span
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.08em',
-                                    color: '#AAA89F',
-                                }}
-                            >
+                            <span className="text-[11px] font-bold tracking-[0.08em] text-[#AAA89F] uppercase">
                                 {stopPickerOpen
                                     ? 'Change stop'
                                     : routeSheetDest
@@ -3213,24 +2865,11 @@ export default function Transit() {
                                     <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#EFEDE7] text-2xl dark:bg-[#2A2920]">
                                         {newsCard.emoji}
                                     </div>
-                                    <div
-                                        style={{
-                                            fontFamily: "'Fraunces', serif",
-                                            fontSize: 20,
-                                            fontWeight: 500,
-                                        }}
-                                    >
+                                    <div className="font-display text-xl font-medium">
                                         {newsCard.name}
                                     </div>
                                 </div>
-                                <div
-                                    className="text-[#6B6860] dark:text-[#AAA89F]"
-                                    style={{
-                                        fontSize: 14,
-                                        lineHeight: 1.65,
-                                        marginBottom: 16,
-                                    }}
-                                >
+                                <div className="mb-4 text-sm leading-[1.65] text-[#6B6860] dark:text-[#AAA89F]">
                                     {newsCard.detail}
                                 </div>
                                 {newsCard.link && (
@@ -3238,8 +2877,7 @@ export default function Transit() {
                                         href={newsCard.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
-                                        style={{ textDecoration: 'none' }}
+                                        className="flex items-center justify-center gap-2 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-3 text-sm font-semibold text-[#18170F] no-underline transition-colors hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F5F4F0] dark:hover:bg-[#3A3930]"
                                     >
                                         Read more ↗
                                     </a>
@@ -3295,8 +2933,7 @@ export default function Transit() {
                     <div className="flex items-center justify-center">
                         <button
                             onClick={swapRoutineRoute}
-                            className="flex cursor-pointer items-center justify-center rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                            style={{ width: 36, height: 36, fontSize: 16 }}
+                            className="flex size-9 cursor-pointer items-center justify-center rounded-[14px] border border-[#E2DFD6] bg-white text-base transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                             title="Swap"
                         >
                             <IconArrowsUpDown size={18} stroke={1.7} />
@@ -3339,13 +2976,7 @@ export default function Transit() {
                         value={rArrival}
                         onChange={(e) => setRArrival(e.target.value)}
                     />
-                    <span
-                        style={{
-                            fontSize: 12,
-                            color: '#AAA89F',
-                            marginLeft: 4,
-                        }}
-                    >
+                    <span className="ml-1 text-xs text-[#AAA89F]">
                         Anker calculates your leave time
                     </span>
                 </div>
@@ -3592,14 +3223,12 @@ function RouteOptionCard({
         <div>
             <div
                 onClick={onClick}
-                className="flex cursor-pointer items-center transition-all hover:bg-[rgba(255,255,255,.18)]"
+                className="flex cursor-pointer items-center gap-3 px-3.5 py-3 transition-all hover:bg-[rgba(255,255,255,.18)]"
                 style={{
                     background: best
                         ? 'rgba(255,255,255,.20)'
                         : 'rgba(255,255,255,.12)',
                     borderRadius: showSteps ? '9px 9px 0 0' : 9,
-                    padding: '12px 14px',
-                    gap: 12,
                     border: best
                         ? '2px solid rgba(255,255,255,.4)'
                         : '2px solid transparent',
@@ -3608,85 +3237,38 @@ function RouteOptionCard({
             >
                 {/* Badge */}
                 <div
-                    className="flex shrink-0 items-center justify-center"
-                    style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 8,
-                        background: 'rgba(255,255,255,.2)',
-                        fontSize: badgeMono ? 13 : 16,
-                        fontFamily: badgeMono
-                            ? "'Geist Mono', monospace"
-                            : undefined,
-                        fontWeight: badgeMono ? 700 : undefined,
-                    }}
+                    className={`flex size-[34px] shrink-0 items-center justify-center rounded-lg bg-[rgba(255,255,255,.2)] ${badgeMono ? 'font-mono text-[13px] font-bold' : 'text-base'}`}
                 >
                     {badge}
                 </div>
 
                 {/* Info */}
                 <div className="min-w-0 flex-1">
-                    <div
-                        style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            marginBottom: 1,
-                        }}
-                    >
+                    <div className="mb-[1px] text-[13px] font-semibold">
                         {name}
                         {best && (
-                            <span
-                                style={{
-                                    fontSize: 9,
-                                    fontWeight: 700,
-                                    background: 'rgba(255,255,255,.25)',
-                                    padding: '2px 7px',
-                                    borderRadius: 20,
-                                    marginLeft: 6,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                }}
-                            >
+                            <span className="ml-1.5 rounded-full bg-[rgba(255,255,255,.25)] px-[7px] py-[2px] text-[9px] font-bold tracking-[0.05em] uppercase">
                                 ⭐ Best
                             </span>
                         )}
                     </div>
-                    <div style={{ fontSize: 11, opacity: 0.75 }}>{detail}</div>
+                    <div className="text-[11px] opacity-75">{detail}</div>
                 </div>
 
                 {/* Time + status dot */}
                 {time > 0 && (
                     <>
                         <div className="shrink-0 text-right">
-                            <div
-                                style={{
-                                    fontFamily: "'Geist Mono', monospace",
-                                    fontSize: 22,
-                                    fontWeight: 500,
-                                    lineHeight: 1,
-                                }}
-                            >
+                            <div className="font-mono text-[22px] leading-none font-medium">
                                 {time}
                             </div>
-                            <div
-                                style={{
-                                    fontSize: 10,
-                                    opacity: 0.6,
-                                    textAlign: 'right',
-                                    marginTop: 1,
-                                }}
-                            >
+                            <div className="mt-[1px] text-right text-[10px] opacity-60">
                                 min
                             </div>
                         </div>
                         <div
-                            className="shrink-0"
-                            style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                background: statusColor,
-                            }}
+                            className="size-2 shrink-0 rounded-full"
+                            style={{ background: statusColor }}
                         />
                     </>
                 )}
