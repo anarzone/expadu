@@ -6,6 +6,7 @@ use App\Enums\AlertType;
 use App\Models\Alert;
 use App\Notifications\BuergeramtSlotNotification;
 use App\Notifications\EventReminderNotification;
+use App\Notifications\GenericAlertNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
@@ -44,6 +45,8 @@ class CreateAlertFromNotification
             $notification instanceof TransitDelayNotification,
             $notification instanceof RhineFloodNotification,
             $notification instanceof WeatherAlertNotification => AlertType::System,
+            // GenericAlertNotification carries its own alert_type
+            $notification instanceof GenericAlertNotification => AlertType::tryFrom($data['alert_type'] ?? 'system') ?? AlertType::System,
             default => AlertType::System,
         };
 

@@ -15,6 +15,7 @@ class GenericAlertNotification extends Notification
         public string $title,
         public string $body,
         public string $deepLink = '/alerts',
+        public string $alertType = 'system',
     ) {}
 
     /**
@@ -29,7 +30,7 @@ class GenericAlertNotification extends Notification
     {
         return (new WebPushMessage)
             ->title($this->title)
-            ->icon('/icons/expadu.png')
+            ->icon('/favicon.svg')
             ->body($this->body)
             ->action('View', 'view_alert')
             ->options(['TTL' => 7200])
@@ -37,7 +38,7 @@ class GenericAlertNotification extends Notification
     }
 
     /**
-     * @return array{type: string, title: string, body: string, url: string}
+     * @return array{type: string, title: string, body: string, url: string, alert_type: string}
      */
     public function toArray(mixed $notifiable): array
     {
@@ -46,6 +47,7 @@ class GenericAlertNotification extends Notification
             'title' => $this->title,
             'body' => $this->body,
             'url' => $this->deepLink,
+            'alert_type' => $this->alertType,
         ];
     }
 }

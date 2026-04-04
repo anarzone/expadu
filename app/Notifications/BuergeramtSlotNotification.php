@@ -49,10 +49,15 @@ class BuergeramtSlotNotification extends Notification implements ShouldQueue
      */
     public function toArray(mixed $notifiable): array
     {
+        $slotCount = collect($this->availableSlots)->sum('slots_today');
+        $officeNames = collect($this->availableSlots)->pluck('name')->filter()->implode(', ');
+
         return [
             'type' => 'buergeramt_slot',
+            'title' => 'Bürgeramt appointment available!',
+            'body' => "{$slotCount} slot(s) at {$officeNames}. Book before they're taken.",
             'available_slots' => $this->availableSlots,
-            'slot_count' => collect($this->availableSlots)->sum('slots_today'),
+            'slot_count' => $slotCount,
             'url' => '/bureaucracy',
         ];
     }

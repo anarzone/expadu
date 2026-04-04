@@ -44,6 +44,8 @@ class TransitDisruptionNotification extends Notification
     {
         return [
             'type' => 'transit_disruption',
+            'title' => "Disruption on {$this->disruption['line']}",
+            'body' => $this->disruption['summary'],
             'line' => $this->disruption['line'],
             'summary' => $this->disruption['summary'],
             'url' => '/transit',
