@@ -1587,10 +1587,7 @@ export default function Transit() {
             <Head title="Transit" />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* ── Sticky header — hidden on mobile (redundant with dock) ── */}
-                <div
-                    className="hidden items-center justify-between border-b border-[#E2DFD6] bg-[rgba(246,245,241,.94)] px-6 md:flex dark:border-[#3A3930] dark:bg-[rgba(30,29,21,.94)]"
-                    style={{ padding: '16px 24px 14px' }}
-                >
+                <div className="hidden" style={{ padding: '16px 24px 14px' }}>
                     <span
                         style={{
                             fontFamily: "'Fraunces', serif",

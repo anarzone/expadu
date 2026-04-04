@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alert;
 use App\Models\NotificationPreference;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,18 +39,26 @@ class AlertController extends Controller
         ]);
     }
 
-    public function markRead(Request $request, Alert $alert): RedirectResponse
+    public function markRead(Request $request, Alert $alert): JsonResponse|RedirectResponse
     {
         if ($alert->user_id === $request->user()->id) {
             $alert->update(['read_at' => now()]);
         }
 
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back();
     }
 
-    public function markAllRead(Request $request): RedirectResponse
+    public function markAllRead(Request $request): JsonResponse|RedirectResponse
     {
         $request->user()->alerts()->whereNull('read_at')->update(['read_at' => now()]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back();
     }

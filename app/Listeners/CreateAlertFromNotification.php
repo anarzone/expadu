@@ -50,12 +50,25 @@ class CreateAlertFromNotification
             default => AlertType::System,
         };
 
+        $title = $data['title'] ?? $data['type'] ?? 'Notification';
+        $userId = $event->notifiable->id;
+
+        // DB-level dedup: skip if same title for same user within last 24h
+        $exists = Alert::where('user_id', $userId)
+            ->where('title', $title)
+            ->where('created_at', '>=', now()->subDay())
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
         Alert::create([
-            'user_id' => $event->notifiable->id,
+            'user_id' => $userId,
             'type' => $alertType,
-            'title' => $data['title'] ?? $data['type'] ?? 'Notification',
+            'title' => $title,
             'body' => $data['body'] ?? $data['summary'] ?? '',
-            'deep_link' => $data['url'] ?? '/alerts',
+            'deep_link' => $data['url'] ?? null,
         ]);
     }
 }

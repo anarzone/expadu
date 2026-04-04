@@ -43,7 +43,7 @@ class RhineFloodNotification extends Notification
             'type' => 'rhine_flood',
             'title' => "Rhine water level {$this->status}",
             'body' => "Water level at {$this->levelCm}cm and {$this->trend}.",
-            'url' => '/dashboard',
+            'url' => null,
         ];
     }
 }

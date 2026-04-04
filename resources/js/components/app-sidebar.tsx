@@ -34,7 +34,12 @@ const navGroups: NavGroup[] = [
         items: [
             { title: 'Home', href: '/dashboard', icon: IconHome },
             { title: 'Explore', href: '/explore', icon: IconCompass },
-            { title: 'Alerts', href: '/alerts', icon: IconBell, badge: 5 },
+            {
+                title: 'Alerts',
+                href: '/alerts',
+                icon: IconBell,
+                badge: undefined,
+            },
         ],
     },
     {
@@ -76,10 +81,23 @@ const dropdownItems = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
-    const user = auth?.user as { name?: string } | undefined;
+    const { auth, unreadAlertCount } = usePage<{
+        auth: { user?: { name?: string } };
+        unreadAlertCount?: number;
+    }>().props;
+    const user = auth?.user;
     const getInitials = useInitials();
     const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    // Set dynamic badge on Alerts nav item
+    const navWithBadges = navGroups.map((group) => ({
+        ...group,
+        items: group.items.map((item) =>
+            item.href === '/alerts' && unreadAlertCount
+                ? { ...item, badge: unreadAlertCount }
+                : item,
+        ),
+    }));
 
     function handleLogout() {
         router.post('/logout');
@@ -105,7 +123,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent className="px-0">
-                <NavMain groups={navGroups} />
+                <NavMain groups={navWithBadges} />
             </SidebarContent>
 
             {/* User chip with dropdown */}

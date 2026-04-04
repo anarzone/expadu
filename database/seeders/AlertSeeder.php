@@ -64,12 +64,12 @@ class AlertSeeder extends Seeder
             'reminder',
         ));
 
-        // Reminder: Steuer-ID
+        // Reminder: Steuer-ID (informational — no action needed)
         $user->notify(new GenericAlertNotification(
-            'Your Steuer-ID should arrive this week',
-            'Check your mailbox — the tax ID letter usually arrives 2-4 weeks after Anmeldung.',
-            '/bureaucracy',
-            'reminder',
+            title: 'Your Steuer-ID should arrive this week',
+            body: 'Check your mailbox — the tax ID letter usually arrives 2-4 weeks after Anmeldung.',
+            deepLink: null,
+            alertType: 'reminder',
         ));
 
         // Social: Language partner

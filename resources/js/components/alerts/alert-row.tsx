@@ -1,4 +1,5 @@
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+import React from 'react';
 import { useTracker } from '@/hooks/use-tracker';
 
 type AlertData = {
@@ -189,25 +190,27 @@ function timeAgo(dateStr: string): string {
 export function AlertRow({
     alert,
     indexInType,
+    onMarkRead,
 }: {
     alert: AlertData;
     indexInType: number;
+    onMarkRead?: (id: number) => void;
 }) {
     const { track } = useTracker();
     const isUnread = !alert.read_at;
     const configs = typeConfigs[alert.type] ?? typeConfigs.system;
     const config = configs[indexInType % configs.length];
+    const hasAction =
+        alert.deep_link &&
+        alert.deep_link !== '/alerts' &&
+        alert.deep_link !== '/dashboard';
 
     function markRead(e?: React.MouseEvent) {
         e?.stopPropagation();
 
         if (isUnread) {
             track('alert_read', { alert_id: alert.id });
-            router.post(
-                `/alerts/${alert.id}/read`,
-                {},
-                { preserveScroll: true },
-            );
+            onMarkRead?.(alert.id);
         }
     }
 
@@ -268,23 +271,20 @@ export function AlertRow({
                 {isUnread && (
                     <div className="size-2 shrink-0 rounded-full bg-primary" />
                 )}
-                <button
-                    onClick={handleCtaClick}
-                    className={`rounded-lg px-[11px] py-[5px] text-[11px] font-bold whitespace-nowrap ${config.ctaBg} ${config.ctaColor}`}
-                >
-                    {config.cta}
-                </button>
+                {hasAction && (
+                    <button
+                        onClick={handleCtaClick}
+                        className={`rounded-lg px-[11px] py-[5px] text-[11px] font-bold whitespace-nowrap ${config.ctaBg} ${config.ctaColor}`}
+                    >
+                        {config.cta}
+                    </button>
+                )}
             </div>
         </div>
     );
 
-    if (alert.deep_link) {
-        return (
-            <Link href={alert.deep_link} onClick={markRead} className="block">
-                {content}
-            </Link>
-        );
-    }
+    // No Link wrapper — clicking row only marks read,
+    // CTA button handles navigation via router.visit
 
     return content;
 }

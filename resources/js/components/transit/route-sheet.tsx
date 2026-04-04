@@ -68,6 +68,7 @@ export function RouteSheet({
     const [data, setData] = useState<RouteData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedMode, setSelectedMode] = useState<string | null>(null);
     const [selectedRoute, setSelectedRoute] = useState<FullRoute | null>(null);
     const [loadingRoute, setLoadingRoute] = useState(false);
     const [showSteps, setShowSteps] = useState(false);
@@ -95,36 +96,9 @@ export function RouteSheet({
             });
     }, [destination.lat, destination.lng]);
 
-    // Fetch full route with geometry + steps when user clicks an option
+    // Track selected mode (no fetch — explore page handles full routing)
     function selectMode(opt: RouteOption) {
-        setShowSteps(false);
-
-        if (!data || opt.mode === 'transit') {
-            return;
-        } // transit has no Valhalla routing yet
-
-        const costing = VALHALLA_COSTING[opt.mode];
-
-        if (!costing) {
-            return;
-        }
-
-        setLoadingRoute(true);
-        fetch(
-            `/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}&mode=${costing}`,
-            {
-                credentials: 'same-origin',
-            },
-        )
-            .then((r) => r.json())
-            .then((json: FullRoute) => {
-                if (json.geometry) {
-                    setSelectedRoute(json);
-                }
-
-                setLoadingRoute(false);
-            })
-            .catch(() => setLoadingRoute(false));
+        setSelectedMode(opt.mode);
     }
 
     if (loading) {
@@ -161,8 +135,8 @@ export function RouteSheet({
         );
     }
 
-    // Full route detail view (after clicking an option)
-    if (selectedRoute) {
+    // Full route detail view — removed, explore page handles it now
+    if (false && selectedRoute) {
         return (
             <div>
                 <button
@@ -278,13 +252,13 @@ export function RouteSheet({
                             <div
                                 key={opt.mode}
                                 onClick={() => selectMode(opt)}
-                                className={`flex items-center gap-3 rounded-[14px] border bg-white p-3.5 transition-all hover:border-[rgba(26,76,212,.25)] hover:shadow-sm ${opt.mode !== 'transit' ? 'cursor-pointer' : ''}`}
-                                style={{
-                                    borderColor: opt.best
-                                        ? 'rgba(26,76,212,.3)'
-                                        : '#E2DFD6',
-                                    background: opt.best ? '#FAFBFF' : 'white',
-                                }}
+                                className={`flex cursor-pointer items-center gap-3 rounded-[14px] border p-3.5 transition-all hover:border-[rgba(26,76,212,.25)] hover:shadow-sm ${
+                                    selectedMode === opt.mode
+                                        ? 'border-[#1A4CD4] bg-[#EBF0FD] dark:border-[#1A4CD4] dark:bg-[#1A4CD4]/20'
+                                        : opt.best
+                                          ? 'border-[rgba(26,76,212,.3)] bg-[#FAFBFF] dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                                          : 'border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                                }`}
                             >
                                 <div
                                     className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg"
@@ -356,17 +330,15 @@ export function RouteSheet({
                         ))}
                     </div>
 
-                    {loadingRoute && (
-                        <div className="mb-3 animate-pulse rounded-[14px] bg-[#EFEDE7] p-4 text-center text-sm text-[#6B6860]">
-                            Loading route...
-                        </div>
-                    )}
-
                     {/* Navigate to explore directions */}
                     <button
                         onClick={() => {
+                            const mode =
+                                selectedMode ??
+                                data.options.find((o) => o.best)?.mode ??
+                                'bike';
                             router.visit(
-                                `/explore?dir_lat=${destination.lat}&dir_lng=${destination.lng}&dir_name=${encodeURIComponent(destination.name)}`,
+                                `/explore?dir_lat=${destination.lat}&dir_lng=${destination.lng}&dir_name=${encodeURIComponent(destination.name)}&dir_mode=${mode}`,
                             );
                         }}
                         className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"

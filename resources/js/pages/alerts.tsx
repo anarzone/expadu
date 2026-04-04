@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { useCallback, useState } from 'react';
 import { AlertRow } from '@/components/alerts/alert-row';
 import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
 import AppLayout from '@/layouts/app-layout';
@@ -61,13 +62,11 @@ function groupAlerts(alerts: AlertData[]): Record<string, AlertData[]> {
 
 export default function Alerts() {
     const {
-        alerts,
-        unreadCount,
-        counts,
-        tab: activeTab,
+        alerts: serverAlerts,
+        counts: serverCounts,
+        tab: serverTab,
     } = usePage<{
         alerts: { data: AlertData[] };
-        unreadCount: number;
         counts: {
             unread: number;
             system: number;
@@ -76,6 +75,30 @@ export default function Alerts() {
         };
         tab: string;
     }>().props;
+
+    // Local state — no page refreshes
+    const [alertList, setAlertList] = useState<AlertData[]>(serverAlerts.data);
+    const [activeTab, setActiveTab] = useState(serverTab || 'all');
+
+    const csrf =
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') || '';
+
+    // Derived counts from local state
+    const unreadCount = alertList.filter((a) => !a.read_at).length;
+    const counts = {
+        unread: unreadCount,
+        system: alertList.filter((a) => a.type === 'system').length,
+        social: alertList.filter((a) => a.type === 'social').length,
+        reminder: alertList.filter((a) => a.type === 'reminder').length,
+    };
+
+    // Filter by active tab (local, no server request)
+    const filteredAlerts =
+        activeTab === 'all'
+            ? alertList
+            : alertList.filter((a) => a.type === activeTab);
 
     // Track index per type for visual config mapping
     const typeCounters: Record<string, number> = {};
@@ -88,17 +111,49 @@ export default function Alerts() {
         return typeCounters[type]++;
     }
 
-    function switchTab(t: string) {
-        router.get('/alerts', t !== 'all' ? { tab: t } : {}, {
-            preserveState: true,
-        });
-    }
+    // Mark single alert read — local state + background fetch
+    const markRead = useCallback(
+        (alertId: number) => {
+            setAlertList((prev) =>
+                prev.map((a) =>
+                    a.id === alertId
+                        ? { ...a, read_at: new Date().toISOString() }
+                        : a,
+                ),
+            );
 
+            fetch(`/alerts/${alertId}/read`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    Accept: 'application/json',
+                },
+            }).catch(() => {});
+        },
+        [csrf],
+    );
+
+    // Mark all read — local state + background fetch
     function markAllRead() {
-        router.post('/alerts/read-all', {}, { preserveScroll: true });
+        setAlertList((prev) =>
+            prev.map((a) => ({
+                ...a,
+                read_at: a.read_at ?? new Date().toISOString(),
+            })),
+        );
+
+        fetch('/alerts/read-all', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRF-TOKEN': csrf,
+                Accept: 'application/json',
+            },
+        }).catch(() => {});
     }
 
-    const grouped = groupAlerts(alerts.data);
+    const grouped = groupAlerts(filteredAlerts);
     const groupOrder = ['Just now', 'Today', 'Yesterday', 'Earlier'];
 
     return (
@@ -134,12 +189,12 @@ export default function Alerts() {
                     </div>
                 </div>
 
-                {/* Tabs — sticky below header */}
+                {/* Tabs — local filtering, no page reload */}
                 <div className="sticky top-[57px] z-40 flex border-b border-border bg-card">
                     {tabs.map((t) => (
                         <button
                             key={t.id}
-                            onClick={() => switchTab(t.id)}
+                            onClick={() => setActiveTab(t.id)}
                             className={`flex-1 border-b-2 px-3 py-[11px] text-center text-xs font-semibold transition-all ${
                                 activeTab === t.id
                                     ? 'border-[#1A4CD4] text-[#1A4CD4]'
@@ -152,7 +207,7 @@ export default function Alerts() {
                 </div>
 
                 {/* Alert feed grouped by time */}
-                {alerts.data.length === 0 ? (
+                {filteredAlerts.length === 0 ? (
                     <div className="py-16 text-center">
                         <div className="mb-3 text-[40px]">🔔</div>
                         <div className="text-base font-semibold text-muted-foreground">
@@ -186,6 +241,7 @@ export default function Alerts() {
                                             indexInType={getTypeIndex(
                                                 alert.type,
                                             )}
+                                            onMarkRead={markRead}
                                         />
                                     ))}
                                 </div>

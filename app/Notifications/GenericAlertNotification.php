@@ -14,7 +14,7 @@ class GenericAlertNotification extends Notification
     public function __construct(
         public string $title,
         public string $body,
-        public string $deepLink = '/alerts',
+        public ?string $deepLink = null,
         public string $alertType = 'system',
     ) {}
 

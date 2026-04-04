@@ -40,7 +40,7 @@ class WeatherAlertNotification extends Notification
             'type' => 'weather_alert',
             'title' => $this->summary,
             'body' => $this->detail,
-            'url' => '/transit',
+            'url' => null,
         ];
     }
 }
