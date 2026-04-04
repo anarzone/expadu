@@ -5,7 +5,11 @@ namespace App\Listeners;
 use App\Enums\AlertType;
 use App\Models\Alert;
 use App\Notifications\BuergeramtSlotNotification;
+use App\Notifications\EventReminderNotification;
+use App\Notifications\RhineFloodNotification;
+use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
+use App\Notifications\WeatherAlertNotification;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Cache;
 
@@ -34,8 +38,12 @@ class CreateAlertFromNotification
 
         // Map notification class → alert type
         $alertType = match (true) {
-            $notification instanceof BuergeramtSlotNotification => AlertType::System,
-            $notification instanceof TransitDisruptionNotification => AlertType::System,
+            $notification instanceof EventReminderNotification => AlertType::Reminder,
+            $notification instanceof BuergeramtSlotNotification,
+            $notification instanceof TransitDisruptionNotification,
+            $notification instanceof TransitDelayNotification,
+            $notification instanceof RhineFloodNotification,
+            $notification instanceof WeatherAlertNotification => AlertType::System,
             default => AlertType::System,
         };
 
