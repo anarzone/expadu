@@ -63,14 +63,42 @@ class RecommendationService
         // 8. City news
         $cards = array_merge($cards, $this->newsCards());
 
-        // Adjust priorities based on user profile + engagement history
+        // Adjust priorities based on time, profile, and engagement
+        $cards = $this->adjustPrioritiesByTimeOfDay($cards);
         $cards = $this->adjustPrioritiesByProfile($user, $cards);
         $cards = $this->adjustPrioritiesByEngagement($user, $cards);
+
+        // Deduplicate by title — keep highest priority version
+        $seen = [];
+        $cards = array_filter($cards, function (array $card) use (&$seen) {
+            $key = preg_replace('/[^a-z0-9]/', '', strtolower($card['title'] ?? ''));
+            if (isset($seen[$key])) {
+                return false;
+            }
+            $seen[$key] = true;
+
+            return true;
+        });
 
         // Sort by priority (highest first)
         usort($cards, fn (array $a, array $b) => $b['priority'] <=> $a['priority']);
 
-        return $cards;
+        // Enforce diversity — max per card type to prevent any type dominating
+        $maxPerType = [
+            'deadline_overdue' => 1, 'deadline_warning' => 1, 'deadline_soon' => 1,
+            'departure' => 2, 'disruption' => 2, 'news' => 1,
+            'event' => 2, 'commute_tip' => 1, 'weather_alert' => 1,
+        ];
+        $typeCounts = [];
+        $cards = array_filter($cards, function (array $card) use ($maxPerType, &$typeCounts) {
+            $type = $card['type'] ?? 'unknown';
+            $typeCounts[$type] = ($typeCounts[$type] ?? 0) + 1;
+            $max = $maxPerType[$type] ?? 3;
+
+            return $typeCounts[$type] <= $max;
+        });
+
+        return array_values($cards);
     }
 
     /**
@@ -545,12 +573,22 @@ class RecommendationService
     protected function departureCards(array $departureData, string $stopName, array $disruptedLines): array
     {
         $cards = [];
-        foreach (array_slice($departureData['departures'] ?? [], 0, 2) as $dep) {
+        $seenLines = [];
+
+        foreach ($departureData['departures'] ?? [] as $dep) {
             $nextMin = $dep['departures'][0] ?? null;
-            if ($nextMin === null) {
+            if ($nextMin === null || $nextMin > 60) {
                 continue;
             }
+
             $line = $dep['line'];
+
+            // Skip if we already have a card for this line
+            if (in_array($line, $seenLines)) {
+                continue;
+            }
+
+            $seenLines[] = $line;
             $isDisrupted = isset($disruptedLines[$line]);
 
             $cards[] = [
@@ -569,6 +607,11 @@ class RecommendationService
                     'disrupted' => $isDisrupted,
                 ],
             ];
+
+            // Max 2 different lines
+            if (count($cards) >= 2) {
+                break;
+            }
         }
 
         return $cards;
@@ -641,30 +684,37 @@ class RecommendationService
      */
     protected function disruptionCards(array $disruptions, User $user): array
     {
-        // Get user's lines from routines + home/work stops for relevance filtering
-        $userLines = collect();
+        // Get user's transit lines from departure data at their stops
+        $userLineNumbers = collect();
         $routines = $user->routines()->where('is_active', true)->get();
         foreach ($routines as $r) {
-            // Extract line numbers from stop names if available
-            $userLines = $userLines->merge([$r->from_stop, $r->to_stop]);
+            // Use the departure service to find which lines serve the user's stops
+            $deps = app(GtfsDepartureService::class)->getDepartures($r->from_stop, 10);
+            foreach ($deps['departures'] ?? [] as $dep) {
+                $userLineNumbers->push(strtolower($dep['line']));
+            }
         }
+        $userLineNumbers = $userLineNumbers->unique();
 
         return collect($disruptions)
-            ->map(function (array $d) use ($userLines) {
+            ->map(function (array $d) use ($userLineNumbers) {
                 $isAccessibility = ($d['type'] ?? '') === 'accessibility';
-                $affectedLines = $d['affected_lines'] ?? [];
+                $affectedLines = collect($d['affected_lines'] ?? [])->map(fn ($l) => strtolower($l));
 
-                // Boost priority if disruption affects user's lines
-                $isPersonal = $userLines->isNotEmpty() && ! empty(array_intersect(
-                    array_map('strtolower', $affectedLines),
-                    $userLines->map(fn ($s) => strtolower($s))->all(),
-                ));
+                // Check if disruption affects any of user's lines
+                $isPersonal = $userLineNumbers->isNotEmpty() &&
+                    $affectedLines->intersect($userLineNumbers)->isNotEmpty();
 
                 $basePriority = match ($d['severity'] ?? 'minor') {
                     'critical' => 90,
                     'major' => 75,
                     default => $isAccessibility ? 45 : 60,
                 };
+
+                // Only show non-personal disruptions if critical
+                if (! $isPersonal && ($d['severity'] ?? 'minor') !== 'critical') {
+                    return null; // Filter out irrelevant disruptions
+                }
 
                 return [
                     'type' => $isAccessibility ? 'accessibility_alert' : 'disruption',
@@ -673,7 +723,7 @@ class RecommendationService
                     'emoji' => $isAccessibility ? '♿' : '⚠️',
                     'value' => '',
                     'unit' => '',
-                    'priority' => $isPersonal ? $basePriority + 10 : $basePriority - 20,
+                    'priority' => $isPersonal ? $basePriority + 10 : $basePriority,
                     'color' => match ($d['severity'] ?? 'minor') {
                         'critical' => 'danger',
                         'major' => 'warn',
@@ -688,8 +738,9 @@ class RecommendationService
                     ],
                 ];
             })
+            ->filter() // Remove nulls (filtered out irrelevant disruptions)
             ->sortByDesc('priority')
-            ->take(2) // Max 2 disruption cards — prevent feed spam
+            ->take(2)
             ->values()
             ->all();
     }
@@ -743,10 +794,15 @@ class RecommendationService
             ];
         }
 
-        // Return top 3 most urgent
+        // Return only the most urgent task — prevents feed domination
         usort($cards, fn ($a, $b) => $b['priority'] <=> $a['priority']);
 
-        return array_slice($cards, 0, 3);
+        if (count($cards) > 1) {
+            // Add a "more tasks" subtitle to the top card
+            $cards[0]['subtitle'] .= ' · '.(count($cards) - 1).' more pending';
+        }
+
+        return array_slice($cards, 0, 1);
     }
 
     /**
@@ -786,6 +842,60 @@ class RecommendationService
             'color' => 'accent',
             'meta' => ['source' => $n->source, 'url' => $n->source_url, 'category' => $n->category],
         ])->all();
+    }
+
+    /**
+     * Adjust card priorities based on time of day.
+     * Morning: boost commute/departures. Evening: boost events. Weekend: boost discovery. Night: suppress transit.
+     */
+    protected function adjustPrioritiesByTimeOfDay(array $cards): array
+    {
+        $hour = now()->hour;
+        $isWeekend = now()->isWeekend();
+
+        foreach ($cards as &$card) {
+            $type = $card['type'] ?? '';
+
+            if ($isWeekend) {
+                // Weekend: boost events and discovery, suppress commute
+                match ($type) {
+                    'event' => $card['priority'] += 15,
+                    'commute_tip' => $card['priority'] -= 20,
+                    'departure' => $card['priority'] -= 10,
+                    'news' => $card['priority'] += 5,
+                    default => null,
+                };
+            } elseif ($hour >= 6 && $hour <= 9) {
+                // Morning commute: boost departures and commute tips
+                match ($type) {
+                    'departure' => $card['priority'] += 15,
+                    'commute_tip' => $card['priority'] += 10,
+                    'disruption' => $card['priority'] += 10,
+                    default => null,
+                };
+            } elseif ($hour >= 16 && $hour <= 19) {
+                // Evening commute: boost departures, events tonight
+                match ($type) {
+                    'departure' => $card['priority'] += 10,
+                    'event' => $card['priority'] += 10,
+                    'commute_tip' => $card['priority'] += 5,
+                    default => null,
+                };
+            } elseif ($hour >= 22 || $hour < 6) {
+                // Night: suppress transit, boost tomorrow's events
+                match ($type) {
+                    'departure' => $card['priority'] -= 30,
+                    'commute_tip' => $card['priority'] -= 20,
+                    'disruption' => $card['priority'] -= 20,
+                    'event' => $card['priority'] += 5,
+                    default => null,
+                };
+            }
+
+            $card['priority'] = max(0, min(100, $card['priority']));
+        }
+
+        return $cards;
     }
 
     /**

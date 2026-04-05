@@ -29,11 +29,10 @@ test('recommendations include appointment when user has upcoming one', function 
 test('recommendations include today events', function () {
     $user = User::factory()->onboarded()->create();
 
-    // Create event later today (not crossing midnight)
-    $eventTime = now()->endOfDay()->subHour();
-    if ($eventTime->isPast()) {
-        $eventTime = now()->addMinutes(30);
-    }
+    // Create event later today (ensure it stays within today and is in the future)
+    $eventTime = now()->hour >= 22
+        ? now()->copy()->setTime(23, 59)
+        : now()->copy()->setTime(now()->hour + 1, 30);
     Event::factory()->create([
         'title' => 'Language Exchange',
         'starts_at' => $eventTime,
