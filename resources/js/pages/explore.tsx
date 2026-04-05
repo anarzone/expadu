@@ -1211,17 +1211,7 @@ export default function Explore() {
                                                             key={idx}
                                                             className="mb-1.5 flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-2.5 transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                                             onClick={() => {
-                                                                const label = [
-                                                                    g.name,
-                                                                    g.city,
-                                                                ]
-                                                                    .filter(
-                                                                        Boolean,
-                                                                    )
-                                                                    .join(', ');
-                                                                setSearch(
-                                                                    label,
-                                                                );
+                                                                setSearch('');
                                                                 mapRef.current?.flyTo(
                                                                     g.lat,
                                                                     g.lng,
@@ -1232,6 +1222,32 @@ export default function Explore() {
                                                                     g.lng,
                                                                     g.name,
                                                                 );
+                                                                selectSpot({
+                                                                    id: -1,
+                                                                    name: g.name,
+                                                                    category:
+                                                                        'other',
+                                                                    address: [
+                                                                        g.street,
+                                                                        g.city,
+                                                                    ]
+                                                                        .filter(
+                                                                            Boolean,
+                                                                        )
+                                                                        .join(
+                                                                            ', ',
+                                                                        ),
+                                                                    wifi_speed:
+                                                                        null,
+                                                                    noise_level:
+                                                                        null,
+                                                                    time_limit_mins:
+                                                                        null,
+                                                                    rating: null,
+                                                                    active_checkins_count: 0,
+                                                                    lat: g.lat,
+                                                                    lng: g.lng,
+                                                                } as SpotData);
                                                             }}
                                                         >
                                                             <span className="shrink-0 text-base text-[#AAA89F]">
