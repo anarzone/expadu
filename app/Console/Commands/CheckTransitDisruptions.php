@@ -6,6 +6,7 @@ use App\Models\Routine;
 use App\Models\User;
 use App\Notifications\TransitDisruptionNotification;
 use App\Services\DisruptionService;
+use App\Support\NotificationThrottle;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -66,6 +67,12 @@ class CheckTransitDisruptions extends Command
             ->pluck('user_id')
             ->unique();
 
+        // Batch all new disruptions into one notification per user
+        $allLines = $newDisruptions->flatMap(fn ($d) => $d['affected_lines'] ?? [])->unique()->values();
+        $batchSummary = $newDisruptions->count() === 1
+            ? ($newDisruptions->first()['description'] ?? $newDisruptions->first()['title'] ?? 'Transit disruption')
+            : $newDisruptions->count().' disruptions affecting lines '.$allLines->take(5)->implode(', ');
+
         $notifiedCount = 0;
 
         foreach ($userIds as $userId) {
@@ -75,18 +82,18 @@ class CheckTransitDisruptions extends Command
                 continue;
             }
 
-            // Send one notification per new disruption
-            foreach ($newDisruptions as $disruption) {
-                $lines = $disruption['affected_lines'] ?? [];
-                $summary = $disruption['description'] ?? $disruption['title'] ?? 'Transit disruption';
-
-                $user->notify(new TransitDisruptionNotification([
-                    'line' => implode(', ', array_slice($lines, 0, 3)),
-                    'summary' => $summary,
-                ]));
-
-                $notifiedCount++;
+            // Check throttle — if exceeded, notification still goes to in-app alerts via listener
+            if (! NotificationThrottle::canPush($user, 'transit_disruption')) {
+                continue;
             }
+
+            $user->notify(new TransitDisruptionNotification([
+                'line' => $allLines->take(3)->implode(', '),
+                'summary' => $batchSummary,
+            ]));
+
+            NotificationThrottle::recordSent($user);
+            $notifiedCount++;
         }
 
         $this->info("Sent {$notifiedCount} disruption notification(s) for ".count($newIds).' new disruption(s).');

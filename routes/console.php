@@ -8,25 +8,25 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Transit & disruptions — need to be fresh
+// Transit & disruptions
 Schedule::command('news:scrape')->everyFiveMinutes()->withoutOverlapping();
-Schedule::command('transit:check-disruptions')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('transit:check-disruptions')->everyTenMinutes()->withoutOverlapping();
 
-// Events — don't change fast
+// Events
 Schedule::command('events:scrape')->everyThirtyMinutes()->withoutOverlapping();
 Schedule::command('events:enrich')->everyFifteenMinutes()->withoutOverlapping();
 
-// Bürgeramt slot monitoring — notify users when appointments available
+// Bürgeramt slot monitoring — rare + time-sensitive, keep frequent
 Schedule::command('buergeramt:check')->everyFiveMinutes()->withoutOverlapping();
 
-// Real-time transit delay alerts — checks GTFS-RT for delays on user routines
-Schedule::command('transit:check-delays')->everyFiveMinutes()->withoutOverlapping();
+// Transit delay alerts — check every 15 min, only notify for >10 min delays
+Schedule::command('transit:check-delays')->everyFifteenMinutes()->withoutOverlapping();
 
-// Weather alerts — rain, extreme temps, wind gusts
-Schedule::command('weather:check-alerts')->hourly()->withoutOverlapping();
+// Weather alerts — every 2 hours, only during commute windows
+Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlapping();
 
-// Rhine flood level monitoring
-Schedule::command('rhine:check')->everyThirtyMinutes()->withoutOverlapping();
+// Rhine flood level — hourly, in-app only (no push)
+Schedule::command('rhine:check')->hourly()->withoutOverlapping();
 
 // Event reminders — 1 day before events user is attending
 Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping();

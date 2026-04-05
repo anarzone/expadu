@@ -6,6 +6,7 @@ use App\Models\Routine;
 use App\Models\User;
 use App\Notifications\TransitDelayNotification;
 use App\Services\GtfsDepartureService;
+use App\Support\NotificationThrottle;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +17,7 @@ class CheckTransitDelays extends Command
 
     protected $description = 'Check GTFS-RT for significant delays on user routine lines and notify them';
 
-    private const MIN_DELAY_MINUTES = 5;
+    private const MIN_DELAY_MINUTES = 10;
 
     public function handle(GtfsDepartureService $departureService): int
     {
@@ -65,8 +66,13 @@ class CheckTransitDelays extends Command
 
                     Cache::put($dedupKey, true, now()->addMinutes(30));
 
-                    $delayText = $cancelled ? 'cancelled' : $delay;
+                    // Throttle check — skip push if throttled
+                    if (! NotificationThrottle::canPush($user, 'transit_delay')) {
+                        continue;
+                    }
+
                     $user->notify(new TransitDelayNotification($line, $delay, $stopName));
+                    NotificationThrottle::recordSent($user);
                     $notifiedCount++;
                 }
             }

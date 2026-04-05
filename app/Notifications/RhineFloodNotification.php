@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
 class RhineFloodNotification extends Notification
@@ -20,7 +19,8 @@ class RhineFloodNotification extends Notification
     /** @return array<int, string> */
     public function via(mixed $notifiable): array
     {
-        return ['database', WebPushChannel::class];
+        // Tier 3: in-app only — Rhine updates are informational, no push
+        return ['database'];
     }
 
     public function toWebPush(mixed $notifiable): WebPushMessage

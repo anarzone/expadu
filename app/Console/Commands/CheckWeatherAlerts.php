@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\User;
 use App\Notifications\WeatherAlertNotification;
 use App\Services\WeatherService;
+use App\Support\NotificationThrottle;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -90,7 +91,12 @@ class CheckWeatherAlerts extends Command
                         continue;
                     }
 
+                    if (! NotificationThrottle::canPush($user, 'weather_commute')) {
+                        continue;
+                    }
+
                     $user->notify(new WeatherAlertNotification($alert['summary'], $alert['detail']));
+                    NotificationThrottle::recordSent($user);
                     $notifiedCount++;
                 }
             });
