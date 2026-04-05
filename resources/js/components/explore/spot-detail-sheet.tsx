@@ -100,11 +100,12 @@ export function SpotDetailSheet({
     const [submitting, setSubmitting] = useState(false);
 
     const fetchReviews = useCallback(() => {
+        if (isGeocodePlace) return;
         fetch(`/explore/${spot.id}/reviews`, { credentials: 'same-origin' })
             .then((r) => r.json())
             .then((data) => setReviews(data.data ?? []))
             .catch(() => {});
-    }, [spot.id]);
+    }, [spot.id, isGeocodePlace]);
 
     useEffect(() => {
         fetchReviews();
@@ -189,6 +190,27 @@ export function SpotDetailSheet({
                         </span>
                     </div>
                 </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="mb-3 flex gap-2">
+                <span
+                    onClick={() =>
+                        onDirections
+                            ? onDirections(spot)
+                            : setNavMenuOpen(!navMenuOpen)
+                    }
+                    className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] bg-[#1A4CD4] py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#1541B8]"
+                >
+                    <IconMapPin size={14} stroke={ICON_STROKE} />
+                    Directions
+                </span>
+                {!isGeocodePlace && (
+                    <span className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] border border-[#EBF0FD] py-2 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:bg-[#EBF0FD]">
+                        <IconHeart size={14} stroke={ICON_STROKE} />
+                        Save
+                    </span>
+                )}
             </div>
 
             {/* Attribute chips + rating — DB spots only */}
@@ -289,27 +311,6 @@ export function SpotDetailSheet({
                     </div>
                 </>
             )}
-
-            {/* Action buttons */}
-            <div className="mt-3 mb-2 flex gap-2">
-                <span
-                    onClick={() =>
-                        onDirections
-                            ? onDirections(spot)
-                            : setNavMenuOpen(!navMenuOpen)
-                    }
-                    className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] bg-[#1A4CD4] py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#1541B8]"
-                >
-                    <IconMapPin size={14} stroke={ICON_STROKE} />
-                    Directions
-                </span>
-                {!isGeocodePlace && (
-                    <span className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] border border-[#EBF0FD] py-2 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:bg-[#EBF0FD]">
-                        <IconHeart size={14} stroke={ICON_STROKE} />
-                        Save
-                    </span>
-                )}
-            </div>
 
             {/* Reviews — DB spots only */}
             {!isGeocodePlace && (

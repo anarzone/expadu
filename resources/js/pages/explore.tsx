@@ -664,6 +664,8 @@ export default function Explore() {
             lat: spot.lat ?? 50.9375,
             lng: spot.lng ?? 6.9603,
         });
+        // Start collapsed so user sees more map — expand with arrow
+        setPanelExpanded(false);
     }
 
     // Tap-to-discover: reverse geocode the tapped point
@@ -775,7 +777,7 @@ export default function Explore() {
                     className={`absolute inset-x-0 top-0 z-[85] flex flex-col md:relative md:inset-auto md:z-auto md:w-[420px] md:shrink-0 max-lg:md:absolute max-lg:md:inset-y-0 max-lg:md:left-0 max-lg:md:z-[80] max-lg:md:shadow-[4px_0_32px_rgba(0,0,0,0.1)] max-lg:md:transition-transform max-lg:md:duration-300 ${listOpen ? 'max-lg:md:translate-x-0' : 'max-lg:md:-translate-x-full'}`}
                 >
                     <div
-                        className={`flex flex-col overflow-hidden border-b border-[#E2DFD6] bg-white transition-[height] duration-300 ease-in-out md:!h-auto md:min-h-0 md:flex-1 md:border-r md:border-b-0 dark:border-[#3A3930] dark:bg-[#1E1D15] ${panelExpanded ? 'h-[70vh]' : 'h-[110px]'} `}
+                        className={`flex flex-col overflow-hidden border-b border-[#E2DFD6] bg-white transition-[max-height,height] duration-300 ease-in-out md:!h-auto md:!max-h-none md:min-h-0 md:flex-1 md:border-r md:border-b-0 dark:border-[#3A3930] dark:bg-[#1E1D15] ${panelExpanded ? 'max-h-[70vh]' : 'max-h-[205px]'} `}
                     >
                         {routeDest ? (
                             <>
