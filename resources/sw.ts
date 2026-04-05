@@ -1,40 +1,10 @@
 /// <reference lib="webworker" />
 
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
-import { clientsClaim } from 'workbox-core';
-import { registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
-
 declare let self: ServiceWorkerGlobalScope;
 
 // Take control immediately
 self.skipWaiting();
-clientsClaim();
-
-// Precache built assets (injected by VitePWA)
-precacheAndRoute(self.__WB_MANIFEST);
-cleanupOutdatedCaches();
-
-// Runtime caching: Weather API
-registerRoute(
-    /^https:\/\/api\.brightsky\.dev/,
-    new StaleWhileRevalidate({
-        cacheName: 'weather-cache',
-        plugins: [new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 900 })],
-    }),
-);
-
-// Runtime caching: Map tiles
-registerRoute(
-    /^https:\/\/tiles\.openfreemap\.org/,
-    new CacheFirst({
-        cacheName: 'map-tiles',
-        plugins: [
-            new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 86400 * 7 }),
-        ],
-    }),
-);
+self.clients.claim();
 
 // ── Push Notification Handler ──
 self.addEventListener('push', (event) => {
@@ -80,5 +50,22 @@ self.addEventListener('notificationclick', (event) => {
                 // No existing window — open a new one
                 return self.clients.openWindow(url);
             }),
+    );
+});
+
+// ── Clear old Workbox caches from previous versions ──
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((keys) =>
+            Promise.all(
+                keys
+                    .filter(
+                        (key) =>
+                            key.startsWith('workbox-precache') ||
+                            key.includes('precache'),
+                    )
+                    .map((key) => caches.delete(key)),
+            ),
+        ),
     );
 });
