@@ -49,15 +49,20 @@ export function AlertStackRow({
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold">
-                            {stack.count} {info.label}
+                            {stack.latest.title}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-px text-[10px] font-bold text-muted-foreground">
+                            +{stack.count - 1}
                         </span>
                         {unreadCount > 0 && (
                             <span className="size-2 rounded-full bg-primary" />
                         )}
                     </div>
-                    <div className="mt-0.5 text-[13px] text-muted-foreground">
-                        {stack.latest.title}
-                    </div>
+                    {stack.latest.body && (
+                        <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                            {stack.latest.body}
+                        </div>
+                    )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                     {unreadCount > 0 && (

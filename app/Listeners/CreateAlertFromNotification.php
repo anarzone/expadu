@@ -56,11 +56,7 @@ class CreateAlertFromNotification
             $notification instanceof RhineFloodNotification => 'rhine',
             $notification instanceof BuergeramtSlotNotification => 'buergeramt',
             $notification instanceof EventReminderNotification => 'event_reminder',
-            $notification instanceof GenericAlertNotification => match ($data['alert_type'] ?? 'system') {
-                'social' => 'social_activity',
-                'reminder' => 'bureaucracy_reminder',
-                default => 'generic',
-            },
+            $notification instanceof GenericAlertNotification => $this->detectGenericSubtype($data),
             default => 'generic',
         };
 
@@ -85,5 +81,44 @@ class CreateAlertFromNotification
             'body' => $data['body'] ?? $data['summary'] ?? '',
             'deep_link' => $data['url'] ?? null,
         ]);
+    }
+
+    /** Detect granular subtype for GenericAlertNotification based on content */
+    private function detectGenericSubtype(array $data): string
+    {
+        $title = strtolower($data['title'] ?? '');
+        $url = $data['url'] ?? '';
+
+        // Social subtypes
+        if (str_contains($title, 'partner') || str_contains($title, 'match')) {
+            return 'partner_match';
+        }
+        if (str_contains($title, 'connection') || str_contains($title, 'accepted')) {
+            return 'connection_accepted';
+        }
+        if (str_contains($title, 'joined') || str_contains($title, 'also')) {
+            return 'event_activity';
+        }
+        if (str_contains($title, 'tip') || str_contains($title, 'area')) {
+            return 'area_tip';
+        }
+
+        // Reminder subtypes
+        if (str_contains($title, 'tomorrow')) {
+            return 'event_reminder';
+        }
+        if (str_contains($title, 'bank') || str_contains($title, 'steuer')) {
+            return 'bureaucracy_reminder';
+        }
+        if (str_contains($title, 'reminder')) {
+            return 'reminder';
+        }
+
+        // Fallback by alert_type
+        return match ($data['alert_type'] ?? 'system') {
+            'social' => 'social_other',
+            'reminder' => 'reminder_other',
+            default => 'generic',
+        };
     }
 }

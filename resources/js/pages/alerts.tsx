@@ -8,24 +8,38 @@ import {
 import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
 import AppLayout from '@/layouts/app-layout';
 
-// Subtypes that should never be stacked
-const NEVER_STACK = new Set(['buergeramt', 'event_reminder', 'rhine']);
+// Subtypes that should never be stacked — each appears individually
+const NEVER_STACK = new Set([
+    'buergeramt',
+    'event_reminder',
+    'rhine',
+    'reminder',
+    'bureaucracy_reminder',
+    'partner_match',
+    'connection_accepted',
+    'event_activity',
+    'area_tip',
+    'generic',
+]);
 
-/** Detect subtype from alert data (uses DB subtype if available, else infers from title) */
+/** Detect subtype from alert data — granular so only truly similar alerts stack */
 function detectSubtype(alert: AlertData): string {
     if (alert.subtype) return alert.subtype;
     const t = alert.title?.toLowerCase() ?? '';
+    // Transit
     if (t.includes('disruption')) return 'transit_disruption';
-    if (t.includes('delay') || t.includes('running') || t.includes('line '))
-        return 'transit_delay';
+    if (t.includes('delay') || t.includes('running')) return 'transit_delay';
+    // Weather
+    if (t.includes('rain')) return 'weather_rain';
+    if (t.includes('wind')) return 'weather_wind';
     if (
-        t.includes('rain') ||
-        t.includes('weather') ||
-        t.includes('wind') ||
         t.includes('heat') ||
-        t.includes('freezing')
+        t.includes('freezing') ||
+        t.includes('temperature')
     )
-        return 'weather';
+        return 'weather_temp';
+    if (t.includes('weather')) return 'weather';
+    // Infrastructure
     if (t.includes('rhine') || t.includes('water level')) return 'rhine';
     if (
         t.includes('bürgeramt') ||
@@ -33,38 +47,58 @@ function detectSubtype(alert: AlertData): string {
         t.includes('slot')
     )
         return 'buergeramt';
-    if (
-        t.includes('partner') ||
-        t.includes('connection') ||
-        t.includes('accepted') ||
-        t.includes('joined') ||
-        t.includes('tip')
-    )
-        return 'social_activity';
-    if (t.includes('tomorrow') || t.includes('reminder'))
-        return 'event_reminder';
+    // Social — each is its own subtype (no grouping across different social actions)
+    if (t.includes('partner') || t.includes('match')) return 'partner_match';
+    if (t.includes('connection') || t.includes('accepted'))
+        return 'connection_accepted';
+    if (t.includes('joined')) return 'event_activity';
+    if (t.includes('tip') || t.includes('area')) return 'area_tip';
+    // Reminders
+    if (t.includes('tomorrow')) return 'event_reminder';
+    if (t.includes('reminder')) return 'reminder';
     if (t.includes('bank') || t.includes('steuer'))
         return 'bureaucracy_reminder';
     return 'generic';
 }
 
-/** Stack alerts within a time group by subtype */
+const STACK_WINDOW_MS = 5 * 60 * 60 * 1000; // 5 hours
+
+/** Stack alerts by subtype + 5-hour time window */
 function stackAlerts(alerts: AlertData[]): (AlertData | AlertStack)[] {
     const result: (AlertData | AlertStack)[] = [];
+    // Key: "subtype:windowStart" → alerts in that window
     const grouped = new Map<string, AlertData[]>();
 
     for (const alert of alerts) {
         const subtype = detectSubtype(alert);
         if (NEVER_STACK.has(subtype)) {
             result.push(alert);
-        } else {
-            const existing = grouped.get(subtype) ?? [];
-            existing.push(alert);
-            grouped.set(subtype, existing);
+            continue;
+        }
+
+        // Find which 5h window this alert belongs to
+        const time = new Date(alert.created_at).getTime();
+        let matched = false;
+
+        for (const [key, group] of grouped) {
+            if (!key.startsWith(subtype + ':')) continue;
+            // Check if this alert is within 5h of the latest in this group
+            const latestTime = new Date(group[0].created_at).getTime();
+            if (Math.abs(time - latestTime) <= STACK_WINDOW_MS) {
+                group.push(alert);
+                matched = true;
+                break;
+            }
+        }
+
+        if (!matched) {
+            const windowKey = `${subtype}:${time}`;
+            grouped.set(windowKey, [alert]);
         }
     }
 
-    for (const [subtype, group] of grouped) {
+    for (const [key, group] of grouped) {
+        const subtype = key.split(':')[0];
         if (group.length === 1) {
             result.push(group[0]);
         } else {
