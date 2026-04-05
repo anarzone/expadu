@@ -75,7 +75,7 @@ export function MobileTopBar({ title }: { title?: string }) {
                             </span>
                         </a>
                         <a
-                            href="/settings/appearance"
+                            href="/settings/profile"
                             onClick={() => setMenuOpen(false)}
                             className="flex w-full items-center gap-2.5 border-b border-[#E2DFD6] px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                         >
@@ -85,7 +85,7 @@ export function MobileTopBar({ title }: { title?: string }) {
                                 className="text-[#6B6860]"
                             />
                             <span style={{ fontSize: 13, fontWeight: 500 }}>
-                                Appearance
+                                Settings
                             </span>
                         </a>
                         <button

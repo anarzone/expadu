@@ -77,7 +77,7 @@ const navGroups: NavGroup[] = [
 
 const dropdownItems = [
     { label: 'Profile', icon: IconUser, href: '/profile' },
-    { label: 'Appearance', icon: IconPalette, href: '/settings/appearance' },
+    { label: 'Settings', icon: IconPalette, href: '/settings/profile' },
 ];
 
 export function AppSidebar() {
