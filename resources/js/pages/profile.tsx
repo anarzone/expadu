@@ -222,11 +222,7 @@ export default function Profile() {
     const user = auth.user;
 
     const [activeTab, setActiveTab] = useTabState('overview');
-    const [openSettingsSection, setOpenSettingsSection] = useState<
-        string | null
-    >(null);
-    const toggleSection = (id: string) =>
-        setOpenSettingsSection((prev) => (prev === id ? null : id));
+    const [settingsPage, setSettingsPage] = useState<string | null>(null);
 
     // Profile fields — seeded from backend user
     const [profileName, setProfileName] = useState(user.name || 'Anar');
@@ -1448,8 +1444,9 @@ export default function Profile() {
                             id="account"
                             icon="👤"
                             title="Profile Information"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <InlineEditRow
                                 field="name"
@@ -1543,8 +1540,9 @@ export default function Profile() {
                             id="places"
                             icon="📍"
                             title="Your Places"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             {places.map((p) => (
                                 <div
@@ -1963,8 +1961,9 @@ export default function Profile() {
                             id="notifications"
                             icon="🔔"
                             title="Notifications"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingToggle
                                 label="🚇 Transit disruptions"
@@ -2016,8 +2015,9 @@ export default function Profile() {
                             id="events-settings"
                             icon="📅"
                             title="Events"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingToggle
                                 label="Show my attendance publicly"
@@ -2047,8 +2047,9 @@ export default function Profile() {
                             id="language"
                             icon="🗣️"
                             title="Language Exchange"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingToggle
                                 label="Discoverable as a partner"
@@ -2085,8 +2086,9 @@ export default function Profile() {
                             id="explore"
                             icon="🚇"
                             title="Explore & Transit"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingValueRow
                                 label="Default transport mode"
@@ -2116,8 +2118,9 @@ export default function Profile() {
                             id="privacy"
                             icon="🔐"
                             title="Privacy"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingValueRow
                                 label="Profile visibility"
@@ -2150,8 +2153,9 @@ export default function Profile() {
                             id="appearance"
                             icon="🎨"
                             title="Appearance"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingValueRow
                                 label="Language"
@@ -2179,8 +2183,9 @@ export default function Profile() {
                             id="support"
                             icon="ℹ️"
                             title="Support"
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingNavRow
                                 label="Help Centre"
@@ -2228,8 +2233,9 @@ export default function Profile() {
                             icon="⚠️"
                             title="Danger Zone"
                             danger={true}
-                            open={openSettingsSection}
-                            onToggle={toggleSection}
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
                         >
                             <SettingNavRow
                                 label="Restart welcome setup"
@@ -2325,25 +2331,27 @@ function SettingsSection({
     id,
     icon,
     title,
-    open,
-    onToggle,
+    activePage,
+    onNavigate,
+    onBack,
     children,
     danger,
 }: {
     id: string;
     icon: string;
     title: string;
-    open: string | null;
-    onToggle: (id: string) => void;
+    activePage: string | null;
+    onNavigate: (id: string) => void;
+    onBack: () => void;
     children: React.ReactNode;
     danger?: boolean;
 }) {
-    const isOpen = open === id;
-    return (
-        <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]">
+    // When no page is active, show the menu item
+    if (!activePage) {
+        return (
             <button
-                onClick={() => onToggle(id)}
-                className={`flex w-full cursor-pointer items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:hover:bg-[#2A2920] ${danger ? 'text-[#C4271A]' : ''}`}
+                onClick={() => onNavigate(id)}
+                className={`flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920] ${danger ? 'text-[#C4271A]' : ''}`}
             >
                 <span className="shrink-0 text-base">{icon}</span>
                 <span className="flex-1 text-[14px] font-medium">{title}</span>
@@ -2356,14 +2364,37 @@ function SettingsSection({
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className={`shrink-0 text-[#AAA89F] transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                    className="shrink-0 text-[#AAA89F]"
                 >
                     <polyline points="9 18 15 12 9 6" />
                 </svg>
             </button>
-            {isOpen && <div className="px-5 pb-4">{children}</div>}
-        </div>
-    );
+        );
+    }
+
+    // When this page is active, show back button + content
+    if (activePage === id) {
+        return (
+            <div>
+                <button
+                    onClick={onBack}
+                    className="flex w-full items-center gap-2 border-b border-[#E2DFD6] px-5 py-3 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:border-[#3A3930] dark:text-[#AAA89F]"
+                >
+                    ← Back to Settings
+                </button>
+                <div className="border-b border-[#E2DFD6] px-5 py-4 dark:border-[#3A3930]">
+                    <div className="mb-3 flex items-center gap-2">
+                        <span className="text-base">{icon}</span>
+                        <span className="text-base font-semibold">{title}</span>
+                    </div>
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
+    // Another page is active — hide this item
+    return null;
 }
 
 function SectionHeader({
