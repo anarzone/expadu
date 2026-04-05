@@ -18,7 +18,9 @@ class SetCacheHeaders
         $response = $next($request);
 
         if ($request->isMethod('GET') && ! $request->is('build/*')) {
-            $response->headers->set('Cache-Control', 'no-cache');
+            $response->headers->set('Cache-Control', 'no-store');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
         }
 
         return $response;
