@@ -47,8 +47,10 @@ class TransitController extends Controller
 
         GtfsDepartureService::logDepartureDebug($user->id, 'transit', $gtfsDepartures, $nearbyLat, $nearbyLng);
 
-        // Enrich routines with next GTFS departure
-        $routines = $user->routines()->get()->map(function ($r) use ($gtfsService) {
+        // Enrich routines with next GTFS departure — batch by stop to avoid N+1
+        $allRoutines = $user->routines()->get();
+        $stopDepsCache = [];
+        $routines = $allRoutines->map(function ($r) use ($gtfsService, &$stopDepsCache) {
             $data = [
                 'id' => $r->id,
                 'emoji' => $r->emoji,
@@ -60,8 +62,11 @@ class TransitController extends Controller
                 'is_active' => $r->is_active,
             ];
 
-            // Add next live departure from the routine's origin stop
-            $deps = $gtfsService->getDepartures($r->from_stop, 3);
+            // Cache departure lookup per stop — shared across routines from same stop
+            if (! isset($stopDepsCache[$r->from_stop])) {
+                $stopDepsCache[$r->from_stop] = $gtfsService->getDepartures($r->from_stop, 3);
+            }
+            $deps = $stopDepsCache[$r->from_stop];
             $nextDep = collect($deps['departures'] ?? [])->first();
             $data['next_departure_min'] = $nextDep['departures'][0] ?? null;
             $data['next_departure_line'] = $nextDep['line'] ?? null;

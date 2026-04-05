@@ -467,8 +467,11 @@ class RecommendationService
         $bikeScore = $forecast['bike_score'] ?? 'Fair';
         $rainStarts = $forecast['rain_starts'] ?? null;
         $temp = $weather['temperature'] ?? 0;
+        $hour = now()->hour;
+        $isWorkHours = $hour >= 6 && $hour <= 21;
 
-        if ($bikeScore === 'Good' && ! $rainStarts && $temp >= 5) {
+        // Perfect biking conditions
+        if (str_starts_with($bikeScore, 'Great') && ! $rainStarts && $temp >= 5) {
             return [[
                 'type' => 'commute_tip',
                 'title' => "Great day to bike — {$temp}°C, no rain",
@@ -478,6 +481,53 @@ class RecommendationService
                 'unit' => '',
                 'priority' => 80,
                 'color' => 'success',
+                'meta' => [],
+            ]];
+        }
+
+        // Rain coming — suggest transit
+        if ($rainStarts) {
+            return [[
+                'type' => 'commute_tip',
+                'title' => "Rain from {$rainStarts} — take transit",
+                'subtitle' => 'Consider tram/bus to stay dry',
+                'emoji' => '🌧️',
+                'value' => '',
+                'unit' => '',
+                'priority' => 78,
+                'color' => 'warn',
+                'meta' => [],
+            ]];
+        }
+
+        // Cold weather
+        if ($temp < 3 && $isWorkHours) {
+            return [[
+                'type' => 'commute_tip',
+                'title' => "Cold today — {$temp}°C, consider transit",
+                'subtitle' => 'Wrap up warm if cycling',
+                'emoji' => '🥶',
+                'value' => '',
+                'unit' => '',
+                'priority' => 70,
+                'color' => 'accent',
+                'meta' => [],
+            ]];
+        }
+
+        // Default — always show during work hours if user has work place
+        if ($work && $isWorkHours) {
+            $condition = $weather['condition'] ?? 'Partly cloudy';
+
+            return [[
+                'type' => 'commute_tip',
+                'title' => "{$temp}°C · {$condition}",
+                'subtitle' => $bikeScore,
+                'emoji' => $weather['emoji'] ?? '⛅',
+                'value' => '',
+                'unit' => '',
+                'priority' => 55,
+                'color' => 'accent',
                 'meta' => [],
             ]];
         }
