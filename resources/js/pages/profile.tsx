@@ -222,6 +222,11 @@ export default function Profile() {
     const user = auth.user;
 
     const [activeTab, setActiveTab] = useTabState('overview');
+    const [openSettingsSection, setOpenSettingsSection] = useState<
+        string | null
+    >(null);
+    const toggleSection = (id: string) =>
+        setOpenSettingsSection((prev) => (prev === id ? null : id));
 
     // Profile fields — seeded from backend user
     const [profileName, setProfileName] = useState(user.name || 'Anar');
@@ -1437,10 +1442,15 @@ export default function Profile() {
                    TAB: SETTINGS
                    ════════════════════════════════════════════════════════════ */}
                 {activeTab === 'settings' && (
-                    <>
+                    <div className="py-2">
                         {/* ACCOUNT */}
-                        <FeedSection>
-                            <SectionHeader title="Account" />
+                        <SettingsSection
+                            id="account"
+                            icon="👤"
+                            title="Profile Information"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <InlineEditRow
                                 field="name"
                                 label="Name"
@@ -1526,11 +1536,16 @@ export default function Profile() {
                                 onCancel={cancelEdit}
                                 isLast
                             />
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* YOUR PLACES */}
-                        <FeedSection>
-                            <SectionHeader title="Your Places" />
+                        <SettingsSection
+                            id="places"
+                            icon="📍"
+                            title="Your Places"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             {places.map((p) => (
                                 <div
                                     key={p.id}
@@ -1941,11 +1956,16 @@ export default function Profile() {
                                     + Add a place
                                 </button>
                             )}
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* NOTIFICATIONS */}
-                        <FeedSection>
-                            <SectionHeader title="Notifications" />
+                        <SettingsSection
+                            id="notifications"
+                            icon="🔔"
+                            title="Notifications"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingToggle
                                 label="🚇 Transit disruptions"
                                 sub="Delays, closures on your routes"
@@ -1989,11 +2009,16 @@ export default function Profile() {
                                 onToggle={() => toggle('weeklyDigest')}
                                 isLast
                             />
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* EVENTS SETTINGS */}
-                        <FeedSection>
-                            <SectionHeader title="Events" />
+                        <SettingsSection
+                            id="events-settings"
+                            icon="📅"
+                            title="Events"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingToggle
                                 label="Show my attendance publicly"
                                 sub="Others can see events you've joined"
@@ -2015,11 +2040,16 @@ export default function Profile() {
                                 sub="Language, networking, cultural"
                                 isLast
                             />
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* LANGUAGE EXCHANGE SETTINGS */}
-                        <FeedSection>
-                            <SectionHeader title="Language Exchange" />
+                        <SettingsSection
+                            id="language"
+                            icon="🗣️"
+                            title="Language Exchange"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingToggle
                                 label="Discoverable as a partner"
                                 sub="Your profile appears in partner search"
@@ -2048,11 +2078,16 @@ export default function Profile() {
                                 value="5"
                                 isLast
                             />
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* EXPLORE & TRANSIT */}
-                        <FeedSection>
-                            <SectionHeader title="Explore & Transit" />
+                        <SettingsSection
+                            id="explore"
+                            icon="🚇"
+                            title="Explore & Transit"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingValueRow
                                 label="Default transport mode"
                                 value="🚲 Bike"
@@ -2074,11 +2109,16 @@ export default function Profile() {
                                 value="Venloer Str."
                                 isLast
                             />
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* PRIVACY */}
-                        <FeedSection>
-                            <SectionHeader title="Privacy" />
+                        <SettingsSection
+                            id="privacy"
+                            icon="🔐"
+                            title="Privacy"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingValueRow
                                 label="Profile visibility"
                                 sub="Who can see your full profile"
@@ -2103,11 +2143,16 @@ export default function Profile() {
                                 onToggle={() => toggle('shareAnonymised')}
                                 isLast
                             />
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* APPEARANCE */}
-                        <FeedSection>
-                            <SectionHeader title="Appearance" />
+                        <SettingsSection
+                            id="appearance"
+                            icon="🎨"
+                            title="Appearance"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingValueRow
                                 label="Language"
                                 sub="App interface language"
@@ -2127,11 +2172,16 @@ export default function Profile() {
                                 onToggle={() => toggle('darkMode')}
                                 isLast
                             />
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* SUPPORT */}
-                        <FeedSection>
-                            <SectionHeader title="Support" />
+                        <SettingsSection
+                            id="support"
+                            icon="ℹ️"
+                            title="Support"
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingNavRow
                                 label="Help Centre"
                                 sub="FAQs, guides, contact support"
@@ -2170,11 +2220,17 @@ export default function Profile() {
                                     1.0.0 (prototype)
                                 </span>
                             </div>
-                        </FeedSection>
+                        </SettingsSection>
 
                         {/* DANGER ZONE */}
-                        <FeedSection>
-                            <SectionHeader title="Danger zone" />
+                        <SettingsSection
+                            id="danger"
+                            icon="⚠️"
+                            title="Danger Zone"
+                            danger={true}
+                            open={openSettingsSection}
+                            onToggle={toggleSection}
+                        >
                             <SettingNavRow
                                 label="Restart welcome setup"
                                 sub="Re-run the onboarding flow"
@@ -2235,8 +2291,8 @@ export default function Profile() {
                                     ›
                                 </span>
                             </div>
-                        </FeedSection>
-                    </>
+                        </SettingsSection>
+                    </div>
                 )}
             </div>
 
@@ -2261,6 +2317,51 @@ function FeedSection({ children }: { children: React.ReactNode }) {
     return (
         <div className="border-b border-[#E2DFD6] px-6 py-5 last:border-b-0 dark:border-[#3A3930]">
             {children}
+        </div>
+    );
+}
+
+function SettingsSection({
+    id,
+    icon,
+    title,
+    open,
+    onToggle,
+    children,
+    danger,
+}: {
+    id: string;
+    icon: string;
+    title: string;
+    open: string | null;
+    onToggle: (id: string) => void;
+    children: React.ReactNode;
+    danger?: boolean;
+}) {
+    const isOpen = open === id;
+    return (
+        <div className="border-b border-[#E2DFD6] dark:border-[#3A3930]">
+            <button
+                onClick={() => onToggle(id)}
+                className={`flex w-full cursor-pointer items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:hover:bg-[#2A2920] ${danger ? 'text-[#C4271A]' : ''}`}
+            >
+                <span className="shrink-0 text-base">{icon}</span>
+                <span className="flex-1 text-[14px] font-medium">{title}</span>
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`shrink-0 text-[#AAA89F] transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                >
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+            {isOpen && <div className="px-5 pb-4">{children}</div>}
         </div>
     );
 }
