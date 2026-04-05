@@ -25,6 +25,10 @@ WORKDIR /app
 COPY --from=composer-build /app /app
 
 # Install npm dependencies and build
+# Set APP_URL for Wayfinder route generation (must not be localhost)
+RUN cp .env.example .env && \
+    sed -i 's|APP_URL=.*|APP_URL=https://expadu.com|' .env && \
+    php artisan key:generate --force
 RUN npm ci --legacy-peer-deps
 RUN npm run build
 
