@@ -37,7 +37,7 @@ class CreateAlertFromNotification
         $notification = $event->notification;
         $data = $notification->toArray($event->notifiable);
 
-        // Map notification class → alert type
+        // Map notification class → alert type + subtype
         $alertType = match (true) {
             $notification instanceof EventReminderNotification => AlertType::Reminder,
             $notification instanceof BuergeramtSlotNotification,
@@ -45,9 +45,23 @@ class CreateAlertFromNotification
             $notification instanceof TransitDelayNotification,
             $notification instanceof RhineFloodNotification,
             $notification instanceof WeatherAlertNotification => AlertType::System,
-            // GenericAlertNotification carries its own alert_type
             $notification instanceof GenericAlertNotification => AlertType::tryFrom($data['alert_type'] ?? 'system') ?? AlertType::System,
             default => AlertType::System,
+        };
+
+        $subtype = match (true) {
+            $notification instanceof TransitDisruptionNotification => 'transit_disruption',
+            $notification instanceof TransitDelayNotification => 'transit_delay',
+            $notification instanceof WeatherAlertNotification => 'weather',
+            $notification instanceof RhineFloodNotification => 'rhine',
+            $notification instanceof BuergeramtSlotNotification => 'buergeramt',
+            $notification instanceof EventReminderNotification => 'event_reminder',
+            $notification instanceof GenericAlertNotification => match ($data['alert_type'] ?? 'system') {
+                'social' => 'social_activity',
+                'reminder' => 'bureaucracy_reminder',
+                default => 'generic',
+            },
+            default => 'generic',
         };
 
         $title = $data['title'] ?? $data['type'] ?? 'Notification';
@@ -66,6 +80,7 @@ class CreateAlertFromNotification
         Alert::create([
             'user_id' => $userId,
             'type' => $alertType,
+            'subtype' => $subtype,
             'title' => $title,
             'body' => $data['body'] ?? $data['summary'] ?? '',
             'deep_link' => $data['url'] ?? null,

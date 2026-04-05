@@ -1,18 +1,100 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
-import { AlertRow } from '@/components/alerts/alert-row';
+import { AlertRow, type AlertData } from '@/components/alerts/alert-row';
+import {
+    AlertStackRow,
+    type AlertStack,
+} from '@/components/alerts/alert-stack';
 import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
 import AppLayout from '@/layouts/app-layout';
 
-type AlertData = {
-    id: number;
-    type: string;
-    title: string;
-    body: string | null;
-    deep_link: string | null;
-    read_at: string | null;
-    created_at: string;
-};
+// Subtypes that should never be stacked
+const NEVER_STACK = new Set(['buergeramt', 'event_reminder', 'rhine']);
+
+/** Detect subtype from alert data (uses DB subtype if available, else infers from title) */
+function detectSubtype(alert: AlertData): string {
+    if (alert.subtype) return alert.subtype;
+    const t = alert.title?.toLowerCase() ?? '';
+    if (t.includes('disruption')) return 'transit_disruption';
+    if (t.includes('delay') || t.includes('running') || t.includes('line '))
+        return 'transit_delay';
+    if (
+        t.includes('rain') ||
+        t.includes('weather') ||
+        t.includes('wind') ||
+        t.includes('heat') ||
+        t.includes('freezing')
+    )
+        return 'weather';
+    if (t.includes('rhine') || t.includes('water level')) return 'rhine';
+    if (
+        t.includes('bürgeramt') ||
+        t.includes('appointment') ||
+        t.includes('slot')
+    )
+        return 'buergeramt';
+    if (
+        t.includes('partner') ||
+        t.includes('connection') ||
+        t.includes('accepted') ||
+        t.includes('joined') ||
+        t.includes('tip')
+    )
+        return 'social_activity';
+    if (t.includes('tomorrow') || t.includes('reminder'))
+        return 'event_reminder';
+    if (t.includes('bank') || t.includes('steuer'))
+        return 'bureaucracy_reminder';
+    return 'generic';
+}
+
+/** Stack alerts within a time group by subtype */
+function stackAlerts(alerts: AlertData[]): (AlertData | AlertStack)[] {
+    const result: (AlertData | AlertStack)[] = [];
+    const grouped = new Map<string, AlertData[]>();
+
+    for (const alert of alerts) {
+        const subtype = detectSubtype(alert);
+        if (NEVER_STACK.has(subtype)) {
+            result.push(alert);
+        } else {
+            const existing = grouped.get(subtype) ?? [];
+            existing.push(alert);
+            grouped.set(subtype, existing);
+        }
+    }
+
+    for (const [subtype, group] of grouped) {
+        if (group.length === 1) {
+            result.push(group[0]);
+        } else {
+            result.push({
+                stackType: 'stack',
+                subtype,
+                latest: group[0],
+                count: group.length,
+                alerts: group,
+            });
+        }
+    }
+
+    // Sort: stacks by their latest alert time, mixed with individual alerts
+    return result.sort((a, b) => {
+        const aTime =
+            'stackType' in a
+                ? new Date(a.latest.created_at).getTime()
+                : new Date(a.created_at).getTime();
+        const bTime =
+            'stackType' in b
+                ? new Date(b.latest.created_at).getTime()
+                : new Date(b.created_at).getTime();
+        return bTime - aTime;
+    });
+}
+
+function isStack(item: AlertData | AlertStack): item is AlertStack {
+    return 'stackType' in item;
+}
 
 const tabs = [
     { id: 'all', label: 'All' },
@@ -215,6 +297,8 @@ export default function Alerts() {
                                 return null;
                             }
 
+                            const stacked = stackAlerts(items);
+
                             return (
                                 <div key={groupName}>
                                     <div className="flex items-center gap-2 px-6 pt-3.5 pb-1.5">
@@ -223,13 +307,21 @@ export default function Alerts() {
                                         </span>
                                         <div className="h-px flex-1 bg-border" />
                                     </div>
-                                    {items.map((alert) => (
-                                        <AlertRow
-                                            key={alert.id}
-                                            alert={alert}
-                                            onMarkRead={markRead}
-                                        />
-                                    ))}
+                                    {stacked.map((item) =>
+                                        isStack(item) ? (
+                                            <AlertStackRow
+                                                key={`stack-${item.subtype}`}
+                                                stack={item}
+                                                onMarkRead={markRead}
+                                            />
+                                        ) : (
+                                            <AlertRow
+                                                key={item.id}
+                                                alert={item}
+                                                onMarkRead={markRead}
+                                            />
+                                        ),
+                                    )}
                                 </div>
                             );
                         })}

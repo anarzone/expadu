@@ -2,9 +2,10 @@ import { router } from '@inertiajs/react';
 import React from 'react';
 import { useTracker } from '@/hooks/use-tracker';
 
-type AlertData = {
+export type AlertData = {
     id: number;
     type: string;
+    subtype?: string | null;
     title: string;
     body: string | null;
     deep_link: string | null;
