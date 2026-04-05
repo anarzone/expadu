@@ -22,8 +22,9 @@ class RecommendationService
      */
     public function getRecommendations(User $user, ?float $lat = null, ?float $lng = null): array
     {
-        $home = $user->places()->orderBy('sort_order')->first();
-        $work = $user->places()->where('category', 'work')->first();
+        $places = $user->places()->get();
+        $home = $places->first();
+        $work = $places->firstWhere('category', 'work');
         $homeLat = $lat ?? ($home?->lat ? (float) $home->lat : 50.9375);
         $homeLng = $lng ?? ($home?->lng ? (float) $home->lng : 6.9603);
         $homeStop = $home?->address ?? $home?->name ?? 'Ehrenfeld';
@@ -54,7 +55,7 @@ class RecommendationService
         $cards = array_merge($cards, $this->weatherCards($weather, $forecast));
 
         // 6. Disruption alerts
-        $cards = array_merge($cards, $this->disruptionCards($disruptions));
+        $cards = array_merge($cards, $this->disruptionCards($disruptions, $user));
 
         // 7. Settlement nudges
         $cards = array_merge($cards, $this->settlementCards($user));
@@ -584,11 +585,32 @@ class RecommendationService
     /**
      * @return array<int, array<string, mixed>>
      */
-    protected function disruptionCards(array $disruptions): array
+    protected function disruptionCards(array $disruptions, User $user): array
     {
+        // Get user's lines from routines + home/work stops for relevance filtering
+        $userLines = collect();
+        $routines = $user->routines()->where('is_active', true)->get();
+        foreach ($routines as $r) {
+            // Extract line numbers from stop names if available
+            $userLines = $userLines->merge([$r->from_stop, $r->to_stop]);
+        }
+
         return collect($disruptions)
-            ->map(function (array $d) {
+            ->map(function (array $d) use ($userLines) {
                 $isAccessibility = ($d['type'] ?? '') === 'accessibility';
+                $affectedLines = $d['affected_lines'] ?? [];
+
+                // Boost priority if disruption affects user's lines
+                $isPersonal = $userLines->isNotEmpty() && ! empty(array_intersect(
+                    array_map('strtolower', $affectedLines),
+                    $userLines->map(fn ($s) => strtolower($s))->all(),
+                ));
+
+                $basePriority = match ($d['severity'] ?? 'minor') {
+                    'critical' => 90,
+                    'major' => 75,
+                    default => $isAccessibility ? 45 : 60,
+                };
 
                 return [
                     'type' => $isAccessibility ? 'accessibility_alert' : 'disruption',
@@ -597,27 +619,23 @@ class RecommendationService
                     'emoji' => $isAccessibility ? '♿' : '⚠️',
                     'value' => '',
                     'unit' => '',
-                    'priority' => match ($d['severity'] ?? 'minor') {
-                        'critical' => 90,
-                        'major' => 75,
-                        default => $isAccessibility ? 45 : 60,
-                    },
+                    'priority' => $isPersonal ? $basePriority + 10 : $basePriority - 20,
                     'color' => match ($d['severity'] ?? 'minor') {
                         'critical' => 'danger',
                         'major' => 'warn',
                         default => $isAccessibility ? 'neutral' : 'warn',
                     },
                     'meta' => [
-                        'lines' => $d['affected_lines'] ?? [],
+                        'lines' => $affectedLines,
                         'severity' => $d['severity'] ?? 'minor',
                         'type' => $d['type'] ?? 'line',
                         'source' => $d['source'] ?? '',
+                        'personal' => $isPersonal,
                     ],
                 ];
             })
-            // Line disruptions first, accessibility lower priority
             ->sortByDesc('priority')
-            ->take(5)
+            ->take(2) // Max 2 disruption cards — prevent feed spam
             ->values()
             ->all();
     }
@@ -688,7 +706,7 @@ class RecommendationService
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
             })
             ->orderByDesc('published_at')
-            ->limit(3)
+            ->limit(1) // Max 1 news card — prevent filler
             ->get();
 
         return $news->map(fn ($n) => [

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Models\User;
 use App\Services\DisruptionService;
 use App\Services\GtfsDepartureService;
@@ -9,7 +10,9 @@ use App\Services\KvbApiService;
 use App\Services\LocationPatternService;
 use App\Services\NearbyStopService;
 use App\Services\RecommendationService;
+use App\Services\RhineService;
 use App\Services\UserLocationService;
+use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -79,6 +82,12 @@ class TransitController extends Controller
             'userLocation' => ['name' => $location['name'], 'address' => $location['name'], 'lat' => $nearbyLat, 'lng' => $nearbyLng],
             'disruptions' => $this->buildDisruptionCards($user, $nearbyLat, $nearbyLng),
             'nearbyDepartures' => fn () => $this->buildNearbyDepartures($user, $nearbyService, $nearbyLat, $nearbyLng),
+            // Right panel data (lazy — only evaluated if right panel renders)
+            'weather' => fn () => app(WeatherService::class)->getCurrentWeather($nearbyLat, $nearbyLng),
+            'forecast' => fn () => app(WeatherService::class)->getForecast($nearbyLat, $nearbyLng),
+            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
+            'todayEvents' => fn () => $this->buildTodayEvents(),
+            'activeDisruptions' => fn () => $this->buildActiveDisruptions(),
         ]);
     }
 
@@ -165,5 +174,37 @@ class TransitController extends Controller
         });
 
         return array_slice($cards, 0, 5);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function buildTodayEvents(): array
+    {
+        return Event::query()
+            ->whereDate('starts_at', today())
+            ->where('starts_at', '>', now())
+            ->orderBy('starts_at')
+            ->limit(7)
+            ->get(['id', 'title', 'starts_at', 'location_name', 'is_free', 'category'])
+            ->map(fn ($e) => [
+                'time' => $e->starts_at->format('H:i'),
+                'emoji' => match ($e->category) {
+                    'music' => '🎵', 'sports' => '⚽', 'language' => '🗣️', 'culture' => '🎭', 'community' => '🤝', 'food' => '🍽️', 'market' => '🛒', default => '📅'
+                },
+                'title' => $e->title,
+                'location' => $e->location_name,
+                'badge' => $e->is_free ? 'Free' : ucfirst($e->category ?? 'Event'),
+                'badgeType' => $e->is_free ? 'free' : 'category',
+            ])
+            ->all();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function buildActiveDisruptions(): array
+    {
+        return collect(app(DisruptionService::class)->getLineDisruptions())
+            ->map(fn ($d) => ['title' => $d['title'], 'severity' => $d['severity'], 'lines' => $d['affected_lines']])
+            ->take(5)
+            ->values()
+            ->all();
     }
 }

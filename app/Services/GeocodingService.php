@@ -29,13 +29,32 @@ class GeocodingService
 
                 if ($response->successful()) {
                     return collect($response->json('features', []))
-                        ->map(fn (array $feature) => [
-                            'name' => $feature['properties']['name'] ?? $feature['properties']['street'] ?? $query,
-                            'street' => $feature['properties']['street'] ?? null,
-                            'city' => $feature['properties']['city'] ?? $feature['properties']['county'] ?? null,
-                            'lat' => $feature['geometry']['coordinates'][1] ?? 0.0,
-                            'lng' => $feature['geometry']['coordinates'][0] ?? 0.0,
-                        ])
+                        ->map(function (array $feature) use ($query) {
+                            $props = $feature['properties'] ?? [];
+                            $street = $props['street'] ?? null;
+                            $houseNumber = $props['housenumber'] ?? null;
+                            $name = $props['name'] ?? $street ?? $query;
+
+                            // Build full address with house number
+                            $fullStreet = $street;
+                            if ($street && $houseNumber) {
+                                $fullStreet = "{$street} {$houseNumber}";
+                            }
+
+                            // Use full street as name if the result is a house/address
+                            $type = $props['type'] ?? $props['osm_value'] ?? '';
+                            if (in_array($type, ['house', 'address', 'residential']) && $fullStreet) {
+                                $name = $fullStreet;
+                            }
+
+                            return [
+                                'name' => $name,
+                                'street' => $fullStreet,
+                                'city' => $props['city'] ?? $props['county'] ?? null,
+                                'lat' => $feature['geometry']['coordinates'][1] ?? 0.0,
+                                'lng' => $feature['geometry']['coordinates'][0] ?? 0.0,
+                            ];
+                        })
                         ->all();
                 }
             } catch (\Exception $e) {

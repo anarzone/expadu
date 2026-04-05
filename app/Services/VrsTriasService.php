@@ -27,7 +27,7 @@ class VrsTriasService
 
         $cacheKey = "trias_departures_{$stopName}_{$limit}";
 
-        return Cache::remember($cacheKey, 30, function () use ($stopName, $limit) {
+        return Cache::remember($cacheKey, 60, function () use ($stopName, $limit) {
             try {
                 $globalId = $this->resolveStopGlobalId($stopName);
                 if (! $globalId) {
@@ -69,7 +69,7 @@ class VrsTriasService
 
         $cacheKey = "trias_departures_nearby_{$lat}_{$lng}_{$limit}";
 
-        return Cache::remember($cacheKey, 30, function () use ($lat, $lng, $limit) {
+        return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
             $globalId = $this->resolveNearbyStop($lat, $lng);
             if (! $globalId) {
                 return null;
@@ -291,7 +291,7 @@ class VrsTriasService
 
         $cacheKey = "trias_stop_deps_{$globalId}_{$limit}";
 
-        return Cache::remember($cacheKey, 30, function () use ($globalId, $limit) {
+        return Cache::remember($cacheKey, 60, function () use ($globalId, $limit) {
             return $this->fetchStopEvents($globalId, $limit);
         });
     }

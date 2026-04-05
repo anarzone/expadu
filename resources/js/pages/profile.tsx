@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { IconClock, IconCalendar } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
 import { useTabState } from '@/hooks/use-tab-state';
@@ -129,7 +130,6 @@ const PLACE_ICONS = [
     '📚',
     '💼',
     '💻',
-    '🏗️',
     '🔧',
     '🎨',
     '🩺',
@@ -288,6 +288,9 @@ export default function Profile() {
     const [placeActiveDays, setPlaceActiveDays] = useState<string[]>([]);
     const [locating, setLocating] = useState(false);
     const [placeEmoji, setPlaceEmoji] = useState('🏠');
+    const [showIconPicker, setShowIconPicker] = useState(false);
+    const [showArriveBy, setShowArriveBy] = useState(false);
+    const [showDays, setShowDays] = useState(false);
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
 
     // Notification toggles
@@ -462,6 +465,9 @@ export default function Profile() {
         }
 
         setShowPlaceForm(true);
+        setShowIconPicker(false);
+        setShowArriveBy(!!place?.arrive_by);
+        setShowDays(!!place?.active_days?.length);
     }
 
     // Restore URL hash after Inertia navigation strips it
@@ -619,6 +625,7 @@ export default function Profile() {
     const [addrSuggestions, setAddrSuggestions] = useState<
         { name: string; address: string; lat: number; lng: number }[]
     >([]);
+    const [addrHighlight, setAddrHighlight] = useState(-1);
     const addrTimerRef = useCallback(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -1620,39 +1627,53 @@ export default function Profile() {
                                             ? 'Edit place'
                                             : 'Add a place'}
                                     </div>
-                                    <div
-                                        className="text-[#AAA89F]"
-                                        style={{
-                                            fontSize: 11,
-                                            fontWeight: 700,
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.07em',
-                                            marginBottom: 7,
-                                        }}
-                                    >
-                                        Choose an icon
-                                    </div>
-                                    <div className="mb-3 flex flex-wrap gap-1.5">
-                                        {PLACE_ICONS.map((ico) => (
-                                            <div
-                                                key={ico}
-                                                onClick={() =>
-                                                    setPlaceEmoji(ico)
-                                                }
-                                                className={`flex cursor-pointer items-center justify-center rounded-[9px] transition-all ${placeEmoji === ico ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-transparent bg-white dark:bg-[#1E1D15]'}`}
-                                                style={{
-                                                    width: 40,
-                                                    height: 40,
-                                                    fontSize: 20,
-                                                }}
-                                            >
-                                                {ico}
+                                    {/* Icon picker — collapsed by default */}
+                                    {showIconPicker ? (
+                                        <>
+                                            <div className="mb-1 flex items-center justify-between">
+                                                <span className="text-[11px] font-bold tracking-[0.07em] text-[#AAA89F] uppercase">
+                                                    Choose an icon
+                                                </span>
+                                                <button
+                                                    onClick={() =>
+                                                        setShowIconPicker(false)
+                                                    }
+                                                    className="text-[11px] font-semibold text-[#1A4CD4]"
+                                                >
+                                                    Done
+                                                </button>
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="mb-3 flex flex-wrap gap-1.5">
+                                                {PLACE_ICONS.map((ico) => (
+                                                    <div
+                                                        key={ico}
+                                                        onClick={() => {
+                                                            setPlaceEmoji(ico);
+                                                            setShowIconPicker(
+                                                                false,
+                                                            );
+                                                        }}
+                                                        className={`flex cursor-pointer items-center justify-center rounded-[9px] transition-all ${placeEmoji === ico ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-transparent bg-white dark:bg-[#1E1D15]'}`}
+                                                        style={{
+                                                            width: 40,
+                                                            height: 40,
+                                                            fontSize: 20,
+                                                        }}
+                                                    >
+                                                        {ico}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : null}
                                     <div className="mb-2 flex gap-2">
                                         <div
-                                            className="flex shrink-0 items-center justify-center rounded-[9px]"
+                                            onClick={() =>
+                                                setShowIconPicker(
+                                                    !showIconPicker,
+                                                )
+                                            }
+                                            className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] transition-all hover:opacity-80"
                                             style={{
                                                 width: 44,
                                                 height: 44,
@@ -1685,16 +1706,78 @@ export default function Profile() {
                                                         setPlaceAddr(
                                                             e.target.value,
                                                         );
+                                                        setAddrHighlight(-1);
                                                         addrTimerRef.search(
                                                             e.target.value,
                                                         );
                                                     }}
-                                                    onBlur={() =>
-                                                        setTimeout(
-                                                            () =>
-                                                                addrTimerRef.clear(),
-                                                            200,
+                                                    onKeyDown={(e) => {
+                                                        if (
+                                                            addrSuggestions.length ===
+                                                            0
                                                         )
+                                                            return;
+                                                        if (
+                                                            e.key ===
+                                                            'ArrowDown'
+                                                        ) {
+                                                            e.preventDefault();
+                                                            setAddrHighlight(
+                                                                (prev) =>
+                                                                    Math.min(
+                                                                        prev +
+                                                                            1,
+                                                                        addrSuggestions.length -
+                                                                            1,
+                                                                    ),
+                                                            );
+                                                        } else if (
+                                                            e.key === 'ArrowUp'
+                                                        ) {
+                                                            e.preventDefault();
+                                                            setAddrHighlight(
+                                                                (prev) =>
+                                                                    Math.max(
+                                                                        prev -
+                                                                            1,
+                                                                        0,
+                                                                    ),
+                                                            );
+                                                        } else if (
+                                                            e.key === 'Enter' &&
+                                                            addrHighlight >= 0
+                                                        ) {
+                                                            e.preventDefault();
+                                                            const s =
+                                                                addrSuggestions[
+                                                                    addrHighlight
+                                                                ];
+                                                            setPlaceAddr(
+                                                                s.address ||
+                                                                    s.name,
+                                                            );
+                                                            setPlaceLat(s.lat);
+                                                            setPlaceLng(s.lng);
+                                                            addrTimerRef.clear();
+                                                            setAddrHighlight(
+                                                                -1,
+                                                            );
+                                                        } else if (
+                                                            e.key === 'Escape'
+                                                        ) {
+                                                            addrTimerRef.clear();
+                                                            setAddrHighlight(
+                                                                -1,
+                                                            );
+                                                        }
+                                                    }}
+                                                    onBlur={() =>
+                                                        setTimeout(() => {
+                                                            addrTimerRef.clear();
+                                                            setAddrHighlight(
+                                                                -1,
+                                                            );
+                                                        }, 200)
                                                     }
                                                     placeholder="Address or area (e.g. Ehrenfeld)"
                                                     className="w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
@@ -1715,16 +1798,8 @@ export default function Profile() {
                                                                     ) => {
                                                                         e.preventDefault();
                                                                         setPlaceAddr(
-                                                                            [
+                                                                            s.address ||
                                                                                 s.name,
-                                                                                s.address,
-                                                                            ]
-                                                                                .filter(
-                                                                                    Boolean,
-                                                                                )
-                                                                                .join(
-                                                                                    ', ',
-                                                                                ),
                                                                         );
                                                                         setPlaceLat(
                                                                             s.lat,
@@ -1734,7 +1809,12 @@ export default function Profile() {
                                                                         );
                                                                         addrTimerRef.clear();
                                                                     }}
-                                                                    className="cursor-pointer px-3 py-2.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
+                                                                    onMouseEnter={() =>
+                                                                        setAddrHighlight(
+                                                                            i,
+                                                                        )
+                                                                    }
+                                                                    className={`cursor-pointer px-3 py-2.5 transition-colors ${addrHighlight === i ? 'bg-[#EBF0FD] dark:bg-[#1A4CD4]/20' : 'hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]'}`}
                                                                     style={{
                                                                         borderBottom:
                                                                             i <
@@ -1793,128 +1873,162 @@ export default function Profile() {
                                             </button>
                                         </div>
                                     </div>
-                                    {/* Arrive by time (optional) */}
-                                    <div className="mb-2.5 flex items-center gap-2">
-                                        <span
-                                            className="text-[#6B6860] dark:text-[#AAA89F]"
-                                            style={{
-                                                fontSize: 12,
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            Arrive by
-                                        </span>
-                                        <input
-                                            type="time"
-                                            value={placeArriveBy}
-                                            onChange={(e) =>
-                                                setPlaceArriveBy(e.target.value)
+                                    {/* Optional: Arrive by + Days — toggle buttons */}
+                                    <div className="mb-2.5 flex gap-2">
+                                        <button
+                                            onClick={() =>
+                                                setShowArriveBy(!showArriveBy)
                                             }
-                                            className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                            style={{
-                                                fontFamily:
-                                                    "'Geist Mono', monospace",
-                                                color: placeArriveBy
-                                                    ? '#1A4CD4'
-                                                    : '#AAA89F',
-                                            }}
-                                            placeholder="--:--"
-                                        />
-                                        <span
-                                            className="text-[#AAA89F]"
-                                            style={{ fontSize: 11 }}
+                                            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showArriveBy ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
                                         >
-                                            For smart commute
-                                        </span>
+                                            <IconClock size={14} stroke={1.7} />{' '}
+                                            Arrive by
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                setShowDays(!showDays)
+                                            }
+                                            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showDays ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
+                                        >
+                                            <IconCalendar
+                                                size={14}
+                                                stroke={1.7}
+                                            />{' '}
+                                            Days
+                                        </button>
                                     </div>
-                                    {/* Active days */}
-                                    <div className="mb-2.5">
-                                        <div className="mb-1.5 flex gap-1.5">
-                                            {[
-                                                {
-                                                    id: 'all',
-                                                    label: 'Every day',
-                                                },
-                                                {
-                                                    id: 'weekdays',
-                                                    label: 'Weekdays',
-                                                },
-                                                {
-                                                    id: 'weekends',
-                                                    label: 'Weekends',
-                                                },
-                                                {
-                                                    id: 'custom',
-                                                    label: 'Custom',
-                                                },
-                                            ].map((m) => (
-                                                <button
-                                                    key={m.id}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setPlaceDayMode(m.id)
-                                                    }
-                                                    className={`cursor-pointer rounded-full border px-2.5 py-[4px] transition-all ${placeDayMode === m.id ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white' : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'}`}
-                                                    style={{
-                                                        fontSize: 11,
-                                                        fontWeight: 600,
-                                                    }}
-                                                >
-                                                    {m.label}
-                                                </button>
-                                            ))}
+
+                                    {/* Arrive by time */}
+                                    {showArriveBy && (
+                                        <div className="mb-2.5 flex items-center gap-2">
+                                            <span
+                                                className="text-[#6B6860] dark:text-[#AAA89F]"
+                                                style={{
+                                                    fontSize: 12,
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                Arrive by
+                                            </span>
+                                            <input
+                                                type="time"
+                                                value={placeArriveBy}
+                                                onChange={(e) =>
+                                                    setPlaceArriveBy(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                style={{
+                                                    fontFamily:
+                                                        "'Geist Mono', monospace",
+                                                    color: placeArriveBy
+                                                        ? '#1A4CD4'
+                                                        : '#AAA89F',
+                                                }}
+                                                placeholder="--:--"
+                                            />
+                                            <span
+                                                className="text-[#AAA89F]"
+                                                style={{ fontSize: 11 }}
+                                            >
+                                                For smart commute
+                                            </span>
                                         </div>
-                                        {placeDayMode === 'custom' && (
-                                            <div className="flex gap-1">
+                                    )}
+                                    {/* Active days */}
+                                    {showDays && (
+                                        <div className="mb-2.5">
+                                            <div className="mb-1.5 flex gap-1.5">
                                                 {[
-                                                    'mon',
-                                                    'tue',
-                                                    'wed',
-                                                    'thu',
-                                                    'fri',
-                                                    'sat',
-                                                    'sun',
-                                                ].map((d) => (
+                                                    {
+                                                        id: 'all',
+                                                        label: 'Every day',
+                                                    },
+                                                    {
+                                                        id: 'weekdays',
+                                                        label: 'Weekdays',
+                                                    },
+                                                    {
+                                                        id: 'weekends',
+                                                        label: 'Weekends',
+                                                    },
+                                                    {
+                                                        id: 'custom',
+                                                        label: 'Custom',
+                                                    },
+                                                ].map((m) => (
                                                     <button
-                                                        key={d}
+                                                        key={m.id}
                                                         type="button"
                                                         onClick={() =>
-                                                            setPlaceActiveDays(
-                                                                (prev) =>
-                                                                    prev.includes(
-                                                                        d,
-                                                                    )
-                                                                        ? prev.filter(
-                                                                              (
-                                                                                  x,
-                                                                              ) =>
-                                                                                  x !==
-                                                                                  d,
-                                                                          )
-                                                                        : [
-                                                                              ...prev,
-                                                                              d,
-                                                                          ],
+                                                            setPlaceDayMode(
+                                                                m.id,
                                                             )
                                                         }
-                                                        className={`flex cursor-pointer items-center justify-center transition-all ${placeActiveDays.includes(d) ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4]' : 'border-2 border-transparent bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920]'}`}
+                                                        className={`cursor-pointer rounded-full border px-2.5 py-[4px] transition-all ${placeDayMode === m.id ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white' : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'}`}
                                                         style={{
-                                                            width: 32,
-                                                            height: 32,
-                                                            borderRadius: '50%',
                                                             fontSize: 11,
-                                                            fontWeight: 700,
+                                                            fontWeight: 600,
                                                         }}
                                                     >
-                                                        {d
-                                                            .charAt(0)
-                                                            .toUpperCase() +
-                                                            d.slice(1, 2)}
+                                                        {m.label}
                                                     </button>
                                                 ))}
                                             </div>
-                                        )}
-                                    </div>
+                                            {placeDayMode === 'custom' && (
+                                                <div className="flex gap-1">
+                                                    {[
+                                                        'mon',
+                                                        'tue',
+                                                        'wed',
+                                                        'thu',
+                                                        'fri',
+                                                        'sat',
+                                                        'sun',
+                                                    ].map((d) => (
+                                                        <button
+                                                            key={d}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setPlaceActiveDays(
+                                                                    (prev) =>
+                                                                        prev.includes(
+                                                                            d,
+                                                                        )
+                                                                            ? prev.filter(
+                                                                                  (
+                                                                                      x,
+                                                                                  ) =>
+                                                                                      x !==
+                                                                                      d,
+                                                                              )
+                                                                            : [
+                                                                                  ...prev,
+                                                                                  d,
+                                                                              ],
+                                                                )
+                                                            }
+                                                            className={`flex cursor-pointer items-center justify-center transition-all ${placeActiveDays.includes(d) ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4]' : 'border-2 border-transparent bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920]'}`}
+                                                            style={{
+                                                                width: 32,
+                                                                height: 32,
+                                                                borderRadius:
+                                                                    '50%',
+                                                                fontSize: 11,
+                                                                fontWeight: 700,
+                                                            }}
+                                                        >
+                                                            {d
+                                                                .charAt(0)
+                                                                .toUpperCase() +
+                                                                d.slice(1, 2)}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="flex gap-2">
                                         <button
                                             onClick={savePlace}

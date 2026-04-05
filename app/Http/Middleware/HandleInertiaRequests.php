@@ -2,10 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Event;
-use App\Services\DisruptionService;
-use App\Services\RhineService;
-use App\Services\WeatherService;
+use App\Services\UserLocationService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -50,81 +47,15 @@ class HandleInertiaRequests extends Middleware
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->whereNull('read_at')->count() ?? 0,
             'serviceErrors' => fn () => session('serviceErrors', []),
+            // User location — cached per request to avoid redundant places queries
             'userLocation' => function () use ($request) {
                 $user = $request->user();
                 if (! $user) {
                     return null;
                 }
-                $home = $user->places()->orderBy('sort_order')->first();
 
-                if (! $home) {
-                    return null;
-                }
-
-                return [
-                    'name' => $home->name,
-                    'address' => $home->address,
-                    'lat' => $home->lat ? (float) $home->lat : null,
-                    'lng' => $home->lng ? (float) $home->lng : null,
-                ];
+                return app(UserLocationService::class)->resolve($user, $request);
             },
-            'weather' => function () use ($request) {
-                $user = $request->user();
-                $home = $user?->places()->orderBy('sort_order')->first();
-                $lat = $home?->lat ? (float) $home->lat : 50.9375;
-                $lng = $home?->lng ? (float) $home->lng : 6.9603;
-
-                return app(WeatherService::class)->getCurrentWeather($lat, $lng);
-            },
-            'forecast' => function () use ($request) {
-                $user = $request->user();
-                $home = $user?->places()->orderBy('sort_order')->first();
-                $lat = $home?->lat ? (float) $home->lat : 50.9375;
-                $lng = $home?->lng ? (float) $home->lng : 6.9603;
-
-                return app(WeatherService::class)->getForecast($lat, $lng);
-            },
-            'todayEvents' => fn () => Event::query()
-                ->whereDate('starts_at', today())
-                ->where('starts_at', '>', now())
-                ->orderBy('starts_at')
-                ->limit(7)
-                ->get(['id', 'title', 'starts_at', 'location_name', 'is_free', 'category'])
-                ->map(fn ($e) => [
-                    'time' => $e->starts_at->format('H:i'),
-                    'emoji' => match ($e->category) {
-                        'music' => '🎵',
-                        'sports' => '⚽',
-                        'language' => '🗣️',
-                        'culture' => '🎭',
-                        'community' => '🤝',
-                        'food' => '🍽️',
-                        'market' => '🛒',
-                        default => '📅',
-                    },
-                    'title' => $e->title,
-                    'location' => $e->location_name,
-                    'badge' => $e->is_free ? 'Free' : match ($e->category) {
-                        'music' => 'Music',
-                        'sports' => 'Sports',
-                        'language' => 'Language',
-                        'culture' => 'Culture',
-                        'community' => 'Community',
-                        'food' => 'Food',
-                        default => 'Event',
-                    },
-                    'badgeType' => $e->is_free ? 'free' : 'category',
-                ]),
-            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
-            'activeDisruptions' => fn () => collect(app(DisruptionService::class)->getLineDisruptions())
-                ->map(fn ($d) => [
-                    'title' => $d['title'],
-                    'severity' => $d['severity'],
-                    'lines' => $d['affected_lines'],
-                ])
-                ->take(5)
-                ->values()
-                ->all(),
         ];
     }
 }

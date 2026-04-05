@@ -21,7 +21,7 @@ class DisruptionService
      */
     public function getActiveDisruptions(): array
     {
-        return Cache::remember('active_disruptions', 120, function () {
+        return Cache::remember('active_disruptions', 300, function () {
             return array_merge(
                 $this->getLineDisruptions(),
                 $this->getAccessibilityDisruptions(),
