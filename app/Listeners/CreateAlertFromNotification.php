@@ -11,6 +11,7 @@ use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
 use App\Notifications\WeatherAlertNotification;
+use App\Support\RedisLogger;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Cache;
 
@@ -22,6 +23,14 @@ class CreateAlertFromNotification
 {
     public function handle(NotificationSent $event): void
     {
+        // Log every notification delivery (all channels)
+        RedisLogger::log('notification_delivery_log', [
+            'user_id' => $event->notifiable->id,
+            'channel' => $event->channel,
+            'type' => get_class($event->notification),
+            'title' => $event->notification->toArray($event->notifiable)['title'] ?? null,
+        ]);
+
         // Only create alerts for the database channel (avoid duplicates from WebPush)
         if ($event->channel !== 'database') {
             return;

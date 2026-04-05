@@ -3,6 +3,7 @@ import { AlertRow, type AlertData } from '@/components/alerts/alert-row';
 
 export type AlertStack = {
     stackType: 'stack';
+    stackKey: string;
     subtype: string;
     latest: AlertData;
     count: number;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\GtfsDepartureService;
+use App\Support\RedisLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,8 +16,17 @@ class StopSearchController extends Controller
             'q' => ['required', 'string', 'min:2', 'max:100'],
         ]);
 
-        return response()->json(
-            $gtfsService->searchStops($request->query('q'), 10)
-        );
+        $query = $request->query('q');
+        $results = $gtfsService->searchStops($query, 10);
+
+        if ($user = $request->user()) {
+            RedisLogger::log("search_debug:{$user->id}", [
+                'query' => $query,
+                'results' => count($results),
+                'source' => 'stop_search',
+            ]);
+        }
+
+        return response()->json($results);
     }
 }

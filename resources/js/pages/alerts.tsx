@@ -104,6 +104,7 @@ function stackAlerts(alerts: AlertData[]): (AlertData | AlertStack)[] {
         } else {
             result.push({
                 stackType: 'stack',
+                stackKey: key,
                 subtype,
                 latest: group[0],
                 count: group.length,
@@ -344,7 +345,7 @@ export default function Alerts() {
                                     {stacked.map((item) =>
                                         isStack(item) ? (
                                             <AlertStackRow
-                                                key={`stack-${item.subtype}`}
+                                                key={`stack-${item.stackKey}`}
                                                 stack={item}
                                                 onMarkRead={markRead}
                                             />

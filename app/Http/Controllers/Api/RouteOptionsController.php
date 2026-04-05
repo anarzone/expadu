@@ -10,6 +10,7 @@ use App\Services\UserLocationService;
 use App\Services\ValhallaRoutingService;
 use App\Services\VrsTriasService;
 use App\Services\WeatherService;
+use App\Support\RedisLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -42,6 +43,17 @@ class RouteOptionsController extends Controller
         $fromName = $location['name'];
         $fromLat = $location['lat'];
         $fromLng = $location['lng'];
+
+        // Log route request
+        RedisLogger::log("route_debug:{$user->id}", [
+            'from' => $fromName,
+            'from_lat' => $fromLat,
+            'from_lng' => $fromLng,
+            'to' => $toName,
+            'to_lat' => $toLat,
+            'to_lng' => $toLng,
+            'mode' => $validated['mode'] ?? 'all',
+        ]);
 
         // Single mode request — return full route with geometry + steps
         if (isset($validated['mode'])) {

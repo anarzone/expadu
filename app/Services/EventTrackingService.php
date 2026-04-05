@@ -91,7 +91,7 @@ class EventTrackingService
     /**
      * Store location ping in Redis for 1-week history.
      *
-     * NOTICE: Location data is stored in Redis (not database) with a 7-day TTL.
+     * NOTICE: Location data is stored in Redis (not database) with a 30-day TTL.
      * This is intentional for:
      * - Analyzing movement patterns to improve commute suggestions
      * - Detecting frequently visited places for routine auto-detection
@@ -99,7 +99,7 @@ class EventTrackingService
      *
      * Data stored per entry: {lat, lng, accuracy, timestamp}
      * Key format: location_history:{user_id} (Redis sorted set, scored by timestamp)
-     * Auto-expires: 7 days from last write via TTL refresh
+     * Auto-expires: 30 days from last write via TTL refresh
      *
      * To query: Redis::zrangebyscore("location_history:{userId}", $from, $to)
      */
@@ -137,11 +137,11 @@ class EventTrackingService
 
             Redis::zadd($key, $timestamp, $entry);
 
-            // Remove entries older than 7 days
-            Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
+            // Remove entries older than 30 days
+            Redis::zremrangebyscore($key, 0, now()->subMonth()->timestamp);
 
-            // Refresh TTL to 7 days from now
-            Redis::expire($key, 604800); // 7 * 24 * 60 * 60
+            // Refresh TTL to 30 days from now
+            Redis::expire($key, 2592000); // 30 * 24 * 60 * 60
         } catch (\Throwable) {
             // Redis unavailable — skip location storage silently
         }

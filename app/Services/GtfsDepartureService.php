@@ -410,7 +410,7 @@ class GtfsDepartureService
     }
 
     /**
-     * Log departure response to Redis for debugging (7-day TTL).
+     * Log departure response to Redis for debugging (30-day TTL).
      * Key: departure_debug:{user_id}, sorted set scored by timestamp.
      */
     public static function logDepartureDebug(int $userId, string $page, array $result, ?float $lat = null, ?float $lng = null): void
@@ -433,8 +433,8 @@ class GtfsDepartureService
             ]);
 
             Redis::zadd($key, $timestamp, $entry);
-            Redis::zremrangebyscore($key, 0, now()->subWeek()->timestamp);
-            Redis::expire($key, 604800);
+            Redis::zremrangebyscore($key, 0, now()->subMonth()->timestamp);
+            Redis::expire($key, 2592000);
         } catch (\Throwable) {
             // Redis unavailable — skip debug logging silently
         }

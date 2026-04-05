@@ -6,6 +6,7 @@ use App\Models\CityNews;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\User;
+use App\Support\RedisLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -181,6 +182,18 @@ class RecommendationService
         $homePlace = $user->places()->where('category', 'home')->first();
         $workPlace = $user->places()->where('category', 'work')->first();
         $needsSetup = ! $homePlace?->address || ! $workPlace?->address;
+
+        // Log recommendations for debugging
+        RedisLogger::log("recommendation_debug:{$user->id}", [
+            'page' => 'home',
+            'location' => $homeStop,
+            'lat' => $homeLat,
+            'lng' => $homeLng,
+            'cards' => collect($recommendations)->pluck('type')->all(),
+            'card_count' => count($recommendations),
+            'weather' => $weather['condition'] ?? null,
+            'departures_source' => $deptResult['source'] ?? null,
+        ]);
 
         return [
             'recommendations' => array_slice($recommendations, 0, 8),

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\RedisLogger;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -764,6 +765,8 @@ class VrsTriasService
             return null;
         }
 
+        $start = microtime(true);
+
         try {
             $url = config('services.vrs.trias_url');
 
@@ -777,17 +780,36 @@ class VrsTriasService
                 ->withBody($xml, 'text/xml')
                 ->post($url);
 
+            $durationMs = round((microtime(true) - $start) * 1000);
+
             if (! $response->successful()) {
                 Log::warning('VRS TRIAS request failed', ['status' => $response->status()]);
-                Cache::put('trias_circuit_open', true, 60); // Skip TRIAS for 60s after failure
+                Cache::put('trias_circuit_open', true, 60);
+                RedisLogger::log('trias_api_log', [
+                    'status' => 'error',
+                    'http_status' => $response->status(),
+                    'duration_ms' => $durationMs,
+                ]);
 
                 return null;
             }
 
+            RedisLogger::log('trias_api_log', [
+                'status' => 'ok',
+                'duration_ms' => $durationMs,
+                'response_bytes' => strlen($response->body()),
+            ]);
+
             return $response->body();
         } catch (\Throwable $e) {
+            $durationMs = round((microtime(true) - $start) * 1000);
             Log::warning('VRS TRIAS error', ['message' => $e->getMessage()]);
-            Cache::put('trias_circuit_open', true, 60); // Skip TRIAS for 60s after failure
+            Cache::put('trias_circuit_open', true, 60);
+            RedisLogger::log('trias_api_log', [
+                'status' => 'exception',
+                'error' => $e->getMessage(),
+                'duration_ms' => $durationMs,
+            ]);
 
             return null;
         }

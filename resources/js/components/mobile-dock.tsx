@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     IconHome,
     IconCompass,
@@ -20,6 +20,7 @@ const dockItems = [
 
 export function MobileDock() {
     const { isCurrentUrl } = useCurrentUrl();
+    const { unreadAlertCount } = usePage<{ unreadAlertCount?: number }>().props;
     const [moreOpen, setMoreOpen] = useState(false);
 
     return (
@@ -34,7 +35,7 @@ export function MobileDock() {
                             key={item.title}
                             href={item.href}
                             prefetch
-                            className={`flex h-11 w-[52px] flex-col items-center justify-center gap-[3px] rounded-full ${
+                            className={`relative flex h-11 w-[52px] flex-col items-center justify-center gap-[3px] rounded-full ${
                                 active ? 'bg-accent-soft' : ''
                             }`}
                         >
@@ -47,6 +48,13 @@ export function MobileDock() {
                                         : 'text-muted-foreground'
                                 }
                             />
+                            {item.href === '/alerts' && !!unreadAlertCount && (
+                                <span className="absolute top-1 right-2 flex size-[16px] items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
+                                    {unreadAlertCount > 9
+                                        ? '9+'
+                                        : unreadAlertCount}
+                                </span>
+                            )}
                             <span
                                 className={`h-1 w-1 rounded-full bg-primary ${active ? 'opacity-100' : 'opacity-0'}`}
                             />
