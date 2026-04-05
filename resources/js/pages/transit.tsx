@@ -1894,16 +1894,13 @@ export default function Transit() {
                         id="departures"
                         className="border-b border-[#E2DFD6] dark:border-[#3A3930]"
                     >
-                        {(geoQuality === 'low' ||
-                            geoQuality === 'stale' ||
-                            geoQuality === 'estimated') &&
+                        {(geoQuality === 'low' || geoQuality === 'estimated') &&
                             geoPos && (
-                                <div className="flex items-center gap-2 border-b border-[#C47D0E]/20 bg-[#FDF0D4] px-3 py-2 text-[12px] text-[#C47D0E] dark:border-[#C47D0E]/30 dark:bg-[#C47D0E]/10">
+                                <div className="flex items-center gap-2 border-b border-[#C47D0E]/20 bg-[#FDF0D4] px-3 py-2 text-[12px] text-[#C47D0E] md:hidden dark:border-[#C47D0E]/30 dark:bg-[#C47D0E]/10">
                                     <span className="shrink-0">⚠</span>
                                     <span>
-                                        {geoQuality === 'stale'
-                                            ? 'Location not updated recently — showing last known stop'
-                                            : 'Location accuracy is low — stop may be approximate'}
+                                        Location accuracy is low — stop may be
+                                        approximate
                                     </span>
                                 </div>
                             )}

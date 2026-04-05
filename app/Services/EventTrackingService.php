@@ -26,8 +26,18 @@ class EventTrackingService
 
         // Auto-detect nearby spots from GPS location + store in Redis for history
         if ($eventType === 'location_ping' && isset($payload['lat'], $payload['lng'])) {
-            $this->storeLocationInRedis($user, (float) $payload['lat'], (float) $payload['lng'], $payload['accuracy'] ?? null);
-            $this->detectNearbySpots($user, (float) $payload['lat'], (float) $payload['lng']);
+            $this->storeLocationInRedis(
+                $user,
+                (float) $payload['lat'],
+                (float) $payload['lng'],
+                $payload['accuracy'] ?? null,
+                $payload['quality'] ?? null,
+                $payload['rejected'] ?? null,
+            );
+            // Skip spot detection for rejected readings
+            if (empty($payload['rejected'])) {
+                $this->detectNearbySpots($user, (float) $payload['lat'], (float) $payload['lng']);
+            }
         }
     }
 
@@ -93,32 +103,37 @@ class EventTrackingService
      *
      * To query: Redis::zrangebyscore("location_history:{userId}", $from, $to)
      */
-    private function storeLocationInRedis(User $user, float $lat, float $lng, ?float $accuracy): void
+    private function storeLocationInRedis(User $user, float $lat, float $lng, ?float $accuracy, ?string $quality = null, ?string $rejected = null): void
     {
         try {
             $key = "location_history:{$user->id}";
             $timestamp = now()->timestamp;
 
-            // Deduplicate: skip if last entry was <60s ago and <50m away
-            $lastEntries = Redis::zrevrange($key, 0, 0, 'WITHSCORES');
-            if (! empty($lastEntries)) {
-                $lastJson = array_key_first($lastEntries);
-                $lastScore = (int) $lastEntries[$lastJson];
+            // Deduplicate accepted readings: skip if last entry was <60s ago and <50m away
+            // Always log rejected readings for debugging
+            if (! $rejected) {
+                $lastEntries = Redis::zrevrange($key, 0, 0, 'WITHSCORES');
+                if (! empty($lastEntries)) {
+                    $lastJson = array_key_first($lastEntries);
+                    $lastScore = (int) $lastEntries[$lastJson];
 
-                if ($timestamp - $lastScore < 60) {
-                    $last = json_decode($lastJson, true);
-                    if ($last && $this->distanceMeters($lat, $lng, (float) $last['lat'], (float) $last['lng']) < 50) {
-                        return;
+                    if ($timestamp - $lastScore < 60) {
+                        $last = json_decode($lastJson, true);
+                        if ($last && ! ($last['rejected'] ?? false) && $this->distanceMeters($lat, $lng, (float) $last['lat'], (float) $last['lng']) < 50) {
+                            return;
+                        }
                     }
                 }
             }
 
-            $entry = json_encode([
+            $entry = json_encode(array_filter([
                 'lat' => round($lat, 6),
                 'lng' => round($lng, 6),
                 'accuracy' => $accuracy ? round($accuracy) : null,
+                'quality' => $quality,
+                'rejected' => $rejected,
                 'at' => now()->toIso8601String(),
-            ]);
+            ], fn ($v) => $v !== null));
 
             Redis::zadd($key, $timestamp, $entry);
 

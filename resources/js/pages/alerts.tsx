@@ -100,17 +100,6 @@ export default function Alerts() {
             ? alertList
             : alertList.filter((a) => a.type === activeTab);
 
-    // Track index per type for visual config mapping
-    const typeCounters: Record<string, number> = {};
-
-    function getTypeIndex(type: string): number {
-        if (!(type in typeCounters)) {
-            typeCounters[type] = 0;
-        }
-
-        return typeCounters[type]++;
-    }
-
     // Mark single alert read — local state + background fetch
     const markRead = useCallback(
         (alertId: number) => {
@@ -238,9 +227,6 @@ export default function Alerts() {
                                         <AlertRow
                                             key={alert.id}
                                             alert={alert}
-                                            indexInType={getTypeIndex(
-                                                alert.type,
-                                            )}
                                             onMarkRead={markRead}
                                         />
                                     ))}

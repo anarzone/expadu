@@ -304,17 +304,6 @@ export function LineDetailSheet({
                     </div>
                 </div>
             )}
-
-            {/* Google Maps link */}
-            <a
-                href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(departure.stop_name + ', Köln')}&travelmode=transit`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-[9px] bg-[#1A4CD4] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1541B8]"
-                style={{ textDecoration: 'none' }}
-            >
-                🗺️ Open in Google Maps
-            </a>
         </div>
     );
 }

@@ -17,7 +17,7 @@ const CSRF = () =>
 // ── Constants ──
 const MAX_ACCURACY_M = 200; // Reject readings worse than 200m
 const MAX_SPEED_KMH = 150; // Reject if implied speed > 150 km/h
-const STALE_THRESHOLD_MS = 30_000; // Position is "stale" after 30s without update
+const STALE_THRESHOLD_MS = 120_000; // Position is "stale" after 2 min without update
 const PING_COOLDOWN_MS = 60_000; // Min 60s between server pings
 const ACCURACY_HIGH = 30;
 const ACCURACY_MEDIUM = 100;
@@ -39,7 +39,13 @@ function distanceMeters(
 }
 
 /** Send a location ping to the server (fire-and-forget) */
-function sendPing(lat: number, lng: number, accuracy: number) {
+function sendPing(
+    lat: number,
+    lng: number,
+    accuracy: number,
+    quality?: string,
+    rejected?: string,
+) {
     fetch('/api/track', {
         method: 'POST',
         credentials: 'same-origin',
@@ -49,7 +55,7 @@ function sendPing(lat: number, lng: number, accuracy: number) {
         },
         body: JSON.stringify({
             event_type: 'location_ping',
-            payload: { lat, lng, accuracy },
+            payload: { lat, lng, accuracy, quality, rejected },
         }),
     }).catch(() => {});
 }
@@ -107,7 +113,13 @@ export function useGeolocation(pingIntervalMs = 300_000) {
 
         // ── Filter 1: Reject readings with accuracy > 200m ──
         if (raw.accuracy > MAX_ACCURACY_M) {
-            // GPS degraded — keep last good position, mark quality
+            sendPing(
+                raw.lat,
+                raw.lng,
+                raw.accuracy,
+                'rejected',
+                `accuracy_${Math.round(raw.accuracy)}m`,
+            );
             if (lastGoodRef.current) {
                 setPosition(lastGoodRef.current);
                 setQuality('low');
@@ -132,7 +144,13 @@ export function useGeolocation(pingIntervalMs = 300_000) {
 
             // If implied speed is impossibly fast, reject this reading
             if (speedKmh > MAX_SPEED_KMH && dist > 500) {
-                // Keep last good position
+                sendPing(
+                    raw.lat,
+                    raw.lng,
+                    raw.accuracy,
+                    'rejected',
+                    `speed_${Math.round(speedKmh)}kmh`,
+                );
                 setQuality('low');
                 return;
             }
@@ -156,7 +174,12 @@ export function useGeolocation(pingIntervalMs = 300_000) {
         const dist = distanceMeters(last.lat, last.lng, raw.lat, raw.lng);
 
         if (dist > 50 || elapsed > pingIntervalMs) {
-            sendPing(raw.lat, raw.lng, raw.accuracy);
+            sendPing(
+                raw.lat,
+                raw.lng,
+                raw.accuracy,
+                classifyQuality(raw.accuracy),
+            );
             lastPingRef.current = {
                 lat: raw.lat,
                 lng: raw.lng,

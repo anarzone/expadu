@@ -12,7 +12,200 @@ type AlertData = {
     created_at: string;
 };
 
-// Per-type visual config matching the prototype exactly
+type VisualConfig = {
+    emoji: string;
+    bg: string;
+    tag: string;
+    tagBg: string;
+    tagColor: string;
+    cta: string;
+    ctaBg: string;
+    ctaColor: string;
+};
+
+// Match visual config based on alert content (deep_link + title keywords)
+function matchConfig(alert: AlertData): VisualConfig {
+    const t = alert.title?.toLowerCase() ?? '';
+    const link = alert.deep_link ?? '';
+
+    // System alerts — match by content
+    if (
+        t.includes('disruption') ||
+        t.includes('delay') ||
+        t.includes('running') ||
+        t.includes('line ')
+    ) {
+        return systemConfigs.transit;
+    }
+    if (
+        t.includes('bürgeramt') ||
+        t.includes('appointment') ||
+        t.includes('slot')
+    ) {
+        return systemConfigs.buergeramt;
+    }
+    if (
+        t.includes('rhine') ||
+        t.includes('water level') ||
+        t.includes('flood')
+    ) {
+        return systemConfigs.rhine;
+    }
+    if (
+        t.includes('rain') ||
+        t.includes('weather') ||
+        t.includes('wind') ||
+        t.includes('temperature') ||
+        t.includes('freezing') ||
+        t.includes('heat')
+    ) {
+        return systemConfigs.weather;
+    }
+
+    // Social alerts
+    if (
+        t.includes('partner') ||
+        t.includes('connection') ||
+        t.includes('accepted') ||
+        link === '/language-exchange'
+    ) {
+        return socialConfigs.language;
+    }
+    if (
+        t.includes('joined') ||
+        t.includes('mixer') ||
+        t.includes('event') ||
+        link === '/events'
+    ) {
+        return socialConfigs.event;
+    }
+    if (t.includes('tip') || t.includes('area') || link === '/explore') {
+        return socialConfigs.tip;
+    }
+
+    // Reminder alerts
+    if (
+        t.includes('tomorrow') ||
+        t.includes('reminder') ||
+        t.includes('event')
+    ) {
+        return reminderConfigs.event;
+    }
+    if (
+        t.includes('bank') ||
+        t.includes('steuer') ||
+        t.includes('bureaucracy') ||
+        link === '/bureaucracy'
+    ) {
+        return reminderConfigs.bureaucracy;
+    }
+
+    // Fallback by type
+    if (alert.type === 'social') return socialConfigs.language;
+    if (alert.type === 'reminder') return reminderConfigs.event;
+    return systemConfigs.transit;
+}
+
+const systemConfigs: Record<string, VisualConfig> = {
+    transit: {
+        emoji: '🚇',
+        bg: 'bg-danger-soft',
+        tag: 'Transit',
+        tagBg: 'bg-danger-soft',
+        tagColor: 'text-danger',
+        cta: 'Check live status',
+        ctaBg: 'bg-warn-soft',
+        ctaColor: 'text-warn',
+    },
+    buergeramt: {
+        emoji: '🏛️',
+        bg: 'bg-success-soft',
+        tag: 'Bürgeramt',
+        tagBg: 'bg-success-soft',
+        tagColor: 'text-success',
+        cta: 'Book now',
+        ctaBg: 'bg-success dark:bg-success',
+        ctaColor: 'text-white',
+    },
+    rhine: {
+        emoji: '🌊',
+        bg: 'bg-accent-soft',
+        tag: 'Rhine',
+        tagBg: 'bg-accent-soft',
+        tagColor: 'text-primary',
+        cta: 'View Rhine level',
+        ctaBg: 'bg-accent-soft',
+        ctaColor: 'text-primary',
+    },
+    weather: {
+        emoji: '🌦️',
+        bg: 'bg-surface-2',
+        tag: 'Weather',
+        tagBg: 'bg-surface-2',
+        tagColor: 'text-muted-foreground',
+        cta: 'Plan my journey',
+        ctaBg: 'bg-accent-soft',
+        ctaColor: 'text-primary',
+    },
+};
+
+const socialConfigs: Record<string, VisualConfig> = {
+    language: {
+        emoji: '🗣️',
+        bg: 'bg-accent-soft',
+        tag: 'Language',
+        tagBg: 'bg-accent-soft',
+        tagColor: 'text-primary',
+        cta: 'View profile',
+        ctaBg: 'bg-primary',
+        ctaColor: 'text-primary-foreground',
+    },
+    event: {
+        emoji: '🎉',
+        bg: 'bg-purple-100 dark:bg-purple-900',
+        tag: 'Events',
+        tagBg: 'bg-purple-100 dark:bg-purple-900',
+        tagColor: 'text-purple-700 dark:text-purple-300',
+        cta: 'View event',
+        ctaBg: 'bg-purple-100 dark:bg-purple-900',
+        ctaColor: 'text-purple-700 dark:text-purple-300',
+    },
+    tip: {
+        emoji: '📍',
+        bg: 'bg-accent-soft',
+        tag: 'Explore',
+        tagBg: 'bg-accent-soft',
+        tagColor: 'text-primary',
+        cta: 'Explore',
+        ctaBg: 'bg-accent-soft',
+        ctaColor: 'text-primary',
+    },
+};
+
+const reminderConfigs: Record<string, VisualConfig> = {
+    event: {
+        emoji: '📅',
+        bg: 'bg-warn-soft',
+        tag: 'Reminder',
+        tagBg: 'bg-warn-soft',
+        tagColor: 'text-warn',
+        cta: 'View event',
+        ctaBg: 'bg-warn-soft',
+        ctaColor: 'text-warn',
+    },
+    bureaucracy: {
+        emoji: '📋',
+        bg: 'bg-surface-2',
+        tag: 'Bureaucracy',
+        tagBg: 'bg-surface-2',
+        tagColor: 'text-muted-foreground',
+        cta: 'Get started',
+        ctaBg: 'bg-accent-soft',
+        ctaColor: 'text-primary',
+    },
+};
+
+// Legacy — kept for type reference only
 const typeConfigs: Record<
     string,
     {
@@ -189,17 +382,14 @@ function timeAgo(dateStr: string): string {
 
 export function AlertRow({
     alert,
-    indexInType,
     onMarkRead,
 }: {
     alert: AlertData;
-    indexInType: number;
     onMarkRead?: (id: number) => void;
 }) {
     const { track } = useTracker();
     const isUnread = !alert.read_at;
-    const configs = typeConfigs[alert.type] ?? typeConfigs.system;
-    const config = configs[indexInType % configs.length];
+    const config = matchConfig(alert);
     const hasAction =
         alert.deep_link &&
         alert.deep_link !== '/alerts' &&
