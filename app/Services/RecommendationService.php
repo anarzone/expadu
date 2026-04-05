@@ -63,6 +63,10 @@ class RecommendationService
         // 8. City news
         $cards = array_merge($cards, $this->newsCards());
 
+        // Adjust priorities based on user profile + engagement history
+        $cards = $this->adjustPrioritiesByProfile($user, $cards);
+        $cards = $this->adjustPrioritiesByEngagement($user, $cards);
+
         // Sort by priority (highest first)
         usort($cards, fn (array $a, array $b) => $b['priority'] <=> $a['priority']);
 
@@ -782,6 +786,95 @@ class RecommendationService
             'color' => 'accent',
             'meta' => ['source' => $n->source, 'url' => $n->source_url, 'category' => $n->category],
         ])->all();
+    }
+
+    /**
+     * Adjust card priorities based on user situation and German level.
+     *
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function adjustPrioritiesByProfile(User $user, array $cards): array
+    {
+        $situation = $user->situation?->value;
+        $germanLevel = $user->german_level?->value;
+
+        foreach ($cards as &$card) {
+            $type = $card['type'] ?? '';
+
+            // Situation-based adjustments
+            match ($situation) {
+                'student' => match ($type) {
+                    'event' => $card['priority'] += 10,
+                    'news' => $card['priority'] += 5,
+                    default => null,
+                },
+                'freelancer', 'digital_nomad' => match ($type) {
+                    'commute_tip' => $card['priority'] -= 10, // Flexible schedule
+                    default => null,
+                },
+                'family_reunification' => match ($type) {
+                    'deadline_overdue', 'deadline_upcoming', 'deadline_soon' => $card['priority'] += 10,
+                    default => null,
+                },
+                default => null,
+            };
+
+            // German level adjustments
+            if (in_array($germanLevel, ['none', 'a1', 'a2'])) {
+                // Beginners: boost language and bureaucracy help
+                if (str_contains($type, 'deadline') || $type === 'settlement') {
+                    $card['priority'] += 5;
+                }
+            }
+
+            $card['priority'] = max(0, min(100, $card['priority']));
+        }
+
+        return $cards;
+    }
+
+    /**
+     * Adjust card priorities based on user engagement history.
+     * Cards the user clicks get boosted. Card types the user never engages with get deprioritized.
+     *
+     * @param  array<int, array<string, mixed>>  $cards
+     * @return array<int, array<string, mixed>>
+     */
+    protected function adjustPrioritiesByEngagement(User $user, array $cards): array
+    {
+        // Get click counts per card type from last 7 days
+        $clicks = $user->behaviorEvents()
+            ->where('event_type', 'card_clicked')
+            ->where('created_at', '>=', now()->subDays(7))
+            ->get()
+            ->groupBy(fn ($e) => $e->payload['card_type'] ?? 'unknown')
+            ->map->count();
+
+        // Get dismiss counts per card type from last 7 days
+        $dismissals = $user->behaviorEvents()
+            ->where('event_type', 'card_dismissed')
+            ->where('created_at', '>=', now()->subDays(7))
+            ->get()
+            ->groupBy(fn ($e) => $e->payload['card_type'] ?? 'unknown')
+            ->map->count();
+
+        foreach ($cards as &$card) {
+            $type = $card['type'] ?? 'unknown';
+            $clickCount = $clicks->get($type, 0);
+            $dismissCount = $dismissals->get($type, 0);
+
+            // Boost clicked types (+5 per click, max +15)
+            $card['priority'] += min($clickCount * 5, 15);
+
+            // Penalize dismissed types (-10 per dismissal, max -30)
+            $card['priority'] -= min($dismissCount * 10, 30);
+
+            // Clamp to 0-100
+            $card['priority'] = max(0, min(100, $card['priority']));
+        }
+
+        return $cards;
     }
 
     /**

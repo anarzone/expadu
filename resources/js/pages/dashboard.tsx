@@ -463,6 +463,11 @@ export default function Dashboard() {
                                             key={i}
                                             pool={pool}
                                             onCardClick={(c) => {
+                                                track('card_clicked', {
+                                                    card_type:
+                                                        c.type ?? 'unknown',
+                                                    card_name: c.name ?? '',
+                                                });
                                                 if (c.to_lat && c.to_lng) {
                                                     setRouteSheetDest({
                                                         name: String(
