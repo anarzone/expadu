@@ -56,16 +56,18 @@ self.addEventListener('notificationclick', (event) => {
 // ── Clear old Workbox caches from previous versions ──
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(
-                keys
-                    .filter(
-                        (key) =>
-                            key.startsWith('workbox-precache') ||
-                            key.includes('precache'),
-                    )
-                    .map((key) => caches.delete(key)),
+        caches
+            .keys()
+            .then((keys) =>
+                Promise.all(
+                    keys
+                        .filter(
+                            (key) =>
+                                key.startsWith('workbox-precache') ||
+                                key.includes('precache'),
+                        )
+                        .map((key) => caches.delete(key)),
+                ),
             ),
-        ),
     );
 });
