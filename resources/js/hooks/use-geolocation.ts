@@ -19,6 +19,7 @@ const MAX_ACCURACY_M = 200; // Reject readings worse than 200m
 const MAX_SPEED_KMH = 150; // Reject if implied speed > 150 km/h
 const STALE_THRESHOLD_MS = 120_000; // Position is "stale" after 2 min without update
 const PING_COOLDOWN_MS = 60_000; // Min 60s between server pings
+const PING_DISTANCE_M = 200; // Only ping server when user moves 200m+
 const ACCURACY_HIGH = 30;
 const ACCURACY_MEDIUM = 100;
 
@@ -187,7 +188,7 @@ export function useGeolocation(pingIntervalMs = 300_000) {
 
         const dist = distanceMeters(last.lat, last.lng, raw.lat, raw.lng);
 
-        if (dist > 50 || elapsed > pingIntervalMs) {
+        if (dist > PING_DISTANCE_M || elapsed > pingIntervalMs) {
             sendPing(
                 raw.lat,
                 raw.lng,

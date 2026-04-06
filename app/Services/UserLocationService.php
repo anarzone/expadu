@@ -31,25 +31,28 @@ class UserLocationService
         if ($request && $request->has('lat') && $request->has('lng')) {
             $lat = (float) $request->query('lat');
             $lng = (float) $request->query('lng');
+            $address = $this->reverseGeocode($lat, $lng) ?? 'Cologne';
 
             return [
                 'lat' => $lat,
                 'lng' => $lng,
                 'source' => 'gps',
-                'name' => 'Current location',
-                'address' => $this->reverseGeocode($lat, $lng) ?? 'Cologne',
+                'name' => $address,
+                'address' => $address,
             ];
         }
 
         // 2. Last known GPS ping from Redis (within last 30 minutes)
         $redisPing = $this->getLastRedisPing($user->id);
         if ($redisPing) {
+            $address = $this->reverseGeocode($redisPing['lat'], $redisPing['lng']) ?? 'Cologne';
+
             return [
                 'lat' => $redisPing['lat'],
                 'lng' => $redisPing['lng'],
                 'source' => 'last_ping',
-                'name' => 'Recent location',
-                'address' => $this->reverseGeocode($redisPing['lat'], $redisPing['lng']) ?? 'Cologne',
+                'name' => $address,
+                'address' => $address,
             ];
         }
 
