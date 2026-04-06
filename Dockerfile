@@ -80,6 +80,7 @@ COPY . .
 
 # Copy built frontend assets
 COPY --from=node-build /app/public/build ./public/build
+COPY --from=node-build /app/public/sw.js ./public/sw.js
 
 # Copy Nginx and Supervisor configs
 COPY docker/prod/nginx.conf /etc/nginx/http.d/default.conf
