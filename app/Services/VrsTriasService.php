@@ -95,11 +95,13 @@ class VrsTriasService
      */
     public function resolveStopGlobalId(string $stopName): ?array
     {
-        // Strip "Köln " prefix if present — TRIAS handles it
+        // Strip "Köln " prefix — we re-add it to ensure Cologne results
         $search = preg_replace('/^Köln\s+/i', '', $stopName);
 
         return Cache::remember("trias_stop_id_{$search}", 86400, function () use ($search) {
-            $xml = $this->buildLocationRequest($search);
+            // Prefix "Köln" to disambiguate stops that exist in multiple cities
+            // e.g. "Scheibenstr." exists in both Cologne (de:05315) and Münster (de:05515)
+            $xml = $this->buildLocationRequest("Köln {$search}");
             $response = $this->post($xml);
 
             if (! $response) {
@@ -115,7 +117,8 @@ class VrsTriasService
             $names = $parsed->xpath('//StopPlaceName/Text');
 
             if (empty($refs) || empty($names)) {
-                return null;
+                // Fallback: try without prefix in case stop name doesn't match with "Köln"
+                return $this->resolveStopWithoutPrefix($search);
             }
 
             return [
@@ -123,6 +126,36 @@ class VrsTriasService
                 'name' => (string) $names[0],
             ];
         });
+    }
+
+    /**
+     * Fallback stop resolution without city prefix.
+     */
+    private function resolveStopWithoutPrefix(string $search): ?array
+    {
+        $xml = $this->buildLocationRequest($search);
+        $response = $this->post($xml);
+
+        if (! $response) {
+            return null;
+        }
+
+        $parsed = $this->parseXml($response);
+        if (! $parsed) {
+            return null;
+        }
+
+        $refs = $parsed->xpath('//StopPlaceRef');
+        $names = $parsed->xpath('//StopPlaceName/Text');
+
+        if (empty($refs) || empty($names)) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $refs[0],
+            'name' => (string) $names[0],
+        ];
     }
 
     /**
