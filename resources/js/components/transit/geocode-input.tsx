@@ -37,7 +37,13 @@ export function GeocodeInput({
 
     const [locating, setLocating] = useState(false);
 
-    const handleLocate = useCallback(() => {
+    // Refs to avoid stale closures in geolocation callback
+    const onChangeRef = useRef(onChange);
+    const onSelectRef = useRef(onSelect);
+    onChangeRef.current = onChange;
+    onSelectRef.current = onSelect;
+
+    function handleLocate() {
         if (!navigator.geolocation) return;
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
@@ -58,11 +64,11 @@ export function GeocodeInput({
                         [parts, district].filter(Boolean).join(', ') ||
                         'Current location';
 
-                    onChange(label);
-                    onSelect({ lat, lng, name: label, label });
+                    onChangeRef.current(label);
+                    onSelectRef.current({ lat, lng, name: label, label });
                 } catch {
-                    onChange('Current location');
-                    onSelect({
+                    onChangeRef.current('Current location');
+                    onSelectRef.current({
                         lat,
                         lng,
                         name: 'Current location',
@@ -75,7 +81,7 @@ export function GeocodeInput({
             () => setLocating(false),
             { enableHighAccuracy: true, timeout: 5000 },
         );
-    }, [onChange, onSelect]);
+    }
 
     const search = useCallback((query: string) => {
         if (timerRef.current) {
