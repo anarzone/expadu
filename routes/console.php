@@ -28,6 +28,9 @@ Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlappi
 // Rhine flood level — hourly, in-app only (no push)
 Schedule::command('rhine:check')->hourly()->withoutOverlapping();
 
+// Leave-by reminders — proactive push before user needs to leave for work/course/etc
+Schedule::command('commute:send-leaveby-reminders')->everyFiveMinutes()->withoutOverlapping();
+
 // Event reminders — 1 day before events user is attending
 Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping();
 

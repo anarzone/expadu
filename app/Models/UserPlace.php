@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\GermanHolidayService;
 use Database\Factories\UserPlaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,9 +32,11 @@ class UserPlace extends Model
     {
         $dayName = strtolower(now()->format('D')); // mon, tue, wed...
 
+        $isHoliday = app(GermanHolidayService::class)->isHoliday();
+
         $dayActive = match ($this->day_mode ?? 'all') {
-            'weekdays' => now()->isWeekday(),
-            'weekends' => now()->isWeekend(),
+            'weekdays' => now()->isWeekday() && ! $isHoliday,
+            'weekends' => now()->isWeekend() || $isHoliday,
             'custom' => in_array($dayName, $this->active_days ?? [], true),
             default => true, // 'all'
         };

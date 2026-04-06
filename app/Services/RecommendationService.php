@@ -226,6 +226,7 @@ class RecommendationService
             'card_count' => count($recommendations),
             'weather' => $weather['condition'] ?? null,
             'departures_source' => $deptResult['source'] ?? null,
+            'nearby_spots_count' => count($nearbySpots),
         ]);
 
         return [
@@ -385,20 +386,18 @@ class RecommendationService
         $suggestionCard = app(DiscoverySuggestionService::class)
             ->getContextCard($user, $weather, $forecast, $context['type'], $context['to_lat'], $context['to_lng']);
 
-        // Determine best route — bike when weather is good NOW, transit otherwise
+        // Determine best route — disruption-aware bike vs tram
         $allCards = [$bikeCard, ...$transitCards];
         if ($suggestionCard) {
             $allCards[] = $suggestionCard;
         }
-        $rainStarts = $forecast['rain_starts'] ?? null;
-        $rainAlreadyStarted = $rainStarts && now()->format('H:i') >= $rainStarts;
-        $bikeScore = $forecast['bike_score'] ?? '';
-        $bikeIsGood = (str_starts_with($bikeScore, 'Great') || str_starts_with($bikeScore, 'Good'))
-            && ! $rainAlreadyStarted
-            && $bikeTime <= 30;
-        $bestIdx = $bikeIsGood ? 0 : (count($transitCards) > 0 ? 1 : 0);
+        $userTransitLines = array_column($allDeps, 'line');
+        $modeResult = $this->determineBestMode($forecast, $bikeTime, $disruptedLines, $userTransitLines);
+        $bestIdx = $modeResult['mode'] === 'bike' ? 0 : (count($transitCards) > 0 ? 1 : 0);
         $allCards[$bestIdx]['best'] = true;
         $bestCard = $allCards[$bestIdx];
+        $rainStarts = $forecast['rain_starts'] ?? null;
+        $bikeScore = $forecast['bike_score'] ?? '';
 
         // Headline — context-aware
         $rainStarts = $forecast['rain_starts'] ?? null;
@@ -412,37 +411,29 @@ class RecommendationService
             $headline = "🚋 Transit today — {$weather['temperature']}°C, {$weather['condition']}";
         }
 
-        // Leave-by calculation — use Valhalla for real travel time when available
-        $leaveBy = null;
-        $arriveByTime = $context['arrive_by'] ?? null;
-        if ($arriveByTime && $context['type'] !== 'off_hours') {
-            // Try Valhalla for accurate travel time (bike for best card, or pedestrian)
-            $valhalla = app(ValhallaRoutingService::class);
-            $travelMin = $bestCard['time'] ?: $bikeTime;
-
-            if ($valhalla->isAvailable()) {
-                $costing = $bestCard['type'] === 'bike' ? 'bicycle' : 'pedestrian';
-                $valhallaRoute = $valhalla->route(
-                    $context['from_lat'], $context['from_lng'],
-                    $context['to_lat'], $context['to_lng'],
-                    $costing,
-                );
-                if ($valhallaRoute) {
-                    $travelMin = $valhallaRoute['duration_min'];
-                }
-            }
-
-            $arriveAt = Carbon::createFromFormat('H:i', $arriveByTime);
-            $leaveAt = $arriveAt->copy()->subMinutes($travelMin);
-            $leaveBy = [
-                'time' => $leaveAt->format('H:i'),
-                'message' => $rainStarts
-                    ? "Rain arrives at {$rainStarts} — plan return journey early."
-                    : "{$weather['condition']} all day — enjoy the ride.",
-            ];
-        }
+        // Leave-by calculation
+        $leaveBy = $this->calculateLeaveBy(
+            $context['from_lat'], $context['from_lng'],
+            $context['to_lat'], $context['to_lng'],
+            $context['arrive_by'] ?? null,
+            $bestCard['type'] === 'bike' ? 'bike' : 'tram',
+            $forecast, $weather,
+        );
 
         $needsSetup = ! $home?->address || ! $work?->address;
+
+        RedisLogger::log("commute_recommendation:{$user->id}", [
+            'context' => $context['type'],
+            'from' => $context['from_name'],
+            'to' => $context['to_name'],
+            'arrive_by' => $context['arrive_by'] ?? null,
+            'leave_by' => $leaveBy['time'] ?? null,
+            'travel_min' => $leaveBy['travel_min'] ?? null,
+            'mode' => $modeResult['mode'],
+            'mode_reason' => $modeResult['reason'],
+            'bike_score' => $bikeScore,
+            'rain_starts' => $rainStarts,
+        ]);
 
         return [
             'from' => $context['from_name'],
@@ -501,6 +492,24 @@ class RecommendationService
         $temp = $weather['temperature'] ?? 0;
         $hour = now()->hour;
         $isWorkHours = $hour >= 6 && $hour <= 21;
+
+        // Public holiday — show holiday info instead of commute
+        $holidayService = app(GermanHolidayService::class);
+        if ($holidayService->isHoliday()) {
+            $name = $holidayService->getHolidayName();
+
+            return [[
+                'type' => 'commute_tip',
+                'title' => "{$name} — public holiday",
+                'subtitle' => "No work today · {$temp}°C · Enjoy the day off",
+                'emoji' => '🎉',
+                'value' => $temp,
+                'unit' => '°C',
+                'priority' => 75,
+                'color' => 'success',
+                'meta' => ['holiday' => true],
+            ]];
+        }
 
         // Perfect biking conditions
         if (str_starts_with($bikeScore, 'Great') && ! $rainStarts && $temp >= 5) {
@@ -1041,8 +1050,8 @@ class RecommendationService
         $now = Carbon::now();
         $hour = $now->hour;
         $minute = $now->minute;
-        $isWeekday = $now->isWeekday();
-        $nowMinutes = $hour * 60 + $minute; // current time as minutes since midnight
+        $isWeekday = $now->isWeekday() && ! app(GermanHolidayService::class)->isHoliday($now);
+        $nowMinutes = $hour * 60 + $minute;
 
         $homeLat = $home?->lat ? (float) $home->lat : 50.9375;
         $homeLng = $home?->lng ? (float) $home->lng : 6.9603;
@@ -1067,113 +1076,109 @@ class RecommendationService
             'arrive_by' => null,
         ];
 
+        $scheduledPlacesCount = 0;
+        $result = null;
+
         // ── 0. Weekend / late night → always discovery ──
         if (! $isWeekday || $hour >= 22 || $hour < 5) {
-            return $discovery($home?->name ?? 'Home', $homeLat, $homeLng);
+            $result = $discovery($home?->name ?? 'Home', $homeLat, $homeLng);
         }
 
         // ── 1. Check ALL scheduled places (arrive_by set) for today ──
-        // Find the next upcoming scheduled place within a 2hr window
-        $scheduledPlaces = $user->places()
-            ->whereNotNull('arrive_by')
-            ->where('category', '!=', 'home')
-            ->orderByRaw("CASE category WHEN 'work' THEN 0 ELSE 1 END")
-            ->orderBy('arrive_by')
-            ->get()
-            ->filter(fn ($p) => $p->isActiveToday());
+        if (! $result) {
+            $scheduledPlaces = $user->places()
+                ->whereNotNull('arrive_by')
+                ->where('category', '!=', 'home')
+                ->orderByRaw("CASE category WHEN 'work' THEN 0 ELSE 1 END")
+                ->orderBy('arrive_by')
+                ->get()
+                ->filter(fn ($p) => $p->isActiveToday());
 
-        $nextScheduled = null;
-        foreach ($scheduledPlaces as $place) {
-            $arriveAt = Carbon::parse($place->arrive_by);
-            $arriveMin = $arriveAt->hour * 60 + $arriveAt->minute;
+            $scheduledPlacesCount = $scheduledPlaces->count();
+            $nextScheduled = null;
 
-            // Window: from 2hr before arrive_by to 1hr after (arrival → activity done)
-            $windowStart = $arriveMin - 120;
-            $windowEnd = $arriveMin + 60;
+            foreach ($scheduledPlaces as $place) {
+                $arriveAt = Carbon::parse($place->arrive_by);
+                $arriveMin = $arriveAt->hour * 60 + $arriveAt->minute;
+                $windowStart = $arriveMin - 120;
+                $windowEnd = $arriveMin + 60;
 
-            if ($nowMinutes >= $windowStart && $nowMinutes < $arriveMin) {
-                // Before arrive_by → should be heading there
-                $nextScheduled = ['place' => $place, 'phase' => 'heading', 'arrive_by' => $arriveAt->format('H:i')];
-                break;
-            }
-
-            if ($nowMinutes >= $arriveMin && $nowMinutes < $windowEnd) {
-                // Past arrive_by but within 1hr → user should be there or it's done
-                $nextScheduled = ['place' => $place, 'phase' => 'there_or_done', 'arrive_by' => $arriveAt->format('H:i')];
-                break;
-            }
-        }
-
-        if ($nextScheduled) {
-            $place = $nextScheduled['place'];
-            $placeLat = (float) $place->lat;
-            $placeLng = (float) $place->lng;
-
-            if ($nextScheduled['phase'] === 'heading') {
-                // GPS says user is already at or near the scheduled place → discovery
-                if ($atName && mb_strtolower($atName) === mb_strtolower($place->name)) {
-                    return $discovery($place->name, $placeLat, $placeLng);
+                if ($nowMinutes >= $windowStart && $nowMinutes < $arriveMin) {
+                    $nextScheduled = ['place' => $place, 'phase' => 'heading', 'arrive_by' => $arriveAt->format('H:i')];
+                    break;
                 }
 
-                // User is elsewhere → commute to the scheduled place
-                $fromLat = $atCategory === 'work' ? ($workLat ?? $homeLat) : $homeLat;
-                $fromLng = $atCategory === 'work' ? ($workLng ?? $homeLng) : $homeLng;
-
-                return [
-                    'type' => 'to_regular',
-                    'from_name' => $atName ?? $home?->name ?? 'Home',
-                    'to_name' => $place->name,
-                    'from_lat' => $fromLat,
-                    'from_lng' => $fromLng,
-                    'to_lat' => $placeLat,
-                    'to_lng' => $placeLng,
-                    'arrive_by' => $nextScheduled['arrive_by'],
-                ];
+                if ($nowMinutes >= $arriveMin && $nowMinutes < $windowEnd) {
+                    $nextScheduled = ['place' => $place, 'phase' => 'there_or_done', 'arrive_by' => $arriveAt->format('H:i')];
+                    break;
+                }
             }
 
-            if ($nextScheduled['phase'] === 'there_or_done') {
-                // Past arrive_by: if GPS says user is at/near the place → discovery (activity in progress or done)
-                // If GPS says user is at Home → they didn't go → discovery
-                return $discovery($atName ?? $home?->name ?? 'Home', $homeLat, $homeLng);
+            if ($nextScheduled) {
+                $place = $nextScheduled['place'];
+                $placeLat = (float) $place->lat;
+                $placeLng = (float) $place->lng;
+
+                if ($nextScheduled['phase'] === 'heading') {
+                    if ($atName && mb_strtolower($atName) === mb_strtolower($place->name)) {
+                        $result = $discovery($place->name, $placeLat, $placeLng);
+                    } else {
+                        $fromLat = $atCategory === 'work' ? ($workLat ?? $homeLat) : $homeLat;
+                        $fromLng = $atCategory === 'work' ? ($workLng ?? $homeLng) : $homeLng;
+
+                        $result = [
+                            'type' => 'to_regular',
+                            'from_name' => $atName ?? $home?->name ?? 'Home',
+                            'to_name' => $place->name,
+                            'from_lat' => $fromLat,
+                            'from_lng' => $fromLng,
+                            'to_lat' => $placeLat,
+                            'to_lng' => $placeLng,
+                            'arrive_by' => $nextScheduled['arrive_by'],
+                        ];
+                    }
+                } elseif ($nextScheduled['phase'] === 'there_or_done') {
+                    $result = $discovery($atName ?? $home?->name ?? 'Home', $homeLat, $homeLng);
+                }
             }
         }
 
         // ── 2. Saved Routine matching current day+hour ──
-        $activeRoutine = $user->routines()
-            ->where('is_active', true)
-            ->get()
-            ->first(function ($r) use ($now) {
-                $dayName = strtolower($now->format('D'));
-                $routineHour = (int) explode(':', $r->departure_time)[0];
+        if (! $result) {
+            $activeRoutine = $user->routines()
+                ->where('is_active', true)
+                ->get()
+                ->first(function ($r) use ($now) {
+                    $dayName = strtolower($now->format('D'));
+                    $routineHour = (int) explode(':', $r->departure_time)[0];
 
-                return in_array($dayName, $r->days ?? [], true)
-                    && abs($now->hour - $routineHour) <= 1;
-            });
+                    return in_array($dayName, $r->days ?? [], true)
+                        && abs($now->hour - $routineHour) <= 1;
+                });
 
-        if ($activeRoutine) {
-            $fromCoords = $this->resolveLocationCoords($user, $activeRoutine->from_stop, $homeLat, $homeLng);
-            $toCoords = $this->resolveLocationCoords($user, $activeRoutine->to_stop, $workLat ?? $homeLat, $workLng ?? $homeLng);
+            if ($activeRoutine) {
+                $fromCoords = $this->resolveLocationCoords($user, $activeRoutine->from_stop, $homeLat, $homeLng);
+                $toCoords = $this->resolveLocationCoords($user, $activeRoutine->to_stop, $workLat ?? $homeLat, $workLng ?? $homeLng);
 
-            return [
-                'type' => 'routine',
-                'from_name' => $activeRoutine->from_stop,
-                'to_name' => $activeRoutine->to_stop,
-                'from_lat' => $fromCoords['lat'],
-                'from_lng' => $fromCoords['lng'],
-                'to_lat' => $toCoords['lat'],
-                'to_lng' => $toCoords['lng'],
-                'arrive_by' => $activeRoutine->departure_time,
-            ];
+                $result = [
+                    'type' => 'routine',
+                    'from_name' => $activeRoutine->from_stop,
+                    'to_name' => $activeRoutine->to_stop,
+                    'from_lat' => $fromCoords['lat'],
+                    'from_lng' => $fromCoords['lng'],
+                    'to_lat' => $toCoords['lat'],
+                    'to_lng' => $toCoords['lng'],
+                    'arrive_by' => $activeRoutine->departure_time,
+                ];
+            }
         }
 
         // ── 3. GPS-based detection with time awareness ──
-        if ($currentLocation) {
-            // At Home
+        if (! $result && $currentLocation) {
             if ($atCategory === 'home') {
-                // Morning before work cutoff → suggest Work
                 $goToWorkCutoff = $workArriveMin ? ($workArriveMin / 60) + 1 : 10;
                 if ($workLat && $workLng && $hour < $goToWorkCutoff) {
-                    return [
+                    $result = [
                         'type' => 'to_work',
                         'from_name' => $atName,
                         'to_name' => $work?->name ?? 'Work',
@@ -1183,18 +1188,13 @@ class RecommendationService
                         'to_lng' => $workLng,
                         'arrive_by' => $workArriveBy,
                     ];
+                } else {
+                    $result = $discovery($atName, $homeLat, $homeLng);
                 }
-
-                // Past work cutoff, at Home → discovery
-                return $discovery($atName, $homeLat, $homeLng);
-            }
-
-            // At Work
-            if ($atCategory === 'work') {
-                // Past arrive_by + 9 hours → suggest Home (work day done)
-                $workDoneMin = $workArriveMin ? $workArriveMin + 540 : 17 * 60; // 9hr work day
+            } elseif ($atCategory === 'work') {
+                $workDoneMin = $workArriveMin ? $workArriveMin + 540 : 17 * 60;
                 if ($nowMinutes >= $workDoneMin) {
-                    return [
+                    $result = [
                         'type' => 'to_home',
                         'from_name' => $atName,
                         'to_name' => $home?->name ?? 'Home',
@@ -1204,29 +1204,24 @@ class RecommendationService
                         'to_lng' => $homeLng,
                         'arrive_by' => null,
                     ];
+                } else {
+                    $result = [
+                        'type' => 'at_work',
+                        'from_name' => $atName,
+                        'to_name' => $home?->name ?? 'Home',
+                        'from_lat' => $workLat ?? $homeLat,
+                        'from_lng' => $workLng ?? $homeLng,
+                        'to_lat' => $homeLat,
+                        'to_lng' => $homeLng,
+                        'arrive_by' => null,
+                    ];
                 }
-
-                // Still within work hours → show departures from work
-                return [
-                    'type' => 'at_work',
-                    'from_name' => $atName,
-                    'to_name' => $home?->name ?? 'Home',
-                    'from_lat' => $workLat ?? $homeLat,
-                    'from_lng' => $workLng ?? $homeLng,
-                    'to_lat' => $homeLat,
-                    'to_lng' => $homeLng,
-                    'arrive_by' => null,
-                ];
-            }
-
-            // At custom place → check if activity is done (1hr past arrive_by)
-            if ($atCategory === 'custom') {
+            } elseif ($atCategory === 'custom') {
                 $customPlace = $user->places()->where('name', $atName)->first();
                 if ($customPlace?->arrive_by) {
                     $placeArriveMin = Carbon::parse($customPlace->arrive_by)->hour * 60 + Carbon::parse($customPlace->arrive_by)->minute;
                     if ($nowMinutes >= $placeArriveMin + 60) {
-                        // Activity done → suggest Home
-                        return [
+                        $result = [
                             'type' => 'to_home',
                             'from_name' => $atName,
                             'to_name' => $home?->name ?? 'Home',
@@ -1239,48 +1234,155 @@ class RecommendationService
                     }
                 }
 
-                // Still at custom place, activity not done → discovery
-                return $discovery($atName, (float) ($customPlace?->lat ?? $homeLat), (float) ($customPlace?->lng ?? $homeLng));
+                if (! $result) {
+                    $result = $discovery($atName, (float) ($customPlace?->lat ?? $homeLat), (float) ($customPlace?->lng ?? $homeLng));
+                }
             }
         }
 
         // ── 4. No GPS: time-based fallback ──
-        if (! $workLat || ! $workLng) {
-            return $discovery($home?->name ?? 'Home', $homeLat, $homeLng);
+        if (! $result) {
+            if (! $workLat || ! $workLng) {
+                $result = $discovery($home?->name ?? 'Home', $homeLat, $homeLng);
+            } else {
+                $workHour = $workArriveMin ? (int) ($workArriveMin / 60) : 9;
+
+                if ($hour < $workHour) {
+                    $result = [
+                        'type' => 'to_work',
+                        'from_name' => $home?->name ?? 'Home',
+                        'to_name' => $work?->name ?? 'Work',
+                        'from_lat' => $homeLat,
+                        'from_lng' => $homeLng,
+                        'to_lat' => $workLat,
+                        'to_lng' => $workLng,
+                        'arrive_by' => $workArriveBy,
+                    ];
+                } else {
+                    $returnHour = $workArriveMin ? min(20, (int) (($workArriveMin + 540) / 60)) : 17;
+                    if ($hour >= $returnHour) {
+                        $result = [
+                            'type' => 'to_home',
+                            'from_name' => $work?->name ?? 'Work',
+                            'to_name' => $home?->name ?? 'Home',
+                            'from_lat' => $workLat,
+                            'from_lng' => $workLng,
+                            'to_lat' => $homeLat,
+                            'to_lng' => $homeLng,
+                            'arrive_by' => null,
+                        ];
+                    } else {
+                        $result = $discovery($home?->name ?? 'Home', $homeLat, $homeLng);
+                    }
+                }
+            }
         }
 
-        $workHour = $workArriveMin ? (int) ($workArriveMin / 60) : 9;
+        RedisLogger::log("commute_context:{$user->id}", [
+            'context_type' => $result['type'],
+            'from' => $result['from_name'],
+            'to' => $result['to_name'],
+            'arrive_by' => $result['arrive_by'],
+            'hour' => $hour,
+            'is_weekday' => $isWeekday,
+            'scheduled_places_count' => $scheduledPlacesCount,
+            'gps_category' => $atCategory,
+        ]);
 
-        // Before work
-        if ($hour < $workHour) {
-            return [
-                'type' => 'to_work',
-                'from_name' => $home?->name ?? 'Home',
-                'to_name' => $work?->name ?? 'Work',
-                'from_lat' => $homeLat,
-                'from_lng' => $homeLng,
-                'to_lat' => $workLat,
-                'to_lng' => $workLng,
-                'arrive_by' => $workArriveBy,
-            ];
+        return $result;
+    }
+
+    /**
+     * Determine the best commute mode considering weather, bike time, and disruptions.
+     *
+     * @param  array<string, string>  $disruptedLines  line => severity
+     * @param  string[]  $userTransitLines  lines serving the user's nearby stops
+     * @return array{mode: string, reason: string}
+     */
+    public function determineBestMode(
+        array $forecast,
+        int $bikeTime,
+        array $disruptedLines = [],
+        array $userTransitLines = [],
+    ): array {
+        $bikeScore = $forecast['bike_score'] ?? '';
+        $rainStarts = $forecast['rain_starts'] ?? null;
+        $rainAlreadyStarted = $rainStarts && now()->format('H:i') >= $rainStarts;
+
+        $bikeIsGood = (str_starts_with($bikeScore, 'Great') || str_starts_with($bikeScore, 'Good'))
+            && ! $rainAlreadyStarted
+            && $bikeTime <= 30;
+
+        // Check if user's transit lines are disrupted (major/critical)
+        $transitDisrupted = false;
+        foreach ($userTransitLines as $line) {
+            $severity = $disruptedLines[$line] ?? 'none';
+            if (in_array($severity, ['major', 'critical'], true)) {
+                $transitDisrupted = true;
+                break;
+            }
         }
 
-        // After work day (arrive_by + 9hr or 17:00)
-        $returnHour = $workArriveMin ? min(20, (int) (($workArriveMin + 540) / 60)) : 17;
-        if ($hour >= $returnHour) {
-            return [
-                'type' => 'to_home',
-                'from_name' => $work?->name ?? 'Work',
-                'to_name' => $home?->name ?? 'Home',
-                'from_lat' => $workLat,
-                'from_lng' => $workLng,
-                'to_lat' => $homeLat,
-                'to_lng' => $homeLng,
-                'arrive_by' => null,
-            ];
+        if ($bikeIsGood && $transitDisrupted) {
+            return ['mode' => 'bike', 'reason' => 'Transit disrupted — bike is best'];
         }
 
-        // Middle of day, no GPS → discovery (don't assume location)
-        return $discovery($home?->name ?? 'Home', $homeLat, $homeLng);
+        if ($bikeIsGood) {
+            return ['mode' => 'bike', 'reason' => 'Great weather for cycling'];
+        }
+
+        if ($transitDisrupted) {
+            return ['mode' => 'tram', 'reason' => 'Weather not ideal, transit disrupted — allow extra time'];
+        }
+
+        return ['mode' => 'tram', 'reason' => 'Weather suggests transit today'];
+    }
+
+    /**
+     * Calculate the leave-by time for a given route using Valhalla routing.
+     *
+     * @return array{time: string, travel_min: int, message: string}|null
+     */
+    public function calculateLeaveBy(
+        float $fromLat,
+        float $fromLng,
+        float $toLat,
+        float $toLng,
+        ?string $arriveBy,
+        string $mode,
+        array $forecast,
+        ?array $weather = null,
+    ): ?array {
+        if (! $arriveBy) {
+            return null;
+        }
+
+        $valhalla = app(ValhallaRoutingService::class);
+        $bikeTime = $this->calculateBikeTime(
+            (object) ['lat' => $fromLat, 'lng' => $fromLng],
+            (object) ['lat' => $toLat, 'lng' => $toLng],
+        );
+        $travelMin = $bikeTime;
+
+        if ($valhalla->isAvailable()) {
+            $costing = $mode === 'bike' ? 'bicycle' : 'pedestrian';
+            $valhallaRoute = $valhalla->route($fromLat, $fromLng, $toLat, $toLng, $costing);
+            if ($valhallaRoute) {
+                $travelMin = $valhallaRoute['duration_min'];
+            }
+        }
+
+        $arriveAt = Carbon::createFromFormat('H:i', $arriveBy);
+        $leaveAt = $arriveAt->copy()->subMinutes($travelMin);
+        $rainStarts = $forecast['rain_starts'] ?? null;
+        $condition = $weather['condition'] ?? 'Clear';
+
+        return [
+            'time' => $leaveAt->format('H:i'),
+            'travel_min' => $travelMin,
+            'message' => $rainStarts
+                ? "Rain arrives at {$rainStarts} — plan return journey early."
+                : "{$condition} all day — enjoy the ride.",
+        ];
     }
 }

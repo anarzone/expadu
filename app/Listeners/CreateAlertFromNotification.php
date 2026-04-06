@@ -7,6 +7,8 @@ use App\Models\Alert;
 use App\Notifications\BuergeramtSlotNotification;
 use App\Notifications\EventReminderNotification;
 use App\Notifications\GenericAlertNotification;
+use App\Notifications\LeaveByReminderNotification;
+use App\Notifications\MarketClosureNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
@@ -48,7 +50,9 @@ class CreateAlertFromNotification
 
         // Map notification class → alert type + subtype
         $alertType = match (true) {
-            $notification instanceof EventReminderNotification => AlertType::Reminder,
+            $notification instanceof EventReminderNotification,
+            $notification instanceof LeaveByReminderNotification,
+            $notification instanceof MarketClosureNotification => AlertType::Reminder,
             $notification instanceof BuergeramtSlotNotification,
             $notification instanceof TransitDisruptionNotification,
             $notification instanceof TransitDelayNotification,
@@ -65,6 +69,8 @@ class CreateAlertFromNotification
             $notification instanceof RhineFloodNotification => 'rhine',
             $notification instanceof BuergeramtSlotNotification => 'buergeramt',
             $notification instanceof EventReminderNotification => 'event_reminder',
+            $notification instanceof LeaveByReminderNotification => 'leave_by',
+            $notification instanceof MarketClosureNotification => 'market_closure',
             $notification instanceof GenericAlertNotification => $this->detectGenericSubtype($data),
             default => 'generic',
         };

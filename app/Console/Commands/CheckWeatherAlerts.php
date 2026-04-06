@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Notifications\MarketClosureNotification;
 use App\Notifications\WeatherAlertNotification;
+use App\Services\GermanHolidayService;
 use App\Services\WeatherService;
 use App\Support\NotificationThrottle;
 use Illuminate\Console\Command;
@@ -18,11 +20,23 @@ class CheckWeatherAlerts extends Command
 
     public function handle(WeatherService $weatherService): int
     {
+        // Market closure warning — only between 12:00-16:00, no weather data needed
+        $closureCount = 0;
+        $hour = now()->hour;
+        if ($hour >= 12 && $hour <= 16) {
+            $closureCount = $this->sendMarketClosureWarning();
+            if ($closureCount > 0) {
+                $this->info("Sent {$closureCount} market closure warning(s).");
+            }
+        }
+
         $current = $weatherService->getCurrentWeather();
         $forecast = $weatherService->getForecast();
 
         if (empty($current) || empty($forecast)) {
-            $this->info('Could not fetch weather data.');
+            if ($closureCount === 0) {
+                $this->info('No weather alerts needed.');
+            }
 
             return self::SUCCESS;
         }
@@ -106,5 +120,45 @@ class CheckWeatherAlerts extends Command
         Log::info('Weather alert notifications sent', ['count' => $notifiedCount, 'alerts' => count($alerts)]);
 
         return self::SUCCESS;
+    }
+
+    private function sendMarketClosureWarning(): int
+    {
+        $holidayService = app(GermanHolidayService::class);
+
+        if (! $holidayService->isShopsClosedTomorrow()) {
+            return 0;
+        }
+
+        $tomorrow = now()->addDay();
+        $holidayName = $holidayService->getHolidayName($tomorrow);
+
+        $dedupKey = 'market_closure_notif:'.$tomorrow->format('Y-m-d');
+        if (Cache::has($dedupKey)) {
+            return 0;
+        }
+
+        Cache::put($dedupKey, true, now()->addDays(2));
+
+        $count = 0;
+
+        User::whereNotNull('onboarded_at')->chunk(100, function ($users) use ($holidayName, &$count) {
+            foreach ($users as $user) {
+                if (! $user->wantsNotification('events')) {
+                    continue;
+                }
+
+                if (! NotificationThrottle::canPush($user, 'market_closure')) {
+                    continue;
+                }
+
+                $reason = $holidayName ?? 'Sunday';
+                $user->notify(new MarketClosureNotification($reason, $holidayName));
+                NotificationThrottle::recordSent($user);
+                $count++;
+            }
+        });
+
+        return $count;
     }
 }
