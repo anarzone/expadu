@@ -47,11 +47,8 @@ jobs:
         run: npm run lint:check || true # TODO: fix 47 remaining ESLint errors
 
   test:
-    name: Test (Shard ${{ matrix.shard }}/3)
+    name: Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        shard: [1, 2, 3]
 
     services:
       postgres:
@@ -109,7 +106,7 @@ jobs:
           PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
       - name: Run Tests
-        run: vendor/bin/pest --compact --shard=${{ matrix.shard }}/3
+        run: vendor/bin/pest --compact --parallel
 
   build-and-push:
     name: Build & Push Image
