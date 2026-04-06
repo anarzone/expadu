@@ -1,3 +1,4 @@
+import { IconSettings } from '@tabler/icons-react';
 import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
 import { AlertRow, type AlertData } from '@/components/alerts/alert-row';
@@ -6,6 +7,7 @@ import {
     type AlertStack,
 } from '@/components/alerts/alert-stack';
 import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
+import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
 
 // Subtypes that should never be stacked — each appears individually
@@ -196,6 +198,7 @@ export default function Alerts() {
     // Local state — no page refreshes
     const [alertList, setAlertList] = useState<AlertData[]>(serverAlerts.data);
     const [activeTab, setActiveTab] = useState(serverTab || 'all');
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     const csrf =
         document
@@ -292,6 +295,12 @@ export default function Alerts() {
                                 Mark all read
                             </button>
                         )}
+                        <button
+                            onClick={() => setSettingsOpen(true)}
+                            className="text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+                        >
+                            <IconSettings size={20} stroke={1.7} />
+                        </button>
                     </div>
                 </div>
 
@@ -363,6 +372,14 @@ export default function Alerts() {
                     </div>
                 )}
             </div>
+
+            {/* Mobile notification settings */}
+            <BottomSheet
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+            >
+                <AlertsRightPanel counts={counts} />
+            </BottomSheet>
         </AppLayout>
     );
 }
