@@ -118,18 +118,20 @@ function NotificationSettings() {
             </div>
 
             {/* Master push toggle */}
-            {isSupported && (
-                <div className="flex items-center justify-between border-b border-border bg-[#F6F5F1] px-4 py-[11px] dark:bg-[#2A2920]">
-                    <div>
-                        <div className="text-[13px] font-semibold">
-                            Push notifications
-                        </div>
-                        <div className="mt-px text-[11px] text-muted-foreground">
-                            {isSubscribed
-                                ? 'Enabled — you will receive alerts'
-                                : 'Enable to receive alerts on this device'}
-                        </div>
+            <div className="flex items-center justify-between border-b border-border bg-[#F6F5F1] px-4 py-[11px] dark:bg-[#2A2920]">
+                <div>
+                    <div className="text-[13px] font-semibold">
+                        Push notifications
                     </div>
+                    <div className="mt-px text-[11px] text-muted-foreground">
+                        {!isSupported
+                            ? 'Not supported on this browser'
+                            : isSubscribed
+                              ? 'Enabled — you will receive alerts'
+                              : 'Enable to receive alerts on this device'}
+                    </div>
+                </div>
+                {isSupported && (
                     <button
                         onClick={handlePushToggle}
                         disabled={pushLoading}
@@ -149,8 +151,8 @@ function NotificationSettings() {
                             }}
                         />
                     </button>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* Per-type toggles */}
             {notificationSettings.map((setting) => (
