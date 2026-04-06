@@ -62,20 +62,22 @@ self.addEventListener('notificationclick', (event) => {
 // ── Activate: claim clients + clear old caches ──
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        self.clients.claim().then(() =>
-            caches
-                .keys()
-                .then((keys) =>
-                    Promise.all(
-                        keys
-                            .filter(
-                                (key) =>
-                                    key.startsWith('workbox-precache') ||
-                                    key.includes('precache'),
-                            )
-                            .map((key) => caches.delete(key)),
+        self.clients
+            .claim()
+            .then(() =>
+                caches
+                    .keys()
+                    .then((keys) =>
+                        Promise.all(
+                            keys
+                                .filter(
+                                    (key) =>
+                                        key.startsWith('workbox-precache') ||
+                                        key.includes('precache'),
+                                )
+                                .map((key) => caches.delete(key)),
+                        ),
                     ),
-                ),
-        ),
+            ),
     );
 });
