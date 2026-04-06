@@ -15,6 +15,7 @@ export function GeocodeInput({
     onChange,
     onSelect,
     onFocus: onFocusProp,
+    locatable = false,
 }: {
     icon: string;
     placeholder: string;
@@ -27,11 +28,54 @@ export function GeocodeInput({
         label: string;
     }) => void;
     onFocus?: () => void;
+    locatable?: boolean;
 }) {
     const [results, setResults] = useState<GeoResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [locating, setLocating] = useState(false);
+
+    const handleLocate = useCallback(() => {
+        if (!navigator.geolocation) return;
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                try {
+                    const res = await fetch(
+                        `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`,
+                    );
+                    const data = await res.json();
+                    const props = data?.features?.[0]?.properties;
+                    const street = props?.street ?? props?.name ?? '';
+                    const house = props?.housenumber ?? '';
+                    const district = props?.district ?? props?.locality ?? '';
+                    const parts = [street, house].filter(Boolean).join(' ');
+                    const label =
+                        [parts, district].filter(Boolean).join(', ') ||
+                        'Current location';
+
+                    onChange(label);
+                    onSelect({ lat, lng, name: label, label });
+                } catch {
+                    onChange('Current location');
+                    onSelect({
+                        lat,
+                        lng,
+                        name: 'Current location',
+                        label: 'Current location',
+                    });
+                } finally {
+                    setLocating(false);
+                }
+            },
+            () => setLocating(false),
+            { enableHighAccuracy: true, timeout: 5000 },
+        );
+    }, [onChange, onSelect]);
 
     const search = useCallback((query: string) => {
         if (timerRef.current) {
@@ -84,8 +128,17 @@ export function GeocodeInput({
                     padding: '11px 14px',
                 }}
             >
-                <span style={{ fontSize: 15, color: '#AAA89F', flexShrink: 0 }}>
-                    {icon}
+                <span
+                    style={{
+                        fontSize: 15,
+                        color: '#AAA89F',
+                        flexShrink: 0,
+                        cursor: locatable ? 'pointer' : 'default',
+                    }}
+                    onClick={locatable ? handleLocate : undefined}
+                    title={locatable ? 'Use current location' : undefined}
+                >
+                    {locating ? '⏳' : icon}
                 </span>
                 <input
                     className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"

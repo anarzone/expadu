@@ -1696,6 +1696,7 @@ export default function Transit() {
                                         lng: r.lng,
                                     });
                                 }}
+                                locatable
                             />
                             {/* Swap button — between inputs */}
                             <div className="flex justify-center">
