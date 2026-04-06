@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { PushPromptCard } from '@/components/cards/push-prompt-card';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
 import {
     IconCompass,
@@ -520,6 +521,11 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
+
+                {/* Push notification prompt */}
+                <div className="section-pad">
+                    <PushPromptCard />
+                </div>
 
                 {/* Warnings section removed — handled by commute recommendation cards now */}
                 {false && warnings.length > 0 && (
