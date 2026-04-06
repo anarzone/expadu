@@ -66,7 +66,11 @@ class RecommendationService
         // Adjust priorities based on time, profile, and engagement
         $cards = $this->adjustPrioritiesByTimeOfDay($cards);
         $cards = $this->adjustPrioritiesByProfile($user, $cards);
-        $cards = $this->adjustPrioritiesByEngagement($user, $cards);
+
+        // Only apply engagement-based personalisation if user has it enabled
+        if ($user->setting('personalised_content') !== false) {
+            $cards = $this->adjustPrioritiesByEngagement($user, $cards);
+        }
 
         // Deduplicate by title — keep highest priority version
         $seen = [];

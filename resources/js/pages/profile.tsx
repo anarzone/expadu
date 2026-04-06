@@ -212,12 +212,22 @@ type ProfileStats = {
 };
 
 export default function Profile() {
-    const { auth, userPlaces, goingEvents, pastEvents, stats } = usePage<{
+    const {
+        auth,
+        userPlaces,
+        goingEvents,
+        pastEvents,
+        stats,
+        notificationPreferences,
+        userSettings,
+    } = usePage<{
         auth: Auth;
         userPlaces?: UserPlaceData[];
         goingEvents?: EventSummary[];
         pastEvents?: EventSummary[];
         stats?: ProfileStats;
+        notificationPreferences?: Record<string, boolean>;
+        userSettings?: Record<string, boolean | string>;
     }>().props;
     const user = auth.user;
 
@@ -293,15 +303,23 @@ export default function Profile() {
     const [showDays, setShowDays] = useState(false);
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
 
-    // Notification toggles
+    // Notification toggles — initialized from server data
+    const np = notificationPreferences ?? {};
+    const us = userSettings ?? {};
     const [toggles, setToggles] = useState<Record<string, boolean>>({
-        transitDisruptions: true,
-        buergermtSlots: true,
-        eventReminders: true,
-        langPartnerMsg: true,
-        langPartnerMatch: true,
-        checklistReminders: true,
-        weeklyDigest: false,
+        // Notification prefs (synced with backend)
+        transitDisruptions: np.transit ?? true,
+        buergermtSlots: np.burgeramt ?? true,
+        eventReminders: np.events ?? true,
+        langPartnerMsg: np.language ?? true,
+        langPartnerMatch: np.language ?? true,
+        checklistReminders: np.checklist ?? true,
+        weeklyDigest: np.digest ?? false,
+        // Privacy settings (synced with backend)
+        shareLocation: (us.share_location as boolean) ?? true,
+        personalised: (us.personalised_content as boolean) ?? true,
+        shareAnonymised: (us.share_anonymised as boolean) ?? true,
+        // UI-only (future features)
         showAttendance: true,
         receiveInvites: true,
         discoverable: true,
@@ -309,9 +327,6 @@ export default function Profile() {
         autoAccept: false,
         showCrowd: true,
         checkInVisibility: true,
-        shareLocation: true,
-        personalised: true,
-        shareAnonymised: true,
         darkMode: false,
     });
 
@@ -329,9 +344,83 @@ export default function Profile() {
         setTimeout(() => setToastMsg(null), 2500);
     }, []);
 
-    // Toggle handler
-    const toggle = (key: string) =>
-        setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+    // Notification pref key mapping (frontend key → backend key)
+    const notifKeyMap: Record<string, string> = {
+        transitDisruptions: 'transit',
+        buergermtSlots: 'burgeramt',
+        eventReminders: 'events',
+        langPartnerMsg: 'language',
+        langPartnerMatch: 'language',
+        checklistReminders: 'checklist',
+        weeklyDigest: 'digest',
+    };
+
+    // Privacy setting key mapping (frontend key → backend key)
+    const privacyKeyMap: Record<string, string> = {
+        shareLocation: 'share_location',
+        personalised: 'personalised_content',
+        shareAnonymised: 'share_anonymised',
+    };
+
+    const csrf =
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '';
+
+    const persistNotifPref = useCallback(
+        (prefs: Record<string, boolean>) => {
+            fetch('/notification-preferences', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ preferences: prefs }),
+            }).catch(() => {});
+        },
+        [csrf],
+    );
+
+    const persistUserSetting = useCallback(
+        (settings: Record<string, boolean | string>) => {
+            fetch('/user-settings', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ settings }),
+            }).catch(() => {});
+        },
+        [csrf],
+    );
+
+    // Toggle handler — persists to correct backend
+    const toggle = (key: string) => {
+        setToggles((prev) => {
+            const newVal = !prev[key];
+
+            // Notification preferences
+            if (key in notifKeyMap) {
+                const backendKey = notifKeyMap[key];
+                const currentPrefs = { ...(notificationPreferences ?? {}) };
+                currentPrefs[backendKey] = newVal;
+                persistNotifPref(currentPrefs);
+            }
+
+            // Privacy settings
+            if (key in privacyKeyMap) {
+                const backendKey = privacyKeyMap[key];
+                persistUserSetting({ [backendKey]: newVal });
+            }
+
+            return { ...prev, [key]: newVal };
+        });
+    };
 
     // Inline edit handlers
     function startEdit(field: string, currentValue: string) {

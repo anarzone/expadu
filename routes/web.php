@@ -23,6 +23,7 @@ use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TransitController;
 use App\Http\Controllers\UserPlaceController;
+use App\Http\Controllers\UserSettingController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -77,6 +78,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Notification preferences
     Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
     Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+
+    // User settings (privacy, etc.)
+    Route::get('user-settings', [UserSettingController::class, 'show'])->name('user-settings.show');
+    Route::put('user-settings', [UserSettingController::class, 'update'])->name('user-settings.update');
 
     // Spot reviews
     Route::get('explore/{spot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');

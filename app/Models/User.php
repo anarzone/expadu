@@ -132,6 +132,12 @@ class User extends Authenticatable
         return $this->hasOne(NotificationPreference::class);
     }
 
+    /** @return HasOne<UserSetting, $this> */
+    public function userSetting(): HasOne
+    {
+        return $this->hasOne(UserSetting::class);
+    }
+
     /** Check if user wants a specific notification type */
     public function wantsNotification(string $type): bool
     {
@@ -139,5 +145,13 @@ class User extends Authenticatable
             ?? NotificationPreference::defaults();
 
         return $prefs[$type] ?? true;
+    }
+
+    /** Get a user setting value with fallback to default */
+    public function setting(string $key): mixed
+    {
+        $settings = $this->userSetting?->settings ?? UserSetting::defaults();
+
+        return $settings[$key] ?? UserSetting::defaults()[$key] ?? null;
     }
 }

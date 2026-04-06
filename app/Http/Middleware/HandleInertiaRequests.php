@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\NotificationPreference;
+use App\Models\UserSetting;
 use App\Services\UserLocationService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -47,6 +49,8 @@ class HandleInertiaRequests extends Middleware
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->whereNull('read_at')->count() ?? 0,
             'serviceErrors' => fn () => session('serviceErrors', []),
+            'notificationPreferences' => fn () => $request->user()?->notificationPreference?->preferences ?? NotificationPreference::defaults(),
+            'userSettings' => fn () => $request->user()?->userSetting?->settings ?? UserSetting::defaults(),
             // User location — cached per request to avoid redundant places queries
             'userLocation' => function () use ($request) {
                 $user = $request->user();

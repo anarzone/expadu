@@ -38,6 +38,19 @@ function distanceMeters(
     );
 }
 
+/** Check if location sharing is enabled via user settings */
+let locationSharingEnabled = true;
+try {
+    const el = document.getElementById('app');
+    if (el) {
+        const pageData = JSON.parse(el.dataset.page || '{}');
+        locationSharingEnabled =
+            pageData?.props?.userSettings?.share_location !== false;
+    }
+} catch {
+    // Fallback to enabled
+}
+
 /** Send a location ping to the server (fire-and-forget) */
 function sendPing(
     lat: number,
@@ -46,6 +59,7 @@ function sendPing(
     quality?: string,
     rejected?: string,
 ) {
+    if (!locationSharingEnabled) return;
     fetch('/api/track', {
         method: 'POST',
         credentials: 'same-origin',
