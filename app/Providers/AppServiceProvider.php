@@ -8,6 +8,7 @@ use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -30,6 +31,11 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
+
+        // Enable PostGIS in parallel test databases
+        ParallelTesting::setUpTestDatabase(function (string $database) {
+            DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
+        });
     }
 
     /**

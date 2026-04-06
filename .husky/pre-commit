@@ -37,7 +37,7 @@ run_check "Frontend Format (staged)" "npx lint-staged"
 # PHP Tests: Run only if PHP files were changed
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.php$' || true)
 if [ -n "$STAGED_PHP" ]; then
-    run_check "PHP Tests (fast)" "php artisan test --compact --stop-on-failure"
+    run_check "PHP Tests (fast)" "php artisan test --compact --parallel --stop-on-failure"
 fi
 
 echo -e "${GREEN}✅ All checks passed!${NC}"

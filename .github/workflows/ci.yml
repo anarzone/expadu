@@ -97,11 +97,17 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Enable PostGIS
-        run: PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+      - name: Setup Test Databases
+        run: |
+          for i in $(seq 1 10); do
+            PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c "SELECT 1" > /dev/null 2>&1 || true
+            PGPASSWORD=password createdb -h 127.0.0.1 -U sail "testing_test_$i" 2>/dev/null || true
+            PGPASSWORD=password psql -h 127.0.0.1 -U sail -d "testing_test_$i" -c "CREATE EXTENSION IF NOT EXISTS postgis;" 2>/dev/null || true
+          done
+          PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
       - name: Run Tests
-        run: php artisan test --compact
+        run: php artisan test --compact --parallel
 
   build-and-push:
     name: Build & Push Image
