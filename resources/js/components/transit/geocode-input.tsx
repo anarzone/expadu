@@ -52,34 +52,31 @@ export function GeocodeInput({
                 const lng = pos.coords.longitude;
                 try {
                     const res = await fetch(
-                        `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`,
+                        `/api/reverse-geocode?lat=${lat}&lng=${lng}`,
                     );
                     const data = await res.json();
-                    const props = data?.features?.[0]?.properties;
-                    const street = props?.street ?? props?.name ?? '';
-                    const house = props?.housenumber ?? '';
-                    const district = props?.district ?? props?.locality ?? '';
-                    const parts = [street, house].filter(Boolean).join(' ');
-                    const label =
-                        [parts, district].filter(Boolean).join(', ') ||
-                        'Current location';
+                    const label = data?.address || 'Current location';
 
                     onChangeRef.current(label);
                     onSelectRef.current({ lat, lng, name: label, label });
-                } catch {
-                    onChangeRef.current('Current location');
+                } catch (err) {
+                    console.error('Reverse geocode failed:', err);
+                    onChangeRef.current(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
                     onSelectRef.current({
                         lat,
                         lng,
                         name: 'Current location',
-                        label: 'Current location',
+                        label: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
                     });
                 } finally {
                     setLocating(false);
                 }
             },
-            () => setLocating(false),
-            { enableHighAccuracy: true, timeout: 5000 },
+            (err) => {
+                console.error('Geolocation error:', err.message);
+                setLocating(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000 },
         );
     }
 

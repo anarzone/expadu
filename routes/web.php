@@ -3,6 +3,7 @@
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
+use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\RouteOptionsController;
 use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
@@ -34,6 +35,7 @@ Route::inertia('/', 'welcome', [
 Route::middleware(['auth', 'verified'])->group(function () {
     // APIs — generous limits since all are authenticated + local data
     Route::get('api/geocode', GeocodeController::class)->name('api.geocode');
+    Route::get('api/reverse-geocode', ReverseGeocodeController::class)->name('api.reverse-geocode');
     Route::get('api/stops', StopSearchController::class)->name('api.stops');
     Route::get('api/spots', SpotSearchController::class)->name('api.spots');
     Route::post('api/track', TrackEventController::class)->name('api.track');
