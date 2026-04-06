@@ -275,6 +275,7 @@ export default function Chat() {
         <AppLayout
             breadcrumbs={[{ title: 'Chat', href: '/chat' }]}
             rightPanel={<ChatRightPanel onOpenThread={openThread} />}
+            showBack
         >
             <Head title="Chat" />
 

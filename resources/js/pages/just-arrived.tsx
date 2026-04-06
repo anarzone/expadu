@@ -745,6 +745,7 @@ export default function JustArrived() {
         <AppLayout
             breadcrumbs={[{ title: 'Just Arrived', href: '/just-arrived' }]}
             rightPanel={<JourneyRightPanel />}
+            showBack
         >
             <Head title="Just Arrived" />
 

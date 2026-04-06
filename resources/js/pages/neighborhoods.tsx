@@ -706,6 +706,7 @@ export default function Neighborhoods() {
         <AppLayout
             breadcrumbs={[{ title: 'Neighborhoods', href: '/neighborhoods' }]}
             rightPanel={<NeighborhoodsRightPanel />}
+            showBack
         >
             <Head title="Neighborhoods" />
             <div className="mx-auto w-full max-w-[680px]">

@@ -120,29 +120,10 @@ export default function Services() {
         <AppLayout
             breadcrumbs={[{ title: 'Services', href: '/services' }]}
             rightPanel={<ServicesRightPanel />}
+            showBack
         >
             <Head title="Services" />
             <div className="w-full">
-                {/* Sticky header — title only */}
-                <div
-                    className="sticky top-0 z-50 border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{
-                        background: 'rgba(246,245,241,.92)',
-                        backdropFilter: 'blur(16px)',
-                    }}
-                >
-                    <span
-                        style={{
-                            fontFamily: "'Fraunces', serif",
-                            fontSize: 20,
-                            fontWeight: 500,
-                            letterSpacing: '-0.01em',
-                        }}
-                    >
-                        Services
-                    </span>
-                </div>
-
                 {/* All content in one px-6 wrapper for consistent width */}
                 <div className="px-6">
                     {/* Search bar */}

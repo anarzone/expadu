@@ -279,6 +279,7 @@ export default function Events() {
         <AppLayout
             breadcrumbs={[{ title: 'Events', href: '/events' }]}
             rightPanel={<EventsRightPanel onSelectEvent={openEvent} />}
+            showBack
         >
             <Head title="Events" />
             <div className="mx-auto w-full max-w-[680px]">

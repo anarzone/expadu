@@ -1507,7 +1507,10 @@ export default function Transit() {
     }
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Transit', href: '/transit' }]}>
+        <AppLayout
+            breadcrumbs={[{ title: 'Transit', href: '/transit' }]}
+            showBack
+        >
             <Head title="Transit" />
             <ServiceErrorBanner />
             <div className="mx-auto w-full max-w-[680px]">

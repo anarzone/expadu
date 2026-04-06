@@ -670,6 +670,7 @@ export default function Bureaucracy() {
         <AppLayout
             breadcrumbs={[{ title: 'Bureaucracy', href: '/bureaucracy' }]}
             rightPanel={<BureaucracyRightPanel onSwitchTab={switchTab} />}
+            showBack
         >
             <Head title="Bureaucracy" />
             <div className="mx-auto w-full max-w-[680px]">

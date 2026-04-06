@@ -1,10 +1,21 @@
 import { router, usePage } from '@inertiajs/react';
-import { IconUser, IconPalette, IconLogout } from '@tabler/icons-react';
+import {
+    IconArrowLeft,
+    IconUser,
+    IconPalette,
+    IconLogout,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { ICON_STROKE } from '@/constants/icons';
 
-export function MobileTopBar({ title }: { title?: string }) {
+export function MobileTopBar({
+    title,
+    showBack,
+}: {
+    title?: string;
+    showBack?: boolean;
+}) {
     const { auth } = usePage().props as any;
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -21,10 +32,24 @@ export function MobileTopBar({ title }: { title?: string }) {
         <div className="relative md:hidden">
             <header className="flex items-center justify-between border-b border-border bg-background px-5 py-[11px] shadow-[0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
                 <div className="flex items-center gap-2.5">
-                    <AppLogoIcon className="!size-7 !rounded-lg !text-sm" />
-                    <span className="font-display text-[21px] font-medium tracking-tight">
-                        <span className="text-primary">E</span>xpadu
-                    </span>
+                    {showBack ? (
+                        <button
+                            onClick={() => window.history.back()}
+                            className="flex items-center gap-1.5 text-primary"
+                        >
+                            <IconArrowLeft size={22} stroke={ICON_STROKE} />
+                        </button>
+                    ) : (
+                        <a
+                            href="/dashboard"
+                            className="flex items-center gap-2.5"
+                        >
+                            <AppLogoIcon className="!size-7 !rounded-lg !text-sm" />
+                            <span className="font-display text-[21px] font-medium tracking-tight">
+                                <span className="text-primary">E</span>xpadu
+                            </span>
+                        </a>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     {title && (

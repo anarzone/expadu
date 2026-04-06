@@ -26,6 +26,8 @@ export default defineConfig({
             srcDir: 'resources',
             filename: 'sw.ts',
             registerType: 'autoUpdate',
+            buildBase: '/',
+            scope: '/',
             manifest: {
                 name: 'Expadu — Your City Guide',
                 short_name: 'Expadu',

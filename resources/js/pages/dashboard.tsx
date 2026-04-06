@@ -156,7 +156,6 @@ export default function Dashboard() {
     const recs = feed?.recommendations ?? [];
     const settlement = feed?.settlement;
     const departures = feed?.departures;
-    const places = feed?.places ?? [];
     const nearbySpots = feed?.nearby_spots ?? [];
     const thisWeek = feed?.this_week ?? [];
     const needsSetup = feed?.needs_setup ?? false;
@@ -527,6 +526,128 @@ export default function Dashboard() {
                     <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]"></div>
                 )}
 
+                {/* Live departures */}
+                {departures && (departures.departures?.length ?? 0) > 0 && (
+                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
+                        <div className="mb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span style={{ fontSize: 16, fontWeight: 600 }}>
+                                    Departures · {departures.stop_name}
+                                </span>
+                                {departures.source === 'trias_rt' ||
+                                departures.source === 'gtfs_rt' ? (
+                                    <span className="flex items-center gap-1 rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold text-[#0A7C52] dark:bg-[#0A7C52]/20">
+                                        <span className="inline-block size-[4px] animate-pulse rounded-full bg-[#0A7C52]" />
+                                        Live
+                                    </span>
+                                ) : (
+                                    <span className="rounded-full bg-[#EBF0FD] px-[7px] py-[2px] text-[9px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20">
+                                        Timetable
+                                    </span>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    sessionStorage.setItem(
+                                        'transit_scroll',
+                                        'departures',
+                                    );
+                                    router.visit('/transit');
+                                }}
+                                className="text-xs font-semibold text-[#1A4CD4]"
+                            >
+                                Full board →
+                            </button>
+                        </div>
+                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                            {departures.departures.slice(0, 4).map((dep, i) => (
+                                <div
+                                    key={`${dep.line}-${dep.direction}`}
+                                    className={`flex items-center gap-3 px-4 py-3 ${i < 3 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
+                                >
+                                    <div
+                                        className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                                        style={{
+                                            background: dep.color,
+                                            color: 'white',
+                                            fontFamily:
+                                                "'Geist Mono', monospace",
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        {dep.line}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {dep.direction}
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                        {dep.cancelled ? (
+                                            <span
+                                                style={{
+                                                    fontFamily:
+                                                        "'Geist Mono', monospace",
+                                                    fontSize: 18,
+                                                    fontWeight: 500,
+                                                    color: '#C4271A',
+                                                }}
+                                            >
+                                                —
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span
+                                                    style={{
+                                                        fontFamily:
+                                                            "'Geist Mono', monospace",
+                                                        fontSize: 18,
+                                                        fontWeight: 500,
+                                                        color:
+                                                            (dep.delay ?? 0) > 0
+                                                                ? '#C47D0E'
+                                                                : '#0A7C52',
+                                                    }}
+                                                >
+                                                    {dep.departures[0]}
+                                                </span>
+                                                <span
+                                                    className="text-[#AAA89F] dark:text-[#6B6860]"
+                                                    style={{
+                                                        fontSize: 10,
+                                                        marginLeft: 2,
+                                                    }}
+                                                >
+                                                    min
+                                                </span>
+                                            </>
+                                        )}
+                                        {(dep.delay ?? 0) > 0 &&
+                                            !dep.cancelled && (
+                                                <div
+                                                    style={{
+                                                        fontSize: 9,
+                                                        fontWeight: 700,
+                                                        color: '#C47D0E',
+                                                        marginTop: 1,
+                                                    }}
+                                                >
+                                                    +{dep.delay}m
+                                                </div>
+                                            )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Settlement progress */}
                 {settlement && settlement.total > 0 && (
                     <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
@@ -571,28 +692,6 @@ export default function Dashboard() {
                                     }}
                                 />
                             </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Your places */}
-                {places.length > 0 && (
-                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
-                        <div
-                            className="mb-3"
-                            style={{ fontSize: 16, fontWeight: 600 }}
-                        >
-                            Your Places
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {places.map((p) => (
-                                <span
-                                    key={p.id}
-                                    className="inline-flex items-center gap-1.5 rounded-full border border-[#E2DFD6] bg-white px-3 py-1.5 text-xs font-medium text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
-                                >
-                                    {p.emoji} {p.name}
-                                </span>
-                            ))}
                         </div>
                     </div>
                 )}
@@ -773,128 +872,6 @@ export default function Dashboard() {
                                         </span>
                                     )}
                                 </a>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Live departures */}
-                {departures && (departures.departures?.length ?? 0) > 0 && (
-                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span style={{ fontSize: 16, fontWeight: 600 }}>
-                                    Departures · {departures.stop_name}
-                                </span>
-                                {departures.source === 'trias_rt' ||
-                                departures.source === 'gtfs_rt' ? (
-                                    <span className="flex items-center gap-1 rounded-full bg-[#D4F0E6] px-[7px] py-[2px] text-[9px] font-bold text-[#0A7C52] dark:bg-[#0A7C52]/20">
-                                        <span className="inline-block size-[4px] animate-pulse rounded-full bg-[#0A7C52]" />
-                                        Live
-                                    </span>
-                                ) : (
-                                    <span className="rounded-full bg-[#EBF0FD] px-[7px] py-[2px] text-[9px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20">
-                                        Timetable
-                                    </span>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => {
-                                    sessionStorage.setItem(
-                                        'transit_scroll',
-                                        'departures',
-                                    );
-                                    router.visit('/transit');
-                                }}
-                                className="text-xs font-semibold text-[#1A4CD4]"
-                            >
-                                Full board →
-                            </button>
-                        </div>
-                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                            {departures.departures.slice(0, 4).map((dep, i) => (
-                                <div
-                                    key={`${dep.line}-${dep.direction}`}
-                                    className={`flex items-center gap-3 px-4 py-3 ${i < 3 ? 'border-b border-[#E2DFD6] dark:border-[#3A3930]' : ''}`}
-                                >
-                                    <div
-                                        className="flex size-8 shrink-0 items-center justify-center rounded-md"
-                                        style={{
-                                            background: dep.color,
-                                            color: 'white',
-                                            fontFamily:
-                                                "'Geist Mono', monospace",
-                                            fontSize: 12,
-                                            fontWeight: 700,
-                                        }}
-                                    >
-                                        {dep.line}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div
-                                            style={{
-                                                fontSize: 13,
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            {dep.direction}
-                                        </div>
-                                    </div>
-                                    <div className="shrink-0 text-right">
-                                        {dep.cancelled ? (
-                                            <span
-                                                style={{
-                                                    fontFamily:
-                                                        "'Geist Mono', monospace",
-                                                    fontSize: 18,
-                                                    fontWeight: 500,
-                                                    color: '#C4271A',
-                                                }}
-                                            >
-                                                —
-                                            </span>
-                                        ) : (
-                                            <>
-                                                <span
-                                                    style={{
-                                                        fontFamily:
-                                                            "'Geist Mono', monospace",
-                                                        fontSize: 18,
-                                                        fontWeight: 500,
-                                                        color:
-                                                            (dep.delay ?? 0) > 0
-                                                                ? '#C47D0E'
-                                                                : '#0A7C52',
-                                                    }}
-                                                >
-                                                    {dep.departures[0]}
-                                                </span>
-                                                <span
-                                                    className="text-[#AAA89F] dark:text-[#6B6860]"
-                                                    style={{
-                                                        fontSize: 10,
-                                                        marginLeft: 2,
-                                                    }}
-                                                >
-                                                    min
-                                                </span>
-                                            </>
-                                        )}
-                                        {(dep.delay ?? 0) > 0 &&
-                                            !dep.cancelled && (
-                                                <div
-                                                    style={{
-                                                        fontSize: 9,
-                                                        fontWeight: 700,
-                                                        color: '#C47D0E',
-                                                        marginTop: 1,
-                                                    }}
-                                                >
-                                                    +{dep.delay}m
-                                                </div>
-                                            )}
-                                    </div>
-                                </div>
                             ))}
                         </div>
                     </div>
