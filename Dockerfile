@@ -59,7 +59,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         bcmath \
         pcntl \
         mbstring \
-        opcache
+        opcache \
+        calendar
 
 # Install Redis extension
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
