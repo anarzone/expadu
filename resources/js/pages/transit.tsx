@@ -1697,6 +1697,7 @@ export default function Transit() {
                                     });
                                 }}
                                 locatable
+                                gpsPosition={geoPos}
                             />
                             {/* Swap button — between inputs */}
                             <div className="flex justify-center">

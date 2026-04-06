@@ -16,6 +16,7 @@ export function GeocodeInput({
     onSelect,
     onFocus: onFocusProp,
     locatable = false,
+    gpsPosition,
 }: {
     icon: string;
     placeholder: string;
@@ -29,6 +30,7 @@ export function GeocodeInput({
     }) => void;
     onFocus?: () => void;
     locatable?: boolean;
+    gpsPosition?: { lat: number; lng: number } | null;
 }) {
     const [results, setResults] = useState<GeoResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -43,40 +45,53 @@ export function GeocodeInput({
     onChangeRef.current = onChange;
     onSelectRef.current = onSelect;
 
+    async function resolveAddress(lat: number, lng: number) {
+        try {
+            const res = await fetch(
+                `/api/reverse-geocode?lat=${lat}&lng=${lng}`,
+            );
+            const data = await res.json();
+            return data?.address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        } catch {
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+    }
+
     function handleLocate() {
-        if (!navigator.geolocation) return;
         setLocating(true);
+
+        // Use existing GPS position if available (instant)
+        if (gpsPosition?.lat && gpsPosition?.lng) {
+            resolveAddress(gpsPosition.lat, gpsPosition.lng).then((label) => {
+                onChangeRef.current(label);
+                onSelectRef.current({
+                    lat: gpsPosition.lat,
+                    lng: gpsPosition.lng,
+                    name: label,
+                    label,
+                });
+                setLocating(false);
+            });
+            return;
+        }
+
+        // Fallback: request fresh position (low accuracy for speed)
+        if (!navigator.geolocation) {
+            setLocating(false);
+            return;
+        }
+
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
-                try {
-                    const res = await fetch(
-                        `/api/reverse-geocode?lat=${lat}&lng=${lng}`,
-                    );
-                    const data = await res.json();
-                    const label = data?.address || 'Current location';
-
-                    onChangeRef.current(label);
-                    onSelectRef.current({ lat, lng, name: label, label });
-                } catch (err) {
-                    console.error('Reverse geocode failed:', err);
-                    onChangeRef.current(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-                    onSelectRef.current({
-                        lat,
-                        lng,
-                        name: 'Current location',
-                        label: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-                    });
-                } finally {
-                    setLocating(false);
-                }
-            },
-            (err) => {
-                console.error('Geolocation error:', err.message);
+                const label = await resolveAddress(lat, lng);
+                onChangeRef.current(label);
+                onSelectRef.current({ lat, lng, name: label, label });
                 setLocating(false);
             },
-            { enableHighAccuracy: true, timeout: 10000 },
+            () => setLocating(false),
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 },
         );
     }
 
