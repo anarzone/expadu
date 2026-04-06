@@ -1,19 +1,25 @@
 import { IconBellRinging, IconBrandSafari, IconX } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
-import { usePushSubscription } from '@/hooks/use-push-subscription';
+import { useCallback, useMemo, useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
+import { usePushSubscription } from '@/hooks/use-push-subscription';
 
 const PUSH_DISMISS_KEY = 'push_prompt_dismissed_at';
 const SAFARI_DISMISS_KEY = 'safari_prompt_dismissed_at';
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 function isIos(): boolean {
-    if (typeof navigator === 'undefined') return false;
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
 function isStandalone(): boolean {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
     return (
         'standalone' in navigator &&
         (navigator as unknown as { standalone: boolean }).standalone
@@ -21,15 +27,26 @@ function isStandalone(): boolean {
 }
 
 function isSafari(): boolean {
-    if (typeof navigator === 'undefined') return false;
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+
     const ua = navigator.userAgent;
+
     return /Safari/.test(ua) && !/Chrome|CriOS|FxiOS/.test(ua);
 }
 
 function isDismissed(key: string): boolean {
-    if (typeof localStorage === 'undefined') return true;
+    if (typeof localStorage === 'undefined') {
+        return true;
+    }
+
     const ts = localStorage.getItem(key);
-    if (!ts) return false;
+
+    if (!ts) {
+        return false;
+    }
+
     return Date.now() - Number(ts) < COOLDOWN_MS;
 }
 
@@ -44,33 +61,29 @@ function isDismissed(key: string): boolean {
  */
 export function PushPromptCard() {
     const { isSupported, isSubscribed, subscribe } = usePushSubscription();
-    const [variant, setVariant] = useState<'safari' | 'enable' | null>(null);
     const [loading, setLoading] = useState(false);
     const [dismissed, setDismissed] = useState(false);
 
-    useEffect(() => {
-        // iOS but not Safari or not standalone PWA → suggest Safari
+    const variant = useMemo(() => {
         if (isIos() && (!isSafari() || !isStandalone())) {
             if (!isDismissed(SAFARI_DISMISS_KEY)) {
-                setVariant('safari');
-                return;
+                return 'safari' as const;
             }
         }
 
-        // Supported browser but not subscribed → suggest enabling
         if (isSupported && !isSubscribed) {
             if (!isDismissed(PUSH_DISMISS_KEY)) {
-                setVariant('enable');
-                return;
+                return 'enable' as const;
             }
         }
 
-        setVariant(null);
+        return null;
     }, [isSupported, isSubscribed]);
 
     const dismiss = useCallback(() => {
         const key =
             variant === 'safari' ? SAFARI_DISMISS_KEY : PUSH_DISMISS_KEY;
+
         localStorage.setItem(key, String(Date.now()));
         setDismissed(true);
     }, [variant]);
@@ -78,11 +91,17 @@ export function PushPromptCard() {
     const handleEnable = useCallback(async () => {
         setLoading(true);
         const ok = await subscribe();
+
         setLoading(false);
-        if (ok) setDismissed(true);
+
+        if (ok) {
+            setDismissed(true);
+        }
     }, [subscribe]);
 
-    if (!variant || dismissed) return null;
+    if (!variant || dismissed) {
+        return null;
+    }
 
     if (variant === 'safari') {
         return (

@@ -1,6 +1,4 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { PushPromptCard } from '@/components/cards/push-prompt-card';
-import { ServiceErrorBanner } from '@/components/service-error-banner';
 import {
     IconCompass,
     IconFileText,
@@ -8,6 +6,8 @@ import {
     IconBell,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
+import { PushPromptCard } from '@/components/cards/push-prompt-card';
+import { ServiceErrorBanner } from '@/components/service-error-banner';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { RouteSheet } from '@/components/transit/route-sheet';
 import { ICON_STROKE } from '@/constants/icons';
