@@ -74,7 +74,7 @@ class GermanHolidayService
      *
      * @return array{date: Carbon, name: string}|null
      */
-    public function getNextHoliday(?Carbon $from = null): ?array
+    public function getNextHoliday(CarbonInterface|Carbon|null $from = null): ?array
     {
         $from ??= Carbon::today();
         $holidays = $this->getHolidaysForYear($from->year);
