@@ -37,10 +37,15 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
         .props;
     const [isSubscribed, setIsSubscribed] = useState(false);
 
-    const isSupported =
-        typeof window !== 'undefined' &&
-        'serviceWorker' in navigator &&
-        'PushManager' in window;
+    const [isSupported, setIsSupported] = useState(false);
+
+    useEffect(() => {
+        setIsSupported(
+            'serviceWorker' in navigator &&
+                'PushManager' in window &&
+                'Notification' in window,
+        );
+    }, []);
 
     useEffect(() => {
         if (!isSupported) {
