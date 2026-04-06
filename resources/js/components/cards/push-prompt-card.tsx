@@ -1,4 +1,9 @@
-import { IconBellRinging, IconBrandSafari, IconX } from '@tabler/icons-react';
+import {
+    IconBellOff,
+    IconBellRinging,
+    IconBrandSafari,
+    IconX,
+} from '@tabler/icons-react';
 import { useCallback, useMemo, useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 import { usePushSubscription } from '@/hooks/use-push-subscription';
@@ -88,6 +93,14 @@ export function PushPromptCard() {
         setDismissed(true);
     }, [variant]);
 
+    const permissionDenied = useMemo(() => {
+        if (typeof Notification === 'undefined') {
+            return false;
+        }
+
+        return Notification.permission === 'denied';
+    }, []);
+
     const handleEnable = useCallback(async () => {
         setLoading(true);
         const ok = await subscribe();
@@ -131,6 +144,40 @@ export function PushPromptCard() {
                             </span>{' '}
                             to get push notifications and an app-like
                             experience.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (permissionDenied) {
+        return (
+            <div className="relative overflow-hidden rounded-[9px] border border-amber-500/15 bg-amber-500/[0.06] p-4 dark:border-amber-400/20 dark:bg-amber-500/10">
+                <button
+                    onClick={dismiss}
+                    className="absolute top-3 right-3 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    <IconX size={16} stroke={ICON_STROKE} />
+                </button>
+                <div className="flex items-start gap-3 pr-5">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 dark:bg-amber-400/15">
+                        <IconBellOff
+                            size={20}
+                            stroke={ICON_STROKE}
+                            className="text-amber-600 dark:text-amber-400"
+                        />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="text-[13px] font-semibold">
+                            Notifications blocked
+                        </div>
+                        <div className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+                            To receive alerts, allow notifications in your
+                            browser settings:{' '}
+                            <span className="font-medium text-foreground">
+                                Site settings → Notifications → Allow
+                            </span>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
 {
-    "resources/js/**/*.{ts,tsx}": ["prettier --write"],
+    "resources/js/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
     "resources/css/**/*.css": ["prettier --write"]
 }
