@@ -109,7 +109,7 @@ jobs:
           PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
       - name: Run Tests
-        run: php artisan test --compact --parallel --shard=${{ matrix.shard }}/3
+        run: vendor/bin/pest --compact --shard=${{ matrix.shard }}/3
 
   build-and-push:
     name: Build & Push Image
