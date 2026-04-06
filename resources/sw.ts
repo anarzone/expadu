@@ -8,7 +8,12 @@ self.clients.claim();
 
 // ── Push Notification Handler ──
 self.addEventListener('push', (event) => {
-    const data = event.data?.json() ?? {};
+    let data: Record<string, unknown> = {};
+    try {
+        data = event.data?.json() ?? {};
+    } catch {
+        // Malformed push payload — show generic notification
+    }
 
     const title = data.title ?? 'Expadu';
     const options: NotificationOptions = {
