@@ -1266,7 +1266,11 @@ export default function Transit() {
     const cr = commuteRecommendation;
 
     // UI state
-    const [fromValue, setFromValue] = useState(`${homeName}, ${homeAddress}`);
+    const [fromValue, setFromValue] = useState(
+        homeAddress && homeAddress !== homeName
+            ? `${homeName}, ${homeAddress}`
+            : homeName,
+    );
     const [toValue, setToValue] = useState('');
     const [journeyOrigin, setJourneyOrigin] = useState<{
         lat: number;

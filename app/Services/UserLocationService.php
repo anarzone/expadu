@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -22,17 +23,21 @@ class UserLocationService
     /**
      * Resolve the user's best known location.
      *
-     * @return array{lat: float, lng: float, source: string, name: string}
+     * @return array{lat: float, lng: float, source: string, name: string, address: string}
      */
     public function resolve(User $user, ?Request $request = null): array
     {
         // 1. GPS from request params (frontend sends lat/lng when GPS available)
         if ($request && $request->has('lat') && $request->has('lng')) {
+            $lat = (float) $request->query('lat');
+            $lng = (float) $request->query('lng');
+
             return [
-                'lat' => (float) $request->query('lat'),
-                'lng' => (float) $request->query('lng'),
+                'lat' => $lat,
+                'lng' => $lng,
                 'source' => 'gps',
                 'name' => 'Current location',
+                'address' => $this->reverseGeocode($lat, $lng) ?? 'Cologne',
             ];
         }
 
@@ -44,6 +49,7 @@ class UserLocationService
                 'lng' => $redisPing['lng'],
                 'source' => 'last_ping',
                 'name' => 'Recent location',
+                'address' => $this->reverseGeocode($redisPing['lat'], $redisPing['lng']) ?? 'Cologne',
             ];
         }
 
@@ -57,6 +63,7 @@ class UserLocationService
                 'lng' => (float) $home->lng,
                 'source' => 'home',
                 'name' => $home->name ?? 'Home',
+                'address' => $home->address ?? 'Cologne',
             ];
         }
 
@@ -66,7 +73,48 @@ class UserLocationService
             'lng' => 6.9603,
             'source' => 'default',
             'name' => 'Cologne',
+            'address' => 'Cologne, Germany',
         ];
+    }
+
+    /**
+     * Reverse geocode coordinates to a street address using Photon API.
+     * Cached for 1 hour to avoid excessive API calls.
+     */
+    private function reverseGeocode(float $lat, float $lng): ?string
+    {
+        // Round to ~100m precision for cache key (avoids cache misses for nearby pings)
+        $cacheKey = 'reverse_geo:'.round($lat, 3).','.round($lng, 3);
+
+        return cache()->remember($cacheKey, 3600, function () use ($lat, $lng) {
+            try {
+                $response = Http::timeout(3)
+                    ->get('https://photon.komoot.io/reverse', [
+                        'lat' => $lat,
+                        'lon' => $lng,
+                    ]);
+
+                $feature = $response->json('features.0.properties');
+                if (! $feature) {
+                    return null;
+                }
+
+                $street = $feature['street'] ?? $feature['name'] ?? null;
+                $house = $feature['housenumber'] ?? null;
+                $district = $feature['district'] ?? $feature['locality'] ?? null;
+
+                $parts = array_filter([$street, $house]);
+                $address = implode(' ', $parts);
+
+                if ($district && $address) {
+                    return "{$address}, {$district}";
+                }
+
+                return $address ?: $district ?: ($feature['city'] ?? null);
+            } catch (\Throwable) {
+                return null;
+            }
+        });
     }
 
     /**
