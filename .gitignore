@@ -29,3 +29,10 @@ yarn-error.log
 /.zed
 Version_3.1.4 2/
 /testing
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+tests/Browser/.auth/
