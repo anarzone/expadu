@@ -185,6 +185,7 @@ class DiscoverySuggestionService
                 ($goingEvent->location_name ?? 'Cologne').' · '.$goingEvent->starts_at->format('H:i'),
                 $goingEvent->lat ?? $workLat,
                 $goingEvent->lng ?? $workLng,
+                $goingEvent->source_url,
             );
         }
 
@@ -202,12 +203,18 @@ class DiscoverySuggestionService
             ->first();
 
         if ($event) {
+            $priceLabel = $event->price_text ?? ($event->is_free ? 'Free' : null);
+            $detail = ($event->location_name ?? 'Cologne')
+                .' · '.$event->starts_at->format('H:i')
+                .($priceLabel ? ' · '.$priceLabel : '');
+
             return $this->card(
                 $event->emoji ?? '📅',
                 $event->title,
-                ($event->location_name ?? 'Cologne').' · '.$event->starts_at->format('H:i'),
+                $detail,
                 $event->lat ?? $workLat,
                 $event->lng ?? $workLng,
+                $event->source_url,
             );
         }
 
@@ -280,6 +287,7 @@ class DiscoverySuggestionService
                 'You\'re going · '.$goingEvent->starts_at->format('H:i'),
                 $goingEvent->lat ?? $homeLat,
                 $goingEvent->lng ?? $homeLng,
+                $goingEvent->source_url,
             );
         }
 
@@ -432,12 +440,26 @@ class DiscoverySuggestionService
 
         foreach ($events as $e) {
             $going = $e->attendees()->where('user_id', $user->id)->exists();
+
+            $priceLabel = match (true) {
+                $going => null,
+                (bool) $e->price_text => $e->price_text,
+                (bool) $e->is_free => 'Free',
+                default => null,
+            };
+
+            $detail = ($going ? 'You\'re going · ' : '')
+                .($e->location_name ?? 'Cologne')
+                .' · '.$e->starts_at->format('H:i')
+                .($priceLabel ? ' · '.$priceLabel : '');
+
             $items[] = $this->card(
                 $going ? '🎫' : ($e->emoji ?? '📅'),
                 $e->title,
-                ($going ? 'You\'re going · ' : '').($e->location_name ?? 'Cologne').' · '.$e->starts_at->format('H:i'),
+                $detail,
                 $e->lat,
                 $e->lng,
+                $e->source_url,
             );
         }
 

@@ -26,19 +26,13 @@ class ScrapeEvents extends Command
 
         $created = 0;
 
-        // 1. Recurring community events
-        $created += $this->createRecurringEvents($systemUser->id);
-        $this->info("Recurring events: {$created} created");
+        $recurringCount = $this->createRecurringEvents($systemUser->id);
+        $created += $recurringCount;
+        $this->info("Recurring events: {$recurringCount} created");
 
-        // 2. Scrape koeln.de event calendar (RSS feed)
         $koelnCount = $this->scrapeKoelnDe($systemUser->id);
         $created += $koelnCount;
         $this->info("koeln.de events: {$koelnCount} created");
-
-        // 3. Scrape Stadt Köln Veranstaltungen
-        $stadtCount = $this->scrapeStadtKoeln($systemUser->id);
-        $created += $stadtCount;
-        $this->info("stadt-koeln.de events: {$stadtCount} created");
 
         $this->info("Total: {$created} events created/updated");
 
@@ -47,7 +41,6 @@ class ScrapeEvents extends Command
 
     /**
      * Fetch events from koeln.de via their Tribe Events REST API.
-     * Endpoint: https://www.koeln.de/wp-json/tribe/events/v1/events
      */
     protected function scrapeKoelnDe(int $organiserId): int
     {
@@ -68,9 +61,7 @@ class ScrapeEvents extends Command
                 return 0;
             }
 
-            $data = $response->json();
-
-            foreach ($data['events'] ?? [] as $ev) {
+            foreach ($response->json('events', []) as $ev) {
                 $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
                 if (! $title) {
                     continue;
@@ -81,7 +72,6 @@ class ScrapeEvents extends Command
                     continue;
                 }
 
-                // Deduplicate by title + date
                 if (Event::where('title', $title)->whereDate('starts_at', $startsAt->toDateString())->exists()) {
                     continue;
                 }
@@ -90,9 +80,18 @@ class ScrapeEvents extends Command
                 $venue = $ev['venue']['venue'] ?? null;
                 $address = $ev['venue']['address'] ?? null;
                 $category = $this->categoriseEvent($title, $desc);
-                $isFree = str_contains(mb_strtolower($ev['cost'] ?? ''), 'frei')
-                    || str_contains(mb_strtolower($ev['cost'] ?? ''), 'free')
-                    || empty($ev['cost']);
+                $sourceUrl = $ev['url'] ?? null;
+
+                [$isFree, $price, $priceText] = $this->parseCost($ev['cost'] ?? null);
+
+                $qualityScore = $this->computeInitialQuality([
+                    'venue' => $venue,
+                    'address' => $address,
+                    'description' => $desc,
+                    'starts_at' => $startsAt,
+                    'source_url' => $sourceUrl,
+                    'price_known' => $isFree !== null,
+                ]);
 
                 Event::create([
                     'title' => mb_substr($title, 0, 255),
@@ -101,10 +100,15 @@ class ScrapeEvents extends Command
                     'description' => $desc ?: null,
                     'starts_at' => $startsAt,
                     'ends_at' => isset($ev['end_date']) ? Carbon::parse($ev['end_date']) : $startsAt->copy()->addHours(2),
-                    'location_name' => $venue ? html_entity_decode($venue, ENT_QUOTES, 'UTF-8') : 'Cologne',
-                    'address' => $address ? html_entity_decode($address, ENT_QUOTES, 'UTF-8') : 'Cologne',
-                    'is_free' => $isFree,
+                    'location_name' => $venue ? html_entity_decode($venue, ENT_QUOTES, 'UTF-8') : null,
+                    'address' => $address ? html_entity_decode($address, ENT_QUOTES, 'UTF-8') : null,
+                    'is_free' => $isFree ?? false,
+                    'price' => $price,
+                    'price_text' => $priceText,
+                    'source' => 'koeln.de',
+                    'source_url' => $sourceUrl,
                     'organiser_id' => $organiserId,
+                    'quality_score' => $qualityScore,
                 ]);
 
                 $created++;
@@ -117,94 +121,81 @@ class ScrapeEvents extends Command
     }
 
     /**
-     * Scrape from Stadt Köln official events.
+     * Parse a raw cost string into (is_free, price, price_text).
+     *
+     * Returns:
+     *   - is_free: true = confirmed free, false = has cost, null = unknown
+     *   - price: lowest numeric price found, or null
+     *   - price_text: cleaned display string, or null when empty
+     *
+     * @return array{bool|null, float|null, string|null}
      */
-    protected function scrapeStadtKoeln(int $organiserId): int
+    protected function parseCost(?string $raw): array
     {
-        $created = 0;
-
-        try {
-            $response = Http::timeout(15)
-                ->withHeaders(['User-Agent' => 'Expadu/1.0'])
-                ->get('https://www.stadt-koeln.de/leben-in-koeln/freizeit-natur-sport/veranstaltungskalender/');
-
-            if (! $response->successful()) {
-                return 0;
-            }
-
-            $html = $response->body();
-
-            // Extract event data from structured HTML
-            preg_match_all('/<(?:h[234]|a|span)[^>]*>([^<]{10,100})<\/(?:h[234]|a|span)>/i', $html, $matches);
-
-            $seen = [];
-            foreach ($matches[1] ?? [] as $rawTitle) {
-                $title = trim(strip_tags($rawTitle));
-                if (! $title || mb_strlen($title) < 8 || mb_strlen($title) > 120) {
-                    continue;
-                }
-
-                // Skip generic navigation/UI text
-                if (preg_match('/^(Menü|Suche|Kontakt|Impressum|Datenschutz|Navigation|Anmelden|Startseite)/i', $title)) {
-                    continue;
-                }
-
-                $key = mb_strtolower($title);
-                if (isset($seen[$key])) {
-                    continue;
-                }
-                $seen[$key] = true;
-
-                if (Event::where('title', $title)->whereDate('starts_at', '>=', today())->exists()) {
-                    continue;
-                }
-
-                $category = $this->categoriseEvent($title, '');
-
-                // Try to parse a date from the title (e.g. "12.04.2026: Frühlingsfest")
-                $startsAt = null;
-                if (preg_match('/(\d{1,2})\.(\d{1,2})\.(\d{4})/', $title, $dm)) {
-                    try {
-                        $startsAt = Carbon::createFromFormat('d.m.Y', "{$dm[1]}.{$dm[2]}.{$dm[3]}")->setTime(10, 0);
-                        if ($startsAt->isPast()) {
-                            $startsAt = null;
-                        }
-                    } catch (\Exception) {
-                        $startsAt = null;
-                    }
-                }
-
-                // Skip events where we can't determine a real date — no random dates
-                if (! $startsAt) {
-                    continue;
-                }
-
-                Event::create([
-                    'title' => mb_substr($title, 0, 255),
-                    'emoji' => $this->categoryEmoji($category),
-                    'category' => $category,
-                    'description' => 'Official city event — Stadt Köln',
-                    'starts_at' => $startsAt,
-                    'ends_at' => null,
-                    'location_name' => null,
-                    'address' => null,
-                    'is_free' => true,
-                    'organiser_id' => $organiserId,
-                    'source' => 'stadt-koeln',
-                    'quality_score' => 0.2,
-                ]);
-
-                $created++;
-
-                if ($created >= 10) {
-                    break;
-                }
-            }
-        } catch (\Exception $e) {
-            Log::warning('events:scrape — stadt-koeln.de error: '.$e->getMessage());
+        if ($raw === null || trim($raw) === '') {
+            // Empty = unknown, NOT free
+            return [null, null, null];
         }
 
-        return $created;
+        $cleaned = trim(html_entity_decode($raw, ENT_QUOTES, 'UTF-8'));
+
+        // Explicitly free by keyword
+        if (preg_match('/\b(frei|free|kostenlos|gratis|eintritt frei)\b/i', $cleaned)) {
+            return [true, null, 'Free'];
+        }
+
+        // Extract all numeric prices (handles "8–12 €", "15,00€", "ab 9.50 €")
+        preg_match_all('/(\d+)[,.]?(\d*)/', $cleaned, $matches);
+        $prices = [];
+        foreach ($matches[1] as $i => $whole) {
+            $decimal = $matches[2][$i] ? '.'.$matches[2][$i] : '';
+            $prices[] = (float) ($whole.$decimal);
+        }
+
+        $minPrice = ! empty($prices) ? min($prices) : null;
+
+        // "0 €", "0" — numeric zero means free
+        if ($minPrice !== null && $minPrice == 0 && mb_strlen(trim(preg_replace('/[\d\s,.]/', '', $cleaned))) <= 2) {
+            return [true, null, 'Free'];
+        }
+
+        // Normalise display text: strip excess whitespace, cap length
+        $displayText = mb_substr(preg_replace('/\s+/', ' ', $cleaned), 0, 60);
+
+        return [false, $minPrice, $displayText];
+    }
+
+    /**
+     * Compute an initial quality score 0.0–1.0 at scrape time.
+     *
+     * The enrichment command may later refine this.
+     *
+     * @param  array{venue: ?string, address: ?string, description: ?string, starts_at: Carbon, source_url: ?string, price_known: bool}  $fields
+     */
+    protected function computeInitialQuality(array $fields): float
+    {
+        $score = 0.0;
+
+        if ($fields['venue'] && ! in_array(mb_strtolower($fields['venue']), ['cologne', 'köln', ''])) {
+            $score += 0.25;
+        }
+        if ($fields['address'] && ! in_array(mb_strtolower($fields['address']), ['cologne', 'köln', ''])) {
+            $score += 0.2;
+        }
+        if ($fields['description'] && mb_strlen($fields['description']) > 20) {
+            $score += 0.2;
+        }
+        if ($fields['starts_at']->hour > 0) {
+            $score += 0.15;
+        }
+        if ($fields['source_url']) {
+            $score += 0.1;
+        }
+        if ($fields['price_known']) {
+            $score += 0.1;
+        }
+
+        return min(1.0, $score);
     }
 
     protected function categoriseEvent(string $title, string $desc): string
@@ -230,7 +221,7 @@ class ScrapeEvents extends Command
             return 'social';
         }
 
-        return 'culture'; // default
+        return 'culture';
     }
 
     protected function categoryEmoji(string $category): string
@@ -280,8 +271,10 @@ class ScrapeEvents extends Command
                     'location_name' => $t['location_name'],
                     'address' => $t['address'],
                     'is_free' => $t['is_free'],
+                    'price_text' => 'Free',
                     'max_attendees' => $t['max_attendees'],
                     'organiser_id' => $organiserId,
+                    'quality_score' => 0.7,
                 ]);
 
                 $created++;

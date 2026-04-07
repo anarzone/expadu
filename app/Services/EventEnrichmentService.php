@@ -165,7 +165,12 @@ class EventEnrichmentService
 
         // Has specific venue (not generic "Cologne")
         if ($event->location_name && ! in_array(mb_strtolower($event->location_name), ['cologne', 'köln', ''])) {
-            $score += 0.3;
+            $score += 0.25;
+        }
+
+        // Has address with detail
+        if ($event->address && ! in_array(mb_strtolower($event->address), ['cologne', 'köln', ''])) {
+            $score += 0.2;
         }
 
         // Has description
@@ -175,17 +180,17 @@ class EventEnrichmentService
 
         // Has proper time (not midnight which suggests missing data)
         if ($event->starts_at && $event->starts_at->hour > 0) {
-            $score += 0.2;
+            $score += 0.15;
         }
 
-        // Has category
-        if ($event->category) {
+        // Links back to source
+        if ($event->source_url) {
             $score += 0.1;
         }
 
-        // Has address with detail
-        if ($event->address && ! in_array(mb_strtolower($event->address), ['cologne', 'köln', ''])) {
-            $score += 0.2;
+        // Price is known (either confirmed free or has price text)
+        if ($event->price_text || $event->is_free) {
+            $score += 0.1;
         }
 
         return min(1.0, $score);
