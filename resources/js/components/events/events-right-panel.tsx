@@ -30,9 +30,9 @@ function toRpEvent(ev: EventData): RightPanelEvent {
         emoji,
         title: ev.title,
         sub: `${ev.day} ${ev.date} ${ev.month} · ${ev.time}`,
-        tagLabel: ev.price ?? 'Free',
-        tagBg: ev.free ? '#D4F0E6' : '#EFEDE7',
-        tagColor: ev.free ? '#0A7C52' : '#6B6860',
+        tagLabel: ev.price ?? (ev.free ? 'Free' : 'See website'),
+        tagBg: ev.free ? '#D4F0E6' : ev.price ? '#EFEDE7' : '#FDF0D4',
+        tagColor: ev.free ? '#0A7C52' : ev.price ? '#6B6860' : '#C47D0E',
     };
 }
 

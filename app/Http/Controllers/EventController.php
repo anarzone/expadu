@@ -132,7 +132,9 @@ class EventController extends Controller
             'area' => $area,
             'distance' => '',
             'address' => $e->address,
-            'price' => $e->is_free ? 'Free' : ($e->price ? '€'.number_format($e->price, 0) : 'Free'),
+            'price' => $e->is_free
+                ? 'Free'
+                : ($e->price_text ?? ($e->price ? '€'.number_format($e->price, 0) : null)),
             'color' => $color,
             'barColor' => $color,
             'categories' => [$e->category],

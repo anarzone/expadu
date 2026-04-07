@@ -92,7 +92,11 @@ export function EventDetailContent({
                     icon="📍"
                     text={`${event.venue}, ${event.area} · ${event.distance}`}
                 />
-                <DetailRow icon="💶" text={event.price} />
+                <DetailRow
+                    icon="💶"
+                    text={event.price ?? 'See website for price'}
+                    muted={!event.price}
+                />
                 <DetailRow
                     icon="👥"
                     text={`${attendStr} attending${spotsLeft !== null ? ` · ${spotsLeft} spots left` : ''}`}
@@ -205,11 +209,19 @@ export function EventDetailContent({
     );
 }
 
-function DetailRow({ icon, text }: { icon: string; text: string }) {
+function DetailRow({
+    icon,
+    text,
+    muted = false,
+}: {
+    icon: string;
+    text: string;
+    muted?: boolean;
+}) {
     return (
         <div className="flex items-center gap-2.5" style={{ fontSize: 13 }}>
             <span style={{ fontSize: 16 }}>{icon}</span>
-            <span>{text}</span>
+            <span className={muted ? 'text-[#AAA89F]' : undefined}>{text}</span>
         </div>
     );
 }

@@ -28,7 +28,7 @@ export type EventData = {
     distance: string;
     time: string;
     duration: string | null;
-    price: string;
+    price: string | null;
     color: string;
     barColor: string;
     categories: string[];
