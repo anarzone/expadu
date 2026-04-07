@@ -149,7 +149,7 @@ class EventController extends Controller
             'englishFriendly' => true,
             'featured' => false,
             'karneval' => false,
-            'link' => null,
+            'link' => $e->source_url,
         ];
     }
 
