@@ -2,69 +2,88 @@
 
 namespace App\Services;
 
+use App\Services\Weather\BrightSkyProvider;
+use App\Services\Weather\MetNoProvider;
+use App\Services\Weather\OpenMeteoProvider;
+use App\Services\Weather\WeatherProvider;
+use App\Services\Weather\WttrInProvider;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WeatherService
 {
     /**
-     * Get current weather using Open-Meteo API (DWD ICON model — same as Apple Weather in Germany).
-     * Single API call returns both current conditions and hourly forecast.
-     * Free, no API key, updates every 15 minutes.
+     * Ordered list of providers. First successful response wins.
+     *
+     * @var list<WeatherProvider>
      */
-    public function getCurrentWeather(float $lat = 50.9375, float $lng = 6.9603): array
+    protected array $providers;
+
+    /**
+     * @param  list<WeatherProvider>|null  $providers
+     */
+    public function __construct(?array $providers = null)
     {
-        $data = $this->fetchOpenMeteo($lat, $lng);
-
-        $current = $data['current'] ?? [];
-        $weatherCode = $current['weather_code'] ?? 3;
-        $precip = (float) ($current['precipitation'] ?? 0);
-        $cloudCover = (int) ($current['cloud_cover'] ?? 50);
-
-        // Override weather code when model disagrees with actual conditions:
-        // If precipitation is negligible but code says rain, use cloud cover instead
-        if ($precip < 0.5 && $weatherCode >= 50 && $weatherCode <= 69) {
-            $weatherCode = match (true) {
-                $cloudCover <= 10 => 0,  // Clear
-                $cloudCover <= 50 => 2,  // Partly cloudy
-                default => 3,            // Overcast
-            };
-        }
-
-        return [
-            'temperature' => (int) floor($current['temperature_2m'] ?? 0),
-            'feels_like' => (int) floor($current['apparent_temperature'] ?? $current['temperature_2m'] ?? 0),
-            'icon' => $this->wmoToIcon($weatherCode),
-            'emoji' => $this->wmoToEmoji($weatherCode),
-            'condition' => $this->wmoToCondition($weatherCode),
-            'wind_speed' => (int) floor($current['wind_speed_10m'] ?? 0),
-            'wind_gust' => (int) floor($current['wind_gusts_10m'] ?? 0),
-            'wind_direction' => $current['wind_direction_10m'] ?? 0,
-            'humidity' => round($current['relative_humidity_2m'] ?? 0),
-            'precipitation' => $precip,
+        // Ordered by reliability first, data quality second:
+        //  1. wttr.in     — most reliable in our tests, real FeelsLikeC, gust from current hour
+        //  2. Open-Meteo  — best data when up (sun-aware AT) but recently degraded (502/429/timeouts)
+        //  3. Bright Sky  — DWD station observations, no feels_like
+        //  4. Met.no      — Norwegian Met Institute, no feels_like
+        $this->providers = $providers ?? [
+            app(WttrInProvider::class),
+            app(OpenMeteoProvider::class),
+            app(BrightSkyProvider::class),
+            app(MetNoProvider::class),
         ];
     }
 
     /**
-     * Get hourly forecast for today. Returns rain start time and bike score.
+     * Get current weather. Uses DWD (Bright Sky) with Met.no fallback.
+     */
+    public function getCurrentWeather(float $lat = 50.9375, float $lng = 6.9603): array
+    {
+        $data = $this->fetch($lat, $lng);
+        $current = $data['current'] ?? null;
+
+        if (! $current) {
+            return $this->unavailableWeather();
+        }
+
+        $icon = $current['icon'];
+
+        return [
+            'temperature' => (int) floor($current['temperature']),
+            'feels_like' => $current['feels_like'] !== null
+                ? (int) floor($current['feels_like'])
+                : null,
+            'icon' => $icon,
+            'emoji' => $this->iconToEmoji($icon),
+            'condition' => $this->iconToCondition($icon),
+            'wind_speed' => (int) floor($current['wind_speed']),
+            'wind_gust' => (int) floor($current['wind_gust']),
+            'wind_direction' => (int) floor($current['wind_direction']),
+            'humidity' => $current['humidity'] !== null ? (int) round($current['humidity']) : 0,
+            'precipitation' => (float) $current['precipitation'],
+        ];
+    }
+
+    /**
+     * Get hourly forecast — returns rain start time and a bike score.
      */
     public function getForecast(float $lat = 50.9375, float $lng = 6.9603): array
     {
-        $data = $this->fetchOpenMeteo($lat, $lng);
-
+        $data = $this->fetch($lat, $lng);
         $hourly = $data['hourly'] ?? [];
-        $times = $hourly['time'] ?? [];
-        $precip = $hourly['precipitation'] ?? [];
-        $nowHour = now()->hour;
+        $nowHour = now('Europe/Berlin')->hour;
         $rainStart = null;
 
-        foreach ($times as $i => $time) {
-            $hour = (int) date('G', strtotime($time));
-            if ($hour <= $nowHour) {
+        foreach ($hourly as $entry) {
+            if ($entry['hour'] <= $nowHour) {
                 continue;
             }
-            if (($precip[$i] ?? 0) > 0.1 && ! $rainStart) {
-                $rainStart = str_pad($hour, 2, '0', STR_PAD_LEFT).':00';
+            if ($entry['precipitation'] > 0.1) {
+                $rainStart = str_pad((string) $entry['hour'], 2, '0', STR_PAD_LEFT).':00';
+                break;
             }
         }
 
@@ -79,32 +98,54 @@ class WeatherService
     }
 
     /**
-     * Fetch Open-Meteo data — cached for 5 minutes.
-     * Single call returns current + hourly forecast.
+     * Try each provider in order. Cache only successful responses.
+     *
+     * @return array{current: array<string, mixed>, hourly: list<array{hour: int, precipitation: float}>}|array{}
      */
-    protected function fetchOpenMeteo(float $lat, float $lng): array
+    protected function fetch(float $lat, float $lng): array
     {
-        return Cache::remember("openmeteo_{$lat}_{$lng}", 300, function () use ($lat, $lng) {
-            try {
-                $response = Http::timeout(5)->retry(2, 500)
-                    ->get('https://api.open-meteo.com/v1/forecast', [
-                        'latitude' => $lat,
-                        'longitude' => $lng,
-                        'current' => 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover',
-                        'hourly' => 'precipitation,temperature_2m,wind_speed_10m',
-                        'timezone' => 'Europe/Berlin',
-                        'forecast_days' => 1,
-                    ]);
+        $cacheKey = "weather_{$lat}_{$lng}";
+        $cached = Cache::get($cacheKey);
 
-                if ($response->successful()) {
-                    return $response->json();
-                }
-            } catch (\Exception $e) {
-                report($e);
+        if (is_array($cached) && ! empty($cached)) {
+            return $cached;
+        }
+
+        foreach ($this->providers as $provider) {
+            $data = $provider->fetch($lat, $lng);
+
+            if ($data !== null) {
+                Cache::put($cacheKey, $data, 300);
+
+                return $data;
             }
 
-            return [];
-        });
+            Log::warning("Weather provider {$provider->name()} returned null, falling back");
+        }
+
+        Log::error("All weather providers failed for ({$lat}, {$lng})");
+
+        return [];
+    }
+
+    /**
+     * Placeholder values when every provider fails. The `condition` is the
+     * signal consumers can use to show a "weather unavailable" state.
+     */
+    protected function unavailableWeather(): array
+    {
+        return [
+            'temperature' => 0,
+            'feels_like' => null,
+            'icon' => 'cloudy',
+            'emoji' => '☁️',
+            'condition' => 'Unavailable',
+            'wind_speed' => 0,
+            'wind_gust' => 0,
+            'wind_direction' => 0,
+            'humidity' => 0,
+            'precipitation' => 0.0,
+        ];
     }
 
     protected function calculateBikeScore(array $weather, ?string $rainStart): string
@@ -131,65 +172,40 @@ class WeatherService
         return 'Great — clear skies';
     }
 
-    /**
-     * WMO Weather Code to emoji.
-     * https://www.nodc.noaa.gov/archive/arc0021/0002199/1.1/data/0-data/HTML/WMO-CODE/WMO4677.HTM
-     */
-    protected function wmoToEmoji(int $code): string
+    protected function iconToEmoji(string $icon): string
     {
         $isNight = now()->hour < 6 || now()->hour >= 20;
 
-        return match (true) {
-            $code === 0 => $isNight ? '🌙' : '☀️',
-            $code <= 2 => $isNight ? '🌙' : '⛅',
-            $code === 3 => '☁️',
-            $code <= 49 => '🌫️',
-            $code <= 59 => '🌦️',
-            $code <= 69 => '🌧️',
-            $code <= 79 => '🌨️',
-            $code <= 84 => '🌧️',
-            $code <= 89 => '🌨️',
-            $code <= 99 => '⛈️',
+        return match ($icon) {
+            'clear-day' => '☀️',
+            'clear-night' => '🌙',
+            'partly-cloudy-day' => '⛅',
+            'partly-cloudy-night' => '🌙',
+            'cloudy' => '☁️',
+            'fog' => '🌫️',
+            'wind' => '💨',
+            'rain' => '🌧️',
+            'sleet' => '🌨️',
+            'snow' => '🌨️',
+            'hail' => '🌧️',
+            'thunderstorm' => '⛈️',
             default => $isNight ? '🌙' : '⛅',
         };
     }
 
-    protected function wmoToIcon(int $code): string
+    protected function iconToCondition(string $icon): string
     {
-        $isDay = now()->hour >= 6 && now()->hour < 20;
-
-        return match (true) {
-            $code === 0 => $isDay ? 'clear-day' : 'clear-night',
-            $code <= 2 => $isDay ? 'partly-cloudy-day' : 'partly-cloudy-night',
-            $code === 3 => 'cloudy',
-            $code <= 49 => 'fog',
-            $code <= 69 => 'rain',
-            $code <= 79 => 'snow',
-            $code <= 84 => 'rain',
-            $code <= 89 => 'hail',
-            $code <= 99 => 'thunderstorm',
-            default => 'cloudy',
-        };
-    }
-
-    protected function wmoToCondition(int $code): string
-    {
-        return match (true) {
-            $code === 0 => 'Clear sky',
-            $code === 1 => 'Mainly clear',
-            $code === 2 => 'Partly cloudy',
-            $code === 3 => 'Overcast',
-            $code <= 49 => 'Foggy',
-            $code <= 55 => 'Drizzle',
-            $code <= 59 => 'Freezing drizzle',
-            $code <= 65 => 'Rain',
-            $code <= 69 => 'Freezing rain',
-            $code <= 75 => 'Snow',
-            $code === 77 => 'Snow grains',
-            $code <= 82 => 'Rain showers',
-            $code <= 86 => 'Snow showers',
-            $code <= 89 => 'Hail',
-            $code <= 99 => 'Thunderstorm',
+        return match ($icon) {
+            'clear-day', 'clear-night' => 'Clear sky',
+            'partly-cloudy-day', 'partly-cloudy-night' => 'Partly cloudy',
+            'cloudy' => 'Overcast',
+            'fog' => 'Foggy',
+            'wind' => 'Windy',
+            'rain' => 'Rain',
+            'sleet' => 'Sleet',
+            'snow' => 'Snow',
+            'hail' => 'Hail',
+            'thunderstorm' => 'Thunderstorm',
             default => 'Partly cloudy',
         };
     }

@@ -35,15 +35,40 @@ pest()->extend(TestCase::class)
         });
 
         Http::fake([
+            'wttr.in/*' => Http::response([
+                'current_condition' => [[
+                    'temp_C' => '15',
+                    'FeelsLikeC' => '14',
+                    'humidity' => '65',
+                    'weatherCode' => '116',
+                    'winddirDegree' => '220',
+                    'windspeedKmph' => '5',
+                    'precipMM' => '0.0',
+                ]],
+                'weather' => [[
+                    'hourly' => [
+                        ['time' => '0', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                        ['time' => '300', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                        ['time' => '600', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                        ['time' => '900', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                        ['time' => '1200', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                        ['time' => '1500', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                        ['time' => '1800', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                        ['time' => '2100', 'precipMM' => '0.0', 'WindGustKmph' => '12'],
+                    ],
+                ]],
+            ]),
             'api.open-meteo.com/*' => Http::response([
                 'current' => [
                     'temperature_2m' => 15.0,
+                    'apparent_temperature' => 14.0,
                     'wind_speed_10m' => 5.0,
                     'wind_gusts_10m' => 12.0,
                     'wind_direction_10m' => 220,
                     'relative_humidity_2m' => 65,
                     'precipitation' => 0.0,
                     'weather_code' => 2,
+                    'cloud_cover' => 50,
                 ],
                 'hourly' => [
                     'time' => [],
