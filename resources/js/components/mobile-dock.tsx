@@ -49,7 +49,10 @@ export function MobileDock() {
                                 }
                             />
                             {item.href === '/alerts' && !!unreadAlertCount && (
-                                <span className="absolute top-1 right-2 flex size-[16px] items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
+                                <span
+                                    data-testid="alert-badge"
+                                    className="absolute top-1 right-2 flex size-[16px] items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white"
+                                >
                                     {unreadAlertCount > 9
                                         ? '9+'
                                         : unreadAlertCount}

@@ -115,10 +115,9 @@ export default function Dashboard() {
         needs_setup?: boolean;
     };
 
-    const { feed, weather, forecast, commuteRecommendation } = usePage<{
+    const { feed, weather, commuteRecommendation } = usePage<{
         feed: DashboardFeed;
         weather: DashboardFeed['weather'];
-        forecast: DashboardFeed['forecast'];
         commuteRecommendation: CommuteRec;
     }>().props;
     const cr = commuteRecommendation;
@@ -126,7 +125,7 @@ export default function Dashboard() {
     const user = auth?.user as { name?: string } | undefined;
     const greeting = getGreeting(user?.name);
     const { track } = useTracker();
-    const { position: geoPos, quality: geoQuality } = useGeolocation();
+    const { position: geoPos } = useGeolocation();
 
     // Track location + reload dashboard when moved >200m
     const lastDashReloadRef = useRef<string>('');
@@ -153,6 +152,7 @@ export default function Dashboard() {
                 preserveScroll: true,
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [geoPos?.lat, geoPos?.lng]);
     const recs = feed?.recommendations ?? [];
     const settlement = feed?.settlement;
@@ -171,27 +171,6 @@ export default function Dashboard() {
     const topAlert = recs.find(
         (r) => r.type === 'appointment' || r.type === 'deadline_overdue',
     );
-    const warnings = recs.filter(
-        (r) =>
-            [
-                'deadline_overdue',
-                'deadline_warning',
-                'disruption',
-                'weather_alert',
-            ].includes(r.type) && r !== topAlert,
-    );
-    const timelineRows = recs
-        .filter(
-            (r) =>
-                ![
-                    'deadline_overdue',
-                    'deadline_warning',
-                    'disruption',
-                    'weather_alert',
-                    'appointment',
-                ].includes(r.type),
-        )
-        .slice(0, 3);
 
     return (
         <AppLayout>
@@ -233,6 +212,7 @@ export default function Dashboard() {
                 {weather && (
                     <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                         <div
+                            data-testid="commute-card"
                             className="relative overflow-hidden"
                             style={{
                                 background: '#1A4CD4',
@@ -468,6 +448,7 @@ export default function Dashboard() {
                                                         c.type ?? 'unknown',
                                                     card_name: c.name ?? '',
                                                 });
+
                                                 if (c.to_lat && c.to_lng) {
                                                     setRouteSheetDest({
                                                         name: String(
@@ -528,9 +509,6 @@ export default function Dashboard() {
                 </div>
 
                 {/* Warnings section removed — handled by commute recommendation cards now */}
-                {false && warnings.length > 0 && (
-                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]"></div>
-                )}
 
                 {/* Live departures */}
                 {departures && (departures.departures?.length ?? 0) > 0 && (
@@ -982,80 +960,6 @@ export default function Dashboard() {
                 </div>
             )}
         </AppLayout>
-    );
-}
-
-function RecCard({ rec }: { rec: Recommendation }) {
-    const colorMap: Record<
-        string,
-        { bg: string; text: string; border: string }
-    > = {
-        danger: {
-            bg: '#FDE8E6',
-            text: '#C4271A',
-            border: 'rgba(196,39,26,.15)',
-        },
-        warn: {
-            bg: '#FDF0D4',
-            text: '#C47D0E',
-            border: 'rgba(196,125,14,.15)',
-        },
-        success: {
-            bg: '#D4F0E6',
-            text: '#0A7C52',
-            border: 'rgba(10,124,82,.15)',
-        },
-        accent: {
-            bg: '#EBF0FD',
-            text: '#1A4CD4',
-            border: 'rgba(26,76,212,.15)',
-        },
-        neutral: { bg: '#EFEDE7', text: '#6B6860', border: '#E2DFD6' },
-    };
-    const colors = colorMap[rec.color] ?? colorMap.neutral;
-
-    return (
-        <div
-            className="flex items-center gap-3 rounded-[14px] border bg-white p-3.5 transition-all hover:shadow-sm dark:bg-[#1E1D15]"
-            style={{ borderColor: colors.border }}
-        >
-            <div
-                className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg"
-                style={{ background: colors.bg }}
-            >
-                {rec.emoji}
-            </div>
-            <div className="min-w-0 flex-1">
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{rec.title}</div>
-                <div
-                    className="text-[#6B6860] dark:text-[#AAA89F]"
-                    style={{ fontSize: 12 }}
-                >
-                    {rec.subtitle}
-                </div>
-            </div>
-            {rec.value && (
-                <div className="shrink-0 text-right">
-                    <div
-                        style={{
-                            fontFamily: "'Geist Mono', monospace",
-                            fontSize: 20,
-                            fontWeight: 500,
-                            lineHeight: 1,
-                            color: colors.text,
-                        }}
-                    >
-                        {rec.value}
-                    </div>
-                    <div
-                        className="text-[#AAA89F] dark:text-[#6B6860]"
-                        style={{ fontSize: 9 }}
-                    >
-                        {rec.unit}
-                    </div>
-                </div>
-            )}
-        </div>
     );
 }
 

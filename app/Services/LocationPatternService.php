@@ -120,6 +120,29 @@ class LocationPatternService
     }
 
     /**
+     * Get the user's most recent GPS position from location_ping events (last 60 min).
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    public function getLastGps(User $user): ?array
+    {
+        $ping = UserEvent::where('user_id', $user->id)
+            ->where('event_type', 'location_ping')
+            ->where('created_at', '>=', now()->subMinutes(60))
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $ping || ! isset($ping->payload['lat'], $ping->payload['lng'])) {
+            return null;
+        }
+
+        return [
+            'lat' => (float) $ping->payload['lat'],
+            'lng' => (float) $ping->payload['lng'],
+        ];
+    }
+
+    /**
      * Detect the user's current location context from GPS pings.
      * Returns which saved place they're nearest to.
      *

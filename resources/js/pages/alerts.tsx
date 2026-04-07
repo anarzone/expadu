@@ -1,11 +1,10 @@
+import { Head, router, usePage } from '@inertiajs/react';
 import { IconSettings } from '@tabler/icons-react';
-import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
-import { AlertRow, type AlertData } from '@/components/alerts/alert-row';
-import {
-    AlertStackRow,
-    type AlertStack,
-} from '@/components/alerts/alert-stack';
+import { AlertRow } from '@/components/alerts/alert-row';
+import type { AlertData } from '@/components/alerts/alert-row';
+import { AlertStackRow } from '@/components/alerts/alert-stack';
+import type { AlertStack } from '@/components/alerts/alert-stack';
 import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import AppLayout from '@/layouts/app-layout';
@@ -26,40 +25,85 @@ const NEVER_STACK = new Set([
 
 /** Detect subtype from alert data — granular so only truly similar alerts stack */
 function detectSubtype(alert: AlertData): string {
-    if (alert.subtype) return alert.subtype;
+    if (alert.subtype) {
+        return alert.subtype;
+    }
+
     const t = alert.title?.toLowerCase() ?? '';
+
     // Transit
-    if (t.includes('disruption')) return 'transit_disruption';
-    if (t.includes('delay') || t.includes('running')) return 'transit_delay';
+    if (t.includes('disruption')) {
+        return 'transit_disruption';
+    }
+
+    if (t.includes('delay') || t.includes('running')) {
+        return 'transit_delay';
+    }
+
     // Weather
-    if (t.includes('rain')) return 'weather_rain';
-    if (t.includes('wind')) return 'weather_wind';
+    if (t.includes('rain')) {
+        return 'weather_rain';
+    }
+
+    if (t.includes('wind')) {
+        return 'weather_wind';
+    }
+
     if (
         t.includes('heat') ||
         t.includes('freezing') ||
         t.includes('temperature')
-    )
+    ) {
         return 'weather_temp';
-    if (t.includes('weather')) return 'weather';
+    }
+
+    if (t.includes('weather')) {
+        return 'weather';
+    }
+
     // Infrastructure
-    if (t.includes('rhine') || t.includes('water level')) return 'rhine';
+    if (t.includes('rhine') || t.includes('water level')) {
+        return 'rhine';
+    }
+
     if (
         t.includes('bürgeramt') ||
         t.includes('appointment') ||
         t.includes('slot')
-    )
+    ) {
         return 'buergeramt';
+    }
+
     // Social — each is its own subtype (no grouping across different social actions)
-    if (t.includes('partner') || t.includes('match')) return 'partner_match';
-    if (t.includes('connection') || t.includes('accepted'))
+    if (t.includes('partner') || t.includes('match')) {
+        return 'partner_match';
+    }
+
+    if (t.includes('connection') || t.includes('accepted')) {
         return 'connection_accepted';
-    if (t.includes('joined')) return 'event_activity';
-    if (t.includes('tip') || t.includes('area')) return 'area_tip';
+    }
+
+    if (t.includes('joined')) {
+        return 'event_activity';
+    }
+
+    if (t.includes('tip') || t.includes('area')) {
+        return 'area_tip';
+    }
+
     // Reminders
-    if (t.includes('tomorrow')) return 'event_reminder';
-    if (t.includes('reminder')) return 'reminder';
-    if (t.includes('bank') || t.includes('steuer'))
+    if (t.includes('tomorrow')) {
+        return 'event_reminder';
+    }
+
+    if (t.includes('reminder')) {
+        return 'reminder';
+    }
+
+    if (t.includes('bank') || t.includes('steuer')) {
         return 'bureaucracy_reminder';
+    }
+
     return 'generic';
 }
 
@@ -73,6 +117,7 @@ function stackAlerts(alerts: AlertData[]): (AlertData | AlertStack)[] {
 
     for (const alert of alerts) {
         const subtype = detectSubtype(alert);
+
         if (NEVER_STACK.has(subtype)) {
             result.push(alert);
             continue;
@@ -83,9 +128,13 @@ function stackAlerts(alerts: AlertData[]): (AlertData | AlertStack)[] {
         let matched = false;
 
         for (const [key, group] of grouped) {
-            if (!key.startsWith(subtype + ':')) continue;
+            if (!key.startsWith(subtype + ':')) {
+                continue;
+            }
+
             // Check if this alert is within 5h of the latest in this group
             const latestTime = new Date(group[0].created_at).getTime();
+
             if (Math.abs(time - latestTime) <= STACK_WINDOW_MS) {
                 group.push(alert);
                 matched = true;
@@ -101,6 +150,7 @@ function stackAlerts(alerts: AlertData[]): (AlertData | AlertStack)[] {
 
     for (const [key, group] of grouped) {
         const subtype = key.split(':')[0];
+
         if (group.length === 1) {
             result.push(group[0]);
         } else {
@@ -125,6 +175,7 @@ function stackAlerts(alerts: AlertData[]): (AlertData | AlertStack)[] {
             'stackType' in b
                 ? new Date(b.latest.created_at).getTime()
                 : new Date(b.created_at).getTime();
+
         return bTime - aTime;
     });
 }
@@ -197,6 +248,7 @@ export default function Alerts() {
 
     // Local state — no page refreshes
     const [alertList, setAlertList] = useState<AlertData[]>(serverAlerts.data);
+    const [counts, setCounts] = useState(serverCounts);
     const [activeTab, setActiveTab] = useState(serverTab || 'all');
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -205,14 +257,17 @@ export default function Alerts() {
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute('content') || '';
 
-    // Derived counts from local state
-    const unreadCount = alertList.filter((a) => !a.read_at).length;
-    const counts = {
-        unread: unreadCount,
-        system: alertList.filter((a) => a.type === 'system').length,
-        social: alertList.filter((a) => a.type === 'social').length,
-        reminder: alertList.filter((a) => a.type === 'reminder').length,
-    };
+    // The header badge + right panel read from `counts`, which is seeded from
+    // the server (full DB totals, not the paginated list) and kept in sync
+    // optimistically below.
+    const unreadCount = counts.unread;
+
+    // Refresh Inertia shared props so the sidebar / mobile dock badges stay in
+    // sync with the alerts page after optimistic updates. Without this the raw
+    // fetch() bypasses Inertia and the badge goes stale.
+    const refreshSharedUnreadCount = useCallback(() => {
+        router.reload({ only: ['unreadAlertCount'] });
+    }, []);
 
     // Filter by active tab (local, no server request)
     const filteredAlerts =
@@ -223,13 +278,27 @@ export default function Alerts() {
     // Mark single alert read — local state + background fetch
     const markRead = useCallback(
         (alertId: number) => {
+            const wasUnread = alertList.some(
+                (a) => a.id === alertId && !a.read_at,
+            );
+
             setAlertList((prev) =>
                 prev.map((a) =>
                     a.id === alertId
-                        ? { ...a, read_at: new Date().toISOString() }
+                        ? {
+                              ...a,
+                              read_at: a.read_at ?? new Date().toISOString(),
+                          }
                         : a,
                 ),
             );
+
+            if (wasUnread) {
+                setCounts((prev) => ({
+                    ...prev,
+                    unread: Math.max(0, prev.unread - 1),
+                }));
+            }
 
             fetch(`/alerts/${alertId}/read`, {
                 method: 'POST',
@@ -238,9 +307,11 @@ export default function Alerts() {
                     'X-CSRF-TOKEN': csrf,
                     Accept: 'application/json',
                 },
-            }).catch(() => {});
+            })
+                .then(refreshSharedUnreadCount)
+                .catch(() => {});
         },
-        [csrf],
+        [alertList, csrf, refreshSharedUnreadCount],
     );
 
     // Mark all read — local state + background fetch
@@ -251,6 +322,7 @@ export default function Alerts() {
                 read_at: a.read_at ?? new Date().toISOString(),
             })),
         );
+        setCounts((prev) => ({ ...prev, unread: 0 }));
 
         fetch('/alerts/read-all', {
             method: 'POST',
@@ -259,7 +331,9 @@ export default function Alerts() {
                 'X-CSRF-TOKEN': csrf,
                 Accept: 'application/json',
             },
-        }).catch(() => {});
+        })
+            .then(refreshSharedUnreadCount)
+            .catch(() => {});
     }
 
     const grouped = groupAlerts(filteredAlerts);

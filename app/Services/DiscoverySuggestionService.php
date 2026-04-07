@@ -88,10 +88,14 @@ class DiscoverySuggestionService
 
         $pool = [];
 
-        $cafes = Spot::nearby($lat, $lng)->where('category', 'cafe')->limit(6)->get();
-        $libraries = Spot::nearby($lat, $lng)->where('category', 'library')->limit(3)->get();
-        $parks = Spot::nearby($lat, $lng)->where('category', 'park')->limit(3)->get();
-        $coworking = Spot::nearby($lat, $lng)->where('category', 'coworking')->limit(3)->get();
+        // Exclude spots the user is already standing at (within 200 m)
+        $notHere = fn (Spot $spot): bool => $spot->lat === null || $spot->lng === null
+            || $this->metersApart($lat, $lng, (float) $spot->lat, (float) $spot->lng) >= 200;
+
+        $cafes = Spot::nearby($lat, $lng)->where('category', 'cafe')->limit(6)->get()->filter($notHere)->values();
+        $libraries = Spot::nearby($lat, $lng)->where('category', 'library')->limit(3)->get()->filter($notHere)->values();
+        $parks = Spot::nearby($lat, $lng)->where('category', 'park')->limit(3)->get()->filter($notHere)->values();
+        $coworking = Spot::nearby($lat, $lng)->where('category', 'coworking')->limit(3)->get()->filter($notHere)->values();
 
         $outdoorOk = $temp >= 8 && ! $raining && $wind < 25;
         $badWeather = $raining || $temp < 5 || $wind > 30;
@@ -470,6 +474,16 @@ class DiscoverySuggestionService
         }
 
         return $items;
+    }
+
+    private function metersApart(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $R = 6371000;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 
     /**

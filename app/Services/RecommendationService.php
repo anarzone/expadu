@@ -1069,14 +1069,17 @@ class RecommendationService
         $atCategory = $currentLocation['place_category'] ?? null;
         $atName = $currentLocation['place_name'] ?? null;
 
+        // Raw GPS even when not near a saved place — used to centre discovery on actual position
+        $gpsCoords = $locationService->getLastGps($user);
+
         $discovery = fn (string $fromName, float $fromLat, float $fromLng) => [
             'type' => 'off_hours',
             'from_name' => $fromName,
             'to_name' => 'Nearby',
-            'from_lat' => $fromLat,
-            'from_lng' => $fromLng,
-            'to_lat' => $fromLat,
-            'to_lng' => $fromLng,
+            'from_lat' => $gpsCoords['lat'] ?? $fromLat,
+            'from_lng' => $gpsCoords['lng'] ?? $fromLng,
+            'to_lat' => $gpsCoords['lat'] ?? $fromLat,
+            'to_lng' => $gpsCoords['lng'] ?? $fromLng,
             'arrive_by' => null,
         ];
 
