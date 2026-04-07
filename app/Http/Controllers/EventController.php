@@ -144,9 +144,9 @@ class EventController extends Controller
             'going' => $e->attendees()->where('user_id', $userId)->exists(),
             'saved' => false,
             'organiser' => $e->organiser?->name ?? 'Expadu',
-            'tags' => $this->buildTags($e->category, $color),
+            'tags' => $this->buildTags($e->category, $e->tags ?? [], $color),
             'attendees' => ['🇬🇧', '🇩🇪', '🇹🇷', '🇫🇷'],
-            'englishFriendly' => true,
+            'englishFriendly' => in_array('english', $e->tags ?? []),
             'featured' => false,
             'karneval' => false,
             'link' => $e->source_url,
@@ -154,19 +154,33 @@ class EventController extends Controller
     }
 
     /**
+     * @param  string[]  $dbTags  Tags stored on the event (source categories + time tags)
      * @return array<int, array{l: string, bg: string, c: string}>
      */
-    private function buildTags(?string $category, string $color): array
+    private function buildTags(?string $category, array $dbTags, string $color): array
     {
-        $tagMap = [
-            'language' => [['l' => 'Language', 'bg' => '#EBF0FD', 'c' => '#1A4CD4']],
-            'social' => [['l' => 'Social', 'bg' => '#EDFAF4', 'c' => '#0A7C52']],
-            'culture' => [['l' => 'Culture', 'bg' => '#FDF0D4', 'c' => '#C47D0E']],
-            'music' => [['l' => 'Music', 'bg' => '#EDE9FE', 'c' => '#7C3AED']],
-            'food' => [['l' => 'Food', 'bg' => '#FDF0D4', 'c' => '#C47D0E']],
-            'sports' => [['l' => 'Sports', 'bg' => '#EDFAF4', 'c' => '#0A7C52']],
-        ];
+        $categoryTag = match ($category) {
+            'language' => ['l' => 'Language', 'bg' => '#EBF0FD', 'c' => '#1A4CD4'],
+            'social' => ['l' => 'Social', 'bg' => '#EDFAF4', 'c' => '#0A7C52'],
+            'culture' => ['l' => 'Culture', 'bg' => '#FDF0D4', 'c' => '#C47D0E'],
+            'music' => ['l' => 'Music', 'bg' => '#EDE9FE', 'c' => '#7C3AED'],
+            'food' => ['l' => 'Food', 'bg' => '#FDF0D4', 'c' => '#C47D0E'],
+            'sports' => ['l' => 'Sports', 'bg' => '#EDFAF4', 'c' => '#0A7C52'],
+            default => ['l' => ucfirst($category ?? 'Event'), 'bg' => '#EFEDE7', 'c' => '#6B6860'],
+        };
 
-        return $tagMap[$category] ?? [['l' => ucfirst($category ?? 'Event'), 'bg' => '#EFEDE7', 'c' => '#6B6860']];
+        $tags = [$categoryTag];
+
+        // Render source category names from koeln.de (skip internal time/meta tags)
+        $skip = ['evening', 'morning', 'weekend', 'free', 'english', 'outdoor', 'family',
+            'beginner-friendly', 'language', 'social', 'culture', 'music', 'food', 'sports'];
+
+        foreach ($dbTags as $tag) {
+            if (! in_array(mb_strtolower($tag), $skip, true) && mb_strlen($tag) <= 40) {
+                $tags[] = ['l' => $tag, 'bg' => '#EFEDE7', 'c' => '#6B6860'];
+            }
+        }
+
+        return $tags;
     }
 }

@@ -79,8 +79,18 @@ class ScrapeEvents extends Command
                 $desc = mb_substr(strip_tags($ev['description'] ?? ''), 0, 1000);
                 $venue = $ev['venue']['venue'] ?? null;
                 $address = $ev['venue']['address'] ?? null;
-                $category = $this->categoriseEvent($title, $desc);
                 $sourceUrl = $ev['url'] ?? null;
+
+                // Prefer source categories over keyword guessing
+                $sourceCategories = array_map(
+                    fn ($c) => $c['name'] ?? '',
+                    $ev['categories'] ?? [],
+                );
+                $category = $this->mapSourceCategory($sourceCategories)
+                    ?? $this->categoriseEvent($title, $desc);
+
+                // Store source category names as tags for future LLM enrichment context
+                $sourceTags = array_values(array_filter($sourceCategories));
 
                 [$isFree, $price, $priceText] = $this->parseCost($ev['cost'] ?? null);
 
@@ -107,6 +117,7 @@ class ScrapeEvents extends Command
                     'price_text' => $priceText,
                     'source' => 'koeln.de',
                     'source_url' => $sourceUrl,
+                    'tags' => $sourceTags ?: null,
                     'organiser_id' => $organiserId,
                     'quality_score' => $qualityScore,
                 ]);
@@ -196,6 +207,46 @@ class ScrapeEvents extends Command
         }
 
         return min(1.0, $score);
+    }
+
+    /**
+     * Map koeln.de source category names to our internal category system.
+     * Returns null when no confident match — falls back to keyword guessing.
+     *
+     * @param  string[]  $sourceCategories
+     */
+    protected function mapSourceCategory(array $sourceCategories): ?string
+    {
+        $map = [
+            'Konzerte' => 'music',
+            'Partys & Clubbing' => 'music',
+            'Festivals' => 'music',
+            'Jazz' => 'music',
+            'Theater' => 'culture',
+            'Ausstellungen' => 'culture',
+            'Kino' => 'culture',
+            'Lesungen' => 'culture',
+            'Kabarett & Comedy' => 'culture',
+            'Führungen' => 'culture',
+            'Vorträge' => 'culture',
+            'Stadtführungen' => 'culture',
+            'Märkte' => 'food',
+            'Flohmärkte' => 'food',
+            'Sport' => 'sports',
+            'Yoga' => 'sports',
+            'Laufen' => 'sports',
+            'Sprachen' => 'language',
+            'Networking' => 'social',
+            'Stammtisch' => 'social',
+        ];
+
+        foreach ($sourceCategories as $name) {
+            if (isset($map[$name])) {
+                return $map[$name];
+            }
+        }
+
+        return null;
     }
 
     protected function categoriseEvent(string $title, string $desc): string

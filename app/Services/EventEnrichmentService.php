@@ -103,16 +103,15 @@ class EventEnrichmentService
      */
     protected function assignTags(Event $event): array
     {
-        $text = mb_strtolower(($event->title ?? '').' '.($event->description ?? ''));
-        $tags = [];
+        // Start from any tags already stored (e.g. source category names from scraper)
+        $tags = $event->tags ?? [];
 
-        // Time-based
+        // Add factual time-based tags derived from the event date — no guessing
         if ($event->starts_at) {
             $hour = $event->starts_at->hour;
             if ($hour >= 18) {
                 $tags[] = 'evening';
-            }
-            if ($hour < 12) {
+            } elseif ($hour < 12) {
                 $tags[] = 'morning';
             }
             $dow = $event->starts_at->dayOfWeek;
@@ -121,27 +120,12 @@ class EventEnrichmentService
             }
         }
 
-        // Content-based
         if ($event->is_free) {
             $tags[] = 'free';
         }
-        if (preg_match('/english|englisch|international|expat/i', $text)) {
-            $tags[] = 'english';
-        }
-        if (preg_match('/outdoor|draußen|park|garten|rhein/i', $text)) {
-            $tags[] = 'outdoor';
-        }
-        if (preg_match('/family|famili|kinder|kids/i', $text)) {
-            $tags[] = 'family';
-        }
-        if (preg_match('/beginner|anfänger|a1|a2|newcomer/i', $text)) {
-            $tags[] = 'beginner-friendly';
-        }
 
-        // Category tag
-        if ($event->category) {
-            $tags[] = $event->category;
-        }
+        // Context tags (english-friendly, outdoor, family, etc.) are intentionally
+        // left to LLM enrichment (Layer 2) — regex guessing produces false positives.
 
         return array_values(array_unique($tags));
     }
