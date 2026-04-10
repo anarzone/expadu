@@ -65,7 +65,12 @@ class Spot extends Model
      */
     public function scopeNearby(Builder $query, float $lat, float $lng): Builder
     {
-        return $query->selectRaw('*, ABS(lat - ?) + ABS(lng - ?) as dist', [$lat, $lng])
-            ->orderBy('dist');
+        // Lat-corrected Euclidean distance-squared for proper sorting at ~51°N.
+        // 1° lat ≈ 111 km → factor 12321; 1° lng ≈ 70 km → factor 4900.
+        // Ordering by dist_sq is equivalent to ordering by true distance.
+        return $query->selectRaw(
+            '*, POWER(lat - ?, 2) * 12321 + POWER(lng - ?, 2) * 4900 AS dist_sq',
+            [$lat, $lng]
+        )->orderBy('dist_sq');
     }
 }

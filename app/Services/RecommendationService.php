@@ -373,11 +373,14 @@ class RecommendationService
         }
 
         // Bike card
+        $weatherDetail = isset($weather['temperature'])
+            ? "{$weather['condition']} · {$weather['temperature']}°C"
+            : 'Check weather';
         $bikeCard = [
             'type' => 'bike',
             'badge' => '🚲',
             'name' => 'Bike to '.$context['to_name'],
-            'detail' => "No disruptions · {$weather['condition']} · {$weather['temperature']}°C",
+            'detail' => "No disruptions · {$weatherDetail}",
             'time' => $bikeTime,
             'status' => 'ok',
             'best' => false,
@@ -405,14 +408,19 @@ class RecommendationService
 
         // Headline — context-aware
         $rainStarts = $forecast['rain_starts'] ?? null;
+        $hasWeather = isset($weather['temperature']);
         if ($context['type'] === 'off_hours') {
-            $headline = "{$weather['emoji']} {$weather['temperature']}°C — {$weather['condition']}";
+            $headline = $hasWeather
+                ? "{$weather['emoji']} {$weather['temperature']}°C — {$weather['condition']}"
+                : '🌍 Cologne — Discover what\'s nearby';
         } elseif ($bestCard['type'] === 'bike') {
             $headline = $rainStarts
                 ? "🚲 Bike today — dry until {$rainStarts}, lane clear"
-                : "🚲 Bike today — {$weather['condition']}, lane clear";
+                : '🚲 Bike today — '.($hasWeather ? "{$weather['condition']}, lane clear" : 'lane clear');
         } else {
-            $headline = "🚋 Transit today — {$weather['temperature']}°C, {$weather['condition']}";
+            $headline = $hasWeather
+                ? "🚋 Transit today — {$weather['temperature']}°C, {$weather['condition']}"
+                : '🚋 Transit today — Check weather app';
         }
 
         // Leave-by calculation
@@ -1371,9 +1379,10 @@ class RecommendationService
         );
         $travelMin = $bikeTime;
 
-        if ($valhalla->isAvailable()) {
-            $costing = $mode === 'bike' ? 'bicycle' : 'pedestrian';
-            $valhallaRoute = $valhalla->route($fromLat, $fromLng, $toLat, $toLng, $costing);
+        // Only use Valhalla for bike routing — pedestrian costing fails for cross-city
+        // distances (5+ km) and transit journey time cannot be estimated via walking anyway.
+        if ($mode === 'bike' && $valhalla->isAvailable()) {
+            $valhallaRoute = $valhalla->route($fromLat, $fromLng, $toLat, $toLng, 'bicycle');
             if ($valhallaRoute) {
                 $travelMin = $valhallaRoute['duration_min'];
             }
