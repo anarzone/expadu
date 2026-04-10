@@ -634,16 +634,45 @@ export const MapView = forwardRef<
             const el = document.createElement('div');
             el.className = 'maplibregl-marker spot-marker-pill';
             el.style.cssText = `
-                display: flex; align-items: center; justify-content: center; gap: 3px;
-                width: 28px; height: 28px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center; gap: 0px;
+                height: 28px; border-radius: 20px; overflow: hidden;
+                max-width: 28px; padding: 0 7px;
                 font-size: 12px; font-weight: 600; color: white;
                 background: ${isSelected ? '#1A4CD4' : 'rgba(24,23,15,0.85)'};
                 box-shadow: 0 1px 4px rgba(0,0,0,0.3);
                 cursor: pointer; white-space: nowrap;
-                transition: background 0.2s, box-shadow 0.2s;
-                ${isSelected ? 'transform: scale(1.2); box-shadow: 0 2px 8px rgba(26,76,212,0.4);' : ''}
+                transition: max-width 0.22s cubic-bezier(.4,0,.2,1), background 0.2s, box-shadow 0.2s;
+                ${isSelected ? 'transform: scale(1.2); box-shadow: 0 2px 8px rgba(26,76,212,0.4); max-width: 28px;' : ''}
             `;
-            el.innerHTML = `<span class="spot-emoji" style="font-size:14px">${emoji}</span><span class="spot-label" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;font-size:11px">${spot.name}</span>`;
+            el.innerHTML = `
+                <span class="spot-emoji" style="font-size:14px;flex-shrink:0;line-height:1">${emoji}</span>
+                <span class="spot-label" style="
+                    max-width:0; overflow:hidden; opacity:0; white-space:nowrap;
+                    font-size:11px; font-weight:600; text-overflow:ellipsis;
+                    transition: max-width 0.22s cubic-bezier(.4,0,.2,1), opacity 0.15s ease, margin-left 0.22s;
+                    margin-left:0;
+                ">${spot.name}</span>
+            `;
+            el.addEventListener('mouseenter', () => {
+                el.style.maxWidth = '150px';
+                const label = el.querySelector('.spot-label') as HTMLElement;
+
+                if (label) {
+                    label.style.maxWidth = '110px';
+                    label.style.opacity = '1';
+                    label.style.marginLeft = '4px';
+                }
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.maxWidth = '28px';
+                const label = el.querySelector('.spot-label') as HTMLElement;
+
+                if (label) {
+                    label.style.maxWidth = '0';
+                    label.style.opacity = '0';
+                    label.style.marginLeft = '0';
+                }
+            });
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 onSelectSpot(spot.id);
