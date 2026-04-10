@@ -640,7 +640,7 @@ export const MapView = forwardRef<
                 background: ${isSelected ? '#1A4CD4' : 'rgba(24,23,15,0.85)'};
                 box-shadow: 0 1px 4px rgba(0,0,0,0.3);
                 cursor: pointer; white-space: nowrap;
-                transition: all 0.2s;
+                transition: background 0.2s, box-shadow 0.2s;
                 ${isSelected ? 'transform: scale(1.2); box-shadow: 0 2px 8px rgba(26,76,212,0.4);' : ''}
             `;
             el.innerHTML = `<span class="spot-emoji" style="font-size:14px">${emoji}</span><span class="spot-label" style="display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;font-size:11px">${spot.name}</span>`;
