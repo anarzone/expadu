@@ -89,7 +89,6 @@ export const MapView = forwardRef<
     const markersRef = useRef<maplibregl.Marker[]>([]);
     const placeMarkersRef = useRef<maplibregl.Marker[]>([]);
     const searchPinRef = useRef<maplibregl.Marker | null>(null);
-    const userMarkerRef = useRef<maplibregl.Marker | null>(null);
     const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
     const routeMarkersRef = useRef<maplibregl.Marker[]>([]);
     const lastFlyToId = useRef<number | null>(null);
@@ -588,12 +587,21 @@ export const MapView = forwardRef<
                 });
 
                 mapRef.current = map;
+
+                // Automatically call map.resize() whenever the container
+                // changes size (panel expand/collapse, mobile viewport height
+                // shift). Without this, MapLibre's WebGL canvas keeps its old
+                // pixel dimensions and tiles appear to slide or be offset.
+                const ro = new ResizeObserver(() => map.resize());
+                ro.observe(containerRef.current!);
+                (map as any)._ro = ro;
             });
 
         return () => {
             cancelled = true;
 
             if (mapRef.current) {
+                (mapRef.current as any)._ro?.disconnect();
                 mapRef.current.remove();
                 mapRef.current = null;
             }

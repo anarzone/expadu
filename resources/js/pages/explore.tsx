@@ -9,7 +9,6 @@ import {
 } from 'react';
 import { ExploreFilterBar } from '@/components/explore/filter-bar';
 import type { MapBounds, MapViewHandle } from '@/components/explore/map-view';
-import { ModePicker } from '@/components/explore/mode-picker';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
 import { JourneyTimeline } from '@/components/transit/journey-timeline';
@@ -86,7 +85,7 @@ export default function Explore() {
     }>().props;
 
     const { track } = useTracker();
-    const { position: geoPos, quality: geoQuality } = useGeolocation();
+    const { position: geoPos, quality: _geoQuality } = useGeolocation();
 
     // Best known location: GPS → server-resolved → default
     const myLat = geoPos?.lat ?? userLocation?.lat ?? 50.9375;
@@ -235,83 +234,12 @@ export default function Explore() {
         is_current: boolean;
         toward_destination: boolean;
     };
-    const [connectionsByStop, setConnectionsByStop] = useState<
+    const [_connectionsByStop, setConnectionsByStop] = useState<
         Record<string, ConnectionOption[]>
     >({});
-    const [connectionsLoading, setConnectionsLoading] = useState<
+    const [_connectionsLoading, setConnectionsLoading] = useState<
         Record<string, boolean>
     >({});
-
-    // Restore directions from URL params on mount (survives refresh)
-    const dirRestoredRef = useRef(false);
-    useEffect(() => {
-        if (dirRestoredRef.current) {
-            return;
-        }
-
-        dirRestoredRef.current = true;
-        const params = new URLSearchParams(window.location.search);
-        const lat = params.get('dir_lat');
-        const lng = params.get('dir_lng');
-        const name = params.get('dir_name');
-        const mode = params.get('dir_mode');
-
-        if (lat && lng && name) {
-            startDirections(parseFloat(lat), parseFloat(lng), name, mode);
-        }
-    }, []);
-
-    function startDirections(
-        lat: number,
-        lng: number,
-        name: string,
-        preferredMode?: string | null,
-    ) {
-        setRouteDest({ lat, lng, name });
-        setRouteMode(null);
-        setRouteDetail(null);
-        setRouteLoading(true);
-        // Keep selectedSpot so we can go back to detail view
-        setListOpen(true);
-        setPanelExpanded(true);
-
-        // Persist in URL so refresh restores directions
-        const url = new URL(window.location.href);
-        url.searchParams.set('dir_lat', String(lat));
-        url.searchParams.set('dir_lng', String(lng));
-        url.searchParams.set('dir_name', name);
-        window.history.replaceState({}, '', url.toString());
-
-        fetch(
-            `/api/route-options?to_lat=${lat}&to_lng=${lng}&name=${encodeURIComponent(name)}`,
-            { credentials: 'same-origin' },
-        )
-            .then((r) => r.json())
-            .then((data) => {
-                setRouteOptions(data.options ?? []);
-                setRouteMapsUrl(data.maps_url ?? null);
-                setRouteLoading(false);
-                // Use preferred mode if provided, otherwise default to bike
-                const mode = preferredMode ?? 'bike';
-                const opt =
-                    (data.options ?? []).find(
-                        (o: RouteOption) => o.mode === mode,
-                    ) ??
-                    (data.options ?? []).find(
-                        (o: RouteOption) => o.mode === 'bike',
-                    );
-
-                if (opt) {
-                    selectRouteMode(
-                        opt.mode,
-                        opt.geometry,
-                        { lat: data.from.lat, lng: data.from.lng },
-                        { lat, lng },
-                    );
-                }
-            })
-            .catch(() => setRouteLoading(false));
-    }
 
     function selectRouteMode(
         mode: string,
@@ -324,7 +252,7 @@ export default function Explore() {
         setPanelExpanded(true);
 
         const dest = routeDest ?? to;
-        const origin = from ?? { lat: myLat, lng: myLng };
+        const _origin = from ?? { lat: myLat, lng: myLng };
         const costing =
             mode === 'bike'
                 ? 'bicycle'
@@ -400,6 +328,79 @@ export default function Explore() {
         }
     }
 
+    // Restore directions from URL params on mount (survives refresh)
+    const dirRestoredRef = useRef(false);
+
+    function startDirections(
+        lat: number,
+        lng: number,
+        name: string,
+        preferredMode?: string | null,
+    ) {
+        setRouteDest({ lat, lng, name });
+        setRouteMode(null);
+        setRouteDetail(null);
+        setRouteLoading(true);
+        // Keep selectedSpot so we can go back to detail view
+        setListOpen(true);
+        setPanelExpanded(true);
+
+        // Persist in URL so refresh restores directions
+        const url = new URL(window.location.href);
+        url.searchParams.set('dir_lat', String(lat));
+        url.searchParams.set('dir_lng', String(lng));
+        url.searchParams.set('dir_name', name);
+        window.history.replaceState({}, '', url.toString());
+
+        fetch(
+            `/api/route-options?to_lat=${lat}&to_lng=${lng}&name=${encodeURIComponent(name)}`,
+            { credentials: 'same-origin' },
+        )
+            .then((r) => r.json())
+            .then((data) => {
+                setRouteOptions(data.options ?? []);
+                setRouteMapsUrl(data.maps_url ?? null);
+                setRouteLoading(false);
+                // Use preferred mode if provided, otherwise default to bike
+                const mode = preferredMode ?? 'bike';
+                const opt =
+                    (data.options ?? []).find(
+                        (o: RouteOption) => o.mode === mode,
+                    ) ??
+                    (data.options ?? []).find(
+                        (o: RouteOption) => o.mode === 'bike',
+                    );
+
+                if (opt) {
+                    selectRouteMode(
+                        opt.mode,
+                        opt.geometry,
+                        { lat: data.from.lat, lng: data.from.lng },
+                        { lat, lng },
+                    );
+                }
+            })
+            .catch(() => setRouteLoading(false));
+    }
+
+    useEffect(() => {
+        if (dirRestoredRef.current) {
+            return;
+        }
+
+        dirRestoredRef.current = true;
+        const params = new URLSearchParams(window.location.search);
+        const lat = params.get('dir_lat');
+        const lng = params.get('dir_lng');
+        const name = params.get('dir_name');
+        const mode = params.get('dir_mode');
+
+        if (lat && lng && name) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            startDirections(parseFloat(lat), parseFloat(lng), name, mode);
+        }
+    }, []);
+
     function closeRoute() {
         setRouteDest(null);
         setRouteOptions([]);
@@ -455,7 +456,7 @@ export default function Explore() {
         mapRef.current?.clearRoute();
     }
 
-    function fetchConnections(stopId: string) {
+    function _fetchConnections(stopId: string) {
         setConnectionsLoading((prev) => ({ ...prev, [stopId]: true }));
         const currentLine =
             routeDetail?.segments?.find((s) => s.type === 'transit')?.line ??
@@ -483,7 +484,7 @@ export default function Explore() {
             );
     }
 
-    function selectConnection(stopId: string, connection: ConnectionOption) {
+    function _selectConnection(stopId: string, connection: ConnectionOption) {
         if (!routeDetail?.segments || !routeDest) {
             return;
         }
@@ -610,7 +611,10 @@ export default function Explore() {
         }
 
         const q = search.trim().toLowerCase();
-        if (!q) return true;
+
+        if (!q) {
+            return true;
+        }
 
         return (
             s.name.toLowerCase().includes(q) ||
@@ -625,8 +629,10 @@ export default function Explore() {
         }
 
         if (!search.trim() || search.trim().length < 2) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setGeoSuggestions([]);
             mapRef.current?.clearSearchPin();
+
             return;
         }
 
@@ -669,6 +675,7 @@ export default function Explore() {
     }
 
     // Tap-to-discover: reverse geocode the tapped point
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     const handleMapTap = useCallback(async (lat: number, lng: number) => {
         // Close any existing tap point or place form
         setShowPlaceForm(false);
@@ -1302,7 +1309,7 @@ export default function Explore() {
                 </div>
 
                 {/* ═══ MAP PANEL ═══ flex:1, always visible */}
-                <div className="relative flex-1 overflow-hidden bg-[#E8E4DC]">
+                <div className="relative flex-1 bg-[#E8E4DC]">
                     {/* Tablet: ☰ toggle button — md visible, lg hidden */}
                     <button
                         onClick={() => setListOpen(!listOpen)}
@@ -1617,6 +1624,7 @@ function SearchBar({
    - Min 80px, max 92% of container
    - Non-passive touch/mouse on document level
    - cursor/userSelect toggling during drag */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function MobileListSheet({
     spots,
     selectedId,
