@@ -1,5 +1,19 @@
+import {
+    IconBook,
+    IconBuilding,
+    IconCoffee,
+    IconMapPin,
+    IconTree,
+} from '@tabler/icons-react';
 import maplibregl from 'maplibre-gl';
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import {
+    createElement,
+    forwardRef,
+    useEffect,
+    useImperativeHandle,
+    useRef,
+} from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { decodePolyline } from '@/utils/polyline';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -45,12 +59,64 @@ export type MapViewHandle = {
     clearRoute: () => void;
 };
 
-const categoryEmoji: Record<string, string> = {
-    cafe: '☕',
-    coworking: '🏢',
-    library: '📚',
-    park: '🌳',
+type CategoryConfig = {
+    icon: React.ComponentType<{
+        size?: number;
+        strokeWidth?: number;
+        color?: string;
+    }>;
+    bg: string;
+    color: string;
+    selectedBg: string;
 };
+
+const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
+    cafe: {
+        icon: IconCoffee,
+        bg: '#FEF3C7',
+        color: '#92400E',
+        selectedBg: '#D97706',
+    },
+    coworking: {
+        icon: IconBuilding,
+        bg: '#DBEAFE',
+        color: '#1E3A8A',
+        selectedBg: '#2563EB',
+    },
+    library: {
+        icon: IconBook,
+        bg: '#D1FAE5',
+        color: '#065F46',
+        selectedBg: '#059669',
+    },
+    park: {
+        icon: IconTree,
+        bg: '#DCFCE7',
+        color: '#166534',
+        selectedBg: '#16A34A',
+    },
+};
+
+const DEFAULT_CATEGORY: CategoryConfig = {
+    icon: IconMapPin,
+    bg: '#F3E8FF',
+    color: '#6B21A8',
+    selectedBg: '#9333EA',
+};
+
+function makeIconSvg(
+    IconCmp: React.ComponentType<{
+        size?: number;
+        strokeWidth?: number;
+        color?: string;
+    }>,
+    color: string,
+    size = 16,
+): string {
+    return renderToStaticMarkup(
+        createElement(IconCmp, { size, strokeWidth: 2, color }),
+    );
+}
 
 export type MapBounds = {
     sw_lat: number;
@@ -483,58 +549,27 @@ export const MapView = forwardRef<
                 // Resize markers on zoom — emoji circle at low zoom, pill with name at high zoom
                 function updateMarkerSize() {
                     const zoom = map.getZoom();
-                    const showLabels = zoom >= 16;
+                    const size =
+                        zoom >= 14 ? '32px' : zoom >= 12 ? '26px' : '22px';
+                    const iconScale =
+                        zoom >= 14 ? '1' : zoom >= 12 ? '0.85' : '0.7';
 
                     document
                         .querySelectorAll('.spot-marker-pill')
                         .forEach((el) => {
                             const htmlEl = el as HTMLElement;
-                            const emojiEl = htmlEl.querySelector(
+                            const iconEl = htmlEl.querySelector(
                                 '.spot-emoji',
                             ) as HTMLElement;
-                            const label = htmlEl.querySelector(
-                                '.spot-label',
-                            ) as HTMLElement;
 
-                            if (showLabels) {
-                                // Pill with name
-                                htmlEl.style.width = 'auto';
-                                htmlEl.style.height = 'auto';
-                                htmlEl.style.borderRadius = '20px';
-                                htmlEl.style.padding = '4px 8px';
-
-                                if (emojiEl) {
-                                    emojiEl.style.fontSize = '13px';
-                                }
-
-                                if (label) {
-                                    label.style.display = '';
-                                }
-                            } else {
-                                // Emoji-only circle
-                                const size =
-                                    zoom >= 14
-                                        ? '28px'
-                                        : zoom >= 12
-                                          ? '24px'
-                                          : '20px';
-                                htmlEl.style.width = size;
+                            // Only resize if not in hover-expanded state
+                            if (parseFloat(htmlEl.style.maxWidth) <= 32) {
+                                htmlEl.style.maxWidth = size;
                                 htmlEl.style.height = size;
-                                htmlEl.style.borderRadius = '50%';
-                                htmlEl.style.padding = '0';
+                            }
 
-                                if (emojiEl) {
-                                    emojiEl.style.fontSize =
-                                        zoom >= 14
-                                            ? '14px'
-                                            : zoom >= 12
-                                              ? '12px'
-                                              : '10px';
-                                }
-
-                                if (label) {
-                                    label.style.display = 'none';
-                                }
+                            if (iconEl) {
+                                iconEl.style.transform = `scale(${iconScale})`;
                             }
                         });
                 }
@@ -628,43 +663,46 @@ export const MapView = forwardRef<
                 return;
             }
 
-            const emoji = categoryEmoji[spot.category] || '📍';
+            const cfg = CATEGORY_CONFIG[spot.category] ?? DEFAULT_CATEGORY;
             const isSelected = spot.id === selectedId;
+            const bg = isSelected ? cfg.selectedBg : cfg.bg;
+            const iconColor = isSelected ? '#ffffff' : cfg.color;
+            const svgContent = makeIconSvg(cfg.icon, iconColor);
 
             const el = document.createElement('div');
             el.className = 'maplibregl-marker spot-marker-pill';
             el.style.cssText = `
                 display: flex; align-items: center; justify-content: center; gap: 0px;
-                height: 28px; border-radius: 20px; overflow: hidden;
-                max-width: 28px; padding: 0 7px;
-                font-size: 12px; font-weight: 600; color: white;
-                background: ${isSelected ? '#1A4CD4' : 'rgba(24,23,15,0.85)'};
-                box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+                height: 32px; border-radius: 20px; overflow: hidden;
+                max-width: 32px; padding: 0 8px;
+                font-size: 12px; font-weight: 600; color: ${cfg.color};
+                background: ${bg};
+                box-shadow: 0 1px 6px rgba(0,0,0,0.12), 0 0 0 1.5px ${isSelected ? cfg.selectedBg : cfg.color}33;
                 cursor: pointer; white-space: nowrap;
                 transition: max-width 0.22s cubic-bezier(.4,0,.2,1), background 0.2s, box-shadow 0.2s;
-                ${isSelected ? 'transform: scale(1.2); box-shadow: 0 2px 8px rgba(26,76,212,0.4); max-width: 28px;' : ''}
+                ${isSelected ? `transform: scale(1.15); box-shadow: 0 2px 10px ${cfg.selectedBg}66, 0 0 0 2px ${cfg.selectedBg};` : ''}
             `;
             el.innerHTML = `
-                <span class="spot-emoji" style="font-size:14px;flex-shrink:0;line-height:1">${emoji}</span>
+                <span class="spot-emoji" style="display:flex;align-items:center;flex-shrink:0;line-height:1">${svgContent}</span>
                 <span class="spot-label" style="
                     max-width:0; overflow:hidden; opacity:0; white-space:nowrap;
-                    font-size:11px; font-weight:600; text-overflow:ellipsis;
+                    font-size:11px; font-weight:600; text-overflow:ellipsis; color:${cfg.color};
                     transition: max-width 0.22s cubic-bezier(.4,0,.2,1), opacity 0.15s ease, margin-left 0.22s;
                     margin-left:0;
                 ">${spot.name}</span>
             `;
             el.addEventListener('mouseenter', () => {
-                el.style.maxWidth = '150px';
+                el.style.maxWidth = '160px';
                 const label = el.querySelector('.spot-label') as HTMLElement;
 
                 if (label) {
-                    label.style.maxWidth = '110px';
+                    label.style.maxWidth = '120px';
                     label.style.opacity = '1';
-                    label.style.marginLeft = '4px';
+                    label.style.marginLeft = '5px';
                 }
             });
             el.addEventListener('mouseleave', () => {
-                el.style.maxWidth = '28px';
+                el.style.maxWidth = '32px';
                 const label = el.querySelector('.spot-label') as HTMLElement;
 
                 if (label) {
