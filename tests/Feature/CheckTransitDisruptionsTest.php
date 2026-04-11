@@ -230,6 +230,12 @@ test('does not notify user when saved place lines are not disrupted', function (
 // --- GPS-based alerts ---
 
 test('notifies stationary user near disrupted line via GPS', function () {
+    try {
+        Redis::ping();
+    } catch (Throwable) {
+        $this->markTestSkipped('Redis not available');
+    }
+
     $this->mock(NearbyStopService::class, function ($mock) {
         $mock->shouldReceive('getWalkableStops')->andReturn([
             ['id' => 1, 'name' => 'Neumarkt', 'lines' => ['1', '7', '9'], 'lat' => 50.94, 'lng' => 6.95, 'distance_m' => 100, 'walk_min' => 1],
@@ -254,17 +260,20 @@ test('notifies stationary user near disrupted line via GPS', function () {
 
     $user = User::factory()->onboarded()->create();
 
-    // Simulate stationary GPS pings over 25 minutes (all within 50m)
+    // Simulate stationary GPS pings over 25 minutes (all at same spot)
     $key = "location_history:{$user->id}";
     for ($i = 0; $i < 5; $i++) {
         $ts = now()->subMinutes(25 - $i * 5)->timestamp;
-        Redis::zadd($key, $ts, json_encode([
-            'lat' => 50.9390 + rand(-3, 3) / 100000,
-            'lng' => 6.9490 + rand(-3, 3) / 100000,
+        Redis::zadd($key, (string) $ts, json_encode([
+            'lat' => 50.9390,
+            'lng' => 6.9490,
             'accuracy' => 15,
             'at' => now()->subMinutes(25 - $i * 5)->toIso8601String(),
         ]));
     }
+
+    // Flush the UserTransitLines cache so fresh data is used
+    Cache::forget("user_transit_lines:{$user->id}");
 
     $this->artisan('transit:check-disruptions')->assertSuccessful();
 
@@ -272,6 +281,12 @@ test('notifies stationary user near disrupted line via GPS', function () {
 });
 
 test('does not notify moving user via GPS', function () {
+    try {
+        Redis::ping();
+    } catch (Throwable) {
+        $this->markTestSkipped('Redis not available');
+    }
+
     $this->mock(NearbyStopService::class, function ($mock) {
         $mock->shouldReceive('getWalkableStops')->andReturn([
             ['id' => 1, 'name' => 'Neumarkt', 'lines' => ['1'], 'lat' => 50.94, 'lng' => 6.95, 'distance_m' => 100, 'walk_min' => 1],
