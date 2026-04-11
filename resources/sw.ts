@@ -1,5 +1,9 @@
 /// <reference lib="webworker" />
 
+import { ExpirationPlugin } from 'workbox-expiration';
+import { registerRoute } from 'workbox-routing';
+import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+
 declare let self: ServiceWorkerGlobalScope;
 
 // Take control as soon as installed
@@ -7,9 +11,57 @@ self.addEventListener('install', () => {
     self.skipWaiting();
 });
 
+// ── Runtime Caching ──
+
+// Build assets (hashed filenames) — cache forever
+registerRoute(
+    ({ url }) => url.pathname.startsWith('/build/assets/'),
+    new CacheFirst({
+        cacheName: 'build-assets',
+        plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 365 * 24 * 60 * 60 })],
+    }),
+);
+
+// Self-hosted fonts — cache forever
+registerRoute(
+    ({ url }) => url.pathname.startsWith('/fonts/'),
+    new CacheFirst({
+        cacheName: 'fonts',
+        plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 })],
+    }),
+);
+
+// Map tiles — show cached instantly, update in background
+registerRoute(
+    ({ url }) => url.hostname.includes('tile') || url.pathname.includes('/tiles/'),
+    new StaleWhileRevalidate({
+        cacheName: 'map-tiles',
+        plugins: [new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 7 * 24 * 60 * 60 })],
+    }),
+);
+
+// Inertia page requests — network first with offline fallback
+registerRoute(
+    ({ request }) => request.headers.get('X-Inertia') === 'true',
+    new NetworkFirst({
+        cacheName: 'inertia-pages',
+        plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 24 * 60 * 60 })],
+    }),
+);
+
+// API requests — network first
+registerRoute(
+    ({ url }) => url.pathname.startsWith('/api/'),
+    new NetworkFirst({
+        cacheName: 'api',
+        plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 })],
+    }),
+);
+
 // ── Push Notification Handler ──
 self.addEventListener('push', (event) => {
     let data: Record<string, unknown> = {};
+
     try {
         data = event.data?.json() ?? {};
     } catch {
@@ -37,12 +89,10 @@ self.addEventListener('notificationclick', (event) => {
 
     const url = event.notification.data?.url ?? '/dashboard';
 
-    // Focus existing window or open new one
     event.waitUntil(
         self.clients
             .matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
-                // Try to focus an existing window on the same origin
                 for (const client of clientList) {
                     if (
                         client.url.includes(self.location.origin) &&
@@ -50,10 +100,11 @@ self.addEventListener('notificationclick', (event) => {
                     ) {
                         client.focus();
                         client.navigate(url);
+
                         return;
                     }
                 }
-                // No existing window — open a new one
+
                 return self.clients.openWindow(url);
             }),
     );

@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
+import { compression } from 'vite-plugin-compression2';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
@@ -54,5 +55,29 @@ export default defineConfig({
                 injectionPoint: undefined,
             },
         }),
+        compression({ algorithm: 'gzip', include: /\.(js|css|svg|json)$/ }),
+        compression({ algorithm: 'brotliCompress', include: /\.(js|css|svg|json)$/ }),
     ],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                            return 'vendor-react';
+                        }
+                        if (id.includes('maplibre-gl')) {
+                            return 'vendor-maplibre';
+                        }
+                        if (id.includes('@radix-ui')) {
+                            return 'vendor-radix';
+                        }
+                        if (id.includes('@tabler/icons')) {
+                            return 'vendor-icons';
+                        }
+                    }
+                },
+            },
+        },
+    },
 });

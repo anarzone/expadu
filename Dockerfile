@@ -50,7 +50,7 @@ RUN cp .env.example .env \
     && sed -i 's|APP_URL=.*|APP_URL=https://expadu.com|' .env \
     && php artisan key:generate --force
 RUN npm ci --legacy-peer-deps
-RUN npm run build
+RUN npm run build && npm run build:ssr
 
 # ── Stage 4: Production ───────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production
@@ -59,6 +59,7 @@ FROM php:8.4-fpm-alpine AS production
 RUN apk add --no-cache \
     nginx \
     supervisor \
+    nodejs \
     libpq \
     libzip \
     icu-libs \
@@ -83,6 +84,7 @@ COPY --from=composer-build /app/vendor ./vendor
 COPY . .
 COPY --from=node-build /app/public/build ./public/build
 COPY --from=node-build /app/public/sw.js ./public/sw.js
+COPY --from=node-build /app/bootstrap/ssr ./bootstrap/ssr
 
 COPY docker/prod/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
