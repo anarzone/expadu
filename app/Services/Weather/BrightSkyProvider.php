@@ -117,6 +117,7 @@ class BrightSkyProvider implements WeatherProvider
                 'lat' => $lat,
                 'lon' => $lng,
                 'date' => now('Europe/Berlin')->toDateString(),
+                'last_date' => now('Europe/Berlin')->addDay()->toDateString(),
                 'units' => 'dwd',
             ]);
 

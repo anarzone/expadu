@@ -42,7 +42,10 @@ class WttrInProvider implements WeatherProvider
             }
 
             $weatherCode = (int) ($current['weatherCode'] ?? 113);
-            $hourlySlots = $data['weather'][0]['hourly'] ?? [];
+            $hourlySlots = array_merge(
+                $data['weather'][0]['hourly'] ?? [],
+                $data['weather'][1]['hourly'] ?? [],
+            );
 
             return [
                 'current' => [

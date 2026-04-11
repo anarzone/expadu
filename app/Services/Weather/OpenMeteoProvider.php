@@ -32,7 +32,7 @@ class OpenMeteoProvider implements WeatherProvider
                     'current' => 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover',
                     'hourly' => 'precipitation',
                     'timezone' => 'Europe/Berlin',
-                    'forecast_days' => 1,
+                    'forecast_days' => 2,
                 ]);
 
             if (! $response->successful()) {

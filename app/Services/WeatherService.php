@@ -77,9 +77,13 @@ class WeatherService
         $nowHour = now('Europe/Berlin')->hour;
         $rainStart = null;
 
+        $pastCurrent = false;
         foreach ($hourly as $entry) {
-            if ($entry['hour'] <= $nowHour) {
-                continue;
+            if (! $pastCurrent) {
+                if ($entry['hour'] <= $nowHour) {
+                    continue;
+                }
+                $pastCurrent = true;
             }
             if ($entry['precipitation'] > 0.1) {
                 $rainStart = str_pad((string) $entry['hour'], 2, '0', STR_PAD_LEFT).':00';
@@ -94,12 +98,17 @@ class WeatherService
 
         // Build next-hours forecast (current hour + next 7 = 8 slots)
         $nextHours = [];
+        $foundCurrent = false;
         foreach ($hourly as $entry) {
-            if ($entry['hour'] < $nowHour) {
-                continue;
+            $h = $entry['hour'];
+            if (! $foundCurrent) {
+                if ($h < $nowHour) {
+                    continue;
+                }
+                $foundCurrent = true;
             }
             $nextHours[] = [
-                'hour' => str_pad((string) $entry['hour'], 2, '0', STR_PAD_LEFT).':00',
+                'hour' => str_pad((string) $h, 2, '0', STR_PAD_LEFT).':00',
                 'precip' => round((float) $entry['precipitation'], 1),
             ];
             if (count($nextHours) >= 8) {

@@ -80,7 +80,7 @@ class MetNoProvider implements WeatherProvider
      */
     private function buildHourly(array $timeseries): array
     {
-        $today = now('Europe/Berlin')->toDateString();
+        $cutoff = now('Europe/Berlin')->addHours(24);
         $hourly = [];
 
         foreach ($timeseries as $entry) {
@@ -91,8 +91,8 @@ class MetNoProvider implements WeatherProvider
 
             $local = Carbon::parse($time)->setTimezone('Europe/Berlin');
 
-            if ($local->toDateString() !== $today) {
-                continue;
+            if ($local->greaterThan($cutoff)) {
+                break;
             }
 
             $hourly[] = [
