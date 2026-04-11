@@ -2,7 +2,11 @@
 
 import { ExpirationPlugin } from 'workbox-expiration';
 import { registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import {
+    CacheFirst,
+    NetworkFirst,
+    StaleWhileRevalidate,
+} from 'workbox-strategies';
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -18,7 +22,12 @@ registerRoute(
     ({ url }) => url.pathname.startsWith('/build/assets/'),
     new CacheFirst({
         cacheName: 'build-assets',
-        plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 365 * 24 * 60 * 60 })],
+        plugins: [
+            new ExpirationPlugin({
+                maxEntries: 100,
+                maxAgeSeconds: 365 * 24 * 60 * 60,
+            }),
+        ],
     }),
 );
 
@@ -27,16 +36,27 @@ registerRoute(
     ({ url }) => url.pathname.startsWith('/fonts/'),
     new CacheFirst({
         cacheName: 'fonts',
-        plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 })],
+        plugins: [
+            new ExpirationPlugin({
+                maxEntries: 20,
+                maxAgeSeconds: 365 * 24 * 60 * 60,
+            }),
+        ],
     }),
 );
 
 // Map tiles — show cached instantly, update in background
 registerRoute(
-    ({ url }) => url.hostname.includes('tile') || url.pathname.includes('/tiles/'),
+    ({ url }) =>
+        url.hostname.includes('tile') || url.pathname.includes('/tiles/'),
     new StaleWhileRevalidate({
         cacheName: 'map-tiles',
-        plugins: [new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 7 * 24 * 60 * 60 })],
+        plugins: [
+            new ExpirationPlugin({
+                maxEntries: 500,
+                maxAgeSeconds: 7 * 24 * 60 * 60,
+            }),
+        ],
     }),
 );
 
@@ -45,7 +65,12 @@ registerRoute(
     ({ request }) => request.headers.get('X-Inertia') === 'true',
     new NetworkFirst({
         cacheName: 'inertia-pages',
-        plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 24 * 60 * 60 })],
+        plugins: [
+            new ExpirationPlugin({
+                maxEntries: 30,
+                maxAgeSeconds: 24 * 60 * 60,
+            }),
+        ],
     }),
 );
 
@@ -54,7 +79,9 @@ registerRoute(
     ({ url }) => url.pathname.startsWith('/api/'),
     new NetworkFirst({
         cacheName: 'api',
-        plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 })],
+        plugins: [
+            new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 }),
+        ],
     }),
 );
 
