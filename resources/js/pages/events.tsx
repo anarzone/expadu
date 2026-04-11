@@ -93,7 +93,10 @@ const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Events() {
     const { track } = useTracker();
-    const { dbEvents } = usePage<{ dbEvents: { data: EventData[] } }>().props;
+    const { dbEvents: dbEventsRaw } = usePage<{
+        dbEvents?: { data: EventData[] };
+    }>().props;
+    const dbEvents = dbEventsRaw ?? { data: [] };
 
     // Derive events from backend data
     const [localOverrides, setLocalOverrides] = useState<

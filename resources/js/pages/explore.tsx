@@ -77,12 +77,18 @@ const PLACE_EMOJIS = [
 ];
 
 export default function Explore() {
-    const { spots, filters, personalPlaces, userLocation } = usePage<{
-        spots: { data: SpotData[] };
+    const {
+        spots: spotsRaw,
+        filters,
+        personalPlaces,
+        userLocation,
+    } = usePage<{
+        spots?: { data: SpotData[] };
         filters: { category?: string | null };
         personalPlaces: PersonalPlace[];
         userLocation?: { lat: number; lng: number } | null;
     }>().props;
+    const spots = spotsRaw ?? { data: [] };
 
     const { track } = useTracker();
     const { position: geoPos, quality: _geoQuality } = useGeolocation();

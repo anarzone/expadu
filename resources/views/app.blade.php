@@ -3,9 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-        <meta http-equiv="Cache-Control" content="no-store">
-        <meta http-equiv="Pragma" content="no-cache">
-        <meta http-equiv="Expires" content="0">
+        <meta http-equiv="Cache-Control" content="no-cache">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -51,9 +49,9 @@
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+        {{-- Preload critical font weights for fastest text rendering --}}
+        <link rel="preload" href="/fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/fonts/geist-600.woff2" as="font" type="font/woff2" crossorigin>
 
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

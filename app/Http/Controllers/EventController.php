@@ -44,7 +44,7 @@ class EventController extends Controller
         $formattedEvents = $events->through(fn (Event $e) => $this->formatEvent($e, $userId));
 
         return Inertia::render('events', [
-            'dbEvents' => $formattedEvents,
+            'dbEvents' => Inertia::defer(fn () => $formattedEvents),
             'filters' => [
                 'category' => $request->query('category'),
                 'free' => $request->query('free'),
@@ -59,12 +59,12 @@ class EventController extends Controller
 
         return Inertia::render('events', [
             'event' => $this->formatEvent($event, request()->user()->id),
-            'dbEvents' => Event::where('starts_at', '>', now())
+            'dbEvents' => Inertia::defer(fn () => Event::where('starts_at', '>', now())
                 ->orderBy('starts_at')
                 ->with('organiser:id,name')
                 ->withCount('attendees')
                 ->paginate(30)
-                ->through(fn (Event $e) => $this->formatEvent($e, request()->user()->id)),
+                ->through(fn (Event $e) => $this->formatEvent($e, request()->user()->id))),
             'filters' => [],
         ]);
     }
@@ -96,7 +96,7 @@ class EventController extends Controller
             ->paginate(30);
 
         return Inertia::render('events', [
-            'dbEvents' => $events->through(fn (Event $e) => $this->formatEvent($e, $userId)),
+            'dbEvents' => Inertia::defer(fn () => $events->through(fn (Event $e) => $this->formatEvent($e, $userId))),
             'filters' => [],
             'tab' => 'saved',
         ]);

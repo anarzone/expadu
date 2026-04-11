@@ -53,7 +53,7 @@ class SpotController extends Controller
         $spots = $query->withCount('activeCheckins')->paginate(20);
 
         return Inertia::render('explore', [
-            'spots' => $spots,
+            'spots' => Inertia::defer(fn () => $spots),
             'filters' => [
                 'category' => $request->query('category'),
                 'noise_level' => $request->query('noise_level'),
@@ -71,7 +71,7 @@ class SpotController extends Controller
 
         return Inertia::render('explore', [
             'spot' => $spot,
-            'spots' => Spot::withCount('activeCheckins')->orderByDesc('rating')->paginate(50),
+            'spots' => Inertia::defer(fn () => Spot::withCount('activeCheckins')->orderByDesc('rating')->paginate(50)),
             'filters' => [],
             'personalPlaces' => request()->user()->places()
                 ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')

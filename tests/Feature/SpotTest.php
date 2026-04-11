@@ -15,7 +15,10 @@ test('explore page renders with spots', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('explore')
-        ->has('spots.data', 3)
+        ->missing('spots')
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->has('spots.data', 3)
+        )
     );
 });
 
@@ -41,7 +44,12 @@ test('spots can be filtered by category', function () {
 
     $response = $this->get(route('explore', ['category' => 'cafe']));
 
-    $response->assertInertia(fn ($page) => $page->has('spots.data', 1));
+    $response->assertInertia(fn ($page) => $page
+        ->missing('spots')
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->has('spots.data', 1)
+        )
+    );
 });
 
 test('user can check into a spot', function () {
