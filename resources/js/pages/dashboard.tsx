@@ -5,16 +5,27 @@ import {
     IconLanguage,
     IconBell,
 } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { PushPromptCard } from '@/components/cards/push-prompt-card';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { RouteSheet } from '@/components/transit/route-sheet';
 import { ICON_STROKE } from '@/constants/icons';
-import { getTag } from '@/constants/tags';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
+
+// Lazy-load below-fold sections to reduce initial JS parse time
+const NearbySpotsSection = lazy(() =>
+    import('@/components/cards/nearby-spots-section').then((m) => ({
+        default: m.NearbySpotsSection,
+    })),
+);
+const ThisWeekSection = lazy(() =>
+    import('@/components/cards/this-week-section').then((m) => ({
+        default: m.ThisWeekSection,
+    })),
+);
 
 type Recommendation = {
     type: string;
@@ -693,198 +704,39 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* Work spots nearby */}
-                {nearbySpots.length > 0 && (
-                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
-                        <div className="mb-3 flex items-baseline justify-between">
-                            <span
-                                className="text-[#AAA89F] dark:text-[#6B6860]"
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.08em',
-                                }}
-                            >
-                                Work Spots Nearby
-                            </span>
-                            <a
-                                href="/explore"
-                                className="text-xs font-semibold text-[#1A4CD4]"
-                                style={{ textDecoration: 'none' }}
-                            >
-                                See all →
-                            </a>
-                        </div>
-                        <div className="flex flex-col" style={{ gap: 8 }}>
-                            {nearbySpots.map((spot) => (
-                                <div
-                                    key={spot.id}
-                                    onClick={() => {
-                                        track('card_clicked', {
-                                            card_type: 'nearby_spot',
-                                            card_name: spot.name,
-                                            spot_id: spot.id,
-                                        });
-                                        setRouteSheetDest({
-                                            name: spot.name,
-                                            emoji: spot.emoji,
-                                            lat: spot.lat,
-                                            lng: spot.lng,
-                                        });
-                                    }}
-                                    className="flex cursor-pointer items-center rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:translate-x-0.5 hover:border-[rgba(26,76,212,.25)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                    style={{ padding: '10px 14px', gap: 12 }}
-                                >
-                                    <span
-                                        style={{ fontSize: 22, flexShrink: 0 }}
-                                    >
-                                        {spot.emoji}
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                        <div
-                                            style={{
-                                                fontSize: 14,
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            {spot.name}
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: 12,
-                                                marginTop: 1,
-                                            }}
-                                        >
-                                            <span className="text-[#6B6860] dark:text-[#AAA89F]">
-                                                {spot.area.trim()}
-                                                {spot.area.trim() ? ' · ' : ''}
-                                            </span>
-                                            <span
-                                                style={{
-                                                    color: '#0A7C52',
-                                                    fontWeight: 500,
-                                                }}
-                                            >
-                                                Open now
-                                            </span>
-                                        </div>
-                                        {spot.tags.length > 0 && (
-                                            <div
-                                                className="flex"
-                                                style={{ gap: 4, marginTop: 3 }}
-                                            >
-                                                {spot.tags.map((tag) => {
-                                                    const t = getTag(tag);
-                                                    const TagIcon = t?.icon;
+                {/* Work spots nearby (lazy-loaded) */}
+                <Suspense>
+                    <NearbySpotsSection
+                        spots={nearbySpots}
+                        onSpotClick={(spot) => {
+                            track('card_clicked', {
+                                card_type: 'nearby_spot',
+                                card_name: spot.name,
+                                spot_id: spot.id,
+                            });
+                            setRouteSheetDest({
+                                name: spot.name,
+                                emoji: spot.emoji,
+                                lat: spot.lat,
+                                lng: spot.lng,
+                            });
+                        }}
+                    />
+                </Suspense>
 
-                                                    return (
-                                                        <span
-                                                            key={tag}
-                                                            className={`flex items-center gap-0.5 rounded-full px-1.5 py-[2px] text-[10px] font-medium ${t?.cls ?? 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#6B6860]/15 dark:text-[#AAA89F]'}`}
-                                                        >
-                                                            {TagIcon && (
-                                                                <TagIcon
-                                                                    size={10}
-                                                                    stroke={
-                                                                        ICON_STROKE
-                                                                    }
-                                                                />
-                                                            )}
-                                                            {t?.label ?? tag}
-                                                        </span>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <span
-                                        className="text-[#AAA89F] dark:text-[#6B6860]"
-                                        style={{
-                                            fontFamily:
-                                                "'Geist Mono', monospace",
-                                            fontSize: 12,
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        {spot.distance_km} km
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* This week events */}
-                {thisWeek.length > 0 && (
-                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
-                        <div className="mb-3 flex items-baseline justify-between">
-                            <span style={{ fontSize: 16, fontWeight: 600 }}>
-                                This Week
-                            </span>
-                            <a
-                                href="/events"
-                                className="text-xs font-semibold text-[#1A4CD4]"
-                                style={{ textDecoration: 'none' }}
-                            >
-                                See all →
-                            </a>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            {thisWeek.map((ev) => (
-                                <a
-                                    key={ev.id}
-                                    href={`/events/${ev.id}`}
-                                    onClick={() =>
-                                        track('card_clicked', {
-                                            card_type: 'this_week_event',
-                                            card_name: ev.title,
-                                            event_id: ev.id,
-                                        })
-                                    }
-                                    className="flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3 transition-all hover:border-[rgba(26,76,212,.2)] hover:shadow-sm dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                    style={{
-                                        textDecoration: 'none',
-                                        color: 'inherit',
-                                    }}
-                                >
-                                    <span className="text-lg">
-                                        {ev.emoji || '📅'}
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                        <div
-                                            style={{
-                                                fontSize: 13,
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            {ev.title}
-                                        </div>
-                                        <div
-                                            className="text-[#6B6860] dark:text-[#AAA89F]"
-                                            style={{ fontSize: 12 }}
-                                        >
-                                            {new Date(
-                                                ev.starts_at,
-                                            ).toLocaleDateString('en-GB', {
-                                                weekday: 'short',
-                                                day: 'numeric',
-                                                month: 'short',
-                                            })}
-                                            {ev.location_name &&
-                                                ` · ${ev.location_name}`}
-                                        </div>
-                                    </div>
-                                    {ev.is_free && (
-                                        <span className="shrink-0 rounded-full bg-[#D4F0E6] px-2 py-0.5 text-[9px] font-bold text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20 dark:text-[#34D399]">
-                                            Free
-                                        </span>
-                                    )}
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* This week events (lazy-loaded) */}
+                <Suspense>
+                    <ThisWeekSection
+                        events={thisWeek}
+                        onEventClick={(ev) =>
+                            track('card_clicked', {
+                                card_type: 'this_week_event',
+                                card_name: ev.title,
+                                event_id: ev.id,
+                            })
+                        }
+                    />
+                </Suspense>
 
                 {/* Quick access */}
                 <div className="section-pad">
