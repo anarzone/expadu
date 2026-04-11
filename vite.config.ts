@@ -56,14 +56,26 @@ export default defineConfig({
             },
         }),
         compression({ algorithm: 'gzip', include: /\.(js|css|svg|json)$/ }),
-        compression({ algorithm: 'brotliCompress', include: /\.(js|css|svg|json)$/ }),
+        compression({
+            algorithm: 'brotliCompress',
+            include: /\.(js|css|svg|json)$/,
+        }),
     ],
+    ssr: {
+        // Bundle all dependencies into the SSR output so production
+        // doesn't need node_modules at runtime
+        noExternal: true,
+    },
     build: {
         rollupOptions: {
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
-                        if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                        if (
+                            id.includes('react') ||
+                            id.includes('react-dom') ||
+                            id.includes('scheduler')
+                        ) {
                             return 'vendor-react';
                         }
                         if (id.includes('maplibre-gl')) {
