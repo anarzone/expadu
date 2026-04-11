@@ -12,9 +12,16 @@ type WeatherData = {
     precipitation: number;
 };
 
+type HourlyEntry = {
+    hour: string;
+    precip: number;
+};
+
 type ForecastData = {
     rain_starts: string | null;
     bike_score: string;
+    rain_summary: string;
+    hourly: HourlyEntry[];
 };
 
 type TodayEvent = {
@@ -81,9 +88,6 @@ function WeatherWidget({
     const humidity = weather?.humidity ?? 0;
     const rainStarts = forecast?.rain_starts;
     const bikeScore = forecast?.bike_score ?? 'Good';
-    const rainLabel =
-        rainStarts === 'now' ? 'Raining now' : (rainStarts ?? 'None today');
-    const rainVariant: 'good' | 'caution' = rainStarts ? 'caution' : 'good';
 
     return (
         <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
@@ -104,11 +108,7 @@ function WeatherWidget({
                         {condition}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                        {rainStarts === 'now'
-                            ? 'Raining — clearing later'
-                            : rainStarts
-                              ? `Rain from ${rainStarts}`
-                              : 'No rain expected'}
+                        {forecast?.rain_summary ?? (rainStarts ? `Rain from ${rainStarts}` : 'No rain expected')}
                     </div>
                 </div>
                 <div className="text-[44px] opacity-85">{emoji}</div>
@@ -139,11 +139,10 @@ function WeatherWidget({
                     value={bikeScore}
                     variant="good"
                 />
-                <WeatherRow
-                    emoji="🌧️"
-                    label="Rain arrives"
-                    value={rainLabel}
-                    variant={rainVariant}
+                <RainTimeline
+                    hourly={forecast?.hourly ?? []}
+                    summary={forecast?.rain_summary ?? rainLabel}
+                    isRaining={!!rainStarts}
                 />
             </div>
         </div>
@@ -177,6 +176,64 @@ function WeatherRow({
             <span className={`font-mono font-medium ${valueColor}`}>
                 {value}
             </span>
+        </div>
+    );
+}
+
+function RainTimeline({
+    hourly,
+    summary,
+    isRaining,
+}: {
+    hourly: HourlyEntry[];
+    summary: string;
+    isRaining: boolean;
+}) {
+    const maxPrecip = Math.max(0.5, ...hourly.map((h) => h.precip));
+    const hasRain = hourly.some((h) => h.precip > 0.1);
+
+    return (
+        <div className="border-b border-border px-4 py-2.5 last:border-b-0">
+            <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="flex items-center gap-[7px] text-muted-foreground">
+                    <span className="text-sm">🌧️</span>
+                    Rain
+                </span>
+                <span
+                    className={`font-mono font-medium ${isRaining ? 'text-warn' : 'text-success'}`}
+                >
+                    {summary}
+                </span>
+            </div>
+            {hourly.length > 0 && (
+                <div className="flex items-end gap-[3px]">
+                    {hourly.map((h, i) => {
+                        const height = hasRain
+                            ? Math.max(2, Math.round((h.precip / maxPrecip) * 24))
+                            : 2;
+                        const isWet = h.precip > 0.1;
+
+                        return (
+                            <div
+                                key={i}
+                                className="flex flex-1 flex-col items-center gap-1"
+                            >
+                                <div
+                                    className={`w-full rounded-sm transition-all ${
+                                        isWet
+                                            ? 'bg-primary'
+                                            : 'bg-border'
+                                    }`}
+                                    style={{ height }}
+                                />
+                                <span className="text-[8px] text-muted-foreground">
+                                    {h.hour.slice(0, 2)}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }

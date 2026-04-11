@@ -92,10 +92,29 @@ class WeatherService
             || in_array($current['icon'] ?? '', ['rain', 'sleet', 'thunderstorm', 'hail']);
         $bikeScore = $this->calculateBikeScore($current, $rainStart, $isRainingNow);
 
+        // Build next-hours forecast (current hour + next 7 = 8 slots)
+        $nextHours = [];
+        foreach ($hourly as $entry) {
+            if ($entry['hour'] < $nowHour) {
+                continue;
+            }
+            $nextHours[] = [
+                'hour' => str_pad((string) $entry['hour'], 2, '0', STR_PAD_LEFT).':00',
+                'precip' => round((float) $entry['precipitation'], 1),
+            ];
+            if (count($nextHours) >= 8) {
+                break;
+            }
+        }
+
+        // Smart rain summary from hourly data
+        $rainSummary = $this->buildRainSummary($nextHours, $isRainingNow);
+
         return [
             'rain_starts' => $isRainingNow && ! $rainStart ? 'now' : $rainStart,
             'bike_score' => $bikeScore,
-            'hourly' => [],
+            'rain_summary' => $rainSummary,
+            'hourly' => $nextHours,
         ];
     }
 
@@ -148,6 +167,63 @@ class WeatherService
             'humidity' => 0,
             'precipitation' => 0.0,
         ];
+    }
+
+    /**
+     * Generate a human-readable rain summary from hourly forecast data.
+     *
+     * @param  array<int, array{hour: string, precip: float}>  $hours
+     */
+    protected function buildRainSummary(array $hours, bool $isRainingNow): string
+    {
+        if (empty($hours)) {
+            return $isRainingNow ? 'Raining now' : 'No data';
+        }
+
+        $rainyHours = array_filter($hours, fn ($h) => $h['precip'] > 0.1);
+        $dryHours = array_filter($hours, fn ($h) => $h['precip'] <= 0.1);
+
+        // All dry
+        if (empty($rainyHours)) {
+            return $isRainingNow ? 'Clearing soon' : 'Dry next '.count($hours).' hours';
+        }
+
+        // All rainy
+        if (empty($dryHours)) {
+            return 'Rain all day';
+        }
+
+        // Find first rain and first clear after rain
+        $firstRain = null;
+        $clearsAt = null;
+
+        foreach ($hours as $h) {
+            if ($h['precip'] > 0.1 && ! $firstRain) {
+                $firstRain = $h['hour'];
+            }
+            if ($firstRain && $h['precip'] <= 0.1 && ! $clearsAt) {
+                $clearsAt = $h['hour'];
+            }
+        }
+
+        if ($isRainingNow && $clearsAt) {
+            return "Rain until {$clearsAt}";
+        }
+
+        if ($isRainingNow) {
+            return 'Rain continuing';
+        }
+
+        if ($firstRain) {
+            $duration = count($rainyHours);
+            if ($clearsAt) {
+                return "Rain {$firstRain}–{$clearsAt}";
+            }
+
+            return "Rain from {$firstRain} ({$duration}h+)";
+        }
+
+        return 'Dry next '.count($hours).' hours';
     }
 
     protected function calculateBikeScore(array $weather, ?string $rainStart, bool $isRainingNow = false): string
