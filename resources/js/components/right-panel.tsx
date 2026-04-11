@@ -105,7 +105,10 @@ function WeatherWidget({
                     <div className="text-[11px] text-muted-foreground">
                         {rainStarts
                             ? `Rain from ${rainStarts}`
-                            : 'No rain expected'}
+                            : (weather?.precipitation ?? 0) > 0 ||
+                                condition === 'Rain'
+                              ? 'Rain clearing later'
+                              : 'No rain expected'}
                     </div>
                 </div>
                 <div className="text-[44px] opacity-85">{emoji}</div>
