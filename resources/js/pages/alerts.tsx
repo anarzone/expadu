@@ -314,6 +314,35 @@ export default function Alerts() {
         [alertList, csrf, refreshSharedUnreadCount],
     );
 
+    // Dismiss alert — remove from list + background fetch
+    const dismissAlert = useCallback(
+        (alertId: number) => {
+            const alert = alertList.find((a) => a.id === alertId);
+            const wasUnread = alert && !alert.read_at;
+
+            setAlertList((prev) => prev.filter((a) => a.id !== alertId));
+
+            if (wasUnread) {
+                setCounts((prev) => ({
+                    ...prev,
+                    unread: Math.max(0, prev.unread - 1),
+                }));
+            }
+
+            fetch(`/alerts/${alertId}/dismiss`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    Accept: 'application/json',
+                },
+            })
+                .then(refreshSharedUnreadCount)
+                .catch(() => {});
+        },
+        [alertList, csrf, refreshSharedUnreadCount],
+    );
+
     // Mark all read — local state + background fetch
     function markAllRead() {
         setAlertList((prev) =>
@@ -431,12 +460,14 @@ export default function Alerts() {
                                                 key={`stack-${item.stackKey}`}
                                                 stack={item}
                                                 onMarkRead={markRead}
+                                                onDismiss={dismissAlert}
                                             />
                                         ) : (
                                             <AlertRow
                                                 key={item.id}
                                                 alert={item}
                                                 onMarkRead={markRead}
+                                                onDismiss={dismissAlert}
                                             />
                                         ),
                                     )}

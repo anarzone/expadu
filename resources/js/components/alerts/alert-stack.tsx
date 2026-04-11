@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AlertRow, type AlertData } from '@/components/alerts/alert-row';
+import { AlertRow } from '@/components/alerts/alert-row';
+import type { AlertData } from '@/components/alerts/alert-row';
 
 export type AlertStack = {
     stackType: 'stack';
@@ -21,9 +22,11 @@ const subtypeLabels: Record<string, { emoji: string; label: string }> = {
 export function AlertStackRow({
     stack,
     onMarkRead,
+    onDismiss,
 }: {
     stack: AlertStack;
     onMarkRead?: (id: number) => void;
+    onDismiss?: (id: number) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
     const info = subtypeLabels[stack.subtype] ?? subtypeLabels.generic;
@@ -101,6 +104,7 @@ export function AlertStackRow({
                             key={alert.id}
                             alert={alert}
                             onMarkRead={onMarkRead}
+                            onDismiss={onDismiss}
                         />
                     ))}
                 </div>

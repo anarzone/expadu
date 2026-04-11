@@ -436,3 +436,15 @@ it('metno provider maps symbol codes to icon vocab', function (string $symbol, s
     'lightsleet' => ['lightsleet', 'sleet'],
     'rainandthunder' => ['rainandthunder', 'thunderstorm'],
 ]);
+
+it('returns wind_gust key not wind_gusts in getCurrentWeather', function () {
+    $payload = samplePayload();
+    $payload['current']['wind_gust'] = 65.0;
+
+    $service = new WeatherService([fakeProvider('test', $payload)]);
+    $result = $service->getCurrentWeather(50.9, 6.9);
+
+    expect($result)->toHaveKey('wind_gust')
+        ->and($result)->not->toHaveKey('wind_gusts')
+        ->and($result['wind_gust'])->toBe(65);
+});

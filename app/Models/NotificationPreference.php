@@ -34,6 +34,7 @@ class NotificationPreference extends Model
             'burgeramt' => true,
             'language' => true,
             'events' => true,
+            'weather' => true,
             'checklist' => true,
             'digest' => false,
             'rhine' => true,

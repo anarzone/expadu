@@ -38,15 +38,17 @@ class CreateAlertFromNotification
             return;
         }
 
-        // Dedup: use notification ID + user to prevent double-firing
-        $dedupKey = 'alert_created:'.$event->notification->id.':'.$event->notifiable->id;
+        // Dedup: hash notification class + user + title to prevent double-firing
+        $data = $event->notification->toArray($event->notifiable);
+        $dedupKey = 'alert_created:'.md5(
+            get_class($event->notification).':'.$event->notifiable->id.':'.($data['title'] ?? '')
+        );
         if (Cache::has($dedupKey)) {
             return;
         }
         Cache::put($dedupKey, true, 60);
 
         $notification = $event->notification;
-        $data = $notification->toArray($event->notifiable);
 
         // Map notification class → alert type + subtype
         $alertType = match (true) {

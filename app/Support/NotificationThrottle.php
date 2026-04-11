@@ -136,9 +136,9 @@ class NotificationThrottle
         return match ($type) {
             'transit_disruption', 'critical_disruption', 'transit_delay', 'leave_by_reminder' => 'transit',
             'buergeramt' => 'burgeramt',
-            'weather_commute', 'weather_info', 'market_closure' => 'events', // weather + market use events pref
+            'weather_commute', 'weather_info' => 'weather',
+            'market_closure', 'event_reminder' => 'events',
             'rhine' => 'rhine',
-            'event_reminder' => 'events',
             default => null,
         };
     }

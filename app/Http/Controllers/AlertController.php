@@ -14,7 +14,7 @@ class AlertController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = $request->user()->alerts()->orderByDesc('created_at');
+        $query = $request->user()->alerts()->whereNull('dismissed_at')->orderByDesc('created_at');
 
         if ($tab = $request->query('tab')) {
             if (in_array($tab, ['system', 'social', 'reminder'])) {
@@ -22,7 +22,7 @@ class AlertController extends Controller
             }
         }
 
-        $userAlerts = $request->user()->alerts();
+        $userAlerts = $request->user()->alerts()->whereNull('dismissed_at');
 
         return Inertia::render('alerts', [
             'alerts' => $query->paginate(30),
@@ -55,6 +55,22 @@ class AlertController extends Controller
     public function markAllRead(Request $request): JsonResponse|RedirectResponse
     {
         $request->user()->alerts()->whereNull('read_at')->update(['read_at' => now()]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back();
+    }
+
+    public function dismiss(Request $request, Alert $alert): JsonResponse|RedirectResponse
+    {
+        if ($alert->user_id === $request->user()->id) {
+            $alert->update([
+                'dismissed_at' => now(),
+                'read_at' => $alert->read_at ?? now(),
+            ]);
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['ok' => true]);

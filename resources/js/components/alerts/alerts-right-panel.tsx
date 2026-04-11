@@ -31,6 +31,11 @@ const notificationSettings = [
         sub: "1 day before events you're attending",
     },
     {
+        id: 'weather',
+        label: 'Weather alerts',
+        sub: 'Rain, wind, and commute-affecting weather',
+    },
+    {
         id: 'digest',
         label: 'Weekly digest',
         sub: 'Monday morning events roundup',
@@ -64,6 +69,7 @@ function NotificationSettings() {
             burgeramt: true,
             language: true,
             events: true,
+            weather: true,
             digest: false,
             rhine: true,
         },
@@ -95,17 +101,20 @@ function NotificationSettings() {
         setToggles((prev) => {
             const next = { ...prev, [id]: !prev[id] };
             persistPreferences(next);
+
             return next;
         });
     }
 
     async function handlePushToggle() {
         setPushLoading(true);
+
         if (isSubscribed) {
             await unsubscribe();
         } else {
             await subscribe();
         }
+
         setPushLoading(false);
     }
 

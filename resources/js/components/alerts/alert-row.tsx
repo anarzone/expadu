@@ -10,6 +10,7 @@ export type AlertData = {
     body: string | null;
     deep_link: string | null;
     read_at: string | null;
+    dismissed_at: string | null;
     created_at: string;
 };
 
@@ -38,6 +39,7 @@ function matchConfig(alert: AlertData): VisualConfig {
     ) {
         return systemConfigs.transit;
     }
+
     if (
         t.includes('bürgeramt') ||
         t.includes('appointment') ||
@@ -45,6 +47,7 @@ function matchConfig(alert: AlertData): VisualConfig {
     ) {
         return systemConfigs.buergeramt;
     }
+
     if (
         t.includes('rhine') ||
         t.includes('water level') ||
@@ -52,6 +55,7 @@ function matchConfig(alert: AlertData): VisualConfig {
     ) {
         return systemConfigs.rhine;
     }
+
     if (
         t.includes('rain') ||
         t.includes('weather') ||
@@ -72,6 +76,7 @@ function matchConfig(alert: AlertData): VisualConfig {
     ) {
         return socialConfigs.language;
     }
+
     if (
         t.includes('joined') ||
         t.includes('mixer') ||
@@ -80,6 +85,7 @@ function matchConfig(alert: AlertData): VisualConfig {
     ) {
         return socialConfigs.event;
     }
+
     if (t.includes('tip') || t.includes('area') || link === '/explore') {
         return socialConfigs.tip;
     }
@@ -92,6 +98,7 @@ function matchConfig(alert: AlertData): VisualConfig {
     ) {
         return reminderConfigs.event;
     }
+
     if (
         t.includes('bank') ||
         t.includes('steuer') ||
@@ -102,8 +109,14 @@ function matchConfig(alert: AlertData): VisualConfig {
     }
 
     // Fallback by type
-    if (alert.type === 'social') return socialConfigs.language;
-    if (alert.type === 'reminder') return reminderConfigs.event;
+    if (alert.type === 'social') {
+        return socialConfigs.language;
+    }
+
+    if (alert.type === 'reminder') {
+        return reminderConfigs.event;
+    }
+
     return systemConfigs.transit;
 }
 
@@ -206,148 +219,6 @@ const reminderConfigs: Record<string, VisualConfig> = {
     },
 };
 
-// Legacy — kept for type reference only
-const typeConfigs: Record<
-    string,
-    {
-        emoji: string;
-        bg: string;
-        tag: string;
-        tagBg: string;
-        tagColor: string;
-        cta: string;
-        ctaBg: string;
-        ctaColor: string;
-    }[]
-> = {
-    system: [
-        {
-            emoji: '🚇',
-            bg: 'bg-danger-soft',
-            tag: 'Transit',
-            tagBg: 'bg-danger-soft',
-            tagColor: 'text-danger',
-            cta: 'See alternatives',
-            ctaBg: 'bg-accent-soft',
-            ctaColor: 'text-primary',
-        },
-        {
-            emoji: '🏛️',
-            bg: 'bg-success-soft',
-            tag: 'Bürgeramt',
-            tagBg: 'bg-success-soft',
-            tagColor: 'text-success',
-            cta: 'Book now',
-            ctaBg: 'bg-success dark:bg-success',
-            ctaColor: 'text-white',
-        },
-        {
-            emoji: '🌊',
-            bg: 'bg-accent-soft',
-            tag: 'Rhine',
-            tagBg: 'bg-accent-soft',
-            tagColor: 'text-primary',
-            cta: 'View Rhine level',
-            ctaBg: 'bg-accent-soft',
-            ctaColor: 'text-primary',
-        },
-        {
-            emoji: '🌦️',
-            bg: 'bg-surface-2',
-            tag: 'Weather',
-            tagBg: 'bg-surface-2',
-            tagColor: 'text-muted-foreground',
-            cta: 'Plan my journey',
-            ctaBg: 'bg-accent-soft',
-            ctaColor: 'text-primary',
-        },
-        {
-            emoji: '🚇',
-            bg: 'bg-warn-soft',
-            tag: 'Transit',
-            tagBg: 'bg-warn-soft',
-            tagColor: 'text-warn',
-            cta: 'Check live status',
-            ctaBg: 'bg-warn-soft',
-            ctaColor: 'text-warn',
-        },
-    ],
-    social: [
-        {
-            emoji: '🇬🇧',
-            bg: 'bg-accent-soft',
-            tag: 'Language',
-            tagBg: 'bg-accent-soft',
-            tagColor: 'text-primary',
-            cta: 'Send message',
-            ctaBg: 'bg-primary',
-            ctaColor: 'text-primary-foreground',
-        },
-        {
-            emoji: '🗣️',
-            bg: 'bg-purple-100 dark:bg-purple-900',
-            tag: 'Language',
-            tagBg: 'bg-purple-100 dark:bg-purple-900',
-            tagColor: 'text-purple-700 dark:text-purple-300',
-            cta: 'View profile',
-            ctaBg: 'bg-accent-soft',
-            ctaColor: 'text-primary',
-        },
-        {
-            emoji: '🎉',
-            bg: 'bg-success-soft',
-            tag: 'Event',
-            tagBg: 'bg-success-soft',
-            tagColor: 'text-success',
-            cta: 'View event',
-            ctaBg: 'bg-success-soft',
-            ctaColor: 'text-success',
-        },
-        {
-            emoji: '💬',
-            bg: 'bg-surface-2',
-            tag: 'Community',
-            tagBg: 'bg-surface-2',
-            tagColor: 'text-muted-foreground',
-            cta: 'See on map',
-            ctaBg: 'bg-surface-2',
-            ctaColor: 'text-muted-foreground',
-        },
-    ],
-    reminder: [
-        {
-            emoji: '📅',
-            bg: 'bg-warn-soft',
-            tag: 'Event',
-            tagBg: 'bg-warn-soft',
-            tagColor: 'text-warn',
-            cta: 'Get directions',
-            ctaBg: 'bg-primary',
-            ctaColor: 'text-primary-foreground',
-        },
-        {
-            emoji: '🏛️',
-            bg: 'bg-danger-soft',
-            tag: 'Bureaucracy',
-            tagBg: 'bg-danger-soft',
-            tagColor: 'text-danger',
-            cta: 'Open N26 now',
-            ctaBg: 'bg-primary',
-            ctaColor: 'text-primary-foreground',
-        },
-        {
-            emoji: '📬',
-            bg: 'bg-surface-2',
-            tag: 'Tax ID',
-            tagBg: 'bg-surface-2',
-            tagColor: 'text-muted-foreground',
-            cta: 'Request a copy',
-            ctaBg: 'bg-surface-2',
-            ctaColor: 'text-muted-foreground',
-        },
-    ],
-};
-
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -384,9 +255,11 @@ function timeAgo(dateStr: string): string {
 export function AlertRow({
     alert,
     onMarkRead,
+    onDismiss,
 }: {
     alert: AlertData;
     onMarkRead?: (id: number) => void;
+    onDismiss?: (id: number) => void;
 }) {
     const { track } = useTracker();
     const isUnread = !alert.read_at;
@@ -417,7 +290,7 @@ export function AlertRow({
     const content = (
         <div
             onClick={markRead}
-            className={`relative flex items-start gap-[13px] border-b border-border px-6 py-3.5 transition-colors hover:bg-secondary/50 ${
+            className={`group relative flex items-start gap-[13px] border-b border-border px-6 py-3.5 transition-colors hover:bg-secondary/50 ${
                 isUnread ? 'bg-primary/[0.03]' : ''
             }`}
         >
@@ -468,6 +341,17 @@ export function AlertRow({
                         className={`rounded-lg px-[11px] py-[5px] text-[11px] font-bold whitespace-nowrap ${config.ctaBg} ${config.ctaColor}`}
                     >
                         {config.cta}
+                    </button>
+                )}
+                {onDismiss && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDismiss(alert.id);
+                        }}
+                        className="text-[11px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                        Dismiss
                     </button>
                 )}
             </div>

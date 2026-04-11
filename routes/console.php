@@ -34,5 +34,8 @@ Schedule::command('commute:send-leaveby-reminders')->everyFiveMinutes()->without
 // Event reminders — 1 day before events user is attending
 Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping();
 
+// Notification health check — hourly automated monitoring
+Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
+
 // GTFS static timetable refresh — VRS updates weekly
 Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();

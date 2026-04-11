@@ -10,8 +10,8 @@ return [
      */
     'vapid' => [
         'subject' => env('VAPID_SUBJECT', 'mailto:hello@expadu.com'),
-        'public_key' => env('VAPID_PUBLIC_KEY', 'BJ_9B1fEWKeKCWNLza5ZamrzSIEkevDLxg-tdL1rb97dkfAGnN_PNmMzlbBDKslxnzGZIf2MgO0SJ-sd5X-3epc'),
-        'private_key' => env('VAPID_PRIVATE_KEY', '-7iNq6ThNrJjvX00GcLzvn1WtHqFUgrCqVHE9GzzWfU'),
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
         'pem_file' => env('VAPID_PEM_FILE'),
     ],
 

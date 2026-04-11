@@ -258,6 +258,12 @@ export default function Dashboard() {
                                     style={{ marginBottom: 14 }}
                                 >
                                     <div
+                                        onClick={() =>
+                                            track('card_clicked', {
+                                                card_type: topAlert.type,
+                                                card_name: topAlert.title,
+                                            })
+                                        }
                                         className="flex cursor-pointer items-center gap-3 rounded-[14px] transition-all hover:bg-[rgba(255,255,255,.22)]"
                                         style={{
                                             background: 'rgba(255,255,255,.15)',
@@ -646,7 +652,14 @@ export default function Dashboard() {
                                 {settlement.days_since_arrival} days in Germany
                             </span>
                         </div>
-                        <div className="overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                        <div
+                            onClick={() =>
+                                track('card_clicked', {
+                                    card_type: 'settlement_progress',
+                                })
+                            }
+                            className="cursor-pointer overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white p-4 transition-all hover:border-[rgba(26,76,212,.2)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                        >
                             <div className="mb-2 flex justify-between text-sm">
                                 <span style={{ fontWeight: 600 }}>
                                     {settlement.completed} of {settlement.total}{' '}
@@ -707,14 +720,19 @@ export default function Dashboard() {
                             {nearbySpots.map((spot) => (
                                 <div
                                     key={spot.id}
-                                    onClick={() =>
+                                    onClick={() => {
+                                        track('card_clicked', {
+                                            card_type: 'nearby_spot',
+                                            card_name: spot.name,
+                                            spot_id: spot.id,
+                                        });
                                         setRouteSheetDest({
                                             name: spot.name,
                                             emoji: spot.emoji,
                                             lat: spot.lat,
                                             lng: spot.lng,
-                                        })
-                                    }
+                                        });
+                                    }}
                                     className="flex cursor-pointer items-center rounded-[14px] border border-[#E2DFD6] bg-white transition-all hover:translate-x-0.5 hover:border-[rgba(26,76,212,.25)] dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                     style={{ padding: '10px 14px', gap: 12 }}
                                 >
@@ -817,6 +835,13 @@ export default function Dashboard() {
                                 <a
                                     key={ev.id}
                                     href={`/events/${ev.id}`}
+                                    onClick={() =>
+                                        track('card_clicked', {
+                                            card_type: 'this_week_event',
+                                            card_name: ev.title,
+                                            event_id: ev.id,
+                                        })
+                                    }
                                     className="flex items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3 transition-all hover:border-[rgba(26,76,212,.2)] hover:shadow-sm dark:border-[#3A3930] dark:bg-[#1E1D15]"
                                     style={{
                                         textDecoration: 'none',

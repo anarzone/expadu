@@ -73,7 +73,7 @@ class CheckWeatherAlerts extends Command
         }
 
         // Check for high winds (> 60 km/h)
-        $windGusts = $current['wind_gusts'] ?? 0;
+        $windGusts = $current['wind_gust'] ?? 0;
         if ($windGusts > 60) {
             $alerts[] = [
                 'summary' => "Strong wind gusts: {$windGusts} km/h",
@@ -101,7 +101,7 @@ class CheckWeatherAlerts extends Command
 
             User::whereNotNull('onboarded_at')->chunk(100, function ($users) use ($alert, &$notifiedCount) {
                 foreach ($users as $user) {
-                    if (! $user->wantsNotification('events')) {
+                    if (! $user->wantsNotification('weather')) {
                         continue;
                     }
 

@@ -72,6 +72,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('alerts', [AlertController::class, 'index'])->name('alerts');
     Route::post('alerts/{alert}/read', [AlertController::class, 'markRead'])->name('alerts.read');
     Route::post('alerts/read-all', [AlertController::class, 'markAllRead'])->name('alerts.read-all');
+    Route::post('alerts/{alert}/dismiss', [AlertController::class, 'dismiss'])->name('alerts.dismiss');
 
     // Push subscriptions
     Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
