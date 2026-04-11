@@ -2,8 +2,10 @@
 
 use App\Models\Routine;
 use App\Models\User;
+use App\Models\UserPlace;
 use App\Notifications\TransitDisruptionNotification;
 use App\Services\DisruptionService;
+use App\Services\NearbyStopService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;
@@ -147,4 +149,166 @@ test('notifies user when disruption affects their to_stop lines', function () {
     $this->artisan('transit:check-disruptions')->assertSuccessful();
 
     Notification::assertSentTo($user, TransitDisruptionNotification::class);
+});
+
+// --- Place-based alerts ---
+
+test('notifies user with saved place near disrupted line (no routine needed)', function () {
+    $this->mock(NearbyStopService::class, function ($mock) {
+        $mock->shouldReceive('getWalkableStops')->andReturn([
+            ['id' => 1, 'name' => 'Merkenich Mitte', 'lines' => ['12', '140'], 'lat' => 51.02, 'lng' => 6.95, 'distance_m' => 250, 'walk_min' => 3],
+        ]);
+    });
+
+    $this->mock(DisruptionService::class, function ($mock) {
+        $mock->shouldReceive('getLineDisruptions')->andReturn([
+            [
+                'id' => 'news_200',
+                'title' => 'Line 12 disruption',
+                'description' => 'Construction on line 12',
+                'severity' => 'major',
+                'type' => 'line',
+                'affected_lines' => ['12'],
+                'started_at' => now()->toIso8601String(),
+                'estimated_end' => null,
+                'source' => 'kvb_news',
+            ],
+        ]);
+    });
+
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Home',
+        'category' => 'home',
+        'lat' => 51.023,
+        'lng' => 6.950,
+    ]);
+
+    $this->artisan('transit:check-disruptions')->assertSuccessful();
+
+    Notification::assertSentTo($user, TransitDisruptionNotification::class);
+});
+
+test('does not notify user when saved place lines are not disrupted', function () {
+    $this->mock(NearbyStopService::class, function ($mock) {
+        $mock->shouldReceive('getWalkableStops')->andReturn([
+            ['id' => 1, 'name' => 'Merkenich Mitte', 'lines' => ['12', '140'], 'lat' => 51.02, 'lng' => 6.95, 'distance_m' => 250, 'walk_min' => 3],
+        ]);
+    });
+
+    $this->mock(DisruptionService::class, function ($mock) {
+        $mock->shouldReceive('getLineDisruptions')->andReturn([
+            [
+                'id' => 'news_201',
+                'title' => 'Line 3 disruption',
+                'description' => 'Test',
+                'severity' => 'major',
+                'type' => 'line',
+                'affected_lines' => ['3'],
+                'started_at' => now()->toIso8601String(),
+                'estimated_end' => null,
+                'source' => 'kvb_news',
+            ],
+        ]);
+    });
+
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Home',
+        'category' => 'home',
+        'lat' => 51.023,
+        'lng' => 6.950,
+    ]);
+
+    $this->artisan('transit:check-disruptions')->assertSuccessful();
+
+    Notification::assertNotSentTo($user, TransitDisruptionNotification::class);
+});
+
+// --- GPS-based alerts ---
+
+test('notifies stationary user near disrupted line via GPS', function () {
+    $this->mock(NearbyStopService::class, function ($mock) {
+        $mock->shouldReceive('getWalkableStops')->andReturn([
+            ['id' => 1, 'name' => 'Neumarkt', 'lines' => ['1', '7', '9'], 'lat' => 50.94, 'lng' => 6.95, 'distance_m' => 100, 'walk_min' => 1],
+        ]);
+    });
+
+    $this->mock(DisruptionService::class, function ($mock) {
+        $mock->shouldReceive('getLineDisruptions')->andReturn([
+            [
+                'id' => 'news_202',
+                'title' => 'Line 1 disruption',
+                'description' => 'Test',
+                'severity' => 'major',
+                'type' => 'line',
+                'affected_lines' => ['1'],
+                'started_at' => now()->toIso8601String(),
+                'estimated_end' => null,
+                'source' => 'kvb_news',
+            ],
+        ]);
+    });
+
+    $user = User::factory()->onboarded()->create();
+
+    // Simulate stationary GPS pings over 25 minutes (all within 50m)
+    $key = "location_history:{$user->id}";
+    for ($i = 0; $i < 5; $i++) {
+        $ts = now()->subMinutes(25 - $i * 5)->timestamp;
+        Redis::zadd($key, $ts, json_encode([
+            'lat' => 50.9390 + rand(-3, 3) / 100000,
+            'lng' => 6.9490 + rand(-3, 3) / 100000,
+            'accuracy' => 15,
+            'at' => now()->subMinutes(25 - $i * 5)->toIso8601String(),
+        ]));
+    }
+
+    $this->artisan('transit:check-disruptions')->assertSuccessful();
+
+    Notification::assertSentTo($user, TransitDisruptionNotification::class);
+});
+
+test('does not notify moving user via GPS', function () {
+    $this->mock(NearbyStopService::class, function ($mock) {
+        $mock->shouldReceive('getWalkableStops')->andReturn([
+            ['id' => 1, 'name' => 'Neumarkt', 'lines' => ['1'], 'lat' => 50.94, 'lng' => 6.95, 'distance_m' => 100, 'walk_min' => 1],
+        ]);
+    });
+
+    $this->mock(DisruptionService::class, function ($mock) {
+        $mock->shouldReceive('getLineDisruptions')->andReturn([
+            [
+                'id' => 'news_203',
+                'title' => 'Line 1 disruption',
+                'description' => 'Test',
+                'severity' => 'major',
+                'type' => 'line',
+                'affected_lines' => ['1'],
+                'started_at' => now()->toIso8601String(),
+                'estimated_end' => null,
+                'source' => 'kvb_news',
+            ],
+        ]);
+    });
+
+    $user = User::factory()->onboarded()->create();
+
+    // Simulate MOVING GPS pings — spread across 500m
+    $key = "location_history:{$user->id}";
+    for ($i = 0; $i < 5; $i++) {
+        $ts = now()->subMinutes(25 - $i * 5)->timestamp;
+        Redis::zadd($key, $ts, json_encode([
+            'lat' => 50.9390 + $i * 0.002,
+            'lng' => 6.9490,
+            'accuracy' => 15,
+            'at' => now()->subMinutes(25 - $i * 5)->toIso8601String(),
+        ]));
+    }
+
+    $this->artisan('transit:check-disruptions')->assertSuccessful();
+
+    Notification::assertNotSentTo($user, TransitDisruptionNotification::class);
 });

@@ -2,15 +2,13 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Routine;
 use App\Models\User;
 use App\Notifications\TransitDisruptionNotification;
 use App\Services\DisruptionService;
+use App\Services\UserTransitLinesService;
 use App\Support\NotificationThrottle;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CheckTransitDisruptions extends Command
@@ -19,7 +17,7 @@ class CheckTransitDisruptions extends Command
 
     protected $description = 'Check for new transit disruptions and notify affected users';
 
-    public function handle(DisruptionService $disruptionService): int
+    public function handle(DisruptionService $disruptionService, UserTransitLinesService $transitLines): int
     {
         $disruptions = $disruptionService->getLineDisruptions();
 
@@ -62,102 +60,63 @@ class CheckTransitDisruptions extends Command
             return self::SUCCESS;
         }
 
-        // Get active routines and match against affected lines per user
-        $routines = Routine::where('is_active', true)->with('user')->get();
-        $byStop = $routines->groupBy(fn ($r) => $r->from_stop.'|||'.$r->to_stop);
-
-        /** @var array<int, Collection<int, string>> */
-        $userAffectedLines = [];
-
-        foreach ($byStop as $stopKey => $stopRoutines) {
-            [$fromStop, $toStop] = explode('|||', $stopKey);
-
-            // Get lines serving both from and to stops
-            $linesAtFrom = $this->getLinesAtStop($fromStop);
-            $linesAtTo = $toStop ? $this->getLinesAtStop($toStop) : collect();
-            $linesForRoutine = $linesAtFrom->merge($linesAtTo)->unique();
-
-            // Intersect with disrupted lines
-            $matchedLines = $allAffectedLines->intersect($linesForRoutine);
-
-            if ($matchedLines->isEmpty()) {
-                continue;
-            }
-
-            foreach ($stopRoutines as $routine) {
-                $userId = $routine->user_id;
-                if (! isset($userAffectedLines[$userId])) {
-                    $userAffectedLines[$userId] = collect();
-                }
-                $userAffectedLines[$userId] = $userAffectedLines[$userId]->merge($matchedLines)->unique()->values();
-            }
-        }
-
-        if (empty($userAffectedLines)) {
-            $this->info('No users affected by new disruptions.');
-
-            return self::SUCCESS;
-        }
-
+        // Check all onboarded users — match against routines + places + GPS
         $notifiedCount = 0;
 
-        foreach ($userAffectedLines as $userId => $lines) {
-            $user = User::find($userId);
+        User::whereNotNull('onboarded_at')
+            ->chunk(100, function ($users) use ($transitLines, $allAffectedLines, $newDisruptions, &$notifiedCount) {
+                foreach ($users as $user) {
+                    $relevant = $transitLines->getRelevantLines($user);
+                    $matchedLines = $allAffectedLines->intersect($relevant['lines']);
 
-            if (! $user || ! $user->wantsNotification('transit')) {
-                continue;
-            }
+                    if ($matchedLines->isEmpty()) {
+                        continue;
+                    }
 
-            if (! NotificationThrottle::canPush($user, 'transit_disruption')) {
-                continue;
-            }
+                    if (! $user->wantsNotification('transit')) {
+                        continue;
+                    }
 
-            // Build personalized summary showing only the user's affected lines
-            $userDisruptions = $newDisruptions->filter(function ($d) use ($lines) {
-                return collect($d['affected_lines'] ?? [])->intersect($lines)->isNotEmpty();
+                    if (! NotificationThrottle::canPush($user, 'transit_disruption')) {
+                        continue;
+                    }
+
+                    // Build personalized summary with location context
+                    $context = $matchedLines
+                        ->map(fn ($l) => $relevant['context'][$l] ?? '')
+                        ->filter()
+                        ->unique()
+                        ->first();
+
+                    $userDisruptions = $newDisruptions->filter(function ($d) use ($matchedLines) {
+                        return collect($d['affected_lines'] ?? [])->intersect($matchedLines)->isNotEmpty();
+                    });
+
+                    $summary = $userDisruptions->count() === 1
+                        ? ($userDisruptions->first()['description'] ?? $userDisruptions->first()['title'] ?? 'Transit disruption')
+                        : $userDisruptions->count().' disruptions affecting lines '.$matchedLines->take(5)->implode(', ');
+
+                    if ($context) {
+                        $summary .= " — {$context}";
+                    }
+
+                    $user->notify(new TransitDisruptionNotification([
+                        'line' => $matchedLines->take(3)->implode(', '),
+                        'summary' => $summary,
+                    ]));
+
+                    NotificationThrottle::recordSent($user);
+                    $notifiedCount++;
+                }
             });
-
-            $summary = $userDisruptions->count() === 1
-                ? ($userDisruptions->first()['description'] ?? $userDisruptions->first()['title'] ?? 'Transit disruption')
-                : $userDisruptions->count().' disruptions affecting lines '.$lines->take(5)->implode(', ');
-
-            $user->notify(new TransitDisruptionNotification([
-                'line' => $lines->take(3)->implode(', '),
-                'summary' => $summary,
-            ]));
-
-            NotificationThrottle::recordSent($user);
-            $notifiedCount++;
-        }
 
         $this->info("Sent {$notifiedCount} disruption notification(s) for ".count($newIds).' new disruption(s).');
 
         Log::info('Transit disruption notifications sent', [
             'new_disruptions' => count($newIds),
-            'affected_users' => count($userAffectedLines),
             'notifications_sent' => $notifiedCount,
         ]);
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Get transit line names that serve a given stop via GTFS static data.
-     *
-     * @return Collection<int, string>
-     */
-    private function getLinesAtStop(string $stopName): Collection
-    {
-        return Cache::remember("lines_at_stop:{$stopName}", 3600, function () use ($stopName) {
-            return DB::table('gtfs_stops')
-                ->join('gtfs_stop_times', 'gtfs_stops.stop_id', '=', 'gtfs_stop_times.stop_id')
-                ->join('gtfs_trips', 'gtfs_stop_times.trip_id', '=', 'gtfs_trips.trip_id')
-                ->join('gtfs_routes', 'gtfs_trips.route_id', '=', 'gtfs_routes.route_id')
-                ->where('gtfs_stops.stop_name', 'ILIKE', "%{$stopName}%")
-                ->where('gtfs_stops.location_type', 0)
-                ->whereNotNull('gtfs_routes.route_short_name')
-                ->distinct()
-                ->pluck('gtfs_routes.route_short_name');
-        });
     }
 }

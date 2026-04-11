@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Routine;
 use App\Models\User;
 use App\Notifications\TransitDelayNotification;
 use App\Services\GtfsDepartureService;
+use App\Services\UserTransitLinesService;
 use App\Support\NotificationThrottle;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -15,26 +15,39 @@ class CheckTransitDelays extends Command
 {
     protected $signature = 'transit:check-delays';
 
-    protected $description = 'Check GTFS-RT for significant delays on user routine lines and notify them';
+    protected $description = 'Check GTFS-RT for significant delays on lines near user places and notify them';
 
     private const MIN_DELAY_MINUTES = 10;
 
-    public function handle(GtfsDepartureService $departureService): int
+    public function handle(GtfsDepartureService $departureService, UserTransitLinesService $transitLines): int
     {
-        // Get all active routines with their from_stop
-        $routines = Routine::where('is_active', true)->with('user')->get();
+        // Build stop → users mapping from all sources (routines + places + GPS)
+        $stopUsers = [];
+        $userLines = [];
 
-        if ($routines->isEmpty()) {
-            $this->info('No active routines.');
+        User::whereNotNull('onboarded_at')->each(function (User $user) use ($transitLines, &$stopUsers, &$userLines) {
+            $relevant = $transitLines->getRelevantLines($user);
+
+            if ($relevant['stops']->isEmpty()) {
+                return;
+            }
+
+            $userLines[$user->id] = $relevant;
+
+            foreach ($relevant['stops'] as $stop) {
+                $stopUsers[$stop][] = $user;
+            }
+        });
+
+        if (empty($stopUsers)) {
+            $this->info('No stops to check.');
 
             return self::SUCCESS;
         }
 
-        // Group routines by from_stop to batch departure lookups
-        $byStop = $routines->groupBy('from_stop');
         $notifiedCount = 0;
 
-        foreach ($byStop as $stopName => $stopRoutines) {
+        foreach ($stopUsers as $stopName => $users) {
             $departures = $departureService->getDepartures($stopName, 10);
 
             if (empty($departures['departures'])) {
@@ -50,11 +63,14 @@ class CheckTransitDelays extends Command
                     continue;
                 }
 
-                // Find users with routines from this stop
-                foreach ($stopRoutines as $routine) {
-                    $user = $routine->user;
+                foreach ($users as $user) {
+                    // Only notify if this line is relevant to this user
+                    $relevant = $userLines[$user->id] ?? null;
+                    if (! $relevant || ! $relevant['lines']->contains($line)) {
+                        continue;
+                    }
 
-                    if (! $user || ! $user->wantsNotification('transit')) {
+                    if (! $user->wantsNotification('transit')) {
                         continue;
                     }
 
@@ -66,12 +82,14 @@ class CheckTransitDelays extends Command
 
                     Cache::put($dedupKey, true, now()->addMinutes(30));
 
-                    // Throttle check — skip push if throttled
                     if (! NotificationThrottle::canPush($user, 'transit_delay')) {
                         continue;
                     }
 
-                    $user->notify(new TransitDelayNotification($line, $delay, $stopName));
+                    $context = $relevant['context'][$line] ?? '';
+                    $stopLabel = $context ?: $stopName;
+
+                    $user->notify(new TransitDelayNotification($line, $delay, $stopLabel));
                     NotificationThrottle::recordSent($user);
                     $notifiedCount++;
                 }
