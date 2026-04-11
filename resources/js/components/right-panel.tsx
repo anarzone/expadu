@@ -108,7 +108,10 @@ function WeatherWidget({
                         {condition}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                        {forecast?.rain_summary ?? (rainStarts ? `Rain from ${rainStarts}` : 'No rain expected')}
+                        {forecast?.rain_summary ??
+                            (rainStarts
+                                ? `Rain from ${rainStarts}`
+                                : 'No rain expected')}
                     </div>
                 </div>
                 <div className="text-[44px] opacity-85">{emoji}</div>
@@ -209,7 +212,10 @@ function RainTimeline({
                 <div className="flex items-end gap-[3px]">
                     {hourly.map((h, i) => {
                         const height = hasRain
-                            ? Math.max(2, Math.round((h.precip / maxPrecip) * 24))
+                            ? Math.max(
+                                  2,
+                                  Math.round((h.precip / maxPrecip) * 24),
+                              )
                             : 2;
                         const isWet = h.precip > 0.1;
 
@@ -220,9 +226,7 @@ function RainTimeline({
                             >
                                 <div
                                     className={`w-full rounded-sm transition-all ${
-                                        isWet
-                                            ? 'bg-primary'
-                                            : 'bg-border'
+                                        isWet ? 'bg-primary' : 'bg-border'
                                     }`}
                                     style={{ height }}
                                 />
