@@ -99,6 +99,11 @@ RUN mkdir -p \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+# VAPID keys for Web Push notifications (override via Coolify env vars when possible)
+ENV VAPID_SUBJECT=mailto:hello@expadu.com
+ENV VAPID_PUBLIC_KEY=BJ_9B1fEWKeKCWNLza5ZamrzSIEkevDLxg-tdL1rb97dkfAGnN_PNmMzlbBDKslxnzGZIf2MgO0SJ-sd5X-3epc
+ENV VAPID_PRIVATE_KEY=-7iNq6ThNrJjvX00GcLzvn1WtHqFUgrCqVHE9GzzWfU
+
 COPY docker/prod/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
