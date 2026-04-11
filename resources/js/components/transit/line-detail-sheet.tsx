@@ -52,7 +52,7 @@ const WARM_COLORS: Record<string, string> = {
 export function LineDetailSheet({
     departure,
     disruptions,
-    onClose,
+    onClose: _onClose,
 }: {
     departure: LineDeparture;
     disruptions: Disruption[];
@@ -92,9 +92,7 @@ export function LineDetailSheet({
                     >
                         {departure.direction}
                     </div>
-                    <div
-                        style={{ fontSize: 13, color: '#6B6860', marginTop: 2 }}
-                    >
+                    <div className="mt-0.5 text-[13px] text-muted-foreground">
                         {departure.type === 'rail'
                             ? 'S-Bahn / Regional'
                             : departure.type === 'bus'
@@ -106,28 +104,12 @@ export function LineDetailSheet({
             </div>
 
             {/* Upcoming departures */}
-            <div className="mb-3 rounded-[14px] border border-[#E2DFD6] bg-white p-4">
-                <div
-                    className="mb-3"
-                    style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#AAA89F',
-                    }}
-                >
+            <div className="mb-3 rounded-[14px] border border-border bg-card p-4">
+                <div className="mb-3 text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
                     Upcoming departures
                 </div>
                 {isCancelled ? (
-                    <div
-                        className="rounded-[9px] bg-[#FDE8E6] py-3 text-center"
-                        style={{
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: '#C4271A',
-                        }}
-                    >
+                    <div className="rounded-[9px] bg-danger-soft py-3 text-center text-sm font-semibold text-danger">
                         Service cancelled
                     </div>
                 ) : (
@@ -135,22 +117,22 @@ export function LineDetailSheet({
                         {departure.departures.slice(0, 5).map((min, i) => (
                             <div
                                 key={i}
-                                className="flex-1 rounded-[9px] border border-[#E2DFD6] py-2 text-center"
-                                style={{
-                                    background: i === 0 ? '#EBF0FD' : 'white',
-                                }}
+                                className={`flex-1 rounded-[9px] border py-2 text-center ${
+                                    i === 0
+                                        ? 'border-primary/20 bg-primary/10'
+                                        : 'border-border bg-card'
+                                }`}
                             >
                                 <div
-                                    style={{
-                                        fontFamily: "'Geist Mono', monospace",
-                                        fontSize: 18,
-                                        fontWeight: 500,
-                                        color: i === 0 ? '#1A4CD4' : '#18170F',
-                                    }}
+                                    className={`font-mono text-lg font-medium ${
+                                        i === 0
+                                            ? 'text-primary'
+                                            : 'text-foreground'
+                                    }`}
                                 >
                                     {min}
                                 </div>
-                                <div style={{ fontSize: 10, color: '#AAA89F' }}>
+                                <div className="text-[10px] text-muted-foreground">
                                     min
                                 </div>
                             </div>
@@ -160,7 +142,7 @@ export function LineDetailSheet({
             </div>
 
             {/* Line info */}
-            <div className="mb-3 rounded-[14px] border border-[#E2DFD6] bg-white p-4">
+            <div className="mb-3 rounded-[14px] border border-border bg-card p-4">
                 <div className="flex items-center gap-3">
                     <div
                         className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white"
@@ -174,27 +156,16 @@ export function LineDetailSheet({
                         {departure.line}
                     </div>
                     <div className="flex-1">
-                        <div style={{ fontSize: 14, fontWeight: 600 }}>
+                        <div className="text-sm font-semibold">
                             Line {departure.line} → {departure.direction}
                         </div>
-                        <div style={{ fontSize: 12, color: '#6B6860' }}>
+                        <div className="text-xs text-muted-foreground">
                             {departure.stop_name} · {departure.walk_min} min
                             walk · Static timetable
                         </div>
                     </div>
                     {!departure.disrupted && (
-                        <span
-                            style={{
-                                fontSize: 9,
-                                fontWeight: 700,
-                                padding: '2px 7px',
-                                borderRadius: 20,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                background: '#D4F0E6',
-                                color: '#0A7C52',
-                            }}
-                        >
+                        <span className="rounded-full bg-success-soft px-[7px] py-0.5 text-[9px] font-bold tracking-[0.05em] text-success uppercase">
                             On time
                         </span>
                     )}
@@ -204,46 +175,23 @@ export function LineDetailSheet({
             {/* Disruptions */}
             {lineDisruptions.length > 0 && (
                 <div className="mb-3">
-                    <div
-                        className="mb-2"
-                        style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                            color: '#AAA89F',
-                        }}
-                    >
+                    <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
                         Active disruptions
                     </div>
                     <div className="flex flex-col gap-2">
                         {lineDisruptions.map((d) => (
                             <div
                                 key={d.id}
-                                className="rounded-[14px] border p-4"
-                                style={{
-                                    background:
-                                        d.severity === 'critical'
-                                            ? '#FDE8E6'
-                                            : d.severity === 'major'
-                                              ? '#FDF0D4'
-                                              : '#EFEDE7',
-                                    borderColor:
-                                        d.severity === 'critical'
-                                            ? 'rgba(196,39,26,0.15)'
-                                            : d.severity === 'major'
-                                              ? 'rgba(196,125,14,0.2)'
-                                              : '#E2DFD6',
-                                }}
+                                className={`rounded-[14px] border p-4 ${
+                                    d.severity === 'critical'
+                                        ? 'border-danger/15 bg-danger-soft'
+                                        : d.severity === 'major'
+                                          ? 'border-warn/20 bg-warn-soft'
+                                          : 'border-border bg-surface-2'
+                                }`}
                             >
                                 <div className="flex items-start gap-2">
-                                    <span
-                                        style={{
-                                            fontSize: 16,
-                                            flexShrink: 0,
-                                            marginTop: 1,
-                                        }}
-                                    >
+                                    <span className="mt-0.5 shrink-0 text-base">
                                         {d.severity === 'critical'
                                             ? '🚫'
                                             : d.severity === 'major'
@@ -251,23 +199,11 @@ export function LineDetailSheet({
                                               : '🔧'}
                                     </span>
                                     <div className="min-w-0 flex-1">
-                                        <div
-                                            style={{
-                                                fontSize: 13,
-                                                fontWeight: 600,
-                                                marginBottom: 2,
-                                            }}
-                                        >
+                                        <div className="mb-0.5 text-[13px] font-semibold">
                                             {d.title}
                                         </div>
                                         {d.description && (
-                                            <div
-                                                style={{
-                                                    fontSize: 12,
-                                                    color: '#6B6860',
-                                                    lineHeight: 1.5,
-                                                }}
-                                            >
+                                            <div className="text-xs leading-relaxed text-muted-foreground">
                                                 {d.description.length > 200
                                                     ? d.description.slice(
                                                           0,
@@ -285,21 +221,12 @@ export function LineDetailSheet({
             )}
 
             {lineDisruptions.length === 0 && !departure.disrupted && (
-                <div className="mb-3 rounded-[14px] border border-[#D4F0E6] bg-[#F0FBF6] p-4 text-center">
-                    <span style={{ fontSize: 14 }}>✅</span>
-                    <div
-                        style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: '#0A7C52',
-                            marginTop: 4,
-                        }}
-                    >
+                <div className="mb-3 rounded-[14px] border border-success/20 bg-success-soft p-4 text-center">
+                    <span className="text-sm">✅</span>
+                    <div className="mt-1 text-[13px] font-semibold text-success">
                         No disruptions
                     </div>
-                    <div
-                        style={{ fontSize: 12, color: '#6B6860', marginTop: 2 }}
-                    >
+                    <div className="mt-0.5 text-xs text-muted-foreground">
                         This line is running normally
                     </div>
                 </div>
