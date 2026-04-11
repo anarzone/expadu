@@ -81,6 +81,15 @@ class CheckTransitDisruptions extends Command
                         continue;
                     }
 
+                    // Dedup: skip if we already notified this user about these lines recently
+                    $lineKey = $matchedLines->sort()->implode(',');
+                    $dedupKey = "disruption_notif:{$user->id}:{$lineKey}";
+                    if (Cache::has($dedupKey)) {
+                        continue;
+                    }
+
+                    Cache::put($dedupKey, true, now()->addHours(6));
+
                     // Build personalized summary with location context
                     $context = $matchedLines
                         ->map(fn ($l) => $relevant['context'][$l] ?? '')
