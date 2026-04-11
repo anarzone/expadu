@@ -81,7 +81,8 @@ function WeatherWidget({
     const humidity = weather?.humidity ?? 0;
     const rainStarts = forecast?.rain_starts;
     const bikeScore = forecast?.bike_score ?? 'Good';
-    const rainLabel = rainStarts ?? 'None today';
+    const rainLabel =
+        rainStarts === 'now' ? 'Raining now' : (rainStarts ?? 'None today');
     const rainVariant: 'good' | 'caution' = rainStarts ? 'caution' : 'good';
 
     return (
@@ -103,11 +104,10 @@ function WeatherWidget({
                         {condition}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                        {rainStarts
-                            ? `Rain from ${rainStarts}`
-                            : (weather?.precipitation ?? 0) > 0 ||
-                                condition === 'Rain'
-                              ? 'Rain clearing later'
+                        {rainStarts === 'now'
+                            ? 'Raining — clearing later'
+                            : rainStarts
+                              ? `Rain from ${rainStarts}`
                               : 'No rain expected'}
                     </div>
                 </div>

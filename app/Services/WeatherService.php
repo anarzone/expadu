@@ -88,10 +88,12 @@ class WeatherService
         }
 
         $current = $this->getCurrentWeather($lat, $lng);
-        $bikeScore = $this->calculateBikeScore($current, $rainStart);
+        $isRainingNow = ($current['precipitation'] ?? 0) > 0
+            || in_array($current['icon'] ?? '', ['rain', 'sleet', 'thunderstorm', 'hail']);
+        $bikeScore = $this->calculateBikeScore($current, $rainStart, $isRainingNow);
 
         return [
-            'rain_starts' => $rainStart,
+            'rain_starts' => $isRainingNow && ! $rainStart ? 'now' : $rainStart,
             'bike_score' => $bikeScore,
             'hourly' => [],
         ];
@@ -148,7 +150,7 @@ class WeatherService
         ];
     }
 
-    protected function calculateBikeScore(array $weather, ?string $rainStart): string
+    protected function calculateBikeScore(array $weather, ?string $rainStart, bool $isRainingNow = false): string
     {
         $temp = $weather['temperature'];
         $wind = $weather['wind_speed'];
@@ -159,7 +161,7 @@ class WeatherService
         if ($wind > 40) {
             return 'Poor — strong wind';
         }
-        if ($rainStart && $rainStart <= date('H:i')) {
+        if ($isRainingNow) {
             return 'Poor — raining now';
         }
         if ($rainStart) {
