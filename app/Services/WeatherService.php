@@ -24,15 +24,15 @@ class WeatherService
      */
     public function __construct(?array $providers = null)
     {
-        // Ordered by reliability first, data quality second:
-        //  1. wttr.in     — most reliable in our tests, real FeelsLikeC, gust from current hour
-        //  2. Open-Meteo  — best data when up (sun-aware AT) but recently degraded (502/429/timeouts)
-        //  3. Bright Sky  — DWD station observations, no feels_like
-        //  4. Met.no      — Norwegian Met Institute, no feels_like
+        // Ordered by data quality (hourly granularity) then reliability:
+        //  1. Open-Meteo  — true hourly data, sun-aware apparent temp, best for forecast
+        //  2. Bright Sky  — DWD hourly observations, no feels_like
+        //  3. wttr.in     — reliable but only 3-hour slots (misses short rain windows)
+        //  4. Met.no      — Norwegian Met Institute, hourly but no wind gust
         $this->providers = $providers ?? [
-            app(WttrInProvider::class),
             app(OpenMeteoProvider::class),
             app(BrightSkyProvider::class),
+            app(WttrInProvider::class),
             app(MetNoProvider::class),
         ];
     }
