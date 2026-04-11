@@ -1,4 +1,4 @@
-import { Eye, EyeOff } from 'lucide-react';
+import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { ComponentProps, Ref } from 'react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
@@ -27,9 +27,9 @@ export default function PasswordInput({
                 tabIndex={-1}
             >
                 {showPassword ? (
-                    <EyeOff className="size-4" />
+                    <IconEyeOff className="size-4" />
                 ) : (
-                    <Eye className="size-4" />
+                    <IconEye className="size-4" />
                 )}
             </button>
         </div>

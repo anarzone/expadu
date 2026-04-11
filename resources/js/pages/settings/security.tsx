@@ -1,6 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head } from '@inertiajs/react';
-import { ShieldCheck } from 'lucide-react';
+import { IconShieldCheck } from '@tabler/icons-react';
 import { useRef, useState } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
@@ -219,7 +219,7 @@ export default function Security({
                                                 setShowSetupModal(true)
                                             }
                                         >
-                                            <ShieldCheck />
+                                            <IconShieldCheck />
                                             Continue setup
                                         </Button>
                                     ) : (

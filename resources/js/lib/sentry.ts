@@ -1,8 +1,16 @@
-import * as Sentry from '@sentry/react';
+/**
+ * Lazy Sentry initialization.
+ * Called after app mounts to keep @sentry/react out of the critical path.
+ */
+export async function initSentry(): Promise<void> {
+    const dsn = import.meta.env.VITE_SENTRY_DSN_PUBLIC;
 
-const dsn = import.meta.env.VITE_SENTRY_DSN_PUBLIC;
+    if (!dsn) {
+        return;
+    }
 
-if (dsn) {
+    const Sentry = await import('@sentry/react');
+
     Sentry.init({
         dsn,
         environment: import.meta.env.MODE,
@@ -16,5 +24,3 @@ if (dsn) {
         ],
     });
 }
-
-export { Sentry };
