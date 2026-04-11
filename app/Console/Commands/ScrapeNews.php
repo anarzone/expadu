@@ -346,11 +346,16 @@ class ScrapeNews extends Command
     {
         $t = mb_strtolower($title);
 
-        if (preg_match('/sperrung|vollsperrung|gesperrt|streik/i', $t)) {
+        if (preg_match('/sperrung|vollsperrung|gesperrt|streik|evakuierung|entgleist/i', $t)) {
             return 'critical';
         }
 
         if (preg_match('/trennung|getrennt|umleitung|einschränkung|ausfall|sanierung/i', $t)) {
+            return 'major';
+        }
+
+        // Service terminations, infrastructure damage, and construction
+        if (preg_match('/enden hier|fahrleitungsschaden|hohes verkehrsaufkommen|baumaßnahme|bauarbeiten|verkehrsbehinderung/i', $t)) {
             return 'major';
         }
 

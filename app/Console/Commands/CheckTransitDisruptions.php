@@ -77,7 +77,17 @@ class CheckTransitDisruptions extends Command
                         continue;
                     }
 
-                    if (! NotificationThrottle::canPush($user, 'transit_disruption')) {
+                    // Find disruptions matching this user's lines and determine severity
+                    $userDisruptions = $newDisruptions->filter(function ($d) use ($matchedLines) {
+                        return collect($d['affected_lines'] ?? [])->intersect($matchedLines)->isNotEmpty();
+                    });
+
+                    // Use critical_disruption type for major/critical disruptions (exempt from quiet hours)
+                    $maxSeverity = $userDisruptions->max('severity');
+                    $isCritical = in_array($maxSeverity, ['critical', 'major']);
+                    $throttleType = $isCritical ? 'critical_disruption' : 'transit_disruption';
+
+                    if (! NotificationThrottle::canPush($user, $throttleType)) {
                         continue;
                     }
 
@@ -96,10 +106,6 @@ class CheckTransitDisruptions extends Command
                         ->filter()
                         ->unique()
                         ->first();
-
-                    $userDisruptions = $newDisruptions->filter(function ($d) use ($matchedLines) {
-                        return collect($d['affected_lines'] ?? [])->intersect($matchedLines)->isNotEmpty();
-                    });
 
                     $summary = $userDisruptions->count() === 1
                         ? ($userDisruptions->first()['description'] ?? $userDisruptions->first()['title'] ?? 'Transit disruption')
