@@ -160,13 +160,13 @@ class EventController extends Controller
     private function buildTags(?string $category, array $dbTags, string $color): array
     {
         $categoryTag = match ($category) {
-            'language' => ['l' => 'Language', 'bg' => '#EBF0FD', 'c' => '#1A4CD4'],
-            'social' => ['l' => 'Social', 'bg' => '#EDFAF4', 'c' => '#0A7C52'],
-            'culture' => ['l' => 'Culture', 'bg' => '#FDF0D4', 'c' => '#C47D0E'],
-            'music' => ['l' => 'Music', 'bg' => '#EDE9FE', 'c' => '#7C3AED'],
-            'food' => ['l' => 'Food', 'bg' => '#FDF0D4', 'c' => '#C47D0E'],
-            'sports' => ['l' => 'Sports', 'bg' => '#EDFAF4', 'c' => '#0A7C52'],
-            default => ['l' => ucfirst($category ?? 'Event'), 'bg' => '#EFEDE7', 'c' => '#6B6860'],
+            'language' => ['l' => 'Language', 'cls' => 'bg-primary/10 text-primary dark:bg-primary/20'],
+            'social' => ['l' => 'Social', 'cls' => 'bg-success/10 text-success dark:bg-success/20'],
+            'culture' => ['l' => 'Culture', 'cls' => 'bg-warn/10 text-warn dark:bg-warn/20'],
+            'music' => ['l' => 'Music', 'cls' => 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'],
+            'food' => ['l' => 'Food', 'cls' => 'bg-warn/10 text-warn dark:bg-warn/20'],
+            'sports' => ['l' => 'Sports', 'cls' => 'bg-success/10 text-success dark:bg-success/20'],
+            default => ['l' => ucfirst($category ?? 'Event'), 'cls' => 'bg-surface-2 text-muted-foreground'],
         };
 
         $tags = [$categoryTag];
@@ -177,7 +177,7 @@ class EventController extends Controller
 
         foreach ($dbTags as $tag) {
             if (! in_array(mb_strtolower($tag), $skip, true) && mb_strlen($tag) <= 40) {
-                $tags[] = ['l' => $tag, 'bg' => '#EFEDE7', 'c' => '#6B6860'];
+                $tags[] = ['l' => $tag, 'cls' => 'bg-surface-2 text-muted-foreground'];
             }
         }
 

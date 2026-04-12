@@ -133,16 +133,7 @@ export function EventDetailContent({
                 {event.tags.map((t) => (
                     <span
                         key={t.l}
-                        className="rounded-[20px]"
-                        style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.03em',
-                            padding: '3px 10px',
-                            background: t.bg,
-                            color: t.c,
-                        }}
+                        className={`rounded-[20px] px-[10px] py-[3px] text-[11px] font-bold tracking-[0.03em] uppercase ${t.cls ?? 'bg-surface-2 text-muted-foreground'}`}
                     >
                         {t.l}
                     </span>

@@ -167,16 +167,7 @@ export function EventCard({
                             {event.tags.map((t) => (
                                 <span
                                     key={t.l}
-                                    className="rounded-[20px]"
-                                    style={{
-                                        fontSize: 10,
-                                        fontWeight: 700,
-                                        padding: '2px 7px',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.03em',
-                                        background: t.bg,
-                                        color: t.c,
-                                    }}
+                                    className={`rounded-[20px] px-[7px] py-0.5 text-[10px] font-bold tracking-[0.03em] uppercase ${t.cls ?? 'bg-surface-2 text-muted-foreground'}`}
                                 >
                                     {t.l}
                                 </span>
