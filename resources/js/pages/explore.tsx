@@ -576,7 +576,19 @@ export default function Explore() {
             limit: '100',
         });
 
-        if (cat && ['cafe', 'coworking', 'library', 'park'].includes(cat)) {
+        if (
+            cat &&
+            [
+                'cafe',
+                'coworking',
+                'library',
+                'park',
+                'restaurant',
+                'fast_food',
+                'bar',
+                'bakery',
+            ].includes(cat)
+        ) {
             params.set('category', cat);
         }
 

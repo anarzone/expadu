@@ -1,8 +1,12 @@
 import {
+    IconBeer,
     IconBook,
+    IconBread,
     IconBuilding,
+    IconBurger,
     IconCoffee,
     IconMapPin,
+    IconToolsKitchen2,
     IconTree,
 } from '@tabler/icons-react';
 import maplibregl from 'maplibre-gl';
@@ -94,6 +98,30 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
         bg: '#DCFCE7',
         color: '#166534',
         selectedBg: '#16A34A',
+    },
+    restaurant: {
+        icon: IconToolsKitchen2,
+        bg: '#FEE2E2',
+        color: '#991B1B',
+        selectedBg: '#DC2626',
+    },
+    fast_food: {
+        icon: IconBurger,
+        bg: '#FEF3C7',
+        color: '#92400E',
+        selectedBg: '#F59E0B',
+    },
+    bar: {
+        icon: IconBeer,
+        bg: '#EDE9FE',
+        color: '#5B21B6',
+        selectedBg: '#7C3AED',
+    },
+    bakery: {
+        icon: IconBread,
+        bg: '#FFF7ED',
+        color: '#9A3412',
+        selectedBg: '#EA580C',
     },
 };
 

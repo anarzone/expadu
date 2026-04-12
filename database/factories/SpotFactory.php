@@ -12,7 +12,7 @@ class SpotFactory extends Factory
     {
         return [
             'name' => fake()->company(),
-            'category' => fake()->randomElement(['cafe', 'coworking', 'library', 'park']),
+            'category' => fake()->randomElement(['cafe', 'coworking', 'library', 'park', 'restaurant', 'fast_food', 'bar', 'bakery']),
             'description' => fake()->sentence(),
             'address' => fake()->address(),
             'wifi_speed' => fake()->randomElement(['fast', 'ok', null]),

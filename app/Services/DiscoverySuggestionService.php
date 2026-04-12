@@ -110,6 +110,7 @@ class DiscoverySuggestionService
 
         $categoryEmoji = [
             'cafe' => '☕', 'library' => '📚', 'park' => '🌳', 'coworking' => '💻',
+            'restaurant' => '🍽️', 'fast_food' => '🍔', 'bar' => '🍺', 'bakery' => '🥐',
         ];
 
         return $mixed->map(function ($spot) use ($categoryEmoji) {

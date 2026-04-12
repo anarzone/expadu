@@ -8,4 +8,8 @@ enum SpotCategory: string
     case Coworking = 'coworking';
     case Library = 'library';
     case Park = 'park';
+    case Restaurant = 'restaurant';
+    case FastFood = 'fast_food';
+    case Bar = 'bar';
+    case Bakery = 'bakery';
 }

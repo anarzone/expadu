@@ -125,7 +125,7 @@ class SpotScoringService
             $total = array_sum($weights) ?: 1;
 
             // Normalize to 0-1, ensure every category has at least a base score
-            $categories = ['cafe', 'library', 'park', 'coworking'];
+            $categories = ['cafe', 'library', 'park', 'coworking', 'restaurant', 'fast_food', 'bar', 'bakery'];
             $result = [];
             foreach ($categories as $cat) {
                 $result[$cat] = max(0.1, ($weights[$cat] ?? 0) / $total);
@@ -272,8 +272,21 @@ class SpotScoringService
             $parts[] = "Highly rated {$spot->rating}★";
         }
 
-        if ($topFamiliar && $category === 'cafe') {
-            $parts[] = 'New café to try';
+        $cuisine = $spot->cuisine ?? null;
+        $cuisineLabel = $cuisine ? ucfirst($cuisine) : null;
+
+        if ($category === 'restaurant' && $cuisineLabel) {
+            $parts[] = "{$cuisineLabel} restaurant";
+        } elseif ($category === 'restaurant') {
+            $parts[] = 'Try this restaurant';
+        } elseif ($category === 'fast_food') {
+            $parts[] = 'Quick bite nearby';
+        } elseif ($category === 'bar') {
+            $parts[] = 'Evening drinks';
+        } elseif ($category === 'bakery') {
+            $parts[] = 'Fresh bakery';
+        } elseif ($category === 'cafe') {
+            $parts[] = $topFamiliar ? 'New café to try' : 'Discover this café';
         } elseif ($category === 'library') {
             $parts[] = 'Quiet workspace';
         } elseif ($category === 'coworking') {
@@ -284,7 +297,7 @@ class SpotScoringService
             $parts[] = "Discover this {$categoryLabel}";
         }
 
-        if ($isRaining && in_array($category, ['cafe', 'library', 'coworking'])) {
+        if ($isRaining && in_array($category, ['cafe', 'library', 'coworking', 'restaurant', 'bar'])) {
             $parts[] = 'Perfect for rainy days';
         }
 
