@@ -83,78 +83,40 @@ class DiscoverySuggestionService
     {
         $lat ??= 50.9375;
         $lng ??= 6.9603;
-        $temp = $weather['temperature'] ?? 10;
-        $wind = $weather['wind_speed'] ?? 0;
-        $condition = $weather['condition'] ?? 'Cloudy';
-        $raining = ($weather['precipitation'] ?? 0) > 0.5
-            || in_array($weather['icon'] ?? '', ['rain', 'thunderstorm'], true);
-        $hour = now()->hour;
 
-        $pool = [];
+        // Fetch nearby spots (all categories), exclude user's current location
+        $allSpots = Spot::nearby($lat, $lng)->limit(30)->get()
+            ->filter(fn (Spot $s) => $s->lat === null || $s->lng === null
+                || $this->metersApart($lat, $lng, (float) $s->lat, (float) $s->lng) >= 200)
+            ->values();
 
-        // Exclude spots the user is already standing at (within 200 m)
-        // Apply filter in PHP after fetching more candidates to avoid under-fetching
-        $notHere = fn (Spot $spot): bool => $spot->lat === null || $spot->lng === null
-            || $this->metersApart($lat, $lng, (float) $spot->lat, (float) $spot->lng) >= 200;
-
-        $cafes = Spot::nearby($lat, $lng)->where('category', 'cafe')->limit(10)->get()->filter($notHere)->values();
-        $libraries = Spot::nearby($lat, $lng)->where('category', 'library')->limit(5)->get()->filter($notHere)->values();
-        $parks = Spot::nearby($lat, $lng)->where('category', 'park')->limit(5)->get()->filter($notHere)->values();
-        $coworking = Spot::nearby($lat, $lng)->where('category', 'coworking')->limit(5)->get()->filter($notHere)->values();
-
-        $outdoorOk = $temp >= 8 && ! $raining && $wind < 25;
-        $badWeather = $raining || $temp < 5 || $wind > 30;
-
-        if ($outdoorOk) {
-            foreach ($parks as $p) {
-                $dist = $this->distLabel($lat, $lng, (float) $p->lat, (float) $p->lng);
-                $pool[] = $this->card('🌳', $p->name, "{$dist} · {$temp}°C · Fresh air", (float) $p->lat, (float) $p->lng);
-            }
-            foreach ($cafes->skip(2)->take(2) as $c) {
-                $dist = $this->distLabel($lat, $lng, (float) $c->lat, (float) $c->lng);
-                $pool[] = $this->card('🚲', "Bike to {$c->name}", "{$dist} · {$temp}°C · {$condition}", (float) $c->lat, (float) $c->lng);
-            }
+        if ($allSpots->isEmpty()) {
+            return [$this->card('🗺️', 'Explore nearby', 'Open the map to discover spots')];
         }
 
-        foreach ($cafes->take(3) as $c) {
-            $dist = $this->distLabel($lat, $lng, (float) $c->lat, (float) $c->lng);
-            $pool[] = $this->card('☕', $c->name, "{$dist} · {$condition}", (float) $c->lat, (float) $c->lng);
+        // Score all spots using weighted algorithm
+        $scorer = app(SpotScoringService::class);
+        $scored = $scorer->scoreSpots($user, $allSpots, $lat, $lng, $weather);
+
+        // Enforce familiar + new mix
+        $familiar = $scored->filter(fn ($s) => $s->visit_count > 0)->take(2);
+        $new = $scored->filter(fn ($s) => $s->visit_count === 0)->take(3);
+        $mixed = $familiar->merge($new)->sortByDesc('score')->take(5);
+
+        // If not enough variety, fill from top scored
+        if ($mixed->count() < 3) {
+            $mixed = $scored->take(5);
         }
 
-        if ($hour >= 17 && $hour < 22 && ! $raining) {
-            foreach ($cafes->take(2) as $c) {
-                $dist = $this->distLabel($lat, $lng, (float) $c->lat, (float) $c->lng);
-                $pool[] = $this->card('🌆', $c->name, "{$dist} · Evening spot", (float) $c->lat, (float) $c->lng);
-            }
-        }
+        $categoryEmoji = [
+            'cafe' => '☕', 'library' => '📚', 'park' => '🌳', 'coworking' => '💻',
+        ];
 
-        foreach ($libraries->take(1) as $l) {
-            $dist = $this->distLabel($lat, $lng, (float) $l->lat, (float) $l->lng);
-            $pool[] = $this->card('📚', $l->name, "{$dist} · Free · Quiet · WiFi", (float) $l->lat, (float) $l->lng);
-        }
+        return $mixed->map(function ($spot) use ($categoryEmoji) {
+            $emoji = $categoryEmoji[$spot->category?->value ?? 'cafe'] ?? '📍';
 
-        if ($badWeather) {
-            foreach ($libraries as $l) {
-                $dist = $this->distLabel($lat, $lng, (float) $l->lat, (float) $l->lng);
-                $pool[] = $this->card('📚', $l->name, "{$dist} · Stay warm · Free WiFi", (float) $l->lat, (float) $l->lng);
-            }
-            foreach ($coworking as $c) {
-                $dist = $this->distLabel($lat, $lng, (float) $c->lat, (float) $c->lng);
-                $pool[] = $this->card('💻', $c->name, "{$dist} · Coworking · WiFi", (float) $c->lat, (float) $c->lng);
-            }
-            foreach ($cafes->take(2) as $c) {
-                $dist = $this->distLabel($lat, $lng, (float) $c->lat, (float) $c->lng);
-                $pool[] = $this->card('☕', $c->name, "{$dist} · Warm up with coffee", (float) $c->lat, (float) $c->lng);
-            }
-        }
-
-        if (empty($pool) && $cafes->isNotEmpty()) {
-            $first = $cafes->first();
-            $dist = $this->distLabel($lat, $lng, (float) $first->lat, (float) $first->lng);
-            $pool[] = $this->card('☕', $first->name, $dist, (float) $first->lat, (float) $first->lng);
-        }
-
-        return $pool;
+            return $this->card($emoji, $spot->name, $spot->reason, (float) $spot->lat, (float) $spot->lng);
+        })->values()->all();
     }
 
     /**
