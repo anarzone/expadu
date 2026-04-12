@@ -29,6 +29,8 @@ RUN apk add --no-cache --virtual .build-deps \
 # ── Stage 2: Composer dependencies ───────────────────────────────────────────
 FROM composer:2 AS composer-build
 
+RUN docker-php-ext-install intl
+
 WORKDIR /app
 
 COPY composer.json composer.lock ./
