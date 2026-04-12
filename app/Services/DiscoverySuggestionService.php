@@ -556,8 +556,20 @@ class DiscoverySuggestionService
      */
     private function card(string $badge, string $name, string $detail, ?float $lat = null, ?float $lng = null, ?string $link = null): array
     {
+        // Infer card type from badge for engagement tracking granularity
+        $type = match (true) {
+            in_array($badge, ['☕', '💻', '📚', '🌳', '🌆', '📍', '🍽️', '💊']) => 'spot',
+            in_array($badge, ['🚲', '🏠']) => 'commute',
+            in_array($badge, ['📅', '🗣️']) => 'event',
+            in_array($badge, ['🌧️', '☀️']) => 'weather',
+            in_array($badge, ['⚠️', '🚋']) => 'transit',
+            in_array($badge, ['🔄', '⭐']) => 'routine',
+            $badge === '📰' => 'news',
+            default => 'discovery',
+        };
+
         return [
-            'type' => 'discovery',
+            'type' => $type,
             'badge' => $badge,
             'name' => $name,
             'detail' => $detail,

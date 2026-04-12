@@ -974,32 +974,51 @@ class RecommendationService
      */
     protected function adjustPrioritiesByEngagement(User $user, array $cards): array
     {
-        // Get click counts per card type from last 7 days
+        $since = now()->subDays(7);
+
+        // Get click counts per card type
         $clicks = $user->behaviorEvents()
             ->where('event_type', 'card_clicked')
-            ->where('created_at', '>=', now()->subDays(7))
+            ->where('created_at', '>=', $since)
             ->get()
             ->groupBy(fn ($e) => $e->payload['card_type'] ?? 'unknown')
             ->map->count();
 
-        // Get dismiss counts per card type from last 7 days
+        // Get dismiss counts per card type
         $dismissals = $user->behaviorEvents()
             ->where('event_type', 'card_dismissed')
-            ->where('created_at', '>=', now()->subDays(7))
+            ->where('created_at', '>=', $since)
             ->get()
             ->groupBy(fn ($e) => $e->payload['card_type'] ?? 'unknown')
             ->map->count();
+
+        // Implicit engagement signals: departure_viewed → boost transit,
+        // spot_viewed → boost spots, journey_planned → boost commute
+        $implicitSignals = $user->behaviorEvents()
+            ->whereIn('event_type', ['departure_viewed', 'spot_viewed', 'journey_planned'])
+            ->where('created_at', '>=', $since)
+            ->get()
+            ->groupBy('event_type')
+            ->map->count();
+
+        $implicitBoosts = [
+            'departure' => min(($implicitSignals->get('departure_viewed', 0) / 5) * 3, 12),
+            'transit' => min(($implicitSignals->get('departure_viewed', 0) / 5) * 2, 8),
+            'spot' => min(($implicitSignals->get('spot_viewed', 0) / 2) * 3, 12),
+            'commute' => min(($implicitSignals->get('journey_planned', 0)) * 4, 12),
+        ];
 
         foreach ($cards as &$card) {
             $type = $card['type'] ?? 'unknown';
+
+            // Direct engagement: clicks and dismissals
             $clickCount = $clicks->get($type, 0);
             $dismissCount = $dismissals->get($type, 0);
-
-            // Boost clicked types (+5 per click, max +15)
             $card['priority'] += min($clickCount * 5, 15);
-
-            // Penalize dismissed types (-10 per dismissal, max -30)
             $card['priority'] -= min($dismissCount * 10, 30);
+
+            // Implicit engagement from behavior
+            $card['priority'] += (int) ($implicitBoosts[$type] ?? 0);
 
             // Clamp to 0-100
             $card['priority'] = max(0, min(100, $card['priority']));
