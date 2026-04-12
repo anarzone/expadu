@@ -29,7 +29,7 @@ RUN apk add --no-cache --virtual .build-deps \
 # ── Stage 2: Composer dependencies ───────────────────────────────────────────
 FROM composer:2 AS composer-build
 
-RUN docker-php-ext-install intl
+RUN apt-get update && apt-get install -y libicu-dev && docker-php-ext-install intl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
