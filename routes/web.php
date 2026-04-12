@@ -53,7 +53,12 @@ $marketingRoutes = function () {
 };
 
 // ── App (app.expadu.com) ─────────────────────────────────────────────────
-$appRoutes = function () {
+$appRoutes = function () use ($appDomain) {
+    // App root redirects to dashboard (only in production with subdomain)
+    if ($appDomain) {
+        Route::get('/', fn () => redirect('/dashboard'));
+    }
+
     Route::middleware(['auth', 'verified'])->group(function () {
         // APIs
         Route::get('api/geocode', GeocodeController::class)->name('api.geocode');

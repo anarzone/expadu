@@ -144,7 +144,12 @@ function WeatherWidget({
                 />
                 <RainTimeline
                     hourly={forecast?.hourly ?? []}
-                    summary={forecast?.rain_summary ?? rainLabel}
+                    summary={
+                        forecast?.rain_summary ??
+                        (rainStarts
+                            ? `Rain from ${rainStarts}`
+                            : 'No rain expected')
+                    }
                     isRaining={!!rainStarts}
                 />
             </div>
