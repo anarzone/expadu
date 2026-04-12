@@ -9,7 +9,9 @@ class UsersChart extends ChartWidget
 {
     protected ?string $heading = 'New Users (30 days)';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 1;
+
+    protected ?string $maxHeight = '200px';
 
     protected function getData(): array
     {

@@ -22,8 +22,13 @@ class ScrapeRestaurants extends Command
 
     private const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
-    // Cologne bounding box
-    private const BBOX = '50.86,6.82,51.08,7.12';
+    // Cologne split into quadrants to avoid Overpass timeouts
+    private const BBOXES = [
+        '50.86,6.82,50.97,6.97',  // SW
+        '50.86,6.97,50.97,7.12',  // SE
+        '50.97,6.82,51.08,6.97',  // NW
+        '50.97,6.97,51.08,7.12',  // NE
+    ];
 
     private const CATEGORY_MAP = [
         'restaurant' => 'restaurant',
@@ -42,21 +47,35 @@ class ScrapeRestaurants extends Command
         foreach (self::CATEGORY_MAP as $osmType => $spotCategory) {
             $this->info("Fetching {$osmType}...");
 
-            $query = $this->buildQuery($osmType);
-            $response = Http::timeout(30)->post(self::OVERPASS_URL, ['data' => $query]);
+            // Query each quadrant separately to avoid Overpass timeouts
+            $elements = [];
+            foreach (self::BBOXES as $bbox) {
+                $query = $this->buildQuery($osmType, $bbox);
+                $response = Http::asForm()->timeout(60)->post(self::OVERPASS_URL, ['data' => $query]);
 
-            if (! $response->successful()) {
-                $this->error("Overpass API failed for {$osmType}: HTTP {$response->status()}");
+                if ($response->successful()) {
+                    $elements = array_merge($elements, $response->json('elements') ?? []);
+                } else {
+                    $this->warn("  Quadrant {$bbox} failed: HTTP {$response->status()}");
+                }
+
+                usleep(500000); // 0.5s between quadrant requests
+            }
+
+            if (empty($elements)) {
+                $this->error("  No data for {$osmType}");
 
                 continue;
             }
 
             $elements = $response->json('elements') ?? [];
-            $this->info('  Found '.count($elements).' elements');
+            $this->info('  Found '.count($elements).' elements across '.count(self::BBOXES).' quadrants');
 
             if ($limit > 0) {
                 $elements = array_slice($elements, 0, $limit);
             }
+
+            $totalFiltered = 0;
 
             foreach ($elements as $el) {
                 $name = $el['tags']['name'] ?? null;
@@ -70,16 +89,41 @@ class ScrapeRestaurants extends Command
                     continue;
                 }
 
+                $tags = $el['tags'] ?? [];
+
+                // Quality scoring: count filled fields out of key fields
+                // Key fields: name, address, cuisine, phone, website, opening_hours, outdoor_seating
+                $fields = [
+                    'name' => true, // always true at this point
+                    'address' => isset($tags['addr:street']),
+                    'cuisine' => isset($tags['cuisine']),
+                    'phone' => isset($tags['phone']) || isset($tags['contact:phone']),
+                    'website' => isset($tags['website']) || isset($tags['contact:website']),
+                    'opening_hours' => isset($tags['opening_hours']),
+                    'outdoor_seating' => isset($tags['outdoor_seating']),
+                ];
+
+                $filled = count(array_filter($fields));
+                $total = count($fields);
+                $fillRate = $filled / $total;
+
+                // Skip if less than 60% fields filled
+                if ($fillRate < 0.6) {
+                    $totalFiltered++;
+
+                    continue;
+                }
+
                 $sourceId = 'osm_'.$el['id'];
 
-                // Skip if already imported
                 if (Spot::where('source', 'osm')->where('source_id', $sourceId)->exists()) {
                     $totalSkipped++;
 
                     continue;
                 }
 
-                $tags = $el['tags'] ?? [];
+                // Auto-verify if 80%+ fields filled
+                $isVerified = $fillRate >= 0.8;
 
                 Spot::create([
                     'name' => mb_substr($name, 0, 255),
@@ -96,6 +140,7 @@ class ScrapeRestaurants extends Command
                     'opening_hours' => $tags['opening_hours'] ?? null,
                     'source' => 'osm',
                     'source_id' => $sourceId,
+                    'is_verified' => $isVerified,
                 ]);
 
                 $totalCreated++;
@@ -105,24 +150,17 @@ class ScrapeRestaurants extends Command
             sleep(2);
         }
 
-        $this->info("Done: {$totalCreated} created, {$totalSkipped} skipped (already exist).");
+        $verified = Spot::where('source', 'osm')->where('is_verified', true)->count();
+        $this->info("Done: {$totalCreated} imported, {$verified} auto-verified, {$totalSkipped} skipped (exist), {$totalFiltered} filtered (low quality).");
         Log::info('Restaurant scrape completed', ['created' => $totalCreated, 'skipped' => $totalSkipped]);
 
         return self::SUCCESS;
     }
 
-    private function buildQuery(string $amenityType): string
+    private function buildQuery(string $amenityType, string $bbox): string
     {
-        $bbox = self::BBOX;
+        return "[out:json][timeout:30];(node[\"amenity\"=\"{$amenityType}\"][\"name\"]({$bbox});way[\"amenity\"=\"{$amenityType}\"][\"name\"]({$bbox}););out center;";
 
-        return <<<QUERY
-        [out:json][timeout:25];
-        (
-          node["amenity"="{$amenityType}"]["name"]({$bbox});
-          way["amenity"="{$amenityType}"]["name"]({$bbox});
-        );
-        out center;
-        QUERY;
     }
 
     private function normalizeCuisine(?string $raw): ?string

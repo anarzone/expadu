@@ -9,7 +9,9 @@ class AlertsChart extends ChartWidget
 {
     protected ?string $heading = 'Alerts by Type (7 days)';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 1;
+
+    protected ?string $maxHeight = '200px';
 
     protected function getData(): array
     {
