@@ -48,16 +48,20 @@ $marketingRoutes = function () {
         'canRegister' => Features::enabled(Features::registration()),
     ])->name('home');
 
-    // SEO redirects: old app URLs → app subdomain
+    // Redirect app-only routes to subdomain (not pages that should exist on marketing site)
     $appUrl = config('app.url');
     if ($appUrl && ! str_contains($appUrl, 'localhost')) {
-        $appPaths = ['dashboard', 'explore', 'transit', 'events', 'alerts', 'profile',
-            'bureaucracy', 'services', 'language-exchange', 'neighborhoods', 'chat', 'just-arrived'];
+        $appOnlyPaths = ['dashboard', 'transit', 'alerts', 'profile',
+            'language-exchange', 'chat', 'onboarding', 'notification-preferences', 'user-settings'];
 
-        foreach ($appPaths as $path) {
+        foreach ($appOnlyPaths as $path) {
             Route::get($path, fn () => redirect("{$appUrl}/{$path}", 301));
         }
     }
+
+    // Pages that will exist on marketing site (future: public listings for SEO)
+    // /explore, /events, /bureaucracy, /services, /neighborhoods, /just-arrived
+    // These stay on expadu.com — no redirect
 };
 
 // ── App (app.expadu.com) ─────────────────────────────────────────────────
