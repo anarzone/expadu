@@ -842,7 +842,8 @@ export default function Dashboard() {
 
 function getGreeting(name?: string): string {
     const hour = new Date().getHours();
-    const display = name ? `, ${name}` : '';
+    const firstName = name?.split(' ')[0];
+    const display = firstName ? `, ${firstName}` : '';
 
     if (hour < 12) {
         return `Good morning${display}`;
