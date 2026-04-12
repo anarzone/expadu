@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,10 +20,15 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 
 #[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'onboarded_at', 'avatar_path'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return (bool) $this->is_admin;
+    }
 
     /**
      * @return array<string, string>

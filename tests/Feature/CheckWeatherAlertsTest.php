@@ -14,21 +14,21 @@ beforeEach(function () {
 
     // 8 AM is within the commute window (6-9) required by NotificationThrottle for weather_commute
     $this->travelTo(now()->setTime(8, 0));
+});
 
-    // Reset throttle counters for any user that will be created in this test
-    // Use specific key deletion instead of flushdb to avoid parallel test interference
+function clearThrottleForUser(int $userId): void
+{
     try {
         $today = now()->format('Y-m-d');
         $hour = now()->format('Y-m-d-H');
-        // Clear for user IDs 1-20 (covers auto-increment in test DB)
-        for ($i = 1; $i <= 20; $i++) {
-            Redis::del("notif_throttle:last:{$i}");
-            Redis::del("notif_throttle:hour:{$i}:{$hour}");
-            Redis::del("notif_throttle:day:{$i}:{$today}");
-        }
+        Redis::del(
+            "notif_throttle:last:{$userId}",
+            "notif_throttle:hour:{$userId}:{$hour}",
+            "notif_throttle:day:{$userId}:{$today}",
+        );
     } catch (Throwable) {
     }
-});
+}
 
 function weatherMock(array $currentOverrides = [], ?string $rainStarts = null): array
 {
@@ -57,6 +57,7 @@ function weatherMock(array $currentOverrides = [], ?string $rainStarts = null): 
 
 test('fires wind alert when wind_gust exceeds 60 kmh', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock(['wind_gust' => 75]);
     $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
@@ -70,6 +71,7 @@ test('fires wind alert when wind_gust exceeds 60 kmh', function () {
 
 test('does not fire wind alert when wind_gust is below threshold', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock(['wind_gust' => 40]);
     $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
@@ -85,6 +87,7 @@ test('does not fire wind alert when wind_gust is below threshold', function () {
 
 test('fires rain alert when forecast has rain_starts', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock([], '14:00');
     $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
@@ -98,6 +101,7 @@ test('fires rain alert when forecast has rain_starts', function () {
 
 test('fires freezing alert when temperature below zero', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock(['temperature' => -5]);
     $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
@@ -111,6 +115,7 @@ test('fires freezing alert when temperature below zero', function () {
 
 test('fires heat alert when temperature above 33', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock(['temperature' => 36]);
     $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
@@ -124,6 +129,7 @@ test('fires heat alert when temperature above 33', function () {
 
 test('does not fire alert when weather is normal', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock();
     $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
@@ -139,6 +145,7 @@ test('does not fire alert when weather is normal', function () {
 
 test('respects weather notification preference opt-out', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     NotificationPreference::create([
         'user_id' => $user->id,
         'preferences' => array_merge(NotificationPreference::defaults(), ['weather' => false]),
@@ -158,6 +165,7 @@ test('respects weather notification preference opt-out', function () {
 
 test('deduplicates same alert within 12 hours', function () {
     $user = User::factory()->onboarded()->create();
+    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock([], '14:00');
     $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
