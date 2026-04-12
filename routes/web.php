@@ -28,85 +28,127 @@ use App\Http\Controllers\UserSettingController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+/*
+|--------------------------------------------------------------------------
+| Subdomain Routing
+|--------------------------------------------------------------------------
+|
+| Production: marketing routes on expadu.com, app routes on app.expadu.com.
+| Local dev: APP_DOMAIN is null, so no subdomain enforcement — all routes
+| respond to localhost.
+|
+*/
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    // APIs — generous limits since all are authenticated + local data
-    Route::get('api/geocode', GeocodeController::class)->name('api.geocode');
-    Route::get('api/reverse-geocode', ReverseGeocodeController::class)->name('api.reverse-geocode');
-    Route::get('api/stops', StopSearchController::class)->name('api.stops');
-    Route::get('api/spots', SpotSearchController::class)->name('api.spots');
-    Route::post('api/track', TrackEventController::class)->name('api.track');
-    Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
-    Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
-    Route::get('api/transfer-connections', [TransferConnectionsController::class, 'getConnections'])->name('api.transfer-connections');
-    Route::post('api/transfer-select', [TransferConnectionsController::class, 'selectConnection'])->name('api.transfer-select');
+$appDomain = config('app.app_domain');
+$marketingDomain = config('app.marketing_domain');
 
-    Route::inertia('onboarding', 'onboarding')->name('onboarding');
-    Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
+// ── Marketing site (expadu.com) ──────────────────────────────────────────
+$marketingRoutes = function () {
+    Route::inertia('/', 'welcome', [
+        'canRegister' => Features::enabled(Features::registration()),
+    ])->name('home');
 
-    Route::get('dashboard', HomeFeedController::class)->name('dashboard');
+    // SEO redirects: old app URLs → app subdomain
+    $appUrl = config('app.url');
+    if ($appUrl && ! str_contains($appUrl, 'localhost')) {
+        $appPaths = ['dashboard', 'explore', 'transit', 'events', 'alerts', 'profile',
+            'bureaucracy', 'services', 'language-exchange', 'neighborhoods', 'chat', 'just-arrived'];
 
-    // Transit
-    Route::get('transit', [TransitController::class, 'index'])->name('transit');
-    Route::post('routines', [RoutineController::class, 'store'])->name('routines.store');
-    Route::put('routines/{routine}', [RoutineController::class, 'update'])->name('routines.update');
-    Route::delete('routines/{routine}', [RoutineController::class, 'destroy'])->name('routines.destroy');
+        foreach ($appPaths as $path) {
+            Route::get($path, fn () => redirect("{$appUrl}/{$path}", 301));
+        }
+    }
+};
 
-    // Explore / Spots
-    Route::get('explore', [SpotController::class, 'index'])->name('explore');
-    Route::get('explore/{spot}', [SpotController::class, 'show'])->name('spots.show');
-    Route::post('explore/{spot}/checkin', [SpotController::class, 'checkin'])->name('spots.checkin');
-    Route::post('explore/{spot}/checkout', [SpotController::class, 'checkout'])->name('spots.checkout');
+// ── App (app.expadu.com) ─────────────────────────────────────────────────
+$appRoutes = function () {
+    Route::middleware(['auth', 'verified'])->group(function () {
+        // APIs
+        Route::get('api/geocode', GeocodeController::class)->name('api.geocode');
+        Route::get('api/reverse-geocode', ReverseGeocodeController::class)->name('api.reverse-geocode');
+        Route::get('api/stops', StopSearchController::class)->name('api.stops');
+        Route::get('api/spots', SpotSearchController::class)->name('api.spots');
+        Route::post('api/track', TrackEventController::class)->name('api.track');
+        Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
+        Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
+        Route::get('api/transfer-connections', [TransferConnectionsController::class, 'getConnections'])->name('api.transfer-connections');
+        Route::post('api/transfer-select', [TransferConnectionsController::class, 'selectConnection'])->name('api.transfer-select');
 
-    // Events
-    Route::get('events', [EventController::class, 'index'])->name('events');
-    Route::get('events/saved', [EventController::class, 'saved'])->name('events.saved');
-    Route::get('events/{event}', [EventController::class, 'show'])->name('events.show');
-    Route::post('events/{event}/join', [EventController::class, 'join'])->name('events.join');
-    Route::delete('events/{event}/join', [EventController::class, 'leave'])->name('events.leave');
+        Route::inertia('onboarding', 'onboarding')->name('onboarding');
+        Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
-    // Alerts
-    Route::get('alerts', [AlertController::class, 'index'])->name('alerts');
-    Route::post('alerts/{alert}/read', [AlertController::class, 'markRead'])->name('alerts.read');
-    Route::post('alerts/read-all', [AlertController::class, 'markAllRead'])->name('alerts.read-all');
-    Route::post('alerts/{alert}/dismiss', [AlertController::class, 'dismiss'])->name('alerts.dismiss');
+        Route::get('dashboard', HomeFeedController::class)->name('dashboard');
 
-    // Push subscriptions
-    Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
-    Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+        // Transit
+        Route::get('transit', [TransitController::class, 'index'])->name('transit');
+        Route::post('routines', [RoutineController::class, 'store'])->name('routines.store');
+        Route::put('routines/{routine}', [RoutineController::class, 'update'])->name('routines.update');
+        Route::delete('routines/{routine}', [RoutineController::class, 'destroy'])->name('routines.destroy');
 
-    // Notification preferences
-    Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
-    Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+        // Explore / Spots
+        Route::get('explore', [SpotController::class, 'index'])->name('explore');
+        Route::get('explore/{spot}', [SpotController::class, 'show'])->name('spots.show');
+        Route::post('explore/{spot}/checkin', [SpotController::class, 'checkin'])->name('spots.checkin');
+        Route::post('explore/{spot}/checkout', [SpotController::class, 'checkout'])->name('spots.checkout');
 
-    // User settings (privacy, etc.)
-    Route::get('user-settings', [UserSettingController::class, 'show'])->name('user-settings.show');
-    Route::put('user-settings', [UserSettingController::class, 'update'])->name('user-settings.update');
+        // Events
+        Route::get('events', [EventController::class, 'index'])->name('events');
+        Route::get('events/saved', [EventController::class, 'saved'])->name('events.saved');
+        Route::get('events/{event}', [EventController::class, 'show'])->name('events.show');
+        Route::post('events/{event}/join', [EventController::class, 'join'])->name('events.join');
+        Route::delete('events/{event}/join', [EventController::class, 'leave'])->name('events.leave');
 
-    // Spot reviews
-    Route::get('explore/{spot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');
-    Route::post('explore/{spot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+        // Alerts
+        Route::get('alerts', [AlertController::class, 'index'])->name('alerts');
+        Route::post('alerts/{alert}/read', [AlertController::class, 'markRead'])->name('alerts.read');
+        Route::post('alerts/read-all', [AlertController::class, 'markAllRead'])->name('alerts.read-all');
+        Route::post('alerts/{alert}/dismiss', [AlertController::class, 'dismiss'])->name('alerts.dismiss');
 
-    // Slot monitoring
-    Route::post('slots/toggle', [SlotMonitorController::class, 'toggle'])->name('slots.toggle');
+        // Push subscriptions
+        Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+        Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 
-    // User places CRUD
-    Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');
-    Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->name('user-places.update');
-    Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->name('user-places.destroy');
+        // Notification preferences
+        Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
+        Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
 
-    // Placeholder pages
-    Route::inertia('language-exchange', 'language-exchange')->name('language-exchange');
-    Route::inertia('chat', 'chat')->name('chat');
-    Route::inertia('neighborhoods', 'neighborhoods')->name('neighborhoods');
-    Route::get('services', [ServicesController::class, 'index'])->name('services');
-    Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
-    Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
-    Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');
-    Route::get('profile', ProfilePageController::class)->name('profile');
-});
+        // User settings
+        Route::get('user-settings', [UserSettingController::class, 'show'])->name('user-settings.show');
+        Route::put('user-settings', [UserSettingController::class, 'update'])->name('user-settings.update');
+
+        // Spot reviews
+        Route::get('explore/{spot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+        Route::post('explore/{spot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+
+        // Slot monitoring
+        Route::post('slots/toggle', [SlotMonitorController::class, 'toggle'])->name('slots.toggle');
+
+        // User places
+        Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');
+        Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->name('user-places.update');
+        Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->name('user-places.destroy');
+
+        // Placeholder pages
+        Route::inertia('language-exchange', 'language-exchange')->name('language-exchange');
+        Route::inertia('chat', 'chat')->name('chat');
+        Route::inertia('neighborhoods', 'neighborhoods')->name('neighborhoods');
+        Route::get('services', [ServicesController::class, 'index'])->name('services');
+        Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+        Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
+        Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');
+        Route::get('profile', ProfilePageController::class)->name('profile');
+    });
+};
+
+// Register routes — with or without subdomain enforcement
+if ($appDomain && $marketingDomain) {
+    // Production: enforce subdomains
+    Route::domain($marketingDomain)->group($marketingRoutes);
+    Route::domain($appDomain)->group($appRoutes);
+} else {
+    // Local dev: no subdomain enforcement, all routes on localhost
+    $marketingRoutes();
+    $appRoutes();
+}
 
 require __DIR__.'/settings.php';

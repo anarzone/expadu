@@ -12,13 +12,22 @@ beforeEach(function () {
     Notification::fake();
     Cache::flush();
 
-    try {
-        Redis::connection()->flushdb();
-    } catch (Throwable) {
-    }
-
     // 8 AM is within the commute window (6-9) required by NotificationThrottle for weather_commute
     $this->travelTo(now()->setTime(8, 0));
+
+    // Reset throttle counters for any user that will be created in this test
+    // Use specific key deletion instead of flushdb to avoid parallel test interference
+    try {
+        $today = now()->format('Y-m-d');
+        $hour = now()->format('Y-m-d-H');
+        // Clear for user IDs 1-20 (covers auto-increment in test DB)
+        for ($i = 1; $i <= 20; $i++) {
+            Redis::del("notif_throttle:last:{$i}");
+            Redis::del("notif_throttle:hour:{$i}:{$hour}");
+            Redis::del("notif_throttle:day:{$i}:{$today}");
+        }
+    } catch (Throwable) {
+    }
 });
 
 function weatherMock(array $currentOverrides = [], ?string $rainStarts = null): array
