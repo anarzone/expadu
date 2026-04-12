@@ -525,7 +525,20 @@ export default function Dashboard() {
                     <PushPromptCard />
                 </div>
 
-                {/* Warnings section removed — handled by commute recommendation cards now */}
+                {/* Loading skeleton while feed is deferred */}
+                {!feed && (
+                    <div className="section-pad space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="animate-pulse rounded-[14px] border border-border bg-card p-4"
+                            >
+                                <div className="mb-2 h-4 w-2/3 rounded bg-muted" />
+                                <div className="h-3 w-1/2 rounded bg-muted" />
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Live departures */}
                 {departures && (departures.departures?.length ?? 0) > 0 && (
