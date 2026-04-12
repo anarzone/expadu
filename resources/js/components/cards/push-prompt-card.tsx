@@ -121,6 +121,7 @@ export function PushPromptCard() {
             <div className="relative overflow-hidden rounded-[9px] border border-[#1A4CD4]/15 bg-[#1A4CD4]/[0.06] p-4 dark:border-[#5B8DEF]/20 dark:bg-[#1A4CD4]/10">
                 <button
                     onClick={dismiss}
+                    aria-label="Dismiss"
                     className="absolute top-3 right-3 text-muted-foreground transition-colors hover:text-foreground"
                 >
                     <IconX size={16} stroke={ICON_STROKE} />
@@ -156,6 +157,7 @@ export function PushPromptCard() {
             <div className="relative overflow-hidden rounded-[9px] border border-amber-500/15 bg-amber-500/[0.06] p-4 dark:border-amber-400/20 dark:bg-amber-500/10">
                 <button
                     onClick={dismiss}
+                    aria-label="Dismiss"
                     className="absolute top-3 right-3 text-muted-foreground transition-colors hover:text-foreground"
                 >
                     <IconX size={16} stroke={ICON_STROKE} />

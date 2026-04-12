@@ -16,7 +16,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                     {/* Group label */}
                     <div
                         data-sidebar-text
-                        className="overflow-hidden px-2 pt-3.5 pb-[5px] text-[10px] font-bold tracking-[0.09em] whitespace-nowrap text-[#AAA89F] uppercase group-data-[collapsible=icon]:hidden dark:text-[#6B6860]"
+                        className="overflow-hidden px-2 pt-3.5 pb-[5px] text-[10px] font-bold tracking-[0.09em] whitespace-nowrap text-muted-foreground uppercase group-data-[collapsible=icon]:hidden"
                     >
                         {group.label}
                     </div>
