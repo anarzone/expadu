@@ -111,12 +111,12 @@ test('dashboard includes unified feed', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
+        ->has('weather')
         ->missing('feed')
         ->loadDeferredProps(fn ($reload) => $reload
             ->has('feed')
             ->has('feed.recommendations')
             ->has('feed.settlement')
-            ->has('weather')
         )
     );
 });

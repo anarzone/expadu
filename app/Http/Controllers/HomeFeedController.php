@@ -22,13 +22,14 @@ class HomeFeedController extends Controller
         $lng = $location['lng'];
 
         return Inertia::render('dashboard', [
-            // Heavy data — deferred to load after page shell renders
+            // Heavy — defer (external API calls, complex queries)
             'feed' => Inertia::defer(fn () => $recommendationService->buildDashboardFeed($user, $request)),
             'commuteRecommendation' => Inertia::defer(fn () => $recommendationService->getCommuteRecommendation($user)),
-            'weather' => Inertia::defer(fn () => app(WeatherService::class)->getCurrentWeather($lat, $lng)),
-            'forecast' => Inertia::defer(fn () => app(WeatherService::class)->getForecast($lat, $lng)),
-            'rhineLevel' => Inertia::defer(fn () => app(RhineService::class)->getCurrentLevel()),
-            'todayEvents' => Inertia::defer(fn () => Event::query()
+            // Light — eager (cached, fast DB queries)
+            'weather' => fn () => app(WeatherService::class)->getCurrentWeather($lat, $lng),
+            'forecast' => fn () => app(WeatherService::class)->getForecast($lat, $lng),
+            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
+            'todayEvents' => fn () => Event::query()
                 ->whereDate('starts_at', today())
                 ->where('starts_at', '>', now())
                 ->orderBy('starts_at')
@@ -44,10 +45,10 @@ class HomeFeedController extends Controller
                     'badge' => $e->is_free ? 'Free' : ucfirst($e->category ?? 'Event'),
                     'badgeType' => $e->is_free ? 'free' : 'category',
                 ])
-                ->all()),
-            'activeDisruptions' => Inertia::defer(fn () => collect(app(DisruptionService::class)->getLineDisruptions())
+                ->all(),
+            'activeDisruptions' => fn () => collect(app(DisruptionService::class)->getLineDisruptions())
                 ->map(fn ($d) => ['title' => $d['title'], 'severity' => $d['severity'], 'lines' => $d['affected_lines']])
-                ->take(5)->values()->all()),
+                ->take(5)->values()->all(),
         ]);
     }
 }
