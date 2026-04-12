@@ -50,14 +50,12 @@ export function EventDetailContent({
             )}
             {event.karneval && (
                 <div
-                    className="mb-2.5 inline-flex items-center gap-1 rounded-[20px] px-2 py-0.5"
+                    className="mb-2.5 inline-flex items-center gap-1 rounded-[20px] bg-danger-soft px-2 py-0.5 text-danger"
                     style={{
                         fontSize: 9,
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
-                        background: '#FDE8E6',
-                        color: '#C4271A',
                     }}
                 >
                     <span>🎭</span> Karneval
@@ -78,7 +76,10 @@ export function EventDetailContent({
             </div>
 
             {/* Organiser */}
-            <div style={{ fontSize: 13, color: '#6B6860', marginBottom: 16 }}>
+            <div
+                className="text-muted-foreground"
+                style={{ fontSize: 13, marginBottom: 16 }}
+            >
                 Organised by {event.organiser}
             </div>
 
@@ -117,9 +118,9 @@ export function EventDetailContent({
                 About
             </div>
             <div
+                className="text-muted-foreground"
                 style={{
                     fontSize: 14,
-                    color: '#6B6860',
                     lineHeight: 1.65,
                     marginBottom: 16,
                 }}
@@ -148,13 +149,11 @@ export function EventDetailContent({
                 ))}
                 {event.englishFriendly && (
                     <span
-                        className="inline-flex items-center gap-1 rounded-[20px]"
+                        className="inline-flex items-center gap-1 rounded-[20px] bg-success-soft text-success"
                         style={{
                             fontSize: 11,
                             fontWeight: 700,
                             padding: '3px 10px',
-                            background: '#D4F0E6',
-                            color: '#0A7C52',
                         }}
                     >
                         🇬🇧 English-friendly
@@ -169,8 +168,10 @@ export function EventDetailContent({
                     className="cursor-pointer rounded-[9px] border-none py-[13px] transition-all"
                     style={{
                         flex: 2,
-                        background: going ? '#D4F0E6' : '#1A4CD4',
-                        color: going ? '#0A7C52' : 'white',
+                        background: going
+                            ? 'var(--success-soft)'
+                            : 'var(--primary)',
+                        color: going ? 'var(--success)' : 'white',
                         fontFamily: "'Geist', sans-serif",
                         fontSize: 14,
                         fontWeight: 600,
@@ -180,7 +181,7 @@ export function EventDetailContent({
                 </button>
                 <button
                     onClick={() => window.open(mapsUrl, '_blank', 'noopener')}
-                    className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-[13px] transition-all hover:bg-[#E2DFD6]"
+                    className="cursor-pointer rounded-[9px] border border-border bg-surface-2 px-4 py-[13px] transition-all hover:bg-border"
                     style={{
                         fontFamily: "'Geist', sans-serif",
                         fontSize: 13,
@@ -194,7 +195,7 @@ export function EventDetailContent({
                         onClick={() =>
                             window.open(event.link, '_blank', 'noopener')
                         }
-                        className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-[13px] transition-all hover:bg-[#E2DFD6]"
+                        className="cursor-pointer rounded-[9px] border border-border bg-surface-2 px-4 py-[13px] transition-all hover:bg-border"
                         style={{
                             fontFamily: "'Geist', sans-serif",
                             fontSize: 13,

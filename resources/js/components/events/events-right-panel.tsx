@@ -31,8 +31,16 @@ function toRpEvent(ev: EventData): RightPanelEvent {
         title: ev.title,
         sub: `${ev.day} ${ev.date} ${ev.month} · ${ev.time}`,
         tagLabel: ev.price ?? (ev.free ? 'Free' : 'See website'),
-        tagBg: ev.free ? '#D4F0E6' : ev.price ? '#EFEDE7' : '#FDF0D4',
-        tagColor: ev.free ? '#0A7C52' : ev.price ? '#6B6860' : '#C47D0E',
+        tagBg: ev.free
+            ? 'var(--success-soft)'
+            : ev.price
+              ? 'var(--surface-2)'
+              : 'var(--warn-soft)',
+        tagColor: ev.free
+            ? 'var(--success)'
+            : ev.price
+              ? 'var(--muted-foreground)'
+              : 'var(--warn)',
     };
 }
 
@@ -106,17 +114,17 @@ export function EventsRightPanel({
             )}
 
             {/* Weekly digest */}
-            <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
-                <div className="border-b border-[#E2DFD6] px-[15px] py-3">
+            <div className="mb-3.5 overflow-hidden rounded-[14px] border border-border bg-card">
+                <div className="border-b border-border px-[15px] py-3">
                     <span style={{ fontSize: 13, fontWeight: 700 }}>
                         Weekly digest
                     </span>
                 </div>
                 <div className="px-[15px] py-3.5">
                     <div
+                        className="text-muted-foreground"
                         style={{
                             fontSize: 13,
-                            color: '#6B6860',
                             lineHeight: 1.6,
                             marginBottom: 10,
                         }}
@@ -129,9 +137,11 @@ export function EventsRightPanel({
                         className="w-full cursor-pointer rounded-[9px] border-none py-[9px] transition-all"
                         style={{
                             background: digestSubscribed
-                                ? '#D4F0E6'
-                                : '#1A4CD4',
-                            color: digestSubscribed ? '#0A7C52' : 'white',
+                                ? 'var(--success-soft)'
+                                : 'var(--primary)',
+                            color: digestSubscribed
+                                ? 'var(--success)'
+                                : 'white',
                             fontFamily: "'Geist', sans-serif",
                             fontSize: 13,
                             fontWeight: 600,
@@ -149,8 +159,8 @@ export function EventsRightPanel({
 
 function RpBlock({ title, children }: { title: string; children: ReactNode }) {
     return (
-        <div className="mb-3.5 overflow-hidden rounded-[14px] border border-[#E2DFD6] bg-white">
-            <div className="flex items-center justify-between border-b border-[#E2DFD6] px-[15px] py-3">
+        <div className="mb-3.5 overflow-hidden rounded-[14px] border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border px-[15px] py-3">
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{title}</span>
             </div>
             {children}
@@ -168,7 +178,7 @@ function RpRow({
     return (
         <div
             onClick={onClick}
-            className="flex cursor-pointer items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors last:border-b-0 hover:bg-[#EFEDE7]"
+            className="flex cursor-pointer items-start gap-2.5 border-b border-border px-[15px] py-[11px] transition-colors last:border-b-0 hover:bg-surface-2"
         >
             <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
                 {event.emoji}
@@ -177,7 +187,7 @@ function RpRow({
                 <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 1 }}>
                     {event.title}
                 </div>
-                <div style={{ fontSize: 11, color: '#6B6860' }}>
+                <div className="text-muted-foreground" style={{ fontSize: 11 }}>
                     {event.sub}
                 </div>
             </div>

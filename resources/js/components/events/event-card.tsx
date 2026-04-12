@@ -25,7 +25,7 @@ export function EventCard({
     const attendStr = formatAttending(event.attending);
 
     // Card classes: featured = purple border, karneval = red border
-    let borderStyle = '1px solid #E2DFD6';
+    let borderStyle = '1px solid var(--border)';
 
     if (event.featured) {
         borderStyle = '1.5px solid rgba(124,58,237,.3)';
@@ -38,7 +38,7 @@ export function EventCard({
     return (
         <div
             onClick={onClick}
-            className="animate-fade-up group mb-2.5 cursor-pointer overflow-hidden bg-white transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
+            className="animate-fade-up group mb-2.5 cursor-pointer overflow-hidden bg-card transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
             style={{
                 border: borderStyle,
                 borderRadius: 14,
@@ -57,7 +57,7 @@ export function EventCard({
                         'rgba(196,39,26,.3)';
                 } else {
                     (e.currentTarget as HTMLDivElement).style.borderColor =
-                        '#E2DFD6';
+                        'var(--border)';
                 }
             }}
         >
@@ -86,14 +86,12 @@ export function EventCard({
                 {/* Karneval badge */}
                 {event.karneval && (
                     <div
-                        className="mb-1.5 inline-flex items-center gap-1 rounded-[20px] px-2 py-0.5"
+                        className="mb-1.5 inline-flex items-center gap-1 rounded-[20px] bg-danger-soft px-2 py-0.5 text-danger"
                         style={{
                             fontSize: 9,
                             fontWeight: 700,
                             textTransform: 'uppercase',
                             letterSpacing: '0.06em',
-                            background: '#FDE8E6',
-                            color: '#C4271A',
                         }}
                     >
                         <span>🎭</span> Karneval
@@ -104,9 +102,8 @@ export function EventCard({
                 <div className="mb-2.5 flex items-start gap-3">
                     {/* Date block */}
                     <div
-                        className="shrink-0 text-center"
+                        className="shrink-0 bg-surface-2 text-center"
                         style={{
-                            background: '#EFEDE7',
                             borderRadius: 9,
                             padding: '7px 10px',
                             minWidth: 46,
@@ -151,8 +148,8 @@ export function EventCard({
 
                         {/* Meta row */}
                         <div
-                            className="mb-1.5 flex flex-wrap items-center gap-[5px]"
-                            style={{ fontSize: 12, color: '#6B6860' }}
+                            className="mb-1.5 flex flex-wrap items-center gap-[5px] text-muted-foreground"
+                            style={{ fontSize: 12 }}
                         >
                             <span>📍 {event.venue}</span>
                             <Dot />
@@ -186,13 +183,11 @@ export function EventCard({
                             ))}
                             {event.englishFriendly && (
                                 <span
-                                    className="inline-flex items-center gap-1 rounded-[20px]"
+                                    className="inline-flex items-center gap-1 rounded-[20px] bg-success-soft text-success"
                                     style={{
                                         fontSize: 9,
                                         fontWeight: 700,
                                         padding: '2px 8px',
-                                        background: '#D4F0E6',
-                                        color: '#0A7C52',
                                     }}
                                 >
                                     🇬🇧 English-friendly
@@ -212,8 +207,12 @@ export function EventCard({
                             width: 32,
                             height: 32,
                             fontSize: 14,
-                            background: saved ? '#FDE8E6' : 'white',
-                            borderColor: saved ? '#C4271A' : '#E2DFD6',
+                            background: saved
+                                ? 'var(--danger-soft)'
+                                : 'var(--card)',
+                            borderColor: saved
+                                ? 'var(--danger)'
+                                : 'var(--border)',
                         }}
                         title={saved ? 'Unsave' : 'Save'}
                     >
@@ -222,22 +221,22 @@ export function EventCard({
                 </div>
 
                 {/* Bottom row */}
-                <div className="flex items-center justify-between border-t border-[#E2DFD6] pt-2.5">
+                <div className="flex items-center justify-between border-t border-border pt-2.5">
                     {/* Attendees */}
                     <div
-                        className="flex items-center gap-1.5"
-                        style={{ fontSize: 12, color: '#6B6860' }}
+                        className="flex items-center gap-1.5 text-muted-foreground"
+                        style={{ fontSize: 12 }}
                     >
                         <div className="flex">
                             {event.attendees.slice(0, 4).map((flag, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-center rounded-full border-2 border-white"
+                                    className="flex items-center justify-center rounded-full border-2 border-card"
                                     style={{
                                         width: 20,
                                         height: 20,
                                         fontSize: 10,
-                                        background: '#EFEDE7',
+                                        background: 'var(--surface-2)',
                                         marginLeft: i === 0 ? 0 : -6,
                                     }}
                                 >
@@ -261,8 +260,10 @@ export function EventCard({
                             fontSize: 12,
                             fontWeight: 600,
                             fontFamily: "'Geist', sans-serif",
-                            background: going ? '#D4F0E6' : '#1A4CD4',
-                            color: going ? '#0A7C52' : 'white',
+                            background: going
+                                ? 'var(--success-soft)'
+                                : 'var(--primary)',
+                            color: going ? 'var(--success)' : 'white',
                         }}
                     >
                         {going ? '✓ Going' : "I'm going"}

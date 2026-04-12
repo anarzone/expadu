@@ -287,13 +287,7 @@ export default function Events() {
             <Head title="Events" />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* ── Sticky header: title + pill tabs ── */}
-                <div
-                    className="sticky top-0 z-50 flex items-center justify-between border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{
-                        background: 'rgba(246,245,241,.94)',
-                        backdropFilter: 'blur(16px)',
-                    }}
-                >
+                <div className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/94 px-6 py-3.5 backdrop-blur-[16px]">
                     <span
                         className="shrink-0"
                         style={{
@@ -305,31 +299,16 @@ export default function Events() {
                     >
                         Events
                     </span>
-                    <div
-                        className="flex gap-1 rounded-full p-[3px]"
-                        style={{ background: '#EFEDE7' }}
-                    >
+                    <div className="flex gap-1 rounded-full bg-surface-2 p-[3px]">
                         {TABS.map((t) => (
                             <button
                                 key={t.id}
                                 onClick={() => setActiveTab(t.id)}
-                                className="cursor-pointer rounded-full border-none px-3.5 py-1.5 transition-all"
+                                className={`cursor-pointer rounded-full border-none px-3.5 py-1.5 transition-all ${activeTab === t.id ? 'bg-card text-foreground shadow-[0_1px_4px_rgba(0,0,0,0.08)]' : 'bg-transparent text-muted-foreground'}`}
                                 style={{
                                     fontSize: 12,
                                     fontWeight: 600,
                                     fontFamily: "'Geist', sans-serif",
-                                    color:
-                                        activeTab === t.id
-                                            ? '#18170F'
-                                            : '#6B6860',
-                                    background:
-                                        activeTab === t.id
-                                            ? 'white'
-                                            : 'transparent',
-                                    boxShadow:
-                                        activeTab === t.id
-                                            ? '0 1px 4px rgba(0,0,0,0.08)'
-                                            : 'none',
                                 }}
                             >
                                 {t.label}
@@ -344,9 +323,9 @@ export default function Events() {
                         <EventsHero />
 
                         {/* Search + Filters */}
-                        <div className="border-b border-[#E2DFD6] px-6 pt-3.5 pb-3">
+                        <div className="border-b border-border px-6 pt-3.5 pb-3">
                             {/* Search bar */}
-                            <div className="mb-2.5 flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
+                            <div className="mb-2.5 flex cursor-text items-center gap-[9px] rounded-[9px] border border-border bg-surface-2 px-[13px] py-2.5 transition-all focus-within:border-primary focus-within:bg-card focus-within:shadow-[0_0_0_3px_#EBF0FD]">
                                 <span
                                     style={{ fontSize: 15, color: '#AAA89F' }}
                                 >
@@ -357,7 +336,7 @@ export default function Events() {
                                     placeholder="Search events…"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
+                                    className="flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-[#AAA89F]"
                                     style={{
                                         fontFamily: "'Geist', sans-serif",
                                         fontSize: 14,
@@ -382,24 +361,12 @@ export default function Events() {
                                     <button
                                         key={f.id}
                                         onClick={() => setActiveFilter(f.id)}
-                                        className="shrink-0 cursor-pointer rounded-full border px-3 py-[5px] transition-all"
+                                        className={`shrink-0 cursor-pointer rounded-full border px-3 py-[5px] transition-all ${activeFilter === f.id ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground'}`}
                                         style={{
                                             fontSize: 12,
                                             fontWeight: 500,
                                             fontFamily: "'Geist', sans-serif",
                                             whiteSpace: 'nowrap',
-                                            background:
-                                                activeFilter === f.id
-                                                    ? '#1A4CD4'
-                                                    : 'white',
-                                            color:
-                                                activeFilter === f.id
-                                                    ? 'white'
-                                                    : '#6B6860',
-                                            borderColor:
-                                                activeFilter === f.id
-                                                    ? '#1A4CD4'
-                                                    : '#E2DFD6',
                                         }}
                                     >
                                         {f.label}
@@ -424,10 +391,10 @@ export default function Events() {
                                         🔍
                                     </div>
                                     <div
+                                        className="text-muted-foreground"
                                         style={{
                                             fontSize: 15,
                                             fontWeight: 600,
-                                            color: '#6B6860',
                                             marginBottom: 6,
                                         }}
                                     >
@@ -478,7 +445,7 @@ export default function Events() {
                                                             : ''}
                                                         {label}
                                                     </span>
-                                                    <div className="h-px flex-1 bg-[#E2DFD6]" />
+                                                    <div className="h-px flex-1 bg-border" />
                                                 </div>
 
                                                 {evs.map((ev, i) => (
@@ -545,7 +512,7 @@ export default function Events() {
 
                         {/* Events for selected day */}
                         {selectedCalDay !== null && calDayEvents.length > 0 && (
-                            <div className="mt-4 border-t border-[#E2DFD6] pt-4">
+                            <div className="mt-4 border-t border-border pt-4">
                                 <div
                                     className="mb-2.5"
                                     style={{
@@ -584,10 +551,10 @@ export default function Events() {
                                     🔖
                                 </div>
                                 <div
+                                    className="text-muted-foreground"
                                     style={{
                                         fontSize: 16,
                                         fontWeight: 600,
-                                        color: '#6B6860',
                                         marginBottom: 6,
                                     }}
                                 >
@@ -648,7 +615,7 @@ function CalNavBtn({ label, onClick }: { label: string; onClick: () => void }) {
     return (
         <button
             onClick={onClick}
-            className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-[#E2DFD6] bg-white transition-all hover:bg-[#EFEDE7]"
+            className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-border bg-card transition-all hover:bg-surface-2"
             style={{ fontSize: 14 }}
         >
             {label}
@@ -720,16 +687,16 @@ function CalendarGrid({
                 const hasEvents = eventDates.has(d);
 
                 let bg = 'transparent';
-                let color = '#18170F';
+                let color = 'var(--foreground)';
                 let fontWeight = 500;
 
                 if (isSelected) {
-                    bg = '#1A4CD4';
+                    bg = 'var(--primary)';
                     color = 'white';
                     fontWeight = 700;
                 } else if (isTodayCell) {
                     bg = '#EBF0FD';
-                    color = '#1A4CD4';
+                    color = 'var(--primary)';
                     fontWeight = 700;
                 }
 
@@ -737,7 +704,7 @@ function CalendarGrid({
                     <div
                         key={`day-${d}`}
                         onClick={() => onSelectDay(d)}
-                        className="relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[9px] transition-all hover:bg-[#EFEDE7]"
+                        className="relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[9px] transition-all hover:bg-surface-2"
                         style={{
                             fontSize: 13,
                             fontWeight,
@@ -754,7 +721,7 @@ function CalendarGrid({
                                     height: 4,
                                     background: isSelected
                                         ? 'white'
-                                        : '#1A4CD4',
+                                        : 'var(--primary)',
                                 }}
                             />
                         )}
