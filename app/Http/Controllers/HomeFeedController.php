@@ -21,13 +21,16 @@ class HomeFeedController extends Controller
         $lat = $location['lat'];
         $lng = $location['lng'];
 
+        // Pre-warm weather cache so all props that use it are fast
+        $weatherService = app(WeatherService::class);
+        $weather = $weatherService->getCurrentWeather($lat, $lng);
+        $forecast = $weatherService->getForecast($lat, $lng);
+
         return Inertia::render('dashboard', [
-            // Heavy — defer (external API calls, complex queries)
-            'feed' => Inertia::defer(fn () => $recommendationService->buildDashboardFeed($user, $request)),
-            'commuteRecommendation' => Inertia::defer(fn () => $recommendationService->getCommuteRecommendation($user)),
-            // Light — eager (cached, fast DB queries)
-            'weather' => fn () => app(WeatherService::class)->getCurrentWeather($lat, $lng),
-            'forecast' => fn () => app(WeatherService::class)->getForecast($lat, $lng),
+            'feed' => fn () => $recommendationService->buildDashboardFeed($user, $request),
+            'commuteRecommendation' => fn () => $recommendationService->getCommuteRecommendation($user),
+            'weather' => $weather,
+            'forecast' => $forecast,
             'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
             'todayEvents' => fn () => Event::query()
                 ->whereDate('starts_at', today())
