@@ -33,6 +33,7 @@ class ScrapeRestaurants extends Command
     private const CATEGORY_MAP = [
         'restaurant' => 'restaurant',
         'fast_food' => 'fast_food',
+        'cafe' => 'cafe',
         'bar' => 'bar',
         'pub' => 'bar',
         'bakery' => 'bakery',
@@ -68,7 +69,6 @@ class ScrapeRestaurants extends Command
                 continue;
             }
 
-            $elements = $response->json('elements') ?? [];
             $this->info('  Found '.count($elements).' elements across '.count(self::BBOXES).' quadrants');
 
             if ($limit > 0) {

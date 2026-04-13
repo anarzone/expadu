@@ -37,8 +37,8 @@ Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping
 // Notification health check — hourly automated monitoring
 Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 
-// Restaurant data refresh — weekly from OpenStreetMap
-Schedule::command('restaurants:scrape')->weeklyOn(2, '04:00')->withoutOverlapping();
+// Restaurant/spot data refresh — daily at 04:00 until coverage is complete, then switch to weekly
+Schedule::command('restaurants:scrape')->dailyAt('04:00')->withoutOverlapping();
 
 // GTFS static timetable refresh — VRS updates weekly
 Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();

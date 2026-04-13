@@ -12,8 +12,9 @@ beforeEach(function () {
     Notification::fake();
     Cache::flush();
 
-    // 8 AM is within the commute window (6-9) required by NotificationThrottle for weather_commute
-    $this->travelTo(now()->setTime(8, 0));
+    // Travel to a unique date per test to avoid parallel dedup key collisions in Redis
+    // Each test gets a different day offset based on the test index
+    $this->travelTo(now()->addDays(random_int(1000, 9999))->setTime(8, 0));
 });
 
 function clearThrottleForUser(int $userId): void
