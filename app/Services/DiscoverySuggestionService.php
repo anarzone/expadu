@@ -84,10 +84,16 @@ class DiscoverySuggestionService
         $lat ??= 50.9375;
         $lng ??= 6.9603;
 
-        // Fetch nearby spots (all categories), exclude user's current location
-        $allSpots = Spot::nearby($lat, $lng)->limit(30)->get()
-            ->filter(fn (Spot $s) => $s->lat === null || $s->lng === null
-                || $this->metersApart($lat, $lng, (float) $s->lat, (float) $s->lng) >= 200)
+        // Fetch nearby spots (all categories), between 200m and 3km
+        $allSpots = Spot::nearby($lat, $lng)->limit(50)->get()
+            ->filter(function (Spot $s) use ($lat, $lng) {
+                if ($s->lat === null || $s->lng === null) {
+                    return false;
+                }
+                $dist = $this->metersApart($lat, $lng, (float) $s->lat, (float) $s->lng);
+
+                return $dist >= 200 && $dist <= 3000;
+            })
             ->values();
 
         if ($allSpots->isEmpty()) {
@@ -98,10 +104,19 @@ class DiscoverySuggestionService
         $scorer = app(SpotScoringService::class);
         $scored = $scorer->scoreSpots($user, $allSpots, $lat, $lng, $weather);
 
-        // Enforce familiar + new mix
+        // Enforce familiar + new mix with category diversity
         $familiar = $scored->filter(fn ($s) => $s->visit_count > 0)->take(2);
-        $new = $scored->filter(fn ($s) => $s->visit_count === 0)->take(3);
-        $mixed = $familiar->merge($new)->sortByDesc('score')->take(5);
+        $new = $scored->filter(fn ($s) => $s->visit_count === 0)->take(5);
+        $mixed = $familiar->merge($new)->sortByDesc('score');
+
+        // Enforce category diversity: max 2 per category
+        $categoryCounts = [];
+        $mixed = $mixed->filter(function ($s) use (&$categoryCounts) {
+            $cat = $s->category?->value ?? 'cafe';
+            $categoryCounts[$cat] = ($categoryCounts[$cat] ?? 0) + 1;
+
+            return $categoryCounts[$cat] <= 2;
+        })->take(5);
 
         // If not enough variety, fill from top scored
         if ($mixed->count() < 3) {

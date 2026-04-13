@@ -1212,6 +1212,7 @@ class RecommendationService
             if ($atCategory === 'home') {
                 $goToWorkCutoff = $workArriveMin ? ($workArriveMin / 60) + 1 : 10;
                 if ($workLat && $workLng && $hour < $goToWorkCutoff) {
+                    // Morning: heading to work
                     $result = [
                         'type' => 'to_work',
                         'from_name' => $atName,
@@ -1223,7 +1224,10 @@ class RecommendationService
                         'arrive_by' => $workArriveBy,
                     ];
                 } else {
-                    $result = $discovery($atName, $homeLat, $homeLng);
+                    // Afternoon/evening at home: show nearby discovery centered on home
+                    // Not full discovery mode — still show transit + spots but without commute framing
+                    $result = $discovery($atName, $gpsCoords['lat'] ?? $homeLat, $gpsCoords['lng'] ?? $homeLng);
+                    $result['type'] = 'at_home';
                 }
             } elseif ($atCategory === 'work') {
                 $workDoneMin = $workArriveMin ? $workArriveMin + 540 : 17 * 60;
