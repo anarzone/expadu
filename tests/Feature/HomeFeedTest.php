@@ -13,16 +13,14 @@ test('home feed returns unified feed for onboarded user', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
-        ->missing('feed') // Deferred prop not in initial response
-        ->missing('weather')
+        ->has('weather')
+        ->has('commuteRecommendation')
+        ->missing('feed') // Only feed is deferred
         ->loadDeferredProps(fn ($reload) => $reload
             ->has('feed')
             ->has('feed.recommendations')
             ->has('feed.settlement')
             ->has('feed.places')
-        )
-        ->loadDeferredProps('weather', fn ($reload) => $reload
-            ->has('weather')
         )
     );
 });

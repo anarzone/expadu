@@ -24,12 +24,14 @@ class HomeFeedController extends Controller
         $weatherService = app(WeatherService::class);
 
         return Inertia::render('dashboard', [
+            // Heavy feed: defer to separate request (700ms+ with spot queries, departures, events)
             'feed' => Inertia::defer(fn () => $recommendationService->buildDashboardFeed($user, $request)),
-            'commuteRecommendation' => Inertia::defer(fn () => $recommendationService->getCommuteRecommendation($user)),
-            'weather' => Inertia::defer(fn () => $weatherService->getCurrentWeather($lat, $lng), 'weather'),
-            'forecast' => Inertia::defer(fn () => $weatherService->getForecast($lat, $lng), 'weather'),
-            'rhineLevel' => Inertia::defer(fn () => app(RhineService::class)->getCurrentLevel(), 'extras'),
-            'todayEvents' => Inertia::defer(fn () => Event::query()
+            // Everything else: lazy props resolved in same response (fast with warm caches)
+            'commuteRecommendation' => fn () => $recommendationService->getCommuteRecommendation($user),
+            'weather' => fn () => $weatherService->getCurrentWeather($lat, $lng),
+            'forecast' => fn () => $weatherService->getForecast($lat, $lng),
+            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
+            'todayEvents' => fn () => Event::query()
                 ->whereDate('starts_at', today())
                 ->where('starts_at', '>', now())
                 ->orderBy('starts_at')
@@ -45,10 +47,10 @@ class HomeFeedController extends Controller
                     'badge' => $e->is_free ? 'Free' : ucfirst($e->category ?? 'Event'),
                     'badgeType' => $e->is_free ? 'free' : 'category',
                 ])
-                ->all(), 'extras'),
-            'activeDisruptions' => Inertia::defer(fn () => collect(app(DisruptionService::class)->getLineDisruptions())
+                ->all(),
+            'activeDisruptions' => fn () => collect(app(DisruptionService::class)->getLineDisruptions())
                 ->map(fn ($d) => ['title' => $d['title'], 'severity' => $d['severity'], 'lines' => $d['affected_lines']])
-                ->take(5)->values()->all(), 'extras'),
+                ->take(5)->values()->all(),
         ]);
     }
 }
