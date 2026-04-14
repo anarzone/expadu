@@ -1,5 +1,7 @@
 <?php
 
+uses()->group('slow');
+
 use App\Models\Appointment;
 use App\Models\CityNews;
 use App\Models\Event;

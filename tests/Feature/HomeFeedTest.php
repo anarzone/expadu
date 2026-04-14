@@ -1,5 +1,7 @@
 <?php
 
+uses()->group('slow');
+
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;

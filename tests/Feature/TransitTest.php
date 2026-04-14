@@ -1,5 +1,6 @@
 <?php
 
+uses()->group('slow');
 use App\Models\Routine;
 use App\Models\User;
 

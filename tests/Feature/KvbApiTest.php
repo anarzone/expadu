@@ -1,5 +1,6 @@
 <?php
 
+uses()->group('slow');
 use App\Models\CityNews;
 use App\Services\DisruptionService;
 use App\Services\KvbApiService;
