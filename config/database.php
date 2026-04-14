@@ -159,7 +159,7 @@ return [
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
-            'database' => env('REDIS_DB', '0'),
+            'database' => (int) env('REDIS_DB', '0') + ((int) env('TEST_TOKEN', 0) > 0 ? (int) env('TEST_TOKEN') + 1 : 0),
             'max_retries' => env('REDIS_MAX_RETRIES', 3),
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),

@@ -17,19 +17,6 @@ beforeEach(function () {
     // Travel to a unique date per test to avoid parallel dedup key collisions in Redis
     $this->travelTo(now()->addDays(random_int(1000, 9999))->setTime(10, 0));
 
-    // Clear throttle keys for this test's unique date
-    try {
-        $today = now()->format('Y-m-d');
-        $hour = now()->format('Y-m-d-H');
-        $keys = Redis::keys('notif_throttle:*') ?: [];
-        foreach ($keys as $key) {
-            if (str_contains($key, $today) || str_contains($key, $hour)) {
-                Redis::del($key);
-            }
-        }
-    } catch (Throwable) {
-    }
-
     // Seed minimal GTFS data: Ehrenfeld served by lines 3, 4; Deutz by lines 1, 7
     DB::table('gtfs_stops')->insert([
         ['stop_id' => 'S1', 'stop_name' => 'Ehrenfeld', 'stop_lat' => 50.94, 'stop_lng' => 6.92, 'location_type' => 0],
@@ -57,6 +44,25 @@ beforeEach(function () {
         ['trip_id' => 'T7', 'stop_id' => 'S2', 'stop_sequence' => 1, 'arrival_time' => '08:10:00', 'departure_time' => '08:10:00'],
     ]);
 });
+
+/**
+ * Clear throttle and dedup Redis keys for specific user IDs.
+ * Required because parallel tests share Redis but user IDs recycle from transaction rollbacks.
+ */
+function clearThrottleFor(int ...$userIds): void
+{
+    try {
+        $keys = [];
+        foreach ($userIds as $id) {
+            $keys[] = "notif_throttle:last:{$id}";
+            $keys[] = "notif_throttle:hour:{$id}:".now()->format('Y-m-d-H');
+            $keys[] = "notif_throttle:day:{$id}:".now()->format('Y-m-d');
+            $keys[] = "user_transit_lines:{$id}";
+        }
+        Redis::del(...$keys);
+    } catch (Throwable) {
+    }
+}
 
 test('only notifies users whose routine stops are served by disrupted lines', function () {
     // Mock MUST be set up before creating routines so the artisan command gets it
@@ -92,6 +98,7 @@ test('only notifies users whose routine stops are served by disrupted lines', fu
         'is_active' => true,
     ]);
 
+    clearThrottleFor($userEhrenfeld->id, $userDeutz->id);
     $this->artisan('transit:check-disruptions')->assertSuccessful();
 
     Notification::assertSentTo($userEhrenfeld, TransitDisruptionNotification::class);
@@ -153,6 +160,7 @@ test('notifies user when disruption affects their to_stop lines', function () {
         ]);
     });
 
+    clearThrottleFor($user->id);
     $this->artisan('transit:check-disruptions')->assertSuccessful();
 
     Notification::assertSentTo($user, TransitDisruptionNotification::class);
@@ -192,6 +200,7 @@ test('notifies user with saved place near disrupted line (no routine needed)', f
         'lng' => 6.950,
     ]);
 
+    clearThrottleFor($user->id);
     $this->artisan('transit:check-disruptions')->assertSuccessful();
 
     Notification::assertSentTo($user, TransitDisruptionNotification::class);
@@ -282,6 +291,7 @@ test('notifies stationary user near disrupted line via GPS', function () {
     // Flush the UserTransitLines cache so fresh data is used
     Cache::forget("user_transit_lines:{$user->id}");
 
+    clearThrottleFor($user->id);
     $this->artisan('transit:check-disruptions')->assertSuccessful();
 
     Notification::assertSentTo($user, TransitDisruptionNotification::class);

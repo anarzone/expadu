@@ -28,7 +28,8 @@ class UserTransitLinesService
      */
     public function getRelevantLines(User $user): array
     {
-        return Cache::remember("user_transit_lines:{$user->id}", 600, function () use ($user) {
+        // Cache as arrays to avoid __PHP_Incomplete_Class on unserialization in CLI
+        $cached = Cache::remember("user_transit_lines:{$user->id}", 600, function () use ($user) {
             $lines = collect();
             $stops = collect();
             $context = [];
@@ -38,11 +39,17 @@ class UserTransitLinesService
             $this->addGpsLines($user, $lines, $stops, $context);
 
             return [
-                'lines' => $lines->unique()->values(),
-                'stops' => $stops->unique()->values(),
+                'lines' => $lines->unique()->values()->all(),
+                'stops' => $stops->unique()->values()->all(),
                 'context' => $context,
             ];
         });
+
+        return [
+            'lines' => collect($cached['lines']),
+            'stops' => collect($cached['stops']),
+            'context' => $cached['context'],
+        ];
     }
 
     /**
@@ -191,7 +198,8 @@ class UserTransitLinesService
      */
     public function getLinesAtStop(string $stopName): Collection
     {
-        return Cache::remember("lines_at_stop:{$stopName}", 3600, function () use ($stopName) {
+        // Cache as array to avoid __PHP_Incomplete_Class on unserialization in CLI
+        $lines = Cache::remember("lines_at_stop:{$stopName}", 3600, function () use ($stopName) {
             return DB::table('gtfs_stops')
                 ->join('gtfs_stop_times', 'gtfs_stops.stop_id', '=', 'gtfs_stop_times.stop_id')
                 ->join('gtfs_trips', 'gtfs_stop_times.trip_id', '=', 'gtfs_trips.trip_id')
@@ -200,8 +208,11 @@ class UserTransitLinesService
                 ->where('gtfs_stops.location_type', 0)
                 ->whereNotNull('gtfs_routes.route_short_name')
                 ->distinct()
-                ->pluck('gtfs_routes.route_short_name');
+                ->pluck('gtfs_routes.route_short_name')
+                ->all();
         });
+
+        return collect($lines);
     }
 
     private function haversineMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
