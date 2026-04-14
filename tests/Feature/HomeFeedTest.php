@@ -13,11 +13,17 @@ test('home feed returns unified feed for onboarded user', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
-        ->has('feed')
-        ->has('feed.recommendations')
-        ->has('feed.settlement')
-        ->has('feed.places')
-        ->has('weather')
+        ->missing('feed') // Deferred prop not in initial response
+        ->missing('weather')
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->has('feed')
+            ->has('feed.recommendations')
+            ->has('feed.settlement')
+            ->has('feed.places')
+        )
+        ->loadDeferredProps('weather', fn ($reload) => $reload
+            ->has('weather')
+        )
     );
 });
 
@@ -32,8 +38,10 @@ test('home feed includes settlement progress', function () {
     $response = $this->get(route('dashboard'));
 
     $response->assertInertia(fn ($page) => $page
-        ->has('feed.settlement')
-        ->where('feed.settlement.total', fn ($v) => $v > 0)
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->has('feed.settlement')
+            ->where('feed.settlement.total', fn ($v) => $v > 0)
+        )
     );
 });
 
@@ -44,14 +52,16 @@ test('home feed recommendations sorted by priority', function () {
     $response = $this->get(route('dashboard'));
 
     $response->assertInertia(fn ($page) => $page
-        ->where('feed.recommendations', function ($recs) {
-            if (count($recs) < 2) {
-                return true;
-            }
-            $priorities = collect($recs)->pluck('priority')->all();
-            $sorted = collect($priorities)->sortDesc()->values()->all();
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->where('feed.recommendations', function ($recs) {
+                if (count($recs) < 2) {
+                    return true;
+                }
+                $priorities = collect($recs)->pluck('priority')->all();
+                $sorted = collect($priorities)->sortDesc()->values()->all();
 
-            return $priorities === $sorted;
-        })
+                return $priorities === $sorted;
+            })
+        )
     );
 });

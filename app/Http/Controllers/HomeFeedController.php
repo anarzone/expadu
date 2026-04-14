@@ -21,18 +21,15 @@ class HomeFeedController extends Controller
         $lat = $location['lat'];
         $lng = $location['lng'];
 
-        // Pre-warm weather cache so all props that use it are fast
         $weatherService = app(WeatherService::class);
-        $weather = $weatherService->getCurrentWeather($lat, $lng);
-        $forecast = $weatherService->getForecast($lat, $lng);
 
         return Inertia::render('dashboard', [
-            'feed' => fn () => $recommendationService->buildDashboardFeed($user, $request),
-            'commuteRecommendation' => fn () => $recommendationService->getCommuteRecommendation($user),
-            'weather' => $weather,
-            'forecast' => $forecast,
-            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
-            'todayEvents' => fn () => Event::query()
+            'feed' => Inertia::defer(fn () => $recommendationService->buildDashboardFeed($user, $request)),
+            'commuteRecommendation' => Inertia::defer(fn () => $recommendationService->getCommuteRecommendation($user)),
+            'weather' => Inertia::defer(fn () => $weatherService->getCurrentWeather($lat, $lng), 'weather'),
+            'forecast' => Inertia::defer(fn () => $weatherService->getForecast($lat, $lng), 'weather'),
+            'rhineLevel' => Inertia::defer(fn () => app(RhineService::class)->getCurrentLevel(), 'extras'),
+            'todayEvents' => Inertia::defer(fn () => Event::query()
                 ->whereDate('starts_at', today())
                 ->where('starts_at', '>', now())
                 ->orderBy('starts_at')
@@ -48,10 +45,10 @@ class HomeFeedController extends Controller
                     'badge' => $e->is_free ? 'Free' : ucfirst($e->category ?? 'Event'),
                     'badgeType' => $e->is_free ? 'free' : 'category',
                 ])
-                ->all(),
-            'activeDisruptions' => fn () => collect(app(DisruptionService::class)->getLineDisruptions())
+                ->all(), 'extras'),
+            'activeDisruptions' => Inertia::defer(fn () => collect(app(DisruptionService::class)->getLineDisruptions())
                 ->map(fn ($d) => ['title' => $d['title'], 'severity' => $d['severity'], 'lines' => $d['affected_lines']])
-                ->take(5)->values()->all(),
+                ->take(5)->values()->all(), 'extras'),
         ]);
     }
 }

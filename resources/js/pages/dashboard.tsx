@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, router, usePage } from '@inertiajs/react';
 import {
     IconCompass,
     IconFileText,
@@ -220,79 +220,143 @@ export default function Dashboard() {
                 </div>
 
                 {/* Blue highlight — Today's Highlights */}
-                {weather && (
-                    <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
-                        <div
-                            data-testid="commute-card"
-                            className="relative overflow-hidden"
-                            style={{
-                                background: '#1A4CD4',
-                                borderRadius: 9,
-                                padding: '20px 22px',
-                                color: 'white',
-                            }}
-                        >
+                <Deferred
+                    data={['weather', 'commuteRecommendation']}
+                    fallback={
+                        <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
                             <div
-                                className="pointer-events-none absolute"
+                                className="animate-pulse rounded-[9px] p-5"
                                 style={{
-                                    top: -50,
-                                    right: -50,
-                                    width: 180,
-                                    height: 180,
-                                    background: 'rgba(255,255,255,.05)',
-                                    borderRadius: '50%',
-                                }}
-                            />
-
-                            {/* Eyebrow — commute context */}
-                            <div
-                                className="relative z-[1]"
-                                style={{
-                                    fontSize: 10,
-                                    fontWeight: 600,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.10em',
-                                    opacity: 0.6,
-                                    marginBottom: 6,
+                                    background: '#1A4CD4',
+                                    minHeight: 260,
                                 }}
                             >
-                                {cr?.context === 'off_hours' ||
-                                cr?.context === 'discovery'
-                                    ? `Discover · ${cr?.from ?? 'Home'}`
-                                    : `Recommended route · ${cr?.from ?? 'Home'} → ${cr?.to ?? ''}`}
-                            </div>
-
-                            {/* Top alert card (appointment or overdue task) */}
-                            {topAlert && (
-                                <div
-                                    className="relative z-[1]"
-                                    style={{ marginBottom: 14 }}
-                                >
-                                    <div
-                                        onClick={() =>
-                                            track('card_clicked', {
-                                                card_type: topAlert.type,
-                                                card_name: topAlert.title,
-                                            })
-                                        }
-                                        className="flex cursor-pointer items-center gap-3 rounded-[14px] transition-all hover:bg-[rgba(255,255,255,.22)]"
-                                        style={{
-                                            background: 'rgba(255,255,255,.15)',
-                                            border: '1px solid rgba(255,255,255,.2)',
-                                            padding: '12px 14px',
-                                        }}
-                                    >
-                                        <span
+                                <div className="mb-3 h-3 w-24 rounded bg-white/20" />
+                                <div className="mb-5 h-6 w-56 rounded bg-white/25" />
+                                <div className="space-y-3">
+                                    {[1, 2, 3].map((i) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-center gap-3 rounded-[14px] p-3"
                                             style={{
-                                                fontSize: 22,
-                                                flexShrink: 0,
+                                                background:
+                                                    'rgba(255,255,255,.12)',
                                             }}
                                         >
-                                            {topAlert.emoji}
-                                        </span>
-                                        <div className="min-w-0 flex-1">
-                                            {topAlert.type === 'appointment' &&
-                                                topAlert.meta?.label && (
+                                            <div className="size-10 rounded-lg bg-white/15" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-3.5 w-32 rounded bg-white/20" />
+                                                <div className="h-2.5 w-44 rounded bg-white/15" />
+                                            </div>
+                                            <div className="h-7 w-10 rounded bg-white/15" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    }
+                >
+                    {weather && (
+                        <div className="section-pad border-b border-[#E2DFD6] dark:border-[#3A3930]">
+                            <div
+                                data-testid="commute-card"
+                                className="relative overflow-hidden"
+                                style={{
+                                    background: '#1A4CD4',
+                                    borderRadius: 9,
+                                    padding: '20px 22px',
+                                    color: 'white',
+                                }}
+                            >
+                                <div
+                                    className="pointer-events-none absolute"
+                                    style={{
+                                        top: -50,
+                                        right: -50,
+                                        width: 180,
+                                        height: 180,
+                                        background: 'rgba(255,255,255,.05)',
+                                        borderRadius: '50%',
+                                    }}
+                                />
+
+                                {/* Eyebrow — commute context */}
+                                <div
+                                    className="relative z-[1]"
+                                    style={{
+                                        fontSize: 10,
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.10em',
+                                        opacity: 0.6,
+                                        marginBottom: 6,
+                                    }}
+                                >
+                                    {cr?.context === 'off_hours' ||
+                                    cr?.context === 'discovery'
+                                        ? `Discover · ${cr?.from ?? 'Home'}`
+                                        : `Recommended route · ${cr?.from ?? 'Home'} → ${cr?.to ?? ''}`}
+                                </div>
+
+                                {/* Top alert card (appointment or overdue task) */}
+                                {topAlert && (
+                                    <div
+                                        className="relative z-[1]"
+                                        style={{ marginBottom: 14 }}
+                                    >
+                                        <div
+                                            onClick={() =>
+                                                track('card_clicked', {
+                                                    card_type: topAlert.type,
+                                                    card_name: topAlert.title,
+                                                })
+                                            }
+                                            className="flex cursor-pointer items-center gap-3 rounded-[14px] transition-all hover:bg-[rgba(255,255,255,.22)]"
+                                            style={{
+                                                background:
+                                                    'rgba(255,255,255,.15)',
+                                                border: '1px solid rgba(255,255,255,.2)',
+                                                padding: '12px 14px',
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    fontSize: 22,
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                {topAlert.emoji}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                {topAlert.type ===
+                                                    'appointment' &&
+                                                    topAlert.meta?.label && (
+                                                        <div
+                                                            style={{
+                                                                fontSize: 9,
+                                                                fontWeight: 700,
+                                                                textTransform:
+                                                                    'uppercase',
+                                                                letterSpacing:
+                                                                    '0.08em',
+                                                                opacity: 0.65,
+                                                                marginBottom: 3,
+                                                            }}
+                                                        >
+                                                            ⚠️{' '}
+                                                            {topAlert.meta
+                                                                .urgent
+                                                                ? 'Urgent'
+                                                                : 'Upcoming'}{' '}
+                                                            ·{' '}
+                                                            {String(
+                                                                topAlert.meta
+                                                                    .label,
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                {topAlert.type ===
+                                                    'deadline_overdue' && (
                                                     <div
                                                         style={{
                                                             fontSize: 9,
@@ -305,220 +369,209 @@ export default function Dashboard() {
                                                             marginBottom: 3,
                                                         }}
                                                     >
-                                                        ⚠️{' '}
-                                                        {topAlert.meta.urgent
-                                                            ? 'Urgent'
-                                                            : 'Upcoming'}{' '}
-                                                        ·{' '}
-                                                        {String(
-                                                            topAlert.meta.label,
-                                                        )}
+                                                        🚨 Overdue
                                                     </div>
                                                 )}
-                                            {topAlert.type ===
-                                                'deadline_overdue' && (
                                                 <div
                                                     style={{
-                                                        fontSize: 9,
+                                                        fontSize: 14,
                                                         fontWeight: 700,
-                                                        textTransform:
-                                                            'uppercase',
-                                                        letterSpacing: '0.08em',
-                                                        opacity: 0.65,
-                                                        marginBottom: 3,
+                                                        lineHeight: 1.2,
                                                     }}
                                                 >
-                                                    🚨 Overdue
+                                                    {topAlert.title}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 11,
+                                                        opacity: 0.75,
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {topAlert.subtitle}
+                                                </div>
+                                            </div>
+                                            {topAlert.value && (
+                                                <div className="shrink-0 text-right">
+                                                    <div
+                                                        style={{
+                                                            fontFamily:
+                                                                "'Geist Mono', monospace",
+                                                            fontSize: 16,
+                                                            fontWeight: 600,
+                                                            lineHeight: 1,
+                                                        }}
+                                                    >
+                                                        {topAlert.value}
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: 9,
+                                                            opacity: 0.6,
+                                                            display: 'block',
+                                                        }}
+                                                    >
+                                                        {topAlert.unit}
+                                                    </div>
                                                 </div>
                                             )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Headline — from commute recommendation */}
+                                <div
+                                    className="relative z-[1]"
+                                    style={{
+                                        fontFamily: "'Fraunces', serif",
+                                        fontSize: 22,
+                                        fontWeight: 400,
+                                        lineHeight: 1.2,
+                                        marginBottom: 16,
+                                    }}
+                                >
+                                    {cr?.headline ??
+                                        `${weather.temperature}°C, ${weather.condition.toLowerCase()}.`}
+                                </div>
+
+                                {/* Setup prompt for new users */}
+                                {needsSetup && (
+                                    <a
+                                        href="/profile#settings"
+                                        className="relative z-[1] mb-3 flex items-center gap-3 rounded-[14px] p-3 transition-all hover:bg-[rgba(255,255,255,.22)]"
+                                        style={{
+                                            background: 'rgba(255,255,255,.15)',
+                                            border: '1px dashed rgba(255,255,255,.3)',
+                                            textDecoration: 'none',
+                                            color: 'inherit',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: 22 }}>📍</span>
+                                        <div className="flex-1">
                                             <div
                                                 style={{
-                                                    fontSize: 14,
-                                                    fontWeight: 700,
-                                                    lineHeight: 1.2,
+                                                    fontSize: 13,
+                                                    fontWeight: 600,
                                                 }}
                                             >
-                                                {topAlert.title}
+                                                Set your Home &amp; Work
+                                                addresses
                                             </div>
                                             <div
                                                 style={{
                                                     fontSize: 11,
-                                                    opacity: 0.75,
-                                                    marginTop: 2,
+                                                    opacity: 0.7,
                                                 }}
                                             >
-                                                {topAlert.subtitle}
+                                                For personalized commute &amp;
+                                                route recommendations
                                             </div>
                                         </div>
-                                        {topAlert.value && (
-                                            <div className="shrink-0 text-right">
-                                                <div
-                                                    style={{
-                                                        fontFamily:
-                                                            "'Geist Mono', monospace",
-                                                        fontSize: 16,
-                                                        fontWeight: 600,
-                                                        lineHeight: 1,
-                                                    }}
-                                                >
-                                                    {topAlert.value}
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        fontSize: 9,
-                                                        opacity: 0.6,
-                                                        display: 'block',
-                                                    }}
-                                                >
-                                                    {topAlert.unit}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Headline — from commute recommendation */}
-                            <div
-                                className="relative z-[1]"
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 22,
-                                    fontWeight: 400,
-                                    lineHeight: 1.2,
-                                    marginBottom: 16,
-                                }}
-                            >
-                                {cr?.headline ??
-                                    `${weather.temperature}°C, ${weather.condition.toLowerCase()}.`}
-                            </div>
-
-                            {/* Setup prompt for new users */}
-                            {needsSetup && (
-                                <a
-                                    href="/profile#settings"
-                                    className="relative z-[1] mb-3 flex items-center gap-3 rounded-[14px] p-3 transition-all hover:bg-[rgba(255,255,255,.22)]"
-                                    style={{
-                                        background: 'rgba(255,255,255,.15)',
-                                        border: '1px dashed rgba(255,255,255,.3)',
-                                        textDecoration: 'none',
-                                        color: 'inherit',
-                                    }}
-                                >
-                                    <span style={{ fontSize: 22 }}>📍</span>
-                                    <div className="flex-1">
-                                        <div
+                                        <span
                                             style={{
-                                                fontSize: 13,
+                                                fontSize: 12,
                                                 fontWeight: 600,
-                                            }}
-                                        >
-                                            Set your Home &amp; Work addresses
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: 11,
                                                 opacity: 0.7,
                                             }}
                                         >
-                                            For personalized commute &amp; route
-                                            recommendations
+                                            →
+                                        </span>
+                                    </a>
+                                )}
+
+                                {/* Divider */}
+                                <div
+                                    className="relative z-[1]"
+                                    style={{
+                                        height: 1,
+                                        background: 'rgba(255,255,255,.12)',
+                                        marginBottom: 12,
+                                    }}
+                                />
+
+                                {/* Route/discovery cards — same as transit highlight */}
+                                <div
+                                    className="relative z-[1] flex flex-col"
+                                    style={{ gap: 8 }}
+                                >
+                                    {(cr?.route_cards ?? []).map((card, i) => {
+                                        const pool = cr?.card_pools?.[i] ?? [
+                                            card,
+                                        ];
+
+                                        return (
+                                            <RotatingCardSlot
+                                                key={i}
+                                                pool={pool}
+                                                onCardClick={(c) => {
+                                                    track('card_clicked', {
+                                                        card_type:
+                                                            c.type ?? 'unknown',
+                                                        card_name: c.name ?? '',
+                                                    });
+
+                                                    if (c.to_lat && c.to_lng) {
+                                                        setRouteSheetDest({
+                                                            name: String(
+                                                                c.to_name ??
+                                                                    c.name ??
+                                                                    '',
+                                                            ),
+                                                            emoji: String(
+                                                                c.badge ?? '📍',
+                                                            ),
+                                                            lat: Number(
+                                                                c.to_lat,
+                                                            ),
+                                                            lng: Number(
+                                                                c.to_lng,
+                                                            ),
+                                                        });
+                                                    }
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Leave-by */}
+                                {cr?.leave_by && (
+                                    <div
+                                        className="relative z-[1] mt-[10px] flex items-center gap-[10px]"
+                                        style={{
+                                            background: 'rgba(255,255,255,.15)',
+                                            borderRadius: 9,
+                                            padding: '11px 14px',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                fontSize: 18,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            ⏰
+                                        </span>
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                lineHeight: 1.4,
+                                                flex: 1,
+                                            }}
+                                        >
+                                            Leave by{' '}
+                                            <strong style={{ fontWeight: 700 }}>
+                                                {cr.leave_by.time}
+                                            </strong>{' '}
+                                            to arrive on time.{' '}
+                                            {cr.leave_by.message}
                                         </div>
                                     </div>
-                                    <span
-                                        style={{
-                                            fontSize: 12,
-                                            fontWeight: 600,
-                                            opacity: 0.7,
-                                        }}
-                                    >
-                                        →
-                                    </span>
-                                </a>
-                            )}
-
-                            {/* Divider */}
-                            <div
-                                className="relative z-[1]"
-                                style={{
-                                    height: 1,
-                                    background: 'rgba(255,255,255,.12)',
-                                    marginBottom: 12,
-                                }}
-                            />
-
-                            {/* Route/discovery cards — same as transit highlight */}
-                            <div
-                                className="relative z-[1] flex flex-col"
-                                style={{ gap: 8 }}
-                            >
-                                {(cr?.route_cards ?? []).map((card, i) => {
-                                    const pool = cr?.card_pools?.[i] ?? [card];
-
-                                    return (
-                                        <RotatingCardSlot
-                                            key={i}
-                                            pool={pool}
-                                            onCardClick={(c) => {
-                                                track('card_clicked', {
-                                                    card_type:
-                                                        c.type ?? 'unknown',
-                                                    card_name: c.name ?? '',
-                                                });
-
-                                                if (c.to_lat && c.to_lng) {
-                                                    setRouteSheetDest({
-                                                        name: String(
-                                                            c.to_name ??
-                                                                c.name ??
-                                                                '',
-                                                        ),
-                                                        emoji: String(
-                                                            c.badge ?? '📍',
-                                                        ),
-                                                        lat: Number(c.to_lat),
-                                                        lng: Number(c.to_lng),
-                                                    });
-                                                }
-                                            }}
-                                        />
-                                    );
-                                })}
+                                )}
                             </div>
-
-                            {/* Leave-by */}
-                            {cr?.leave_by && (
-                                <div
-                                    className="relative z-[1] mt-[10px] flex items-center gap-[10px]"
-                                    style={{
-                                        background: 'rgba(255,255,255,.15)',
-                                        borderRadius: 9,
-                                        padding: '11px 14px',
-                                    }}
-                                >
-                                    <span
-                                        style={{ fontSize: 18, flexShrink: 0 }}
-                                    >
-                                        ⏰
-                                    </span>
-                                    <div
-                                        style={{
-                                            fontSize: 13,
-                                            lineHeight: 1.4,
-                                            flex: 1,
-                                        }}
-                                    >
-                                        Leave by{' '}
-                                        <strong style={{ fontWeight: 700 }}>
-                                            {cr.leave_by.time}
-                                        </strong>{' '}
-                                        to arrive on time. {cr.leave_by.message}
-                                    </div>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                )}
+                    )}
+                </Deferred>
 
                 {/* Push notification prompt */}
                 <div className="section-pad">
