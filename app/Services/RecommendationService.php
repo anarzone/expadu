@@ -293,13 +293,11 @@ class RecommendationService
 
         // For each line, prefer the direction heading towards Work
         if ($work?->lat && $work?->lng) {
-            $workLat = (float) $work->lat;
-            $workLng = (float) $work->lng;
-
-            // Group by line, prefer direction heading towards Work
             $kvb = app(KvbApiService::class);
-            $nearWorkStop = $kvb->nearestStop($workLat, $workLng);
-            $workStopName = $nearWorkStop ? mb_strtolower($nearWorkStop['name']) : '';
+
+            // Get stop names near both Home and Work to match against headsigns
+            $nearHomeStop = $kvb->nearestStop($fromLat, $fromLng);
+            $homeStopName = $nearHomeStop ? mb_strtolower($nearHomeStop['name']) : '';
 
             $lineGroups = [];
             foreach ($allDeps as $dep) {
@@ -311,13 +309,17 @@ class RecommendationService
                 if (count($lineDeps) === 1) {
                     $sortedDeps[] = $lineDeps[0];
                 } else {
-                    // Prefer direction whose headsign matches Work area
-                    usort($lineDeps, function ($a, $b) use ($workStopName) {
-                        if ($workStopName) {
-                            $aMatch = str_contains(mb_strtolower($a['direction']), $workStopName) ? 1 : 0;
-                            $bMatch = str_contains(mb_strtolower($b['direction']), $workStopName) ? 1 : 0;
-                            if ($aMatch !== $bMatch) {
-                                return $bMatch <=> $aMatch;
+                    // Reject direction heading back toward Home (headsign contains home area name)
+                    // e.g. at "Merkenich Mitte", reject direction "Merkenich"
+                    usort($lineDeps, function ($a, $b) use ($homeStopName) {
+                        if ($homeStopName) {
+                            $aDir = mb_strtolower($a['direction']);
+                            $bDir = mb_strtolower($b['direction']);
+                            $aIsHome = str_contains($aDir, $homeStopName) || str_contains($homeStopName, $aDir);
+                            $bIsHome = str_contains($bDir, $homeStopName) || str_contains($homeStopName, $bDir);
+                            if ($aIsHome !== $bIsHome) {
+                                // Prefer the one NOT heading home
+                                return $aIsHome <=> $bIsHome;
                             }
                         }
 

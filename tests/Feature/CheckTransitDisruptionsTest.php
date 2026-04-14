@@ -14,14 +14,21 @@ beforeEach(function () {
     Notification::fake();
     Cache::flush();
 
-    // Flush Redis throttle keys to prevent cross-test/real-data interference
-    try {
-        Redis::connection()->flushdb();
-    } catch (Throwable) {
-        // Redis unavailable
-    }
+    // Travel to a unique date per test to avoid parallel dedup key collisions in Redis
+    $this->travelTo(now()->addDays(random_int(1000, 9999))->setTime(10, 0));
 
-    $this->travelTo(now()->setTime(10, 0));
+    // Clear throttle keys for this test's unique date
+    try {
+        $today = now()->format('Y-m-d');
+        $hour = now()->format('Y-m-d-H');
+        $keys = Redis::keys('notif_throttle:*') ?: [];
+        foreach ($keys as $key) {
+            if (str_contains($key, $today) || str_contains($key, $hour)) {
+                Redis::del($key);
+            }
+        }
+    } catch (Throwable) {
+    }
 
     // Seed minimal GTFS data: Ehrenfeld served by lines 3, 4; Deutz by lines 1, 7
     DB::table('gtfs_stops')->insert([
