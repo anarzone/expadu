@@ -9,14 +9,8 @@ class LogoutResponse implements LogoutResponseContract
 {
     public function toResponse($request): Response
     {
-        $marketingDomain = config('app.marketing_domain');
-
-        // In production, redirect to the marketing site login
-        if ($marketingDomain) {
-            return redirect("https://{$marketingDomain}/login");
-        }
-
-        // Local dev: redirect to /login on same host
+        // Always redirect to the app's own login page to avoid cross-origin CORS errors
+        // (Inertia submits logout as XHR — cross-domain redirects are blocked by browsers)
         return redirect('/login');
     }
 }
