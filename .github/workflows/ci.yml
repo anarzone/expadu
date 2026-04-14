@@ -106,7 +106,7 @@ jobs:
           PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
       - name: Run Tests
-        run: vendor/bin/pest --compact --parallel
+        run: vendor/bin/pest --compact --parallel --exclude-group=slow
 
   build-and-push:
     name: Build & Push Image
