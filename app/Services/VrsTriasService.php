@@ -793,9 +793,8 @@ class VrsTriasService
 
     private function post(string $xml): ?string
     {
-        // Circuit breaker: 3 failures in 60s → skip for 15s
-        $failures = (int) Cache::get('trias_failures', 0);
-        if ($failures >= 3 && Cache::get('trias_circuit_open')) {
+        // Circuit breaker: skip if tripped (15s cooldown)
+        if (Cache::get('trias_circuit_open')) {
             return null;
         }
 
@@ -822,8 +821,7 @@ class VrsTriasService
                 return null;
             }
 
-            // Success — reset failure counter
-            Cache::forget('trias_failures');
+            // Success — ensure circuit is closed
             Cache::forget('trias_circuit_open');
 
             RedisLogger::log('trias_api_log', [
@@ -844,18 +842,13 @@ class VrsTriasService
 
     private function recordTriasFailure(float $durationMs, string $error): void
     {
-        $failures = (int) Cache::increment('trias_failures');
-        if ($failures >= 3) {
-            Cache::put('trias_circuit_open', true, 15);
-        }
-        // Reset failure counter after 60s of no failures
-        Cache::put('trias_failures', $failures, 60);
+        // Trip circuit for 15s — single failure is enough since we already retry once
+        Cache::put('trias_circuit_open', true, 15);
 
         RedisLogger::log('trias_api_log', [
             'status' => 'error',
             'error' => $error,
             'duration_ms' => $durationMs,
-            'failures' => $failures,
         ]);
     }
 
