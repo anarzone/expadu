@@ -54,17 +54,17 @@ $marketingRoutes = function () {
 };
 
 // ── App (app.expadu.com) ─────────────────────────────────────────────────
+// Social login — responds on all domains (same as Fortify login/register)
+Route::middleware('guest')->group(function () {
+    Route::get('auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])->name('social.redirect');
+    Route::get('auth/{provider}/callback', [SocialLoginController::class, 'callback'])->name('social.callback');
+});
+
 $appRoutes = function () use ($appDomain) {
     // App root redirects to dashboard (only in production with subdomain)
     if ($appDomain) {
         Route::get('/', fn () => redirect('/dashboard'));
     }
-
-    // Social login (must be outside auth middleware)
-    Route::middleware('guest')->group(function () {
-        Route::get('auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])->name('social.redirect');
-        Route::get('auth/{provider}/callback', [SocialLoginController::class, 'callback'])->name('social.callback');
-    });
 
     Route::middleware(['auth', 'verified'])->group(function () {
         // APIs
