@@ -68,17 +68,13 @@ it('planJourney caches results', function () {
     Http::assertSentCount(1);
 });
 
-it('planJourney respects circuit breaker', function () {
-    Cache::put('trias_failures', 3, 60);
-    Cache::put('trias_circuit_open', true, 15);
-
-    Http::fake(['*' => Http::response(triasTrip())]);
+it('planJourney returns null when API fails after retry', function () {
+    Http::fake(['*' => Http::response('Server Error', 500)]);
 
     $service = app(VrsTriasService::class);
     $result = $service->planJourney(50.94, 6.96, 50.93, 6.95);
 
     expect($result)->toBeNull();
-    Http::assertNothingSent();
 });
 
 // ── getDepartures ──

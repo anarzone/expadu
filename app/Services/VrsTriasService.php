@@ -793,11 +793,6 @@ class VrsTriasService
 
     private function post(string $xml): ?string
     {
-        // Circuit breaker: skip if tripped (15s cooldown)
-        if (Cache::get('trias_circuit_open')) {
-            return null;
-        }
-
         $start = microtime(true);
 
         try {
@@ -807,7 +802,7 @@ class VrsTriasService
             $this->applyVrsSsl($options);
 
             $response = Http::withOptions($options)
-                ->retry(2, 100, throw: false)
+                ->retry(2, 200, throw: false)
                 ->withHeaders(['Content-Type' => 'text/xml; charset=UTF-8'])
                 ->withBody($xml, 'text/xml')
                 ->post($url);
@@ -815,14 +810,10 @@ class VrsTriasService
             $durationMs = round((microtime(true) - $start) * 1000);
 
             if (! $response->successful()) {
-                Log::warning('VRS TRIAS request failed', ['status' => $response->status()]);
-                $this->recordTriasFailure($durationMs, 'HTTP '.$response->status());
+                Log::warning('VRS TRIAS request failed', ['status' => $response->status(), 'ms' => $durationMs]);
 
                 return null;
             }
-
-            // Success — ensure circuit is closed
-            Cache::forget('trias_circuit_open');
 
             RedisLogger::log('trias_api_log', [
                 'status' => 'ok',
@@ -833,23 +824,10 @@ class VrsTriasService
             return $response->body();
         } catch (\Throwable $e) {
             $durationMs = round((microtime(true) - $start) * 1000);
-            Log::warning('VRS TRIAS error', ['message' => $e->getMessage()]);
-            $this->recordTriasFailure($durationMs, $e->getMessage());
+            Log::warning('VRS TRIAS error', ['message' => $e->getMessage(), 'ms' => $durationMs]);
 
             return null;
         }
-    }
-
-    private function recordTriasFailure(float $durationMs, string $error): void
-    {
-        // Trip circuit for 15s — single failure is enough since we already retry once
-        Cache::put('trias_circuit_open', true, 15);
-
-        RedisLogger::log('trias_api_log', [
-            'status' => 'error',
-            'error' => $error,
-            'duration_ms' => $durationMs,
-        ]);
     }
 
     /**
