@@ -113,20 +113,13 @@ class VrsRealtimeService
     {
         try {
             $url = config('services.vrs.gtfsrt_url');
-            $caCert = config('services.vrs.ca_cert');
 
             $options = [
                 'timeout' => 3,
                 'connect_timeout' => 2,
             ];
 
-            // Test endpoints use self-signed certs — disable SSL verify
-            // Production endpoints should use proper CA cert from VRS
-            if (str_contains($url, '-test.vrs.de') || str_contains($url, 'apitest.vrs.de')) {
-                $options['verify'] = false;
-            } elseif ($caCert && file_exists($caCert)) {
-                $options['verify'] = $caCert;
-            }
+            $this->applyVrsSsl($options);
 
             $response = Http::withOptions($options)->get($url);
 
@@ -226,6 +219,21 @@ class VrsRealtimeService
      * previous stop propagates forward. Find the most recent update before
      * the requested stop's position in the trip.
      */
+    /**
+     * Apply VRS client certificate to Guzzle options for mTLS authentication.
+     */
+    private function applyVrsSsl(array &$options): void
+    {
+        $clientCert = config('services.vrs.client_cert');
+        $clientCertPassword = config('services.vrs.client_cert_password');
+
+        if ($clientCert && file_exists($clientCert)) {
+            $options['cert'] = $clientCertPassword
+                ? [$clientCert, $clientCertPassword]
+                : $clientCert;
+        }
+    }
+
     private function propagateDelay(array $trip, string $targetStopId): ?int
     {
         if (empty($trip['stops'])) {

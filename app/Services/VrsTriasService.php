@@ -804,9 +804,7 @@ class VrsTriasService
             $url = config('services.vrs.trias_url');
 
             $options = ['timeout' => 5, 'connect_timeout' => 3];
-            if (str_contains($url, 'apitest.vrs.de') || str_contains($url, '-test.vrs.de')) {
-                $options['verify'] = false;
-            }
+            $this->applyVrsSsl($options);
 
             $response = Http::withOptions($options)
                 ->withHeaders(['Content-Type' => 'text/xml; charset=UTF-8'])
@@ -861,6 +859,21 @@ class VrsTriasService
         $xml = @simplexml_load_string($clean);
 
         return $xml ?: null;
+    }
+
+    /**
+     * Apply VRS client certificate to Guzzle options for mTLS authentication.
+     */
+    private function applyVrsSsl(array &$options): void
+    {
+        $clientCert = config('services.vrs.client_cert');
+        $clientCertPassword = config('services.vrs.client_cert_password');
+
+        if ($clientCert && file_exists($clientCert)) {
+            $options['cert'] = $clientCertPassword
+                ? [$clientCert, $clientCertPassword]
+                : $clientCert;
+        }
     }
 
     private function mapPtMode(string $ptMode, string $lineName): string

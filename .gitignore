@@ -36,3 +36,4 @@ playwright-report/
 blob-report/
 .playwright/
 tests/Browser/.auth/
+storage/certs/
