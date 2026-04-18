@@ -40,5 +40,8 @@ Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 // Restaurant/spot data refresh — daily at 04:00 until coverage is complete, then switch to weekly
 Schedule::command('restaurants:scrape')->dailyAt('04:00')->withoutOverlapping();
 
+// External API health monitoring — every 5 minutes
+Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping();
+
 // GTFS static timetable refresh — VRS updates weekly
 Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
