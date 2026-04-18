@@ -69,9 +69,10 @@ it('planJourney caches results', function () {
 });
 
 it('planJourney respects circuit breaker', function () {
-    Cache::put('trias_circuit_open', true, 60);
+    Cache::put('trias_failures', 3, 60);
+    Cache::put('trias_circuit_open', true, 15);
 
-    Http::fake(['*apitest.vrs.de*' => Http::response(triasTrip())]);
+    Http::fake(['*' => Http::response(triasTrip())]);
 
     $service = app(VrsTriasService::class);
     $result = $service->planJourney(50.94, 6.96, 50.93, 6.95);
