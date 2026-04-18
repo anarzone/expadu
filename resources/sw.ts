@@ -61,8 +61,11 @@ registerRoute(
 );
 
 // Inertia page requests — network first with offline fallback
+// Exclude partial/deferred requests (live transit data, weather, etc.)
 registerRoute(
-    ({ request }) => request.headers.get('X-Inertia') === 'true',
+    ({ request }) =>
+        request.headers.get('X-Inertia') === 'true' &&
+        !request.headers.get('X-Inertia-Partial-Component'),
     new NetworkFirst({
         cacheName: 'inertia-pages',
         plugins: [
