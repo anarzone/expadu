@@ -33,7 +33,7 @@ class GtfsDepartureService
             return $this->fallbackDepartures('Nearby');
         }
 
-        $cacheKey = "gtfs_departures_nearby_{$lat}_{$lng}_{$limit}";
+        $cacheKey = 'gtfs_departures_nearby_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}";
 
         return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
             // Try up to 5 nearest stops until we find one with departures

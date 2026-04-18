@@ -70,7 +70,7 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = "trias_departures_nearby_{$lat}_{$lng}_{$limit}";
+        $cacheKey = 'trias_departures_nearby_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}";
 
         // Return cached live data if available
         $cached = Cache::get($cacheKey);
