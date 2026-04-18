@@ -55,6 +55,6 @@ class SocialLoginController extends Controller
 
         Auth::login($user, remember: true);
 
-        return redirect()->intended(config('fortify.home', '/dashboard'));
+        return redirect(config('fortify.home', '/dashboard'));
     }
 }
