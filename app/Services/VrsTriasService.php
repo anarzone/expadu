@@ -808,6 +808,7 @@ class VrsTriasService
             $this->applyVrsSsl($options);
 
             $response = Http::withOptions($options)
+                ->retry(2, 100, throw: false)
                 ->withHeaders(['Content-Type' => 'text/xml; charset=UTF-8'])
                 ->withBody($xml, 'text/xml')
                 ->post($url);
