@@ -25,6 +25,11 @@ class CreateAlertFromNotification
 {
     public function handle(NotificationSent $event): void
     {
+        // Skip framework notifications (password reset, email verification, etc.)
+        if (! method_exists($event->notification, 'toArray')) {
+            return;
+        }
+
         // Log every notification delivery (all channels)
         RedisLogger::log('notification_delivery_log', [
             'user_id' => $event->notifiable->id,
