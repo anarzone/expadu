@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import SocialLoginButtons from '@/components/social-login-buttons';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,12 +18,14 @@ type Props = {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    socialProviders: string[];
 };
 
 export default function Login({
     status,
     canResetPassword,
     canRegister,
+    socialProviders,
 }: Props) {
     const form = useForm({
         email: '',
@@ -43,6 +46,22 @@ export default function Login({
             description="Enter your email and password below to log in"
         >
             <Head title="Log in" />
+
+            {socialProviders.length > 0 && (
+                <>
+                    <SocialLoginButtons providers={socialProviders} />
+                    <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                                or continue with email
+                            </span>
+                        </div>
+                    </div>
+                </>
+            )}
 
             <form onSubmit={submit} className="flex flex-col gap-6">
                 <div className="grid gap-6">

@@ -20,6 +20,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\SlotMonitorController;
+use App\Http\Controllers\SocialLoginController;
 use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TransitController;
@@ -58,6 +59,12 @@ $appRoutes = function () use ($appDomain) {
     if ($appDomain) {
         Route::get('/', fn () => redirect('/dashboard'));
     }
+
+    // Social login (must be outside auth middleware)
+    Route::middleware('guest')->group(function () {
+        Route::get('auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])->name('social.redirect');
+        Route::get('auth/{provider}/callback', [SocialLoginController::class, 'callback'])->name('social.callback');
+    });
 
     Route::middleware(['auth', 'verified'])->group(function () {
         // APIs

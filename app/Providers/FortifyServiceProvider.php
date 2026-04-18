@@ -51,10 +51,13 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
+        $socialProviders = $this->enabledSocialProviders();
+
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
+            'socialProviders' => $socialProviders,
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
@@ -70,11 +73,31 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register'));
+        Fortify::registerView(fn () => Inertia::render('auth/register', [
+            'socialProviders' => $socialProviders,
+        ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+    }
+
+    /**
+     * Return the list of social providers that have credentials configured.
+     *
+     * @return array<int, string>
+     */
+    private function enabledSocialProviders(): array
+    {
+        $providers = [];
+
+        foreach (['google', 'apple'] as $provider) {
+            if (config("services.{$provider}.client_id")) {
+                $providers[] = $provider;
+            }
+        }
+
+        return $providers;
     }
 
     /**
