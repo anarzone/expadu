@@ -140,7 +140,7 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-// ── Activate: claim clients + clear old caches ──
+// ── Activate: claim clients + clear stale caches ──
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         self.clients
@@ -154,7 +154,9 @@ self.addEventListener('activate', (event) => {
                                 .filter(
                                     (key) =>
                                         key.startsWith('workbox-precache') ||
-                                        key.includes('precache'),
+                                        key.includes('precache') ||
+                                        key === 'inertia-pages' ||
+                                        key === 'api',
                                 )
                                 .map((key) => caches.delete(key)),
                         ),
