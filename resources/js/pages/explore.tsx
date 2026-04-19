@@ -277,34 +277,47 @@ export default function Explore() {
 
             if (dest) {
                 setRouteLoading(true);
-                fetch(
-                    `/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=transit`,
-                    { credentials: 'same-origin' },
-                )
-                    .then((r) => r.json())
-                    .then((data) => {
-                        const trips = data.trips ?? [];
-                        setTransitTrips(trips);
-                        setRouteLoading(false);
+                const fetchTransit = (attempt = 1) => {
+                    fetch(
+                        `/api/route-options?to_lat=${dest.lat}&to_lng=${dest.lng}&name=${encodeURIComponent(routeDest?.name ?? '')}&mode=transit`,
+                        { credentials: 'same-origin' },
+                    )
+                        .then((r) => r.json())
+                        .then((data) => {
+                            const trips = data.trips ?? [];
 
-                        // Draw the first trip's route on the map immediately
-                        if (
-                            trips.length > 0 &&
-                            trips[0].segments?.length > 0 &&
-                            dest
-                        ) {
-                            const orig = data.from ?? {
-                                lat: myLat,
-                                lng: myLng,
-                            };
-                            mapRef.current?.drawTransitRoute(
-                                trips[0].segments,
-                                { lat: orig.lat, lng: orig.lng },
-                                dest,
-                            );
-                        }
-                    })
-                    .catch(() => setRouteLoading(false));
+                            if (trips.length === 0 && attempt < 3) {
+                                setTimeout(
+                                    () => fetchTransit(attempt + 1),
+                                    500,
+                                );
+
+                                return;
+                            }
+
+                            setTransitTrips(trips);
+                            setRouteLoading(false);
+
+                            // Draw the first trip's route on the map immediately
+                            if (
+                                trips.length > 0 &&
+                                trips[0].segments?.length > 0 &&
+                                dest
+                            ) {
+                                const orig = data.from ?? {
+                                    lat: myLat,
+                                    lng: myLng,
+                                };
+                                mapRef.current?.drawTransitRoute(
+                                    trips[0].segments,
+                                    { lat: orig.lat, lng: orig.lng },
+                                    dest,
+                                );
+                            }
+                        })
+                        .catch(() => setRouteLoading(false));
+                };
+                fetchTransit();
             }
 
             return;

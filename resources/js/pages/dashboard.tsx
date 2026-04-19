@@ -171,6 +171,24 @@ export default function Dashboard() {
     const nearbySpots = feed?.nearby_spots ?? [];
     const thisWeek = feed?.this_week ?? [];
     const needsSetup = feed?.needs_setup ?? false;
+
+    // Auto-retry once if departures loaded as static (VRS flaky)
+    const retriedRef = useRef(false);
+    useEffect(() => {
+        if (
+            departures &&
+            departures.source !== 'trias_rt' &&
+            departures.source !== 'gtfs_rt' &&
+            !retriedRef.current
+        ) {
+            retriedRef.current = true;
+            const timer = setTimeout(() => {
+                router.reload({ only: ['feed'], preserveScroll: true });
+            }, 2000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [departures]);
     const [routeSheetDest, setRouteSheetDest] = useState<{
         name: string;
         emoji: string;
