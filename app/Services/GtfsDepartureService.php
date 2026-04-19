@@ -28,8 +28,8 @@ class GtfsDepartureService
         // Try TRIAS first for real-time data
         $trias = $this->triasService->getDeparturesNearby($lat, $lng, $limit);
         if ($trias && ! empty($trias['departures'])) {
-            // Store as fallback for when TRIAS fails (30 min TTL)
-            Cache::put($fallbackKey, $trias, 1800);
+            // Store as fallback for when TRIAS fails (3 min TTL — keeps departure times accurate)
+            Cache::put($fallbackKey, $trias, 180);
 
             return $trias;
         }

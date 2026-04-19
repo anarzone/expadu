@@ -96,15 +96,15 @@ it('GPS jitter hits same fallback cache — different coords round to same key',
     expect($result2['source'])->toBe('trias_rt');
 });
 
-it('fallback expires after 30 minutes', function () {
+it('fallback expires after 3 minutes', function () {
     $trias = Mockery::mock(VrsTriasService::class);
     $trias->shouldReceive('getDeparturesNearby')->once()->andReturn(makeLiveResult());
 
     $service = makeService($trias);
     $service->getDeparturesNearby(50.94, 6.96);
 
-    // Travel 31 minutes forward — fallback should be expired
-    $this->travel(31)->minutes();
+    // Travel 4 minutes forward — fallback should be expired
+    $this->travel(4)->minutes();
 
     $trias2 = Mockery::mock(VrsTriasService::class);
     $trias2->shouldReceive('getDeparturesNearby')->once()->andReturn(null);
