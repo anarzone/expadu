@@ -23,10 +23,21 @@ class GtfsDepartureService
      */
     public function getDeparturesNearby(float $lat, float $lng, int $limit = 10): array
     {
+        $fallbackKey = 'trias_last_good_nearby_'.round($lat, 3).'_'.round($lng, 3);
+
         // Try TRIAS first for real-time data
         $trias = $this->triasService->getDeparturesNearby($lat, $lng, $limit);
         if ($trias && ! empty($trias['departures'])) {
+            // Store as fallback for when TRIAS fails (5 min TTL)
+            Cache::put($fallbackKey, $trias, 300);
+
             return $trias;
+        }
+
+        // TRIAS failed — use last known good result if fresh enough
+        $lastGood = Cache::get($fallbackKey);
+        if ($lastGood) {
+            return $lastGood;
         }
 
         if (! $this->hasGtfsData()) {
@@ -68,10 +79,20 @@ class GtfsDepartureService
      */
     public function getDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
     {
+        $fallbackKey = "trias_last_good_{$stopName}";
+
         // Try TRIAS first for real-time data
         $trias = $this->triasService->getDepartures($stopName, $limit);
         if ($trias && ! empty($trias['departures'])) {
+            Cache::put($fallbackKey, $trias, 300);
+
             return $trias;
+        }
+
+        // TRIAS failed — use last known good result if fresh enough
+        $lastGood = Cache::get($fallbackKey);
+        if ($lastGood) {
+            return $lastGood;
         }
 
         return $this->getStaticDepartures($stopName, $limit);
