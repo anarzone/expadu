@@ -109,35 +109,41 @@ class VrsTriasService
     {
         // Strip "Köln " prefix — we re-add it to ensure Cologne results
         $search = preg_replace('/^Köln\s+/i', '', $stopName);
+        $cacheKey = "trias_stop_id_{$search}";
 
-        return Cache::remember("trias_stop_id_{$search}", 86400, function () use ($search) {
-            // Prefix "Köln" to disambiguate stops that exist in multiple cities
-            // e.g. "Scheibenstr." exists in both Cologne (de:05315) and Münster (de:05515)
-            $xml = $this->buildLocationRequest("Köln {$search}");
-            $response = $this->post($xml);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
-            if (! $response) {
-                return null;
-            }
+        // Prefix "Köln" to disambiguate stops that exist in multiple cities
+        $xml = $this->buildLocationRequest("Köln {$search}");
+        $response = $this->post($xml);
 
-            $parsed = $this->parseXml($response);
-            if (! $parsed) {
-                return null;
-            }
+        if (! $response) {
+            return null;
+        }
 
-            $refs = $parsed->xpath('//StopPlaceRef');
-            $names = $parsed->xpath('//StopPlaceName/Text');
+        $parsed = $this->parseXml($response);
+        if (! $parsed) {
+            return null;
+        }
 
-            if (empty($refs) || empty($names)) {
-                // Fallback: try without prefix in case stop name doesn't match with "Köln"
-                return $this->resolveStopWithoutPrefix($search);
-            }
+        $refs = $parsed->xpath('//StopPlaceRef');
+        $names = $parsed->xpath('//StopPlaceName/Text');
 
-            return [
-                'id' => (string) $refs[0],
-                'name' => (string) $names[0],
-            ];
-        });
+        if (empty($refs) || empty($names)) {
+            return $this->resolveStopWithoutPrefix($search);
+        }
+
+        $result = [
+            'id' => (string) $refs[0],
+            'name' => (string) $names[0],
+        ];
+
+        Cache::put($cacheKey, $result, 86400);
+
+        return $result;
     }
 
     /**
@@ -179,31 +185,38 @@ class VrsTriasService
     {
         $cacheKey = 'trias_nearby_stop_'.round($lat, 3).'_'.round($lng, 3);
 
-        return Cache::remember($cacheKey, 300, function () use ($lat, $lng) {
-            $xml = $this->buildGeoLocationRequest($lat, $lng);
-            $response = $this->post($xml);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
-            if (! $response) {
-                return null;
-            }
+        $xml = $this->buildGeoLocationRequest($lat, $lng);
+        $response = $this->post($xml);
 
-            $parsed = $this->parseXml($response);
-            if (! $parsed) {
-                return null;
-            }
+        if (! $response) {
+            return null;
+        }
 
-            $refs = $parsed->xpath('//StopPlaceRef');
-            $names = $parsed->xpath('//StopPlaceName/Text');
+        $parsed = $this->parseXml($response);
+        if (! $parsed) {
+            return null;
+        }
 
-            if (empty($refs) || empty($names)) {
-                return null;
-            }
+        $refs = $parsed->xpath('//StopPlaceRef');
+        $names = $parsed->xpath('//StopPlaceName/Text');
 
-            return [
-                'id' => (string) $refs[0],
-                'name' => (string) $names[0],
-            ];
-        });
+        if (empty($refs) || empty($names)) {
+            return null;
+        }
+
+        $result = [
+            'id' => (string) $refs[0],
+            'name' => (string) $names[0],
+        ];
+
+        Cache::put($cacheKey, $result, 300);
+
+        return $result;
     }
 
     /**
@@ -336,9 +349,17 @@ class VrsTriasService
 
         $cacheKey = "trias_stop_deps_{$globalId}_{$limit}";
 
-        return Cache::remember($cacheKey, 60, function () use ($globalId, $limit) {
-            return $this->fetchStopEvents($globalId, $limit);
-        });
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $result = $this->fetchStopEvents($globalId, $limit);
+        if ($result !== null) {
+            Cache::put($cacheKey, $result, 60);
+        }
+
+        return $result;
     }
 
     /**
@@ -355,21 +376,29 @@ class VrsTriasService
 
         $cacheKey = "trias_trip_stop_{$fromStopId}_{$toLat}_{$toLng}_{$departureTime}";
 
-        return Cache::remember($cacheKey, 60, function () use ($fromStopId, $toLat, $toLng, $departureTime, $maxResults) {
-            $xml = $this->buildTripRequestFromStop($fromStopId, $toLat, $toLng, $departureTime, $maxResults);
-            $response = $this->post($xml);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
-            if (! $response) {
-                return null;
-            }
+        $xml = $this->buildTripRequestFromStop($fromStopId, $toLat, $toLng, $departureTime, $maxResults);
+        $response = $this->post($xml);
 
-            $parsed = $this->parseXml($response);
-            if (! $parsed) {
-                return null;
-            }
+        if (! $response) {
+            return null;
+        }
 
-            return $this->parseTripResponse($parsed);
-        });
+        $parsed = $this->parseXml($response);
+        if (! $parsed) {
+            return null;
+        }
+
+        $result = $this->parseTripResponse($parsed);
+        if ($result !== null) {
+            Cache::put($cacheKey, $result, 60);
+        }
+
+        return $result;
     }
 
     /**
@@ -386,21 +415,29 @@ class VrsTriasService
 
         $cacheKey = "trias_trip_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
 
-        return Cache::remember($cacheKey, 60, function () use ($fromLat, $fromLng, $toLat, $toLng, $maxResults) {
-            $xml = $this->buildTripRequest($fromLat, $fromLng, $toLat, $toLng, $maxResults);
-            $response = $this->post($xml);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
-            if (! $response) {
-                return null;
-            }
+        $xml = $this->buildTripRequest($fromLat, $fromLng, $toLat, $toLng, $maxResults);
+        $response = $this->post($xml);
 
-            $parsed = $this->parseXml($response);
-            if (! $parsed) {
-                return null;
-            }
+        if (! $response) {
+            return null;
+        }
 
-            return $this->parseTripResponse($parsed);
-        });
+        $parsed = $this->parseXml($response);
+        if (! $parsed) {
+            return null;
+        }
+
+        $result = $this->parseTripResponse($parsed);
+        if ($result !== null) {
+            Cache::put($cacheKey, $result, 60);
+        }
+
+        return $result;
     }
 
     /**
