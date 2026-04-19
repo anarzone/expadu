@@ -2,10 +2,14 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Enums\Situation;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class UsersTable
@@ -15,43 +19,44 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('email')
-                    ->label('Email address')
-                    ->searchable(),
-                TextColumn::make('email_verified_at')
-                    ->dateTime()
+                    ->label('Email')
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('two_factor_confirmed_at')
-                    ->dateTime()
+                IconColumn::make('is_admin')
+                    ->label('Admin')
+                    ->boolean()
                     ->sortable(),
-                TextColumn::make('city')
-                    ->searchable(),
                 TextColumn::make('situation')
                     ->badge()
-                    ->searchable(),
-                TextColumn::make('arrival_date')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('german_level')
+                    ->toggleable(),
+                TextColumn::make('city')
+                    ->toggleable(),
+                TextColumn::make('social_provider')
+                    ->label('Social')
                     ->badge()
-                    ->searchable(),
-                TextColumn::make('onboarded_at')
-                    ->dateTime()
+                    ->toggleable(),
+                IconColumn::make('email_verified_at')
+                    ->label('Verified')
+                    ->boolean()
+                    ->getStateUsing(fn ($record) => $record->email_verified_at !== null)
                     ->sortable(),
-                TextColumn::make('avatar_path')
-                    ->searchable(),
+                TextColumn::make('created_at')
+                    ->label('Joined')
+                    ->since()
+                    ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                TernaryFilter::make('is_admin')
+                    ->label('Admin'),
+                SelectFilter::make('situation')
+                    ->options(Situation::class),
+                TernaryFilter::make('email_verified_at')
+                    ->label('Verified')
+                    ->nullable(),
             ])
             ->recordActions([
                 EditAction::make(),
