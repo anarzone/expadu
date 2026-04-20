@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Support\RedisLogger;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -842,12 +841,17 @@ class VrsTriasService
 
     private function post(string $xml): ?string
     {
+        // If TRIAS was down recently, skip entirely — instant fallback
+        if (Cache::get('trias_down')) {
+            return null;
+        }
+
         $start = microtime(true);
 
         try {
             $url = config('services.vrs.trias_url');
 
-            $options = ['timeout' => 5, 'connect_timeout' => 3];
+            $options = ['timeout' => 3, 'connect_timeout' => 1];
             $this->applyVrsSsl($options);
 
             $response = Http::withOptions($options)
@@ -859,24 +863,29 @@ class VrsTriasService
             $durationMs = round((microtime(true) - $start) * 1000);
 
             if (! $response->successful()) {
-                Log::warning('VRS TRIAS request failed', ['status' => $response->status(), 'ms' => $durationMs]);
+                $this->markTriasDown($durationMs, 'HTTP '.$response->status());
 
                 return null;
             }
 
-            RedisLogger::log('trias_api_log', [
-                'status' => 'ok',
-                'duration_ms' => $durationMs,
-                'response_bytes' => strlen($response->body()),
-            ]);
+            // Success — mark as healthy
+            Cache::put('trias_healthy', true, 120);
 
             return $response->body();
         } catch (\Throwable $e) {
             $durationMs = round((microtime(true) - $start) * 1000);
-            Log::warning('VRS TRIAS error', ['message' => $e->getMessage(), 'ms' => $durationMs]);
+            $this->markTriasDown($durationMs, $e->getMessage());
 
             return null;
         }
+    }
+
+    private function markTriasDown(float $durationMs, string $error): void
+    {
+        // Skip TRIAS for 30s after a failure — prevents timeout cascades
+        Cache::put('trias_down', true, 30);
+
+        Log::warning('VRS TRIAS down', ['error' => $error, 'ms' => $durationMs]);
     }
 
     /**
