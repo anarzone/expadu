@@ -4,6 +4,7 @@ namespace App\ContextEngine;
 
 use App\Models\User;
 use App\Support\NotificationThrottle;
+use App\Support\RedisLogger;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -35,6 +36,19 @@ class ActionBus
 
         // Keep ZSET TTL ~7 days; sweeper trims expired members on read.
         Redis::expire($key, 7 * 24 * 3600);
+
+        // Persistent 30-day insert log so we can review activity after
+        // valid_until expiries clear the live ZSET. Mirrors the existing
+        // commute_context / leaveby_debug streams.
+        RedisLogger::log("scored_action:{$user->id}", [
+            'type' => $action->type,
+            'action_key' => $action->actionKey,
+            'score' => $action->score,
+            'severity' => $action->severity,
+            'channels' => $action->deliverChannels,
+            'valid_until' => $action->validUntil?->toIso8601String(),
+            'shadow' => (bool) config('context_engine.shadow'),
+        ]);
 
         return $action;
     }
