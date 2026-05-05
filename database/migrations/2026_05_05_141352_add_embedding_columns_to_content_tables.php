@@ -17,7 +17,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('CREATE EXTENSION IF NOT EXISTS vector');
+        try {
+            DB::statement('CREATE EXTENSION IF NOT EXISTS vector');
+        } catch (\Throwable $e) {
+            throw new \RuntimeException(
+                "pgvector extension is not installed on this Postgres server. ".
+                "Rebuild the pgsql container from docker/pgsql/Dockerfile (postgis + pgvector), ".
+                "then run `php artisan migrate` again. Original error: {$e->getMessage()}"
+            );
+        }
 
         foreach (['spots', 'events', 'city_news', 'services'] as $table) {
             if (Schema::hasTable($table) && ! Schema::hasColumn($table, 'embedding')) {
