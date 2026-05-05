@@ -236,12 +236,19 @@ class DailyAudit extends Command
     /** @return list<string> */
     private function scanKeys(string $pattern): array
     {
-        $prefix = (string) config('database.redis.options.prefix', '');
-        $full = $prefix.$pattern;
+        // phpredis defaults to SCAN_NORETRY where the configured key prefix is
+        // NOT auto-applied to MATCH patterns. SCAN_PREFIX makes phpredis prepend
+        // the prefix automatically and strip it from results, so we can pass the
+        // logical pattern and get back unprefixed keys.
+        $client = Redis::connection()->client();
+        if (defined('Redis::OPT_SCAN') && method_exists($client, 'setOption')) {
+            $client->setOption(\Redis::OPT_SCAN, \Redis::SCAN_PREFIX);
+        }
+
         $cursor = '0';
         $out = [];
         do {
-            [$cursor, $batch] = Redis::scan($cursor, ['MATCH' => $full, 'COUNT' => 500]);
+            [$cursor, $batch] = Redis::scan($cursor, ['MATCH' => $pattern, 'COUNT' => 500]);
             foreach ($batch as $k) {
                 $out[] = (string) $k;
             }
@@ -252,6 +259,10 @@ class DailyAudit extends Command
 
     private function stripPrefix(string $key): string
     {
+        // With SCAN_PREFIX mode set in scanKeys(), phpredis already strips the
+        // prefix from returned keys. Keep this helper as a safety net for the
+        // (unlikely) case where SCAN_PREFIX wasn't applied — strip if present,
+        // pass through if not.
         $prefix = (string) config('database.redis.options.prefix', '');
         if ($prefix && str_starts_with($key, $prefix)) {
             return substr($key, strlen($prefix));
