@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\Context\TransitDelayDetected;
 use App\Models\User;
 use App\Notifications\TransitDelayNotification;
 use App\Services\GtfsDepartureService;
@@ -61,6 +62,18 @@ class CheckTransitDelays extends Command
 
                 if ($delay < self::MIN_DELAY_MINUTES && ! $cancelled) {
                     continue;
+                }
+
+                // Dual-emit: context-engine path. Listener fans out per-user.
+                $delayDedupKey = "delay_event_emitted:{$line}:{$stopName}";
+                if (! Cache::has($delayDedupKey)) {
+                    event(new TransitDelayDetected(
+                        line: (string) $line,
+                        direction: (string) ($dep['direction'] ?? ''),
+                        delayMin: $cancelled ? 60 : (int) $delay,
+                        stopId: (string) $stopName,
+                    ));
+                    Cache::put($delayDedupKey, true, now()->addMinutes(30));
                 }
 
                 foreach ($users as $user) {

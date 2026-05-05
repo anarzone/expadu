@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Events\Context\TransitDisruptionDetected;
 use App\Models\User;
 use App\Notifications\TransitDisruptionNotification;
 use App\Services\DisruptionService;
 use App\Services\UserTransitLinesService;
 use App\Support\NotificationThrottle;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -46,6 +48,19 @@ class CheckTransitDisruptions extends Command
         // Get new disruptions with their affected lines
         $newDisruptions = collect($disruptions)
             ->filter(fn ($d) => in_array($d['id'] ?? null, $newIds));
+
+        // Emit context-engine events alongside legacy fan-out.
+        // Per-user evaluation happens in TransitDisruptionEvaluator (queued listener).
+        foreach ($newDisruptions as $d) {
+            event(new TransitDisruptionDetected(
+                disruptionId: (int) ($d['id'] ?? 0),
+                lines: array_values(array_map('strval', $d['affected_lines'] ?? [])),
+                stopsAffected: array_values(array_map('strval', $d['stops_affected'] ?? [])),
+                severity: (string) ($d['severity'] ?? 'minor'),
+                bbox: $d['bbox'] ?? null,
+                expiresAt: ! empty($d['expires_at']) ? CarbonImmutable::parse($d['expires_at']) : null,
+            ));
+        }
 
         // Collect all affected lines across new disruptions
         $allAffectedLines = $newDisruptions

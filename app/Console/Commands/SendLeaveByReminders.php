@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\Context\UserContextChanged;
 use App\Models\User;
 use App\Notifications\LeaveByReminderNotification;
 use App\Services\DisruptionService;
@@ -12,6 +13,7 @@ use App\Services\WeatherService;
 use App\Support\NotificationThrottle;
 use App\Support\RedisLogger;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -206,6 +208,14 @@ class SendLeaveByReminders extends Command
 
         // Send notification
         Cache::put($dedupKey, true, now()->endOfDay());
+
+        // Dual-emit: LeaveByEvaluator listens for `leave_by_due` and inserts a ScoredAction.
+        event(new UserContextChanged(
+            userId: $user->id,
+            contextType: 'leave_by_due',
+            placeId: $place->id,
+            at: CarbonImmutable::instance($leaveAt),
+        ));
 
         $user->notify(new LeaveByReminderNotification([
             'place_name' => $place->name,

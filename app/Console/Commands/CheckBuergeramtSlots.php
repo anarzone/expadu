@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\Context\BuergeramtSlotsAvailable;
 use App\Models\SlotMonitor;
 use App\Notifications\BuergeramtSlotNotification;
 use App\Services\BuergeramtService;
@@ -55,6 +56,18 @@ class CheckBuergeramtSlots extends Command
             'available_offices' => $availableCount,
             'newly_available' => count($newlyAvailable),
         ]);
+
+        // Dual-emit: context-engine evaluator listens and fans out to relevant users.
+        foreach ($newlyAvailable as $officeId => $slot) {
+            $dates = [];
+            if (! empty($slot['next_slot'])) {
+                $dates[] = (string) $slot['next_slot'];
+            }
+            event(new BuergeramtSlotsAvailable(
+                officeId: (string) $officeId,
+                dates: $dates,
+            ));
+        }
 
         // Notify users who are monitoring newly available offices
         if (count($newlyAvailable) > 0) {

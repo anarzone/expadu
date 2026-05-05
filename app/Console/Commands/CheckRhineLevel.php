@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\Context\RhineLevelChanged;
 use App\Models\User;
 use App\Notifications\RhineFloodNotification;
 use App\Services\RhineService;
@@ -52,6 +53,13 @@ class CheckRhineLevel extends Command
         }
 
         Cache::put('rhine:last_alert_level', $cm, now()->addHours(6));
+
+        // Dual-emit: context-engine listener (RhineEvaluator) handles per-user evaluation.
+        $threshold = $cm >= self::HIGH_CM ? 'critical' : ($cm >= self::WARNING_CM ? 'warning' : null);
+        event(new RhineLevelChanged(
+            level: $cm / 100.0,
+            thresholdCrossed: $threshold,
+        ));
 
         // Notify all users who want rhine alerts
         $notifiedCount = 0;

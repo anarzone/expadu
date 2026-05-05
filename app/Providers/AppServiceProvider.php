@@ -2,7 +2,23 @@
 
 namespace App\Providers;
 
+use App\ContextEngine\Evaluators\BuergeramtEvaluator;
+use App\ContextEngine\Evaluators\LeaveByEvaluator;
+use App\ContextEngine\Evaluators\MarketEvaluator;
+use App\ContextEngine\Evaluators\RhineEvaluator;
+use App\ContextEngine\Evaluators\TransitDelayEvaluator;
+use App\ContextEngine\Evaluators\TransitDisruptionEvaluator;
+use App\ContextEngine\Evaluators\WeatherEvaluator;
+use App\Events\Context\BuergeramtSlotsAvailable;
+use App\Events\Context\MarketClosureDetected;
+use App\Events\Context\RhineLevelChanged;
+use App\Events\Context\TransitDelayDetected;
+use App\Events\Context\TransitDisruptionDetected;
+use App\Events\Context\UserContextChanged;
+use App\Events\Context\WeatherChanged;
 use App\Listeners\CreateAlertFromNotification;
+use App\Models\UserPlace;
+use App\Observers\UserPlaceObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
@@ -31,6 +47,16 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
+
+        UserPlace::observe(UserPlaceObserver::class);
+
+        Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
+        Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);
+        Event::listen(WeatherChanged::class, WeatherEvaluator::class);
+        Event::listen(BuergeramtSlotsAvailable::class, BuergeramtEvaluator::class);
+        Event::listen(RhineLevelChanged::class, RhineEvaluator::class);
+        Event::listen(MarketClosureDetected::class, MarketEvaluator::class);
+        Event::listen(UserContextChanged::class, LeaveByEvaluator::class);
 
         // Enable PostGIS in parallel test databases
         ParallelTesting::setUpTestDatabase(function (string $database) {

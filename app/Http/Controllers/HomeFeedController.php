@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Services\DisruptionService;
-use App\Services\RecommendationService;
+use App\Services\HomeFeedComposer;
 use App\Services\RhineService;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
@@ -14,7 +14,7 @@ use Inertia\Response;
 
 class HomeFeedController extends Controller
 {
-    public function __invoke(Request $request, RecommendationService $recommendationService): Response
+    public function __invoke(Request $request, HomeFeedComposer $composer): Response
     {
         $user = $request->user();
         $location = app(UserLocationService::class)->resolve($user, $request);
@@ -25,9 +25,9 @@ class HomeFeedController extends Controller
 
         return Inertia::render('dashboard', [
             // Heavy feed: defer to separate request (700ms+ with spot queries, departures, events)
-            'feed' => Inertia::defer(fn () => $recommendationService->buildDashboardFeed($user, $request)),
+            'feed' => Inertia::defer(fn () => $composer->buildDashboardFeed($user, $request)),
             // Everything else: lazy props resolved in same response (fast with warm caches)
-            'commuteRecommendation' => fn () => $recommendationService->getCommuteRecommendation($user),
+            'commuteRecommendation' => fn () => $composer->buildCommuteRecommendation($user),
             'weather' => fn () => $weatherService->getCurrentWeather($lat, $lng),
             'forecast' => fn () => $weatherService->getForecast($lat, $lng),
             'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),

@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Events\Context\MarketClosureDetected;
+use App\Events\Context\WeatherChanged;
 use App\Models\User;
 use App\Notifications\MarketClosureNotification;
 use App\Notifications\WeatherAlertNotification;
@@ -90,6 +92,30 @@ class CheckWeatherAlerts extends Command
 
         $notifiedCount = 0;
 
+        // Dual-emit: a single WeatherChanged event with all new alerts, fanned out by WeatherEvaluator.
+        $emittedAlerts = [];
+        foreach ($alerts as $alert) {
+            $dedupKey = "weather_alert:{$alert['key']}";
+            if (Cache::has($dedupKey)) {
+                continue;
+            }
+            $emittedAlerts[] = [
+                'id' => $alert['key'] ?? null,
+                'severity' => $alert['severity'] ?? 'minor',
+                'title' => $alert['summary'] ?? '',
+                'description' => $alert['detail'] ?? '',
+            ];
+        }
+        if (! empty($emittedAlerts)) {
+            event(new WeatherChanged(
+                condition: 'alert',
+                hourlyForecast: [],
+                alerts: $emittedAlerts,
+                lat: 50.9375,
+                lng: 6.9603,
+            ));
+        }
+
         foreach ($alerts as $alert) {
             // Dedup: skip if already sent this alert today
             $dedupKey = "weather_alert:{$alert['key']}";
@@ -139,6 +165,13 @@ class CheckWeatherAlerts extends Command
         }
 
         Cache::put($dedupKey, true, now()->addDays(2));
+
+        // Dual-emit: MarketEvaluator fans out per-user.
+        event(new MarketClosureDetected(
+            marketId: 'all',
+            day: $tomorrow->format('Y-m-d'),
+            reason: $holidayName ?? 'Sunday',
+        ));
 
         $count = 0;
 
