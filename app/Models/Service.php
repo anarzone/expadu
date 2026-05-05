@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEmbedding;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,6 +15,21 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class Service extends Model
 {
+    use HasEmbedding;
+
+    public function embeddingText(): string
+    {
+        $langs = is_array($this->languages) ? implode(' ', $this->languages) : '';
+
+        return trim(implode(' ', array_filter([
+            $this->name,
+            $this->category,
+            $this->subcategory,
+            $langs,
+            $this->description,
+        ])));
+    }
+
     protected function casts(): array
     {
         return [

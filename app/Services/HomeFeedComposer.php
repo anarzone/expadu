@@ -3,9 +3,13 @@
 namespace App\Services;
 
 use App\ContextEngine\ActionBus;
+use App\ContextEngine\PersonalisationStrategy;
 use App\ContextEngine\ScoredAction;
+use App\Models\Spot;
 use App\Models\User;
+use App\Models\UserEvent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Replaces RecommendationService at the controller boundary.
@@ -43,6 +47,7 @@ class HomeFeedComposer
     public function __construct(
         private RecommendationService $legacy,
         private ActionBus $bus,
+        private PersonalisationStrategy $personalisation,
     ) {}
 
     /**
@@ -81,7 +86,122 @@ class HomeFeedComposer
 
         $feed['recommendations'] = array_slice($merged, 0, 8);
 
+        $feed['nearby_spots'] = $this->personaliseDiscovery($user, $feed['nearby_spots'] ?? []);
+
         return $feed;
+    }
+
+    /**
+     * Re-rank or augment the discovery slot using personalisation +
+     * context filtering. Falls back to legacy nearby spots if personalisation
+     * is empty (cold-start with no profile).
+     *
+     * @param  list<array<string, mixed>>  $legacyNearby
+     * @return list<array<string, mixed>>
+     */
+    private function personaliseDiscovery(User $user, array $legacyNearby): array
+    {
+        $personalIds = $this->personalisation->recommendSpotIds($user, 20);
+        if (empty($personalIds)) {
+            return $legacyNearby;
+        }
+
+        $dismissed = $this->recentlyDismissedSpotIds($user);
+        $personalIds = array_values(array_diff($personalIds, $dismissed));
+        if (empty($personalIds)) {
+            return $legacyNearby;
+        }
+
+        $spots = Spot::whereIn('id', $personalIds)
+            ->limit(10)
+            ->get(['id', 'name', 'category', 'address', 'lat', 'lng', 'tags', 'wifi_speed', 'noise_level', 'opening_hours']);
+
+        $byId = $spots->keyBy('id');
+        $ordered = collect($personalIds)->map(fn ($id) => $byId->get($id))->filter();
+
+        $homeLat = (float) ($user->places()->where('category', 'home')->value('lat') ?? 50.9375);
+        $homeLng = (float) ($user->places()->where('category', 'home')->value('lng') ?? 6.9603);
+
+        $out = [];
+        foreach ($ordered as $spot) {
+            if (! $this->passesContextFilter($spot, $homeLat, $homeLng)) {
+                continue;
+            }
+            $out[] = $this->renderSpot($spot, $homeLat, $homeLng);
+            if (count($out) >= 5) {
+                break;
+            }
+        }
+
+        return $out ?: $legacyNearby;
+    }
+
+    /** @return list<int> */
+    private function recentlyDismissedSpotIds(User $user): array
+    {
+        return Cache::remember("dismissed_spots:{$user->id}", 60, function () use ($user): array {
+            return UserEvent::where('user_id', $user->id)
+                ->where('event_type', 'card_dismissed')
+                ->where('created_at', '>', now()->subDays(7))
+                ->whereRaw("payload->>'spot_id' is not null")
+                ->pluck('payload')
+                ->map(fn ($p) => is_array($p) ? (int) ($p['spot_id'] ?? 0) : 0)
+                ->filter()
+                ->values()
+                ->all();
+        });
+    }
+
+    private function passesContextFilter(Spot $spot, float $homeLat, float $homeLng): bool
+    {
+        $R = 6371.0;
+        $dLat = deg2rad(((float) $spot->lat) - $homeLat);
+        $dLng = deg2rad(((float) $spot->lng) - $homeLng);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($homeLat)) * cos(deg2rad((float) $spot->lat)) * sin($dLng / 2) ** 2;
+        $distKm = $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $distKm <= 4.0;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function renderSpot(Spot $spot, float $homeLat, float $homeLng): array
+    {
+        $cat = $spot->category instanceof \BackedEnum ? $spot->category->value : (string) $spot->category;
+
+        $emoji = match ($cat) {
+            'cafe' => '☕',
+            'coworking' => '🏢',
+            'library' => '📚',
+            'park' => '🌳',
+            default => '📍',
+        };
+
+        $R = 6371.0;
+        $dLat = deg2rad(((float) $spot->lat) - $homeLat);
+        $dLng = deg2rad(((float) $spot->lng) - $homeLng);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($homeLat)) * cos(deg2rad((float) $spot->lat)) * sin($dLng / 2) ** 2;
+        $distKm = $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        $area = '';
+        if ($spot->address) {
+            $parts = explode(',', $spot->address);
+            $area = trim($parts[1] ?? $parts[0] ?? '');
+            $area = preg_replace('/^Köln\s*/i', '', $area) ?: $area;
+        }
+
+        return [
+            'id' => $spot->id,
+            'name' => $spot->name,
+            'emoji' => $emoji,
+            'area' => $area,
+            'distance_km' => round($distKm, 1),
+            'tags' => array_slice(is_array($spot->tags) ? $spot->tags : [], 0, 3),
+            'lat' => (float) $spot->lat,
+            'lng' => (float) $spot->lng,
+            'personalised' => true,
+        ];
     }
 
     /**

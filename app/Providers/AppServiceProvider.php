@@ -17,8 +17,14 @@ use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\UserContextChanged;
 use App\Events\Context\WeatherChanged;
 use App\Listeners\CreateAlertFromNotification;
+use App\Models\CityNews;
+use App\Models\Event as EventModel;
+use App\Models\Service;
+use App\Models\Spot;
 use App\Models\UserPlace;
+use App\Observers\EmbeddableObserver;
 use App\Observers\UserPlaceObserver;
+use App\Services\EmbeddingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
@@ -36,7 +42,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(EmbeddingService::class, function ($app) {
+            $cfg = $app['config']->get('services.embedding');
+
+            return new EmbeddingService(
+                baseUrl: $cfg['url'],
+                timeoutSec: (int) $cfg['timeout'],
+                dim: (int) $cfg['dim'],
+            );
+        });
     }
 
     /**
@@ -49,6 +63,11 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
 
         UserPlace::observe(UserPlaceObserver::class);
+
+        Spot::observe(EmbeddableObserver::class);
+        EventModel::observe(EmbeddableObserver::class);
+        CityNews::observe(EmbeddableObserver::class);
+        Service::observe(EmbeddableObserver::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);

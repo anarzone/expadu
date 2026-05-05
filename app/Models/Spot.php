@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NoiseLevel;
 use App\Enums\SpotCategory;
+use App\Models\Concerns\HasEmbedding;
 use Database\Factories\SpotFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,7 +16,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Spot extends Model
 {
     /** @use HasFactory<SpotFactory> */
-    use HasFactory;
+    use HasEmbedding, HasFactory;
+
+    public function embeddingText(): string
+    {
+        $cat = $this->category instanceof \BackedEnum ? $this->category->value : (string) $this->category;
+        $tags = is_array($this->tags) ? implode(' ', $this->tags) : '';
+
+        return trim(implode(' ', array_filter([
+            $this->name,
+            $cat,
+            $this->cuisine,
+            $tags,
+            $this->description,
+        ])));
+    }
 
     /**
      * @return array<string, string>

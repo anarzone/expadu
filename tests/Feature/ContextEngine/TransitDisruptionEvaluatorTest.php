@@ -13,11 +13,14 @@ beforeEach(function () {
     config(['context_engine.shadow' => false, 'context_engine.enabled' => true]);
 });
 
-afterEach(function () {
-    foreach (User::pluck('id') as $id) {
-        Redis::del("pending_actions:{$id}");
-        Redis::del("pending_actions:{$id}_shadow");
-    }
+beforeEach(function () {
+    // Parallel test processes share Redis; flush this test file's namespace
+    // before each test rather than tracking specific user IDs.
+    Redis::eval(
+        "for _,k in ipairs(redis.call('KEYS', ARGV[1])) do redis.call('DEL', k) end return 1",
+        0,
+        'pending_actions:*'
+    );
 });
 
 test('disruption on UserRouteCache line emits a scored action', function () {

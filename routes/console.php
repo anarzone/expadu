@@ -45,3 +45,6 @@ Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping();
 
 // GTFS static timetable refresh — VRS updates weekly
 Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
+
+// Personalisation — rebuild user preference vectors daily at 03:30
+Schedule::command('users:rebuild-preference-vectors')->dailyAt('03:30')->withoutOverlapping();

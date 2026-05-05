@@ -8,10 +8,14 @@ use Illuminate\Support\Facades\Redis;
 
 uses()->group('context-engine');
 
-afterEach(function () {
-    foreach (User::pluck('id') as $id) {
-        Redis::del("pending_actions:{$id}");
-    }
+beforeEach(function () {
+    // Test runs share Redis across parallel processes; isolate this test file
+    // by flushing only the keys it owns at the start of each test.
+    Redis::eval(
+        "for _,k in ipairs(redis.call('KEYS', ARGV[1])) do redis.call('DEL', k) end return 1",
+        0,
+        'pending_actions:*'
+    );
 });
 
 test('insert + topK returns actions in score order', function () {
