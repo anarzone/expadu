@@ -236,23 +236,26 @@ class DailyAudit extends Command
     /** @return list<string> */
     private function scanKeys(string $pattern): array
     {
-        // phpredis defaults to SCAN_NORETRY where the configured key prefix is
-        // NOT auto-applied to MATCH patterns. SCAN_PREFIX makes phpredis prepend
-        // the prefix automatically and strip it from results, so we can pass the
-        // logical pattern and get back unprefixed keys.
+        // Drop down to the raw phpredis client because Laravel's Redis::scan()
+        // wrapper doesn't handle the by-reference cursor that phpredis uses,
+        // and SCAN_PREFIX needs to be set on the same client instance that
+        // does the scanning.
         $client = Redis::connection()->client();
         if (defined('Redis::OPT_SCAN') && method_exists($client, 'setOption')) {
             $client->setOption(\Redis::OPT_SCAN, \Redis::SCAN_PREFIX);
         }
 
-        $cursor = '0';
+        $iterator = null;
         $out = [];
         do {
-            [$cursor, $batch] = Redis::scan($cursor, ['MATCH' => $pattern, 'COUNT' => 500]);
+            $batch = $client->scan($iterator, $pattern, 500);
+            if ($batch === false) {
+                break;
+            }
             foreach ($batch as $k) {
                 $out[] = (string) $k;
             }
-        } while ($cursor !== '0' && count($out) < 5000);
+        } while ($iterator > 0 && count($out) < 5000);
 
         return $out;
     }
