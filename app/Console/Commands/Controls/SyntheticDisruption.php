@@ -93,8 +93,16 @@ class SyntheticDisruption extends Command
             throw new \RuntimeException($msg);
         }
 
-        if ($found->score <= 50.0) {
-            $msg = "synthetic disruption scored {$found->score} (expected > 50)";
+        // Score floor checks the pipeline matched personal_relevance dimension
+        // correctly. A route_match disruption produces score = severity_base
+        // × 1.0 (route match) × temporal_relevance × ~1.0 (fresh), so even
+        // outside the user's typical_window it lands at severity_base × 0.1
+        // = 7 for a major disruption. >5 proves all four dimensions multiplied
+        // and the route-match path fired; >50 would only pass during the
+        // user's actual commute window which is too restrictive for a 30-min
+        // cron canary.
+        if ($found->score <= 5.0) {
+            $msg = "synthetic disruption scored {$found->score} (expected > 5)";
             Log::error('controls:synthetic-disruption low score', [
                 'user_id' => $user->id,
                 'score' => $found->score,
