@@ -10,11 +10,13 @@ uses()->group('context-engine');
 
 beforeEach(function () {
     // Test runs share Redis across parallel processes; isolate this test file
-    // by flushing only the keys it owns at the start of each test.
+    // by flushing the keys it owns at the start of each test. Lua KEYS()
+    // sees the database-side keys directly, so prepend the configured prefix.
+    $prefix = (string) config('database.redis.options.prefix', '');
     Redis::eval(
         "for _,k in ipairs(redis.call('KEYS', ARGV[1])) do redis.call('DEL', k) end return 1",
         0,
-        'pending_actions:*'
+        $prefix.'pending_actions:*'
     );
 });
 

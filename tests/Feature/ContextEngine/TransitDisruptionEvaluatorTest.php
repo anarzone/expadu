@@ -15,11 +15,13 @@ beforeEach(function () {
 
 beforeEach(function () {
     // Parallel test processes share Redis; flush this test file's namespace
-    // before each test rather than tracking specific user IDs.
+    // before each test rather than tracking specific user IDs. Lua KEYS()
+    // sees the database-side keys directly, so prepend the configured prefix.
+    $prefix = (string) config('database.redis.options.prefix', '');
     Redis::eval(
         "for _,k in ipairs(redis.call('KEYS', ARGV[1])) do redis.call('DEL', k) end return 1",
         0,
-        'pending_actions:*'
+        $prefix.'pending_actions:*'
     );
 });
 
