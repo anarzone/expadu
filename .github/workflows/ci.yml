@@ -222,3 +222,5 @@ jobs:
             cd /data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
             docker pull ghcr.io/anarzone/expadu/app:latest
             docker compose up -d app
+            sleep 5
+            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force
