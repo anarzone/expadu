@@ -48,3 +48,8 @@ Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 
 // Personalisation — rebuild user preference vectors daily at 03:30
 Schedule::command('users:rebuild-preference-vectors')->dailyAt('03:30')->withoutOverlapping();
+
+// Recommendation pipeline controls
+Schedule::command('controls:daily-audit')->dailyAt('04:00')->withoutOverlapping();
+Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();
+Schedule::command('controls:drift-report')->weeklyOn(1, '04:30')->withoutOverlapping();

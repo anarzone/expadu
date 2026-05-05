@@ -25,6 +25,27 @@ test.describe('Dashboard', () => {
         });
     });
 
+    test('context engine cards: no duplicate-titled recommendations', async ({ page }) => {
+        // H3 — validation-and-controls.md §D3
+        // The composer must displace legacy disruption/weather cards when the
+        // engine is enabled. We don't assert which path served; we assert
+        // there is at most one card per title so a sloppy merge can't show
+        // the same disruption twice.
+        await page.goto('/dashboard');
+        await page.waitForLoadState('networkidle');
+
+        const titles = await page
+            .locator('[data-testid="recommendation-card"] h3, [data-testid="recommendation-card"] h2')
+            .allTextContents();
+        const counts = new Map<string, number>();
+        for (const t of titles) {
+            counts.set(t, (counts.get(t) ?? 0) + 1);
+        }
+        for (const [title, n] of counts) {
+            expect(n, `card "${title}" appeared ${n} times`).toBeLessThanOrEqual(1);
+        }
+    });
+
     test('navigation links are all reachable without errors', async ({
         page,
     }) => {
