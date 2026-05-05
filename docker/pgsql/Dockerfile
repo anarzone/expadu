@@ -1,4 +1,7 @@
-FROM postgis/postgis:16-3.4
+# Base on imresamu/postgis to match prod (Coolify runs imresamu/postgis:16-3.4)
+# and to get multi-arch support — postgis/postgis:16-3.4 is amd64-only and
+# breaks our arm64 build runner.
+FROM imresamu/postgis:16-3.4
 
 # Install pgvector for embeddings (Personalisation phase 2)
 RUN apt-get update \
