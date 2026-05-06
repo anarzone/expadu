@@ -8,6 +8,7 @@ use App\ContextEngine\ScoredAction;
 use App\Models\Spot;
 use App\Models\User;
 use App\Models\UserEvent;
+use App\Models\UserRouteCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -122,18 +123,77 @@ class HomeFeedComposer
         $homeLat = (float) ($user->places()->where('category', 'home')->value('lat') ?? 50.9375);
         $homeLng = (float) ($user->places()->where('category', 'home')->value('lng') ?? 6.9603);
 
+        $context = $this->resolveLocationContext($user, $homeLat, $homeLng);
+
         $out = [];
         foreach ($ordered as $spot) {
-            if (! $this->passesContextFilter($spot, $homeLat, $homeLng)) {
+            if (! $this->passesContextFilter($spot, $context)) {
                 continue;
             }
-            $out[] = $this->renderSpot($spot, $homeLat, $homeLng);
+            $out[] = $this->renderSpot($spot, $context['display_lat'], $context['display_lng']);
             if (count($out) >= 5) {
                 break;
             }
         }
 
         return $out ?: $legacyNearby;
+    }
+
+    /**
+     * Resolve "where the user is right now" for the discovery filter.
+     * Tiered: live GPS (within 30 min) → UserRouteCache bounding boxes →
+     * home + 8km. Returned context tells passesContextFilter() how to judge.
+     *
+     * @return array{mode: string, lat: float, lng: float, radius_km: float, bboxes: list<array{minLat: float, minLng: float, maxLat: float, maxLng: float}>, display_lat: float, display_lng: float}
+     */
+    private function resolveLocationContext(User $user, float $homeLat, float $homeLng): array
+    {
+        // 1. live GPS within 30 min
+        $gps = app(LocationPatternService::class)->getLastGps($user);
+        if ($gps !== null) {
+            return [
+                'mode' => 'gps',
+                'lat' => $gps['lat'],
+                'lng' => $gps['lng'],
+                'radius_km' => 4.0,
+                'bboxes' => [],
+                'display_lat' => $gps['lat'],
+                'display_lng' => $gps['lng'],
+            ];
+        }
+
+        // 2. user's commute route bboxes
+        $routes = UserRouteCache::where('user_id', $user->id)
+            ->whereNotNull('bbox')
+            ->get(['bbox']);
+        $bboxes = [];
+        foreach ($routes as $r) {
+            if (is_array($r->bbox) && isset($r->bbox['minLat'], $r->bbox['minLng'], $r->bbox['maxLat'], $r->bbox['maxLng'])) {
+                $bboxes[] = $r->bbox;
+            }
+        }
+        if (! empty($bboxes)) {
+            return [
+                'mode' => 'route_bbox',
+                'lat' => $homeLat,
+                'lng' => $homeLng,
+                'radius_km' => 0.0,
+                'bboxes' => $bboxes,
+                'display_lat' => $homeLat,
+                'display_lng' => $homeLng,
+            ];
+        }
+
+        // 3. cold-start fallback: home + 8km
+        return [
+            'mode' => 'home_radius',
+            'lat' => $homeLat,
+            'lng' => $homeLng,
+            'radius_km' => 8.0,
+            'bboxes' => [],
+            'display_lat' => $homeLat,
+            'display_lng' => $homeLng,
+        ];
     }
 
     /** @return list<int> */
@@ -152,15 +212,33 @@ class HomeFeedComposer
         });
     }
 
-    private function passesContextFilter(Spot $spot, float $homeLat, float $homeLng): bool
+    /**
+     * @param  array{mode: string, lat: float, lng: float, radius_km: float, bboxes: list<array{minLat: float, minLng: float, maxLat: float, maxLng: float}>}  $context
+     */
+    private function passesContextFilter(Spot $spot, array $context): bool
     {
+        $spotLat = (float) $spot->lat;
+        $spotLng = (float) $spot->lng;
+
+        if ($context['mode'] === 'route_bbox') {
+            foreach ($context['bboxes'] as $b) {
+                if ($spotLat >= $b['minLat'] && $spotLat <= $b['maxLat']
+                    && $spotLng >= $b['minLng'] && $spotLng <= $b['maxLng']) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // gps or home_radius — distance check
         $R = 6371.0;
-        $dLat = deg2rad(((float) $spot->lat) - $homeLat);
-        $dLng = deg2rad(((float) $spot->lng) - $homeLng);
-        $a = sin($dLat / 2) ** 2 + cos(deg2rad($homeLat)) * cos(deg2rad((float) $spot->lat)) * sin($dLng / 2) ** 2;
+        $dLat = deg2rad($spotLat - $context['lat']);
+        $dLng = deg2rad($spotLng - $context['lng']);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($context['lat'])) * cos(deg2rad($spotLat)) * sin($dLng / 2) ** 2;
         $distKm = $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
 
-        return $distKm <= 4.0;
+        return $distKm <= $context['radius_km'];
     }
 
     /**
