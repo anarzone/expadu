@@ -62,6 +62,13 @@ class HomeFeedComposer
             return $feed;
         }
 
+        // Personalisation runs unconditionally when the engine is enabled —
+        // it ranks the discovery slot from the user's preference_vector and
+        // is independent of whether transit/weather disruptions are firing
+        // right now. An empty pending_actions ZSET means no Phase-1 events
+        // are active, but the user still wants relevant spots.
+        $feed['nearby_spots'] = $this->personaliseDiscovery($user, $feed['nearby_spots'] ?? []);
+
         $actions = $this->bus->topK($user->id, 20);
         if (empty($actions)) {
             return $feed;
@@ -86,8 +93,6 @@ class HomeFeedComposer
         usort($merged, fn (array $a, array $b) => ($b['priority'] ?? 0) <=> ($a['priority'] ?? 0));
 
         $feed['recommendations'] = array_slice($merged, 0, 8);
-
-        $feed['nearby_spots'] = $this->personaliseDiscovery($user, $feed['nearby_spots'] ?? []);
 
         return $feed;
     }
