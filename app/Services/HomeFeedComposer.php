@@ -149,13 +149,18 @@ class HomeFeedComposer
     private function resolveLocationContext(User $user, float $homeLat, float $homeLng): array
     {
         // 1. live GPS within 30 min
+        // 12km is "across the city" for Cologne (diameter ~17km). 4km was
+        // too tight for users at the city edge whose engagement cluster
+        // sits in central Köln (~9km from outer-suburb home/GPS). Keeping
+        // wide enough to capture transit-reachable spots while still
+        // meaningfully "near".
         $gps = app(LocationPatternService::class)->getLastGps($user);
         if ($gps !== null) {
             return [
                 'mode' => 'gps',
                 'lat' => $gps['lat'],
                 'lng' => $gps['lng'],
-                'radius_km' => 4.0,
+                'radius_km' => 12.0,
                 'bboxes' => [],
                 'display_lat' => $gps['lat'],
                 'display_lng' => $gps['lng'],
@@ -184,12 +189,12 @@ class HomeFeedComposer
             ];
         }
 
-        // 3. cold-start fallback: home + 8km
+        // 3. cold-start fallback: home + 12km (matches GPS tier; Cologne-scale)
         return [
             'mode' => 'home_radius',
             'lat' => $homeLat,
             'lng' => $homeLng,
-            'radius_km' => 8.0,
+            'radius_km' => 12.0,
             'bboxes' => [],
             'display_lat' => $homeLat,
             'display_lng' => $homeLng,
