@@ -9,9 +9,11 @@ use App\ContextEngine\Evaluators\RhineEvaluator;
 use App\ContextEngine\Evaluators\TransitDelayEvaluator;
 use App\ContextEngine\Evaluators\TransitDisruptionEvaluator;
 use App\ContextEngine\Evaluators\WeatherEvaluator;
+use App\ContextEngine\Listeners\ScoredActionPushDispatcher;
 use App\Events\Context\BuergeramtSlotsAvailable;
 use App\Events\Context\MarketClosureDetected;
 use App\Events\Context\RhineLevelChanged;
+use App\Events\Context\ScoredActionInserted;
 use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\UserContextChanged;
@@ -76,6 +78,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(RhineLevelChanged::class, RhineEvaluator::class);
         Event::listen(MarketClosureDetected::class, MarketEvaluator::class);
         Event::listen(UserContextChanged::class, LeaveByEvaluator::class);
+
+        Event::listen(ScoredActionInserted::class, ScoredActionPushDispatcher::class);
 
         // Enable PostGIS in parallel test databases
         ParallelTesting::setUpTestDatabase(function (string $database) {

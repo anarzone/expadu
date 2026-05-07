@@ -96,7 +96,7 @@ it('hydrates each ScoredAction type to a complete card', function (array $case) 
     );
 
     $composer = app(HomeFeedComposer::class);
-    $reflection = new \ReflectionMethod($composer, 'actionToCard');
+    $reflection = new ReflectionMethod($composer, 'actionToCard');
     $reflection->setAccessible(true);
     $card = $reflection->invoke($composer, $action);
 
@@ -131,7 +131,7 @@ it('returns null for alternative_route when alternative is missing', function ()
     );
 
     $composer = app(HomeFeedComposer::class);
-    $reflection = new \ReflectionMethod($composer, 'actionToCard');
+    $reflection = new ReflectionMethod($composer, 'actionToCard');
     $reflection->setAccessible(true);
     $card = $reflection->invoke($composer, $action);
 
@@ -151,7 +151,7 @@ it('returns null for unknown action types', function () {
     );
 
     $composer = app(HomeFeedComposer::class);
-    $reflection = new \ReflectionMethod($composer, 'actionToCard');
+    $reflection = new ReflectionMethod($composer, 'actionToCard');
     $reflection->setAccessible(true);
     $card = $reflection->invoke($composer, $action);
 

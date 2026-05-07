@@ -2,6 +2,7 @@
 
 namespace App\ContextEngine;
 
+use App\Events\Context\ScoredActionInserted;
 use App\Models\User;
 use App\Support\NotificationThrottle;
 use App\Support\RedisLogger;
@@ -49,6 +50,12 @@ class ActionBus
             'valid_until' => $action->validUntil?->toIso8601String(),
             'shadow' => (bool) config('context_engine.shadow'),
         ]);
+
+        // Notify listeners (push dispatcher, future digest emitters, etc.)
+        // Skipped in shadow mode to avoid double-firing alongside legacy notify().
+        if (! config('context_engine.shadow')) {
+            event(new ScoredActionInserted($user, $action));
+        }
 
         return $action;
     }
