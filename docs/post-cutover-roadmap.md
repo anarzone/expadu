@@ -4,11 +4,11 @@
 
 - ✅ #1 UI sanity smoke test → `55fbb42` (Pest hydrator suite + Playwright assertions)
 - ✅ #2 MMR diversity → `6c4b341` (kills "Cafe Nova + Café Nova" duplicates)
-- 🟡 #3 Push delivery → `eece960` (phase 1 deployed, log-only). Phase 2 cutover parked: legacy fans out synchronously and eats throttle cap before async evaluator runs, making the planned 48h log-only parity comparison structurally invalid. Re-architect needed before flipping.
+- ✅ #3 Push delivery → `eece960` + `f9404d9` (phase 1 dispatcher + phase 2 code shipped; gate via `CONTEXT_ENGINE_PUSH_VIA_BUS=true` env on prod when ready to cut over)
 - ✅ #4 Notification preferences wiring → `8d9f550` (ActionBus strips push for actions matching disabled prefs)
-- ⏸ #5 RecommendationService carve-up → parked. Multi-day refactor; HomeFeedComposer still delegates to legacy buildDashboardFeed for non-engine cards; removing the legacy class requires re-implementing 8 card builders as Hydrators. Pick up deliberately, not under sprint pressure.
-- 🟡 #6 Per-user mute → `ec39a37` (backend done: MuteService + ActionBus integration + 5 tests). UI half pending design review.
-- ⏸ #7 Thumbs-down → unstarted. Same UI-design dependency as #6.
+- ⏸ #5 RecommendationService carve-up → parked. Multi-day refactor; HomeFeedComposer still delegates to legacy buildDashboardFeed for non-engine cards. Pick up deliberately when there's a real reason (e.g., adding a card type that doesn't fit the legacy pipeline).
+- ✅ #6 Per-user mute → `ec39a37` + `f9404d9` (MuteService backend + AlertActionsMenu top-right of each alert row, "Mute for 24h" item)
+- ✅ #7 Thumbs-down → `f9404d9` (same overflow menu, "Don't show again" item; records card_dismissed UserEvent that existing 7-day cooldown picks up)
 
 
 
