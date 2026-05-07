@@ -1,5 +1,17 @@
 # Post-Cutover Roadmap
 
+**Progress as of 2026-05-07:**
+
+- ✅ #1 UI sanity smoke test → `55fbb42` (Pest hydrator suite + Playwright assertions)
+- ✅ #2 MMR diversity → `6c4b341` (kills "Cafe Nova + Café Nova" duplicates)
+- 🟡 #3 Push delivery → `eece960` (phase 1 deployed, log-only). Phase 2 cutover parked: legacy fans out synchronously and eats throttle cap before async evaluator runs, making the planned 48h log-only parity comparison structurally invalid. Re-architect needed before flipping.
+- ✅ #4 Notification preferences wiring → `8d9f550` (ActionBus strips push for actions matching disabled prefs)
+- ⏸ #5 RecommendationService carve-up → parked. Multi-day refactor; HomeFeedComposer still delegates to legacy buildDashboardFeed for non-engine cards; removing the legacy class requires re-implementing 8 card builders as Hydrators. Pick up deliberately, not under sprint pressure.
+- 🟡 #6 Per-user mute → `ec39a37` (backend done: MuteService + ActionBus integration + 5 tests). UI half pending design review.
+- ⏸ #7 Thumbs-down → unstarted. Same UI-design dependency as #6.
+
+
+
 Phase 1 (Context Engine) and Phase 2 (personalisation) are live on prod
 as of 2026-05-06. This document is the prioritised follow-on work that
 turns the substrate into shipped product features.
