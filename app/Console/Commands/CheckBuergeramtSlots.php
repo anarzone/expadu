@@ -113,9 +113,11 @@ class CheckBuergeramtSlots extends Command
                 continue;
             }
 
-            $monitor->user->notify(new BuergeramtSlotNotification($userSlots));
-            $monitor->update(['notified_at' => now()]);
-            $notifiedCount++;
+            if (! config('context_engine.push_via_bus')) {
+                $monitor->user->notify(new BuergeramtSlotNotification($userSlots));
+                $monitor->update(['notified_at' => now()]);
+                $notifiedCount++;
+            }
         }
 
         $this->info("  Notified {$notifiedCount} user(s)");

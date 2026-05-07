@@ -102,9 +102,11 @@ class CheckTransitDelays extends Command
                     $context = $relevant['context'][$line] ?? '';
                     $stopLabel = $context ?: $stopName;
 
-                    $user->notify(new TransitDelayNotification($line, $delay, $stopLabel));
-                    NotificationThrottle::recordSent($user);
-                    $notifiedCount++;
+                    if (! config('context_engine.push_via_bus')) {
+                        $user->notify(new TransitDelayNotification($line, $delay, $stopLabel));
+                        NotificationThrottle::recordSent($user);
+                        $notifiedCount++;
+                    }
                 }
             }
         }

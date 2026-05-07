@@ -135,9 +135,11 @@ class CheckWeatherAlerts extends Command
                         continue;
                     }
 
-                    $user->notify(new WeatherAlertNotification($alert['summary'], $alert['detail']));
-                    NotificationThrottle::recordSent($user);
-                    $notifiedCount++;
+                    if (! config('context_engine.push_via_bus')) {
+                        $user->notify(new WeatherAlertNotification($alert['summary'], $alert['detail']));
+                        NotificationThrottle::recordSent($user);
+                        $notifiedCount++;
+                    }
                 }
             });
         }
@@ -186,9 +188,11 @@ class CheckWeatherAlerts extends Command
                 }
 
                 $reason = $holidayName ?? 'Sunday';
-                $user->notify(new MarketClosureNotification($reason, $holidayName));
-                NotificationThrottle::recordSent($user);
-                $count++;
+                if (! config('context_engine.push_via_bus')) {
+                    $user->notify(new MarketClosureNotification($reason, $holidayName));
+                    NotificationThrottle::recordSent($user);
+                    $count++;
+                }
             }
         });
 

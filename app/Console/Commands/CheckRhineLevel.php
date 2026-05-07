@@ -69,8 +69,10 @@ class CheckRhineLevel extends Command
                     continue;
                 }
 
-                $user->notify(new RhineFloodNotification($cm, $status, $trend));
-                $notifiedCount++;
+                if (! config('context_engine.push_via_bus')) {
+                    $user->notify(new RhineFloodNotification($cm, $status, $trend));
+                    $notifiedCount++;
+                }
             }
         });
 

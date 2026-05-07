@@ -130,13 +130,14 @@ class CheckTransitDisruptions extends Command
                         $summary .= " — {$context}";
                     }
 
-                    $user->notify(new TransitDisruptionNotification([
-                        'line' => $matchedLines->take(3)->implode(', '),
-                        'summary' => $summary,
-                    ]));
-
-                    NotificationThrottle::recordSent($user);
-                    $notifiedCount++;
+                    if (! config('context_engine.push_via_bus')) {
+                        $user->notify(new TransitDisruptionNotification([
+                            'line' => $matchedLines->take(3)->implode(', '),
+                            'summary' => $summary,
+                        ]));
+                        NotificationThrottle::recordSent($user);
+                        $notifiedCount++;
+                    }
                 }
             });
 

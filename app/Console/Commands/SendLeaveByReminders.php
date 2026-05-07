@@ -217,17 +217,18 @@ class SendLeaveByReminders extends Command
             at: CarbonImmutable::instance($leaveAt),
         ));
 
-        $user->notify(new LeaveByReminderNotification([
-            'place_name' => $place->name,
-            'leave_by' => $leaveBy['time'],
-            'mode' => $modeName,
-            'mode_emoji' => $modeEmoji,
-            'weather_context' => $weatherContext,
-            'arrive_by' => $arriveBy,
-            'travel_min' => $leaveBy['travel_min'],
-        ]));
-
-        NotificationThrottle::recordSent($user);
+        if (! config('context_engine.push_via_bus')) {
+            $user->notify(new LeaveByReminderNotification([
+                'place_name' => $place->name,
+                'leave_by' => $leaveBy['time'],
+                'mode' => $modeName,
+                'mode_emoji' => $modeEmoji,
+                'weather_context' => $weatherContext,
+                'arrive_by' => $arriveBy,
+                'travel_min' => $leaveBy['travel_min'],
+            ]));
+            NotificationThrottle::recordSent($user);
+        }
 
         $this->logCalculation($user, $place, $arriveBy, $leaveBy, $modeResult, $modeResult, $weather, $forecast, $disruptedLines, true, null);
 

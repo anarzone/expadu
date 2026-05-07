@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import React from 'react';
+import { AlertActionsMenu } from '@/components/alerts/alert-actions-menu';
 import { useTracker } from '@/hooks/use-tracker';
 
 export type AlertData = {
@@ -252,6 +253,37 @@ function timeAgo(dateStr: string): string {
     return `${days} days ago`;
 }
 
+/** Lightweight title→subtype fallback for alerts without an explicit subtype column. */
+function detectSubtypeFromTitle(title: string): string {
+    const t = title.toLowerCase();
+
+    if (t.includes('disruption')) {
+        return 'transit_disruption';
+    }
+
+    if (t.includes('delay') || t.includes('running')) {
+        return 'transit_delay';
+    }
+
+    if (t.includes('rain') || t.includes('weather') || t.includes('wind')) {
+        return 'weather';
+    }
+
+    if (t.includes('rhine') || t.includes('water level')) {
+        return 'rhine';
+    }
+
+    if (
+        t.includes('bürgeramt') ||
+        t.includes('appointment') ||
+        t.includes('slot')
+    ) {
+        return 'buergeramt';
+    }
+
+    return 'generic';
+}
+
 export function AlertRow({
     alert,
     onMarkRead,
@@ -287,6 +319,9 @@ export function AlertRow({
         }
     }
 
+    const subtypeForMenu =
+        alert.subtype ?? detectSubtypeFromTitle(alert.title ?? '');
+
     const content = (
         <div
             onClick={markRead}
@@ -298,6 +333,11 @@ export function AlertRow({
             {isUnread && (
                 <div className="absolute top-0 bottom-0 left-0 w-[3px] bg-primary" />
             )}
+
+            {/* Top-right overflow menu — mute + thumbs-down (Roadmap #6/#7) */}
+            <div className="absolute top-2 right-2 z-10">
+                <AlertActionsMenu alertId={alert.id} subtype={subtypeForMenu} />
+            </div>
 
             {/* Icon bubble — 42x42 circle */}
             <div

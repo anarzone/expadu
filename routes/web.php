@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\TransferConnectionsController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
+use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfilePageController;
@@ -107,6 +108,12 @@ $appRoutes = function () use ($appDomain) {
         Route::post('alerts/{alert}/read', [AlertController::class, 'markRead'])->name('alerts.read');
         Route::post('alerts/read-all', [AlertController::class, 'markAllRead'])->name('alerts.read-all');
         Route::post('alerts/{alert}/dismiss', [AlertController::class, 'dismiss'])->name('alerts.dismiss');
+
+        // Mute + thumbs-down (Roadmap #6 + #7)
+        Route::get('mutes', [MuteController::class, 'index'])->name('mutes.index');
+        Route::post('mutes', [MuteController::class, 'store'])->name('mutes.store');
+        Route::delete('mutes', [MuteController::class, 'destroy'])->name('mutes.destroy');
+        Route::post('mutes/thumbs-down', [MuteController::class, 'thumbsDown'])->name('mutes.thumbs-down');
 
         // Push subscriptions
         Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
