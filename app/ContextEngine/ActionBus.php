@@ -4,6 +4,7 @@ namespace App\ContextEngine;
 
 use App\Events\Context\ScoredActionInserted;
 use App\Models\User;
+use App\Services\MuteService;
 use App\Support\NotificationThrottle;
 use App\Support\RedisLogger;
 use Illuminate\Support\Facades\Redis;
@@ -44,6 +45,16 @@ class ActionBus
 
     public function insert(User $user, ScoredAction $action): ScoredAction
     {
+        // Per-user mute (Roadmap #6 backend) — when a user has muted a
+        // specific instance (e.g. Line 12 disruptions for the day), we
+        // strip the push channel. Dashboard card still shows so the
+        // user can see "yes, the thing you muted is happening" if they
+        // open the app deliberately.
+        $muteSubject = app(MuteService::class)->muteSubjectFor($action->type, $action->payload);
+        if ($muteSubject !== null && app(MuteService::class)->isMuted($user, $muteSubject[0], $muteSubject[1])) {
+            $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);
+        }
+
         if (in_array(ScoredAction::CHANNEL_PUSH, $action->deliverChannels, true)) {
             $prefKey = self::TYPE_TO_PREF_KEY[$action->type] ?? null;
             if ($prefKey !== null && method_exists($user, 'wantsNotification') && ! $user->wantsNotification($prefKey)) {
