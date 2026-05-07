@@ -20,10 +20,35 @@ class ActionBus
      * Insert (or update) a scored action for a user. Throttled push channels
      * are stripped here so downstream delivery does not need to re-check.
      */
+    /**
+     * Map ScoredAction types to notification-preference keys (the same
+     * keys NotificationPreference::defaults() exposes). Roadmap #4.
+     *
+     * If a user has wantsNotification($key) === false, the push channel
+     * is stripped before the action lands in the bus — dashboard card
+     * still shows but no push is sent. This works regardless of whether
+     * push delivery flows through the legacy notify() path or the
+     * future dispatcher path.
+     */
+    private const TYPE_TO_PREF_KEY = [
+        'transit_disruption' => 'transit',
+        'transit_delay' => 'transit',
+        'alternative_route' => 'transit',
+        'disruption_no_alt' => 'transit',
+        'leave_by' => 'transit',
+        'weather_alert' => 'weather',
+        'rhine_level' => 'rhine',
+        'buergeramt_slot' => 'burgeramt',
+        'market_closure' => 'events',
+    ];
+
     public function insert(User $user, ScoredAction $action): ScoredAction
     {
         if (in_array(ScoredAction::CHANNEL_PUSH, $action->deliverChannels, true)) {
-            if (! NotificationThrottle::canPush($user, $action->type)) {
+            $prefKey = self::TYPE_TO_PREF_KEY[$action->type] ?? null;
+            if ($prefKey !== null && method_exists($user, 'wantsNotification') && ! $user->wantsNotification($prefKey)) {
+                $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);
+            } elseif (! NotificationThrottle::canPush($user, $action->type)) {
                 $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);
             }
         }
