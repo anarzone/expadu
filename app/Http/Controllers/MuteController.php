@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\UserEvent;
 use App\Services\MuteService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 /**
@@ -22,7 +22,7 @@ class MuteController extends Controller
 {
     public function __construct(private MuteService $mutes) {}
 
-    public function store(Request $request): Response
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'type' => ['required', 'string', Rule::in([
@@ -41,10 +41,14 @@ class MuteController extends Controller
             $data['duration_seconds'] ?? MuteService::DEFAULT_TTL_SECONDS,
         );
 
-        return response()->noContent();
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back();
     }
 
-    public function destroy(Request $request): Response
+    public function destroy(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'type' => ['required', 'string'],
@@ -57,7 +61,11 @@ class MuteController extends Controller
             mb_strtolower($data['key']),
         );
 
-        return response()->noContent();
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back();
     }
 
     public function index(Request $request): JsonResponse
@@ -67,7 +75,7 @@ class MuteController extends Controller
         ]);
     }
 
-    public function thumbsDown(Request $request): Response
+    public function thumbsDown(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'action_key' => ['required', 'string', 'max:255'],
@@ -85,6 +93,10 @@ class MuteController extends Controller
             ],
         ]);
 
-        return response()->noContent();
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back();
     }
 }
