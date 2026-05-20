@@ -10,11 +10,9 @@ import {
     IconWalk,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { lazy, Suspense } from 'react';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import {
-    DepartureBoard,
     useClock,
     formatDepartureTime,
 } from '@/components/transit/departure-board';
@@ -29,12 +27,6 @@ import type { RoutineCardData } from '@/components/transit/routine-card';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
-
-const RoutePreviewMapLazy = lazy(() =>
-    import('@/components/transit/route-preview-map').then((m) => ({
-        default: m.RoutePreviewMap,
-    })),
-);
 
 type WeatherData = {
     temperature: number;
@@ -51,14 +43,6 @@ type ForecastData = {
     rain_starts: string | null;
     bike_score: string;
     hourly: Array<Record<string, unknown>>;
-};
-
-type GeoResult = {
-    name: string;
-    street: string | null;
-    city: string | null;
-    lat: number;
-    lng: number;
 };
 
 // Route data is derived from GTFS departures — no more hardcoded ROUTES
@@ -86,6 +70,7 @@ function encodePolyline(coords: [number, number][], precision = 6): string {
     let output = '';
     let prevLat = 0;
     let prevLng = 0;
+
     for (const [lat, lng] of coords) {
         const iLat = Math.round(lat * factor);
         const iLng = Math.round(lng * factor);
@@ -94,16 +79,20 @@ function encodePolyline(coords: [number, number][], precision = 6): string {
         prevLat = iLat;
         prevLng = iLng;
     }
+
     return output;
 }
 function encodeValue(value: number): string {
     let v = value < 0 ? ~(value << 1) : value << 1;
     let result = '';
+
     while (v >= 0x20) {
         result += String.fromCharCode((0x20 | (v & 0x1f)) + 63);
         v >>= 5;
     }
+
     result += String.fromCharCode(v + 63);
+
     return result;
 }
 
@@ -142,7 +131,7 @@ function gtfsToBoardData(
 }
 
 /** Human-readable source label */
-function sourceLabel(source: string): string {
+function _sourceLabel(source: string): string {
     switch (source) {
         case 'gtfs_static':
             return 'Timetable';
@@ -233,7 +222,7 @@ const DEFAULT_DEST_CHIPS = [
 // Journey route panel — fetches from Valhalla, mode switch updates map
 // ============================================================
 function JourneyRoutePanel({
-    origin,
+    origin: _origin,
     destination,
     onClear,
 }: {
@@ -253,16 +242,17 @@ function JourneyRoutePanel({
     };
     const [options, setOptions] = useState<JourneyOption[]>([]);
     const [selectedMode, setSelectedMode] = useState<string | null>(null);
-    const [selectedGeometry, setSelectedGeometry] = useState<string | null>(
+    const [_selectedGeometry, setSelectedGeometry] = useState<string | null>(
         null,
     );
     const [loading, setLoading] = useState(true);
-    const [mapsUrl, setMapsUrl] = useState<{
+    const [_mapsUrl, setMapsUrl] = useState<{
         google: string;
         apple: string;
     } | null>(null);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoading(true);
         fetch(
             `/api/route-options?to_lat=${destination.lat}&to_lng=${destination.lng}&name=${encodeURIComponent(destination.name)}`,
@@ -325,18 +315,26 @@ function JourneyRoutePanel({
                     .then((data) => {
                         if (data.geometry) {
                             setSelectedGeometry(data.geometry);
+
                             return;
                         }
+
                         // Build geometry from first trip's segment coordinates
                         const trip = data.trips?.[0];
+
                         if (trip?.segments) {
                             const coords: [number, number][] = [];
+
                             for (const seg of trip.segments) {
-                                if (seg.from_lat && seg.from_lng)
+                                if (seg.from_lat && seg.from_lng) {
                                     coords.push([seg.from_lat, seg.from_lng]);
-                                if (seg.to_lat && seg.to_lng)
+                                }
+
+                                if (seg.to_lat && seg.to_lng) {
                                     coords.push([seg.to_lat, seg.to_lng]);
+                                }
                             }
+
                             if (coords.length >= 2) {
                                 // Encode as simple polyline (precision 6)
                                 setSelectedGeometry(encodePolyline(coords));
@@ -350,7 +348,7 @@ function JourneyRoutePanel({
         }
     }
 
-    const gmMode =
+    const _gmMode =
         selectedMode === 'transit'
             ? 'transit'
             : selectedMode === 'bike'
@@ -523,6 +521,7 @@ function RoutineDetailContent({
                         const inp = (
                             e.currentTarget as HTMLElement
                         ).querySelector('input');
+
                         try {
                             inp?.showPicker();
                         } catch {
@@ -1119,11 +1118,27 @@ export default function Transit() {
     );
 
     const fetchNearbyDeps = useCallback((lat: number, lng: number) => {
+        // Defensive: skip if coords aren't usable. Without this we send (NaN,NaN)
+        // or (0,0) on early renders and waste a 422 round-trip.
+        if (
+            !Number.isFinite(lat) ||
+            !Number.isFinite(lng) ||
+            (lat === 0 && lng === 0) ||
+            Math.abs(lat) > 90 ||
+            Math.abs(lng) > 180
+        ) {
+            return;
+        }
+
         fetch(`/api/nearby-departures?lat=${lat}&lng=${lng}`, {
             credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
         })
-            .then((r) => r.json())
-            .then((data) => setLiveNearbyDeps(data))
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => data && setLiveNearbyDeps(data))
             .catch(() => {});
     }, []);
 
@@ -1195,6 +1210,7 @@ export default function Transit() {
     // Scroll to departures when navigated from home "Full board" link
     useEffect(() => {
         const target = sessionStorage.getItem('transit_scroll');
+
         if (target) {
             sessionStorage.removeItem('transit_scroll');
             setTimeout(() => {
@@ -1212,12 +1228,12 @@ export default function Transit() {
     const dbDepartures = (gtfsDepartures?.departures ?? []).filter(
         (d) => d.type === 'rail' || d.type === 'subway',
     );
-    const kvbBoard = gtfsToBoardData(
+    const _kvbBoard = gtfsToBoardData(
         kvbDepartures,
         gtfsDepartures?.stop_name ?? currentStop ?? homeName,
         '📍',
     );
-    const dbBoard = gtfsToBoardData(
+    const _dbBoard = gtfsToBoardData(
         dbDepartures,
         (gtfsDepartures?.stop_name ?? currentStop ?? homeName) + ' Bf',
         '🚂',
@@ -1247,15 +1263,15 @@ export default function Transit() {
     const weatherEmoji = weather?.emoji ?? '⛅';
     const weatherCondition = weather?.condition ?? 'Partly cloudy';
     const rainStarts = forecast?.rain_starts ?? null;
-    const bikeScore = forecast?.bike_score ?? 'Good';
+    const _bikeScore = forecast?.bike_score ?? 'Good';
 
     // Build dynamic commute hero text
-    const commuteWeatherText = rainStarts
+    const _commuteWeatherText = rainStarts
         ? `dry until ${rainStarts}, lane clear`
         : `${weatherCondition.toLowerCase()}, lane clear`;
 
     // Build leave-by weather warning
-    const leaveByWarning = rainStarts
+    const _leaveByWarning = rainStarts
         ? `Rain arrives at ${rainStarts} — plan return journey early.`
         : `${weatherCondition} all day — enjoy the ride.`;
 
@@ -1287,12 +1303,13 @@ export default function Transit() {
             ? localStorage.getItem(ROUTINE_DISMISS_KEY)
             : null;
     const cooldownActive =
+        // eslint-disable-next-line react-hooks/purity
         dismissedAt !== null && Date.now() - Number(dismissedAt) < 3600_000;
     const [routinePromptVisible, setRoutinePromptVisible] =
         useState(!cooldownActive);
     const [routinePromptSaved, setRoutinePromptSaved] = useState(false);
-    const [activeStop, setActiveStop] = useState(currentStop ?? homeName);
-    const [activeStopName, setActiveStopName] = useState(
+    const [activeStop, _setActiveStop] = useState(currentStop ?? homeName);
+    const [activeStopName, _setActiveStopName] = useState(
         gtfsDepartures?.stop_name ?? currentStop ?? homeName,
     );
 
@@ -1405,11 +1422,11 @@ export default function Transit() {
         }
     }
 
-    function dismissDisruption(idx: number) {
+    function _dismissDisruption(idx: number) {
         setDismissedDisruptions((prev) => [...prev, idx]);
     }
 
-    function saveRoutine() {
+    function _saveRoutine() {
         setRoutinePromptSaved(true);
         setTimeout(() => setRoutinePromptVisible(false), 3000);
     }
@@ -2960,6 +2977,7 @@ export default function Transit() {
                         const inp = (
                             e.currentTarget as HTMLElement
                         ).querySelector('input');
+
                         try {
                             inp?.showPicker();
                         } catch {
@@ -3168,10 +3186,10 @@ function RouteOptionCard({
         distance_km: number;
         time_sec: number;
     }> | null>(null);
-    const [loadingSteps, setLoadingSteps] = useState(false);
+    const [_loadingSteps, setLoadingSteps] = useState(false);
     const hasCoords = toLat && toLng;
 
-    function toggleSteps(e: React.MouseEvent) {
+    function _toggleSteps(e: React.MouseEvent) {
         e.stopPropagation();
 
         if (showSteps) {
@@ -3203,8 +3221,8 @@ function RouteOptionCard({
         const originLng = document.querySelector<HTMLMetaElement>(
             'meta[name="user-lng"]',
         )?.content;
-        const fromLat = originLat ? parseFloat(originLat) : 50.9375;
-        const fromLng = originLng ? parseFloat(originLng) : 6.9603;
+        const _fromLat = originLat ? parseFloat(originLat) : 50.9375;
+        const _fromLng = originLng ? parseFloat(originLng) : 6.9603;
 
         fetch(
             `/api/route-options?to_lat=${toLat}&to_lng=${toLng}&name=${encodeURIComponent(name)}&mode=${costing}`,

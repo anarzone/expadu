@@ -10,6 +10,7 @@ use App\Support\RedisLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
 
 class RecommendationService
 {
@@ -257,6 +258,24 @@ class RecommendationService
      * @return array{headline: string, route_cards: array, leave_by: array|null, context: string}
      */
     public function getCommuteRecommendation(User $user): array
+    {
+        // The recommendation depends on (user, time-of-day, current places).
+        // Within a single minute the answer barely changes; caching collapses
+        // p95 on the transit + dashboard commute defer groups since the
+        // underlying GTFS + KVB + Weather calls all run inside.
+        $cacheKey = "commute_rec:{$user->id}:".now()->format('YmdHi');
+
+        return Cache::remember(
+            $cacheKey,
+            60,
+            fn () => $this->computeCommuteRecommendation($user)
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function computeCommuteRecommendation(User $user): array
     {
         $home = $user->places()->where('category', 'home')->first();
         $work = $user->places()->where('category', 'work')->first();
