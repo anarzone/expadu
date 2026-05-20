@@ -133,6 +133,33 @@ class NearbyStopService
         ?float $destLng = null,
         ?string $destName = null,
     ): array {
+        // Coarse-grid cache (~100m) keyed by origin + destination. Repeat polls
+        // from the same approximate location hit the cache instead of re-running
+        // the 3-stops × getDepartures + rail-stations × getDepartures fan-out.
+        $cacheKey = sprintf(
+            'nearby_dep:%.3f_%.3f:%s',
+            $lat,
+            $lng,
+            $destLat && $destLng ? sprintf('%.3f_%.3f', $destLat, $destLng) : 'nodest'
+        );
+
+        return Cache::remember(
+            $cacheKey,
+            30,
+            fn () => $this->buildDeparturesByType($lat, $lng, $destLat, $destLng, $destName)
+        );
+    }
+
+    /**
+     * @return array{kvb: array, db: array, stops_used: array}
+     */
+    private function buildDeparturesByType(
+        float $lat,
+        float $lng,
+        ?float $destLat,
+        ?float $destLng,
+        ?string $destName,
+    ): array {
         $stops = $this->getWalkableStops($lat, $lng, 600);
 
         $gtfs = App::make(GtfsDepartureService::class);

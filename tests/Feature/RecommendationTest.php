@@ -133,9 +133,12 @@ test('transit page includes commute recommendation', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('transit')
-        ->has('commuteRecommendation')
-        ->has('commuteRecommendation.headline')
-        ->has('commuteRecommendation.route_cards')
+        ->missing('commuteRecommendation')
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->has('commuteRecommendation')
+            ->has('commuteRecommendation.headline')
+            ->has('commuteRecommendation.route_cards')
+        )
     );
 });
 

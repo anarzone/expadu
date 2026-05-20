@@ -75,6 +75,7 @@ class TransitController extends Controller
         });
 
         return Inertia::render('transit', [
+            // Critical path — render immediately
             'routines' => $routines,
             'detectedRoutines' => $patternService->detectUnsavedRoutines($user),
             'currentStop' => $gtfsDepartures['stop_name'] ?? $stop,
@@ -82,17 +83,20 @@ class TransitController extends Controller
                 ->select('id', 'emoji', 'name', 'address', 'lat', 'lng')
                 ->get(),
             'gtfsDepartures' => $gtfsDepartures,
-            'gtfsStops' => fn () => $stop ? $gtfsService->searchStops($stop, 20) : [],
-            'commuteRecommendation' => $recommendationService->getCommuteRecommendation($user),
             'userLocation' => ['name' => $location['name'], 'address' => $location['name'], 'lat' => $nearbyLat, 'lng' => $nearbyLng],
-            'disruptions' => $this->buildDisruptionCards($user, $nearbyLat, $nearbyLng),
-            'nearbyDepartures' => fn () => $this->buildNearbyDepartures($user, $nearbyService, $nearbyLat, $nearbyLng),
-            // Right panel data (lazy — only evaluated if right panel renders)
-            'weather' => fn () => app(WeatherService::class)->getCurrentWeather($nearbyLat, $nearbyLng),
-            'forecast' => fn () => app(WeatherService::class)->getForecast($nearbyLat, $nearbyLng),
-            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
-            'todayEvents' => fn () => $this->buildTodayEvents(),
-            'activeDisruptions' => fn () => $this->buildActiveDisruptions(),
+
+            // Commute group — heavy + dependent on routing/disruption data
+            'commuteRecommendation' => Inertia::defer(fn () => $recommendationService->getCommuteRecommendation($user), 'commute'),
+            'disruptions' => Inertia::defer(fn () => $this->buildDisruptionCards($user, $nearbyLat, $nearbyLng), 'commute'),
+            'nearbyDepartures' => Inertia::defer(fn () => $this->buildNearbyDepartures($user, $nearbyService, $nearbyLat, $nearbyLng), 'commute'),
+            'gtfsStops' => Inertia::defer(fn () => $stop ? $gtfsService->searchStops($stop, 20) : [], 'commute'),
+
+            // Meta group — small queries / fast service hits
+            'weather' => Inertia::defer(fn () => app(WeatherService::class)->getCurrentWeather($nearbyLat, $nearbyLng), 'meta'),
+            'forecast' => Inertia::defer(fn () => app(WeatherService::class)->getForecast($nearbyLat, $nearbyLng), 'meta'),
+            'rhineLevel' => Inertia::defer(fn () => app(RhineService::class)->getCurrentLevel(), 'meta'),
+            'todayEvents' => Inertia::defer(fn () => $this->buildTodayEvents(), 'meta'),
+            'activeDisruptions' => Inertia::defer(fn () => $this->buildActiveDisruptions(), 'meta'),
         ]);
     }
 
