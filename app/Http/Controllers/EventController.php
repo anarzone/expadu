@@ -41,6 +41,7 @@ class EventController extends Controller
                 return $query
                     ->with('organiser:id,name')
                     ->withCount('attendees')
+                    ->withExists(['attendees as user_going' => fn ($q) => $q->where('user_id', $userId)])
                     ->paginate(30)
                     ->through(fn (Event $e) => $this->formatEvent($e, $userId));
             }),
@@ -51,19 +52,22 @@ class EventController extends Controller
         ]);
     }
 
-    public function show(Event $event): Response
+    public function show(Request $request, Event $event): Response
     {
+        $userId = $request->user()->id;
         $event->loadCount('attendees');
         $event->load('organiser:id,name');
+        $event->user_going = $event->attendees()->where('user_id', $userId)->exists();
 
         return Inertia::render('events', [
-            'event' => $this->formatEvent($event, request()->user()->id),
+            'event' => $this->formatEvent($event, $userId),
             'dbEvents' => Inertia::defer(fn () => Event::where('starts_at', '>', now())
                 ->orderBy('starts_at')
                 ->with('organiser:id,name')
                 ->withCount('attendees')
+                ->withExists(['attendees as user_going' => fn ($q) => $q->where('user_id', $userId)])
                 ->paginate(30)
-                ->through(fn (Event $e) => $this->formatEvent($e, request()->user()->id))),
+                ->through(fn (Event $e) => $this->formatEvent($e, $userId))),
             'filters' => [],
         ]);
     }
@@ -94,6 +98,7 @@ class EventController extends Controller
                 ->orderBy('starts_at')
                 ->with('organiser:id,name')
                 ->withCount('attendees')
+                ->withExists(['attendees as user_going' => fn ($q) => $q->where('user_id', $userId)])
                 ->paginate(30)
                 ->through(fn (Event $e) => $this->formatEvent($e, $userId))),
             'filters' => [],
@@ -140,7 +145,7 @@ class EventController extends Controller
             'free' => (bool) $e->is_free,
             'attending' => $e->attendees_count ?? 0,
             'max' => $e->max_attendees,
-            'going' => $e->attendees()->where('user_id', $userId)->exists(),
+            'going' => isset($e->user_going) ? (bool) $e->user_going : $e->attendees()->where('user_id', $userId)->exists(),
             'saved' => false,
             'organiser' => $e->organiser?->name ?? 'Expadu',
             'tags' => $this->buildTags($e->category, $e->tags ?? [], $color),

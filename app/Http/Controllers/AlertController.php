@@ -7,6 +7,7 @@ use App\Models\NotificationPreference;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,6 +15,7 @@ class AlertController extends Controller
 {
     public function index(Request $request): Response
     {
+        $userId = $request->user()->id;
         $query = $request->user()->alerts()->whereNull('dismissed_at')->orderByDesc('created_at');
 
         if ($tab = $request->query('tab')) {
@@ -22,16 +24,27 @@ class AlertController extends Controller
             }
         }
 
-        $userAlerts = $request->user()->alerts()->whereNull('dismissed_at');
+        // Single grouped aggregate replaces five clone+count queries.
+        /** @var array<int, object{type: ?string, total: int, unread: int}> $aggregates */
+        $aggregates = DB::table('alerts')
+            ->selectRaw('type, COUNT(*) AS total, COUNT(*) FILTER (WHERE read_at IS NULL) AS unread')
+            ->where('user_id', $userId)
+            ->whereNull('dismissed_at')
+            ->groupBy('type')
+            ->get()
+            ->all();
+
+        $unreadCount = (int) array_sum(array_column($aggregates, 'unread'));
+        $byType = collect($aggregates)->keyBy('type');
 
         return Inertia::render('alerts', [
             'alerts' => $query->paginate(30),
-            'unreadCount' => (clone $userAlerts)->whereNull('read_at')->count(),
+            'unreadCount' => $unreadCount,
             'counts' => [
-                'unread' => (clone $userAlerts)->whereNull('read_at')->count(),
-                'system' => (clone $userAlerts)->where('type', 'system')->count(),
-                'social' => (clone $userAlerts)->where('type', 'social')->count(),
-                'reminder' => (clone $userAlerts)->where('type', 'reminder')->count(),
+                'unread' => $unreadCount,
+                'system' => (int) ($byType->get('system')->total ?? 0),
+                'social' => (int) ($byType->get('social')->total ?? 0),
+                'reminder' => (int) ($byType->get('reminder')->total ?? 0),
             ],
             'tab' => $request->query('tab', 'all'),
             'notificationPreferences' => $request->user()->notificationPreference?->preferences

@@ -649,6 +649,8 @@ class RecommendationService
             ->whereDate('starts_at', today())
             ->where('starts_at', '>', now())
             ->where('quality_score', '>=', 0.3)
+            ->withCount('attendees')
+            ->withExists(['attendees as user_going' => fn ($q) => $q->where('user_id', $user->id)])
             ->orderByDesc('is_expat_relevant')
             ->orderByDesc('quality_score')
             ->orderBy('starts_at')
@@ -657,8 +659,8 @@ class RecommendationService
 
         $cards = [];
         foreach ($events as $event) {
-            $going = $event->attendees()->where('user_id', $user->id)->exists();
-            $attendees = $event->attendees()->count();
+            $going = (bool) $event->user_going;
+            $attendees = (int) $event->attendees_count;
 
             $cards[] = [
                 'type' => 'event',
@@ -707,17 +709,12 @@ class RecommendationService
      */
     protected function disruptionCards(array $disruptions, User $user): array
     {
-        // Get user's transit lines from departure data at their stops
-        $userLineNumbers = collect();
-        $routines = $user->routines()->where('is_active', true)->get();
-        foreach ($routines as $r) {
-            // Use the departure service to find which lines serve the user's stops
-            $deps = app(GtfsDepartureService::class)->getDepartures($r->from_stop, 10);
-            foreach ($deps['departures'] ?? [] as $dep) {
-                $userLineNumbers->push(strtolower($dep['line']));
-            }
-        }
-        $userLineNumbers = $userLineNumbers->unique();
+        // One cached call replaces a per-routine GTFS fan-out: UserTransitLinesService
+        // merges routines + saved places + stationary GPS into one normalised line set.
+        $userLineNumbers = app(UserTransitLinesService::class)
+            ->getRelevantLines($user)['lines']
+            ->map(fn (string $l) => strtolower($l))
+            ->unique();
 
         return collect($disruptions)
             ->map(function (array $d) use ($userLineNumbers) {
@@ -978,28 +975,21 @@ class RecommendationService
     {
         $since = now()->subDays(7);
 
-        // Get click counts per card type
-        $clicks = $user->behaviorEvents()
-            ->where('event_type', 'card_clicked')
+        // Single query covering all engagement-bearing event types; grouping happens in PHP.
+        $events = $user->behaviorEvents()
+            ->whereIn('event_type', ['card_clicked', 'card_dismissed', 'departure_viewed', 'spot_viewed', 'journey_planned'])
             ->where('created_at', '>=', $since)
-            ->get()
+            ->get(['event_type', 'payload']);
+
+        $clicks = $events->where('event_type', 'card_clicked')
             ->groupBy(fn ($e) => $e->payload['card_type'] ?? 'unknown')
             ->map->count();
 
-        // Get dismiss counts per card type
-        $dismissals = $user->behaviorEvents()
-            ->where('event_type', 'card_dismissed')
-            ->where('created_at', '>=', $since)
-            ->get()
+        $dismissals = $events->where('event_type', 'card_dismissed')
             ->groupBy(fn ($e) => $e->payload['card_type'] ?? 'unknown')
             ->map->count();
 
-        // Implicit engagement signals: departure_viewed → boost transit,
-        // spot_viewed → boost spots, journey_planned → boost commute
-        $implicitSignals = $user->behaviorEvents()
-            ->whereIn('event_type', ['departure_viewed', 'spot_viewed', 'journey_planned'])
-            ->where('created_at', '>=', $since)
-            ->get()
+        $implicitSignals = $events->whereIn('event_type', ['departure_viewed', 'spot_viewed', 'journey_planned'])
             ->groupBy('event_type')
             ->map->count();
 
