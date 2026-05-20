@@ -23,6 +23,15 @@ class RefreshWeather implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 15;
 
+    /**
+     * Pin to the redis connection — prod's queue:work runs on
+     * `redis --queue=commute,default`. Without this the job dispatches
+     * to the app-default (database) and never gets processed.
+     */
+    public $connection = 'redis';
+
+    public $queue = 'default';
+
     public function __construct(
         public float $lat,
         public float $lng,
