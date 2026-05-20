@@ -28,6 +28,7 @@ use App\Http\Controllers\TransitController;
 use App\Http\Controllers\UserPlaceController;
 use App\Http\Controllers\UserSettingController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 /*
@@ -139,14 +140,40 @@ $appRoutes = function () use ($appDomain) {
         Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->name('user-places.update');
         Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->name('user-places.destroy');
 
-        // Placeholder pages
-        Route::inertia('language-exchange', 'language-exchange')->name('language-exchange');
-        Route::inertia('chat', 'chat')->name('chat');
-        Route::inertia('neighborhoods', 'neighborhoods')->name('neighborhoods');
+        // Feature-flagged pages — backend not yet built. Until each flag flips
+        // on, the route renders a "coming soon" placeholder and the sidebar
+        // entry hides itself (see resources/js/components/app-sidebar.tsx).
+        Route::get('language-exchange', fn () => config('features.language_exchange')
+            ? Inertia::render('language-exchange')
+            : Inertia::render('coming-soon', [
+                'title' => 'Language Exchange',
+                'description' => 'Find partners to practise German with locals and other expats. Launching soon.',
+            ]))->name('language-exchange');
+
+        Route::get('chat', fn () => config('features.chat')
+            ? Inertia::render('chat')
+            : Inertia::render('coming-soon', [
+                'title' => 'Chat',
+                'description' => 'Direct messaging with people you meet through Expadu. Launching soon.',
+            ]))->name('chat');
+
+        Route::get('neighborhoods', fn () => config('features.neighbourhoods')
+            ? Inertia::render('neighborhoods')
+            : Inertia::render('coming-soon', [
+                'title' => 'Neighbourhoods',
+                'description' => 'Curated guides to Cologne neighbourhoods — parks, cafés, workspaces, rentals. Launching soon.',
+            ]))->name('neighborhoods');
+
+        Route::get('just-arrived', fn () => config('features.just_arrived')
+            ? Inertia::render('just-arrived')
+            : Inertia::render('coming-soon', [
+                'title' => 'Just Arrived',
+                'description' => 'A personalised first-month checklist for your new city. Launching soon.',
+            ]))->name('just-arrived');
+
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
         Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
-        Route::inertia('just-arrived', 'just-arrived')->name('just-arrived');
         Route::get('profile', ProfilePageController::class)->name('profile');
     });
 };

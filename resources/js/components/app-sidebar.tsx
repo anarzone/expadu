@@ -28,52 +28,77 @@ import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import type { NavGroup } from '@/types';
 
-const navGroups: NavGroup[] = [
-    {
-        label: 'Main',
-        items: [
-            { title: 'Home', href: '/dashboard', icon: IconHome },
-            { title: 'Explore', href: '/explore', icon: IconCompass },
-            {
-                title: 'Alerts',
-                href: '/alerts',
-                icon: IconBell,
-                badge: undefined,
-            },
-        ],
-    },
-    {
-        label: 'City',
-        items: [
-            { title: 'Transit', href: '/transit', icon: IconTrain },
-            { title: 'Events', href: '/events', icon: IconCalendarEvent },
-            {
-                title: 'Language Exchange',
-                href: '/language-exchange',
-                icon: IconLanguage,
-            },
-            {
-                title: 'Neighborhoods',
-                href: '/neighborhoods',
-                icon: IconBuildingCommunity,
-            },
-            { title: 'Services', href: '/services', icon: IconFirstAidKit },
-        ],
-    },
-    {
-        label: 'Personal',
-        items: [
-            {
-                title: 'Bureaucracy',
-                href: '/bureaucracy',
-                icon: IconFileText,
-                badge: 3,
-                badgeVariant: 'warn',
-            },
-            { title: 'Just Arrived', href: '/just-arrived', icon: IconPackage },
-        ],
-    },
-];
+interface FeatureFlags {
+    language_exchange?: boolean;
+    chat?: boolean;
+    neighbourhoods?: boolean;
+    just_arrived?: boolean;
+}
+
+function buildNavGroups(features: FeatureFlags): NavGroup[] {
+    return [
+        {
+            label: 'Main',
+            items: [
+                { title: 'Home', href: '/dashboard', icon: IconHome },
+                { title: 'Explore', href: '/explore', icon: IconCompass },
+                {
+                    title: 'Alerts',
+                    href: '/alerts',
+                    icon: IconBell,
+                    badge: undefined,
+                },
+            ],
+        },
+        {
+            label: 'City',
+            items: [
+                { title: 'Transit', href: '/transit', icon: IconTrain },
+                { title: 'Events', href: '/events', icon: IconCalendarEvent },
+                ...(features.language_exchange
+                    ? [
+                          {
+                              title: 'Language Exchange',
+                              href: '/language-exchange',
+                              icon: IconLanguage,
+                          },
+                      ]
+                    : []),
+                ...(features.neighbourhoods
+                    ? [
+                          {
+                              title: 'Neighborhoods',
+                              href: '/neighborhoods',
+                              icon: IconBuildingCommunity,
+                          },
+                      ]
+                    : []),
+                { title: 'Services', href: '/services', icon: IconFirstAidKit },
+            ],
+        },
+        {
+            label: 'Personal',
+            items: [
+                {
+                    title: 'Bureaucracy',
+                    href: '/bureaucracy',
+                    icon: IconFileText,
+                    badge: 3,
+                    badgeVariant: 'warn',
+                },
+                ...(features.just_arrived
+                    ? [
+                          {
+                              title: 'Just Arrived',
+                              href: '/just-arrived',
+                              icon: IconPackage,
+                          },
+                      ]
+                    : []),
+            ],
+        },
+    ];
+}
 
 const dropdownItems = [
     { label: 'Profile', icon: IconUser, href: '/profile' },
@@ -82,13 +107,16 @@ const dropdownItems = [
 ];
 
 export function AppSidebar() {
-    const { auth, unreadAlertCount } = usePage<{
+    const { auth, unreadAlertCount, features } = usePage<{
         auth: { user?: { name?: string } };
         unreadAlertCount?: number;
+        features?: FeatureFlags;
     }>().props;
     const user = auth?.user;
     const getInitials = useInitials();
     const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    const navGroups = buildNavGroups(features ?? {});
 
     // Set dynamic badge on Alerts nav item
     const navWithBadges = navGroups.map((group) => ({
