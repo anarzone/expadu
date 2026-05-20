@@ -33,16 +33,20 @@ export default defineConfig({
                 name: 'Expadu — Your City Guide',
                 short_name: 'Expadu',
                 description: 'Smart city companion for expats in Germany',
+                lang: 'en',
+                categories: ['travel', 'utilities', 'navigation'],
                 theme_color: '#1A4CD4',
                 background_color: '#F6F5F1',
                 display: 'standalone',
+                orientation: 'portrait',
                 scope: '/',
-                start_url: '/dashboard',
+                start_url: '/',
                 icons: [
                     {
                         src: '/favicon.svg',
                         sizes: 'any',
                         type: 'image/svg+xml',
+                        purpose: 'any',
                     },
                     {
                         src: '/apple-touch-icon.png',

@@ -1,5 +1,5 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { dashboard, login, register } from '@/routes';
+import { Head, Link } from '@inertiajs/react';
+import { login, register } from '@/routes';
 
 const features = [
     {
@@ -27,8 +27,6 @@ export default function Welcome({
 }: {
     canRegister?: boolean;
 }) {
-    const { auth } = usePage().props;
-
     return (
         <>
             <Head title="Your City. Your Guide.">
@@ -40,36 +38,25 @@ export default function Welcome({
             </Head>
 
             <div className="flex min-h-screen flex-col bg-background text-foreground">
-                {/* Nav */}
+                {/* Nav — interim placeholder until full landing page lands */}
                 <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
                     <span className="font-display text-xl font-semibold tracking-tight text-primary">
                         Expadu
                     </span>
                     <nav className="flex items-center gap-3">
-                        {auth.user ? (
+                        <Link
+                            href={login()}
+                            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
+                        >
+                            Log in
+                        </Link>
+                        {canRegister && (
                             <Link
-                                href={dashboard()}
+                                href={register()}
                                 className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:bg-accent-hover"
                             >
-                                Dashboard
+                                Get started
                             </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    href={login()}
-                                    className="rounded-lg px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
-                                >
-                                    Log in
-                                </Link>
-                                {canRegister && (
-                                    <Link
-                                        href={register()}
-                                        className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:bg-accent-hover"
-                                    >
-                                        Get started
-                                    </Link>
-                                )}
-                            </>
                         )}
                     </nav>
                 </header>

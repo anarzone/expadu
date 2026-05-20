@@ -1,2 +1,14 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /alerts
+Disallow: /events
+Disallow: /transit
+Disallow: /explore
+Disallow: /bureaucracy
+Disallow: /profile
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /api/
+
+Sitemap: https://expadu.com/sitemap.xml
