@@ -26,6 +26,8 @@ function getCookie(name: string): string | null {
 }
 
 export type UsePushSubscriptionReturn = {
+    /** True once the hook has finished detecting support + subscription state. */
+    isReady: boolean;
     isSupported: boolean;
     isSubscribed: boolean;
     subscribe: () => Promise<boolean>;
@@ -36,6 +38,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
     const { vapidPublicKey } = usePage<{ vapidPublicKey: string | null }>()
         .props;
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [isReady, setIsReady] = useState(false);
 
     const [isSupported, setIsSupported] = useState(false);
 
@@ -49,12 +52,19 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
 
     useEffect(() => {
         if (!isSupported) {
+            // Nothing to check — mark ready immediately so consumers can render.
+            setIsReady(true);
+
             return;
         }
 
         navigator.serviceWorker.ready
             .then((registration) => registration.pushManager.getSubscription())
-            .then((subscription) => setIsSubscribed(subscription !== null));
+            .then((subscription) => {
+                setIsSubscribed(subscription !== null);
+                setIsReady(true);
+            })
+            .catch(() => setIsReady(true));
     }, [isSupported]);
 
     const subscribe = useCallback(async (): Promise<boolean> => {
@@ -132,5 +142,5 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
         }
     }, [isSupported]);
 
-    return { isSupported, isSubscribed, subscribe, unsubscribe };
+    return { isReady, isSupported, isSubscribed, subscribe, unsubscribe };
 }

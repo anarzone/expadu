@@ -65,7 +65,8 @@ function isDismissed(key: string): boolean {
  * Dismissible with 7-day cooldown via localStorage.
  */
 export function PushPromptCard() {
-    const { isSupported, isSubscribed, subscribe } = usePushSubscription();
+    const { isReady, isSupported, isSubscribed, subscribe } =
+        usePushSubscription();
     const [loading, setLoading] = useState(false);
     const [dismissed, setDismissed] = useState(false);
 
@@ -112,7 +113,10 @@ export function PushPromptCard() {
         }
     }, [subscribe]);
 
-    if (!variant || dismissed) {
+    // Don't render until the hook has confirmed subscription state — otherwise
+    // already-subscribed users see the card flash on every refresh while the
+    // serviceWorker.ready promise resolves.
+    if (!isReady || !variant || dismissed) {
         return null;
     }
 
