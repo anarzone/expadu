@@ -514,20 +514,25 @@ export default function Bureaucracy() {
         url: string;
     };
 
-    const { slots, monitors, dbTasks, taskProgress, bookingServices } =
-        usePage<{
-            slots: Record<string, SlotData>;
-            monitors: string[];
-            dbTasks: DbTask[];
-            taskProgress: TaskProgress;
-            bookingServices?: BookingService[];
-        }>().props;
+    const {
+        slots,
+        monitors,
+        dbTasks,
+        taskProgress,
+        bookingServices: _bookingServices,
+    } = usePage<{
+        slots: Record<string, SlotData>;
+        monitors: string[];
+        dbTasks: DbTask[];
+        taskProgress: TaskProgress;
+        bookingServices?: BookingService[];
+    }>().props;
 
     const offices = useMemo(
         () => slotsToOffices(slots ?? {}, monitors ?? []),
         [slots, monitors],
     );
-    const monitoringCount = offices.filter((o) => o.monitoring).length;
+    const _monitoringCount = offices.filter((o) => o.monitoring).length;
 
     // Map backend tasks to frontend shape
     const tasks = useMemo(
@@ -675,13 +680,7 @@ export default function Bureaucracy() {
             <Head title="Bureaucracy" />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* ── Sticky header: title + tabs ── */}
-                <div
-                    className="sticky top-0 z-50 border-b border-[#E2DFD6] px-6 py-3.5"
-                    style={{
-                        background: 'rgba(246,245,241,.94)',
-                        backdropFilter: 'blur(16px)',
-                    }}
-                >
+                <div className="sticky top-0 z-50 border-b border-[#E2DFD6] bg-[rgba(246,245,241,0.94)] px-6 py-3.5 backdrop-blur-[16px] dark:border-[#3A3930] dark:bg-[rgba(15,14,12,0.94)]">
                     <div className="flex items-center justify-between">
                         <span
                             className="shrink-0"
@@ -700,20 +699,12 @@ export default function Bureaucracy() {
                             <button
                                 key={t.id}
                                 onClick={() => setActiveTab(t.id)}
-                                className="cursor-pointer border-none bg-transparent px-3 py-2 transition-all"
-                                style={{
-                                    fontFamily: "'Geist', sans-serif",
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    color:
-                                        activeTab === t.id
-                                            ? '#1A4CD4'
-                                            : '#6B6860',
-                                    borderBottom:
-                                        activeTab === t.id
-                                            ? '2px solid #1A4CD4'
-                                            : '2px solid transparent',
-                                }}
+                                className={`cursor-pointer border-b-2 border-none bg-transparent px-3 py-2 text-[13px] font-semibold transition-all ${
+                                    activeTab === t.id
+                                        ? 'border-[#1A4CD4] text-[#1A4CD4] dark:border-[#5B8DEF] dark:text-[#5B8DEF]'
+                                        : 'border-transparent text-[#6B6860] dark:text-[#AAA89F]'
+                                }`}
+                                style={{ fontFamily: "'Geist', sans-serif" }}
                             >
                                 {t.label}
                             </button>
