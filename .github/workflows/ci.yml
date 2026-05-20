@@ -139,9 +139,28 @@ jobs:
       - name: Run Tests
         run: vendor/bin/pest --compact --parallel --exclude-group=slow
 
+  detect-changes:
+    name: Detect path changes
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    outputs:
+      pgsql: ${{ steps.filter.outputs.pgsql }}
+      embedding: ${{ steps.filter.outputs.embedding }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            pgsql:
+              - 'docker/pgsql/**'
+            embedding:
+              - 'services/embedding/**'
+
   build-and-push:
     name: Build & Push Image
-    needs: [lint, test]
+    # Build only waits on lint, runs in parallel with test. Deploy waits on both.
+    needs: [lint]
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04-arm
     permissions:
@@ -187,8 +206,8 @@ jobs:
 
   build-pgsql:
     name: Build & Push pgsql Image
-    needs: [lint, test]
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [lint, detect-changes]
+    if: needs.detect-changes.outputs.pgsql == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -233,8 +252,8 @@ jobs:
 
   build-embedding:
     name: Build & Push embedding Image
-    needs: [lint, test]
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [lint, detect-changes]
+    if: needs.detect-changes.outputs.embedding == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -279,7 +298,9 @@ jobs:
 
   deploy-staging:
     name: Deploy to Staging
-    needs: [build-and-push]
+    # Tests must pass before we deploy — build runs in parallel with them but
+    # the image only ships if both come back green.
+    needs: [build-and-push, test]
     if: github.ref == 'refs/heads/staging' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
@@ -299,7 +320,7 @@ jobs:
 
   deploy-production:
     name: Deploy to Production
-    needs: [build-and-push]
+    needs: [build-and-push, test]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 

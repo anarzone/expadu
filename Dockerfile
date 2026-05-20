@@ -33,9 +33,13 @@ RUN apk add --no-cache icu-dev && docker-php-ext-install intl
 
 WORKDIR /app
 
+# Lockfiles first → install layer caches unless composer.lock changes.
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+RUN --mount=type=cache,target=/tmp/composer-cache,sharing=locked \
+    COMPOSER_CACHE_DIR=/tmp/composer-cache \
+    composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 
+# Source second (invalidates often, but composer install already done).
 COPY . .
 RUN composer dump-autoload --optimize
 
@@ -46,13 +50,27 @@ RUN apk add --no-cache nodejs npm postgresql-dev icu-dev \
     && docker-php-ext-install pdo_pgsql intl bcmath
 
 WORKDIR /app
-COPY --from=composer-build /app /app
+
+# npm install layer caches unless package-lock.json changes — by far the slowest
+# step when source changed but lockfile didn't. Cache mount reuses npm's tarball
+# cache across builds.
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --legacy-peer-deps
+
+# Bring in PHP vendor (Wayfinder needs autoload to enumerate Laravel routes).
+COPY --from=composer-build /app/vendor ./vendor
+COPY composer.json composer.lock ./
+
+# Source code last — frequent changes here invalidate only the build, not deps.
+COPY . .
 
 RUN cp .env.example .env \
     && sed -i 's|APP_URL=.*|APP_URL=https://expadu.com|' .env \
     && php artisan key:generate --force
-RUN npm ci --legacy-peer-deps
-RUN npm run build && npm run build:ssr
+
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm run build && npm run build:ssr
 
 # ── Stage 4: Production ───────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production
