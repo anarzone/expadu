@@ -1,0 +1,209 @@
+situation: non_eu_employee
+
+tasks:
+  - title: Register your address (Anmeldung)
+    description: |
+      Every resident in Germany must register their address at the Bürgeramt within 14 days
+      of moving in. Without the Meldebescheinigung you can't open a bank account, get a
+      Steuer-ID, or finalise your residence permit.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 14
+    booking_service_key: anmeldung
+    documents_required:
+      - Passport (Reisepass)
+      - Wohnungsgeberbestätigung (signed by your landlord)
+      - Rental contract (Mietvertrag) — optional but useful
+    links:
+      - https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung
+    how_to_steps:
+      - title: Get a Wohnungsgeberbestätigung from your landlord
+        body: Your landlord must give you this form within two weeks of moving in. It confirms you actually live at the address. Without it the Bürgeramt will reject the appointment.
+      - title: Book a Bürgeramt appointment online
+        body: The Cologne city website has online slots — they often release new slots overnight, so try early mornings if everything looks booked.
+        link: https://termine.stadt-koeln.de/
+      - title: Bring originals to the appointment
+        body: Passport, Wohnungsgeberbestätigung, and ideally your rental contract. The appointment takes ~15 minutes; you'll walk out with a printed Meldebescheinigung.
+      - title: Make digital copies
+        body: Photograph the Meldebescheinigung and back it up. You'll need it for almost everything else on this list.
+
+  - title: Wait for your Steuer-ID (tax identification number)
+    description: |
+      The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
+      within 2–4 weeks of Anmeldung. You can't legally be paid in Germany without it.
+    phase: arrival
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 28
+    documents_required: []
+    links:
+      - https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+    how_to_steps:
+      - title: Check your post daily
+        body: It arrives as an unbranded letter from Bonn — easy to miss. Don't throw away mail until you've found it.
+      - title: If nothing after 4 weeks, request a copy
+        body: Use the BZSt online form. They'll send a new letter to your registered address.
+        link: https://www.bzst.de/SiteGlobals/Kontaktformulare/EN/Contactform_IDNr/IdNr_node.html
+      - title: Give it to your employer immediately
+        body: Without your Steuer-ID, payroll defaults to maximum tax class — you'll be over-taxed every payslip until you fix it.
+
+  - title: Sign up for German health insurance
+    description: |
+      Health insurance is mandatory in Germany. As an employee, you'll typically be
+      enrolled in a gesetzliche Krankenversicherung (public/statutory) — the employer
+      handles most of the paperwork, but you choose the insurer.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passport
+      - Meldebescheinigung
+      - Employment contract
+    links:
+      - https://www.krankenkassen.de/
+    how_to_steps:
+      - title: Compare public insurers
+        body: TK, AOK, Barmer, DAK — same baseline coverage by law, differ on extras (English service, app quality, dental add-ons). For most expats, TK has the best English support.
+      - title: Apply online
+        body: Most insurers let you sign up online with passport + Meldebescheinigung. They'll send a membership confirmation to your employer.
+      - title: Wait for your insurance card
+        body: Arrives by post in 2–3 weeks. In the meantime, doctors will accept the membership confirmation letter.
+
+  - title: Apply for your residence permit (Aufenthaltstitel)
+    description: |
+      As a non-EU employee, you have 90 days from arrival to apply for a residence permit
+      at the Ausländerbehörde. Your entry visa expires; the permit is what lets you stay
+      and work long-term.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - Passport with entry visa
+      - Meldebescheinigung
+      - Employment contract
+      - Proof of health insurance
+      - Biometric passport photos
+      - Proof of income / salary statement
+    links:
+      - https://www.stadt-koeln.de/service/produkt/aufenthaltstitel-erteilung
+    how_to_steps:
+      - title: Book an Ausländerbehörde appointment
+        body: Slots are scarce — book as soon as your Anmeldung is done. Wait times of 6–12 weeks are normal in Cologne.
+        link: https://termine.stadt-koeln.de/
+      - title: Gather every document on the list before the appointment
+        body: Missing one document means rebooking and another 6+ week wait. The biometric photo dimensions are strict — get them at the Bürgeramt's photo machine or a professional photographer.
+      - title: Pay the fee at the appointment
+        body: ~€100, card or cash. You'll get a temporary Fiktionsbescheinigung; the actual eAT card arrives by post 4–8 weeks later.
+
+  - title: Open a German bank account
+    description: |
+      Required for receiving your salary and paying rent. Pick a Girokonto from a bank
+      that supports IBAN, mobile app, and ideally English service.
+    phase: first_30_days
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passport
+      - Meldebescheinigung
+      - Tax ID (if available)
+    links:
+      - https://www.n26.com/en-de
+      - https://www.commerzbank.de/portal/en/englishsite/englishsite.html
+    how_to_steps:
+      - title: Pick an account type
+        body: Online-only banks (N26, Revolut, C24) are fastest to open. Traditional banks (Sparkasse, Deutsche Bank, Commerzbank) are useful if you need a branch or notarised paperwork.
+      - title: Apply with passport + Meldebescheinigung
+        body: Online banks usually verify identity via video call (PostIdent or self-onboarding via app). Allow 1–3 days for the IBAN to be issued.
+      - title: Share the IBAN with employer + landlord
+        body: Your IBAN should be on the employer's HR portal before payroll. Same with rent direct-debit.
+
+  - title: Settle your Rundfunkbeitrag (broadcasting fee)
+    description: |
+      Every household in Germany pays €18.36/month for public broadcasting, regardless of
+      whether you own a TV. The Beitragsservice will write to you automatically a few
+      weeks after Anmeldung — you can also register pre-emptively.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required: []
+    links:
+      - https://www.rundfunkbeitrag.de/en/
+    how_to_steps:
+      - title: Register at rundfunkbeitrag.de
+        body: One Beitrag per household. If your flatmates already pay, you don't have to register again — just give the Beitragsnummer of one of them.
+      - title: Set up SEPA direct debit
+        body: Saves you from manual transfers; can be cancelled anytime if you move out.
+      - title: Apply for exemption if eligible
+        body: BAföG recipients, certain low-income workers, and disabled persons can be exempted — full list on the official site.
+
+  - title: Get private liability insurance (Haftpflichtversicherung)
+    description: |
+      Not legally required, but socially expected — covers damage you accidentally cause
+      to other people's property. Costs €30–50/year and protects you against bills that
+      could otherwise wipe out your savings.
+    phase: settling
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.check24.de/haftpflichtversicherung/
+    how_to_steps:
+      - title: Compare on Check24 or Verivox
+        body: Look for "Privathaftpflicht" with at least €10M coverage. Pay annually if you want a discount.
+      - title: Note your policy number
+        body: You'll need it if you ever cause damage (e.g., breaking a friend's TV, damaging a rented item).
+
+  - title: Convert your driving licence (if from a non-EU country)
+    description: |
+      EU/EEA licences are valid indefinitely. Licences from other countries are valid for
+      6 months after Anmeldung — after that you need a German one. Some countries (US,
+      Canada, etc.) allow direct conversion; others require a full test.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 180
+    booking_service_key: kfz
+    documents_required:
+      - Original driving licence
+      - Translation (if not in German/English)
+      - Passport photo
+      - Eye-test certificate (≤2 years old)
+      - First-aid course certificate
+    links:
+      - https://www.stadt-koeln.de/service/produkt/umschreibung-eines-fuehrerscheins
+    how_to_steps:
+      - title: Check if your country qualifies for direct conversion
+        body: The Stadt Köln list shows which countries' licences convert without a test. If yours is not on the list, you'll need theory + practical exams.
+      - title: Book a KFZ-Zulassungsstelle appointment
+        body: Bring all documents at once — missing the first-aid certificate is the most common reason for rejection.
+      - title: Pay the conversion fee
+        body: ~€42, takes a few weeks to issue the German licence. You can keep driving on the original in the meantime if still within the 6-month window.
+
+  - title: File your annual tax return (Einkommensteuererklärung)
+    description: |
+      Mandatory if you had multiple employers in a year, received unemployment benefits,
+      or want to claim deductions (commute, work-from-home, professional fees, etc.).
+      Most expats get money back — average refund is ~€1,000.
+    phase: ongoing
+    urgency: medium
+    deadline_type: none
+    recurrence_months: 12
+    documents_required:
+      - Lohnsteuerbescheinigung from each employer
+      - Receipts for deductible expenses
+      - Bank statements showing tax-relevant transactions
+    links:
+      - https://www.elster.de/eportal/start
+    how_to_steps:
+      - title: Pick a filing method
+        body: ELSTER (free, German-only, complex) or commercial tools like Taxfix, Wundertax, Steuerbot (English, ~€40, much easier).
+      - title: Gather your Lohnsteuerbescheinigung
+        body: Your employer sends this by end of February each year. It's the tax summary for the previous year.
+      - title: File by July 31
+        body: Standard deadline if filing yourself; later if a Steuerberater files for you. Late penalties accrue if missed.

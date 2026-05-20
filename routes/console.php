@@ -49,6 +49,9 @@ Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 // Personalisation — rebuild user preference vectors daily at 03:30
 Schedule::command('users:rebuild-preference-vectors')->dailyAt('03:30')->withoutOverlapping();
 
+// Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
+Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:00')->withoutOverlapping();
+
 // Recommendation pipeline controls
 Schedule::command('controls:daily-audit')->dailyAt('04:00')->withoutOverlapping();
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();

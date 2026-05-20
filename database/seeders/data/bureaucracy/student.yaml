@@ -1,0 +1,198 @@
+situation: student
+
+tasks:
+  - title: Register your address (Anmeldung)
+    description: |
+      Every resident in Germany must register their address at the Bürgeramt within 14
+      days of moving in. Without the Meldebescheinigung you can't enrol at university,
+      open a bank account, or finalise your residence permit.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 14
+    booking_service_key: anmeldung
+    documents_required:
+      - Passport
+      - Wohnungsgeberbestätigung (signed by landlord/dorm)
+    links:
+      - https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung
+    how_to_steps:
+      - title: Get a Wohnungsgeberbestätigung
+        body: Your landlord (or the Studierendenwerk, if you're in a dorm) must give you this form. Without it the Bürgeramt won't proceed.
+      - title: Book a Bürgeramt appointment
+        body: Slots fill fast in September/October (semester start). Try booking immediately after you have a contract.
+        link: https://termine.stadt-koeln.de/
+      - title: Make digital + paper copies
+        body: You'll need the Meldebescheinigung repeatedly — keep originals safe and PDFs accessible.
+
+  - title: Enrol at your university (Immatrikulation)
+    description: |
+      Officially become a student. Until enrolment is complete you don't have your
+      student ID, can't access most facilities, and can't get the semester ticket.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Admission letter (Zulassungsbescheid)
+      - Passport
+      - Meldebescheinigung
+      - Health insurance confirmation
+      - Proof of payment of Semesterbeitrag
+    links:
+      - https://www.portal.uni-koeln.de/
+    how_to_steps:
+      - title: Pay the Semesterbeitrag
+        body: ~€300/semester — includes the Semesterticket (free public transit in NRW). Pay by bank transfer; takes 1–2 working days to clear.
+      - title: Submit enrolment documents
+        body: Most German universities now accept digital uploads via the student portal. Some still require an in-person submission.
+      - title: Pick up your student ID + Semesterticket
+        body: Usually mailed within 2 weeks of enrolment. The Semesterticket lets you ride all public transit in North Rhine-Westphalia for free.
+
+  - title: Sign up for student health insurance
+    description: |
+      Students under 30 pay a discounted rate (~€110/month) for public insurance.
+      You must have proof of insurance before you can enrol — many universities won't
+      finalise enrolment without it.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 14
+    documents_required:
+      - Passport
+      - Meldebescheinigung
+      - Admission letter
+    links:
+      - https://www.tk.de/en
+    how_to_steps:
+      - title: Choose a public insurer
+        body: TK, AOK, Barmer all offer student rates. TK has the best English service for international students.
+      - title: Apply online for student membership
+        body: Specify you're a Pflichtversicherter as a student. The insurer issues a Studienbescheinigung for your university enrolment.
+      - title: Forward the confirmation to your university
+        body: Submit the insurance confirmation in the student portal — required to complete Immatrikulation.
+
+  - title: Apply for student residence permit
+    description: |
+      Non-EU students must convert their entry visa into a student residence permit
+      within the first 90 days. The permit covers studies + 120 days of part-time work
+      per year.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - Passport with entry visa
+      - Meldebescheinigung
+      - Immatrikulationsbescheinigung
+      - Health insurance proof
+      - Proof of finances (€11,208/year — blocked account or scholarship letter)
+      - Biometric passport photo
+    links:
+      - https://www.stadt-koeln.de/service/produkt/aufenthaltstitel-zum-zweck-des-studiums
+    how_to_steps:
+      - title: Open a blocked account or get a scholarship letter
+        body: To prove financial sufficiency, most students use a Sperrkonto (blocked account) at Fintiba, Expatrio, or Deutsche Bank, deposited with one year's living costs.
+      - title: Book the Ausländerbehörde appointment
+        body: Demand is heaviest in Sep/Oct. Try booking early August if you have an accepted offer.
+      - title: Bring originals + colour copies of everything
+        body: Even the smallest missing document means a rebooked appointment — currently a 6–12 week wait in Cologne.
+
+  - title: Wait for your Steuer-ID
+    description: |
+      Automatically sent by post 2–4 weeks after Anmeldung. As a student you'll need
+      it for any paid work (mini-jobs, working student contracts, tutoring) and to file
+      your first tax return.
+    phase: arrival
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 28
+    documents_required: []
+    links:
+      - https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+    how_to_steps:
+      - title: Watch your post
+        body: Plain letter from Bonn — don't throw out unbranded mail in your first month.
+      - title: Request a copy if it doesn't arrive in 4 weeks
+        body: Use the BZSt online contact form.
+
+  - title: Open a student bank account
+    description: |
+      Most German banks offer free Girokonto accounts to students under 30 — no monthly
+      fee, free debit card, English support at the bigger banks.
+    phase: first_30_days
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passport
+      - Meldebescheinigung
+      - Immatrikulationsbescheinigung (proves student status)
+    links:
+      - https://www.n26.com/en-de
+      - https://www.deutsche-bank.de/pk/konten-und-karten/girokonto/junges-konto.html
+    how_to_steps:
+      - title: Pick online-only or branch-based
+        body: N26 and C24 are fast and English-friendly. Deutsche Bank, Commerzbank offer student accounts with branch service.
+      - title: Apply with student certificate
+        body: Many "free" accounts require proof you're under 30 + an active student — your Immatrikulationsbescheinigung is what unlocks the student rate.
+      - title: Activate online banking + share IBAN with university
+        body: For getting refunds (e.g., dropped courses) you'll need the IBAN on file with the registrar.
+
+  - title: Register with Studierendenwerk for housing + meals
+    description: |
+      Studierendenwerk Köln runs the dorms, mensa cards, and student support services.
+      Even if you live off-campus, your student ID gives you discounted meals at the
+      mensa — load it with the Studierendenwerk card.
+    phase: settling
+    urgency: low
+    deadline_type: none
+    documents_required:
+      - Student ID
+    links:
+      - https://www.kstw.de/
+    how_to_steps:
+      - title: Set up your mensa card
+        body: Either via your student ID directly (if your uni supports it) or by picking up a separate Studierendenwerk card.
+      - title: Top it up online
+        body: Most dorms have charging stations. Meals are €3–6 vs. €10+ outside.
+
+  - title: Settle your Rundfunkbeitrag (or apply for exemption)
+    description: |
+      €18.36/month per household. If you receive BAföG you can apply for exemption
+      and skip the fee entirely.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required: []
+    links:
+      - https://www.rundfunkbeitrag.de/en/
+    how_to_steps:
+      - title: Register or be added to flatmates' account
+        body: One Beitrag per shared household. Ask flatmates for their Beitragsnummer before signing up separately.
+      - title: Apply for BAföG exemption if eligible
+        body: BAföG recipients pay €0/month — submit your BAföG-Bescheid as proof.
+
+  - title: Apply for BAföG (if eligible)
+    description: |
+      Federal student aid for low-income students, including some non-EU students with
+      certain residence titles. Up to €934/month — half grant, half interest-free loan.
+    phase: settling
+    urgency: low
+    deadline_type: none
+    documents_required:
+      - Immatrikulationsbescheinigung
+      - Income statements (yours + parents')
+      - Bank statements
+      - Tax IDs
+    links:
+      - https://www.bafoeg-digital.de/
+    how_to_steps:
+      - title: Check eligibility
+        body: Generally for German citizens, EU citizens, or non-EU students with at least 5 years of legal residence. The official portal has an eligibility quiz.
+      - title: File online via bafoeg-digital.de
+        body: Fully digital application; takes 6–10 weeks to process. Submit early in the semester to start receiving funds sooner.
+      - title: Submit yearly updates
+        body: BAföG is recalculated each year — keep income + enrolment docs ready every September.

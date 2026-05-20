@@ -1,0 +1,203 @@
+situation: family_reunification
+
+tasks:
+  - title: Register your family's address (Anmeldung)
+    description: |
+      Within 14 days of arrival, every family member must be registered at the Bürgeramt
+      — including children. Book a single appointment for the whole family.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 14
+    booking_service_key: anmeldung
+    documents_required:
+      - Passports for every family member
+      - Wohnungsgeberbestätigung
+      - Marriage certificate (apostilled + translated)
+      - Birth certificates for children (apostilled + translated)
+    links:
+      - https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung
+    how_to_steps:
+      - title: Confirm certificates are recognised
+        body: Marriage + birth certificates from outside the EU usually need an Apostille and a German translation by a sworn translator. The Bürgeramt will reject untranslated documents.
+      - title: Book a family Anmeldung slot
+        body: Specify "Familienanmeldung" so the Bürgeramt allocates enough time. Trying to register everyone in a 15-minute slot causes appointments to overrun and get cancelled.
+      - title: Receive separate Meldebescheinigung per person
+        body: Each family member needs their own — for school, daycare, health insurance, and visa processing.
+
+  - title: Apply for residence permits for the whole family
+    description: |
+      Reunifying family members need their own residence permits, even if the sponsoring
+      spouse already has one. Apply at the Ausländerbehörde within 90 days.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - Sponsor's residence permit + passport
+      - Family member passports + entry visas
+      - Marriage certificate (apostilled + translated)
+      - Birth certificates for children
+      - Sponsor's employment contract + salary statements
+      - Proof of accommodation (rental contract, size requirements)
+      - Health insurance for every family member
+      - Basic German certificate (A1) for spouse — unless exempted
+    links:
+      - https://www.stadt-koeln.de/service/produkt/aufenthaltserlaubnis-zum-zweck-des-familiennachzugs
+    how_to_steps:
+      - title: Confirm the sponsor's residence permit covers family reunification
+        body: Not all permit types qualify. Skilled-worker (§ 18) and Blue Card (§ 18b) typically do; short-term work permits do not.
+      - title: Book a single Ausländerbehörde appointment for the whole family
+        body: Mention you're bringing dependents when booking — they'll allocate ~1 hour instead of 20 min.
+      - title: Bring originals AND certified translations
+        body: For non-German documents, you need the original + an apostille + a sworn German translation. The Ausländerbehörde keeps copies but checks the originals.
+
+  - title: Enrol health insurance for every dependent
+    description: |
+      Each family member needs their own coverage. Public insurance through the sponsor
+      usually covers spouse + children for free (Familienversicherung) — but you must
+      actively register them, it's not automatic.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Sponsor's insurance card + member number
+      - Passports of dependents
+      - Marriage / birth certificates
+    links:
+      - https://www.tk.de/en
+    how_to_steps:
+      - title: Contact your insurer to add dependents
+        body: Most public insurers have a Familienversicherung form — submit by email or via the member portal. Spouse coverage requires that the spouse has no significant income.
+      - title: Wait for individual cards
+        body: Each dependent gets their own insurance card, mailed within 2–3 weeks. In the meantime, the membership confirmation works at doctors.
+      - title: If spouse has income, switch to separate coverage
+        body: Above ~€505/month income, the spouse needs their own paid coverage — choose between public or private depending on situation.
+
+  - title: Register children for school or Kita
+    description: |
+      School is compulsory from age 6. Kita (daycare) is widely available from age 1 but
+      has long waitlists in Cologne — apply as soon as you have a confirmed address.
+    phase: first_30_days
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required:
+      - Child's passport + birth certificate
+      - Child's vaccination record (Impfausweis)
+      - Meldebescheinigung
+      - Parents' Meldebescheinigung
+    links:
+      - https://www.stadt-koeln.de/leben-in-koeln/familie-kinder/kinderbetreuung
+    how_to_steps:
+      - title: For school-age children
+        body: Contact the local Grundschule for your address. Cologne assigns by catchment area — the Schulamt has a map. Submit enrolment forms 6+ months before school start.
+      - title: For Kita-age children
+        body: Apply via Little Bird (Cologne's central Kita waiting list) — accepts applications up to 12 months in advance. Most Kitas are full; expect to apply to 8–10 to get one offer.
+        link: https://www.little-bird.de/koeln
+      - title: Check vaccination record
+        body: German law requires proof of measles vaccination. If the record is in another language, get a German translation before submitting.
+
+  - title: Apply for Kindergeld (child benefit)
+    description: |
+      €250/month per child until age 18 (or 25 if in education). Available to most
+      residents regardless of income. Apply via the Familienkasse — separate from the
+      tax office.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required:
+      - Steuer-ID for each parent + each child
+      - Birth certificates (apostilled + translated)
+      - Meldebescheinigung
+      - Residence permits
+    links:
+      - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld-beantragen
+    how_to_steps:
+      - title: Wait for everyone's Steuer-IDs
+        body: Each child gets their own Steuer-ID a few weeks after Anmeldung. You can't file the Kindergeld application without all of them.
+      - title: File online via the Familienkasse portal
+        body: One application per family. Processing takes 6–10 weeks; payments are backdated to the application month.
+      - title: Set up direct deposit
+        body: Use the German bank account that receives your salary — they pay into a single household account.
+
+  - title: Wait for everyone's Steuer-IDs
+    description: |
+      Each family member, including children, gets their own 11-digit tax ID by post
+      within 2–4 weeks of Anmeldung. Required for school benefits and Kindergeld.
+    phase: arrival
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 28
+    documents_required: []
+    links:
+      - https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+    how_to_steps:
+      - title: Watch the post daily for the first month
+        body: Children's Steuer-IDs arrive in unmarked letters — easy to mistake for junk mail. Keep all post until you've identified the IDs.
+      - title: Store the numbers safely
+        body: Each family member's Steuer-ID is permanent — keep a digital backup. You'll need them for Kindergeld, school registration, and the annual tax return.
+
+  - title: Open a joint or family bank account
+    description: |
+      Receive salaries, pay rent + utilities, and manage shared expenses. Most banks let
+      you add a second account holder (Gemeinschaftskonto) once you're both registered.
+    phase: first_30_days
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passports for both account holders
+      - Meldebescheinigung for both
+      - Marriage certificate
+    links:
+      - https://www.commerzbank.de/portal/en/englishsite/englishsite.html
+    how_to_steps:
+      - title: Pick a joint-friendly bank
+        body: Traditional banks (Sparkasse, Commerzbank, Deutsche Bank) handle joint accounts well. Online banks like N26 are personal-only — both spouses need separate accounts.
+      - title: Apply with both account holders present
+        body: Branch banks usually require both spouses for the initial opening. Bring marriage certificate to confirm joint status.
+      - title: Set up direct debits + standing orders
+        body: Rent, utilities, Rundfunkbeitrag — move them all to the joint account once active.
+
+  - title: Settle Rundfunkbeitrag (one per household)
+    description: |
+      €18.36/month per household — flat rate regardless of family size. The Beitragsservice
+      will contact you automatically a few weeks after Anmeldung.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required: []
+    links:
+      - https://www.rundfunkbeitrag.de/en/
+    how_to_steps:
+      - title: Register the household at rundfunkbeitrag.de
+        body: One registration per household — you don't pay extra for spouse or children.
+      - title: Set up SEPA direct debit
+        body: From the joint bank account, ideally — keeps household bills together.
+
+  - title: Sign up for an Integration Course
+    description: |
+      The Integrationskurs is a subsidised 600-700 hour German + civics course. Mandatory
+      for some residence permit holders, optional but strongly recommended for others —
+      provides A1–B1 German plus orientation on German society.
+    phase: settling
+    urgency: low
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    documents_required:
+      - Residence permit
+      - Passport
+    links:
+      - https://www.bamf.de/EN/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/integrationskurse-node.html
+    how_to_steps:
+      - title: Check whether the course is mandatory for you
+        body: Some residence permits (e.g., family reunification with limited German) make the course mandatory. The Ausländerbehörde issues a Verpflichtung if so.
+      - title: Find a course provider
+        body: Volkshochschule (VHS), language schools, and community providers all run BAMF-certified courses. Search by postcode on the BAMF website.
+      - title: Apply for the Berechtigungsschein
+        body: This entitles you to the subsidised rate (~€2.29/lesson vs. full price ~€4.40). Apply at BAMF; takes 4–6 weeks.
