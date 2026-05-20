@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\RefreshWeather;
 use App\Services\Weather\BrightSkyProvider;
 use App\Services\Weather\MetNoProvider;
 use App\Services\Weather\OpenMeteoProvider;
@@ -10,6 +11,7 @@ use App\Services\Weather\WttrInProvider;
 use App\Support\PerfLogger;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class WeatherService
 {
@@ -149,34 +151,77 @@ class WeatherService
     }
 
     /**
-     * Try each provider in order. Cache only successful responses.
+     * Stale-while-revalidate read. Returns fresh cache if available; otherwise
+     * returns stale cache and queues a background refresh; otherwise fetches
+     * synchronously with fast-fail provider iteration.
      *
      * @return array{current: array<string, mixed>, hourly: list<array{hour: int, precipitation: float}>}|array{}
      */
     protected function fetch(float $lat, float $lng): array
     {
-        $cacheKey = "weather_{$lat}_{$lng}";
-        $cached = Cache::get($cacheKey);
+        $freshKey = "weather_fresh:{$lat}_{$lng}";
+        $staleKey = "weather_stale:{$lat}_{$lng}";
 
-        if (is_array($cached) && ! empty($cached)) {
-            return $cached;
+        $fresh = Cache::get($freshKey);
+        if (is_array($fresh) && ! empty($fresh)) {
+            return $fresh;
         }
 
+        $stale = Cache::get($staleKey);
+        if (is_array($stale) && ! empty($stale)) {
+            // Return stale immediately, refresh asynchronously so the next
+            // request gets fresh data without paying provider-chain cost.
+            try {
+                RefreshWeather::dispatch($lat, $lng);
+            } catch (Throwable $e) {
+                Log::warning('Weather refresh dispatch failed, returning stale', ['err' => $e->getMessage()]);
+            }
+
+            return $stale;
+        }
+
+        return $this->fetchSync($lat, $lng);
+    }
+
+    /**
+     * Synchronous fetch through the provider chain with per-provider failure
+     * cooldown. Public so RefreshWeather can drive it from the queue worker.
+     *
+     * @return array{current: array<string, mixed>, hourly: list<array{hour: int, precipitation: float}>}|array{}
+     */
+    public function fetchSync(float $lat, float $lng): array
+    {
         foreach ($this->providers as $provider) {
+            $name = $provider->name();
+            if (Cache::has("weather_blacklist:{$name}")) {
+                continue;
+            }
+
             $data = $provider->fetch($lat, $lng);
 
             if ($data !== null) {
-                Cache::put($cacheKey, $data, 300);
+                $this->cacheResult($lat, $lng, $data);
 
                 return $data;
             }
 
-            Log::warning("Weather provider {$provider->name()} returned null, falling back");
+            // Blacklist for 5 min so we skip the slow path on subsequent reads.
+            Cache::put("weather_blacklist:{$name}", true, 300);
+            Log::warning("Weather provider {$name} failed, cooled down 5min");
         }
 
         Log::error("All weather providers failed for ({$lat}, {$lng})");
 
         return [];
+    }
+
+    /**
+     * @param  array{current: array<string, mixed>, hourly: list<array{hour: int, precipitation: float}>}  $data
+     */
+    private function cacheResult(float $lat, float $lng, array $data): void
+    {
+        Cache::put("weather_fresh:{$lat}_{$lng}", $data, 300);
+        Cache::put("weather_stale:{$lat}_{$lng}", $data, 86400);
     }
 
     /**

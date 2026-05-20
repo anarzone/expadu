@@ -28,9 +28,11 @@ class PerfTrackMiddleware
             $route = $request->method().' '.($request->route()?->uri() ?: $request->path());
         }
 
+        $status = $response->getStatusCode();
         PerfLogger::record('route:'.$route, [
             'ms' => (int) round((microtime(true) - $start) * 1000),
-            'status' => $response->getStatusCode(),
+            'ok' => $status < 400 ? 1 : 0,
+            'status' => $status,
             'method' => $request->method(),
             'inertia' => $request->header('X-Inertia') ? 1 : 0,
         ]);

@@ -24,8 +24,8 @@ class OpenMeteoProvider implements WeatherProvider
     public function fetch(float $lat, float $lng): ?array
     {
         try {
-            $response = Http::timeout(5)
-                ->retry(2, 500, throw: false)
+            $response = Http::timeout(2)
+                ->connectTimeout(1)
                 ->get('https://api.open-meteo.com/v1/forecast', [
                     'latitude' => $lat,
                     'longitude' => $lng,

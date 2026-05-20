@@ -53,8 +53,8 @@ class BrightSkyProvider implements WeatherProvider
      */
     private function fetchCurrent(float $lat, float $lng): ?array
     {
-        $response = Http::timeout(5)
-            ->retry(2, 500, throw: false)
+        $response = Http::timeout(2)
+            ->connectTimeout(1)
             ->get('https://api.brightsky.dev/current_weather', [
                 'lat' => $lat,
                 'lon' => $lng,
@@ -111,8 +111,8 @@ class BrightSkyProvider implements WeatherProvider
      */
     private function fetchHourly(float $lat, float $lng): ?array
     {
-        $response = Http::timeout(5)
-            ->retry(2, 500, throw: false)
+        $response = Http::timeout(2)
+            ->connectTimeout(1)
             ->get('https://api.brightsky.dev/weather', [
                 'lat' => $lat,
                 'lon' => $lng,

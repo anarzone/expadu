@@ -103,7 +103,7 @@ it('returns unavailable placeholder when all providers fail', function () {
         ->and($result['temperature'])->toBe(0);
 });
 
-it('does not cache failed responses', function () {
+it('cools down a failing provider so it is skipped on the next call', function () {
     $provider = new class implements WeatherProvider
     {
         public int $calls = 0;
@@ -117,7 +117,7 @@ it('does not cache failed responses', function () {
 
         public function name(): string
         {
-            return 'test';
+            return 'test_cooldown_provider';
         }
     };
 
@@ -125,7 +125,10 @@ it('does not cache failed responses', function () {
     $service->getCurrentWeather(50.9, 6.9);
     $service->getCurrentWeather(50.9, 6.9);
 
-    expect($provider->calls)->toBe(2);
+    // First call hits the provider and blacklists it; the second call skips it.
+    // This is the intended perf win — we don't pay HTTP cost on a known-failing
+    // provider until its 5-minute cooldown expires.
+    expect($provider->calls)->toBe(1);
 });
 
 it('caches successful responses', function () {
