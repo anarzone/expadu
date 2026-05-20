@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\PerfLogger;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -52,14 +53,16 @@ class KvbApiService
      */
     public function searchStops(string $query, int $limit = 10): array
     {
-        $q = mb_strtolower($query);
+        return PerfLogger::measure('ext:kvb.searchStops', function () use ($query, $limit) {
+            $q = mb_strtolower($query);
 
-        return collect($this->getStops())
-            ->filter(fn (array $s) => str_contains(mb_strtolower($s['name']), $q))
-            ->unique('name')
-            ->take($limit)
-            ->values()
-            ->all();
+            return collect($this->getStops())
+                ->filter(fn (array $s) => str_contains(mb_strtolower($s['name']), $q))
+                ->unique('name')
+                ->take($limit)
+                ->values()
+                ->all();
+        });
     }
 
     /**
@@ -69,19 +72,21 @@ class KvbApiService
      */
     public function nearestStop(float $lat, float $lng): ?array
     {
-        $stops = $this->getStops();
-        $best = null;
-        $bestDist = PHP_FLOAT_MAX;
+        return PerfLogger::measure('ext:kvb.nearestStop', function () use ($lat, $lng) {
+            $stops = $this->getStops();
+            $best = null;
+            $bestDist = PHP_FLOAT_MAX;
 
-        foreach ($stops as $s) {
-            $dist = abs($s['lat'] - $lat) + abs($s['lng'] - $lng);
-            if ($dist < $bestDist) {
-                $bestDist = $dist;
-                $best = $s;
+            foreach ($stops as $s) {
+                $dist = abs($s['lat'] - $lat) + abs($s['lng'] - $lng);
+                if ($dist < $bestDist) {
+                    $bestDist = $dist;
+                    $best = $s;
+                }
             }
-        }
 
-        return $best;
+            return $best;
+        });
     }
 
     /**

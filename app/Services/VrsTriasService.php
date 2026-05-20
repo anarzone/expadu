@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\PerfLogger;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -20,42 +21,44 @@ class VrsTriasService
      */
     public function getDepartures(string $stopName, int $limit = 10): ?array
     {
-        if (! config('services.vrs.enabled')) {
-            return null;
-        }
-
-        $cacheKey = "trias_departures_{$stopName}_{$limit}";
-
-        $cached = Cache::get($cacheKey);
-        if ($cached !== null) {
-            return $cached;
-        }
-
-        try {
-            $globalId = $this->resolveStopGlobalId($stopName);
-            if (! $globalId) {
+        return PerfLogger::measure('ext:vrs.getDepartures', function () use ($stopName, $limit) {
+            if (! config('services.vrs.enabled')) {
                 return null;
             }
 
-            $departures = $this->fetchStopEvents($globalId['id'], $limit);
-            if ($departures === null) {
-                return null;
+            $cacheKey = "trias_departures_{$stopName}_{$limit}";
+
+            $cached = Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
             }
 
-            $result = [
-                'stop_name' => $globalId['name'],
-                'source' => 'trias_rt',
-                'departures' => $departures,
-            ];
+            try {
+                $globalId = $this->resolveStopGlobalId($stopName);
+                if (! $globalId) {
+                    return null;
+                }
 
-            Cache::put($cacheKey, $result, 60);
+                $departures = $this->fetchStopEvents($globalId['id'], $limit);
+                if ($departures === null) {
+                    return null;
+                }
 
-            return $result;
-        } catch (\Throwable $e) {
-            Log::error('TRIAS getDepartures exception', ['stop' => $stopName, 'error' => $e->getMessage()]);
+                $result = [
+                    'stop_name' => $globalId['name'],
+                    'source' => 'trias_rt',
+                    'departures' => $departures,
+                ];
 
-            return null;
-        }
+                Cache::put($cacheKey, $result, 60);
+
+                return $result;
+            } catch (\Throwable $e) {
+                Log::error('TRIAS getDepartures exception', ['stop' => $stopName, 'error' => $e->getMessage()]);
+
+                return null;
+            }
+        });
     }
 
     /**
@@ -408,35 +411,37 @@ class VrsTriasService
      */
     public function planJourney(float $fromLat, float $fromLng, float $toLat, float $toLng, int $maxResults = 3): ?array
     {
-        if (! config('services.vrs.enabled')) {
-            return null;
-        }
+        return PerfLogger::measure('ext:vrs.planJourney', function () use ($fromLat, $fromLng, $toLat, $toLng, $maxResults) {
+            if (! config('services.vrs.enabled')) {
+                return null;
+            }
 
-        $cacheKey = "trias_trip_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
+            $cacheKey = "trias_trip_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
 
-        $cached = Cache::get($cacheKey);
-        if ($cached !== null) {
-            return $cached;
-        }
+            $cached = Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
 
-        $xml = $this->buildTripRequest($fromLat, $fromLng, $toLat, $toLng, $maxResults);
-        $response = $this->post($xml);
+            $xml = $this->buildTripRequest($fromLat, $fromLng, $toLat, $toLng, $maxResults);
+            $response = $this->post($xml);
 
-        if (! $response) {
-            return null;
-        }
+            if (! $response) {
+                return null;
+            }
 
-        $parsed = $this->parseXml($response);
-        if (! $parsed) {
-            return null;
-        }
+            $parsed = $this->parseXml($response);
+            if (! $parsed) {
+                return null;
+            }
 
-        $result = $this->parseTripResponse($parsed);
-        if ($result !== null) {
-            Cache::put($cacheKey, $result, 60);
-        }
+            $result = $this->parseTripResponse($parsed);
+            if ($result !== null) {
+                Cache::put($cacheKey, $result, 60);
+            }
 
-        return $result;
+            return $result;
+        });
     }
 
     /**

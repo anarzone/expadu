@@ -97,7 +97,7 @@ test('skips when outside notification window', function () {
         ]);
     });
 
-    $this->travelTo(now()->next('Monday')->setTime(7, 0));
+    $this->travelTo(Carbon::parse('2026-04-13 07:00'));
 
     Artisan::call('commute:send-leaveby-reminders');
     $output = Artisan::output();
@@ -139,7 +139,7 @@ test('deduplicates same place same day', function () {
         ]);
     });
 
-    $monday = now()->next('Monday')->setTime(8, 32);
+    $monday = Carbon::parse('2026-04-13 08:32');
     $this->travelTo($monday);
 
     Cache::put("leaveby_notif:{$userId}:{$work->id}:{$monday->format('Y-m-d')}", true, now()->endOfDay());
@@ -184,7 +184,7 @@ test('respects user notification preferences', function () {
         ]);
     });
 
-    $this->travelTo(now()->next('Monday')->setTime(8, 32));
+    $this->travelTo(Carbon::parse('2026-04-13 08:32'));
 
     Artisan::call('commute:send-leaveby-reminders');
     $output = Artisan::output();
@@ -227,7 +227,7 @@ test('skips places inactive today based on day_mode', function () {
         ]);
     });
 
-    $this->travelTo(now()->next('Monday')->setTime(9, 47));
+    $this->travelTo(Carbon::parse('2026-04-13 09:47'));
 
     Artisan::call('commute:send-leaveby-reminders');
     $output = Artisan::output();
@@ -281,7 +281,7 @@ test('handles users without home place gracefully', function () {
         'day_mode' => 'weekdays',
     ]);
 
-    $this->travelTo(now()->next('Monday')->setTime(8, 32));
+    $this->travelTo(Carbon::parse('2026-04-13 08:32'));
 
     Artisan::call('commute:send-leaveby-reminders');
     $output = Artisan::output();

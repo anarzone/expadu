@@ -7,6 +7,7 @@ use App\Services\Weather\MetNoProvider;
 use App\Services\Weather\OpenMeteoProvider;
 use App\Services\Weather\WeatherProvider;
 use App\Services\Weather\WttrInProvider;
+use App\Support\PerfLogger;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -42,6 +43,16 @@ class WeatherService
      */
     public function getCurrentWeather(float $lat = 50.9375, float $lng = 6.9603): array
     {
+        return PerfLogger::measure('ext:weather.getCurrentWeather', function () use ($lat, $lng) {
+            return $this->buildCurrentWeather($lat, $lng);
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildCurrentWeather(float $lat, float $lng): array
+    {
         $data = $this->fetch($lat, $lng);
         $current = $data['current'] ?? null;
 
@@ -71,6 +82,16 @@ class WeatherService
      * Get hourly forecast — returns rain start time and a bike score.
      */
     public function getForecast(float $lat = 50.9375, float $lng = 6.9603): array
+    {
+        return PerfLogger::measure('ext:weather.getForecast', function () use ($lat, $lng) {
+            return $this->buildForecast($lat, $lng);
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildForecast(float $lat, float $lng): array
     {
         $data = $this->fetch($lat, $lng);
         $hourly = $data['hourly'] ?? [];
