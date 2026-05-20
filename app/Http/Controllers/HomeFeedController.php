@@ -24,14 +24,15 @@ class HomeFeedController extends Controller
         $weatherService = app(WeatherService::class);
 
         return Inertia::render('dashboard', [
-            // Heavy feed: defer to separate request (700ms+ with spot queries, departures, events)
+            // Heavy feed: own defer group so it doesn't block the meta group.
             'feed' => Inertia::defer(fn () => $composer->buildDashboardFeed($user, $request)),
-            // Everything else: lazy props resolved in same response (fast with warm caches)
-            'commuteRecommendation' => fn () => $composer->buildCommuteRecommendation($user),
-            'weather' => fn () => $weatherService->getCurrentWeather($lat, $lng),
-            'forecast' => fn () => $weatherService->getForecast($lat, $lng),
-            'rhineLevel' => fn () => app(RhineService::class)->getCurrentLevel(),
-            'todayEvents' => fn () => Event::query()
+            // Commute + weather group: depends on routing/external providers, batched together.
+            'commuteRecommendation' => Inertia::defer(fn () => $composer->buildCommuteRecommendation($user), 'commute'),
+            'weather' => Inertia::defer(fn () => $weatherService->getCurrentWeather($lat, $lng), 'commute'),
+            'forecast' => Inertia::defer(fn () => $weatherService->getForecast($lat, $lng), 'commute'),
+            // Light meta group: small queries / fast service hits.
+            'rhineLevel' => Inertia::defer(fn () => app(RhineService::class)->getCurrentLevel(), 'meta'),
+            'todayEvents' => Inertia::defer(fn () => Event::query()
                 ->whereDate('starts_at', today())
                 ->where('starts_at', '>', now())
                 ->orderBy('starts_at')
@@ -47,10 +48,10 @@ class HomeFeedController extends Controller
                     'badge' => $e->is_free ? 'Free' : ucfirst($e->category ?? 'Event'),
                     'badgeType' => $e->is_free ? 'free' : 'category',
                 ])
-                ->all(),
-            'activeDisruptions' => fn () => collect(app(DisruptionService::class)->getLineDisruptions())
+                ->all(), 'meta'),
+            'activeDisruptions' => Inertia::defer(fn () => collect(app(DisruptionService::class)->getLineDisruptions())
                 ->map(fn ($d) => ['title' => $d['title'], 'severity' => $d['severity'], 'lines' => $d['affected_lines']])
-                ->take(5)->values()->all(),
+                ->take(5)->values()->all(), 'meta'),
         ]);
     }
 }

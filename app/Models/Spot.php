@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 #[Fillable(['name', 'category', 'cuisine', 'price_range', 'tags', 'description', 'address', 'lat', 'lng', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating', 'source', 'source_id', 'is_verified', 'phone', 'website'])]
 class Spot extends Model
@@ -74,19 +75,34 @@ class Spot extends Model
     }
 
     /**
-     * Order by proximity to given coordinates.
+     * Order by proximity to given coordinates using the PostGIS GIST index.
      *
      * @param  Builder<Spot>  $query
      * @return Builder<Spot>
      */
     public function scopeNearby(Builder $query, float $lat, float $lng): Builder
     {
-        // Lat-corrected Euclidean distance-squared for proper sorting at ~51°N.
-        // 1° lat ≈ 111 km → factor 12321; 1° lng ≈ 70 km → factor 4900.
-        // Ordering by dist_sq is equivalent to ordering by true distance.
-        return $query->selectRaw(
-            '*, POWER(lat - ?, 2) * 12321 + POWER(lng - ?, 2) * 4900 AS dist_sq',
-            [$lat, $lng]
-        )->orderBy('dist_sq');
+        return $query->whereNotNull('location')
+            ->selectRaw(
+                '*, ST_Distance(location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography) AS distance_meters',
+                [$lng, $lat]
+            )
+            ->orderByRaw('location <-> ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography', [$lng, $lat]);
+    }
+
+    /**
+     * Keep the PostGIS `location` geography column in sync with lat/lng on save.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (Spot $spot) {
+            $latChanged = $spot->wasChanged('lat') || $spot->wasChanged('lng') || $spot->wasRecentlyCreated;
+            if ($latChanged && $spot->lat !== null && $spot->lng !== null) {
+                DB::statement(
+                    'UPDATE spots SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+                    [(float) $spot->lng, (float) $spot->lat, $spot->id]
+                );
+            }
+        });
     }
 }

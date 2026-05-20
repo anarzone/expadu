@@ -25,28 +25,27 @@ class EventController extends Controller
     public function index(Request $request): Response
     {
         $userId = $request->user()->id;
-        $query = Event::query()->where('starts_at', '>', now())->orderBy('starts_at');
-
-        if ($category = $request->query('category')) {
-            $query->where('category', $category);
-        }
-
-        if ($request->query('free') === 'true') {
-            $query->where('is_free', true);
-        }
-
-        $events = $query
-            ->with('organiser:id,name')
-            ->withCount('attendees')
-            ->paginate(30);
-
-        // Format events with enriched data for the frontend
-        $formattedEvents = $events->through(fn (Event $e) => $this->formatEvent($e, $userId));
+        $category = $request->query('category');
+        $freeOnly = $request->query('free') === 'true';
 
         return Inertia::render('events', [
-            'dbEvents' => Inertia::defer(fn () => $formattedEvents),
+            'dbEvents' => Inertia::defer(function () use ($userId, $category, $freeOnly) {
+                $query = Event::query()->where('starts_at', '>', now())->orderBy('starts_at');
+                if ($category) {
+                    $query->where('category', $category);
+                }
+                if ($freeOnly) {
+                    $query->where('is_free', true);
+                }
+
+                return $query
+                    ->with('organiser:id,name')
+                    ->withCount('attendees')
+                    ->paginate(30)
+                    ->through(fn (Event $e) => $this->formatEvent($e, $userId));
+            }),
             'filters' => [
-                'category' => $request->query('category'),
+                'category' => $category,
                 'free' => $request->query('free'),
             ],
         ]);
@@ -88,15 +87,15 @@ class EventController extends Controller
     public function saved(Request $request): Response
     {
         $userId = $request->user()->id;
-        $events = $request->user()->attendingEvents()
-            ->where('starts_at', '>', now())
-            ->orderBy('starts_at')
-            ->with('organiser:id,name')
-            ->withCount('attendees')
-            ->paginate(30);
 
         return Inertia::render('events', [
-            'dbEvents' => Inertia::defer(fn () => $events->through(fn (Event $e) => $this->formatEvent($e, $userId))),
+            'dbEvents' => Inertia::defer(fn () => $request->user()->attendingEvents()
+                ->where('starts_at', '>', now())
+                ->orderBy('starts_at')
+                ->with('organiser:id,name')
+                ->withCount('attendees')
+                ->paginate(30)
+                ->through(fn (Event $e) => $this->formatEvent($e, $userId))),
             'filters' => [],
             'tab' => 'saved',
         ]);

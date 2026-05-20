@@ -13,17 +13,6 @@ class SpotController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Spot::query();
-
-        if ($category = $request->query('category')) {
-            $query->where('category', $category);
-        }
-
-        if ($noise = $request->query('noise_level')) {
-            $query->where('noise_level', $noise);
-        }
-
-        // Sort by distance to user's location — from query params or user's home place
         $userLat = $request->query('lat');
         $userLng = $request->query('lng');
 
@@ -35,28 +24,34 @@ class SpotController extends Controller
             }
         }
 
-        if ($userLat && $userLng) {
-            $query->whereNotNull('lat')
-                ->whereNotNull('lng')
-                ->selectRaw('*, (6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))) as distance_km', [(float) $userLat, (float) $userLng, (float) $userLat])
-                ->orderBy('distance_km');
-        } else {
-            $sort = $request->query('sort', 'rating');
-            $query = match ($sort) {
-                'rating' => $query->orderByDesc('rating'),
-                'crowd' => $query->withCount(['activeCheckins'])->orderBy('active_checkins_count'),
-                default => $query->orderByDesc('rating'),
-            };
-        }
-
-        // Initial load: 20 nearest. Map fetches more via GET /api/spots as user pans
-        $spots = $query->withCount('activeCheckins')->paginate(20);
+        $category = $request->query('category');
+        $noise = $request->query('noise_level');
+        $sort = $request->query('sort', 'rating');
 
         return Inertia::render('explore', [
-            'spots' => Inertia::defer(fn () => $spots),
+            'spots' => Inertia::defer(function () use ($category, $noise, $userLat, $userLng, $sort) {
+                $query = Spot::query();
+                if ($category) {
+                    $query->where('category', $category);
+                }
+                if ($noise) {
+                    $query->where('noise_level', $noise);
+                }
+
+                if ($userLat && $userLng) {
+                    $query->nearby((float) $userLat, (float) $userLng);
+                } else {
+                    $query = match ($sort) {
+                        'crowd' => $query->withCount(['activeCheckins'])->orderBy('active_checkins_count'),
+                        default => $query->orderByDesc('rating'),
+                    };
+                }
+
+                return $query->withCount('activeCheckins')->paginate(20);
+            }),
             'filters' => [
-                'category' => $request->query('category'),
-                'noise_level' => $request->query('noise_level'),
+                'category' => $category,
+                'noise_level' => $noise,
                 'sort' => $request->query('sort', $userLat ? 'distance' : 'rating'),
             ],
             'personalPlaces' => $request->user()->places()

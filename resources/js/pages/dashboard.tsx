@@ -408,7 +408,9 @@ export default function Dashboard() {
                                 }}
                             >
                                 {cr?.headline ??
-                                    `${weather.temperature}°C, ${weather.condition.toLowerCase()}.`}
+                                    (weather
+                                        ? `${weather.temperature}°C, ${weather.condition.toLowerCase()}.`
+                                        : '…')}
                             </div>
 
                             {/* Setup prompt for new users */}
