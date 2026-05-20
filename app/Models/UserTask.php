@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DeadlineType;
+use App\Enums\TaskStatus;
 use Carbon\Carbon;
 use Database\Factories\UserTaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'task_id', 'completed_at', 'snoozed_until', 'notes'])]
+#[Fillable(['user_id', 'task_id', 'status', 'completed_at', 'next_due_at', 'is_applicable', 'snoozed_until', 'notes'])]
 class UserTask extends Model
 {
     /** @use HasFactory<UserTaskFactory> */
@@ -23,8 +24,11 @@ class UserTask extends Model
     protected function casts(): array
     {
         return [
+            'status' => TaskStatus::class,
             'completed_at' => 'datetime',
+            'next_due_at' => 'datetime',
             'snoozed_until' => 'datetime',
+            'is_applicable' => 'boolean',
         ];
     }
 
@@ -135,5 +139,33 @@ class UserTask extends Model
             $q->whereNull('snoozed_until')
                 ->orWhere('snoozed_until', '<', now());
         });
+    }
+
+    /**
+     * Open = anything the user can still act on. Excludes done + not-applicable.
+     *
+     * @param  Builder<UserTask>  $query
+     * @return Builder<UserTask>
+     */
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->where('is_applicable', true)
+            ->where('status', '!=', TaskStatus::Done->value);
+    }
+
+    /**
+     * Mark this task done. For recurring tasks, also schedules the next instance.
+     */
+    public function markDone(): void
+    {
+        $this->status = TaskStatus::Done;
+        $this->completed_at = now();
+
+        $task = $this->task;
+        if ($task && $task->isRecurring()) {
+            $this->next_due_at = now()->addMonths((int) $task->recurrence_months);
+        }
+
+        $this->save();
     }
 }

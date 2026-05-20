@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'description', 'situation', 'phase', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required'])]
+#[Fillable(['title', 'description', 'situation', 'phase', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -27,9 +27,15 @@ class Task extends Model
             'situation' => 'array',
             'links' => 'array',
             'documents_required' => 'array',
+            'how_to_steps' => 'array',
             'deadline_type' => DeadlineType::class,
             'urgency' => Urgency::class,
         ];
+    }
+
+    public function isRecurring(): bool
+    {
+        return $this->recurrence_months !== null;
     }
 
     /** @return BelongsToMany<User, $this> */
