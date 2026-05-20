@@ -23,19 +23,19 @@ class RefreshWeather implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 15;
 
-    /**
-     * Pin to the redis connection — prod's queue:work runs on
-     * `redis --queue=commute,default`. Without this the job dispatches
-     * to the app-default (database) and never gets processed.
-     */
-    public $connection = 'redis';
-
-    public $queue = 'default';
-
     public function __construct(
         public float $lat,
         public float $lng,
-    ) {}
+    ) {
+        // Pin to the redis connection — prod's queue:work runs on
+        // `redis --queue=commute,default`. Without this the job dispatches
+        // to the app-default (database) and never gets processed.
+        // Set in constructor (not as class property) because the Queueable
+        // trait already declares these without defaults, and PHP 8.4 rejects
+        // a redeclaration whose definition differs from the trait's.
+        $this->onConnection('redis');
+        $this->onQueue('default');
+    }
 
     public function handle(WeatherService $weather): void
     {
