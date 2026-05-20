@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { IconArrowLeft } from '@tabler/icons-react';
-import { AppLayout } from '@/layouts/app-layout';
+import AppLayout from '@/layouts/app-layout';
 
 interface ComingSoonProps {
     title: string;
