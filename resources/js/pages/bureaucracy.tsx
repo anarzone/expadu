@@ -1,136 +1,16 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useRef, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
+import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
+import type { Buckets } from '@/components/bureaucracy/checklist-framing-b';
 import { DocumentCard } from '@/components/bureaucracy/document-card';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
-import { TaskCard } from '@/components/bureaucracy/task-card';
 import { useTabState } from '@/hooks/use-tab-state';
-import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
 // Types
 // ============================================================
-
-export type TaskTag = { label: string; bg: string; color: string };
-
-export type TaskData = {
-    id: number;
-    done: boolean;
-    urgent: boolean;
-    title: string;
-    desc: string;
-    tag: TaskTag;
-    steps: string[];
-    docs: string[];
-    time: string;
-    link: string | null;
-    linkLabel?: string;
-};
-
-// Backend shape from BureaucracyController
-type DbTask = {
-    id: number;
-    title: string;
-    description: string | null;
-    urgency: string;
-    phase: string | null;
-    deadline_type: string;
-    deadline_days: number | null;
-    documents_required: string[];
-    links: string[];
-    completed_at: string | null;
-    absolute_deadline: string | null;
-    days_remaining: number | null;
-    deadline_urgency: string;
-};
-
-type TaskProgress = {
-    completed: number;
-    total: number;
-    percent: number;
-};
-
-function deadlineLabel(t: DbTask): string {
-    if (t.completed_at) {
-        return 'Completed';
-    }
-
-    if (t.days_remaining === null) {
-        return 'No deadline';
-    }
-
-    if (t.days_remaining < 0) {
-        return `Overdue by ${Math.abs(t.days_remaining)} days`;
-    }
-
-    if (t.days_remaining === 0) {
-        return 'Due today';
-    }
-
-    if (t.days_remaining <= 3) {
-        return `${t.days_remaining} days left — urgent`;
-    }
-
-    if (t.days_remaining <= 7) {
-        return `${t.days_remaining} days left`;
-    }
-
-    if (t.absolute_deadline) {
-        const d = new Date(t.absolute_deadline);
-
-        return `Due ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · ${t.days_remaining} days`;
-    }
-
-    return `${t.days_remaining} days left`;
-}
-
-function urgencyTagFromDeadline(t: DbTask): TaskTag {
-    if (t.completed_at) {
-        return { label: 'Done', bg: '#D4F0E6', color: '#0A7C52' };
-    }
-
-    if (t.deadline_urgency === 'overdue') {
-        return { label: 'Overdue', bg: '#FDE8E6', color: '#C4271A' };
-    }
-
-    if (t.deadline_urgency === 'critical') {
-        return { label: 'Critical', bg: '#FDE8E6', color: '#C4271A' };
-    }
-
-    if (t.deadline_urgency === 'urgent') {
-        return { label: 'Urgent', bg: '#FDF0D4', color: '#C47D0E' };
-    }
-
-    if (t.urgency === 'critical' || t.urgency === 'high') {
-        return { label: 'Urgent', bg: '#FDE8E6', color: '#C4271A' };
-    }
-
-    return { label: 'Pending', bg: '#EFEDE7', color: '#6B6860' };
-}
-
-function dbTaskToTaskData(t: DbTask): TaskData {
-    const done = !!t.completed_at;
-    const urgent =
-        t.urgency === 'critical' ||
-        t.urgency === 'high' ||
-        t.deadline_urgency === 'overdue' ||
-        t.deadline_urgency === 'critical';
-
-    return {
-        id: t.id,
-        done,
-        urgent,
-        title: t.title,
-        desc: t.description ?? '',
-        tag: urgencyTagFromDeadline(t),
-        steps: [],
-        docs: t.documents_required ?? [],
-        time: deadlineLabel(t),
-        link: t.links?.[0] ?? null,
-        linkLabel: t.links?.[0] ? 'More info ↗' : undefined,
-    };
-}
 
 export type DocTag = { l: string; bg: string; c: string };
 
@@ -504,7 +384,6 @@ const TABS = [
 // ============================================================
 
 export default function Bureaucracy() {
-    const { track } = useTracker();
     type BookingService = {
         key: string;
         name: string;
@@ -517,14 +396,16 @@ export default function Bureaucracy() {
     const {
         slots,
         monitors,
-        dbTasks,
-        taskProgress,
+        situation,
+        tasks: taskBuckets,
+        progress,
         bookingServices: _bookingServices,
     } = usePage<{
         slots: Record<string, SlotData>;
         monitors: string[];
-        dbTasks: DbTask[];
-        taskProgress: TaskProgress;
+        situation: string | null;
+        tasks: Buckets;
+        progress: { done: number; total: number; percent: number };
         bookingServices?: BookingService[];
     }>().props;
 
@@ -534,28 +415,7 @@ export default function Bureaucracy() {
     );
     const _monitoringCount = offices.filter((o) => o.monitoring).length;
 
-    // Map backend tasks to frontend shape
-    const tasks = useMemo(
-        () => (dbTasks ?? []).map(dbTaskToTaskData),
-        [dbTasks],
-    );
-
-    const FILTERS = useMemo(() => {
-        const pending = tasks.filter((t) => !t.done).length;
-        const done = tasks.filter((t) => t.done).length;
-        const urgent = tasks.filter((t) => t.urgent && !t.done).length;
-
-        return [
-            { id: 'all', label: `All (${tasks.length})` },
-            { id: 'pending', label: `Pending (${pending})` },
-            { id: 'done', label: `Done (${done})` },
-            { id: 'urgent', label: `Urgent (${urgent})` },
-        ];
-    }, [tasks]);
-
     const [activeTab, setActiveTab] = useTabState('checklist');
-    const [taskFilter, setTaskFilter] = useState('all');
-    const [expandedTask, setExpandedTask] = useState<number | null>(null);
     const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
     const [docSearch, setDocSearch] = useState('');
     const [slotFilter, setSlotFilter] = useState('all');
@@ -568,30 +428,6 @@ export default function Bureaucracy() {
     const [translationResult, setTranslationResult] =
         useState<AiResponse | null>(null);
     const resultRef = useRef<HTMLDivElement>(null);
-
-    // Derived from backend progress
-    const doneCount =
-        taskProgress?.completed ?? tasks.filter((t) => t.done).length;
-    const totalCount = taskProgress?.total ?? tasks.length;
-    const progressPct =
-        taskProgress?.percent ??
-        (totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
-
-    const filteredTasks = useMemo(() => {
-        if (taskFilter === 'done') {
-            return tasks.filter((t) => t.done);
-        }
-
-        if (taskFilter === 'pending') {
-            return tasks.filter((t) => !t.done);
-        }
-
-        if (taskFilter === 'urgent') {
-            return tasks.filter((t) => t.urgent && !t.done);
-        }
-
-        return tasks;
-    }, [tasks, taskFilter]);
 
     const filteredDocs = useMemo(() => {
         const q = docSearch.toLowerCase().trim();
@@ -607,24 +443,6 @@ export default function Bureaucracy() {
                 d.desc.toLowerCase().includes(q),
         );
     }, [docSearch]);
-
-    // Handlers — toggle calls backend
-    function toggleTaskDone(id: number) {
-        const task = tasks.find((t) => t.id === id);
-
-        if (task && !task.done) {
-            track('task_completed', { task_id: id });
-        }
-
-        router.post(
-            `/tasks/${id}/toggle`,
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-            },
-        );
-    }
 
     function loadExample(key: string) {
         setPasteText(EXAMPLE_TEXTS[key] || '');
@@ -712,155 +530,13 @@ export default function Bureaucracy() {
                     </div>
                 </div>
 
-                {/* ════ CHECKLIST TAB ════ */}
+                {/* ════ CHECKLIST TAB — framing-B rebuild ════ */}
                 {activeTab === 'checklist' && (
-                    <>
-                        {/* Progress hero */}
-                        <div style={{ padding: '20px 24px 0' }}>
-                            <div
-                                style={{
-                                    background: '#1A4CD4',
-                                    borderRadius: 20,
-                                    padding: '22px 24px',
-                                    color: 'white',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                {/* Decorative circle */}
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        top: -50,
-                                        right: -50,
-                                        width: 180,
-                                        height: 180,
-                                        background: 'rgba(255,255,255,.05)',
-                                        borderRadius: '50%',
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        fontSize: 10,
-                                        fontWeight: 700,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.10em',
-                                        opacity: 0.65,
-                                        marginBottom: 6,
-                                    }}
-                                >
-                                    Your settlement checklist · Non-EU employee
-                                </div>
-                                <div
-                                    style={{
-                                        fontFamily: "'Fraunces', serif",
-                                        fontSize: 24,
-                                        fontWeight: 400,
-                                        lineHeight: 1.2,
-                                        marginBottom: 16,
-                                        position: 'relative',
-                                        zIndex: 1,
-                                    }}
-                                >
-                                    {doneCount} of {totalCount} tasks complete —
-                                    <br />
-                                    {doneCount === totalCount
-                                        ? 'all done!'
-                                        : "you're making good progress."}
-                                </div>
-                                {/* Progress bar */}
-                                <div
-                                    style={{
-                                        background: 'rgba(255,255,255,.2)',
-                                        borderRadius: 20,
-                                        height: 6,
-                                        marginBottom: 8,
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            background: 'white',
-                                            borderRadius: 20,
-                                            height: 6,
-                                            width: `${progressPct}%`,
-                                            transition:
-                                                'width .6s cubic-bezier(.32,1,.4,1)',
-                                        }}
-                                    />
-                                </div>
-                                <div
-                                    style={{
-                                        fontFamily: "'Geist Mono', monospace",
-                                        fontSize: 13,
-                                        opacity: 0.8,
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <span>{doneCount} done</span>
-                                    <span>
-                                        {totalCount - doneCount} remaining
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Filter pills */}
-                        <div
-                            className="flex gap-1.5 overflow-x-auto border-b border-[#E2DFD6]"
-                            style={{
-                                padding: '16px 24px 12px',
-                                scrollbarWidth: 'none',
-                            }}
-                        >
-                            {FILTERS.map((f) => (
-                                <button
-                                    key={f.id}
-                                    onClick={() => setTaskFilter(f.id)}
-                                    className="shrink-0 cursor-pointer rounded-full border px-3 py-[5px] transition-all"
-                                    style={{
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        fontFamily: "'Geist', sans-serif",
-                                        whiteSpace: 'nowrap',
-                                        background:
-                                            taskFilter === f.id
-                                                ? '#1A4CD4'
-                                                : 'white',
-                                        color:
-                                            taskFilter === f.id
-                                                ? 'white'
-                                                : '#6B6860',
-                                        borderColor:
-                                            taskFilter === f.id
-                                                ? '#1A4CD4'
-                                                : '#E2DFD6',
-                                    }}
-                                >
-                                    {f.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Task list */}
-                        <div>
-                            {filteredTasks.map((task) => (
-                                <TaskCard
-                                    key={task.id}
-                                    task={task}
-                                    expanded={expandedTask === task.id}
-                                    onToggleExpand={() =>
-                                        setExpandedTask(
-                                            expandedTask === task.id
-                                                ? null
-                                                : task.id,
-                                        )
-                                    }
-                                    onToggleDone={() => toggleTaskDone(task.id)}
-                                />
-                            ))}
-                        </div>
-                    </>
+                    <ChecklistFramingB
+                        situation={situation}
+                        progress={progress}
+                        tasks={taskBuckets}
+                    />
                 )}
 
                 {/* ════ DOCUMENTS TAB ════ */}

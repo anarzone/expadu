@@ -27,6 +27,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TransitController;
 use App\Http\Controllers\UserPlaceController;
 use App\Http\Controllers\UserSettingController;
+use App\Http\Controllers\UserTaskController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -174,6 +175,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
         Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
+        Route::patch('user-tasks/{userTask}', [UserTaskController::class, 'update'])->name('user-tasks.update');
         Route::get('profile', ProfilePageController::class)->name('profile');
     });
 };

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TaskStatus;
 use App\Models\Task;
+use App\Models\User;
+use App\Models\UserTask;
 use App\Services\BuergeramtService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -10,75 +13,50 @@ use Inertia\Response;
 
 class BureaucracyController extends Controller
 {
+    /**
+     * Framing-B bureaucracy page payload. Buckets every situation-relevant
+     * task into one of four lanes (active / upcoming / completed / not_applicable)
+     * so the React side can render the Do-next / Coming-up / Completed sections
+     * with no further bucketing logic.
+     */
     public function index(Request $request, BuergeramtService $buergeramtService): Response
     {
         $user = $request->user();
 
-        // Tasks — from DB, filtered by user's situation
-        $situation = $user->situation?->value;
-        $allTasks = Task::query()
-            ->when($situation, function ($q) use ($situation) {
-                $q->whereJsonContains('situation', $situation);
-            })
-            ->orderByRaw("CASE urgency WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
-            ->get();
+        // Materialise pivots for any situation-relevant Task missing one. The
+        // bureaucracy:remind cron does this nightly, but a fresh-onboarded user
+        // would otherwise see an empty page until tomorrow.
+        $this->ensureUserTasks($user);
 
-        // User's task completion status
-        $userTasks = $user->userTasks()->pluck('completed_at', 'task_id');
+        $userTasks = $user->userTasks()
+            ->with('task')
+            ->get()
+            ->filter(fn (UserTask $ut) => $ut->task !== null);
 
-        $formattedTasks = $allTasks->map(function (Task $task) use ($user, $userTasks) {
-            $deadline = $task->computeDeadlineFor($user);
-            $daysRemaining = $deadline ? (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false) : null;
-            $isCompleted = isset($userTasks[$task->id]) && $userTasks[$task->id] !== null;
+        $cards = $userTasks
+            ->map(fn (UserTask $ut) => $this->formatCard($ut, $user))
+            ->values();
 
-            $deadlineUrgency = 'none';
-            if ($daysRemaining !== null && ! $isCompleted) {
-                if ($daysRemaining < 0) {
-                    $deadlineUrgency = 'overdue';
-                } elseif ($daysRemaining <= 3) {
-                    $deadlineUrgency = 'critical';
-                } elseif ($daysRemaining <= 7) {
-                    $deadlineUrgency = 'urgent';
-                } elseif ($daysRemaining <= 14) {
-                    $deadlineUrgency = 'approaching';
-                } else {
-                    $deadlineUrgency = 'on_track';
-                }
-            }
+        $buckets = [
+            'active' => $cards->filter(fn ($c) => $c['bucket'] === 'active')->values(),
+            'upcoming' => $cards->filter(fn ($c) => $c['bucket'] === 'upcoming')->values(),
+            'completed' => $cards->filter(fn ($c) => $c['bucket'] === 'completed')->values(),
+            'not_applicable' => $cards->filter(fn ($c) => $c['bucket'] === 'not_applicable')->values(),
+        ];
 
-            return [
-                'id' => $task->id,
-                'title' => $task->title,
-                'description' => $task->description,
-                'urgency' => $task->urgency->value,
-                'phase' => $task->phase,
-                'deadline_type' => $task->deadline_type->value,
-                'deadline_days' => $task->deadline_days,
-                'documents_required' => $task->documents_required ?? [],
-                'links' => $task->links ?? [],
-                'completed_at' => $userTasks[$task->id] ?? null,
-                'absolute_deadline' => $deadline?->toDateString(),
-                'days_remaining' => $daysRemaining,
-                'deadline_urgency' => $deadlineUrgency,
-            ];
-        });
+        $totalActionable = $buckets['active']->count() + $buckets['upcoming']->count() + $buckets['completed']->count();
+        $doneCount = $buckets['completed']->count();
 
-        $completedCount = $formattedTasks->whereNotNull('completed_at')->count();
-        $totalCount = $formattedTasks->count();
-
-        // Slots
         $slots = $buergeramtService->checkSlots();
-        $monitors = $user->slotMonitors()
-            ->where('is_active', true)
-            ->pluck('office_id')
-            ->all();
+        $monitors = $user->slotMonitors()->where('is_active', true)->pluck('office_id')->all();
 
         return Inertia::render('bureaucracy', [
-            'dbTasks' => $formattedTasks,
-            'taskProgress' => [
-                'completed' => $completedCount,
-                'total' => $totalCount,
-                'percent' => $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0,
+            'situation' => $user->situation?->value,
+            'tasks' => $buckets,
+            'progress' => [
+                'done' => $doneCount,
+                'total' => $totalActionable,
+                'percent' => $totalActionable > 0 ? (int) round(($doneCount / $totalActionable) * 100) : 0,
             ],
             'slots' => $slots,
             'monitors' => $monitors,
@@ -91,5 +69,122 @@ class BureaucracyController extends Controller
                 'url' => BuergeramtService::BOOKING_URLS[$s['category']].'&service='.$s['uid'],
             ])->values(),
         ]);
+    }
+
+    /**
+     * Ensure a UserTask row exists for every Task matching the user's situation.
+     * Idempotent — mirrors the cron's ensureUserTasks() but bounded to page load.
+     */
+    private function ensureUserTasks(User $user): void
+    {
+        $situation = $user->situation?->value;
+        if (! $situation) {
+            return;
+        }
+
+        $existing = $user->userTasks()->pluck('task_id')->all();
+
+        Task::query()
+            ->whereJsonContains('situation', $situation)
+            ->whereNotIn('id', $existing)
+            ->get()
+            ->each(fn (Task $task) => $user->userTasks()->create(['task_id' => $task->id]));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatCard(UserTask $userTask, User $user): array
+    {
+        $task = $userTask->task;
+        $deadline = $task->computeDeadlineFor($user);
+        $daysRemaining = $deadline
+            ? (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false)
+            : null;
+
+        $status = $userTask->status ?? TaskStatus::NotStarted;
+        $deadlineTier = $this->deadlineTier($daysRemaining, $status);
+        $bucket = $this->bucket($userTask, $deadlineTier);
+
+        $bookingUrl = null;
+        if ($task->booking_service_key && isset(BuergeramtService::SERVICES[$task->booking_service_key])) {
+            $svc = BuergeramtService::SERVICES[$task->booking_service_key];
+            $bookingUrl = (BuergeramtService::BOOKING_URLS[$svc['category']] ?? '').'&service='.$svc['uid'];
+        }
+
+        return [
+            'id' => $userTask->id,
+            'task_id' => $task->id,
+            'title' => $task->title,
+            'description' => $task->description,
+            'phase' => $task->phase,
+            'urgency' => $task->urgency->value,
+            'status' => $status->value,
+            'status_label' => $status->label(),
+            'status_tone' => $status->tone(),
+            'deadline' => $deadline?->toDateString(),
+            'days_remaining' => $daysRemaining,
+            'deadline_tier' => $deadlineTier,
+            'documents_required' => $task->documents_required ?? [],
+            'how_to_steps' => $task->how_to_steps ?? [],
+            'links' => $task->links ?? [],
+            'booking_service_key' => $task->booking_service_key,
+            'booking_url' => $bookingUrl,
+            'is_applicable' => $userTask->is_applicable,
+            'is_recurring' => $task->isRecurring(),
+            'next_due_at' => $userTask->next_due_at?->toIso8601String(),
+            'completed_at' => $userTask->completed_at?->toIso8601String(),
+            'bucket' => $bucket,
+        ];
+    }
+
+    /**
+     * Time-to-deadline tier. Done/not-applicable tasks render as 'none'.
+     */
+    private function deadlineTier(?int $daysRemaining, TaskStatus $status): string
+    {
+        if ($status === TaskStatus::Done) {
+            return 'none';
+        }
+        if ($daysRemaining === null) {
+            return 'no_deadline';
+        }
+        if ($daysRemaining < 0) {
+            return 'overdue';
+        }
+        if ($daysRemaining <= 3) {
+            return 'critical';
+        }
+        if ($daysRemaining <= 7) {
+            return 'urgent';
+        }
+        if ($daysRemaining <= 14) {
+            return 'approaching';
+        }
+
+        return 'on_track';
+    }
+
+    /**
+     * Sort each UserTask into one of four UI lanes.
+     */
+    private function bucket(UserTask $userTask, string $tier): string
+    {
+        if (! $userTask->is_applicable) {
+            return 'not_applicable';
+        }
+        if (($userTask->status ?? TaskStatus::NotStarted) === TaskStatus::Done) {
+            // A recurring done task with next_due_at in the future still hides
+            // until it re-enters the active window.
+            if ($userTask->next_due_at && $userTask->next_due_at->isFuture()) {
+                return 'completed';
+            }
+
+            return 'completed';
+        }
+
+        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching'], true)
+            ? 'active'
+            : 'upcoming';
     }
 }

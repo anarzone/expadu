@@ -102,10 +102,11 @@ test('bureaucracy page passes deadline data', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('bureaucracy')
-        ->has('dbTasks')
-        ->has('dbTasks.0.absolute_deadline')
-        ->has('dbTasks.0.days_remaining')
-        ->has('dbTasks.0.deadline_urgency')
+        ->has('tasks.active')
+        ->has('tasks.active.0.deadline')
+        ->has('tasks.active.0.days_remaining')
+        ->has('tasks.active.0.deadline_tier')
+        ->has('progress')
     );
 });
 
