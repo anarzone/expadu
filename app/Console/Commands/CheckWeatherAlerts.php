@@ -4,12 +4,8 @@ namespace App\Console\Commands;
 
 use App\Events\Context\MarketClosureDetected;
 use App\Events\Context\WeatherChanged;
-use App\Models\User;
-use App\Notifications\MarketClosureNotification;
-use App\Notifications\WeatherAlertNotification;
 use App\Services\GermanHolidayService;
 use App\Services\WeatherService;
-use App\Support\NotificationThrottle;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -18,27 +14,21 @@ class CheckWeatherAlerts extends Command
 {
     protected $signature = 'weather:check-alerts';
 
-    protected $description = 'Check weather forecast and alert users about significant weather (rain, storm, extreme temps)';
+    protected $description = 'Check weather forecast and emit context events for significant weather (rain, storm, extreme temps)';
 
     public function handle(WeatherService $weatherService): int
     {
         // Market closure warning — only between 12:00-16:00, no weather data needed
-        $closureCount = 0;
         $hour = now()->hour;
         if ($hour >= 12 && $hour <= 16) {
-            $closureCount = $this->sendMarketClosureWarning();
-            if ($closureCount > 0) {
-                $this->info("Sent {$closureCount} market closure warning(s).");
-            }
+            $this->emitMarketClosureWarning();
         }
 
         $current = $weatherService->getCurrentWeather();
         $forecast = $weatherService->getForecast();
 
         if (empty($current) || empty($forecast)) {
-            if ($closureCount === 0) {
-                $this->info('No weather alerts needed.');
-            }
+            $this->info('No weather alerts needed.');
 
             return self::SUCCESS;
         }
@@ -90,15 +80,16 @@ class CheckWeatherAlerts extends Command
             return self::SUCCESS;
         }
 
-        $notifiedCount = 0;
-
-        // Dual-emit: a single WeatherChanged event with all new alerts, fanned out by WeatherEvaluator.
+        // Per-user matching and push delivery happen in WeatherEvaluator
+        // via the ActionBus.
         $emittedAlerts = [];
         foreach ($alerts as $alert) {
             $dedupKey = "weather_alert:{$alert['key']}";
             if (Cache::has($dedupKey)) {
                 continue;
             }
+
+            Cache::put($dedupKey, true, now()->addHours(12));
             $emittedAlerts[] = [
                 'id' => $alert['key'] ?? null,
                 'severity' => $alert['severity'] ?? 'minor',
@@ -106,6 +97,7 @@ class CheckWeatherAlerts extends Command
                 'description' => $alert['detail'] ?? '',
             ];
         }
+
         if (! empty($emittedAlerts)) {
             event(new WeatherChanged(
                 condition: 'alert',
@@ -116,46 +108,18 @@ class CheckWeatherAlerts extends Command
             ));
         }
 
-        foreach ($alerts as $alert) {
-            // Dedup: skip if already sent this alert today
-            $dedupKey = "weather_alert:{$alert['key']}";
-            if (Cache::has($dedupKey)) {
-                continue;
-            }
-
-            Cache::put($dedupKey, true, now()->addHours(12));
-
-            User::whereNotNull('onboarded_at')->chunk(100, function ($users) use ($alert, &$notifiedCount) {
-                foreach ($users as $user) {
-                    if (! $user->wantsNotification('weather')) {
-                        continue;
-                    }
-
-                    if (! NotificationThrottle::canPush($user, 'weather_commute')) {
-                        continue;
-                    }
-
-                    if (! config('context_engine.push_via_bus')) {
-                        $user->notify(new WeatherAlertNotification($alert['summary'], $alert['detail']));
-                        NotificationThrottle::recordSent($user);
-                        $notifiedCount++;
-                    }
-                }
-            });
-        }
-
-        $this->info("Sent {$notifiedCount} weather alert(s).");
-        Log::info('Weather alert notifications sent', ['count' => $notifiedCount, 'alerts' => count($alerts)]);
+        $this->info('Emitted '.count($emittedAlerts).' weather alert(s).');
+        Log::info('Weather alert events emitted', ['count' => count($emittedAlerts)]);
 
         return self::SUCCESS;
     }
 
-    private function sendMarketClosureWarning(): int
+    private function emitMarketClosureWarning(): void
     {
         $holidayService = app(GermanHolidayService::class);
 
         if (! $holidayService->isShopsClosedTomorrow()) {
-            return 0;
+            return;
         }
 
         $tomorrow = now()->addDay();
@@ -163,39 +127,18 @@ class CheckWeatherAlerts extends Command
 
         $dedupKey = 'market_closure_notif:'.$tomorrow->format('Y-m-d');
         if (Cache::has($dedupKey)) {
-            return 0;
+            return;
         }
 
         Cache::put($dedupKey, true, now()->addDays(2));
 
-        // Dual-emit: MarketEvaluator fans out per-user.
+        // MarketEvaluator fans out per-user.
         event(new MarketClosureDetected(
             marketId: 'all',
             day: $tomorrow->format('Y-m-d'),
             reason: $holidayName ?? 'Sunday',
         ));
 
-        $count = 0;
-
-        User::whereNotNull('onboarded_at')->chunk(100, function ($users) use ($holidayName, &$count) {
-            foreach ($users as $user) {
-                if (! $user->wantsNotification('events')) {
-                    continue;
-                }
-
-                if (! NotificationThrottle::canPush($user, 'market_closure')) {
-                    continue;
-                }
-
-                $reason = $holidayName ?? 'Sunday';
-                if (! config('context_engine.push_via_bus')) {
-                    $user->notify(new MarketClosureNotification($reason, $holidayName));
-                    NotificationThrottle::recordSent($user);
-                    $count++;
-                }
-            }
-        });
-
-        return $count;
+        $this->info('Emitted market closure warning for '.$tomorrow->format('Y-m-d').'.');
     }
 }

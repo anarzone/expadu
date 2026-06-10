@@ -5,7 +5,7 @@ namespace App\Console\Commands\Controls;
 use App\ContextEngine\ActionBus;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Models\User;
-use App\Models\UserRouteCache;
+use App\Services\UserTransitLinesService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -16,11 +16,11 @@ use Illuminate\Support\Facades\Log;
  * pipeline is wired but events stop landing in the bus (queue worker
  * died, listener deregistered, evaluator returns null on every user, …).
  *
- * Picks a random onboarded user with a UserRouteCache row, fires a
- * synthetic TransitDisruptionDetected with a line that user actually
- * uses, polls pending_actions:{id} for up to 10 sec, asserts an action
- * appeared with score > 50, then ZREMs the synthetic entry so it doesn't
- * pollute the user's real dashboard.
+ * Picks a random onboarded user with a saved place, fires a synthetic
+ * TransitDisruptionDetected with a line that actually serves a stop near
+ * that place, polls pending_actions:{id} for up to 10 sec, asserts an
+ * action appeared, then ZREMs the synthetic entry so it doesn't pollute
+ * the user's real dashboard.
  *
  * Failure throws — Sentry catches it and pages on-call.
  */
@@ -30,26 +30,20 @@ class SyntheticDisruption extends Command
 {
     private const SYNTHETIC_ID = 999_999_999;
 
-    public function handle(ActionBus $bus): int
+    public function handle(ActionBus $bus, UserTransitLinesService $transitLines): int
     {
         $user = $this->pickUser();
         if (! $user) {
-            $this->warn('No onboarded user with UserRouteCache yet — skipping (this is OK pre-cutover).');
+            $this->warn('No onboarded user with a saved place yet — skipping (this is OK pre-launch).');
 
             return self::SUCCESS;
         }
 
-        /** @var UserRouteCache|null $route */
-        $route = UserRouteCache::where('user_id', $user->id)
-            ->whereNotNull('lines')
-            ->first();
-        $lines = $route ? (array) ($route->lines ?? []) : [];
-        if (empty($lines)) {
-            $this->warn("User {$user->id} has UserRouteCache but no lines — skipping.");
-
-            return self::SUCCESS;
-        }
-        $line = (string) $lines[0];
+        // Use a line that actually serves the user's places so the
+        // line-match path fires; fall back to the major-severity broadcast
+        // path when the user has no resolvable lines (still end-to-end).
+        $lines = $transitLines->getRelevantLines($user)['lines'];
+        $line = (string) ($lines->first() ?? 'SYNTHETIC');
 
         $actionKey = 'disruption:'.self::SYNTHETIC_ID.':user:'.$user->id;
 
@@ -85,7 +79,6 @@ class SyntheticDisruption extends Command
 
         // Always clean up before asserting, so a failure does not leave gunk
         $bus->remove($user->id, $actionKey);
-        $bus->remove($user->id, 'disruption_alt:'.self::SYNTHETIC_ID.':user:'.$user->id.':route:'.($route->id ?? 0));
 
         if ($found === null) {
             $msg = "synthetic disruption never landed in pending_actions:{$user->id} within {$timeout}s";
@@ -93,14 +86,10 @@ class SyntheticDisruption extends Command
             throw new \RuntimeException($msg);
         }
 
-        // Score floor checks the pipeline matched personal_relevance dimension
-        // correctly. A route_match disruption produces score = severity_base
-        // × 1.0 (route match) × temporal_relevance × ~1.0 (fresh), so even
-        // outside the user's typical_window it lands at severity_base × 0.1
-        // = 7 for a major disruption. >5 proves all four dimensions multiplied
-        // and the route-match path fired; >50 would only pass during the
-        // user's actual commute window which is too restrictive for a 30-min
-        // cron canary.
+        // Score floor checks the scoring dimensions multiplied. A major
+        // disruption scores severity_base(70) × relevance × temporal(1.0):
+        // line match → 70 × 0.8 = 56, broadcast fallback → 70 × 0.3 = 21.
+        // Either way > 5 proves the pipeline scored rather than zeroing out.
         if ($found->score <= 5.0) {
             $msg = "synthetic disruption scored {$found->score} (expected > 5)";
             Log::error('controls:synthetic-disruption low score', [
@@ -128,10 +117,8 @@ class SyntheticDisruption extends Command
 
         return User::query()
             ->whereNotNull('onboarded_at')
-            ->whereExists(function ($q) {
-                $q->select('id')
-                    ->from('user_route_caches')
-                    ->whereColumn('user_route_caches.user_id', 'users.id');
+            ->whereHas('places', function ($q) {
+                $q->whereNotNull('lat')->whereNotNull('lng');
             })
             ->inRandomOrder()
             ->first();

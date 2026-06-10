@@ -28,9 +28,6 @@ Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlappi
 // Rhine flood level — hourly, in-app only (no push)
 Schedule::command('rhine:check')->hourly()->withoutOverlapping();
 
-// Leave-by reminders — proactive push before user needs to leave for work/course/etc
-Schedule::command('commute:send-leaveby-reminders')->everyFiveMinutes()->withoutOverlapping();
-
 // Event reminders — 1 day before events user is attending
 Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping();
 
@@ -46,13 +43,7 @@ Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping();
 // GTFS static timetable refresh — VRS updates weekly
 Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 
-// Personalisation — rebuild user preference vectors daily at 03:30
-Schedule::command('users:rebuild-preference-vectors')->dailyAt('03:30')->withoutOverlapping();
-
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
 Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:00')->withoutOverlapping();
 
-// Recommendation pipeline controls
-Schedule::command('controls:daily-audit')->dailyAt('04:00')->withoutOverlapping();
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();
-Schedule::command('controls:drift-report')->weeklyOn(1, '04:30')->withoutOverlapping();

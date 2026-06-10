@@ -5,9 +5,8 @@ namespace App\Listeners;
 use App\Enums\AlertType;
 use App\Models\Alert;
 use App\Notifications\BuergeramtSlotNotification;
+use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\EventReminderNotification;
-use App\Notifications\GenericAlertNotification;
-use App\Notifications\LeaveByReminderNotification;
 use App\Notifications\MarketClosureNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
@@ -58,14 +57,8 @@ class CreateAlertFromNotification
         // Map notification class → alert type + subtype
         $alertType = match (true) {
             $notification instanceof EventReminderNotification,
-            $notification instanceof LeaveByReminderNotification,
+            $notification instanceof BureaucracyDeadlineNotification,
             $notification instanceof MarketClosureNotification => AlertType::Reminder,
-            $notification instanceof BuergeramtSlotNotification,
-            $notification instanceof TransitDisruptionNotification,
-            $notification instanceof TransitDelayNotification,
-            $notification instanceof RhineFloodNotification,
-            $notification instanceof WeatherAlertNotification => AlertType::System,
-            $notification instanceof GenericAlertNotification => AlertType::tryFrom($data['alert_type'] ?? 'system') ?? AlertType::System,
             default => AlertType::System,
         };
 
@@ -75,10 +68,9 @@ class CreateAlertFromNotification
             $notification instanceof WeatherAlertNotification => 'weather',
             $notification instanceof RhineFloodNotification => 'rhine',
             $notification instanceof BuergeramtSlotNotification => 'buergeramt',
+            $notification instanceof BureaucracyDeadlineNotification => 'bureaucracy_deadline',
             $notification instanceof EventReminderNotification => 'event_reminder',
-            $notification instanceof LeaveByReminderNotification => 'leave_by',
             $notification instanceof MarketClosureNotification => 'market_closure',
-            $notification instanceof GenericAlertNotification => $this->detectGenericSubtype($data),
             default => 'generic',
         };
 
@@ -103,44 +95,5 @@ class CreateAlertFromNotification
             'body' => $data['body'] ?? $data['summary'] ?? '',
             'deep_link' => $data['url'] ?? null,
         ]);
-    }
-
-    /** Detect granular subtype for GenericAlertNotification based on content */
-    private function detectGenericSubtype(array $data): string
-    {
-        $title = strtolower($data['title'] ?? '');
-        $url = $data['url'] ?? '';
-
-        // Social subtypes
-        if (str_contains($title, 'partner') || str_contains($title, 'match')) {
-            return 'partner_match';
-        }
-        if (str_contains($title, 'connection') || str_contains($title, 'accepted')) {
-            return 'connection_accepted';
-        }
-        if (str_contains($title, 'joined') || str_contains($title, 'also')) {
-            return 'event_activity';
-        }
-        if (str_contains($title, 'tip') || str_contains($title, 'area')) {
-            return 'area_tip';
-        }
-
-        // Reminder subtypes
-        if (str_contains($title, 'tomorrow')) {
-            return 'event_reminder';
-        }
-        if (str_contains($title, 'bank') || str_contains($title, 'steuer')) {
-            return 'bureaucracy_reminder';
-        }
-        if (str_contains($title, 'reminder')) {
-            return 'reminder';
-        }
-
-        // Fallback by alert_type
-        return match ($data['alert_type'] ?? 'system') {
-            'social' => 'social_other',
-            'reminder' => 'reminder_other',
-            default => 'generic',
-        };
     }
 }

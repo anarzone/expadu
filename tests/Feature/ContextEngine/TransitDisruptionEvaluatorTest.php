@@ -1,16 +1,21 @@
 <?php
 
 use App\ContextEngine\ActionBus;
+use App\ContextEngine\ScoredAction;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Models\User;
 use App\Models\UserPlace;
-use App\Models\UserRouteCache;
+use App\Services\UserTransitLinesService;
 use Illuminate\Support\Facades\Redis;
 
 uses()->group('context-engine');
 
 beforeEach(function () {
-    config(['context_engine.shadow' => false, 'context_engine.enabled' => true]);
+    // Push gating is quiet-hours aware (22:00–06:00) and rate-limited per
+    // user-id per day in shared Redis. Travel to a unique future daytime so
+    // channel assertions are deterministic and throttle keys never collide
+    // with other tests reusing recycled user ids.
+    $this->travelTo(now()->addDays(random_int(1000, 9999))->setTime(10, 0));
 });
 
 beforeEach(function () {
@@ -25,31 +30,27 @@ beforeEach(function () {
     );
 });
 
-test('disruption on UserRouteCache line emits a scored action', function () {
+function fakeUserLines(array $lines): void
+{
+    test()->mock(UserTransitLinesService::class, function ($mock) use ($lines) {
+        $mock->shouldReceive('getRelevantLines')->andReturn([
+            'lines' => collect($lines),
+            'stops' => collect(),
+            'context' => [],
+        ]);
+    });
+}
+
+test('disruption on a line near user places emits a scored action', function () {
     $user = User::factory()->onboarded()->create();
-    $home = UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
-    $work = UserPlace::factory()->create([
-        'user_id' => $user->id,
-        'category' => 'work',
-        'arrive_by' => '09:00',
-        'day_mode' => 'weekdays',
-    ]);
-    UserRouteCache::create([
-        'user_id' => $user->id,
-        'from_place_id' => $home->id,
-        'to_place_id' => $work->id,
-        'mode' => 'transit',
-        'lines' => ['12', '15'],
-        'bbox' => null,
-        'typical_window' => ['weekday' => [[7, 9]], 'weekend' => []],
-        'computed_at' => now(),
-    ]);
+    UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
+    fakeUserLines(['12', '15']);
 
     event(new TransitDisruptionDetected(
         disruptionId: 100,
         lines: ['12'],
         stopsAffected: [],
-        severity: 'major',
+        severity: 'moderate',
         bbox: null,
         expiresAt: null,
     ));
@@ -60,15 +61,16 @@ test('disruption on UserRouteCache line emits a scored action', function () {
     expect(collect($actions)->pluck('type')->all())->toContain('transit_disruption');
 });
 
-test('disruption on unrelated line does not emit action', function () {
+test('moderate disruption on unrelated line does not emit action', function () {
     $user = User::factory()->onboarded()->create();
     UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
+    fakeUserLines([]);
 
     event(new TransitDisruptionDetected(
         disruptionId: 200,
         lines: ['99'],
         stopsAffected: [],
-        severity: 'major',
+        severity: 'moderate',
         bbox: null,
         expiresAt: null,
     ));
@@ -76,25 +78,75 @@ test('disruption on unrelated line does not emit action', function () {
     expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty();
 });
 
+test('major disruption broadcasts to all onboarded users without push', function () {
+    $user = User::factory()->onboarded()->create();
+    fakeUserLines([]);
+
+    event(new TransitDisruptionDetected(
+        disruptionId: 250,
+        lines: ['99'],
+        stopsAffected: [],
+        severity: 'major',
+        bbox: null,
+        expiresAt: null,
+    ));
+
+    $actions = app(ActionBus::class)->topK($user->id, 10);
+    $disruption = collect($actions)->firstWhere('type', 'transit_disruption');
+
+    expect($disruption)->not->toBeNull();
+    expect($disruption->deliverChannels)->not->toContain(ScoredAction::CHANNEL_PUSH);
+});
+
+test('critical disruption on matched line includes push channel', function () {
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
+    fakeUserLines(['12']);
+
+    event(new TransitDisruptionDetected(
+        disruptionId: 260,
+        lines: ['12'],
+        stopsAffected: [],
+        severity: 'critical',
+        bbox: null,
+        expiresAt: null,
+    ));
+
+    $actions = app(ActionBus::class)->topK($user->id, 10);
+    $disruption = collect($actions)->firstWhere('type', 'transit_disruption');
+
+    expect($disruption)->not->toBeNull();
+    expect($disruption->deliverChannels)->toContain(ScoredAction::CHANNEL_PUSH);
+});
+
+test('moderate disruption with bbox covering a saved place geo-matches', function () {
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'category' => 'home',
+        'lat' => 50.94,
+        'lng' => 6.96,
+    ]);
+    fakeUserLines([]);
+
+    event(new TransitDisruptionDetected(
+        disruptionId: 270,
+        lines: ['99'],
+        stopsAffected: [],
+        severity: 'moderate',
+        bbox: ['minLat' => 50.9, 'maxLat' => 51.0, 'minLng' => 6.9, 'maxLng' => 7.0],
+        expiresAt: null,
+    ));
+
+    $actions = app(ActionBus::class)->topK($user->id, 10);
+
+    expect(collect($actions)->pluck('type')->all())->toContain('transit_disruption');
+});
+
 test('repeat disruption with same id is deduped by action_key', function () {
     $user = User::factory()->onboarded()->create();
-    $home = UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
-    $work = UserPlace::factory()->create([
-        'user_id' => $user->id,
-        'category' => 'work',
-        'arrive_by' => '09:00',
-        'day_mode' => 'weekdays',
-    ]);
-    UserRouteCache::create([
-        'user_id' => $user->id,
-        'from_place_id' => $home->id,
-        'to_place_id' => $work->id,
-        'mode' => 'transit',
-        'lines' => ['12'],
-        'bbox' => null,
-        'typical_window' => ['weekday' => [[7, 9]], 'weekend' => []],
-        'computed_at' => now(),
-    ]);
+    UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
+    fakeUserLines(['12']);
 
     $payload = [
         'disruptionId' => 300,
@@ -114,29 +166,10 @@ test('repeat disruption with same id is deduped by action_key', function () {
     expect($disruptions)->toHaveCount(1);
 });
 
-test('major disruption on a route_match always lands above severity gate', function () {
-    // Verifies the score is high enough to compete with critical-only legacy gate
+test('major disruption on a matched line scores above the broadcast tier', function () {
     $user = User::factory()->onboarded()->create();
-    $home = UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
-    $work = UserPlace::factory()->create([
-        'user_id' => $user->id,
-        'category' => 'work',
-        'arrive_by' => now()->addHour()->format('H:i'),
-        'day_mode' => 'weekdays',
-    ]);
-    UserRouteCache::create([
-        'user_id' => $user->id,
-        'from_place_id' => $home->id,
-        'to_place_id' => $work->id,
-        'mode' => 'transit',
-        'lines' => ['12'],
-        'bbox' => null,
-        'typical_window' => [
-            'weekday' => [[now()->hour, now()->hour + 2]],
-            'weekend' => [[now()->hour, now()->hour + 2]],
-        ],
-        'computed_at' => now(),
-    ]);
+    UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
+    fakeUserLines(['12']);
 
     event(new TransitDisruptionDetected(
         disruptionId: 400,
@@ -150,5 +183,6 @@ test('major disruption on a route_match always lands above severity gate', funct
     $actions = app(ActionBus::class)->topK($user->id, 10);
     $disruption = collect($actions)->firstWhere('type', 'transit_disruption');
 
+    // major (70) × line match (0.8) × inside window (1.0) × fresh (~1.0) ≈ 56
     expect($disruption->score)->toBeGreaterThan(50.0);
 });

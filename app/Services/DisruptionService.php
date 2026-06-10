@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
  * 1. KVB Open Data API — live elevator/escalator disruptions
  * 2. city_news table — scraped line disruptions from KVB aktuelles
  *
- * Feeds into RecommendationService for smart alerts.
+ * Feeds the ContextEngine disruption pipeline and transit fallbacks.
  */
 class DisruptionService
 {

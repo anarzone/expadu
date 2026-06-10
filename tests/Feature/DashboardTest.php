@@ -24,7 +24,7 @@ test('authenticated non-onboarded users are redirected to onboarding', function 
     $response->assertRedirect(route('onboarding'));
 });
 
-test('dashboard returns unified feed', function () {
+test('dashboard defers tiles and weather', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
@@ -32,11 +32,10 @@ test('dashboard returns unified feed', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
-        ->missing('feed')
+        ->missing('tiles')
         ->missing('weather')
         ->loadDeferredProps(fn ($reload) => $reload
-            ->has('feed')
-            ->has('feed.recommendations')
+            ->has('tiles')
             ->has('weather')
         )
     );

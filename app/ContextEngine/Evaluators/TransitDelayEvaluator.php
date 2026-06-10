@@ -7,12 +7,16 @@ use App\ContextEngine\ScoredAction;
 use App\ContextEngine\Scorer;
 use App\Events\Context\TransitDelayDetected;
 use App\Models\User;
-use App\Models\UserRouteCache;
 use App\Services\UserTransitLinesService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
+/**
+ * Matches a delayed line to users whose saved places are served by it.
+ * Dashboard/alert-page only for moderate delays; push reserved for
+ * major delays (>= 30 min or cancellations) on matched lines.
+ */
 class TransitDelayEvaluator implements ShouldQueue
 {
     use InteractsWithQueue;
@@ -42,25 +46,17 @@ class TransitDelayEvaluator implements ShouldQueue
 
     private function evaluateForUser(User $user, TransitDelayDetected $event, string $severity): void
     {
-        $routes = UserRouteCache::where('user_id', $user->id)->get();
-        $matchedRoute = $routes->first(fn (UserRouteCache $r) => in_array($event->line, $r->lines ?? [], true));
+        $userLines = $this->userLines->getRelevantLines($user)['lines']->all();
 
-        $legacyLines = $this->userLines->getRelevantLines($user)['lines']->all();
-        $legacyMatch = in_array($event->line, $legacyLines, true);
-
-        if (! $matchedRoute && ! $legacyMatch) {
+        if (! in_array($event->line, $userLines, true)) {
             return;
         }
 
-        $personalRelevance = $matchedRoute
-            ? Scorer::RELEVANCE_ROUTE_MATCH
-            : Scorer::RELEVANCE_ROUTINE_MATCH;
-
-        $temporalRelevance = $matchedRoute && $matchedRoute->isInTypicalWindow()
-            ? Scorer::TEMPORAL_INSIDE_WINDOW
-            : Scorer::TEMPORAL_NEAR_WINDOW_VALUE;
-
-        $score = $this->scorer->score($severity, $personalRelevance, $temporalRelevance);
+        $score = $this->scorer->score(
+            severity: $severity,
+            personalRelevance: Scorer::RELEVANCE_ROUTINE_MATCH,
+            temporalRelevance: Scorer::TEMPORAL_INSIDE_WINDOW,
+        );
 
         $action = new ScoredAction(
             type: 'transit_delay',
@@ -68,7 +64,7 @@ class TransitDelayEvaluator implements ShouldQueue
             score: $score,
             severity: $severity,
             validUntil: CarbonImmutable::now()->addHours(2),
-            deliverChannels: $event->delayMin >= 15
+            deliverChannels: $event->delayMin >= 30
                 ? [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_ALERT_PAGE, ScoredAction::CHANNEL_PUSH]
                 : [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_ALERT_PAGE],
             payload: [

@@ -64,18 +64,6 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(UserTask::class);
     }
 
-    /** @return HasMany<Appointment, $this> */
-    public function appointments(): HasMany
-    {
-        return $this->hasMany(Appointment::class);
-    }
-
-    /** @return HasMany<SpotCheckin, $this> */
-    public function spotCheckins(): HasMany
-    {
-        return $this->hasMany(SpotCheckin::class);
-    }
-
     /** @return HasMany<Event, $this> */
     public function organisedEvents(): HasMany
     {
@@ -90,35 +78,10 @@ class User extends Authenticatable implements FilamentUser
             ->withTimestamps();
     }
 
-    /** @return HasMany<LanguagePartner, $this> */
-    public function languagePartnersRequested(): HasMany
-    {
-        return $this->hasMany(LanguagePartner::class, 'requester_id');
-    }
-
-    /** @return HasMany<LanguagePartner, $this> */
-    public function languagePartnersReceived(): HasMany
-    {
-        return $this->hasMany(LanguagePartner::class, 'receiver_id');
-    }
-
-    /** @return BelongsToMany<Conversation, $this> */
-    public function conversations(): BelongsToMany
-    {
-        return $this->belongsToMany(Conversation::class, 'conversation_participants')
-            ->withPivot('joined_at');
-    }
-
     /** @return HasMany<Alert, $this> */
     public function alerts(): HasMany
     {
         return $this->hasMany(Alert::class);
-    }
-
-    /** @return HasMany<Routine, $this> */
-    public function routines(): HasMany
-    {
-        return $this->hasMany(Routine::class);
     }
 
     /** @return HasMany<UserEvent, $this> */

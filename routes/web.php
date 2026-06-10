@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\RouteOptionsController;
 use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TrackEventController;
-use App\Http\Controllers\Api\TransferConnectionsController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
@@ -18,18 +17,15 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\SlotMonitorController;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TaskController;
-use App\Http\Controllers\TransitController;
 use App\Http\Controllers\UserPlaceController;
 use App\Http\Controllers\UserSettingController;
 use App\Http\Controllers\UserTaskController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 /*
@@ -78,25 +74,15 @@ $appRoutes = function () use ($appDomain) {
         Route::post('api/track', TrackEventController::class)->name('api.track');
         Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
-        Route::get('api/transfer-connections', [TransferConnectionsController::class, 'getConnections'])->name('api.transfer-connections');
-        Route::post('api/transfer-select', [TransferConnectionsController::class, 'selectConnection'])->name('api.transfer-select');
 
         Route::inertia('onboarding', 'onboarding')->name('onboarding');
         Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
 
-        // Transit
-        Route::get('transit', [TransitController::class, 'index'])->name('transit');
-        Route::post('routines', [RoutineController::class, 'store'])->name('routines.store');
-        Route::put('routines/{routine}', [RoutineController::class, 'update'])->name('routines.update');
-        Route::delete('routines/{routine}', [RoutineController::class, 'destroy'])->name('routines.destroy');
-
         // Explore / Spots
         Route::get('explore', [SpotController::class, 'index'])->name('explore');
         Route::get('explore/{spot}', [SpotController::class, 'show'])->name('spots.show');
-        Route::post('explore/{spot}/checkin', [SpotController::class, 'checkin'])->name('spots.checkin');
-        Route::post('explore/{spot}/checkout', [SpotController::class, 'checkout'])->name('spots.checkout');
 
         // Events
         Route::get('events', [EventController::class, 'index'])->name('events');
@@ -140,37 +126,6 @@ $appRoutes = function () use ($appDomain) {
         Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');
         Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->name('user-places.update');
         Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->name('user-places.destroy');
-
-        // Feature-flagged pages — backend not yet built. Until each flag flips
-        // on, the route renders a "coming soon" placeholder and the sidebar
-        // entry hides itself (see resources/js/components/app-sidebar.tsx).
-        Route::get('language-exchange', fn () => config('features.language_exchange')
-            ? Inertia::render('language-exchange')
-            : Inertia::render('coming-soon', [
-                'title' => 'Language Exchange',
-                'description' => 'Find partners to practise German with locals and other expats. Launching soon.',
-            ]))->name('language-exchange');
-
-        Route::get('chat', fn () => config('features.chat')
-            ? Inertia::render('chat')
-            : Inertia::render('coming-soon', [
-                'title' => 'Chat',
-                'description' => 'Direct messaging with people you meet through Expadu. Launching soon.',
-            ]))->name('chat');
-
-        Route::get('neighborhoods', fn () => config('features.neighbourhoods')
-            ? Inertia::render('neighborhoods')
-            : Inertia::render('coming-soon', [
-                'title' => 'Neighbourhoods',
-                'description' => 'Curated guides to Cologne neighbourhoods — parks, cafés, workspaces, rentals. Launching soon.',
-            ]))->name('neighborhoods');
-
-        Route::get('just-arrived', fn () => config('features.just_arrived')
-            ? Inertia::render('just-arrived')
-            : Inertia::render('coming-soon', [
-                'title' => 'Just Arrived',
-                'description' => 'A personalised first-month checklist for your new city. Launching soon.',
-            ]))->name('just-arrived');
 
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');

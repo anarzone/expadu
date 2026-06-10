@@ -2,14 +2,9 @@ import { Link } from '@inertiajs/react';
 import {
     IconHome,
     IconCompass,
-    IconTrain,
     IconCalendarEvent,
-    IconLanguage,
-    IconMessageCircle,
-    IconBuildingCommunity,
     IconFirstAidKit,
     IconBuildingBank,
-    IconPackage,
     IconBell,
     IconUser,
     IconX,
@@ -25,31 +20,14 @@ const menuGroups: Array<{
     {
         label: 'Main',
         items: [
-            { title: 'Home', href: '/dashboard', icon: IconHome },
-            { title: 'Explore', href: '/explore', icon: IconCompass },
-            { title: 'Transit', href: '/transit', icon: IconTrain },
+            { title: 'Today', href: '/dashboard', icon: IconHome },
+            { title: 'Places', href: '/explore', icon: IconCompass },
             { title: 'Events', href: '/events', icon: IconCalendarEvent },
-        ],
-    },
-    {
-        label: 'Community',
-        items: [
-            {
-                title: 'Language Exchange',
-                href: '/language-exchange',
-                icon: IconLanguage,
-            },
-            { title: 'Chat', href: '/chat', icon: IconMessageCircle },
         ],
     },
     {
         label: 'City',
         items: [
-            {
-                title: 'Neighborhoods',
-                href: '/neighborhoods',
-                icon: IconBuildingCommunity,
-            },
             { title: 'Services', href: '/services', icon: IconFirstAidKit },
         ],
     },
@@ -61,7 +39,6 @@ const menuGroups: Array<{
                 href: '/bureaucracy',
                 icon: IconBuildingBank,
             },
-            { title: 'Just Arrived', href: '/just-arrived', icon: IconPackage },
         ],
     },
     {

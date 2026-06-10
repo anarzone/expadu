@@ -6,13 +6,11 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 
 /**
- * Resolves which transit lines are relevant to a user by merging three sources:
- * 1. Active routines (from_stop / to_stop)
- * 2. Saved places with coordinates (UserPlace)
- * 3. Current GPS location if stationary for 20+ minutes
+ * Resolves which transit lines are relevant to a user from their saved
+ * places (UserPlace): every line serving a stop within walking distance
+ * of a place counts, with a human-readable context like "near Home".
  */
 class UserTransitLinesService
 {
@@ -22,7 +20,7 @@ class UserTransitLinesService
     ) {}
 
     /**
-     * Get all transit lines relevant to a user from all sources.
+     * Get all transit lines relevant to a user.
      *
      * @return array{lines: Collection<int, string>, stops: Collection<int, string>, context: array<string, string>}
      */
@@ -34,9 +32,7 @@ class UserTransitLinesService
             $stops = collect();
             $context = [];
 
-            $this->addRoutineLines($user, $lines, $stops, $context);
             $this->addPlaceLines($user, $lines, $stops, $context);
-            $this->addGpsLines($user, $lines, $stops, $context);
 
             return [
                 'lines' => $lines->unique()->values()->all(),
@@ -53,30 +49,7 @@ class UserTransitLinesService
     }
 
     /**
-     * Source 1: Lines from active routines (existing behavior).
-     */
-    private function addRoutineLines(User $user, Collection $lines, Collection $stops, array &$context): void
-    {
-        $routines = $user->routines()->where('is_active', true)->get();
-
-        foreach ($routines as $routine) {
-            $fromLines = $this->getLinesAtStop($routine->from_stop);
-            $toLines = $routine->to_stop ? $this->getLinesAtStop($routine->to_stop) : collect();
-
-            foreach ($fromLines->merge($toLines)->unique() as $line) {
-                $lines->push($line);
-                $context[$line] ??= "on your {$routine->name} commute";
-            }
-
-            $stops->push($routine->from_stop);
-            if ($routine->to_stop) {
-                $stops->push($routine->to_stop);
-            }
-        }
-    }
-
-    /**
-     * Source 2: Lines from saved places with coordinates.
+     * Lines from saved places with coordinates.
      */
     private function addPlaceLines(User $user, Collection $lines, Collection $stops, array &$context): void
     {
@@ -112,86 +85,6 @@ class UserTransitLinesService
     }
 
     /**
-     * Source 3: Lines near current GPS location if stationary for 20+ minutes.
-     */
-    private function addGpsLines(User $user, Collection $lines, Collection $stops, array &$context): void
-    {
-        $location = $this->getStationaryLocation($user);
-
-        if (! $location) {
-            return;
-        }
-
-        $nearbyStops = $this->nearbyStopService->getWalkableStops(
-            $location['lat'],
-            $location['lng'],
-            500
-        );
-
-        foreach ($nearbyStops as $stop) {
-            $stops->push($stop['name']);
-            foreach ($stop['lines'] as $line) {
-                $lines->push($line);
-                $context[$line] ??= 'near your current location';
-            }
-        }
-    }
-
-    /**
-     * Detect if user has been stationary for the given number of minutes.
-     * Returns centroid coordinates or null if moving/insufficient data.
-     *
-     * @return array{lat: float, lng: float}|null
-     */
-    public function getStationaryLocation(User $user, int $minutes = 20): ?array
-    {
-        try {
-            $key = "location_history:{$user->id}";
-            $since = now()->subMinutes($minutes)->timestamp;
-            $entries = Redis::zrangebyscore($key, $since, '+inf');
-
-            if (count($entries) < 2) {
-                return null;
-            }
-
-            $points = [];
-            foreach ($entries as $entry) {
-                $data = json_decode($entry, true);
-                if (! $data || ($data['rejected'] ?? false)) {
-                    continue;
-                }
-                if (isset($data['lat'], $data['lng'])) {
-                    $points[] = ['lat' => (float) $data['lat'], 'lng' => (float) $data['lng']];
-                }
-            }
-
-            if (count($points) < 2) {
-                return null;
-            }
-
-            // Compute centroid
-            $centroidLat = collect($points)->avg('lat');
-            $centroidLng = collect($points)->avg('lng');
-
-            // Check max spread from centroid
-            $maxSpread = 0;
-            foreach ($points as $p) {
-                $dist = $this->haversineMeters($centroidLat, $centroidLng, $p['lat'], $p['lng']);
-                $maxSpread = max($maxSpread, $dist);
-            }
-
-            // If any ping is >100m from centroid, user is moving
-            if ($maxSpread > 100) {
-                return null;
-            }
-
-            return ['lat' => round($centroidLat, 6), 'lng' => round($centroidLng, 6)];
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    /**
      * Get transit line names that serve a given stop via GTFS static data.
      *
      * @return Collection<int, string>
@@ -213,15 +106,5 @@ class UserTransitLinesService
         });
 
         return collect($lines);
-    }
-
-    private function haversineMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
-    {
-        $R = 6371000;
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
-
-        return $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 }

@@ -3,17 +3,25 @@
 namespace App\ContextEngine\Evaluators;
 
 use App\ContextEngine\ActionBus;
-use App\ContextEngine\AlternativeRoutePlanner;
 use App\ContextEngine\ScoredAction;
 use App\ContextEngine\Scorer;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Models\User;
-use App\Models\UserRouteCache;
 use App\Services\UserTransitLinesService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
+/**
+ * Matches a disruption to users via their saved places: a line match
+ * (the disrupted line serves a stop near one of the user's places) beats
+ * a geo match (a saved place sits inside the disruption bbox). Major and
+ * critical disruptions additionally reach every onboarded user's
+ * dashboard — strikes matter city-wide.
+ *
+ * Push is reserved for critical disruptions on line-matched users; all
+ * other matches are dashboard/alert-page only.
+ */
 class TransitDisruptionEvaluator implements ShouldQueue
 {
     use InteractsWithQueue;
@@ -22,7 +30,6 @@ class TransitDisruptionEvaluator implements ShouldQueue
 
     public function __construct(
         private ActionBus $bus,
-        private AlternativeRoutePlanner $planner,
         private UserTransitLinesService $userLines,
         private Scorer $scorer,
     ) {}
@@ -40,35 +47,28 @@ class TransitDisruptionEvaluator implements ShouldQueue
 
     private function evaluateForUser(User $user, TransitDisruptionDetected $event): void
     {
-        // Source 1: precomputed Home↔anchor routes (catches transfer-only lines)
-        $routes = UserRouteCache::where('user_id', $user->id)->get();
-        $matchedRoute = $routes->first(
-            fn (UserRouteCache $r) => array_intersect($r->lines ?? [], $event->lines)
-        );
+        $userLines = $this->userLines->getRelevantLines($user)['lines']->all();
+        $lineMatch = (bool) array_intersect($userLines, $event->lines);
+        $geoMatch = ! $lineMatch && $this->placeInBbox($user, $event);
+        $broadcast = in_array($event->severity, ['critical', 'major'], true);
 
-        // Source 2: legacy union (routines + nearby-place stops + GPS)
-        $legacyLines = $this->userLines->getRelevantLines($user)['lines']->all();
-        $legacyMatch = (bool) array_intersect($legacyLines, $event->lines);
-
-        if (! $matchedRoute && ! $legacyMatch && ! $this->geoMatches($user, $event)) {
+        if (! $lineMatch && ! $geoMatch && ! $broadcast) {
             return;
         }
 
         $personalRelevance = match (true) {
-            $matchedRoute !== null => Scorer::RELEVANCE_ROUTE_MATCH,
-            $legacyMatch => Scorer::RELEVANCE_ROUTINE_MATCH,
-            default => Scorer::RELEVANCE_GEO_PROXIMITY,
+            $lineMatch => Scorer::RELEVANCE_ROUTINE_MATCH,
+            $geoMatch => Scorer::RELEVANCE_GEO_PROXIMITY,
+            default => Scorer::RELEVANCE_SITUATION_MATCH,
         };
-
-        $temporalRelevance = $this->temporalRelevance($matchedRoute);
 
         $score = $this->scorer->score(
             severity: $event->severity,
             personalRelevance: $personalRelevance,
-            temporalRelevance: $temporalRelevance,
+            temporalRelevance: Scorer::TEMPORAL_INSIDE_WINDOW,
         );
 
-        $disruptionAction = new ScoredAction(
+        $action = new ScoredAction(
             type: 'transit_disruption',
             actionKey: "disruption:{$event->disruptionId}:user:{$user->id}",
             score: $score,
@@ -76,90 +76,36 @@ class TransitDisruptionEvaluator implements ShouldQueue
             validUntil: $event->expiresAt
                 ? CarbonImmutable::instance($event->expiresAt)
                 : CarbonImmutable::now()->addHours(6),
-            deliverChannels: $this->channelsFor($event->severity, $personalRelevance),
+            deliverChannels: $this->channelsFor($event->severity, $lineMatch),
             payload: [
                 'disruption_id' => $event->disruptionId,
                 'lines' => $event->lines,
                 'stops_affected' => $event->stopsAffected,
-                'matched_route_id' => $matchedRoute?->id,
             ],
             createdAt: CarbonImmutable::now(),
         );
 
-        $this->bus->insert($user, $disruptionAction);
-
-        if ($matchedRoute) {
-            $alt = $this->planner->propose($user, $matchedRoute, $event->lines);
-
-            $altAction = new ScoredAction(
-                type: $alt ? 'alternative_route' : 'disruption_no_alt',
-                actionKey: "disruption_alt:{$event->disruptionId}:user:{$user->id}:route:{$matchedRoute->id}",
-                score: $score - 0.1, // sit just below the disruption card
-                severity: $event->severity,
-                validUntil: $event->expiresAt
-                    ? CarbonImmutable::instance($event->expiresAt)
-                    : CarbonImmutable::now()->addHours(6),
-                deliverChannels: [ScoredAction::CHANNEL_DASHBOARD],
-                payload: [
-                    'disruption_id' => $event->disruptionId,
-                    'matched_route_id' => $matchedRoute->id,
-                    'alternative' => $alt,
-                ],
-                createdAt: CarbonImmutable::now(),
-            );
-
-            $this->bus->insert($user, $altAction);
-        }
+        $this->bus->insert($user, $action);
     }
 
-    private function temporalRelevance(?UserRouteCache $route): float
-    {
-        if (! $route) {
-            return Scorer::TEMPORAL_OUTSIDE_VALUE;
-        }
-
-        if ($route->isInTypicalWindow()) {
-            return Scorer::TEMPORAL_INSIDE_WINDOW;
-        }
-        if ($route->isNearTypicalWindow(Scorer::TEMPORAL_NEAR_WINDOW_MIN)) {
-            return Scorer::TEMPORAL_NEAR_WINDOW_VALUE;
-        }
-        if ($route->isNearTypicalWindow(120)) {
-            return Scorer::TEMPORAL_WITHIN_2H_VALUE;
-        }
-
-        return Scorer::TEMPORAL_OUTSIDE_VALUE;
-    }
-
-    private function geoMatches(User $user, TransitDisruptionDetected $event): bool
+    private function placeInBbox(User $user, TransitDisruptionDetected $event): bool
     {
         if (! $event->bbox) {
             return false;
         }
 
-        $stationary = $this->userLines->getStationaryLocation($user);
-        if (! $stationary) {
-            return false;
-        }
-
-        $lat = (float) ($stationary['lat'] ?? 0);
-        $lng = (float) ($stationary['lng'] ?? 0);
-
-        return $lat >= $event->bbox['minLat']
-            && $lat <= $event->bbox['maxLat']
-            && $lng >= $event->bbox['minLng']
-            && $lng <= $event->bbox['maxLng'];
+        return $user->places()
+            ->whereBetween('lat', [$event->bbox['minLat'], $event->bbox['maxLat']])
+            ->whereBetween('lng', [$event->bbox['minLng'], $event->bbox['maxLng']])
+            ->exists();
     }
 
     /** @return list<string> */
-    private function channelsFor(string $severity, float $personalRelevance): array
+    private function channelsFor(string $severity, bool $lineMatch): array
     {
         $channels = [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_ALERT_PAGE];
 
-        $shouldPush = $severity === 'critical'
-            || ($severity === 'major' && $personalRelevance >= Scorer::RELEVANCE_ROUTINE_MATCH);
-
-        if ($shouldPush) {
+        if ($severity === 'critical' && $lineMatch) {
             $channels[] = ScoredAction::CHANNEL_PUSH;
         }
 

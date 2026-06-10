@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\HasEmbedding;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,20 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
-    use HasEmbedding, HasFactory;
-
-    public function embeddingText(): string
-    {
-        $tags = is_array($this->tags) ? implode(' ', $this->tags) : '';
-
-        return trim(implode(' ', array_filter([
-            $this->title,
-            $this->category,
-            $tags,
-            $this->location_name,
-            $this->description,
-        ])));
-    }
+    use HasFactory;
 
     protected $table = 'events';
 

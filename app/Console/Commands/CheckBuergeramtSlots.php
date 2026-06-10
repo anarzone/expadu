@@ -3,8 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Events\Context\BuergeramtSlotsAvailable;
-use App\Models\SlotMonitor;
-use App\Notifications\BuergeramtSlotNotification;
 use App\Services\BuergeramtService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -57,7 +55,8 @@ class CheckBuergeramtSlots extends Command
             'newly_available' => count($newlyAvailable),
         ]);
 
-        // Dual-emit: context-engine evaluator listens and fans out to relevant users.
+        // BuergeramtEvaluator fans out per-user (push for active SlotMonitor
+        // holders, dashboard-only for situation matches) via the ActionBus.
         foreach ($newlyAvailable as $officeId => $slot) {
             $dates = [];
             if (! empty($slot['next_slot'])) {
@@ -69,62 +68,6 @@ class CheckBuergeramtSlots extends Command
             ));
         }
 
-        // Notify users who are monitoring newly available offices
-        if (count($newlyAvailable) > 0) {
-            $this->notifyUsers($newlyAvailable);
-        }
-
         return self::SUCCESS;
-    }
-
-    /**
-     * Notify users who have active monitors for the newly available offices.
-     *
-     * @param  array<string, array{name: string, address: string, status: string, next_slot: ?string, slots_today: int}>  $newlyAvailable
-     */
-    protected function notifyUsers(array $newlyAvailable): void
-    {
-        $officeIds = array_keys($newlyAvailable);
-
-        $monitors = SlotMonitor::where('is_active', true)
-            ->whereIn('office_id', $officeIds)
-            ->with('user')
-            ->get();
-
-        $notifiedCount = 0;
-
-        foreach ($monitors as $monitor) {
-            // Skip if already notified within the last 30 minutes
-            if ($monitor->notified_at && $monitor->notified_at->isAfter(now()->subMinutes(30))) {
-                continue;
-            }
-
-            // Respect user notification preferences
-            if (! $monitor->user->wantsNotification('burgeramt')) {
-                continue;
-            }
-
-            // Build the available slots specific to this user's monitored office
-            $userSlots = collect($newlyAvailable)
-                ->only($monitor->office_id)
-                ->all();
-
-            if (empty($userSlots)) {
-                continue;
-            }
-
-            if (! config('context_engine.push_via_bus')) {
-                $monitor->user->notify(new BuergeramtSlotNotification($userSlots));
-                $monitor->update(['notified_at' => now()]);
-                $notifiedCount++;
-            }
-        }
-
-        $this->info("  Notified {$notifiedCount} user(s)");
-
-        Log::info('Buergeramt slot notifications sent', [
-            'notified_users' => $notifiedCount,
-            'offices' => $officeIds,
-        ]);
     }
 }

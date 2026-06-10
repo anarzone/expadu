@@ -6,48 +6,65 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
 
-test('home feed returns unified feed for onboarded user', function () {
-    $user = User::factory()->onboarded()->create();
-    $this->actingAs($user);
-
-    $response = $this->get(route('dashboard'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('dashboard')
-        ->missing('feed')
-        ->missing('weather')
-        ->missing('commuteRecommendation')
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->has('feed')
-            ->has('feed.recommendations')
-            ->has('feed.settlement')
-            ->has('feed.places')
-            ->has('weather')
-            ->has('commuteRecommendation')
-        )
-    );
-});
-
-test('home feed includes settlement progress', function () {
+test('tiles include urgent bureaucracy deadlines', function () {
     $user = User::factory()->onboarded()->create([
-        'arrival_date' => now()->subDays(10),
+        'arrival_date' => now()->subDays(12),
     ]);
-    $task = Task::factory()->create(['urgency' => 'critical', 'situation' => ['non_eu_employee']]);
-    UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
+    $task = Task::factory()->create([
+        'title' => 'Register your address (Anmeldung)',
+        'urgency' => 'critical',
+        'situation' => [$user->situation->value],
+        'deadline_type' => 'days_since_arrival',
+        'deadline_days' => 14,
+    ]);
+    UserTask::create(['user_id' => $user->id, 'task_id' => $task->id, 'is_applicable' => true]);
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
 
     $response->assertInertia(fn ($page) => $page
         ->loadDeferredProps(fn ($reload) => $reload
-            ->has('feed.settlement')
-            ->where('feed.settlement.total', fn ($v) => $v > 0)
+            ->where('tiles', function ($tiles) {
+                return collect($tiles)->contains(
+                    fn ($tile) => $tile['type'] === 'bureaucracy_deadline'
+                        && str_contains($tile['title'], 'Anmeldung')
+                );
+            })
         )
     );
 });
 
-test('home feed recommendations sorted by priority', function () {
+test('completed tasks produce no deadline tile', function () {
+    $user = User::factory()->onboarded()->create([
+        'arrival_date' => now()->subDays(12),
+    ]);
+    $task = Task::factory()->create([
+        'urgency' => 'critical',
+        'situation' => [$user->situation->value],
+        'deadline_type' => 'days_since_arrival',
+        'deadline_days' => 14,
+    ]);
+    UserTask::create([
+        'user_id' => $user->id,
+        'task_id' => $task->id,
+        'is_applicable' => true,
+        'status' => 'done',
+        'completed_at' => now(),
+    ]);
+    $this->actingAs($user);
+
+    $response = $this->get(route('dashboard'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->where('tiles', function ($tiles) {
+                return ! collect($tiles)->contains(fn ($tile) => $tile['type'] === 'bureaucracy_deadline');
+            })
+        )
+    );
+});
+
+test('tiles are sorted by score descending', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
@@ -55,14 +72,13 @@ test('home feed recommendations sorted by priority', function () {
 
     $response->assertInertia(fn ($page) => $page
         ->loadDeferredProps(fn ($reload) => $reload
-            ->where('feed.recommendations', function ($recs) {
-                if (count($recs) < 2) {
+            ->where('tiles', function ($tiles) {
+                if (count($tiles) < 2) {
                     return true;
                 }
-                $priorities = collect($recs)->pluck('priority')->all();
-                $sorted = collect($priorities)->sortDesc()->values()->all();
+                $scores = collect($tiles)->pluck('score')->all();
 
-                return $priorities === $sorted;
+                return $scores === collect($scores)->sortDesc()->values()->all();
             })
         )
     );

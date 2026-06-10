@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Spot;
-use App\Models\SpotCheckin;
 use App\Models\User;
 use App\Models\UserPlace;
 
@@ -50,45 +49,4 @@ test('spots can be filtered by category', function () {
             ->has('spots.data', 1)
         )
     );
-});
-
-test('user can check into a spot', function () {
-    $user = User::factory()->onboarded()->create();
-    $spot = Spot::factory()->create();
-    $this->actingAs($user);
-
-    $this->post(route('spots.checkin', $spot));
-
-    expect(SpotCheckin::where('user_id', $user->id)->where('spot_id', $spot->id)->count())->toBe(1);
-});
-
-test('user can check out of a spot', function () {
-    $user = User::factory()->onboarded()->create();
-    $spot = Spot::factory()->create();
-    SpotCheckin::create([
-        'spot_id' => $spot->id,
-        'user_id' => $user->id,
-        'checked_in_at' => now(),
-    ]);
-    $this->actingAs($user);
-
-    $this->post(route('spots.checkout', $spot));
-
-    $checkin = SpotCheckin::where('user_id', $user->id)->first();
-    expect($checkin->checked_out_at)->not->toBeNull();
-});
-
-test('duplicate checkin is prevented', function () {
-    $user = User::factory()->onboarded()->create();
-    $spot = Spot::factory()->create();
-    SpotCheckin::create([
-        'spot_id' => $spot->id,
-        'user_id' => $user->id,
-        'checked_in_at' => now(),
-    ]);
-    $this->actingAs($user);
-
-    $this->post(route('spots.checkin', $spot));
-
-    expect(SpotCheckin::where('user_id', $user->id)->where('spot_id', $spot->id)->count())->toBe(1);
 });

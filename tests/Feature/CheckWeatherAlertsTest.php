@@ -1,35 +1,18 @@
 <?php
 
-use App\Models\NotificationPreference;
-use App\Models\User;
-use App\Notifications\WeatherAlertNotification;
+use App\Events\Context\WeatherChanged;
 use App\Services\WeatherService;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
-    Notification::fake();
     Cache::flush();
+    Event::fake([WeatherChanged::class]);
 
-    // Travel to a unique date per test to avoid parallel dedup key collisions in Redis
-    // Each test gets a different day offset based on the test index
+    // Travel to a unique date per test to avoid dedup key collisions in Redis;
+    // morning hour keeps the market-closure branch (12:00–16:00) out of the way.
     $this->travelTo(now()->addDays(random_int(1000, 9999))->setTime(8, 0));
 });
-
-function clearThrottleForUser(int $userId): void
-{
-    try {
-        $today = now()->format('Y-m-d');
-        $hour = now()->format('Y-m-d-H');
-        Redis::del(
-            "notif_throttle:last:{$userId}",
-            "notif_throttle:hour:{$userId}:{$hour}",
-            "notif_throttle:day:{$userId}:{$today}",
-        );
-    } catch (Throwable) {
-    }
-}
 
 function weatherMock(array $currentOverrides = [], ?string $rainStarts = null): array
 {
@@ -54,142 +37,93 @@ function weatherMock(array $currentOverrides = [], ?string $rainStarts = null): 
     return [$current, $forecast];
 }
 
-// --- Wind alert tests (Bug #1: wind_gusts vs wind_gust) ---
-
-test('fires wind alert when wind_gust exceeds 60 kmh', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
-    [$current, $forecast] = weatherMock(['wind_gust' => 75]);
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
+function mockWeather(array $current, array $forecast): void
+{
+    test()->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
         $mock->shouldReceive('getCurrentWeather')->andReturn($current);
         $mock->shouldReceive('getForecast')->andReturn($forecast);
     });
+}
+
+// Detection rules — per-user matching and push delivery live in
+// WeatherEvaluator + ActionBus and are covered by the ContextEngine tests.
+
+test('emits weather event when wind_gust exceeds 60 kmh', function () {
+    [$current, $forecast] = weatherMock(['wind_gust' => 75]);
+    mockWeather($current, $forecast);
 
     $this->artisan('weather:check-alerts')->assertSuccessful();
 
-    Notification::assertSentTo($user, WeatherAlertNotification::class);
+    Event::assertDispatched(WeatherChanged::class, function ($event) {
+        return collect($event->alerts)->contains(
+            fn ($alert) => str_contains($alert['title'], 'wind')
+        );
+    });
 });
 
-test('does not fire wind alert when wind_gust is below threshold', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
+test('does not emit wind alert when wind_gust is below threshold', function () {
     [$current, $forecast] = weatherMock(['wind_gust' => 40]);
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
+    mockWeather($current, $forecast);
 
     $this->artisan('weather:check-alerts')->assertSuccessful();
 
-    Notification::assertNotSentTo($user, WeatherAlertNotification::class);
+    Event::assertNotDispatched(WeatherChanged::class);
 });
 
-// --- Other weather conditions ---
-
-test('fires rain alert when forecast has rain_starts', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
+test('emits rain alert when forecast has rain_starts', function () {
     [$current, $forecast] = weatherMock([], '14:00');
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
+    mockWeather($current, $forecast);
 
     $this->artisan('weather:check-alerts')->assertSuccessful();
 
-    Notification::assertSentTo($user, WeatherAlertNotification::class);
+    Event::assertDispatched(WeatherChanged::class, function ($event) {
+        return collect($event->alerts)->contains(
+            fn ($alert) => str_contains($alert['title'], 'Rain')
+        );
+    });
 });
 
-test('fires freezing alert when temperature below zero', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
+test('emits freezing alert when temperature below zero', function () {
     [$current, $forecast] = weatherMock(['temperature' => -5]);
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
+    mockWeather($current, $forecast);
 
     $this->artisan('weather:check-alerts')->assertSuccessful();
 
-    Notification::assertSentTo($user, WeatherAlertNotification::class);
+    Event::assertDispatched(WeatherChanged::class, function ($event) {
+        return collect($event->alerts)->contains(
+            fn ($alert) => str_contains($alert['title'], 'Freezing')
+        );
+    });
 });
 
-test('fires heat alert when temperature above 33', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
+test('emits heat alert when temperature above 33', function () {
     [$current, $forecast] = weatherMock(['temperature' => 36]);
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
+    mockWeather($current, $forecast);
 
     $this->artisan('weather:check-alerts')->assertSuccessful();
 
-    Notification::assertSentTo($user, WeatherAlertNotification::class);
+    Event::assertDispatched(WeatherChanged::class, function ($event) {
+        return collect($event->alerts)->contains(
+            fn ($alert) => str_contains($alert['title'], 'Heat')
+        );
+    });
 });
 
-test('does not fire alert when weather is normal', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
+test('emits nothing when weather is normal', function () {
     [$current, $forecast] = weatherMock();
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
+    mockWeather($current, $forecast);
 
     $this->artisan('weather:check-alerts')->assertSuccessful();
 
-    Notification::assertNotSentTo($user, WeatherAlertNotification::class);
+    Event::assertNotDispatched(WeatherChanged::class);
 });
-
-// --- Preference check (Bug #2: events vs weather) ---
-
-test('respects weather notification preference opt-out', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
-    NotificationPreference::create([
-        'user_id' => $user->id,
-        'preferences' => array_merge(NotificationPreference::defaults(), ['weather' => false]),
-    ]);
-    [$current, $forecast] = weatherMock(['wind_gust' => 75]);
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
-
-    $this->artisan('weather:check-alerts')->assertSuccessful();
-
-    Notification::assertNotSentTo($user, WeatherAlertNotification::class);
-});
-
-// --- Dedup ---
 
 test('deduplicates same alert within 12 hours', function () {
-    $user = User::factory()->onboarded()->create();
-    clearThrottleForUser($user->id);
     [$current, $forecast] = weatherMock([], '14:00');
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
+    mockWeather($current, $forecast);
 
     $this->artisan('weather:check-alerts')->assertSuccessful();
     $this->artisan('weather:check-alerts')->assertSuccessful();
 
-    Notification::assertSentToTimes($user, WeatherAlertNotification::class, 1);
-});
-
-// --- Guards ---
-
-test('skips non-onboarded users', function () {
-    $user = User::factory()->create(['onboarded_at' => null]);
-    [$current, $forecast] = weatherMock(['wind_gust' => 75]);
-    $this->mock(WeatherService::class, function ($mock) use ($current, $forecast) {
-        $mock->shouldReceive('getCurrentWeather')->andReturn($current);
-        $mock->shouldReceive('getForecast')->andReturn($forecast);
-    });
-
-    $this->artisan('weather:check-alerts')->assertSuccessful();
-
-    Notification::assertNotSentTo($user, WeatherAlertNotification::class);
+    Event::assertDispatchedTimes(WeatherChanged::class, 1);
 });

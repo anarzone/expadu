@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\HasEmbedding;
 use Database\Factories\CityNewsFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,17 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 class CityNews extends Model
 {
     /** @use HasFactory<CityNewsFactory> */
-    use HasEmbedding, HasFactory;
-
-    public function embeddingText(): string
-    {
-        return trim(implode(' ', array_filter([
-            $this->title,
-            $this->category,
-            $this->relevance,
-            $this->summary,
-        ])));
-    }
+    use HasFactory;
 
     protected function casts(): array
     {

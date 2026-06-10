@@ -34,12 +34,10 @@ class ActionBus
     private const TYPE_TO_PREF_KEY = [
         'transit_disruption' => 'transit',
         'transit_delay' => 'transit',
-        'alternative_route' => 'transit',
-        'disruption_no_alt' => 'transit',
-        'leave_by' => 'transit',
         'weather_alert' => 'weather',
         'rhine_level' => 'rhine',
         'buergeramt_slot' => 'burgeramt',
+        'bureaucracy_task' => 'checklist',
         'market_closure' => 'events',
     ];
 
@@ -84,14 +82,10 @@ class ActionBus
             'severity' => $action->severity,
             'channels' => $action->deliverChannels,
             'valid_until' => $action->validUntil?->toIso8601String(),
-            'shadow' => (bool) config('context_engine.shadow'),
         ]);
 
         // Notify listeners (push dispatcher, future digest emitters, etc.)
-        // Skipped in shadow mode to avoid double-firing alongside legacy notify().
-        if (! config('context_engine.shadow')) {
-            event(new ScoredActionInserted($user, $action));
-        }
+        event(new ScoredActionInserted($user, $action));
 
         return $action;
     }
@@ -158,8 +152,6 @@ class ActionBus
 
     private function key(int $userId): string
     {
-        $suffix = config('context_engine.shadow') ? '_shadow' : '';
-
-        return "pending_actions:{$userId}{$suffix}";
+        return "pending_actions:{$userId}";
     }
 }

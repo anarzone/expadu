@@ -3,8 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Events\Context\RhineLevelChanged;
-use App\Models\User;
-use App\Notifications\RhineFloodNotification;
 use App\Services\RhineService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -54,34 +52,19 @@ class CheckRhineLevel extends Command
 
         Cache::put('rhine:last_alert_level', $cm, now()->addHours(6));
 
-        // Dual-emit: context-engine listener (RhineEvaluator) handles per-user evaluation.
+        // Per-user evaluation, scoring, and push delivery happen in
+        // RhineEvaluator via the ActionBus.
         $threshold = $cm >= self::HIGH_CM ? 'critical' : ($cm >= self::WARNING_CM ? 'warning' : null);
         event(new RhineLevelChanged(
             level: $cm / 100.0,
             thresholdCrossed: $threshold,
         ));
 
-        // Notify all users who want rhine alerts
-        $notifiedCount = 0;
-        User::whereNotNull('onboarded_at')->chunk(100, function ($users) use ($cm, $status, $trend, &$notifiedCount) {
-            foreach ($users as $user) {
-                if (! $user->wantsNotification('rhine')) {
-                    continue;
-                }
-
-                if (! config('context_engine.push_via_bus')) {
-                    $user->notify(new RhineFloodNotification($cm, $status, $trend));
-                    $notifiedCount++;
-                }
-            }
-        });
-
-        $this->info("Notified {$notifiedCount} user(s) about Rhine level {$cm}cm.");
-
-        Log::info('Rhine flood notifications sent', [
+        Log::info('Rhine level event emitted', [
             'level_cm' => $cm,
             'status' => $status,
-            'users_notified' => $notifiedCount,
+            'trend' => $trend,
+            'threshold' => $threshold,
         ]);
 
         return self::SUCCESS;

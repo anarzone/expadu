@@ -43,26 +43,6 @@ services:
                 - ping
             retries: 3
             timeout: 5s
-    embedding:
-        build:
-            context: ./services/embedding
-            dockerfile: Dockerfile
-        image: expadu-embedding:latest
-        ports:
-            - '${FORWARD_EMBEDDING_PORT:-8001}:8000'
-        networks:
-            - sail
-        healthcheck:
-            test:
-                - CMD
-                - python
-                - -c
-                - import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()
-            interval: 30s
-            retries: 3
-            start_period: 90s
-            timeout: 5s
-        restart: unless-stopped
     valhalla:
         image: 'ghcr.io/gis-ops/docker-valhalla/valhalla:latest'
         ports:

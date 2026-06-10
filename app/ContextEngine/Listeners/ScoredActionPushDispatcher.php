@@ -5,7 +5,7 @@ namespace App\ContextEngine\Listeners;
 use App\ContextEngine\ScoredAction;
 use App\Events\Context\ScoredActionInserted;
 use App\Notifications\BuergeramtSlotNotification;
-use App\Notifications\LeaveByReminderNotification;
+use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\MarketClosureNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
@@ -18,20 +18,16 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Translates a ScoredAction with the `push` delivery channel into a
- * concrete Notification dispatch. Roadmap #3.
+ * concrete Notification dispatch. This is the ONLY push delivery path —
+ * the legacy notify() calls in the Check* commands were removed when
+ * CONTEXT_ENGINE_PUSH_VIA_BUS went live (v2 cutover).
  *
- * Two phases:
- * 1. Log-only (default): writes to scored_action_push_dispatch:{userId}
- *    Redis log, does NOT actually call notify(). Lets us verify a 48h
- *    parity window against the legacy notify() volume in the alerts
- *    table without double-pushing.
- * 2. Live (CONTEXT_ENGINE_PUSH_VIA_BUS=true): calls $user->notify(...)
- *    AND legacy notify() calls in source commands must be deleted in
- *    the same change to prevent double delivery.
+ * With push_via_bus=false the dispatcher logs to
+ * scored_action_push_dispatch:{userId} instead of sending — useful as a
+ * kill switch if push delivery misbehaves.
  *
  * Action types without a Notification class (alternative_route,
- * disruption_no_alt, transit_disruption from synthetic events with
- * id=0) are skipped silently — they're dashboard-only.
+ * disruption_no_alt) are skipped silently — they're dashboard-only.
  */
 class ScoredActionPushDispatcher
 {
@@ -97,11 +93,26 @@ class ScoredActionPushDispatcher
             'buergeramt_slot' => $this->buildBuergeramt($action),
             'rhine_level' => $this->buildRhine($action),
             'market_closure' => $this->buildMarketClosure($action),
-            'leave_by' => $this->buildLeaveBy($action),
+            'bureaucracy_task' => $this->buildBureaucracyTask($action),
             // alternative_route, disruption_no_alt — dashboard surface only,
             // they accompany a transit_disruption that already pushes.
             default => null,
         };
+    }
+
+    private function buildBureaucracyTask(ScoredAction $action): ?BureaucracyDeadlineNotification
+    {
+        $title = (string) ($action->payload['title'] ?? '');
+        if ($title === '') {
+            return null;
+        }
+
+        return new BureaucracyDeadlineNotification(
+            taskTitle: $title,
+            tier: (string) ($action->payload['tier'] ?? 'urgent'),
+            daysRemaining: (int) ($action->payload['days_remaining'] ?? 0),
+            deadline: (string) ($action->payload['deadline'] ?? ''),
+        );
     }
 
     private function buildTransitDisruption(ScoredAction $action): ?TransitDisruptionNotification
@@ -189,26 +200,5 @@ class ScoredActionPushDispatcher
         }
 
         return new MarketClosureNotification($reason, null);
-    }
-
-    private function buildLeaveBy(ScoredAction $action): ?LeaveByReminderNotification
-    {
-        $placeId = $action->payload['place_id'] ?? null;
-        if ($placeId === null) {
-            return null;
-        }
-
-        // Legacy expects a fully-populated "data" array; the evaluator
-        // doesn't currently capture mode/leave_by/weather, so we keep the
-        // notification minimal. When push_via_bus goes live, we should
-        // enrich the leave_by ScoredAction payload to include the same
-        // fields the legacy SendLeaveByReminders command builds.
-        return new LeaveByReminderNotification([
-            'place_name' => 'your destination',
-            'leave_by' => '',
-            'mode' => 'tram',
-            'mode_emoji' => '🚊',
-            'place_id' => $placeId,
-        ]);
     }
 }

@@ -18,12 +18,6 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
-    'embedding' => [
-        'url' => env('EMBEDDING_SERVICE_URL', 'http://embedding:8000'),
-        'timeout' => (int) env('EMBEDDING_SERVICE_TIMEOUT', 5),
-        'dim' => 384,
-    ],
-
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

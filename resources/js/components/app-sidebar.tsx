@@ -3,13 +3,9 @@ import {
     IconHome,
     IconCompass,
     IconBell,
-    IconTrain,
     IconCalendarEvent,
-    IconLanguage,
-    IconBuildingCommunity,
     IconFirstAidKit,
     IconFileText,
-    IconPackage,
     IconUser,
     IconPalette,
     IconLogout,
@@ -28,20 +24,13 @@ import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import type { NavGroup } from '@/types';
 
-interface FeatureFlags {
-    language_exchange?: boolean;
-    chat?: boolean;
-    neighbourhoods?: boolean;
-    just_arrived?: boolean;
-}
-
-function buildNavGroups(features: FeatureFlags): NavGroup[] {
+function buildNavGroups(): NavGroup[] {
     return [
         {
             label: 'Main',
             items: [
-                { title: 'Home', href: '/dashboard', icon: IconHome },
-                { title: 'Explore', href: '/explore', icon: IconCompass },
+                { title: 'Today', href: '/dashboard', icon: IconHome },
+                { title: 'Places', href: '/explore', icon: IconCompass },
                 {
                     title: 'Alerts',
                     href: '/alerts',
@@ -53,26 +42,7 @@ function buildNavGroups(features: FeatureFlags): NavGroup[] {
         {
             label: 'City',
             items: [
-                { title: 'Transit', href: '/transit', icon: IconTrain },
                 { title: 'Events', href: '/events', icon: IconCalendarEvent },
-                ...(features.language_exchange
-                    ? [
-                          {
-                              title: 'Language Exchange',
-                              href: '/language-exchange',
-                              icon: IconLanguage,
-                          },
-                      ]
-                    : []),
-                ...(features.neighbourhoods
-                    ? [
-                          {
-                              title: 'Neighborhoods',
-                              href: '/neighborhoods',
-                              icon: IconBuildingCommunity,
-                          },
-                      ]
-                    : []),
                 { title: 'Services', href: '/services', icon: IconFirstAidKit },
             ],
         },
@@ -86,15 +56,6 @@ function buildNavGroups(features: FeatureFlags): NavGroup[] {
                     badge: 3,
                     badgeVariant: 'warn',
                 },
-                ...(features.just_arrived
-                    ? [
-                          {
-                              title: 'Just Arrived',
-                              href: '/just-arrived',
-                              icon: IconPackage,
-                          },
-                      ]
-                    : []),
             ],
         },
     ];
@@ -107,16 +68,15 @@ const dropdownItems = [
 ];
 
 export function AppSidebar() {
-    const { auth, unreadAlertCount, features } = usePage<{
+    const { auth, unreadAlertCount } = usePage<{
         auth: { user?: { name?: string } };
         unreadAlertCount?: number;
-        features?: FeatureFlags;
     }>().props;
     const user = auth?.user;
     const getInitials = useInitials();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    const navGroups = buildNavGroups(features ?? {});
+    const navGroups = buildNavGroups();
 
     // Set dynamic badge on Alerts nav item
     const navWithBadges = navGroups.map((group) => ({

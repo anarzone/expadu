@@ -44,7 +44,6 @@ class SpotSearchController extends Controller
 
         // Add distance calculation and sort by distance
         $spots = $query
-            ->withCount('activeCheckins')
             ->selectRaw('*, (6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))) as distance_km', [$userLat, $userLng, $userLat])
             ->orderBy('distance_km')
             ->limit((int) ($request->query('limit', 50)))
@@ -61,7 +60,7 @@ class SpotSearchController extends Controller
             'noise_level' => $s->noise_level instanceof \BackedEnum ? $s->noise_level->value : $s->noise_level,
             'rating' => $s->rating,
             'time_limit_mins' => $s->time_limit_mins,
-            'active_checkins_count' => $s->active_checkins_count ?? 0,
+            'active_checkins_count' => 0,
             'distance_km' => round((float) $s->distance_km, 1),
         ]));
     }
