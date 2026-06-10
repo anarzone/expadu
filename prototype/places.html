@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expadu v2 — Places</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-h: #1540B8; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --success-s: #D4F0E6; --warn: #C47D0E; --warn-s: #FDF0D4;
+  --danger: #C4271A; --danger-s: #FDE8E6;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 6px 24px rgba(24,23,15,.06);
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860;
+  --accent-soft: rgba(26,76,212,.2);
+  --success-s: rgba(10,124,82,.18); --warn-s: rgba(196,125,14,.16); --danger-s: rgba(196,39,26,.16);
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+}
+.dark .go-btn { color: #8FAAF0; }
+.dark .tag.open { color: #5FCBA0; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Geist', system-ui, sans-serif;
+  background: var(--bg); color: var(--text-1);
+  transition: background .25s, color .25s;
+}
+.shell { max-width: 600px; margin: 0 auto; padding: 24px 16px 120px; }
+
+.mode-toggle {
+  position: fixed; top: 14px; right: 14px; z-index: 50;
+  width: 38px; height: 38px; border-radius: 100px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 16px; cursor: pointer; box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center; transition: all .2s;
+}
+.mode-toggle:hover { border-color: var(--accent); }
+
+/* ── Header ── */
+.head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding-right: 44px; }
+.page-title {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 28px;
+  letter-spacing: -.02em; line-height: 1.15;
+}
+.page-sub { font-size: 14px; color: var(--text-2); margin-top: 5px; }
+.map-btn {
+  flex-shrink: 0; margin-top: 4px;
+  padding: 8px 14px; border-radius: 100px;
+  border: 1px solid var(--border); background: transparent;
+  font-family: 'Geist', sans-serif; font-size: 13px; font-weight: 600;
+  color: var(--text-2); cursor: pointer; transition: all .15s;
+}
+.map-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Filter rows ── */
+.scroll-row {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+  scrollbar-width: none; margin-bottom: 10px;
+}
+.scroll-row::-webkit-scrollbar { display: none; }
+.veedel-pill {
+  flex-shrink: 0; padding: 9px 16px; border-radius: 100px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-family: 'Geist', sans-serif; font-size: 13.5px; font-weight: 500;
+  color: var(--text-1); cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.veedel-pill:hover { border-color: var(--accent); }
+.veedel-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.cat-chip {
+  flex-shrink: 0; padding: 6px 12px; border-radius: 100px;
+  border: 1px solid var(--border); background: transparent;
+  font-family: 'Geist', sans-serif; font-size: 12.5px; font-weight: 500;
+  color: var(--text-2); cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.cat-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.cat-chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.cat-row { margin-bottom: 20px; }
+
+/* ── Result count ── */
+.result-line {
+  font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: 12px;
+}
+
+/* ── Place cards ── */
+.cards { display: flex; flex-direction: column; gap: 10px; }
+.place {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; cursor: pointer;
+  transition: all .15s;
+}
+.place:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.place-row { display: flex; align-items: flex-start; gap: 13px; }
+.place-emoji {
+  width: 48px; height: 48px; border-radius: var(--r-sm); flex-shrink: 0;
+  background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.place-body { flex: 1; min-width: 0; }
+.place-name { font-size: 14.5px; font-weight: 600; line-height: 1.3; }
+.place-meta { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.tag {
+  padding: 2.5px 9px; border-radius: 100px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-size: 11px; font-weight: 500; color: var(--text-2);
+}
+.tag.open { background: var(--success-s); border-color: transparent; color: var(--success); font-weight: 600; }
+.go-btn {
+  flex-shrink: 0; align-self: center;
+  padding: 6px 4px; border: none; background: transparent;
+  font-family: 'Geist', sans-serif; font-size: 13px; font-weight: 600;
+  color: var(--accent); cursor: pointer; white-space: nowrap; transition: opacity .15s;
+}
+.go-btn:hover { opacity: .75; }
+
+/* ── Expanded card ── */
+.place.expanded { border-color: var(--accent); box-shadow: var(--shadow); }
+.place-detail { border-top: 1px solid var(--border); margin-top: 13px; padding-top: 13px; }
+.detail-line { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-2); padding: 4px 0; }
+.detail-line .ic { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+.detail-line b { color: var(--text-1); font-weight: 600; }
+.hint {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-top: 10px; padding: 8px 13px; border-radius: var(--r-sm);
+  background: var(--accent-soft); font-size: 12.5px; font-weight: 500; color: var(--accent);
+}
+.dark .hint { color: #8FAAF0; }
+.facts-row { display: flex; gap: 8px; margin-top: 12px; }
+.fact {
+  flex: 1; background: var(--surface-2); border-radius: var(--r-sm);
+  padding: 9px 10px; text-align: center;
+}
+.fact-val { font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text-1); }
+.fact-lbl {
+  font-family: 'Geist Mono', monospace; font-size: 9.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin-top: 2px;
+}
+
+/* ── Bottom dock ── */
+.dock {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+}
+.dock-inner { max-width: 600px; margin: 0 auto; display: flex; }
+.dock-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 0; border: none; background: transparent; cursor: pointer;
+  font-family: 'Geist', sans-serif; font-size: 10.5px; font-weight: 500;
+  color: var(--text-3); border-radius: var(--r-sm); transition: color .15s;
+}
+.dock-item:hover { color: var(--text-2); }
+.dock-item .ic { font-size: 19px; line-height: 1; }
+.dock-item.active { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';" title="Toggle dark mode">🌙</button>
+
+<div class="shell">
+
+  <!-- Header -->
+  <div class="head-row">
+    <div>
+      <h1 class="page-title">Places</h1>
+      <p class="page-sub">Parks, courts &amp; places to be outside</p>
+    </div>
+    <button class="map-btn">🗺️ Map view</button>
+  </div>
+
+  <!-- Veedel pills -->
+  <div class="scroll-row" id="veedels">
+    <button class="veedel-pill active">📍 Ehrenfeld</button>
+    <button class="veedel-pill">Nippes</button>
+    <button class="veedel-pill">Neustadt-Nord</button>
+    <button class="veedel-pill">Deutz</button>
+    <button class="veedel-pill">Sülz</button>
+    <button class="veedel-pill">All Cologne</button>
+  </div>
+
+  <!-- Category chips -->
+  <div class="scroll-row cat-row" id="cats">
+    <button class="cat-chip active">🌳 Parks</button>
+    <button class="cat-chip">⚽ Pitches</button>
+    <button class="cat-chip">🏀 Courts</button>
+    <button class="cat-chip">🏊 Swimming</button>
+    <button class="cat-chip">🛝 Playgrounds</button>
+    <button class="cat-chip">🐕 Dog parks</button>
+    <button class="cat-chip">🧺 BBQ spots</button>
+  </div>
+
+  <div class="result-line">6 places · Ehrenfeld &amp; nearby</div>
+
+  <!-- Place cards -->
+  <div class="cards">
+
+    <div class="place">
+      <div class="place-row">
+        <div class="place-emoji">🌳</div>
+        <div class="place-body">
+          <div class="place-name">Stadtgarten</div>
+          <div class="place-meta">Park · Ehrenfeld · 12 min away</div>
+          <div class="tag-row">
+            <span class="tag open">open now</span><span class="tag">free</span><span class="tag">beer garden</span>
+          </div>
+        </div>
+        <button class="go-btn">→ Take me there</button>
+      </div>
+    </div>
+
+    <!-- Expanded card -->
+    <div class="place expanded">
+      <div class="place-row">
+        <div class="place-emoji">🏀</div>
+        <div class="place-body">
+          <div class="place-name">Grüngürtel basketball court</div>
+          <div class="place-meta">Court · Ehrenfeld · 8 min away</div>
+          <div class="tag-row">
+            <span class="tag open">open now</span><span class="tag">free</span><span class="tag">full court</span><span class="tag">floodlit</span>
+          </div>
+        </div>
+        <button class="go-btn">→ Take me there</button>
+      </div>
+      <div class="place-detail">
+        <div class="detail-line"><span class="ic">🕐</span><span>Open <b>24 h</b> · floodlights until 22:00</span></div>
+        <div class="detail-line"><span class="ic">🚊</span><span>Line 5 to Lenauplatz, then 3 min walk</span></div>
+        <div class="hint">💡 Best in the afternoon — quiet before 17:00, busy after</div>
+        <div class="facts-row">
+          <div class="fact"><div class="fact-val">2</div><div class="fact-lbl">hoops</div></div>
+          <div class="fact"><div class="fact-val">Tarmac</div><div class="fact-lbl">surface</div></div>
+          <div class="fact"><div class="fact-val">Yes</div><div class="fact-lbl">water nearby</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="place">
+      <div class="place-row">
+        <div class="place-emoji">🏊</div>
+        <div class="place-body">
+          <div class="place-name">Lentpark pool</div>
+          <div class="place-meta">Swimming · Neustadt-Nord · 18 min away</div>
+          <div class="tag-row">
+            <span class="tag open">open now</span><span class="tag">€6.50</span><span class="tag">indoor + ice rink</span>
+          </div>
+        </div>
+        <button class="go-btn">→ Take me there</button>
+      </div>
+    </div>
+
+    <div class="place">
+      <div class="place-row">
+        <div class="place-emoji">🌳</div>
+        <div class="place-body">
+          <div class="place-name">Blücherpark</div>
+          <div class="place-meta">Park · Bilderstöckchen · 14 min away</div>
+          <div class="tag-row">
+            <span class="tag open">open now</span><span class="tag">free</span><span class="tag">BBQ allowed</span><span class="tag">by the canal</span>
+          </div>
+        </div>
+        <button class="go-btn">→ Take me there</button>
+      </div>
+    </div>
+
+    <div class="place">
+      <div class="place-row">
+        <div class="place-emoji">⚽</div>
+        <div class="place-body">
+          <div class="place-name">Bolzplatz Vogelsanger Str.</div>
+          <div class="place-meta">Pitch · Ehrenfeld · 6 min away</div>
+          <div class="tag-row">
+            <span class="tag open">open now</span><span class="tag">free</span><span class="tag">small-sided</span>
+          </div>
+        </div>
+        <button class="go-btn">→ Take me there</button>
+      </div>
+    </div>
+
+    <div class="place">
+      <div class="place-row">
+        <div class="place-emoji">🐕</div>
+        <div class="place-body">
+          <div class="place-name">Hundewiese Beethovenpark</div>
+          <div class="place-meta">Dog park · Sülz · 22 min away</div>
+          <div class="tag-row">
+            <span class="tag open">open now</span><span class="tag">free</span><span class="tag">off-leash</span><span class="tag">fenced</span>
+          </div>
+        </div>
+        <button class="go-btn">→ Take me there</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Bottom dock -->
+<nav class="dock">
+  <div class="dock-inner">
+    <button class="dock-item"><span class="ic">🏠</span>Today</button>
+    <button class="dock-item active"><span class="ic">🌳</span>Places</button>
+    <button class="dock-item"><span class="ic">🎟️</span>Events</button>
+    <button class="dock-item"><span class="ic">📋</span>Bureaucracy</button>
+    <button class="dock-item"><span class="ic">⋯</span>More</button>
+  </div>
+</nav>
+
+<script>
+// Single-active chip behaviour for filter rows
+for (const rowId of ['veedels', 'cats']) {
+  const row = document.getElementById(rowId);
+  row.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    row.querySelectorAll('.active').forEach((el) => el.classList.remove('active'));
+    btn.classList.add('active');
+  });
+}
+</script>
+
+</body>
+</html>

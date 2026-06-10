@@ -5,7 +5,9 @@ namespace App\Filament\Resources\Tasks\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class TasksTable
@@ -27,6 +29,20 @@ class TasksTable
                 TextColumn::make('urgency')
                     ->badge()
                     ->searchable(),
+                TextColumn::make('key')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('verified_at')
+                    ->date()
+                    ->sortable()
+                    ->placeholder('unverified'),
+                TextColumn::make('outdated_reports')
+                    ->numeric()
+                    ->sortable()
+                    ->badge()
+                    ->color(fn (int $state): string => $state >= 3 ? 'danger' : ($state > 0 ? 'warning' : 'gray')),
+                IconColumn::make('is_published')
+                    ->boolean(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -37,7 +53,16 @@ class TasksTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                TernaryFilter::make('verified')
+                    ->nullable()
+                    ->attribute('verified_at')
+                    ->trueLabel('Verified')
+                    ->falseLabel('Unverified')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('verified_at'),
+                        false: fn ($query) => $query->whereNull('verified_at'),
+                        blank: fn ($query) => $query,
+                    ),
             ])
             ->recordActions([
                 EditAction::make(),

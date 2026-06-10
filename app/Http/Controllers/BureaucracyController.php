@@ -6,6 +6,8 @@ use App\Enums\TaskStatus;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Profile\Profile;
+use App\Profile\ProfileEngine;
 use App\Services\BuergeramtService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,22 +21,35 @@ class BureaucracyController extends Controller
      * so the React side can render the Do-next / Coming-up / Completed sections
      * with no further bucketing logic.
      */
-    public function index(Request $request, BuergeramtService $buergeramtService): Response
+    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine): Response
     {
         $user = $request->user();
+        $profile = $profileEngine->build($user);
 
-        // Materialise pivots for any situation-relevant Task missing one. The
+        // Materialise pivots for any branch-relevant Task missing one. The
         // bureaucracy:remind cron does this nightly, but a fresh-onboarded user
         // would otherwise see an empty page until tomorrow.
-        $this->ensureUserTasks($user);
+        $this->ensureUserTasks($user, $profile);
 
         $userTasks = $user->userTasks()
             ->with('task')
             ->get()
-            ->filter(fn (UserTask $ut) => $ut->task !== null);
+            ->filter(fn (UserTask $ut) => $ut->task !== null && $ut->task->is_published);
+
+        // Done task keys unlock dependants: a card is blocked while any of
+        // its depends_on keys is not completed.
+        $doneKeys = $userTasks
+            ->filter(fn (UserTask $ut) => ($ut->status ?? TaskStatus::NotStarted) === TaskStatus::Done)
+            ->map(fn (UserTask $ut) => $ut->task->key)
+            ->filter()
+            ->flip()
+            ->all();
+        $titlesByKey = $userTasks
+            ->mapWithKeys(fn (UserTask $ut) => [$ut->task->key => $ut->task->title])
+            ->all();
 
         $cards = $userTasks
-            ->map(fn (UserTask $ut) => $this->formatCard($ut, $user))
+            ->map(fn (UserTask $ut) => $this->formatCard($ut, $user, $doneKeys, $titlesByKey))
             ->values();
 
         $buckets = [
@@ -75,26 +90,27 @@ class BureaucracyController extends Controller
      * Ensure a UserTask row exists for every Task matching the user's situation.
      * Idempotent — mirrors the cron's ensureUserTasks() but bounded to page load.
      */
-    private function ensureUserTasks(User $user): void
+    private function ensureUserTasks(User $user, Profile $profile): void
     {
-        $situation = $user->situation?->value;
-        if (! $situation) {
-            return;
-        }
-
         $existing = $user->userTasks()->pluck('task_id')->all();
 
         Task::query()
-            ->whereJsonContains('situation', $situation)
+            ->whereJsonContains('situation', $profile->bureaucracyBranch)
+            ->where('is_published', true)
             ->whereNotIn('id', $existing)
             ->get()
+            ->filter(fn (Task $task) => $task->matchesEuStatus($profile->isEu))
             ->each(fn (Task $task) => $user->userTasks()->create(['task_id' => $task->id]));
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function formatCard(UserTask $userTask, User $user): array
+    /**
+     * @param  array<string, int>  $doneKeys
+     * @param  array<string, string>  $titlesByKey
+     */
+    private function formatCard(UserTask $userTask, User $user, array $doneKeys, array $titlesByKey): array
     {
         $task = $userTask->task;
         $deadline = $task->computeDeadlineFor($user);
@@ -105,6 +121,12 @@ class BureaucracyController extends Controller
         $status = $userTask->status ?? TaskStatus::NotStarted;
         $deadlineTier = $this->deadlineTier($daysRemaining, $status);
         $bucket = $this->bucket($userTask, $deadlineTier);
+
+        $blockedBy = collect($task->depends_on ?? [])
+            ->reject(fn (string $key) => isset($doneKeys[$key]))
+            ->map(fn (string $key) => $titlesByKey[$key] ?? $key)
+            ->values()
+            ->all();
 
         $bookingUrl = null;
         if ($task->booking_service_key && isset(BuergeramtService::SERVICES[$task->booking_service_key])) {
@@ -132,6 +154,9 @@ class BureaucracyController extends Controller
             'booking_url' => $bookingUrl,
             'is_applicable' => $userTask->is_applicable,
             'is_recurring' => $task->isRecurring(),
+            'blocked' => $blockedBy !== [] && $status !== TaskStatus::Done,
+            'blocked_by' => $blockedBy,
+            'verified_at' => $task->verified_at?->toDateString(),
             'next_due_at' => $userTask->next_due_at?->toIso8601String(),
             'completed_at' => $userTask->completed_at?->toIso8601String(),
             'bucket' => $bucket,

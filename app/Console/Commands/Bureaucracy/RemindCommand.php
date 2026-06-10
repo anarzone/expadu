@@ -5,6 +5,7 @@ namespace App\Console\Commands\Bureaucracy;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
 use App\Models\Task;
 use App\Models\User;
+use App\Profile\ProfileEngine;
 use Illuminate\Console\Command;
 
 /**
@@ -55,22 +56,21 @@ class RemindCommand extends Command
     }
 
     /**
-     * Materialise UserTask rows for every Task that matches the user's
-     * situation but doesn't yet have a corresponding pivot. Idempotent.
+     * Materialise UserTask rows for every published Task that matches the
+     * user's bureaucracy branch but doesn't yet have a pivot. Idempotent.
      */
     private function ensureUserTasks(User $user): void
     {
-        $situation = $user->situation?->value;
-        if (! $situation) {
-            return;
-        }
+        $profile = app(ProfileEngine::class)->build($user);
 
         $existingTaskIds = $user->userTasks()->pluck('task_id')->all();
 
         Task::query()
-            ->whereJsonContains('situation', $situation)
+            ->whereJsonContains('situation', $profile->bureaucracyBranch)
+            ->where('is_published', true)
             ->whereNotIn('id', $existingTaskIds)
             ->get()
+            ->filter(fn ($task) => $task->matchesEuStatus($profile->isEu))
             ->each(fn ($task) => $user->userTasks()->create([
                 'task_id' => $task->id,
             ]));

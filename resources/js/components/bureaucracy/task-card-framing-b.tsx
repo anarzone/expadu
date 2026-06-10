@@ -5,6 +5,9 @@ import {
     IconChevronUp,
     IconExternalLink,
     IconFile,
+    IconFlag,
+    IconLock,
+    IconShieldCheck,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 
@@ -35,6 +38,9 @@ export type FramingBTask = {
     booking_url: string | null;
     is_applicable: boolean;
     is_recurring: boolean;
+    blocked: boolean;
+    blocked_by: string[];
+    verified_at: string | null;
     next_due_at: string | null;
     completed_at: string | null;
 };
@@ -118,6 +124,7 @@ export function TaskCardFramingB({
 }) {
     const [expanded, setExpanded] = useState(defaultExpanded);
     const [busy, setBusy] = useState(false);
+    const [reported, setReported] = useState(false);
 
     function updateStatus(nextStatus: FramingBTask['status']) {
         if (busy || nextStatus === task.status) {
@@ -170,6 +177,25 @@ export function TaskCardFramingB({
         );
     }
 
+    function reportOutdated() {
+        if (busy) {
+            return;
+        }
+
+        setBusy(true);
+        router.post(
+            `/tasks/${task.task_id}/report-outdated`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setBusy(false);
+                    setReported(true);
+                },
+            },
+        );
+    }
+
     const deadlineLabel = deadlineCopy(task);
     const tierLabel = TIER_LABELS[task.deadline_tier];
     const isDone = task.status === 'done';
@@ -203,6 +229,20 @@ export function TaskCardFramingB({
                                 Recurs
                             </span>
                         )}
+                        {task.blocked && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#EFEDE7] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#6B6860] uppercase dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                                <IconLock size={10} stroke={2} /> Blocked
+                            </span>
+                        )}
+                        {task.verified_at && (
+                            <span
+                                className="inline-flex items-center gap-1 rounded-full bg-[#D4F0E6] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20 dark:text-[#4FB489]"
+                                title={`Verified against the official source on ${task.verified_at}`}
+                            >
+                                <IconShieldCheck size={10} stroke={2} />
+                                Verified {task.verified_at}
+                            </span>
+                        )}
                     </div>
                     <h3
                         className={`mt-2 text-[15px] font-semibold text-[#18170F] dark:text-[#F6F5F1] ${isDone ? 'line-through' : ''}`}
@@ -227,6 +267,21 @@ export function TaskCardFramingB({
 
             {expanded && (
                 <div className="mt-4 space-y-4 border-t border-[#E2DFD6] pt-4 dark:border-[#3A3930]">
+                    {task.blocked && task.blocked_by.length > 0 && (
+                        <div className="flex items-start gap-2 rounded-[9px] bg-[#FDF0D4] p-3 text-[13px] leading-relaxed text-[#7A5208] dark:bg-[#C47D0E]/15 dark:text-[#E8A958]">
+                            <IconLock
+                                size={14}
+                                stroke={2}
+                                className="mt-0.5 shrink-0"
+                            />
+                            <span>
+                                Finish{' '}
+                                <strong>{task.blocked_by.join(', ')}</strong>{' '}
+                                first — doing this out of order is the most
+                                common way to lose weeks.
+                            </span>
+                        </div>
+                    )}
                     {task.description && (
                         <p className="text-sm leading-relaxed text-[#6B6860] dark:text-[#AAA89F]">
                             {task.description}
@@ -330,23 +385,39 @@ export function TaskCardFramingB({
                         </div>
                     </div>
 
-                    {task.is_applicable ? (
-                        <button
-                            onClick={markNotApplicable}
-                            disabled={busy}
-                            className="cursor-pointer text-xs text-[#AAA89F] hover:text-[#6B6860] dark:text-[#6B6A60] dark:hover:text-[#AAA89F]"
-                        >
-                            This doesn't apply to me
-                        </button>
-                    ) : (
-                        <button
-                            onClick={markApplicable}
-                            disabled={busy}
-                            className="cursor-pointer text-xs text-[#1A4CD4] hover:underline dark:text-[#5B8DEF]"
-                        >
-                            Restore as applicable
-                        </button>
-                    )}
+                    <div className="flex items-center justify-between gap-3">
+                        {task.is_applicable ? (
+                            <button
+                                onClick={markNotApplicable}
+                                disabled={busy}
+                                className="cursor-pointer text-xs text-[#AAA89F] hover:text-[#6B6860] dark:text-[#6B6A60] dark:hover:text-[#AAA89F]"
+                            >
+                                This doesn't apply to me
+                            </button>
+                        ) : (
+                            <button
+                                onClick={markApplicable}
+                                disabled={busy}
+                                className="cursor-pointer text-xs text-[#1A4CD4] hover:underline dark:text-[#5B8DEF]"
+                            >
+                                Restore as applicable
+                            </button>
+                        )}
+                        {reported ? (
+                            <span className="text-xs text-[#0A7C52] dark:text-[#4FB489]">
+                                Thanks — we'll re-check this guide.
+                            </span>
+                        ) : (
+                            <button
+                                onClick={reportOutdated}
+                                disabled={busy}
+                                className="inline-flex cursor-pointer items-center gap-1 text-xs text-[#AAA89F] hover:text-[#C47D0E] dark:text-[#6B6A60] dark:hover:text-[#E8A958]"
+                            >
+                                <IconFlag size={11} stroke={2} /> Report
+                                outdated info
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

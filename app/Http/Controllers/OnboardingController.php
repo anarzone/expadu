@@ -13,6 +13,7 @@ class OnboardingController extends Controller
 
         $user->update([
             ...$request->validated(),
+            'city' => 'Köln', // Cologne-only for now; the field unlocks other NRW cities later
             'onboarded_at' => now(),
         ]);
 

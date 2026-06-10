@@ -64,11 +64,12 @@ class UserFactory extends Factory
     public function onboarded(): static
     {
         return $this->state(fn (array $attributes) => [
-            'city' => fake()->randomElement(['cologne', 'berlin', 'munich', 'hamburg', 'frankfurt']),
+            'city' => 'Köln',
+            'veedel' => fake()->randomElement(['Ehrenfeld', 'Nippes', 'Sülz', 'Deutz', 'Neustadt-Nord']),
             'situation' => fake()->randomElement(['non_eu_employee', 'eu_employee', 'student', 'freelancer']),
+            'is_eu' => fake()->boolean(),
             'arrival_date' => fake()->dateTimeBetween('-2 years', 'now'),
             'german_level' => fake()->randomElement(['none', 'a1', 'a2', 'b1', 'b2']),
-            'speaks' => fake()->randomElements(['english', 'turkish', 'arabic', 'spanish', 'french', 'russian'], rand(1, 3)),
             'onboarded_at' => now(),
         ]);
     }
@@ -80,10 +81,11 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'city' => null,
+            'veedel' => null,
             'situation' => null,
+            'is_eu' => null,
             'arrival_date' => null,
             'german_level' => null,
-            'speaks' => null,
             'onboarded_at' => null,
         ]);
     }

@@ -1,32 +1,35 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { CityStep } from '@/components/onboarding/city-step';
 import { ConfirmationStep } from '@/components/onboarding/confirmation-step';
-import { LanguagesStep } from '@/components/onboarding/languages-step';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
-import { SituationStep } from '@/components/onboarding/situation-step';
+import {
+    EU_AMBIGUOUS_SITUATIONS,
+    SituationStep,
+} from '@/components/onboarding/situation-step';
+import { VeedelStep } from '@/components/onboarding/veedel-step';
 import { WelcomeStep } from '@/components/onboarding/welcome-step';
 import { useTracker } from '@/hooks/use-tracker';
 
 export type OnboardingData = {
     situation: string;
-    city: string;
+    is_eu: boolean | null;
+    veedel: string;
     german_level: string;
-    speaks: string[];
     arrival_date: string;
 };
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 export default function Onboarding() {
     const { track } = useTracker();
+    const { veedels } = usePage<{ veedels: Record<string, string[]> }>().props;
     const [step, setStep] = useState(1);
 
     const form = useForm<OnboardingData>({
         situation: '',
-        city: '',
+        is_eu: null,
+        veedel: '',
         german_level: '',
-        speaks: [],
         arrival_date: '',
     });
 
@@ -43,10 +46,6 @@ export default function Onboarding() {
         }
     }
 
-    function skip() {
-        next();
-    }
-
     function submit() {
         track('onboarding_complete');
         form.post('/onboarding/complete');
@@ -57,12 +56,16 @@ export default function Onboarding() {
             case 1:
                 return true;
             case 2:
-                return form.data.situation !== '';
+                if (form.data.situation === '') {
+                    return false;
+                }
+
+                return EU_AMBIGUOUS_SITUATIONS.includes(form.data.situation)
+                    ? form.data.is_eu !== null
+                    : true;
             case 3:
-                return form.data.german_level !== '';
+                return form.data.veedel !== '' && form.data.arrival_date !== '';
             case 4:
-                return form.data.city !== '' && form.data.arrival_date !== '';
-            case 5:
                 return true;
             default:
                 return false;
@@ -73,7 +76,7 @@ export default function Onboarding() {
         switch (step) {
             case 1:
                 return 'Get started';
-            case 5:
+            case 4:
                 return 'Open Expadu';
             default:
                 return 'Continue';
@@ -95,46 +98,34 @@ export default function Onboarding() {
                     {step === 2 && (
                         <SituationStep
                             value={form.data.situation}
+                            isEu={form.data.is_eu}
                             onChange={(v) => form.setData('situation', v)}
+                            onIsEuChange={(v) => form.setData('is_eu', v)}
                         />
                     )}
                     {step === 3 && (
-                        <LanguagesStep
-                            germanLevel={form.data.german_level}
-                            speaks={form.data.speaks}
-                            onGermanLevelChange={(v) =>
-                                form.setData('german_level', v)
-                            }
-                            onSpeaksChange={(v) => form.setData('speaks', v)}
-                        />
-                    )}
-                    {step === 4 && (
-                        <CityStep
-                            city={form.data.city}
+                        <VeedelStep
+                            veedels={veedels ?? {}}
+                            veedel={form.data.veedel}
                             arrivalDate={form.data.arrival_date}
-                            onCityChange={(v) => form.setData('city', v)}
+                            germanLevel={form.data.german_level}
+                            onVeedelChange={(v) => form.setData('veedel', v)}
                             onArrivalDateChange={(v) =>
                                 form.setData('arrival_date', v)
                             }
+                            onGermanLevelChange={(v) =>
+                                form.setData('german_level', v)
+                            }
                         />
                     )}
-                    {step === 5 && <ConfirmationStep data={form.data} />}
+                    {step === 4 && <ConfirmationStep data={form.data} />}
                 </div>
 
                 <div className="sticky bottom-0 border-t border-border bg-background px-6 py-4">
                     <div className="mx-auto flex max-w-[600px] items-center gap-3">
-                        {step > 1 && step < 5 && (
-                            <button
-                                type="button"
-                                onClick={skip}
-                                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                            >
-                                Skip
-                            </button>
-                        )}
                         <button
                             type="button"
-                            onClick={step === 5 ? submit : next}
+                            onClick={step === 4 ? submit : next}
                             disabled={!canProceed() || form.processing}
                             className="ml-auto w-full rounded-xl bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto sm:min-w-[200px]"
                         >

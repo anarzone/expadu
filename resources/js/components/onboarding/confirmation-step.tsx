@@ -10,25 +10,6 @@ const situationLabels: Record<string, string> = {
     other: 'Other',
 };
 
-const germanLabels: Record<string, string> = {
-    none: 'None yet',
-    a1: 'A1',
-    a2: 'A2',
-    b1: 'B1',
-    b2: 'B2',
-    c1: 'C1',
-    c2: 'C2',
-};
-
-const cityLabels: Record<string, string> = {
-    cologne: 'Cologne',
-    berlin: 'Berlin',
-    munich: 'Munich',
-    hamburg: 'Hamburg',
-    frankfurt: 'Frankfurt',
-    other: 'Other city',
-};
-
 export function ConfirmationStep({ data }: { data: OnboardingData }) {
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
@@ -38,8 +19,8 @@ export function ConfirmationStep({ data }: { data: OnboardingData }) {
                     You're all set!
                 </h2>
                 <p className="mx-auto max-w-[280px] text-[15px] leading-relaxed text-muted-foreground">
-                    Expadu is personalised for you. We've set up your checklist
-                    and found language partners nearby.
+                    Expadu now knows your situation — your checklist, deadlines
+                    and neighbourhood are personalised.
                 </p>
             </div>
 
@@ -49,12 +30,16 @@ export function ConfirmationStep({ data }: { data: OnboardingData }) {
                     text={`Personalised checklist ready — ${situationLabels[data.situation] || 'Not set'}`}
                 />
                 <SummaryRow
-                    emoji="🗣️"
-                    text={`Language partners matched for ${germanLabels[data.german_level] || 'Not set'} German`}
+                    emoji="📍"
+                    text={`Home Veedel set to ${data.veedel || 'Not set'}`}
                 />
                 <SummaryRow
-                    emoji="📍"
-                    text={`Local content set to ${cityLabels[data.city] || 'Not set'}`}
+                    emoji="📅"
+                    text={
+                        data.arrival_date
+                            ? `Deadlines computed from your arrival in ${new Date(data.arrival_date).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`
+                            : 'Arrival date not set'
+                    }
                 />
             </div>
         </div>

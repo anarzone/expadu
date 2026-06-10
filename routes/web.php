@@ -26,6 +26,7 @@ use App\Http\Controllers\UserPlaceController;
 use App\Http\Controllers\UserSettingController;
 use App\Http\Controllers\UserTaskController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 /*
@@ -75,7 +76,9 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
 
-        Route::inertia('onboarding', 'onboarding')->name('onboarding');
+        Route::get('onboarding', fn () => Inertia::render('onboarding', [
+            'veedels' => config('veedels'),
+        ]))->name('onboarding');
         Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
@@ -130,6 +133,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
         Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
+        Route::post('tasks/{task}/report-outdated', [TaskController::class, 'reportOutdated'])->name('tasks.report-outdated');
         Route::patch('user-tasks/{userTask}', [UserTaskController::class, 'update'])->name('user-tasks.update');
         Route::get('profile', ProfilePageController::class)->name('profile');
     });

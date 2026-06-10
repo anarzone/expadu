@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'description', 'situation', 'phase', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key'])]
+#[Fillable(['key', 'title', 'description', 'situation', 'eu_filter', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -25,12 +25,27 @@ class Task extends Model
     {
         return [
             'situation' => 'array',
+            'depends_on' => 'array',
             'links' => 'array',
             'documents_required' => 'array',
             'how_to_steps' => 'array',
             'deadline_type' => DeadlineType::class,
             'urgency' => Urgency::class,
+            'verified_at' => 'datetime',
+            'is_published' => 'boolean',
         ];
+    }
+
+    /**
+     * Whether this task applies to a user's EU/non-EU status.
+     */
+    public function matchesEuStatus(bool $isEu): bool
+    {
+        return match ($this->eu_filter) {
+            'eu_only' => $isEu,
+            'non_eu_only' => ! $isEu,
+            default => true,
+        };
     }
 
     public function isRecurring(): bool

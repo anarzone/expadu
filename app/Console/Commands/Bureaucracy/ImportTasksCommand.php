@@ -11,34 +11,44 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Idempotent YAML → DB seeder for the bureaucracy task catalogue.
  *
- * Reads files at database/seeders/data/bureaucracy/{situation}.yaml and upserts
- * Task rows keyed by (title + situation). Designed to be re-run after every
- * content edit — the run is non-destructive (existing user_tasks are preserved),
- * so authoring loops as: AI draft → edit YAML → re-import → repeat.
+ * Reads files at database/seeders/data/bureaucracy/{situation}.yaml and
+ * upserts Task rows keyed by the stable `key` slug. Re-run after every
+ * content edit — non-destructive (existing user_tasks are preserved).
+ *
+ * Trust rules:
+ * - `verified_at` is read from YAML and is ONLY ever set there by a human
+ *   after checking the official source. The importer never invents it.
+ * - tasks without `is_published: true`... default to published; set
+ *   `is_published: false` to hide a task whose facts can't be verified yet.
+ *
+ * Dependency rules:
+ * - `depends_on` lists other task keys. The full set (all files) is
+ *   topologically validated before anything is written; a cycle or an
+ *   unknown key aborts the entire import.
  *
  * YAML shape per file:
  *
  *   situation: non_eu_employee        # string or array
  *   tasks:
- *     - title: Anmeldung
- *       description: Register your address at the Bürgeramt.
- *       phase: arrival                # optional grouping label
- *       urgency: critical             # critical|high|medium|low
- *       deadline_type: days_since_arrival   # days_since_arrival|none
+ *     - key: anmeldung                # stable slug, unique across catalogue
+ *       title: Register your address (Anmeldung)
+ *       eu_filter: null               # eu_only | non_eu_only | null (both)
+ *       depends_on: []                # task keys that must be done first
+ *       verified_at: 2026-06-10       # HUMAN-set date, omit if unverified
+ *       is_published: true
+ *       description: ...
+ *       phase: arrival
+ *       urgency: critical
+ *       deadline_type: days_since_arrival
  *       deadline_days: 14
- *       recurrence_months: null       # null = one-shot; integer = repeat
- *       documents_required:
- *         - Passport
- *         - Rental contract
- *       links:
- *         - https://...
+ *       recurrence_months: null
+ *       documents_required: [Passport, Rental contract]
+ *       links: [https://...]
  *       how_to_steps:
  *         - title: Book an appointment
  *           body: Use the city's online booking portal.
  *           link: https://termine.stadt-koeln.de/...
- *         - title: Gather documents
- *           body: ...
- *       booking_service_key: anmeldung   # optional, links to BuergeramtService
+ *       booking_service_key: anmeldung
  */
 class ImportTasksCommand extends Command
 {
@@ -55,15 +65,16 @@ class ImportTasksCommand extends Command
             return self::FAILURE;
         }
 
-        $created = 0;
-        $updated = 0;
-        $skipped = 0;
+        // Parse everything first — the DAG is validated across the whole
+        // catalogue before a single row is written.
+        $entries = [];
+        $skippedFiles = 0;
 
         foreach ($files as $file) {
             $this->line("→ {$file}");
             $parsed = $this->parseFile($file);
             if ($parsed === null) {
-                $skipped++;
+                $skippedFiles++;
 
                 continue;
             }
@@ -73,18 +84,110 @@ class ImportTasksCommand extends Command
                 : [$parsed['situation']];
 
             foreach ($parsed['tasks'] as $taskData) {
-                $result = $this->upsertTask($situations, $taskData);
-                if ($result === 'created') {
-                    $created++;
-                } elseif ($result === 'updated') {
-                    $updated++;
+                $entries[] = ['situations' => $situations, 'data' => $taskData];
+            }
+        }
+
+        if (! $this->validateKeys($entries) || ! $this->validateDag($entries)) {
+            return self::FAILURE;
+        }
+
+        $created = 0;
+        $updated = 0;
+
+        foreach ($entries as $entry) {
+            $result = $this->upsertTask($entry['situations'], $entry['data']);
+            if ($result === 'created') {
+                $created++;
+            } elseif ($result === 'updated') {
+                $updated++;
+            }
+        }
+
+        $this->info("Done. created={$created} updated={$updated} skipped_files={$skippedFiles}");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Every task needs a unique key; duplicates across files abort.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateKeys(array $entries): bool
+    {
+        $seen = [];
+
+        foreach ($entries as $entry) {
+            $key = $entry['data']['key'] ?? null;
+            if (! is_string($key) || $key === '') {
+                $this->error('  ABORT — task missing `key`: '.($entry['data']['title'] ?? '(untitled)'));
+
+                return false;
+            }
+            if (isset($seen[$key])) {
+                $this->error("  ABORT — duplicate task key `{$key}`");
+
+                return false;
+            }
+            $seen[$key] = true;
+        }
+
+        return true;
+    }
+
+    /**
+     * Topological validation of depends_on across the whole catalogue:
+     * unknown keys and cycles abort the import.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateDag(array $entries): bool
+    {
+        $graph = [];
+        foreach ($entries as $entry) {
+            $graph[$entry['data']['key']] = array_values((array) ($entry['data']['depends_on'] ?? []));
+        }
+
+        foreach ($graph as $key => $deps) {
+            foreach ($deps as $dep) {
+                if (! isset($graph[$dep])) {
+                    $this->error("  ABORT — `{$key}` depends on unknown key `{$dep}`");
+
+                    return false;
                 }
             }
         }
 
-        $this->info("Done. created={$created} updated={$updated} skipped_files={$skipped}");
+        // Kahn's algorithm: if we can't consume every node, there's a cycle.
+        $inDegree = array_fill_keys(array_keys($graph), 0);
+        foreach ($graph as $deps) {
+            foreach ($deps as $dep) {
+                $inDegree[$dep]++;
+            }
+        }
 
-        return self::SUCCESS;
+        $queue = array_keys(array_filter($inDegree, fn ($d) => $d === 0));
+        $visited = 0;
+
+        while ($queue !== []) {
+            $node = array_pop($queue);
+            $visited++;
+            foreach ($graph[$node] as $dep) {
+                if (--$inDegree[$dep] === 0) {
+                    $queue[] = $dep;
+                }
+            }
+        }
+
+        if ($visited !== count($graph)) {
+            $cycleCandidates = implode(', ', array_keys(array_filter($inDegree, fn ($d) => $d > 0)));
+            $this->error("  ABORT — dependency cycle involving: {$cycleCandidates}");
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -151,9 +254,10 @@ class ImportTasksCommand extends Command
      */
     private function upsertTask(array $situations, array $data): string
     {
+        $key = (string) $data['key'];
         $title = (string) ($data['title'] ?? '');
         if ($title === '') {
-            $this->warn('  skipped — task missing title');
+            $this->warn("  skipped — task `{$key}` missing title");
 
             return 'skipped';
         }
@@ -162,7 +266,9 @@ class ImportTasksCommand extends Command
             'title' => $title,
             'description' => $data['description'] ?? null,
             'situation' => $situations,
+            'eu_filter' => $data['eu_filter'] ?? null,
             'phase' => $data['phase'] ?? null,
+            'depends_on' => array_values((array) ($data['depends_on'] ?? [])),
             'urgency' => $this->normalizeUrgency($data['urgency'] ?? 'medium'),
             'deadline_type' => $this->normalizeDeadlineType($data['deadline_type'] ?? 'none'),
             'deadline_days' => isset($data['deadline_days']) ? (int) $data['deadline_days'] : null,
@@ -171,28 +277,35 @@ class ImportTasksCommand extends Command
             'links' => $data['links'] ?? [],
             'how_to_steps' => $data['how_to_steps'] ?? [],
             'booking_service_key' => $data['booking_service_key'] ?? null,
+            // Human-verified only: the importer copies the YAML value verbatim.
+            'verified_at' => $data['verified_at'] ?? null,
+            'is_published' => (bool) ($data['is_published'] ?? true),
         ];
 
         if ($this->option('dry-run')) {
-            $this->line("  [dry] would upsert: {$title}");
+            $this->line("  [dry] would upsert: {$key}");
 
             return 'skipped';
         }
 
-        $existing = Task::query()
-            ->where('title', $title)
-            ->whereJsonContains('situation', $situations[0])
-            ->first();
+        $existing = Task::query()->where('key', $key)->first()
+            // Legacy fallback: first import after the v2 migration matches
+            // pre-key rows by title+situation so they gain keys in place.
+            ?? Task::query()
+                ->whereNull('key')
+                ->where('title', $title)
+                ->whereJsonContains('situation', $situations[0])
+                ->first();
 
         if ($existing) {
-            $existing->fill($payload)->save();
-            $this->line("  updated: {$title}");
+            $existing->fill([...$payload, 'key' => $key])->save();
+            $this->line("  updated: {$key}");
 
             return 'updated';
         }
 
-        Task::create($payload);
-        $this->line("  created: {$title}");
+        Task::create([...$payload, 'key' => $key]);
+        $this->line("  created: {$key}");
 
         return 'created';
     }

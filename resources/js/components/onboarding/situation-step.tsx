@@ -15,7 +15,7 @@ const situations = [
         value: 'student',
         emoji: '🎓',
         title: 'Student',
-        subtitle: 'Student visa · Blocked account · Health insurance',
+        subtitle: 'Enrolment · Health insurance · Semesterticket',
     },
     {
         value: 'freelancer',
@@ -43,13 +43,28 @@ const situations = [
     },
 ];
 
+// Situations where citizenship isn't implied and changes the checklist
+// (residence permit, blocked account, §21 AufenthG, …).
+export const EU_AMBIGUOUS_SITUATIONS = [
+    'student',
+    'freelancer',
+    'digital_nomad',
+    'other',
+];
+
 export function SituationStep({
     value,
+    isEu,
     onChange,
+    onIsEuChange,
 }: {
     value: string;
+    isEu: boolean | null;
     onChange: (value: string) => void;
+    onIsEuChange: (value: boolean) => void;
 }) {
+    const askEu = EU_AMBIGUOUS_SITUATIONS.includes(value);
+
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
@@ -57,7 +72,7 @@ export function SituationStep({
                     What's your situation?
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                    This shapes your personalised checklist and visa guidance.
+                    This shapes your checklist, deadlines, and ticket advice.
                 </p>
             </div>
 
@@ -92,6 +107,37 @@ export function SituationStep({
                     </button>
                 ))}
             </div>
+
+            {askEu && (
+                <div className="mt-6">
+                    <div className="mb-2 text-[11px] font-bold tracking-[0.07em] text-muted-foreground uppercase">
+                        Are you an EU/EEA citizen?
+                    </div>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                        Non-EU citizens have extra steps (residence permit).
+                    </p>
+                    <div className="flex gap-2.5">
+                        {[
+                            { value: true, emoji: '🇪🇺', label: 'EU / EEA' },
+                            { value: false, emoji: '🌍', label: 'Non-EU' },
+                        ].map((opt) => (
+                            <button
+                                key={String(opt.value)}
+                                type="button"
+                                onClick={() => onIsEuChange(opt.value)}
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-[1.5px] px-3.5 py-3 text-sm font-semibold transition-all ${
+                                    isEu === opt.value
+                                        ? 'border-primary bg-accent-soft'
+                                        : 'border-border bg-card hover:border-primary/30'
+                                }`}
+                            >
+                                <span>{opt.emoji}</span>
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

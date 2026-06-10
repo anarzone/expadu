@@ -2,6 +2,8 @@ situation: non_eu_employee
 
 tasks:
   - title: Register your address (Anmeldung)
+    key: nee.anmeldung
+    depends_on: []
     description: |
       Every resident in Germany must register their address at the Bürgeramt within 14 days
       of moving in. Without the Meldebescheinigung you can't open a bank account, get a
@@ -29,6 +31,8 @@ tasks:
         body: Photograph the Meldebescheinigung and back it up. You'll need it for almost everything else on this list.
 
   - title: Wait for your Steuer-ID (tax identification number)
+    key: nee.steuer_id
+    depends_on: [nee.anmeldung]
     description: |
       The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
       within 2–4 weeks of Anmeldung. You can't legally be paid in Germany without it.
@@ -49,6 +53,8 @@ tasks:
         body: Without your Steuer-ID, payroll defaults to maximum tax class — you'll be over-taxed every payslip until you fix it.
 
   - title: Sign up for German health insurance
+    key: nee.health_insurance
+    depends_on: [nee.anmeldung]
     description: |
       Health insurance is mandatory in Germany. As an employee, you'll typically be
       enrolled in a gesetzliche Krankenversicherung (public/statutory) — the employer
@@ -72,6 +78,8 @@ tasks:
         body: Arrives by post in 2–3 weeks. In the meantime, doctors will accept the membership confirmation letter.
 
   - title: Apply for your residence permit (Aufenthaltstitel)
+    key: nee.residence_permit
+    depends_on: [nee.anmeldung, nee.health_insurance]
     description: |
       As a non-EU employee, you have 90 days from arrival to apply for a residence permit
       at the Ausländerbehörde. Your entry visa expires; the permit is what lets you stay
@@ -100,6 +108,8 @@ tasks:
         body: ~€100, card or cash. You'll get a temporary Fiktionsbescheinigung; the actual eAT card arrives by post 4–8 weeks later.
 
   - title: Open a German bank account
+    key: nee.bank_account
+    depends_on: [nee.anmeldung]
     description: |
       Required for receiving your salary and paying rent. Pick a Girokonto from a bank
       that supports IBAN, mobile app, and ideally English service.
@@ -123,6 +133,8 @@ tasks:
         body: Your IBAN should be on the employer's HR portal before payroll. Same with rent direct-debit.
 
   - title: Settle your Rundfunkbeitrag (broadcasting fee)
+    key: nee.rundfunkbeitrag
+    depends_on: [nee.anmeldung]
     description: |
       Every household in Germany pays €18.36/month for public broadcasting, regardless of
       whether you own a TV. The Beitragsservice will write to you automatically a few
@@ -143,6 +155,8 @@ tasks:
         body: BAföG recipients, certain low-income workers, and disabled persons can be exempted — full list on the official site.
 
   - title: Get private liability insurance (Haftpflichtversicherung)
+    key: nee.liability_insurance
+    depends_on: [nee.bank_account]
     description: |
       Not legally required, but socially expected — covers damage you accidentally cause
       to other people's property. Costs €30–50/year and protects you against bills that
@@ -160,6 +174,8 @@ tasks:
         body: You'll need it if you ever cause damage (e.g., breaking a friend's TV, damaging a rented item).
 
   - title: Convert your driving licence (if from a non-EU country)
+    key: nee.drivers_licence
+    depends_on: [nee.residence_permit]
     description: |
       EU/EEA licences are valid indefinitely. Licences from other countries are valid for
       6 months after Anmeldung — after that you need a German one. Some countries (US,
@@ -186,6 +202,8 @@ tasks:
         body: ~€42, takes a few weeks to issue the German licence. You can keep driving on the original in the meantime if still within the 6-month window.
 
   - title: File your annual tax return (Einkommensteuererklärung)
+    key: nee.tax_return
+    depends_on: [nee.steuer_id]
     description: |
       Mandatory if you had multiple employers in a year, received unemployment benefits,
       or want to claim deductions (commute, work-from-home, professional fees, etc.).

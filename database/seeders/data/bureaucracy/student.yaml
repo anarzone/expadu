@@ -2,6 +2,8 @@ situation: student
 
 tasks:
   - title: Register your address (Anmeldung)
+    key: stu.anmeldung
+    depends_on: []
     description: |
       Every resident in Germany must register their address at the Bürgeramt within 14
       days of moving in. Without the Meldebescheinigung you can't enrol at university,
@@ -26,6 +28,8 @@ tasks:
         body: You'll need the Meldebescheinigung repeatedly — keep originals safe and PDFs accessible.
 
   - title: Enrol at your university (Immatrikulation)
+    key: stu.enrolment
+    depends_on: [stu.health_insurance]
     description: |
       Officially become a student. Until enrolment is complete you don't have your
       student ID, can't access most facilities, and can't get the semester ticket.
@@ -50,6 +54,8 @@ tasks:
         body: Usually mailed within 2 weeks of enrolment. The Semesterticket lets you ride all public transit in North Rhine-Westphalia for free.
 
   - title: Sign up for student health insurance
+    key: stu.health_insurance
+    depends_on: []
     description: |
       Students under 30 pay a discounted rate (~€110/month) for public insurance.
       You must have proof of insurance before you can enrol — many universities won't
@@ -73,6 +79,8 @@ tasks:
         body: Submit the insurance confirmation in the student portal — required to complete Immatrikulation.
 
   - title: Apply for student residence permit
+    key: stu.residence_permit
+    depends_on: [stu.anmeldung, stu.enrolment, stu.health_insurance]
     description: |
       Non-EU students must convert their entry visa into a student residence permit
       within the first 90 days. The permit covers studies + 120 days of part-time work
@@ -100,6 +108,8 @@ tasks:
         body: Even the smallest missing document means a rebooked appointment — currently a 6–12 week wait in Cologne.
 
   - title: Wait for your Steuer-ID
+    key: stu.steuer_id
+    depends_on: [stu.anmeldung]
     description: |
       Automatically sent by post 2–4 weeks after Anmeldung. As a student you'll need
       it for any paid work (mini-jobs, working student contracts, tutoring) and to file
@@ -118,6 +128,8 @@ tasks:
         body: Use the BZSt online contact form.
 
   - title: Open a student bank account
+    key: stu.bank_account
+    depends_on: [stu.anmeldung]
     description: |
       Most German banks offer free Girokonto accounts to students under 30 — no monthly
       fee, free debit card, English support at the bigger banks.
@@ -141,6 +153,8 @@ tasks:
         body: For getting refunds (e.g., dropped courses) you'll need the IBAN on file with the registrar.
 
   - title: Register with Studierendenwerk for housing + meals
+    key: stu.studierendenwerk
+    depends_on: [stu.enrolment]
     description: |
       Studierendenwerk Köln runs the dorms, mensa cards, and student support services.
       Even if you live off-campus, your student ID gives you discounted meals at the
@@ -159,6 +173,8 @@ tasks:
         body: Most dorms have charging stations. Meals are €3–6 vs. €10+ outside.
 
   - title: Settle your Rundfunkbeitrag (or apply for exemption)
+    key: stu.rundfunkbeitrag
+    depends_on: [stu.anmeldung]
     description: |
       €18.36/month per household. If you receive BAföG you can apply for exemption
       and skip the fee entirely.
@@ -176,6 +192,8 @@ tasks:
         body: BAföG recipients pay €0/month — submit your BAföG-Bescheid as proof.
 
   - title: Apply for BAföG (if eligible)
+    key: stu.bafoeg
+    depends_on: [stu.enrolment, stu.bank_account]
     description: |
       Federal student aid for low-income students, including some non-EU students with
       certain residence titles. Up to €934/month — half grant, half interest-free loan.

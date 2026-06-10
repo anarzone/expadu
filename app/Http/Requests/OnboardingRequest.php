@@ -19,13 +19,21 @@ class OnboardingRequest extends FormRequest
      */
     public function rules(): array
     {
+        $veedels = collect(config('veedels', []))->flatten()->all();
+
         return [
             'situation' => ['required', 'string', Rule::in(array_column(Situation::cases(), 'value'))],
-            'city' => ['required', 'string', 'max:100'],
-            'german_level' => ['required', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
-            'speaks' => ['required', 'array', 'min:1'],
-            'speaks.*' => ['string', 'max:50'],
+            // Only asked when the situation doesn't imply citizenship
+            // (employee situations encode it; see ProfileEngine::resolveIsEu).
+            'is_eu' => ['nullable', 'boolean', Rule::requiredIf(fn () => in_array($this->input('situation'), [
+                Situation::Student->value,
+                Situation::Freelancer->value,
+                Situation::DigitalNomad->value,
+                Situation::Other->value,
+            ], true))],
             'arrival_date' => ['required', 'date', 'before_or_equal:today'],
+            'veedel' => ['required', 'string', Rule::in($veedels)],
+            'german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
         ];
     }
 }

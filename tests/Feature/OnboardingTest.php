@@ -8,6 +8,7 @@ test('onboarding page renders for non-onboarded user', function () {
 
     $response = $this->get(route('onboarding'));
     $response->assertOk();
+    $response->assertInertia(fn ($page) => $page->has('veedels'));
 });
 
 test('onboarded user accessing onboarding is not redirected away', function () {
@@ -24,9 +25,8 @@ test('onboarding can be completed with valid data', function () {
 
     $response = $this->post(route('onboarding.complete'), [
         'situation' => 'non_eu_employee',
-        'city' => 'cologne',
+        'veedel' => 'Ehrenfeld',
         'german_level' => 'a2',
-        'speaks' => ['english', 'turkish'],
         'arrival_date' => '2026-01-15',
     ]);
 
@@ -34,10 +34,50 @@ test('onboarding can be completed with valid data', function () {
 
     $user->refresh();
     expect($user->situation->value)->toBe('non_eu_employee');
-    expect($user->city)->toBe('cologne');
+    expect($user->veedel)->toBe('Ehrenfeld');
+    expect($user->city)->toBe('Köln');
     expect($user->german_level->value)->toBe('a2');
-    expect($user->speaks)->toBe(['english', 'turkish']);
     expect($user->onboarded_at)->not->toBeNull();
+});
+
+test('ambiguous situations require the EU question', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->post(route('onboarding.complete'), [
+        'situation' => 'student',
+        'veedel' => 'Sülz',
+        'arrival_date' => '2026-01-15',
+    ]);
+
+    $response->assertSessionHasErrors('is_eu');
+});
+
+test('employee situations do not require the EU question', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->post(route('onboarding.complete'), [
+        'situation' => 'eu_employee',
+        'veedel' => 'Nippes',
+        'arrival_date' => '2026-01-15',
+    ]);
+
+    $response->assertRedirect(route('dashboard'));
+});
+
+test('german level is optional', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->post(route('onboarding.complete'), [
+        'situation' => 'student',
+        'is_eu' => true,
+        'veedel' => 'Deutz',
+        'arrival_date' => '2026-01-15',
+    ]);
+
+    $response->assertRedirect(route('dashboard'));
 });
 
 test('onboarding fails with invalid situation', function () {
@@ -46,13 +86,24 @@ test('onboarding fails with invalid situation', function () {
 
     $response = $this->post(route('onboarding.complete'), [
         'situation' => 'invalid_value',
-        'city' => 'cologne',
-        'german_level' => 'a2',
-        'speaks' => ['english'],
+        'veedel' => 'Ehrenfeld',
         'arrival_date' => '2026-01-15',
     ]);
 
     $response->assertSessionHasErrors('situation');
+});
+
+test('onboarding fails with unknown veedel', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->post(route('onboarding.complete'), [
+        'situation' => 'eu_employee',
+        'veedel' => 'Atlantis',
+        'arrival_date' => '2026-01-15',
+    ]);
+
+    $response->assertSessionHasErrors('veedel');
 });
 
 test('onboarding fails without required fields', function () {
@@ -61,7 +112,7 @@ test('onboarding fails without required fields', function () {
 
     $response = $this->post(route('onboarding.complete'), []);
 
-    $response->assertSessionHasErrors(['situation', 'city', 'german_level', 'speaks', 'arrival_date']);
+    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_date']);
 });
 
 test('onboarding fails with future arrival date', function () {
@@ -70,9 +121,8 @@ test('onboarding fails with future arrival date', function () {
 
     $response = $this->post(route('onboarding.complete'), [
         'situation' => 'student',
-        'city' => 'berlin',
-        'german_level' => 'none',
-        'speaks' => ['english'],
+        'is_eu' => false,
+        'veedel' => 'Ehrenfeld',
         'arrival_date' => '2030-01-01',
     ]);
 

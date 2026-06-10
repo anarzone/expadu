@@ -2,6 +2,8 @@ situation: family_reunification
 
 tasks:
   - title: Register your family's address (Anmeldung)
+    key: fam.anmeldung
+    depends_on: []
     description: |
       Within 14 days of arrival, every family member must be registered at the Bürgeramt
       — including children. Book a single appointment for the whole family.
@@ -26,6 +28,8 @@ tasks:
         body: Each family member needs their own — for school, daycare, health insurance, and visa processing.
 
   - title: Apply for residence permits for the whole family
+    key: fam.residence_permits
+    depends_on: [fam.anmeldung]
     description: |
       Reunifying family members need their own residence permits, even if the sponsoring
       spouse already has one. Apply at the Ausländerbehörde within 90 days.
@@ -54,6 +58,8 @@ tasks:
         body: For non-German documents, you need the original + an apostille + a sworn German translation. The Ausländerbehörde keeps copies but checks the originals.
 
   - title: Enrol health insurance for every dependent
+    key: fam.health_insurance
+    depends_on: [fam.anmeldung]
     description: |
       Each family member needs their own coverage. Public insurance through the sponsor
       usually covers spouse + children for free (Familienversicherung) — but you must
@@ -77,6 +83,8 @@ tasks:
         body: Above ~€505/month income, the spouse needs their own paid coverage — choose between public or private depending on situation.
 
   - title: Register children for school or Kita
+    key: fam.school_kita
+    depends_on: [fam.anmeldung]
     description: |
       School is compulsory from age 6. Kita (daycare) is widely available from age 1 but
       has long waitlists in Cologne — apply as soon as you have a confirmed address.
@@ -101,6 +109,8 @@ tasks:
         body: German law requires proof of measles vaccination. If the record is in another language, get a German translation before submitting.
 
   - title: Apply for Kindergeld (child benefit)
+    key: fam.kindergeld
+    depends_on: [fam.steuer_ids]
     description: |
       €250/month per child until age 18 (or 25 if in education). Available to most
       residents regardless of income. Apply via the Familienkasse — separate from the
@@ -125,6 +135,8 @@ tasks:
         body: Use the German bank account that receives your salary — they pay into a single household account.
 
   - title: Wait for everyone's Steuer-IDs
+    key: fam.steuer_ids
+    depends_on: [fam.anmeldung]
     description: |
       Each family member, including children, gets their own 11-digit tax ID by post
       within 2–4 weeks of Anmeldung. Required for school benefits and Kindergeld.
@@ -142,6 +154,8 @@ tasks:
         body: Each family member's Steuer-ID is permanent — keep a digital backup. You'll need them for Kindergeld, school registration, and the annual tax return.
 
   - title: Open a joint or family bank account
+    key: fam.bank_account
+    depends_on: [fam.anmeldung]
     description: |
       Receive salaries, pay rent + utilities, and manage shared expenses. Most banks let
       you add a second account holder (Gemeinschaftskonto) once you're both registered.
@@ -164,6 +178,8 @@ tasks:
         body: Rent, utilities, Rundfunkbeitrag — move them all to the joint account once active.
 
   - title: Settle Rundfunkbeitrag (one per household)
+    key: fam.rundfunkbeitrag
+    depends_on: [fam.anmeldung]
     description: |
       €18.36/month per household — flat rate regardless of family size. The Beitragsservice
       will contact you automatically a few weeks after Anmeldung.
@@ -181,6 +197,8 @@ tasks:
         body: From the joint bank account, ideally — keeps household bills together.
 
   - title: Sign up for an Integration Course
+    key: fam.integration_course
+    depends_on: [fam.residence_permits]
     description: |
       The Integrationskurs is a subsidised 600-700 hour German + civics course. Mandatory
       for some residence permit holders, optional but strongly recommended for others —
