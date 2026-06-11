@@ -293,6 +293,14 @@ export default function Places() {
                         className="mb-4 flex gap-3 overflow-x-auto pb-1"
                         style={{ scrollbarWidth: 'none' }}
                     >
+                        <ContentCard
+                            variant="veedel"
+                            coarse="veedel"
+                            seed={null}
+                            title="All Cologne"
+                            active={bezirk === 'all'}
+                            onActivate={() => pickBezirk('all')}
+                        />
                         {railOptions.map((b) => (
                             <ContentCard
                                 key={b.name}
@@ -305,13 +313,6 @@ export default function Places() {
                                 onActivate={() => pickBezirk(b.name)}
                             />
                         ))}
-                        <ContentCard
-                            variant="veedel"
-                            coarse="veedel"
-                            title="All Cologne"
-                            active={bezirk === 'all'}
-                            onActivate={() => pickBezirk('all')}
-                        />
                     </div>
                 </Deferred>
 

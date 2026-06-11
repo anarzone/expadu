@@ -26,6 +26,7 @@ const CHIP_TONE: Record<NonNullable<CardChip['tone']>, string> = {
 export function ContentCard({
     variant = 'place',
     coarse,
+    seed,
     photoUrl,
     emoji,
     title,
@@ -41,6 +42,8 @@ export function ContentCard({
 }: {
     variant?: 'place' | 'veedel';
     coarse: string;
+    /** Varies the fallback illustration; null forces the default visual. */
+    seed?: string | null;
     photoUrl?: string | null;
     emoji?: string;
     title: string;
@@ -76,7 +79,7 @@ export function ContentCard({
                     ) : (
                         <CategoryIllustration
                             coarse="veedel"
-                            seed={title}
+                            seed={seed === null ? undefined : (seed ?? title)}
                             className="h-full w-full"
                             iconSize={26}
                         />
