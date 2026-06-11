@@ -7,6 +7,7 @@ export type Place = {
     fine_label: string | null;
     emoji: string | null;
     veedel: string | null;
+    park: string | null;
     lat: number;
     lng: number;
     photo_url: string | null;

@@ -177,6 +177,26 @@ test('shows a single place with the full card contract', function () {
     expect(collect($response->json('data.facts'))->pluck('label')->all())->toContain('surface');
 });
 
+test('context prefers facilities in the same park over the 300m radius', function () {
+    Http::fake();
+
+    $court = Spot::factory()->create(['name' => 'Basketballplatz', 'category' => 'basketball', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
+    // Same park but ~700m away → still listed (the park is the venue)
+    $farPitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'lat' => 50.9685, 'lng' => 6.930]);
+    // 100m away but NOT in the park → excluded in park mode
+    Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'park_name' => null, 'lat' => 50.9621, 'lng' => 6.9312]);
+
+    $nearby = $this->getJson("/api/places/{$court->id}/context")->json('nearby');
+
+    expect(collect($nearby)->pluck('id')->all())->toBe([$farPitch->id]);
+});
+
+test('places inside a park carry the park name', function () {
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'veedel' => 'Neuehrenfeld', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
+
+    $this->getJson('/api/places')->assertJsonPath('data.0.park', 'Blücherpark');
+});
+
 test('place context lists nearby places, excluding same-name siblings', function () {
     Http::fake();
 

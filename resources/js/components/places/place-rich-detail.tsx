@@ -26,12 +26,17 @@ export function PlaceRichDetail({
     meta,
     onNavigate,
     onOpenPlace,
+    onBack,
+    backLabel,
 }: {
     place: Place;
     meta: string;
     onNavigate: (target: NavigateTarget) => void;
     /** Swap the detail to another place (nearby chips). */
     onOpenPlace?: (place: Place) => void;
+    /** Return to the previously viewed place after a nearby hop. */
+    onBack?: () => void;
+    backLabel?: string;
 }) {
     const [context, setContext] = useState<PlaceContext | null>(null);
 
@@ -84,6 +89,16 @@ export function PlaceRichDetail({
 
     return (
         <div>
+            {/* Back after a nearby hop — makes the place swap visible */}
+            {onBack && backLabel && (
+                <button
+                    onClick={onBack}
+                    className="mb-2.5 flex cursor-pointer items-center gap-1 text-[13px] font-semibold text-primary transition-opacity hover:opacity-75"
+                >
+                    ← {backLabel}
+                </button>
+            )}
+
             {/* Title */}
             <div className="flex items-start gap-2.5">
                 {place.emoji && (
@@ -201,7 +216,9 @@ export function PlaceRichDetail({
             {context && context.nearby.length > 0 && (
                 <>
                     <div className="mt-4 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-muted-foreground uppercase">
-                        Also around here · 300 m
+                        {place.park
+                            ? `Also in ${place.park}`
+                            : 'Also around here · 300 m'}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                         {context.nearby.map((near) => (

@@ -59,7 +59,9 @@ function placeMeta(place: Place): string {
 
     return [
         cat,
-        place.veedel,
+        // The park is the venue — a more meaningful address than the
+        // Stadtteil when the facility sits inside one.
+        place.park ?? place.veedel,
         place.distance_min != null ? `${place.distance_min} min away` : null,
     ]
         .filter(Boolean)
@@ -99,6 +101,8 @@ export default function Places() {
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [detail, setDetail] = useState<Place | null>(null);
     const [richPlace, setRichPlace] = useState<Place | null>(null);
+    // Breadcrumb of places hopped through via nearby chips ("← back")
+    const [hopStack, setHopStack] = useState<Place[]>([]);
     const [destination, setDestination] = useState<Destination | null>(null);
 
     const isMobile = useIsMobile();
@@ -214,8 +218,31 @@ export default function Places() {
         if (isMobile) {
             setExpandedId((id) => (id === place.id ? null : place.id));
         } else {
+            setHopStack([]);
             setDetail(place);
         }
+    }
+
+    // Nearby-chip hop: remember where we came from so "← back" works.
+    function hopTo(next: Place) {
+        const current = isMobile ? richPlace : detail;
+
+        if (current) {
+            setHopStack((stack) => [...stack, current]);
+        }
+
+        (isMobile ? setRichPlace : setDetail)(next);
+    }
+
+    function hopBack() {
+        const previous = hopStack.at(-1);
+
+        if (!previous) {
+            return;
+        }
+
+        setHopStack((stack) => stack.slice(0, -1));
+        (isMobile ? setRichPlace : setDetail)(previous);
     }
 
     function takeMeThere(place: Place) {
@@ -468,6 +495,7 @@ export default function Places() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
+                                                    setHopStack([]);
                                                     setRichPlace(place);
                                                 }}
                                                 className="mt-3 block min-h-11 w-full rounded-[9px] border border-border py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:border-primary"
@@ -501,7 +529,12 @@ export default function Places() {
             {/* Desktop detail — traditional centered modal (close via overlay or X) */}
             <Dialog
                 open={!isMobile && detail !== null}
-                onOpenChange={(open) => !open && setDetail(null)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDetail(null);
+                        setHopStack([]);
+                    }
+                }}
             >
                 {detail && (
                     <DialogContent
@@ -530,9 +563,14 @@ export default function Places() {
                                 meta={placeMeta(detail)}
                                 onNavigate={(target) => {
                                     setDetail(null);
+                                    setHopStack([]);
                                     setDestination(target);
                                 }}
-                                onOpenPlace={setDetail}
+                                onOpenPlace={hopTo}
+                                onBack={
+                                    hopStack.length > 0 ? hopBack : undefined
+                                }
+                                backLabel={hopStack.at(-1)?.name}
                             />
                         </div>
                     </DialogContent>
@@ -541,7 +579,13 @@ export default function Places() {
 
             {/* Mobile full detail — bottom sheet over the list */}
             {isMobile && richPlace && (
-                <BottomSheet open onClose={() => setRichPlace(null)}>
+                <BottomSheet
+                    open
+                    onClose={() => {
+                        setRichPlace(null);
+                        setHopStack([]);
+                    }}
+                >
                     {/* Bottom padding clears the floating mobile dock */}
                     <div className="pb-24">
                         <PlaceRichDetail
@@ -549,9 +593,12 @@ export default function Places() {
                             meta={placeMeta(richPlace)}
                             onNavigate={(target) => {
                                 setRichPlace(null);
+                                setHopStack([]);
                                 setDestination(target);
                             }}
-                            onOpenPlace={setRichPlace}
+                            onOpenPlace={hopTo}
+                            onBack={hopStack.length > 0 ? hopBack : undefined}
+                            backLabel={hopStack.at(-1)?.name}
                         />
                     </div>
                 </BottomSheet>

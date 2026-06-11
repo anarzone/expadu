@@ -44,6 +44,7 @@ class PlaceResource extends JsonResource
             'fine_label' => $fine?->label(),
             'emoji' => $fine?->emoji(),
             'veedel' => $this->veedel,
+            'park' => $this->park_name,
             'lat' => (float) $this->lat,
             'lng' => (float) $this->lng,
             'photo_url' => $this->photo_url,

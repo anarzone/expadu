@@ -68,27 +68,38 @@ class PlaceContextController extends Controller
     }
 
     /**
-     * Other places within ~300m — excludes the place itself and its own
-     * same-name cluster siblings (those are the "×N here" chip).
+     * Other places around this one — facilities sharing the same park
+     * when there is one ("Also in Blücherpark"), otherwise anything
+     * within ~300m. Excludes the place itself and its own same-name
+     * cluster siblings (those are the "×N here" chip).
      *
      * @return list<array{id: int, name: string, category: string, emoji: string, walk_min: int, lat: float, lng: float}>
      */
     private function nearby(Spot $spot): array
     {
-        $rows = Spot::query()
+        $query = Spot::query()
             ->whereKeyNot($spot->id)
             ->where('name', '!=', $spot->name)
             ->whereIn('category', SpotCategory::placesFines())
             ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->selectRaw(
-                '*, (6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as km',
-                [$spot->lat, $spot->lng, $spot->lat],
-            )
-            ->whereRaw(
+            ->whereNotNull('lng');
+
+        $query->selectRaw(
+            '*, (6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as km',
+            [$spot->lat, $spot->lng, $spot->lat],
+        );
+
+        if ($spot->park_name) {
+            // Same park = same venue, however large the park is.
+            $query->where('park_name', $spot->park_name);
+        } else {
+            $query->whereRaw(
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
                 [$spot->lat, $spot->lng, $spot->lat, self::NEARBY_RADIUS_KM],
-            )
+            );
+        }
+
+        $rows = $query
             ->orderBy('km')
             ->limit(self::NEARBY_LIMIT)
             ->get();
