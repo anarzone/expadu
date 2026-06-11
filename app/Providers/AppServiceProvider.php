@@ -19,6 +19,8 @@ use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
 use App\Listeners\CreateAlertFromNotification;
+use App\Services\AnthropicEventClassifier;
+use App\Services\ClassifiesEvents;
 use App\Transit\Contracts\RouteService;
 use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
@@ -46,6 +48,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             ParsesConstraints::class,
             AnthropicConstraintParser::class,
+        );
+
+        $this->app->bind(
+            ClassifiesEvents::class,
+            AnthropicEventClassifier::class,
         );
     }
 

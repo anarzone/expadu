@@ -1,0 +1,257 @@
+# Manually curated Cologne events — the ManualSource. Same philosophy
+# as the bureaucracy catalogue: hand-written, trusted (verified_at is
+# set at import), summaries in our own words. Recurring events are ONE
+# record with an RRULE; `schedule.weekday` anchors one-offs and series
+# starts on the next such weekday at import time.
+#
+# chips vocabulary: English-friendly · newcomers welcome · solo-OK · free
+
+events:
+  - uid: cologne-language-exchange
+    title: Cologne Language Exchange
+    title_en: Cologne Language Exchange
+    summary_en: >-
+      Table-based language swap in a brewery hall — find your languages'
+      table, sit down, switch halfway. No sign-up, no level requirement.
+    tip_en: Mostly internationals — arrive by 19:15, the popular tables fill fast.
+    category: language_exchange
+    language: mixed
+    chips: [English-friendly, newcomers welcome, solo-OK, free]
+    price_text: free
+    is_free: true
+    relevance: 1.0
+    source_url: https://www.meetup.com/colognelanguageexchange/
+    venue:
+      name: Gilden im Zims
+      address: Heumarkt 77, Altstadt
+      lat: 50.9358
+      lng: 6.9601
+    schedule:
+      weekday: TH
+      time: "19:00"
+      duration_min: 150
+      rrule: FREQ=WEEKLY;BYDAY=TH
+
+  - uid: expat-stammtisch-frueh
+    title: Expat Stammtisch Cologne
+    title_en: Expat Stammtisch Cologne
+    summary_en: >-
+      A long-running internationals' table at a classic brewery —
+      newcomers get introduced around, Kölsch keeps coming until you
+      cover your glass.
+    tip_en: Say you're new — the regulars make a point of pulling newcomers in.
+    category: stammtisch
+    language: en
+    chips: [English-friendly, newcomers welcome, solo-OK]
+    price_text: free entry
+    is_free: true
+    relevance: 1.0
+    source_url: https://www.meetup.com/cologne-expats/
+    venue:
+      name: Brauhaus FRÜH am Dom
+      address: Am Hof 12-18, Altstadt
+      lat: 50.9398
+      lng: 6.9577
+    schedule:
+      weekday: FR
+      time: "19:00"
+      duration_min: 180
+      rrule: FREQ=WEEKLY;BYDAY=FR;INTERVAL=4
+
+  - uid: parkrun-rheinpark
+    title: Rheinpark parkrun
+    title_en: Rheinpark parkrun
+    summary_en: >-
+      Free timed 5k every Saturday morning along the Rhine — walk, jog
+      or run, with a coffee crowd at the finish. Register once online,
+      bring your barcode.
+    tip_en: No German needed — just turn up by 8:50 with your parkrun barcode.
+    category: sports
+    language: none_needed
+    chips: [newcomers welcome, solo-OK, free]
+    price_text: free
+    is_free: true
+    relevance: 0.9
+    source_url: https://www.parkrun.com.de/rheinpark/
+    venue:
+      name: Rheinpark
+      address: Rheinparkweg, Deutz
+      lat: 50.9533
+      lng: 6.9809
+    schedule:
+      weekday: SA
+      time: "09:00"
+      duration_min: 90
+      rrule: FREQ=WEEKLY;BYDAY=SA
+
+  - uid: tandem-sprachcafe-vhs
+    title: Tandem-Sprachcafé
+    title_en: Tandem Language Café
+    summary_en: >-
+      Relaxed German practice round hosted by the adult education
+      centre — small tables by level, native speakers moderate.
+    tip_en: A1 is genuinely welcome — say your level at the door and you'll be seated accordingly.
+    category: language_exchange
+    language: mixed
+    chips: [newcomers welcome, solo-OK, free]
+    price_text: free
+    is_free: true
+    relevance: 0.95
+    source_url: https://vhs-koeln.de/
+    venue:
+      name: VHS Studienhaus am Neumarkt
+      address: Cäcilienstraße 35, Altstadt
+      lat: 50.9356
+      lng: 6.9485
+    schedule:
+      weekday: TU
+      time: "18:30"
+      duration_min: 90
+      rrule: FREQ=WEEKLY;BYDAY=TU
+
+  - uid: couchsurfing-weekly-cologne
+    title: Couchsurfing Weekly Meetup Cologne
+    title_en: Couchsurfing Weekly Meetup Cologne
+    summary_en: >-
+      The open-to-everyone travellers' table — locals, new arrivals and
+      people passing through, English by default.
+    tip_en: Look for the table with the little globe flag; introductions are the whole point.
+    category: intl_meetup
+    language: en
+    chips: [English-friendly, newcomers welcome, solo-OK, free]
+    price_text: free
+    is_free: true
+    relevance: 1.0
+    source_url: https://www.couchsurfing.com/events
+    venue:
+      name: Café Central
+      address: Jülicher Straße 1, Neustadt-Nord
+      lat: 50.9384
+      lng: 6.9320
+    schedule:
+      weekday: WE
+      time: "20:00"
+      duration_min: 180
+      rrule: FREQ=WEEKLY;BYDAY=WE
+
+  - uid: free-walking-tour-altstadt
+    title: Free Walking Tour Cologne
+    title_en: Free Walking Tour Cologne
+    summary_en: >-
+      Two hours through the old town with an English-speaking guide —
+      the fastest orientation a newcomer can get. Tip-based, book a
+      free slot online.
+    tip_en: Meets at the Dom's main portal — the guide holds a yellow umbrella.
+    category: culture
+    language: en
+    chips: [English-friendly, newcomers welcome, solo-OK]
+    price_text: tip-based
+    is_free: true
+    relevance: 0.85
+    source_url: https://www.freewalkcologne.com/
+    venue:
+      name: Kölner Dom (Hauptportal)
+      address: Domkloster 4, Altstadt
+      lat: 50.9413
+      lng: 6.9581
+    schedule:
+      weekday: MO
+      time: "11:00"
+      duration_min: 120
+      rrule: FREQ=DAILY
+
+  - uid: kollwitz-museum-late-evening
+    title: Käthe Kollwitz Museum — Abendöffnung
+    title_en: Käthe Kollwitz Museum evening opening
+    summary_en: >-
+      The Kollwitz collection stays open late with a short intro tour —
+      quiet, small, and very Cologne.
+    tip_en: The intro tour is German, but the collection needs no language at all.
+    category: culture
+    language: none_needed
+    chips: [solo-OK]
+    price_text: "€5"
+    is_free: false
+    relevance: 0.7
+    source_url: https://www.kollwitz.de/
+    venue:
+      name: Käthe Kollwitz Museum
+      address: Neumarkt 18-24, Altstadt
+      lat: 50.9358
+      lng: 6.9476
+    schedule:
+      weekday: FR
+      time: "18:00"
+      duration_min: 180
+
+  - uid: internations-newcomers-night
+    title: InterNations Newcomers' Night
+    title_en: InterNations Newcomers' Night
+    summary_en: >-
+      The big-room mixer for people new to Cologne — name stickers,
+      icebreaker hosts, and a crowd that expects strangers.
+    tip_en: Free for basic members — register online before the door.
+    category: intl_meetup
+    language: en
+    chips: [English-friendly, newcomers welcome, solo-OK]
+    price_text: "€8"
+    is_free: false
+    relevance: 1.0
+    source_url: https://www.internations.org/cologne-expats/
+    venue:
+      name: Stadtgarten
+      address: Venloer Straße 40, Neustadt-Nord
+      lat: 50.9421
+      lng: 6.9358
+    schedule:
+      weekday: SA
+      time: "19:30"
+      duration_min: 210
+
+  - uid: volksgarten-flohmarkt
+    title: Flohmarkt im Volksgarten
+    title_en: Volksgarten flea market
+    summary_en: >-
+      Sunday flea market around the park — furniture, plants and the
+      cheapest way to furnish a first flat in Cologne.
+    tip_en: Go before 11:00 for furniture; haggling is expected and friendly.
+    category: other
+    language: none_needed
+    chips: [free, solo-OK]
+    price_text: free
+    is_free: true
+    relevance: 0.75
+    source_url: https://www.koeln.de/veranstaltungen/
+    venue:
+      name: Volksgarten
+      address: Volksgartenstraße, Neustadt-Süd
+      lat: 50.9214
+      lng: 6.9466
+    schedule:
+      weekday: SU
+      time: "10:00"
+      duration_min: 360
+
+  - uid: odonien-open-air
+    title: Odonien Open Air
+    title_en: Odonien Open Air
+    summary_en: >-
+      Open-air electronic night in Cologne's scrap-metal art compound —
+      sculptures, fire and a friendly mixed crowd.
+    tip_en: Cash for the door; the crowd is international and easy to talk to.
+    category: party
+    language: none_needed
+    chips: [solo-OK]
+    price_text: "€10–15"
+    is_free: false
+    relevance: 0.65
+    source_url: https://www.odonien.de/
+    venue:
+      name: Odonien
+      address: Hornstraße 85, Neuehrenfeld
+      lat: 50.9582
+      lng: 6.9293
+    schedule:
+      weekday: SA
+      time: "22:00"
+      duration_min: 360

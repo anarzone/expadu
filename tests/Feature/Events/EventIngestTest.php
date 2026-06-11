@@ -1,0 +1,141 @@
+<?php
+
+use App\Jobs\ProcessEventJob;
+use App\Models\Event;
+use App\Models\Spot;
+use App\Models\Venue;
+use App\Services\ClassifiesEvents;
+use Illuminate\Support\Facades\DB;
+
+function fakeClassifier(array $result): object
+{
+    $fake = new class implements ClassifiesEvents
+    {
+        public array $result = [];
+
+        public int $calls = 0;
+
+        public function classify(Event $event): array
+        {
+            $this->calls++;
+
+            if (($this->result['__throw'] ?? false) === true) {
+                throw new RuntimeException('Malformed classifier output');
+            }
+
+            return $this->result;
+        }
+    };
+    $fake->result = $result;
+    app()->instance(ClassifiesEvents::class, $fake);
+
+    return $fake;
+}
+
+function classification(array $overrides = []): array
+{
+    return array_merge([
+        'relevance' => 0.9,
+        'confidence' => 0.95,
+        'category' => 'language_exchange',
+        'language' => 'mixed',
+        'chips' => ['English-friendly', 'free'],
+        'title_en' => 'Language night',
+        'summary_en' => 'Our own short words. Two sentences max.',
+        'tip_en' => 'Come early.',
+    ], $overrides);
+}
+
+test('a confident classification stores every AI field once', function () {
+    fakeClassifier(classification());
+    $event = Event::factory()->create(['summary_en' => null, 'location_name' => null]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    $event->refresh();
+    expect($event->title_en)->toBe('Language night');
+    expect($event->summary_en)->toBe('Our own short words. Two sentences max.');
+    expect($event->category)->toBe('language_exchange');
+    expect($event->language)->toBe('mixed');
+    expect($event->chips)->toBe(['English-friendly', 'free']);
+    expect($event->relevance)->toBe(0.9);
+    expect($event->needs_review)->toBeFalse();
+});
+
+test('low confidence drops the chips and flags review', function () {
+    fakeClassifier(classification(['confidence' => 0.5, 'chips' => ['English-friendly']]));
+    $event = Event::factory()->create(['summary_en' => null, 'location_name' => null]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    $event->refresh();
+    expect($event->needs_review)->toBeTrue();
+    expect($event->chips)->toBe([]); // unsure chip dropped, never guessed
+    expect($event->summary_en)->not->toBeNull(); // translation still kept
+});
+
+test('an already-classified event is skipped (idempotent)', function () {
+    $fake = fakeClassifier(classification());
+    $event = Event::factory()->create(['summary_en' => 'done already']);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect($fake->calls)->toBe(0);
+});
+
+test('terminal classification failure flags needs_review', function () {
+    fakeClassifier(classification(['__throw' => true]));
+    $event = Event::factory()->create(['summary_en' => null]);
+
+    $job = new ProcessEventJob($event);
+
+    expect(fn () => $job->handle(app(ClassifiesEvents::class)))->toThrow(RuntimeException::class);
+
+    // queue retries; after the final attempt failed() runs:
+    $job->failed(new RuntimeException('Malformed classifier output'));
+    expect($event->refresh()->needs_review)->toBeTrue();
+});
+
+test('venue resolution links a place within 50m', function () {
+    fakeClassifier(classification());
+    $place = Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'veedel' => 'Neustadt-Nord', 'lat' => 50.9421, 'lng' => 6.9358]);
+
+    $event = Event::factory()->create([
+        'summary_en' => null,
+        'location_name' => 'Stadtgarten Biergarten',
+        'address' => 'Venloer Str. 40',
+    ]);
+    DB::statement('UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?', [6.93582, 50.94212, $event->id]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    $venue = $event->refresh()->venue;
+    expect($venue)->not->toBeNull();
+    expect($venue->place_id)->toBe($place->id);
+    expect($venue->veedel)->toBe('Neustadt-Nord');
+});
+
+test('the same scraped event processed twice stays one record', function () {
+    fakeClassifier(classification());
+    $event = Event::factory()->create(['summary_en' => null, 'location_name' => 'Café X', 'source' => 'koeln.de', 'source_uid' => '42']);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect(Event::where('source', 'koeln.de')->where('source_uid', '42')->count())->toBe(1);
+    expect(Venue::where('name', 'Café X')->count())->toBe(1);
+});
+
+test('events:import-manual upserts the curated catalogue with recurring rules', function () {
+    $this->artisan('events:import-manual')->assertSuccessful();
+    $this->artisan('events:import-manual')->assertSuccessful(); // idempotent
+
+    $exchange = Event::where('source', 'manual')->where('source_uid', 'cologne-language-exchange')->first();
+    expect($exchange)->not->toBeNull();
+    expect(Event::where('source', 'manual')->count())->toBe(10);
+    expect($exchange->recurrence)->toBe('FREQ=WEEKLY;BYDAY=TH');
+    expect($exchange->verified_at)->not->toBeNull();
+    expect($exchange->relevance)->toBe(1.0);
+    expect($exchange->venue->name)->toBe('Gilden im Zims');
+    expect(Event::where('source', 'manual')->whereNotNull('recurrence')->count())->toBeGreaterThanOrEqual(2);
+});

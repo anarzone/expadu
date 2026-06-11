@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\TranslateEvent;
+use App\Jobs\ProcessEventJob;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -27,10 +27,9 @@ class ScrapeEvents extends Command
 
         $created = 0;
 
-        $recurringCount = $this->createRecurringEvents($systemUser->id);
-        $created += $recurringCount;
-        $this->info("Recurring events: {$recurringCount} created");
-
+        // Recurring community events live in the manual source now
+        // (events:import-manual) as single RRULE records — the old
+        // per-week duplicate templates are gone.
         $koelnCount = $this->scrapeKoelnDe($systemUser->id);
         $created += $koelnCount;
         $this->info("koeln.de events: {$koelnCount} created");
@@ -70,6 +69,13 @@ class ScrapeEvents extends Command
 
                 $startsAt = Carbon::parse($ev['start_date'] ?? now());
                 if ($startsAt->isPast()) {
+                    continue;
+                }
+
+                // Dedupe on the source's own id when it has one; fall
+                // back to title+date for sources without stable ids.
+                $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
+                if ($sourceUid && Event::where('source', 'koeln.de')->where('source_uid', $sourceUid)->exists()) {
                     continue;
                 }
 
@@ -118,12 +124,13 @@ class ScrapeEvents extends Command
                     'price_text' => $priceText,
                     'source' => 'koeln.de',
                     'source_url' => $sourceUrl,
+                    'source_uid' => $sourceUid,
                     'tags' => $sourceTags ?: null,
                     'organiser_id' => $organiserId,
                     'quality_score' => $qualityScore,
                 ]);
 
-                TranslateEvent::dispatch($event);
+                ProcessEventJob::dispatch($event);
 
                 $created++;
             }
@@ -289,52 +296,5 @@ class ScrapeEvents extends Command
             'social' => '🌍',
             default => '📅',
         };
-    }
-
-    /**
-     * Create known recurring expat community events for the next 4 weeks.
-     */
-    protected function createRecurringEvents(int $organiserId): int
-    {
-        $templates = [
-            ['title' => 'Language Exchange Night', 'emoji' => '🗣️', 'category' => 'language', 'description' => 'Weekly language exchange at Café Schmitz. All levels welcome.', 'location_name' => 'Café Schmitz', 'address' => 'Venloer Str. 236, Ehrenfeld', 'day_of_week' => 3, 'hour' => 19, 'duration_hours' => 2, 'is_free' => true, 'max_attendees' => 30],
-            ['title' => 'Expat Stammtisch Cologne', 'emoji' => '🍺', 'category' => 'social', 'description' => 'Monthly gathering for internationals. Meet new people, share tips, drink Kölsch.', 'location_name' => 'Brauhaus Früh', 'address' => 'Am Hof 12-18, Altstadt', 'day_of_week' => 5, 'hour' => 19, 'duration_hours' => 3, 'is_free' => true, 'max_attendees' => 50],
-            ['title' => 'Morning Yoga in Volksgarten', 'emoji' => '🧘', 'category' => 'sports', 'description' => 'Free outdoor yoga every Saturday morning. Bring your own mat.', 'location_name' => 'Volksgarten', 'address' => 'Volksgartenstr., Südstadt', 'day_of_week' => 6, 'hour' => 8, 'duration_hours' => 1, 'is_free' => true, 'max_attendees' => 25],
-            ['title' => 'Expat Running Club — Rheinufer', 'emoji' => '🏃', 'category' => 'sports', 'description' => 'Weekly Saturday run along the Rhine. All paces welcome.', 'location_name' => 'Rheinufer, Deutz Bridge', 'address' => 'Deutzer Brücke, Deutz', 'day_of_week' => 6, 'hour' => 9, 'duration_hours' => 1, 'is_free' => true, 'max_attendees' => 40],
-            ['title' => 'German Practice Group', 'emoji' => '📚', 'category' => 'language', 'description' => 'Practice conversational German. A1-B2 levels. Native speakers help.', 'location_name' => 'StadtBibliothek Köln', 'address' => 'Josef-Haubrich-Hof 1, Neustadt-Süd', 'day_of_week' => 1, 'hour' => 18, 'duration_hours' => 1.5, 'is_free' => true, 'max_attendees' => 15],
-        ];
-
-        $created = 0;
-
-        foreach ($templates as $t) {
-            for ($week = 0; $week < 4; $week++) {
-                $date = now()->copy()->next((int) $t['day_of_week'])->addWeeks($week);
-                $startsAt = $date->copy()->setTime($t['hour'], 0);
-
-                if (Event::where('title', $t['title'])->whereDate('starts_at', $startsAt->toDateString())->exists()) {
-                    continue;
-                }
-
-                Event::create([
-                    'title' => $t['title'],
-                    'emoji' => $t['emoji'],
-                    'category' => $t['category'],
-                    'description' => $t['description'],
-                    'starts_at' => $startsAt,
-                    'ends_at' => $startsAt->copy()->addHours($t['duration_hours']),
-                    'location_name' => $t['location_name'],
-                    'address' => $t['address'],
-                    'is_free' => $t['is_free'],
-                    'price_text' => 'Free',
-                    'max_attendees' => $t['max_attendees'],
-                    'organiser_id' => $organiserId,
-                    'quality_score' => 0.7,
-                ]);
-
-                $created++;
-            }
-        }
-
-        return $created;
     }
 }
