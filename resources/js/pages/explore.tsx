@@ -81,6 +81,7 @@ export default function Explore() {
     const {
         spots: spotsRaw,
         filters,
+        veedelOptions,
         personalPlaces,
         userLocation,
     } = usePage<{

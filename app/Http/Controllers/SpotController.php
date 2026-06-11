@@ -11,7 +11,18 @@ use Inertia\Response;
 
 class SpotController extends Controller
 {
-    public function index(Request $request, ProfileEngine $profiles): Response
+    /**
+     * Places is an empty placeholder for now — it will be redesigned as a
+     * curated, list-first discovery feed alongside Events. The v1
+     * maps-clone logic is preserved in legacyIndex() (unrouted) and
+     * explore.tsx for that redesign.
+     */
+    public function index(): Response
+    {
+        return Inertia::render('places');
+    }
+
+    public function legacyIndex(Request $request, ProfileEngine $profiles): Response
     {
         $userLat = $request->query('lat');
         $userLng = $request->query('lng');
