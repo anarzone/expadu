@@ -27,3 +27,18 @@ export type VeedelOption = {
     count: number;
     photo_url: string | null;
 };
+
+export type NearbyPlace = {
+    id: number;
+    name: string;
+    category: string;
+    emoji: string;
+    walk_min: number;
+    lat: number;
+    lng: number;
+};
+
+export type PlaceContext = {
+    now: { text: string; tone: 'good' | 'bad' } | null;
+    nearby: NearbyPlace[];
+};

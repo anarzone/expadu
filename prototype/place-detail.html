@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expadu v2 — Place Detail (rich modal)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-h: #1540B8; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --success-s: #D4F0E6; --warn: #C47D0E; --warn-s: #FDF0D4;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 6px 24px rgba(24,23,15,.06);
+  --shadow-modal: 0 24px 80px rgba(24,23,15,.25);
+  --court: #FDEAD8; --court-ink: #C2520A;
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860;
+  --accent-soft: rgba(26,76,212,.2);
+  --success-s: rgba(10,124,82,.18); --warn-s: rgba(196,125,14,.16);
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+  --shadow-modal: 0 24px 80px rgba(0,0,0,.6);
+  --court: rgba(194,82,10,.18); --court-ink: #F0A368;
+}
+.dark .accent-text, .dark .tip, .dark .near-chip b { color: #8FAAF0; }
+.dark .now-line { color: #E8B05B; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Geist', system-ui, sans-serif;
+  background: var(--bg); color: var(--text-1);
+  transition: background .25s, color .25s;
+}
+.shell { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+
+.mode-toggle {
+  position: fixed; top: 14px; right: 14px; z-index: 90;
+  width: 38px; height: 38px; border-radius: 100px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 16px; cursor: pointer; box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+}
+.mode-toggle:hover { border-color: var(--accent); }
+
+.divider {
+  display: flex; align-items: center; gap: 12px; margin: 44px 0 20px;
+  font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .14em; color: var(--text-3);
+}
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+/* ════ Stage: dimmed app behind the modal ════ */
+.stage {
+  position: relative; border-radius: var(--r-lg); overflow: hidden;
+  border: 1px solid var(--border); background: var(--bg); min-height: 860px;
+  display: flex; align-items: center; justify-content: center; padding: 28px 16px;
+}
+.stage-bg { position: absolute; inset: 0; padding: 20px; filter: blur(3px); opacity: .5; pointer-events: none; }
+.fake-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; margin-bottom: 10px; }
+.fake-line { height: 11px; border-radius: 6px; background: var(--surface-2); margin-bottom: 9px; }
+.fake-line.short { width: 55%; margin-bottom: 0; }
+.dim { position: absolute; inset: 0; background: rgba(24,23,15,.32); }
+.dark .dim { background: rgba(0,0,0,.5); }
+
+/* ════ The modal ════ */
+.modal {
+  position: relative; z-index: 3; width: 100%; max-width: 440px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+.modal-close {
+  position: absolute; top: 12px; right: 12px; z-index: 5;
+  width: 30px; height: 30px; border-radius: 100px; border: none;
+  background: rgba(255,255,255,.85); color: #18170F;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(24,23,15,.18);
+}
+.dark .modal-close { background: rgba(20,19,13,.8); color: #F6F5F1; }
+
+/* Header illustration / photo area */
+.hero {
+  height: 112px; position: relative; overflow: hidden;
+  background: var(--court); color: var(--court-ink);
+  display: flex; align-items: center; justify-content: center;
+}
+.hero .echo { position: absolute; font-size: 84px; opacity: .14; }
+.hero .echo.a { right: -14px; bottom: -22px; transform: rotate(12deg); }
+.hero .echo.b { left: -8px; top: -18px; transform: rotate(-12deg); font-size: 56px; opacity: .1; }
+.hero .main { font-size: 38px; position: relative; }
+
+.head { padding: 16px 20px 0; display: flex; align-items: flex-start; gap: 10px; }
+.head .emoji { font-size: 24px; line-height: 1.25; }
+.head-name { font-family: 'Fraunces', serif; font-weight: 500; font-size: 20px; letter-spacing: -.01em; line-height: 1.2; }
+.head-meta { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+
+/* Mini-map snippet */
+.map-snip {
+  margin: 14px 20px 0; height: 110px; border-radius: var(--r-sm);
+  position: relative; overflow: hidden; border: 1px solid var(--border);
+  background:
+    linear-gradient(115deg, transparent 42%, rgba(26,76,212,.10) 42%, rgba(26,76,212,.10) 46%, transparent 46%),
+    linear-gradient(24deg, transparent 60%, rgba(10,124,82,.12) 60%),
+    linear-gradient(0deg, #EAF3EA, #F2F6EE);
+  cursor: pointer;
+}
+.dark .map-snip { background:
+    linear-gradient(115deg, transparent 42%, rgba(143,170,240,.14) 42%, rgba(143,170,240,.14) 46%, transparent 46%),
+    linear-gradient(24deg, transparent 60%, rgba(10,124,82,.2) 60%),
+    linear-gradient(0deg, #1B221B, #1E261E);
+}
+.map-road { position: absolute; background: rgba(24,23,15,.08); }
+.dark .map-road { background: rgba(246,245,241,.08); }
+.map-road.h { left: 0; right: 0; height: 7px; top: 38%; transform: rotate(-3deg); }
+.map-road.v { top: -10px; bottom: -10px; width: 7px; left: 64%; transform: rotate(8deg); }
+.map-pin {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -90%);
+  font-size: 26px; filter: drop-shadow(0 3px 4px rgba(24,23,15,.3));
+}
+.map-hint {
+  position: absolute; right: 8px; bottom: 8px;
+  font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .08em;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-2); border-radius: 100px; padding: 4px 9px;
+}
+
+.body { padding: 14px 20px 20px; }
+
+/* "Right now" context line — the Context Engine speaking */
+.now-line {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--warn-s); color: var(--warn);
+  border-radius: var(--r-sm); padding: 9px 13px;
+  font-size: 13px; font-weight: 500; margin-bottom: 12px;
+}
+
+/* Practical lines */
+.line { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-2); padding: 5px 0; }
+.line .ic { width: 18px; text-align: center; flex-shrink: 0; font-size: 14px; }
+.line b { color: var(--text-1); font-weight: 600; }
+
+.tip {
+  display: flex; gap: 7px; margin: 10px 0 0; padding: 9px 13px;
+  border-radius: var(--r-sm); background: var(--accent-soft);
+  font-size: 13px; font-weight: 500; color: var(--accent); line-height: 1.45;
+}
+
+/* Facts strip */
+.facts { display: flex; gap: 8px; margin-top: 14px; }
+.fact { flex: 1; background: var(--surface-2); border-radius: var(--r-sm); padding: 9px 10px; text-align: center; }
+.fact-val { font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 500; }
+.fact-lbl { font-family: 'Geist Mono', monospace; font-size: 9.5px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin-top: 2px; }
+
+/* Cluster note */
+.cluster { font-size: 12.5px; color: var(--text-2); margin-top: 12px; }
+.cluster b { color: var(--text-1); }
+
+/* Also around here */
+.near-title {
+  font-family: 'Geist Mono', monospace; font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .1em; color: var(--text-3);
+  margin: 16px 0 8px;
+}
+.near-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.near-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border); background: var(--surface);
+  border-radius: 100px; padding: 6px 12px 6px 9px;
+  font-size: 12.5px; font-weight: 500; color: var(--text-2); cursor: pointer;
+  transition: border-color .15s;
+}
+.near-chip:hover { border-color: var(--accent); }
+.near-chip b { color: var(--text-1); font-weight: 600; }
+.near-chip small { color: var(--text-3); font-family: 'Geist Mono', monospace; font-size: 10.5px; }
+
+/* Action — 48px+ touch target (Material/HIG floor for a primary CTA) */
+.cta {
+  display: block; width: 100%; margin-top: 18px;
+  background: var(--accent); color: #fff; border: none; cursor: pointer;
+  border-radius: var(--r-sm); min-height: 48px; padding: 13px 16px; text-align: center;
+  font-family: 'Geist', sans-serif; font-size: 15px; font-weight: 600;
+  transition: background .2s;
+}
+.cta:hover { background: var(--accent-h); }
+
+/* ════ Variant cards (outside the stage) ════ */
+.variant-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px;
+}
+.variant-label {
+  font-family: 'Geist Mono', monospace; font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: 14px;
+}
+.note { font-size: 13px; color: var(--text-2); line-height: 1.55; max-width: 640px; }
+.note b { color: var(--text-1); }
+
+/* Mobile sheet variant framing */
+.phone {
+  width: 320px; border: 1px solid var(--border); border-radius: 24px;
+  overflow: hidden; background: var(--bg); position: relative; min-height: 560px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.sheet {
+  background: var(--surface); border-top: 1px solid var(--border);
+  border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -8px 40px rgba(24,23,15,.18);
+  max-height: 520px; overflow: hidden;
+}
+.drag { width: 40px; height: 4px; border-radius: 100px; background: var(--border); margin: 10px auto 2px; }
+</style>
+</head>
+<body>
+
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';">🌙</button>
+
+<div class="shell">
+
+  <!-- ════ MAIN: rich detail modal over dimmed Places page (desktop) ════ -->
+  <div class="stage">
+    <div class="stage-bg">
+      <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+      <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+      <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+      <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+      <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+    </div>
+    <div class="dim"></div>
+
+    <div class="modal">
+      <button class="modal-close">✕</button>
+
+      <!-- hero: photo when available, category illustration otherwise -->
+      <div class="hero">
+        <span class="echo a">🏀</span>
+        <span class="echo b">🏀</span>
+        <span class="main">🏀</span>
+      </div>
+
+      <div class="head">
+        <div style="min-width:0;">
+          <div class="head-name">Grüngürtel basketball court</div>
+          <div class="head-meta">Basketball court · Ehrenfeld · 8 min away</div>
+        </div>
+      </div>
+
+      <!-- mini-map: exactly where it is; tap = full map / take-me-there -->
+      <div class="map-snip">
+        <div class="map-road h"></div>
+        <div class="map-road v"></div>
+        <span class="map-pin">📍</span>
+        <span class="map-hint">tap to navigate</span>
+      </div>
+
+      <div class="body">
+        <!-- the Context Engine line: why now is (or isn't) a good time -->
+        <div class="now-line">☀️ 22° and dry — a great court afternoon</div>
+
+        <div class="line"><span class="ic">🕐</span><span>Open <b>24 h</b> · floodlights until <b>22:00</b></span></div>
+        <div class="line"><span class="ic">🚊</span><span>Line <b>5</b> to Lenauplatz, then 3 min walk</span></div>
+        <div class="line"><span class="ic">🎫</span><span>Free · public access</span></div>
+
+        <div class="tip">💡 Quiet before 17:00 — locals fill it up after work.</div>
+
+        <div class="facts">
+          <div class="fact"><div class="fact-val">2</div><div class="fact-lbl">hoops</div></div>
+          <div class="fact"><div class="fact-val">Tarmac</div><div class="fact-lbl">surface</div></div>
+          <div class="fact"><div class="fact-val">Yes</div><div class="fact-lbl">floodlit</div></div>
+        </div>
+
+        <div class="cluster">🏀 <b>×3 courts</b> at this spot — pick any free one.</div>
+
+        <div class="near-title">Also around here · 300 m</div>
+        <div class="near-row">
+          <span class="near-chip">🛝 <b>Spielplatz</b> <small>1′</small></span>
+          <span class="near-chip">⚽ <b>Bolzplatz</b> <small>2′</small></span>
+          <span class="near-chip">🌳 <b>Grüngürtel lawn</b> <small>2′</small></span>
+        </div>
+
+        <button class="cta">→ Take me there</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ Sparse-data variant ════ -->
+  <div class="divider">— sparse-data variant (most OSM rows) —</div>
+
+  <div class="variant-card" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+    <div class="modal" style="max-width:400px; box-shadow: var(--shadow);">
+      <div class="hero" style="height:88px; background: var(--accent-soft); color: var(--accent);">
+        <span class="echo a">🏓</span><span class="main" style="font-size:32px;">🏓</span>
+      </div>
+      <div class="head">
+        <div>
+          <div class="head-name" style="font-size:18px;">Tischtennisplatte</div>
+          <div class="head-meta">Table tennis · Neuehrenfeld · 12 min away</div>
+        </div>
+      </div>
+      <div class="map-snip" style="height:96px;">
+        <div class="map-road h"></div><span class="map-pin">📍</span>
+        <span class="map-hint">tap to navigate</span>
+      </div>
+      <div class="body">
+        <div class="line"><span class="ic">🕐</span><span><b>Open access</b> — outdoor, always available</span></div>
+        <div class="line"><span class="ic">🚊</span><span>Nearest stop: <b>Lenauplatz</b> (~4 min walk)</span></div>
+        <div class="tip">💡 Bring your own ball and net — public tables rarely have them.</div>
+        <div class="near-title">Also around here · 300 m</div>
+        <div class="near-row">
+          <span class="near-chip">🌳 <b>Blücherpark</b> <small>3′</small></span>
+        </div>
+        <button class="cta">→ Take me there</button>
+      </div>
+    </div>
+    <p class="note" style="flex:1; min-width:240px;">
+      <b>Rule: rows collapse, never show empty.</b> No facts → no facts strip. No cluster →
+      no cluster line. No weather relevance (indoor pool) → no "right now" line.
+      The sparse modal still answers the three core questions:
+      <b>where exactly</b> (map), <b>can I go now</b> (hours line),
+      <b>how do I get there</b> (transit + CTA). The generic category tip fills
+      the personality slot only here in the detail — never on the list card.
+    </p>
+  </div>
+
+  <!-- ════ Mobile: same content as a bottom sheet ════ -->
+  <div class="divider">— mobile: same blocks, bottom sheet —</div>
+
+  <div class="variant-card" style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+    <div class="phone">
+      <div class="stage-bg" style="position:absolute;">
+        <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+        <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+        <div class="fake-tile"><div class="fake-line"></div><div class="fake-line short"></div></div>
+      </div>
+      <div class="dim"></div>
+      <div class="sheet" style="position:relative; z-index:2;">
+        <div class="drag"></div>
+        <div class="head" style="padding-top:8px;">
+          <div>
+            <div class="head-name" style="font-size:18px;">Grüngürtel basketball court</div>
+            <div class="head-meta">Basketball court · Ehrenfeld · 8 min away</div>
+          </div>
+        </div>
+        <div class="map-snip" style="height:84px; margin:12px 16px 0;">
+          <div class="map-road h"></div><span class="map-pin">📍</span>
+        </div>
+        <div class="body" style="padding:12px 16px 16px;">
+          <div class="now-line" style="margin-bottom:10px;">☀️ 22° and dry — a great court afternoon</div>
+          <div class="line"><span class="ic">🕐</span><span>Open <b>24 h</b> · floodlit until <b>22:00</b></span></div>
+          <div class="line"><span class="ic">🚊</span><span>Line <b>5</b> to Lenauplatz, 3 min walk</span></div>
+          <div class="facts" style="margin-top:10px;">
+            <div class="fact"><div class="fact-val">2</div><div class="fact-lbl">hoops</div></div>
+            <div class="fact"><div class="fact-val">Tarmac</div><div class="fact-lbl">surface</div></div>
+          </div>
+          <button class="cta" style="margin-top:14px; margin-bottom: env(safe-area-inset-bottom);">→ Take me there</button>
+        </div>
+      </div>
+    </div>
+    <p class="note" style="flex:1; min-width:240px;">
+      On mobile the card's inline accordion stays as the <b>quick glance</b>
+      (hours + transit + tip, as today). A new <b>"Details" affordance</b> on the
+      expanded card opens this full sheet with map, facts, and nearby chips.
+      So: tap card = glance, tap Details = everything, tap Take me there = go.
+      <br><br>
+      <b>Composer reuse:</b> tapping a slot in a composed day plan opens this
+      exact same detail (modal on desktop / sheet on mobile) — the "right now"
+      line doubles as the composer's <i>why this pick</i> explanation.
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>

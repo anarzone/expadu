@@ -4,6 +4,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\LocationConfirmController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
+use App\Http\Controllers\Api\PlaceContextController;
 use App\Http\Controllers\Api\PlacesController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\SpotSearchController;
@@ -76,6 +77,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/stops', StopSearchController::class)->name('api.stops');
         Route::get('api/spots', SpotSearchController::class)->name('api.spots');
         Route::get('api/places', PlacesController::class)->name('api.places');
+        Route::get('api/places/{spot}/context', PlaceContextController::class)->name('api.places.context');
         Route::post('api/track', TrackEventController::class)->name('api.track');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');

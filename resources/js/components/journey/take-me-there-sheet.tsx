@@ -364,7 +364,10 @@ export function TakeMeThereSheet({
                 }
             }}
         >
-            <DialogContent className="gap-0 p-0 sm:max-w-md">
+            <DialogContent
+                aria-describedby={undefined}
+                className="gap-0 p-0 sm:max-w-md"
+            >
                 <DialogTitle className="sr-only">
                     {destination.name}
                 </DialogTitle>

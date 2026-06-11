@@ -89,6 +89,14 @@ class PlaceResource extends JsonResource
 
     private function resolveHoursText(string $coarse): ?string
     {
+        $tags = is_array($this->tags) ? $this->tags : [];
+
+        // A real OSM opening_hours string beats the category default
+        // (matters for pools and fenced facilities).
+        if (! empty($tags['opening_hours']) && $tags['opening_hours'] !== '24/7') {
+            return (string) $tags['opening_hours'];
+        }
+
         if (in_array($coarse, self::FREE_OUTDOOR, true)) {
             return 'Open access';
         }
@@ -111,7 +119,7 @@ class PlaceResource extends JsonResource
     }
 
     /**
-     * Feature chips from OSM tags where present (most seeded rows have none).
+     * Feature chips from OSM tags where present.
      *
      * @return list<string>
      */
@@ -120,18 +128,28 @@ class PlaceResource extends JsonResource
         $tags = is_array($this->tags) ? $this->tags : [];
         $chips = [];
 
-        if (in_array('floodlit', $tags, true) || ($tags['lit'] ?? null) === 'yes') {
+        if (($tags['lit'] ?? null) === 'yes') {
             $chips[] = 'floodlit';
         }
-        if (($tags['covered'] ?? null) === 'yes' || in_array('indoor', $tags, true)) {
+        if (($tags['covered'] ?? null) === 'yes' || ($tags['indoor'] ?? null) === 'yes') {
             $chips[] = 'indoor';
+        }
+        if (($tags['barrier'] ?? null) === 'fence') {
+            $chips[] = 'fenced';
+        }
+        if (($tags['drinking_water'] ?? null) === 'yes') {
+            $chips[] = 'water nearby';
+        }
+        if (($tags['wheelchair'] ?? null) === 'yes') {
+            $chips[] = 'wheelchair ok';
         }
 
         return array_slice($chips, 0, 2);
     }
 
     /**
-     * Fact tiles from OSM tags where present.
+     * Fact tiles from OSM tags where present — yes/no tags become
+     * Yes/No values, counts and free text pass through.
      *
      * @return list<array{label: string, value: string}>
      */
@@ -140,10 +158,29 @@ class PlaceResource extends JsonResource
         $tags = is_array($this->tags) ? $this->tags : [];
         $facts = [];
 
-        foreach (['surface' => 'surface', 'lit' => 'floodlights'] as $tag => $label) {
-            if (! empty($tags[$tag])) {
-                $facts[] = ['label' => $label, 'value' => ucfirst((string) $tags[$tag])];
+        $map = [
+            'hoops' => 'hoops',
+            'surface' => 'surface',
+            'lit' => 'floodlit',
+            'covered' => 'covered',
+            'wheelchair' => 'wheelchair',
+            'drinking_water' => 'water nearby',
+        ];
+
+        foreach ($map as $tag => $label) {
+            $value = $tags[$tag] ?? null;
+            if ($value === null || $value === '') {
+                continue;
             }
+
+            $facts[] = [
+                'label' => $label,
+                'value' => match ($value) {
+                    'yes' => 'Yes',
+                    'no' => 'No',
+                    default => ucfirst((string) $value),
+                },
+            ];
         }
 
         return array_slice($facts, 0, 3);

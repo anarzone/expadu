@@ -10,7 +10,9 @@ import {
 import { ContentCard } from '@/components/places/content-card';
 import type { CardChip } from '@/components/places/content-card';
 import { PlaceDetail } from '@/components/places/place-detail';
+import { PlaceRichDetail } from '@/components/places/place-rich-detail';
 import type { Place, VeedelOption } from '@/components/places/types';
+import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -96,6 +98,7 @@ export default function Places() {
 
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [detail, setDetail] = useState<Place | null>(null);
+    const [richPlace, setRichPlace] = useState<Place | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
 
     const isMobile = useIsMobile();
@@ -462,6 +465,15 @@ export default function Places() {
                                     {isMobile ? (
                                         <div className="border-t border-border px-4 py-4">
                                             <PlaceDetail place={place} />
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setRichPlace(place);
+                                                }}
+                                                className="mt-3 block min-h-11 w-full rounded-[9px] border border-border py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:border-primary"
+                                            >
+                                                Details — map, facts & nearby
+                                            </button>
                                         </div>
                                     ) : undefined}
                                 </ContentCard>
@@ -492,43 +504,56 @@ export default function Places() {
                 onOpenChange={(open) => !open && setDetail(null)}
             >
                 {detail && (
-                    <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+                    <DialogContent
+                        aria-describedby={undefined}
+                        className="gap-0 overflow-hidden p-0 sm:max-w-md"
+                    >
                         <DialogTitle className="sr-only">
                             {detail.name}
                         </DialogTitle>
-                        <CategoryIllustration
-                            coarse={detail.category}
-                            className="h-32 w-full"
-                            iconSize={40}
-                        />
-                        <div className="p-5">
-                            <div className="mb-3 flex items-start gap-2">
-                                <span className="text-2xl leading-none">
-                                    {placeEmoji(detail)}
-                                </span>
-                                <div className="min-w-0">
-                                    <h2 className="font-display text-xl font-medium">
-                                        {detail.name}
-                                    </h2>
-                                    <div className="text-[13px] text-muted-foreground">
-                                        {placeMeta(detail)}
-                                    </div>
-                                </div>
-                            </div>
-                            <PlaceDetail place={detail} />
-                            <button
-                                onClick={() => {
-                                    takeMeThere(detail);
+                        {detail.photo_url ? (
+                            <img
+                                src={detail.photo_url}
+                                alt={detail.name}
+                                className="h-28 w-full object-cover"
+                            />
+                        ) : (
+                            <CategoryIllustration
+                                coarse={detail.category}
+                                className="h-28 w-full"
+                                iconSize={38}
+                            />
+                        )}
+                        <div className="max-h-[72vh] overflow-y-auto p-5">
+                            <PlaceRichDetail
+                                place={detail}
+                                meta={placeMeta(detail)}
+                                onNavigate={(target) => {
                                     setDetail(null);
+                                    setDestination(target);
                                 }}
-                                className="mt-4 w-full rounded-[9px] bg-primary py-2.5 text-center text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
-                            >
-                                → Take me there
-                            </button>
+                            />
                         </div>
                     </DialogContent>
                 )}
             </Dialog>
+
+            {/* Mobile full detail — bottom sheet over the list */}
+            {isMobile && richPlace && (
+                <BottomSheet open onClose={() => setRichPlace(null)}>
+                    {/* Bottom padding clears the floating mobile dock */}
+                    <div className="pb-24">
+                        <PlaceRichDetail
+                            place={richPlace}
+                            meta={placeMeta(richPlace)}
+                            onNavigate={(target) => {
+                                setRichPlace(null);
+                                setDestination(target);
+                            }}
+                        />
+                    </div>
+                </BottomSheet>
+            )}
 
             {destination && (
                 <TakeMeThereSheet

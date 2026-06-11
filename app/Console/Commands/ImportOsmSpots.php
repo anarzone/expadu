@@ -49,27 +49,44 @@ class ImportOsmSpots extends Command
             'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
         ];
 
+        // Mirrors in preference order — the big city-wide leisure queries
+        // get rate-limited on a single endpoint, so fall through on failure.
+        $mirrors = [
+            'https://overpass.kumi.systems/api/interpreter',
+            'https://overpass-api.de/api/interpreter',
+        ];
+
         $allElements = [];
         foreach ($queries as $category => $query) {
             $this->info("  Fetching {$category}...");
-            try {
-                $response = Http::timeout(90)
-                    ->get('https://overpass.kumi.systems/api/interpreter', ['data' => $query]);
+            $fetched = false;
 
-                if ($response->successful()) {
-                    $elements = $response->json('elements', []);
-                    foreach ($elements as &$el) {
-                        $el['_category'] = $category;
+            foreach ($mirrors as $mirror) {
+                try {
+                    $response = Http::timeout(90)->get($mirror, ['data' => $query]);
+
+                    if ($response->successful()) {
+                        $elements = $response->json('elements', []);
+                        foreach ($elements as &$el) {
+                            $el['_category'] = $category;
+                        }
+                        $allElements = array_merge($allElements, $elements);
+                        $this->info('    Found '.count($elements)." {$category} spots");
+                        $fetched = true;
+                        break;
                     }
-                    $allElements = array_merge($allElements, $elements);
-                    $this->info('    Found '.count($elements)." {$category} spots");
-                } else {
-                    $this->warn("    {$category} query failed: status {$response->status()}");
+
+                    $this->warn("    {$category} via {$mirror}: status {$response->status()}");
+                } catch (\Exception $e) {
+                    $this->warn("    {$category} via {$mirror}: {$e->getMessage()}");
                 }
-                sleep(2); // Rate limit courtesy
-            } catch (\Exception $e) {
-                $this->warn("    {$category} query error: {$e->getMessage()}");
             }
+
+            if (! $fetched) {
+                $this->warn("    {$category}: all mirrors failed, skipping");
+            }
+
+            sleep(2); // Rate limit courtesy
         }
 
         if (empty($allElements)) {
@@ -145,14 +162,20 @@ class ImportOsmSpots extends Command
                 continue;
             }
 
-            // Check for duplicates: same name within ~50m
+            $keptTags = $this->keptTags($tags);
+
+            // Check for duplicates: same name within ~50m. Existing rows
+            // still get their tags backfilled — earlier imports dropped them.
             $duplicate = Spot::where('name', $name)
                 ->whereNotNull('lat')
                 ->whereNotNull('lng')
                 ->whereRaw('ABS(lat - ?) < 0.0005 AND ABS(lng - ?) < 0.0005', [$lat, $lng])
-                ->exists();
+                ->first();
 
             if ($duplicate) {
+                if ($keptTags !== [] && empty($duplicate->tags)) {
+                    $duplicate->update(['tags' => $keptTags]);
+                }
                 $skippedDuplicate++;
 
                 continue;
@@ -167,6 +190,7 @@ class ImportOsmSpots extends Command
                 'address' => $address,
                 'lat' => $lat,
                 'lng' => $lng,
+                'tags' => $keptTags ?: null,
                 'wifi_speed' => null,
                 'noise_level' => null,
                 'rating' => null,
@@ -190,6 +214,21 @@ class ImportOsmSpots extends Command
         $this->info("  Skipped (duplicate): {$skippedDuplicate}");
 
         return self::SUCCESS;
+    }
+
+    /** OSM tags worth keeping — they feed the place detail's facts/chips. */
+    private const KEPT_TAG_KEYS = [
+        'surface', 'lit', 'covered', 'indoor', 'access', 'fee', 'opening_hours',
+        'sport', 'hoops', 'wheelchair', 'drinking_water', 'barrier',
+    ];
+
+    /**
+     * @param  array<string, string>  $tags
+     * @return array<string, string>
+     */
+    protected function keptTags(array $tags): array
+    {
+        return array_intersect_key($tags, array_flip(self::KEPT_TAG_KEYS));
     }
 
     /**

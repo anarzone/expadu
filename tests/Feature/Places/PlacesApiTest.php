@@ -4,6 +4,7 @@ use App\Models\Spot;
 use App\Models\User;
 use App\Models\UserPlace;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     $this->user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld']);
@@ -133,6 +134,44 @@ test('collapses identically-named places within ~100m into one card', function (
 
     expect($response->json('meta.total'))->toBe(2);
     expect(collect($response->json('data'))->pluck('cluster_size')->sort()->values()->all())->toBe([1, 3]);
+});
+
+test('OSM tags surface as facts, chips and real opening hours', function () {
+    Spot::factory()->create([
+        'name' => 'Grüngürtel court',
+        'category' => 'basketball',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'tags' => ['hoops' => '2', 'surface' => 'asphalt', 'lit' => 'yes', 'opening_hours' => 'Mo-Su 08:00-22:00'],
+    ]);
+
+    $place = $this->getJson('/api/places')->json('data.0');
+
+    expect($place['feature_chips'])->toContain('floodlit');
+    expect($place['opening_hours_text'])->toBe('Mo-Su 08:00-22:00');
+    expect(collect($place['facts'])->pluck('label')->all())->toBe(['hoops', 'surface', 'floodlit']);
+    expect(collect($place['facts'])->firstWhere('label', 'hoops')['value'])->toBe('2');
+    expect(collect($place['facts'])->firstWhere('label', 'floodlit')['value'])->toBe('Yes');
+});
+
+test('place context lists nearby places, excluding same-name siblings', function () {
+    Http::fake();
+
+    $spot = Spot::factory()->create(['name' => 'Court', 'category' => 'basketball', 'lat' => 50.948, 'lng' => 6.921]);
+    // Same name nearby = cluster sibling, not "also around here"
+    Spot::factory()->create(['name' => 'Court', 'category' => 'basketball', 'lat' => 50.9481, 'lng' => 6.9211]);
+    // Different place ~80m away → listed with a walk time
+    Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'lat' => 50.9485, 'lng' => 6.9215]);
+    // Too far (>300m) → excluded
+    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.96, 'lng' => 6.95]);
+
+    $response = $this->getJson("/api/places/{$spot->id}/context");
+
+    $response->assertOk();
+    expect(collect($response->json('nearby'))->pluck('name')->all())->toBe(['Spielplatz']);
+    expect($response->json('nearby.0.walk_min'))->toBeGreaterThanOrEqual(1);
+    expect($response->json('nearby.0.emoji'))->toBe('🛝');
 });
 
 test('rejects an unknown coarse category', function () {
