@@ -27,14 +27,16 @@ class SpotController extends Controller
                 'veedel' => $request->query('veedel') ?? $homeVeedel ?? 'all',
                 'category' => $request->query('category'),
             ],
-            // Browse rail: each Veedel with at least one leisure place, the
-            // home Veedel pinned first. Deferred so the page shell paints fast.
+            // Browse rail: a short visual teaser (home Veedel + nearest).
+            // Deferred so the page shell paints fast.
             'veedels' => Inertia::defer(fn () => $this->veedelRail($homeVeedel)),
+            // Chips: the exhaustive list — every Veedel with places, A→Z.
+            'allVeedels' => Inertia::defer(fn () => $this->allVeedels()),
         ]);
     }
 
     /** How many Veedel cards the browse rail shows (home + nearest). */
-    private const RAIL_SIZE = 12;
+    private const RAIL_SIZE = 6;
 
     /**
      * Nearest-first so the rail reads as "your corner of Cologne", not an
@@ -72,6 +74,20 @@ class SpotController extends Controller
         }
 
         return $rail;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allVeedels(): array
+    {
+        return DB::table('spots')
+            ->whereNotNull('veedel')
+            ->whereIn('category', SpotCategory::placesFines())
+            ->distinct()
+            ->orderBy('veedel')
+            ->pluck('veedel')
+            ->all();
     }
 
     /**

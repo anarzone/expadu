@@ -65,10 +65,11 @@ function placeEmoji(place: Place): string {
 }
 
 export default function Places() {
-    const { homeVeedel, filters, veedels } = usePage<{
+    const { homeVeedel, filters, veedels, allVeedels } = usePage<{
         homeVeedel: string | null;
         filters: { veedel: string; category: string | null };
         veedels?: VeedelOption[];
+        allVeedels?: string[];
     }>().props;
 
     const [veedel, setVeedel] = useState(filters.veedel ?? 'all');
@@ -188,6 +189,15 @@ export default function Places() {
 
     const veedelLabel = veedel === 'all' ? 'All Cologne' : veedel;
     const railOptions = veedels ?? [];
+    const chipOptions = allVeedels ?? [];
+
+    // With ~80 chips, keep the active one visible when it's picked
+    // elsewhere (rail card, URL, back button).
+    useEffect(() => {
+        document
+            .querySelector(`[data-veedel-chip="${CSS.escape(veedel)}"]`)
+            ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }, [veedel, chipOptions.length]);
 
     const takeMeThereButton = (place: Place) => (
         <button
@@ -270,28 +280,27 @@ export default function Places() {
                     </div>
                 </Deferred>
 
-                {/* Veedel chips (synced with rail) */}
-                {railOptions.length > 0 && (
+                {/* Veedel chips — the exhaustive A→Z list (rail is the teaser) */}
+                {chipOptions.length > 0 && (
                     <div
                         className="mb-2 flex gap-2 overflow-x-auto pb-1"
                         style={{ scrollbarWidth: 'none' }}
                     >
-                        {[...railOptions.map((v) => v.name), 'all'].map(
-                            (name) => (
-                                <button
-                                    key={name}
-                                    onClick={() => setVeedel(name)}
-                                    aria-pressed={veedel === name}
-                                    className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
-                                        veedel === name
-                                            ? 'border-primary bg-primary text-white'
-                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
-                                    }`}
-                                >
-                                    {name === 'all' ? 'All Cologne' : name}
-                                </button>
-                            ),
-                        )}
+                        {['all', ...chipOptions].map((name) => (
+                            <button
+                                key={name}
+                                data-veedel-chip={name}
+                                onClick={() => setVeedel(name)}
+                                aria-pressed={veedel === name}
+                                className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                    veedel === name
+                                        ? 'border-primary bg-primary text-white'
+                                        : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                }`}
+                            >
+                                {name === 'all' ? 'All Cologne' : name}
+                            </button>
+                        ))}
                     </div>
                 )}
 
