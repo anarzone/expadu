@@ -29,4 +29,16 @@ final readonly class JourneyResult
             'degraded' => $this->degraded,
         ];
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            journeys: array_map(fn (array $j) => Journey::fromArray($j), $data['journeys'] ?? []),
+            source: (string) $data['source'],
+            degraded: $data['degraded'] ?? null,
+        );
+    }
 }

@@ -64,4 +64,56 @@ enum SpotCategory: string
             self::Bakery => '🥐',
         };
     }
+
+    /**
+     * The six coarse Places filter buckets the UI exposes. Indoor/legacy
+     * categories map to 'other' and are excluded from the Places page.
+     */
+    public function coarse(): string
+    {
+        return match ($this) {
+            self::Park, self::Viewpoint, self::Bbq => 'park',
+            self::Pitch => 'pitch',
+            self::Basketball, self::Tennis, self::TableTennis, self::Boules, self::Skatepark => 'court',
+            self::Swimming, self::Lake => 'swimming',
+            self::Playground => 'playground',
+            self::DogPark => 'dog_park',
+            default => 'other',
+        };
+    }
+
+    /**
+     * Fine category values that roll up into a coarse Places bucket.
+     *
+     * @return list<string>
+     */
+    public static function finesForCoarse(string $coarse): array
+    {
+        return array_values(array_map(
+            fn (self $c) => $c->value,
+            array_filter(self::cases(), fn (self $c) => $c->coarse() === $coarse),
+        ));
+    }
+
+    /** All fine category values that belong to the Places page (non-'other'). */
+    public static function placesFines(): array
+    {
+        return array_values(array_map(
+            fn (self $c) => $c->value,
+            array_filter(self::cases(), fn (self $c) => $c->coarse() !== 'other'),
+        ));
+    }
+
+    public static function coarseLabel(string $coarse): string
+    {
+        return match ($coarse) {
+            'park' => 'Parks',
+            'pitch' => 'Pitches',
+            'court' => 'Courts',
+            'swimming' => 'Swimming',
+            'playground' => 'Playgrounds',
+            'dog_park' => 'Dog parks',
+            default => ucfirst($coarse),
+        };
+    }
 }

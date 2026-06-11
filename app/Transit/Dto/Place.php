@@ -22,4 +22,16 @@ final readonly class Place
             'stop_id' => $this->stopId,
         ];
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            name: (string) ($data['name'] ?? ''),
+            point: new GeoPoint((float) $data['lat'], (float) $data['lng']),
+            stopId: $data['stop_id'] ?? null,
+        );
+    }
 }

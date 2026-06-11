@@ -44,4 +44,18 @@ final readonly class Journey
             'legs' => array_map(fn (Leg $leg) => $leg->toArray(), $this->legs),
         ];
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            legs: array_map(fn (array $l) => Leg::fromArray($l), $data['legs'] ?? []),
+            departAt: CarbonImmutable::parse($data['depart_at']),
+            arriveAt: CarbonImmutable::parse($data['arrive_at']),
+            durationMin: (int) $data['duration_min'],
+            transfers: (int) $data['transfers'],
+        );
+    }
 }

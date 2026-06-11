@@ -36,7 +36,9 @@ class FailoverRouteService implements RouteService
             $max,
         );
 
-        return Cache::remember($cacheKey, 60, function () use ($from, $to, $departAt, $max) {
+        // Cache the ARRAY form, never the DTO — Redis deserialises cached
+        // objects to __PHP_Incomplete_Class on a hit. Reconstruct on read.
+        $cached = Cache::remember($cacheKey, 60, function () use ($from, $to, $departAt, $max) {
             foreach (['transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
                 if ($this->breaker->isOpen($name)) {
                     continue;
@@ -46,22 +48,24 @@ class FailoverRouteService implements RouteService
                     $result = $adapter->plan($from, $to, $departAt, $max);
                     $this->breaker->recordSuccess($name);
 
-                    return $result;
+                    return $result->toArray();
                 } catch (\Throwable $e) {
                     $this->breaker->recordFailure($name);
                     Log::warning("transit adapter {$name} failed", ['error' => $e->getMessage()]);
                 }
             }
 
-            return $this->degraded($from, $to);
+            return $this->degraded($from, $to)->toArray();
         });
+
+        return JourneyResult::fromArray($cached);
     }
 
     public function geocode(string $query, ?GeoPoint $bias = null): array
     {
         $cacheKey = 'geocode:'.md5($query.($bias ? "{$bias->lat},{$bias->lng}" : ''));
 
-        return Cache::remember($cacheKey, 7 * 24 * 3600, function () use ($query, $bias) {
+        $cached = Cache::remember($cacheKey, 7 * 24 * 3600, function () use ($query, $bias) {
             if ($this->breaker->isOpen('transitous')) {
                 return [];
             }
@@ -70,7 +74,7 @@ class FailoverRouteService implements RouteService
                 $places = $this->transitous->geocode($query, $bias);
                 $this->breaker->recordSuccess('transitous');
 
-                return $places;
+                return array_map(fn (Place $p) => $p->toArray(), $places);
             } catch (\Throwable $e) {
                 $this->breaker->recordFailure('transitous');
                 Log::warning('transitous geocode failed', ['error' => $e->getMessage()]);
@@ -78,13 +82,15 @@ class FailoverRouteService implements RouteService
                 return [];
             }
         });
+
+        return array_map(fn (array $p) => Place::fromArray($p), $cached);
     }
 
     public function reverseGeocode(GeoPoint $point): ?Place
     {
         $cacheKey = sprintf('revgeo:%.4f,%.4f', $point->lat, $point->lng);
 
-        return Cache::remember($cacheKey, 24 * 3600, function () use ($point) {
+        $cached = Cache::remember($cacheKey, 24 * 3600, function () use ($point) {
             if ($this->breaker->isOpen('transitous')) {
                 return null;
             }
@@ -93,13 +99,15 @@ class FailoverRouteService implements RouteService
                 $place = $this->transitous->reverseGeocode($point);
                 $this->breaker->recordSuccess('transitous');
 
-                return $place;
+                return $place?->toArray();
             } catch (\Throwable $e) {
                 $this->breaker->recordFailure('transitous');
 
                 return null;
             }
         });
+
+        return is_array($cached) ? Place::fromArray($cached) : null;
     }
 
     /**

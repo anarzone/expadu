@@ -42,4 +42,22 @@ final readonly class Leg
             'polyline' => $this->polyline,
         ];
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            mode: (string) $data['mode'],
+            from: Place::fromArray($data['from']),
+            to: Place::fromArray($data['to']),
+            departAt: CarbonImmutable::parse($data['depart_at']),
+            arriveAt: CarbonImmutable::parse($data['arrive_at']),
+            durationMin: (int) $data['duration_min'],
+            lineName: $data['line'] ?? null,
+            headsign: $data['headsign'] ?? null,
+            polyline: $data['polyline'] ?? null,
+        );
+    }
 }

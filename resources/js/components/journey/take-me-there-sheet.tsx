@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type JourneyLeg = {
     mode: string;
@@ -99,6 +101,7 @@ export function TakeMeThereSheet({
 }) {
     const [data, setData] = useState<JourneyResponse | null>(null);
     const [error, setError] = useState(false);
+    const isMobile = useIsMobile();
 
     useEffect(() => {
         let cancelled = false;
@@ -128,132 +131,165 @@ export function TakeMeThereSheet({
 
     const journey = data?.journeys?.[0] ?? null;
 
-    return (
-        <BottomSheet open onClose={onClose}>
-            <div className="pb-4">
-                {/* Destination header */}
-                <div className="mb-4 flex items-center gap-3">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-2xl">
-                        {destination.emoji ?? '📍'}
-                    </div>
-                    <div className="min-w-0">
-                        <div className="font-display text-lg font-medium">
-                            {destination.name}
-                        </div>
-                        {destination.address && (
-                            <div className="truncate text-[13px] text-muted-foreground">
-                                {destination.address}
-                            </div>
-                        )}
-                    </div>
+    const body = (
+        <div className="pb-4">
+            {/* Destination header */}
+            <div className="mb-4 flex items-center gap-3">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-2xl">
+                    {destination.emoji ?? '📍'}
                 </div>
+                <div className="min-w-0">
+                    <div className="font-display text-lg font-medium">
+                        {destination.name}
+                    </div>
+                    {destination.address && (
+                        <div className="truncate text-[13px] text-muted-foreground">
+                            {destination.address}
+                        </div>
+                    )}
+                </div>
+            </div>
 
-                {/* Loading */}
-                {!data && !error && (
-                    <div className="flex flex-col gap-2.5">
-                        <div className="h-12 w-2/3 animate-pulse rounded-lg bg-secondary" />
-                        {[1, 2, 3].map((i) => (
-                            <div
-                                key={i}
-                                className="h-10 animate-pulse rounded-lg bg-secondary"
-                            />
+            {/* Loading */}
+            {!data && !error && (
+                <div className="flex flex-col gap-2.5">
+                    <div className="h-12 w-2/3 animate-pulse rounded-lg bg-secondary" />
+                    {[1, 2, 3].map((i) => (
+                        <div
+                            key={i}
+                            className="h-10 animate-pulse rounded-lg bg-secondary"
+                        />
+                    ))}
+                </div>
+            )}
+
+            {error && (
+                <div className="rounded-[9px] bg-danger-soft p-4 text-center text-sm text-danger">
+                    Could not load the journey. Try again in a moment.
+                </div>
+            )}
+
+            {/* Loaded, but no transit route (usually because it's close enough to walk) */}
+            {data && !error && !journey && data.source !== 'degraded' && (
+                <div className="rounded-[9px] bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
+                    🚶 It's close — easy to walk or cycle. No transit needed.
+                </div>
+            )}
+
+            {/* Live journey */}
+            {journey && (
+                <>
+                    <div className="mb-3">
+                        <div className="font-display text-xl font-medium">
+                            Leave by {journey.depart_time}
+                        </div>
+                        <div className="text-[13px] text-muted-foreground">
+                            arrive {journey.arrive_time} ·{' '}
+                            {journey.duration_min} min
+                            {journey.transfers > 0 &&
+                                ` · ${journey.transfers} transfer${journey.transfers > 1 ? 's' : ''}`}
+                        </div>
+                    </div>
+
+                    {data?.ticket && (
+                        <div
+                            className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-[13px] font-medium text-primary"
+                            title={data.ticket.reason}
+                        >
+                            🎫 {data.ticket.label}
+                        </div>
+                    )}
+
+                    {(data?.disruptions ?? []).length > 0 && (
+                        <div className="mb-3 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
+                            ⚠️ {data!.disruptions[0].title}
+                        </div>
+                    )}
+
+                    <div className="mb-1">
+                        {journey.legs.map((leg, i) => (
+                            <LegRow key={i} leg={leg} />
                         ))}
                     </div>
-                )}
+                </>
+            )}
 
-                {error && (
-                    <div className="rounded-[9px] bg-danger-soft p-4 text-center text-sm text-danger">
-                        Could not load the journey. Try again in a moment.
+            {/* Degraded: nearest-stop departures + deep links */}
+            {data?.source === 'degraded' && (
+                <div>
+                    <div className="mb-2 rounded-[9px] bg-secondary px-3 py-2.5 text-[13px] text-muted-foreground">
+                        Live routing is unavailable right now — here are
+                        departures near you.
                     </div>
-                )}
-
-                {/* Live journey */}
-                {journey && (
-                    <>
-                        <div className="mb-3">
-                            <div className="font-display text-xl font-medium">
-                                Leave by {journey.depart_time}
-                            </div>
-                            <div className="text-[13px] text-muted-foreground">
-                                arrive {journey.arrive_time} ·{' '}
-                                {journey.duration_min} min
-                                {journey.transfers > 0 &&
-                                    ` · ${journey.transfers} transfer${journey.transfers > 1 ? 's' : ''}`}
-                            </div>
-                        </div>
-
-                        {data?.ticket && (
+                    <div className="mb-3 overflow-hidden rounded-[14px] border border-border">
+                        {(data.degraded?.departures ?? []).map((dep, i) => (
                             <div
-                                className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-[13px] font-medium text-primary"
-                                title={data.ticket.reason}
+                                key={`${dep.line}-${i}`}
+                                className="flex items-center gap-3 border-b border-border px-3.5 py-2.5 last:border-b-0"
                             >
-                                🎫 {data.ticket.label}
+                                <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-primary px-1.5 text-xs font-bold text-white">
+                                    {dep.line}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate text-sm">
+                                    {dep.direction}
+                                </span>
+                                <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                                    {(dep.departures ?? [])
+                                        .slice(0, 2)
+                                        .map((m) => `${m}'`)
+                                        .join(' · ')}
+                                </span>
                             </div>
-                        )}
-
-                        {(data?.disruptions ?? []).length > 0 && (
-                            <div className="mb-3 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
-                                ⚠️ {data!.disruptions[0].title}
-                            </div>
-                        )}
-
-                        <div className="mb-1">
-                            {journey.legs.map((leg, i) => (
-                                <LegRow key={i} leg={leg} />
-                            ))}
-                        </div>
-                    </>
-                )}
-
-                {/* Degraded: nearest-stop departures + deep links */}
-                {data?.source === 'degraded' && (
-                    <div>
-                        <div className="mb-2 rounded-[9px] bg-secondary px-3 py-2.5 text-[13px] text-muted-foreground">
-                            Live routing is unavailable right now — here are
-                            departures near you.
-                        </div>
-                        <div className="mb-3 overflow-hidden rounded-[14px] border border-border">
-                            {(data.degraded?.departures ?? []).map((dep, i) => (
-                                <div
-                                    key={`${dep.line}-${i}`}
-                                    className="flex items-center gap-3 border-b border-border px-3.5 py-2.5 last:border-b-0"
-                                >
-                                    <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-primary px-1.5 text-xs font-bold text-white">
-                                        {dep.line}
-                                    </span>
-                                    <span className="min-w-0 flex-1 truncate text-sm">
-                                        {dep.direction}
-                                    </span>
-                                    <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                                        {(dep.departures ?? [])
-                                            .slice(0, 2)
-                                            .map((m) => `${m}'`)
-                                            .join(' · ')}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex gap-2">
-                            <a
-                                href={data.degraded?.deep_links.google}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 rounded-[9px] border border-border bg-card py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
-                            >
-                                Open in Google Maps
-                            </a>
-                            <a
-                                href={data.degraded?.deep_links.kvb}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 rounded-[9px] border border-border bg-card py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
-                            >
-                                Open in KVB
-                            </a>
-                        </div>
+                        ))}
                     </div>
-                )}
-            </div>
-        </BottomSheet>
+                    <div className="flex gap-2">
+                        <a
+                            href={data.degraded?.deep_links.google}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 rounded-[9px] border border-border bg-card py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
+                        >
+                            Open in Google Maps
+                        </a>
+                        <a
+                            href={data.degraded?.deep_links.kvb}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 rounded-[9px] border border-border bg-card py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
+                        >
+                            Open in KVB
+                        </a>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    // Mobile: bottom sheet. Desktop: traditional centered modal
+    // (close via overlay click or the X), per the app-wide modal rule.
+    if (isMobile) {
+        return (
+            <BottomSheet open onClose={onClose}>
+                {body}
+            </BottomSheet>
+        );
+    }
+
+    return (
+        <Dialog
+            open
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+        >
+            <DialogContent className="gap-0 p-0 sm:max-w-md">
+                <DialogTitle className="sr-only">
+                    {destination.name}
+                </DialogTitle>
+                <div className="max-h-[80vh] overflow-y-auto p-5">{body}</div>
+            </DialogContent>
+        </Dialog>
     );
 }
