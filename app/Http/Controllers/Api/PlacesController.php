@@ -45,8 +45,9 @@ class PlacesController extends Controller
         }
 
         $nearbyIncluded = false;
+        $selectedVeedel = null;
         if (! empty($validated['veedel']) && $validated['veedel'] !== 'all') {
-            $veedel = $validated['veedel'];
+            $veedel = $selectedVeedel = $validated['veedel'];
             $centroid = DB::table('veedels')
                 ->where('name', $veedel)
                 ->whereNotNull('centroid_lat')
@@ -70,12 +71,21 @@ class PlacesController extends Controller
 
         $page = (int) ($validated['page'] ?? 1);
 
-        $paginator = $query
+        $query
             ->select('*')
             ->selectRaw(
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as distance_km',
                 [$anchorLat, $anchorLng, $anchorLat],
-            )
+            );
+
+        // The selected Veedel's own places come first — a page of "nearby"
+        // results above them would read as broken filtering. Within each
+        // group, closest to the user wins.
+        if ($selectedVeedel !== null) {
+            $query->orderByRaw('(veedel = ?) desc', [$selectedVeedel]);
+        }
+
+        $paginator = $query
             ->orderBy('distance_km')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 

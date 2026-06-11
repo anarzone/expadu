@@ -83,9 +83,10 @@ test('includes places within 2km of the veedel centroid as nearby', function () 
         'updated_at' => now(),
     ]);
 
-    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
-    // Neighbouring Veedel but ~1km from the Ehrenfeld centroid → nearby
-    Spot::factory()->create(['category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.957, 'lng' => 6.920]);
+    // In the selected Veedel, but farther from the user's home anchor…
+    $inVeedel = Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.941, 'lng' => 6.905]);
+    // …than this neighbouring-Veedel place ~1km from the Ehrenfeld centroid
+    $nearby = Spot::factory()->create(['category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
     // Other side of the city, well outside 2km → excluded
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Porz', 'lat' => 50.886, 'lng' => 7.058]);
 
@@ -93,6 +94,10 @@ test('includes places within 2km of the veedel centroid as nearby', function () 
 
     expect($response->json('meta.total'))->toBe(2);
     expect($response->json('nearby_included'))->toBeTrue();
+    // The selected Veedel's own places rank above nearby ones, even when
+    // the nearby place is closer to the user's home.
+    expect($response->json('data.0.id'))->toBe($inVeedel->id);
+    expect($response->json('data.1.id'))->toBe($nearby->id);
 });
 
 test('rejects an unknown coarse category', function () {
