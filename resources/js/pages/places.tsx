@@ -554,11 +554,18 @@ export default function Places() {
                             {detail.name}
                         </DialogTitle>
                         {detail.photo_url ? (
-                            <img
-                                src={detail.photo_url}
-                                alt={detail.name}
-                                className="h-28 w-full object-cover"
-                            />
+                            <div className="relative">
+                                <img
+                                    src={detail.photo_url}
+                                    alt={detail.name}
+                                    className="h-36 w-full object-cover"
+                                />
+                                {detail.photo_attribution && (
+                                    <span className="absolute right-1.5 bottom-1.5 max-w-[85%] truncate rounded bg-black/55 px-1.5 py-0.5 text-[9px] text-white/85">
+                                        {detail.photo_attribution}
+                                    </span>
+                                )}
+                            </div>
                         ) : (
                             <CategoryIllustration
                                 coarse={detail.category}
@@ -600,6 +607,7 @@ export default function Places() {
                         <PlaceRichDetail
                             place={richPlace}
                             meta={placeMeta(richPlace)}
+                            showPhoto
                             onNavigate={(target) => {
                                 setRichPlace(null);
                                 setHopStack([]);

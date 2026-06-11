@@ -11,6 +11,7 @@ export type Place = {
     lat: number;
     lng: number;
     photo_url: string | null;
+    photo_attribution: string | null;
     distance_min: number | null;
     open_now: boolean | null;
     opening_hours_text: string | null;

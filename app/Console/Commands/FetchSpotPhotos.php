@@ -1,0 +1,203 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Enums\SpotCategory;
+use App\Models\Spot;
+use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
+
+/**
+ * Resolves openly-licensed photos for places from Wikimedia Commons.
+ *
+ * OSM tags carry the link: wikidata=Q… → the entity's P18 image claim;
+ * wikipedia=de:… → the article's page image. Both point at a Commons
+ * file, which we hotlink via the Special:FilePath thumbnail service and
+ * credit via the file's extmetadata (artist + licence) — Commons
+ * licences require visible attribution.
+ */
+class FetchSpotPhotos extends Command
+{
+    protected $signature = 'spots:fetch-photos {--force : Refresh spots that already have a photo}';
+
+    protected $description = 'Fetch place photos from Wikimedia Commons via wikidata/wikipedia OSM tags';
+
+    private const BATCH = 50; // both MediaWiki APIs cap batched ids/titles at 50
+
+    public function handle(): int
+    {
+        $spots = Spot::query()
+            ->whereIn('category', SpotCategory::placesFines())
+            ->whereNotNull('tags')
+            ->when(! $this->option('force'), fn ($q) => $q->whereNull('photo_url'))
+            ->get()
+            ->filter(fn (Spot $spot) => ! empty($spot->tags['wikidata']) || ! empty($spot->tags['wikipedia']));
+
+        $this->info("Resolving photos for {$spots->count()} linked place(s)...");
+
+        // spot id => Commons file name
+        $files = $this->filesFromWikidata($spots)
+            + $this->filesFromWikipedia($spots);
+
+        $meta = $this->commonsMetadata(array_unique(array_values($files)));
+
+        $saved = 0;
+        foreach ($files as $spotId => $file) {
+            $spot = $spots->firstWhere('id', $spotId);
+            if (! $spot) {
+                continue;
+            }
+
+            $spot->update([
+                'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/'
+                    .rawurlencode($file).'?width=800',
+                'photo_attribution' => $meta[$file] ?? 'Wikimedia Commons',
+            ]);
+            $saved++;
+        }
+
+        $this->info("Photos saved: {$saved}.");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * P18 image claims for all wikidata-tagged spots, 50 entities a call.
+     *
+     * @param  Collection<int, Spot>  $spots
+     * @return array<int, string>
+     */
+    private function filesFromWikidata($spots): array
+    {
+        $byQid = $spots
+            ->filter(fn (Spot $spot) => preg_match('/^Q\d+$/', $spot->tags['wikidata'] ?? ''))
+            ->mapWithKeys(fn (Spot $spot) => [$spot->tags['wikidata'] => $spot->id]);
+
+        $files = [];
+        foreach (array_chunk($byQid->keys()->all(), self::BATCH) as $chunk) {
+            try {
+                $entities = Http::timeout(30)
+                    ->get('https://www.wikidata.org/w/api.php', [
+                        'action' => 'wbgetentities',
+                        'ids' => implode('|', $chunk),
+                        'props' => 'claims',
+                        'format' => 'json',
+                    ])
+                    ->json('entities', []);
+            } catch (\Exception $e) {
+                $this->warn("  wikidata batch failed: {$e->getMessage()}");
+
+                continue;
+            }
+
+            foreach ($entities as $qid => $entity) {
+                $file = $entity['claims']['P18'][0]['mainsnak']['datavalue']['value'] ?? null;
+                if ($file && isset($byQid[$qid])) {
+                    $files[$byQid[$qid]] = (string) $file;
+                }
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * Page images for spots that only carry a wikipedia=lang:Title tag.
+     *
+     * @param  Collection<int, Spot>  $spots
+     * @return array<int, string>
+     */
+    private function filesFromWikipedia($spots): array
+    {
+        // lang => [title => spot id]
+        $byLang = [];
+        foreach ($spots as $spot) {
+            if (! empty($spot->tags['wikidata'])) {
+                continue; // wikidata path already covers it
+            }
+            if (preg_match('/^([a-z]{2,3}):(.+)$/u', $spot->tags['wikipedia'] ?? '', $m)) {
+                $byLang[$m[1]][$m[2]] = $spot->id;
+            }
+        }
+
+        $files = [];
+        foreach ($byLang as $lang => $titles) {
+            foreach (array_chunk(array_keys($titles), self::BATCH) as $chunk) {
+                try {
+                    $pages = Http::timeout(30)
+                        ->get("https://{$lang}.wikipedia.org/w/api.php", [
+                            'action' => 'query',
+                            'titles' => implode('|', $chunk),
+                            'prop' => 'pageimages',
+                            'piprop' => 'name',
+                            'redirects' => 1,
+                            'format' => 'json',
+                        ])
+                        ->json('query.pages', []);
+                } catch (\Exception $e) {
+                    $this->warn("  {$lang}.wikipedia batch failed: {$e->getMessage()}");
+
+                    continue;
+                }
+
+                foreach ($pages as $page) {
+                    $title = $page['title'] ?? '';
+                    $file = $page['pageimage'] ?? null;
+                    if ($file && isset($titles[$title])) {
+                        $files[$titles[$title]] = (string) $file;
+                    }
+                }
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * Artist + licence per Commons file → one attribution string each.
+     *
+     * @param  list<string>  $files
+     * @return array<string, string>
+     */
+    private function commonsMetadata(array $files): array
+    {
+        $meta = [];
+        foreach (array_chunk($files, self::BATCH) as $chunk) {
+            try {
+                $pages = Http::timeout(30)
+                    ->get('https://commons.wikimedia.org/w/api.php', [
+                        'action' => 'query',
+                        'titles' => implode('|', array_map(fn (string $f) => "File:{$f}", $chunk)),
+                        'prop' => 'imageinfo',
+                        'iiprop' => 'extmetadata',
+                        'format' => 'json',
+                    ])
+                    ->json('query.pages', []);
+            } catch (\Exception $e) {
+                $this->warn("  commons metadata batch failed: {$e->getMessage()}");
+
+                continue;
+            }
+
+            foreach ($pages as $page) {
+                $file = preg_replace('/^File:/', '', $page['title'] ?? '');
+                $ext = $page['imageinfo'][0]['extmetadata'] ?? [];
+
+                $artist = trim(strip_tags($ext['Artist']['value'] ?? ''));
+                $licence = trim($ext['LicenseShortName']['value'] ?? '');
+
+                $parts = array_filter([
+                    $artist !== '' ? mb_substr($artist, 0, 120) : null,
+                    $licence !== '' ? $licence : null,
+                ]);
+
+                $meta[$file] = $parts === []
+                    ? 'Wikimedia Commons'
+                    : implode(' · ', $parts).' · Wikimedia Commons';
+            }
+        }
+
+        return $meta;
+    }
+}

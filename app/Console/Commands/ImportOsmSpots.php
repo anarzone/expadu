@@ -178,8 +178,11 @@ class ImportOsmSpots extends Command
                 ->first();
 
             if ($duplicate) {
-                if ($keptTags !== [] && empty($duplicate->tags)) {
-                    $duplicate->update(['tags' => $keptTags]);
+                // Merge newly-whitelisted keys into rows imported before
+                // the whitelist grew (e.g. wikidata for the photo pipeline).
+                $merged = array_merge($keptTags, is_array($duplicate->tags) ? $duplicate->tags : []);
+                if ($merged !== ($duplicate->tags ?? [])) {
+                    $duplicate->update(['tags' => $merged]);
                 }
                 $skippedDuplicate++;
 
@@ -221,10 +224,14 @@ class ImportOsmSpots extends Command
         return self::SUCCESS;
     }
 
-    /** OSM tags worth keeping — they feed the place detail's facts/chips. */
+    /**
+     * OSM tags worth keeping — they feed the place detail's facts/chips;
+     * wikidata/wikipedia link to Commons photos (spots:fetch-photos).
+     */
     private const KEPT_TAG_KEYS = [
         'surface', 'lit', 'covered', 'indoor', 'access', 'fee', 'opening_hours',
         'sport', 'hoops', 'wheelchair', 'drinking_water', 'barrier',
+        'wikidata', 'wikipedia',
     ];
 
     /**

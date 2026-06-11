@@ -49,6 +49,7 @@ class PlaceResource extends JsonResource
             'lat' => (float) $this->lat,
             'lng' => (float) $this->lng,
             'photo_url' => $this->photo_url,
+            'photo_attribution' => $this->photo_attribution,
             'distance_min' => $this->resolveDistanceMin(),
             'open_now' => $this->resolveOpenNow($coarse),
             'opening_hours_text' => $this->resolveHoursText($coarse),

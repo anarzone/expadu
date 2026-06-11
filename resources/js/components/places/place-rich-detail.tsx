@@ -28,6 +28,7 @@ export function PlaceRichDetail({
     onOpenPlace,
     onBack,
     backLabel,
+    showPhoto = false,
 }: {
     place: Place;
     meta: string;
@@ -37,6 +38,8 @@ export function PlaceRichDetail({
     /** Return to the previously viewed place after a nearby hop. */
     onBack?: () => void;
     backLabel?: string;
+    /** Render the photo inline (mobile sheet; the desktop modal has its own hero). */
+    showPhoto?: boolean;
 }) {
     const [context, setContext] = useState<PlaceContext | null>(null);
 
@@ -115,6 +118,22 @@ export function PlaceRichDetail({
                     </div>
                 </div>
             </div>
+
+            {/* Photo (openly licensed — credit required) */}
+            {showPhoto && place.photo_url && (
+                <div className="relative mt-3.5 overflow-hidden rounded-[9px]">
+                    <img
+                        src={place.photo_url}
+                        alt={place.name}
+                        className="h-40 w-full object-cover"
+                    />
+                    {place.photo_attribution && (
+                        <span className="absolute right-1.5 bottom-1.5 max-w-[85%] truncate rounded bg-black/55 px-1.5 py-0.5 text-[9px] text-white/85">
+                            {place.photo_attribution}
+                        </span>
+                    )}
+                </div>
+            )}
 
             {/* Where exactly */}
             <MiniMap
