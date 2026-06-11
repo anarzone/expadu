@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\TranslateEvent;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -103,7 +104,7 @@ class ScrapeEvents extends Command
                     'price_known' => $isFree !== null,
                 ]);
 
-                Event::create([
+                $event = Event::create([
                     'title' => mb_substr($title, 0, 255),
                     'emoji' => $this->categoryEmoji($category),
                     'category' => $category,
@@ -121,6 +122,8 @@ class ScrapeEvents extends Command
                     'organiser_id' => $organiserId,
                     'quality_score' => $qualityScore,
                 ]);
+
+                TranslateEvent::dispatch($event);
 
                 $created++;
             }

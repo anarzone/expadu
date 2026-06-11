@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\Api\LocationConfirmController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\RouteOptionsController;
@@ -78,6 +79,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
+        Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
 
         Route::get('onboarding', fn () => Inertia::render('onboarding', [
             'veedels' => config('veedels'),
@@ -87,6 +89,9 @@ $appRoutes = function () use ($appDomain) {
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
 
         // Day Composer
+        Route::get('composer', fn () => Inertia::render('composer', [
+            'prompt' => request()->query('prompt'),
+        ]))->name('composer');
         Route::post('composer/parse', [ComposerController::class, 'parse'])->name('composer.parse');
         Route::post('composer/compose', [ComposerController::class, 'compose'])->name('composer.compose');
         Route::post('composer/swap', [ComposerController::class, 'swap'])->name('composer.swap');

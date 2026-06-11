@@ -9,7 +9,7 @@ test('explore page renders with spots', function () {
     Spot::factory()->count(3)->create();
     $this->actingAs($user);
 
-    $response = $this->get(route('explore'));
+    $response = $this->get(route('explore', ['veedel' => 'all']));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -17,6 +17,22 @@ test('explore page renders with spots', function () {
         ->missing('spots')
         ->loadDeferredProps(fn ($reload) => $reload
             ->has('spots.data', 3)
+        )
+    );
+});
+
+test('explore defaults to the user home veedel', function () {
+    $user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld']);
+    Spot::factory()->count(2)->create(['veedel' => 'Ehrenfeld']);
+    Spot::factory()->create(['veedel' => 'Nippes']);
+    $this->actingAs($user);
+
+    $response = $this->get(route('explore'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('filters.veedel', 'Ehrenfeld')
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->has('spots.data', 2)
         )
     );
 });
@@ -41,7 +57,7 @@ test('spots can be filtered by category', function () {
     Spot::factory()->create(['category' => 'library']);
     $this->actingAs($user);
 
-    $response = $this->get(route('explore', ['category' => 'cafe']));
+    $response = $this->get(route('explore', ['category' => 'cafe', 'veedel' => 'all']));
 
     $response->assertInertia(fn ($page) => $page
         ->missing('spots')

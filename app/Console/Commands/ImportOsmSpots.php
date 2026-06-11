@@ -31,12 +31,22 @@ class ImportOsmSpots extends Command
 
         $this->info('Querying Overpass API for Cologne spots...');
 
-        // Fetch each category separately to avoid timeouts
-        $bbox = '50.92,6.92,50.96,6.97'; // Cologne inner city
+        // Fetch each category separately to avoid timeouts. v2: physical
+        // leisure across the whole city is the primary content; indoor
+        // categories stay on the old inner-city bbox.
+        $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
+        $innerBbox = '50.92,6.92,50.96,6.97'; // inner city (cafés etc.)
         $queries = [
-            'cafe' => "[out:json][timeout:25];node[\"amenity\"=\"cafe\"]({$bbox});out body;",
-            'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$bbox});node[\"office\"=\"coworking\"]({$bbox}););out body;",
-            'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$bbox});out body;",
+            'park' => "[out:json][timeout:40];nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});out center;",
+            'playground' => "[out:json][timeout:40];nwr[\"leisure\"=\"playground\"]({$bbox});out center 400;",
+            'pitch' => "[out:json][timeout:50];nwr[\"leisure\"=\"pitch\"][\"sport\"~\"soccer|basketball|tennis|table_tennis|boules|skateboard\"]({$bbox});out center 600;",
+            'dog_park' => "[out:json][timeout:40];nwr[\"leisure\"=\"dog_park\"]({$bbox});out center;",
+            'bbq' => "[out:json][timeout:40];nwr[\"amenity\"=\"bbq\"]({$bbox});out center;",
+            'viewpoint' => "[out:json][timeout:40];nwr[\"tourism\"=\"viewpoint\"][\"name\"]({$bbox});out center;",
+            'swimming' => "[out:json][timeout:40];(nwr[\"leisure\"=\"swimming_area\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"=\"swimming\"]({$bbox}););out center;",
+            'cafe' => "[out:json][timeout:25];node[\"amenity\"=\"cafe\"]({$innerBbox});out body;",
+            'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$innerBbox});node[\"office\"=\"coworking\"]({$innerBbox}););out body;",
+            'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
         ];
 
         $allElements = [];
@@ -113,20 +123,27 @@ class ImportOsmSpots extends Command
             $bar->advance();
 
             $tags = $element['tags'] ?? [];
-            $name = $tags['name'] ?? null;
 
-            // Skip elements without a name
+            // Determine category from tags (query category as the hint)
+            $category = $this->resolveCategory($tags, $element['_category'] ?? 'cafe');
+
+            $name = $tags['name'] ?? $this->fallbackName($category, $tags);
+
+            // Skip elements without a usable name
             if (! $name) {
                 $skippedNoName++;
 
                 continue;
             }
 
-            $lat = (float) $element['lat'];
-            $lng = (float) $element['lon'];
+            // Ways/relations carry their coordinate in `center`
+            $lat = (float) ($element['lat'] ?? $element['center']['lat'] ?? 0);
+            $lng = (float) ($element['lon'] ?? $element['center']['lon'] ?? 0);
+            if (! $lat || ! $lng) {
+                $skippedNoName++;
 
-            // Determine category from tags
-            $category = $this->resolveCategory($tags);
+                continue;
+            }
 
             // Check for duplicates: same name within ~50m
             $duplicate = Spot::where('name', $name)
@@ -176,11 +193,11 @@ class ImportOsmSpots extends Command
     }
 
     /**
-     * Resolve the spot category from OSM tags.
+     * Resolve the spot category from OSM tags, refining pitches by sport.
      *
      * @param  array<string, string>  $tags
      */
-    protected function resolveCategory(array $tags): string
+    protected function resolveCategory(array $tags, string $hint): string
     {
         $amenity = $tags['amenity'] ?? '';
         $office = $tags['office'] ?? '';
@@ -188,12 +205,52 @@ class ImportOsmSpots extends Command
         if ($amenity === 'coworking_space' || $office === 'coworking') {
             return 'coworking';
         }
-
         if ($amenity === 'library') {
             return 'library';
         }
 
-        return 'cafe';
+        if ($hint === 'pitch') {
+            return match (true) {
+                str_contains($tags['sport'] ?? '', 'basketball') => 'basketball',
+                str_contains($tags['sport'] ?? '', 'tennis') && ! str_contains($tags['sport'] ?? '', 'table') => 'tennis',
+                str_contains($tags['sport'] ?? '', 'table_tennis') => 'table_tennis',
+                str_contains($tags['sport'] ?? '', 'boules') => 'boules',
+                str_contains($tags['sport'] ?? '', 'skateboard') => 'skatepark',
+                default => 'pitch',
+            };
+        }
+
+        return $hint;
+    }
+
+    /**
+     * Unnamed playgrounds and pitches are the norm in OSM; synthesise a
+     * usable name from the category + street when possible.
+     *
+     * @param  array<string, string>  $tags
+     */
+    protected function fallbackName(string $category, array $tags): ?string
+    {
+        $label = match ($category) {
+            'playground' => 'Spielplatz',
+            'pitch' => 'Bolzplatz',
+            'basketball' => 'Basketballplatz',
+            'tennis' => 'Tennisplatz',
+            'table_tennis' => 'Tischtennisplatte',
+            'boules' => 'Boulebahn',
+            'skatepark' => 'Skatepark',
+            'dog_park' => 'Hundewiese',
+            'bbq' => 'Grillplatz',
+            default => null,
+        };
+
+        if ($label === null) {
+            return null;
+        }
+
+        $street = $tags['addr:street'] ?? null;
+
+        return $street ? "{$label} {$street}" : $label;
     }
 
     /**

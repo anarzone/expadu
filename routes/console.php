@@ -15,6 +15,7 @@ Schedule::command('transit:check-disruptions')->everyTenMinutes()->withoutOverla
 // Events
 Schedule::command('events:scrape')->everyThirtyMinutes()->withoutOverlapping();
 Schedule::command('events:enrich')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('events:curate')->hourly()->withoutOverlapping();
 
 // Bürgeramt slot monitoring — rare + time-sensitive, keep frequent
 Schedule::command('buergeramt:check')->everyFiveMinutes()->withoutOverlapping();

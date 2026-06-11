@@ -11,6 +11,7 @@ import { ExploreFilterBar } from '@/components/explore/filter-bar';
 import type { MapBounds, MapViewHandle } from '@/components/explore/map-view';
 import { SpotCard } from '@/components/explore/spot-card';
 import { SpotDetailSheet } from '@/components/explore/spot-detail-sheet';
+import { VeedelPills } from '@/components/explore/veedel-pills';
 import { JourneyTimeline } from '@/components/journey/journey-timeline';
 import { RouteStepsPanel } from '@/components/journey/route-steps-panel';
 import { getTag } from '@/constants/tags';
@@ -84,7 +85,8 @@ export default function Explore() {
         userLocation,
     } = usePage<{
         spots?: { data: SpotData[] };
-        filters: { category?: string | null };
+        filters: { category?: string | null; veedel?: string | null };
+        veedelOptions?: string[];
         personalPlaces: PersonalPlace[];
         userLocation?: { lat: number; lng: number } | null;
     }>().props;
@@ -1185,6 +1187,10 @@ export default function Explore() {
                                         search={search}
                                         setSearch={setSearch}
                                     />
+                                    <VeedelPills
+                                        options={veedelOptions ?? []}
+                                        active={filters.veedel ?? 'all'}
+                                    />
                                     <ExploreFilterBar
                                         active={category}
                                         onChange={filterByCategory}
@@ -1373,6 +1379,10 @@ export default function Explore() {
                             )}
                         </div>
                         <div className="px-3.5 py-2">
+                            <VeedelPills
+                                options={veedelOptions ?? []}
+                                active={filters.veedel ?? 'all'}
+                            />
                             <ExploreFilterBar
                                 active={category}
                                 onChange={filterByCategory}

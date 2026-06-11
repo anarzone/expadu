@@ -12,14 +12,48 @@ use Illuminate\Support\Facades\Redis;
  *
  * Priority:
  * 1. GPS coordinates from request params (lat/lng)
- * 2. Last known GPS ping from Redis (stored by EventTrackingService, 7-day TTL)
- * 3. Home place coordinates (user's first place by sort_order)
- * 4. Default: central Cologne (50.9375, 6.9603)
+ * 2. Explicitly confirmed location ("I'm here" chip, 2h validity)
+ * 3. Last known GPS ping from Redis (stored by EventTrackingService, 7-day TTL)
+ * 4. Home place coordinates (user's first place by sort_order)
+ * 5. Default: central Cologne (50.9375, 6.9603)
  *
  * Use this service instead of ad-hoc location resolution in controllers.
  */
 class UserLocationService
 {
+    /**
+     * Store an explicit "I'm here" confirmation, valid for two hours.
+     */
+    public function confirm(User $user, float $lat, float $lng, ?string $name = null): void
+    {
+        Redis::setex(
+            "confirmed_location:{$user->id}",
+            2 * 3600,
+            json_encode([
+                'lat' => $lat,
+                'lng' => $lng,
+                'name' => $name ?? ($this->reverseGeocode($lat, $lng) ?? 'Confirmed location'),
+            ], JSON_THROW_ON_ERROR),
+        );
+    }
+
+    /**
+     * @return array{lat: float, lng: float, name: string}|null
+     */
+    private function getConfirmedLocation(int $userId): ?array
+    {
+        try {
+            $raw = Redis::get("confirmed_location:{$userId}");
+            $data = $raw ? json_decode((string) $raw, true) : null;
+
+            return is_array($data) && isset($data['lat'], $data['lng'])
+                ? ['lat' => (float) $data['lat'], 'lng' => (float) $data['lng'], 'name' => (string) ($data['name'] ?? '')]
+                : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * Resolve the user's best known location.
      *
@@ -42,7 +76,19 @@ class UserLocationService
             ];
         }
 
-        // 2. Last known GPS ping from Redis (within last 30 minutes)
+        // 2. Explicit "I'm here" confirmation beats any inferred source
+        $confirmed = $this->getConfirmedLocation($user->id);
+        if ($confirmed) {
+            return [
+                'lat' => $confirmed['lat'],
+                'lng' => $confirmed['lng'],
+                'source' => 'confirmed',
+                'name' => $confirmed['name'],
+                'address' => $confirmed['name'],
+            ];
+        }
+
+        // 3. Last known GPS ping from Redis (within last 30 minutes)
         $redisPing = $this->getLastRedisPing($user->id);
         if ($redisPing) {
             $address = $this->reverseGeocode($redisPing['lat'], $redisPing['lng']) ?? 'Cologne';
@@ -56,7 +102,7 @@ class UserLocationService
             ];
         }
 
-        // 3. Home place
+        // 4. Home place
         $home = $user->places()->where('category', 'home')->first()
             ?? $user->places()->orderBy('sort_order')->first();
 

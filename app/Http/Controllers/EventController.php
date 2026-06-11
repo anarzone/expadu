@@ -27,10 +27,19 @@ class EventController extends Controller
         $userId = $request->user()->id;
         $category = $request->query('category');
         $freeOnly = $request->query('free') === 'true';
+        $showAll = $request->query('all') === 'true';
 
         return Inertia::render('events', [
-            'dbEvents' => Inertia::defer(function () use ($userId, $category, $freeOnly) {
+            'dbEvents' => Inertia::defer(function () use ($userId, $category, $freeOnly, $showAll) {
                 $query = Event::query()->where('starts_at', '>', now())->orderBy('starts_at');
+
+                // v2 default: the curated meet-people subset. Falls back to
+                // everything while curation hasn't run yet (empty page is
+                // worse than an uncurated one).
+                if (! $showAll && Event::query()->where('starts_at', '>', now())->where('is_curated', true)->exists()) {
+                    $query->where('is_curated', true);
+                }
+
                 if ($category) {
                     $query->where('category', $category);
                 }
@@ -48,6 +57,7 @@ class EventController extends Controller
             'filters' => [
                 'category' => $category,
                 'free' => $request->query('free'),
+                'all' => $showAll,
             ],
         ]);
     }
@@ -122,10 +132,11 @@ class EventController extends Controller
 
         return [
             'id' => $e->id,
-            'title' => $e->title,
+            'title' => $e->title_en ?? $e->title,
+            'title_original' => $e->title_en ? $e->title : null,
             'emoji' => $e->emoji,
             'category' => $e->category,
-            'desc' => $e->description ?? '',
+            'desc' => $e->description_en ?? $e->description ?? '',
             'date' => $startsAt->format('d'),
             'month' => $startsAt->format('M'),
             'day' => $startsAt->format('D'),
