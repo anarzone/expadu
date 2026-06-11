@@ -25,6 +25,9 @@ class FetchSpotPhotos extends Command
 
     private const BATCH = 50; // both MediaWiki APIs cap batched ids/titles at 50
 
+    /** Wikimedia's API policy 403s anonymous/default user agents. */
+    private const USER_AGENT = 'Expadu/1.0 (https://expadu.com; contact@expadu.com)';
+
     public function handle(): int
     {
         $spots = Spot::query()
@@ -77,7 +80,7 @@ class FetchSpotPhotos extends Command
         $files = [];
         foreach (array_chunk($byQid->keys()->all(), self::BATCH) as $chunk) {
             try {
-                $entities = Http::timeout(30)
+                $entities = Http::withUserAgent(self::USER_AGENT)->timeout(30)
                     ->get('https://www.wikidata.org/w/api.php', [
                         'action' => 'wbgetentities',
                         'ids' => implode('|', $chunk),
@@ -125,7 +128,7 @@ class FetchSpotPhotos extends Command
         foreach ($byLang as $lang => $titles) {
             foreach (array_chunk(array_keys($titles), self::BATCH) as $chunk) {
                 try {
-                    $pages = Http::timeout(30)
+                    $pages = Http::withUserAgent(self::USER_AGENT)->timeout(30)
                         ->get("https://{$lang}.wikipedia.org/w/api.php", [
                             'action' => 'query',
                             'titles' => implode('|', $chunk),
@@ -165,7 +168,7 @@ class FetchSpotPhotos extends Command
         $meta = [];
         foreach (array_chunk($files, self::BATCH) as $chunk) {
             try {
-                $pages = Http::timeout(30)
+                $pages = Http::withUserAgent(self::USER_AGENT)->timeout(30)
                     ->get('https://commons.wikimedia.org/w/api.php', [
                         'action' => 'query',
                         'titles' => implode('|', array_map(fn (string $f) => "File:{$f}", $chunk)),
