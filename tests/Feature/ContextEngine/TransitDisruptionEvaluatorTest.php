@@ -30,6 +30,22 @@ beforeEach(function () {
     );
 });
 
+/**
+ * User ids recycle across test runs (parallel workers / fresh migrations)
+ * while Redis throttle keys persist — clear them or push gating flakes.
+ */
+function clearPushThrottle(int $userId): void
+{
+    try {
+        Redis::del(
+            "notif_throttle:last:{$userId}",
+            'notif_throttle:hour:'.$userId.':'.now()->format('Y-m-d-H'),
+            'notif_throttle:day:'.$userId.':'.now()->format('Y-m-d'),
+        );
+    } catch (Throwable) {
+    }
+}
+
 function fakeUserLines(array $lines): void
 {
     test()->mock(UserTransitLinesService::class, function ($mock) use ($lines) {
@@ -100,6 +116,7 @@ test('major disruption broadcasts to all onboarded users without push', function
 
 test('critical disruption on matched line includes push channel', function () {
     $user = User::factory()->onboarded()->create();
+    clearPushThrottle($user->id);
     UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
     fakeUserLines(['12']);
 

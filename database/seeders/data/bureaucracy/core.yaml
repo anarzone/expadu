@@ -1,0 +1,141 @@
+situation: core
+
+tasks:
+  - title: Register your address (Anmeldung)
+    key: core.anmeldung
+    depends_on: []
+    description: |
+      Every resident in Germany must register their address at the Bürgeramt within 14
+      days of moving in. The Meldebescheinigung is the document everything else hangs
+      off — tax ID, bank account, insurance.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 14
+    booking_service_key: anmeldung
+    documents_required:
+      - Passport or EU ID card
+      - Wohnungsgeberbestätigung (signed by your landlord)
+    links:
+      - https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
+    how_to_steps:
+      - title: Get a Wohnungsgeberbestätigung from your landlord
+        body: Your landlord must give you this confirmation within two weeks of moving in. Without it the Bürgeramt won't register you — it cannot be submitted later.
+      - title: Book an appointment, or walk in on Monday/Wednesday
+        body: Cologne Kundenzentren take walk-ins on Mondays and Wednesdays; Tuesday, Thursday and Friday require an appointment. Registration is free.
+        link: https://termine.stadt-koeln.de/
+      - title: Make digital copies of the Meldebescheinigung
+        body: Photograph it and back it up — you'll need it for almost everything else on this list.
+
+  - title: Wait for your Steuer-ID (tax identification number)
+    key: core.steuer_id
+    depends_on: [core.anmeldung]
+    description: |
+      The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
+      within 2–4 weeks of Anmeldung — no application needed. You'll need it for any paid
+      work and most dealings with the tax office.
+    phase: arrival
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 28
+    documents_required: []
+    links:
+      - https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+    how_to_steps:
+      - title: Check your post daily
+        body: It arrives as a plain letter from Bonn — easy to mistake for junk mail. Don't throw anything away in your first month.
+      - title: If nothing arrives after 4 weeks, request a copy
+        body: Use the BZSt input form — for data-protection reasons it's only ever sent by post, to your registered address.
+        link: https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+
+  - title: Sort out health insurance
+    key: core.health_insurance
+    depends_on: [core.anmeldung]
+    description: |
+      Health insurance is mandatory for everyone living in Germany. Which system you end
+      up in — statutory (gesetzlich) or private (privat) — depends on your work and
+      income situation, but "none" is never an option, and gaps can mean back-payments.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passport or ID
+      - Meldebescheinigung
+    links:
+      - https://www.krankenkassen.de/
+    how_to_steps:
+      - title: Work out which system applies to you
+        body: Employees are enrolled in statutory insurance via their employer; the self-employed insure themselves (statutory voluntary or private); travel insurance is only a stop-gap and is not accepted as a substitute for residents.
+      - title: Compare statutory insurers if you have the choice
+        body: TK, AOK, Barmer, DAK — baseline coverage is identical by law; they differ on English service, apps and extras. For most expats, TK has the best English support.
+      - title: Don't leave a gap
+        body: Practical warning — German insurers can charge retroactive premiums for uninsured periods. Sort this in your first weeks, not when you first get sick.
+
+  - title: Open a German bank account
+    key: core.bank_account
+    depends_on: [core.anmeldung]
+    description: |
+      You'll need a Girokonto (current account) with a SEPA IBAN for rent, salary or
+      invoices, insurance and the dozens of direct debits German life runs on.
+    phase: first_30_days
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passport or ID
+      - Meldebescheinigung
+      - Tax ID (if available)
+    links:
+      - https://www.n26.com/en-de
+      - https://www.ing.de/girokonto/
+      - https://www.sparkasse-koelnbonn.de/
+    how_to_steps:
+      - title: Pick an account type
+        body: Online-only banks (N26, C24) are fastest and English-friendly. Traditional banks (Sparkasse, ING, Commerzbank) are useful if you want branches or cash-deposit machines around Cologne.
+      - title: Apply with passport + Meldebescheinigung
+        body: Online banks verify identity by video call or in-app; allow 1–3 days for the IBAN. Branch banks may want an appointment.
+      - title: Set up your recurring payments
+        body: Rent, insurance, phone — German billing assumes direct debit. Getting them in place early avoids reminder fees (Mahngebühren).
+
+  - title: Settle your Rundfunkbeitrag (broadcasting fee)
+    key: core.rundfunkbeitrag
+    depends_on: [core.anmeldung]
+    description: |
+      Every household in Germany pays €18.36/month for public broadcasting — one fee per
+      dwelling, no matter how many people live there or whether anyone owns a TV. The
+      Beitragsservice is notified of your Anmeldung automatically and will write to you.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required: []
+    links:
+      - https://www.rundfunkbeitrag.de/welcome/english
+    how_to_steps:
+      - title: Check whether your household already pays
+        body: One fee per Wohnung. If a flatmate or partner already pays, reply to the Beitragsservice letter with their Beitragsnummer instead of registering again.
+      - title: Register and set up SEPA direct debit
+        body: Direct debit saves you from missed quarterly invoices and reminder fees.
+        link: https://www.rundfunkbeitrag.de/welcome/english
+      - title: Apply for exemption or reduction if eligible
+        body: Recipients of BAföG or Bürgergeld can be exempted; people with an RF disability code pay a reduced €6.12/month. Details on the official site.
+
+  - title: Get private liability insurance (Haftpflichtversicherung)
+    key: core.liability_insurance
+    depends_on: [core.bank_account]
+    description: |
+      Not legally required, but most Germans have it and landlords increasingly expect
+      it — it covers damage you accidentally cause to other people or their property.
+      Costs roughly €30–50/year and caps what could otherwise be an unlimited bill.
+    phase: settling
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.check24.de/haftpflichtversicherung/
+    how_to_steps:
+      - title: Compare on Check24 or Verivox
+        body: Look for "Privathaftpflicht" with at least €10M coverage and no deductible. Annual payment is usually cheaper than monthly.
+      - title: Note your policy number
+        body: You'll need it the day you break something — a friend's laptop, a rented e-scooter, a neighbour's window.

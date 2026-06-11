@@ -47,6 +47,11 @@ return [
         'redirect' => env('APPLE_REDIRECT_URI'),
     ],
 
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
+    ],
+
     'transitous' => [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
     ],

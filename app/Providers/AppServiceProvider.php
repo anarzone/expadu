@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Composer\AnthropicConstraintParser;
+use App\Composer\Contracts\ParsesConstraints;
 use App\ContextEngine\Evaluators\BuergeramtEvaluator;
 use App\ContextEngine\Evaluators\MarketEvaluator;
 use App\ContextEngine\Evaluators\RhineEvaluator;
@@ -39,6 +41,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             RouteService::class,
             FailoverRouteService::class,
+        );
+
+        $this->app->bind(
+            ParsesConstraints::class,
+            AnthropicConstraintParser::class,
         );
     }
 

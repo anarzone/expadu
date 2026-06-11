@@ -1,0 +1,252 @@
+situation: freelancer
+
+tasks:
+  - title: Register your address (Anmeldung)
+    key: fre.anmeldung
+    depends_on: []
+    description: |
+      Every resident in Germany must register their address at the Bürgeramt within 14
+      days of moving in. For freelancers it's doubly important — the Meldebescheinigung
+      is the key to your Steuer-ID, your bank account, and the tax office knowing where
+      to send your Steuernummer.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 14
+    booking_service_key: anmeldung
+    documents_required:
+      - Passport or EU ID card
+      - Wohnungsgeberbestätigung (signed by your landlord)
+    links:
+      - https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
+    how_to_steps:
+      - title: Get a Wohnungsgeberbestätigung from your landlord
+        body: Your landlord must issue this within two weeks of move-in. The Bürgeramt won't register you without it and it cannot be submitted later.
+      - title: Book an appointment, or walk in on Monday/Wednesday
+        body: Cologne Kundenzentren take walk-ins on Mondays and Wednesdays; other weekdays need an appointment. Registration is free.
+        link: https://termine.stadt-koeln.de/
+      - title: Make digital copies
+        body: You'll attach the Meldebescheinigung to bank, insurance and tax paperwork repeatedly — keep a PDF handy.
+
+  - title: Wait for your Steuer-ID (tax identification number)
+    key: fre.steuer_id
+    depends_on: [fre.anmeldung]
+    description: |
+      The Bundeszentralamt für Steuern automatically sends your 11-digit personal tax ID
+      by post within 2–4 weeks of Anmeldung. You need it for the Fragebogen zur
+      steuerlichen Erfassung — the form that gets you your freelance Steuernummer.
+    phase: arrival
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 28
+    documents_required: []
+    links:
+      - https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+    how_to_steps:
+      - title: Watch your post
+        body: Plain letter from Bonn, easy to miss. Don't bin unbranded mail in your first month.
+      - title: Request a copy if it doesn't arrive in 4 weeks
+        body: Use the BZSt input form — it's only ever sent by post to your registered address.
+        link: https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+
+  - title: Apply for a self-employment residence permit (§21 AufenthG)
+    key: fre.residence_permit
+    eu_filter: non_eu_only
+    depends_on: [fre.anmeldung, fre.health_insurance]
+    description: |
+      Non-EU freelancers need a residence permit for self-employment under §21 AufenthG
+      before working independently. Cologne's Ausländeramt assesses your business idea:
+      economic interest, secured financing, and your qualifications. Freelance professions
+      (freie Berufe) are judged more leniently than trade businesses (Gewerbe), but the
+      evidence pack is substantial either way.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - Passport with entry visa
+      - Meldebescheinigung
+      - CV with education, training and work history
+      - Professional qualifications and certificates relevant to your business
+      - Business concept / business plan in German
+      - Financing plan + proof of capital (bank statement)
+      - Evidence of customer contacts / letters of intent
+      - Revenue and profit projections
+      - Proof of health insurance
+      - Biometric passport photo
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00947/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__21.html
+    how_to_steps:
+      - title: Work out if you're Freiberufler or Gewerbe first
+        body: Liberal professions (writers, designers, engineers, translators, teachers and similar — §18 EStG) apply under §21(5) AufenthG; commercial businesses face the full economic-interest test with business plan and capital proof. The document list differs, so settle this before the appointment.
+      - title: Build the business case in German
+        body: Cologne expects the business concept in German, covering activities, location, financing, your experience, existing client contacts and revenue projections. German language skills are generally expected, especially for client-facing work.
+      - title: Contact the Arbeitsmigration desk for an appointment
+        body: Applications go through the Ausländeramt's work-migration unit (Dillenburger Straße 56–66) — appointments are arranged by email, contact form or post, and you attend in person with an invitation letter. Start early; the document review takes time.
+        link: https://www.stadt-koeln.de/service/produkte/00947/index.html
+      - title: Bring originals plus copies of everything
+        body: A missing document means a rebooked appointment and weeks of waiting. Triple-check the financing evidence — it's the most common gap.
+
+  - title: Submit the Fragebogen zur steuerlichen Erfassung
+    key: fre.fragebogen
+    depends_on: [fre.anmeldung, fre.steuer_id]
+    description: |
+      Within one month of starting your freelance activity you must register it with the
+      Finanzamt — electronically, via the Fragebogen zur steuerlichen Erfassung on ELSTER
+      (§138 AO). The outcome is your Steuernummer, which must appear on every invoice you
+      send. Miss the deadline and the tax office can fine you and estimate your income.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: none
+    booking_service_key: finanzamt
+    documents_required:
+      - Steuer-ID
+      - ELSTER account (certificate file)
+      - Estimated revenue + profit for year 1 and year 2
+      - German IBAN for tax refunds/payments
+    links:
+      - https://www.elster.de/elsterweb/infoseite/unternehmensgruendung
+      - https://www.elster.de/eportal/formulare-leistungen/alleformulare/fseeun
+    how_to_steps:
+      - title: Create an ELSTER account early
+        body: Registration involves a postal activation code — allow up to 2 weeks. You can't submit the Fragebogen without it, and the one-month clock runs from your first day of activity.
+        link: https://www.elster.de/eportal/start
+      - title: Fill in the Fragebogen honestly but conservatively
+        body: Your revenue estimate drives income-tax prepayments (Vorauszahlungen). Estimate low-but-realistic for year one — you can always adjust later, but high estimates lock cash in quarterly prepayments.
+      - title: Wait for your Steuernummer by post
+        body: After review, the Finanzamt sends your Steuernummer by post. Put it on every invoice; clients' accounting departments will reject invoices without it.
+
+  - title: Decide on the Kleinunternehmerregelung (§19 UStG)
+    key: fre.kleinunternehmer
+    depends_on: [fre.fragebogen]
+    description: |
+      Inside the Fragebogen you choose whether to use the small-business VAT exemption.
+      Since January 2025 the thresholds are €25,000 turnover in the previous calendar
+      year and €100,000 in the current year. Kleinunternehmer don't charge VAT and skip
+      VAT returns — but also can't reclaim VAT on their own purchases.
+    phase: first_30_days
+    urgency: high
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.gesetze-im-internet.de/ustg_1980/__19.html
+    how_to_steps:
+      - title: Check who your clients are
+        body: If your clients are VAT-registered businesses, charging VAT costs them nothing (they reclaim it) — opting out of §19 lets you reclaim VAT on your laptop, software and co-working space. If you sell to consumers, Kleinunternehmer status makes you ~19% cheaper.
+      - title: Mind the thresholds
+        body: Up to €25,000 turnover in the previous year and €100,000 in the current year (since 1 January 2025). Crossing the €100,000 line mid-year ends the exemption from that moment — watch your running total.
+      - title: Put the right line on your invoices
+        body: Kleinunternehmer invoices must state that no VAT is charged under §19 UStG. Without the clause, clients may withhold payment until you reissue.
+
+  - title: Sort out self-paid health insurance
+    key: fre.health_insurance
+    depends_on: [fre.anmeldung]
+    description: |
+      Health insurance is mandatory and, unlike employees, you pay the full premium
+      yourself. Freelancers choose between voluntary statutory insurance (GKV, income-based)
+      and private insurance (PKV, risk-based). If you work in an artistic or publicist
+      profession, the Künstlersozialkasse can roughly halve your costs.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passport or ID
+      - Meldebescheinigung
+      - Income estimate (for GKV contribution assessment)
+    links:
+      - https://www.krankenkassen.de/
+      - https://www.bundesgesundheitsministerium.de/beitraege
+      - https://www.kuenstlersozialkasse.de/
+    how_to_steps:
+      - title: Understand GKV pricing for the self-employed
+        body: Voluntary statutory members pay the general rate of 14.6% of income plus the insurer's Zusatzbeitrag (2026 average 2.9%), plus long-term care insurance — assessed on your total income, with a legal minimum floor even in lean months. Get a quote based on your realistic profit, not your hoped-for one.
+        link: https://www.bundesgesundheitsministerium.de/beitraege
+      - title: Be careful with PKV
+        body: Private insurance can be cheaper while you're young and healthy, but premiums rise with age and switching back to GKV is hard. Practical rule of thumb — don't choose PKV for short-term savings alone; talk to an independent advisor first.
+      - title: Check the Künstlersozialkasse if you're a creative or publicist
+        body: Designers, writers, journalists, musicians and similar professions can join the KSK, which gives self-employed artists employee-style social cover — you pay roughly the employee half of pension, health and care contributions and the KSK system covers the rest. Applications take months, so file early.
+        link: https://www.kuenstlersozialkasse.de/
+
+  - title: Check whether your activity is a Gewerbe
+    key: fre.gewerbe_check
+    depends_on: [fre.anmeldung]
+    description: |
+      Germany splits the self-employed into freie Berufe (liberal professions — no trade
+      licence needed) and Gewerbe (commercial trade — must register at the Gewerbeamt).
+      Doctors, engineers, writers, translators, teachers, journalists and similar
+      professions under §18 EStG are frei; selling goods, e-commerce and most agency-style
+      businesses are Gewerbe. Registering when required costs €26 in Cologne.
+    phase: first_30_days
+    urgency: medium
+    deadline_type: none
+    documents_required:
+      - ID or passport
+      - Residence permit allowing self-employment (non-EU citizens)
+    links:
+      - https://www.gesetze-im-internet.de/estg/__18.html
+      - https://www.stadt-koeln.de/service/produkte/00268/index.html
+      - https://www.ihk.de/koeln/
+    how_to_steps:
+      - title: Classify your activity
+        body: Compare your work against the §18 EStG catalogue (scientific, artistic, writing, teaching activities; doctors, lawyers, engineers, architects, journalists, interpreters, translators and similar). Mixed activities are tricky — when in doubt, the Finanzamt's classification in response to your Fragebogen is what counts.
+        link: https://www.gesetze-im-internet.de/estg/__18.html
+      - title: If it's a Gewerbe, register online
+        body: Cologne accepts Gewerbeanmeldung through the NRW business portal — €26 for a sole proprietorship, and you receive the Gewerbeschein immediately as a PDF.
+        link: https://www.stadt-koeln.de/service/produkte/00268/index.html
+      - title: Expect IHK membership
+        body: Gewerbe registrations are forwarded to the IHK Köln, where membership is mandatory for trade businesses (freie Berufe are exempt). Small businesses pay little or nothing at low profit — but don't ignore their letters, the fees don't disappear.
+        link: https://www.ihk.de/koeln/
+
+  - title: Open a bank account for your freelance work
+    key: fre.bank_account
+    depends_on: [fre.anmeldung]
+    description: |
+      You need an account for client payments, tax prepayments, and insurance debits.
+      Legally a separate business account is not required for sole-proprietor freelancers,
+      but mixing freelance and private money makes your bookkeeping and any tax audit
+      far more painful than it needs to be.
+    phase: first_30_days
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - Passport or ID
+      - Meldebescheinigung
+      - Tax ID (if available)
+    links:
+      - https://www.n26.com/en-de
+      - https://www.qonto.com/de
+      - https://www.sparkasse-koelnbonn.de/
+    how_to_steps:
+      - title: Check your bank's terms before invoicing through a private account
+        body: Practical trap — many free private accounts prohibit business use in their terms and banks do cancel accounts over it. Look at freelancer-friendly options (N26 Business, Qonto, Holvi, Kontist) or a classic bank business account.
+      - title: Keep freelance money separate
+        body: One account for invoices in and tax/insurance out, one for private life. Your future self at tax-return time will be grateful.
+      - title: Put the IBAN in the Fragebogen
+        body: The Finanzamt uses it for refunds and SEPA collection of prepayments — getting it right avoids paper-cheque chaos.
+
+  - title: Settle your Rundfunkbeitrag (broadcasting fee)
+    key: fre.rundfunkbeitrag
+    depends_on: [fre.anmeldung]
+    description: |
+      Every household pays €18.36/month for public broadcasting — one fee per dwelling,
+      regardless of devices or how many people live there. The Beitragsservice learns
+      about your Anmeldung automatically and will write to you.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required: []
+    links:
+      - https://www.rundfunkbeitrag.de/welcome/english
+    how_to_steps:
+      - title: One fee per household
+        body: If a flatmate or partner already pays, reply with their Beitragsnummer instead of registering twice.
+      - title: Working from home changes nothing for most freelancers
+        body: Your household fee covers a home office in your own flat. If you rent separate business premises (office, studio), check the rules for companies on the official site — separate premises can mean a separate fee.
+        link: https://www.rundfunkbeitrag.de/welcome/english/companies-institutions-and-public-interest-bodies
+      - title: Set up direct debit
+        body: Quarterly invoices are easy to miss while you're buried in setup admin — SEPA direct debit removes the risk of reminder fees.

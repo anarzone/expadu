@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TakeMeThereController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\BureaucracyController;
+use App\Http\Controllers\ComposerController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\MuteController;
@@ -84,6 +85,11 @@ $appRoutes = function () use ($appDomain) {
         Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
+
+        // Day Composer
+        Route::post('composer/parse', [ComposerController::class, 'parse'])->name('composer.parse');
+        Route::post('composer/compose', [ComposerController::class, 'compose'])->name('composer.compose');
+        Route::post('composer/swap', [ComposerController::class, 'swap'])->name('composer.swap');
 
         // Explore / Spots
         Route::get('explore', [SpotController::class, 'index'])->name('explore');

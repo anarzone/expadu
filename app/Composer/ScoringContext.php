@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Composer;
+
+/**
+ * Everything impure the scorer needs, snapshotted once per composition:
+ * weather, profile areas, and the user's intent-signal weights.
+ */
+final readonly class ScoringContext
+{
+    /**
+     * @param  list<string>  $preferredAreas  Veedel names from constraints or profile
+     * @param  array<string, float>  $intentWeights  "category|veedel" → weight
+     */
+    public function __construct(
+        public bool $rainExpected,
+        public array $preferredAreas,
+        public array $intentWeights = [],
+    ) {}
+}

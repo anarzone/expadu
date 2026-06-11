@@ -80,6 +80,7 @@ tasks:
 
   - title: Apply for student residence permit
     key: stu.residence_permit
+    eu_filter: non_eu_only
     depends_on: [stu.anmeldung, stu.enrolment, stu.health_insurance]
     description: |
       Non-EU students must convert their entry visa into a student residence permit
