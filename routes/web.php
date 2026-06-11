@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\LocationConfirmController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\PlacesController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
-use App\Http\Controllers\Api\RouteOptionsController;
 use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TakeMeThereController;
@@ -78,7 +77,6 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/spots', SpotSearchController::class)->name('api.spots');
         Route::get('api/places', PlacesController::class)->name('api.places');
         Route::post('api/track', TrackEventController::class)->name('api.track');
-        Route::get('api/route-options', RouteOptionsController::class)->name('api.route-options');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
@@ -100,7 +98,6 @@ $appRoutes = function () use ($appDomain) {
 
         // Explore / Spots
         Route::get('explore', [SpotController::class, 'index'])->name('explore');
-        Route::get('explore/{spot}', [SpotController::class, 'show'])->name('spots.show');
 
         // Events
         Route::get('events', [EventController::class, 'index'])->name('events');

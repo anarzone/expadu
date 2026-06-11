@@ -56,10 +56,6 @@ return [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
     ],
 
-    'valhalla' => [
-        'url' => env('VALHALLA_URL'),
-    ],
-
     'vrs' => [
         'gtfsrt_url' => env('VRS_GTFSRT_URL'),
         'trias_url' => env('VRS_TRIAS_URL'),
