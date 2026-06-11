@@ -300,7 +300,7 @@ export default function Places() {
                             Places
                         </h1>
                         <p className="mt-0.5 text-[13px] text-muted-foreground">
-                            Parks, courts & places to be outside
+                            Parks, museums & places worth knowing
                         </p>
                     </div>
                     <button
