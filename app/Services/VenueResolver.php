@@ -23,7 +23,7 @@ class VenueResolver
         );
 
         if ($venue->lat && $venue->lng && ! $venue->place_id) {
-            $place = $this->placeWithin50m((float) $venue->lat, (float) $venue->lng);
+            $place = $this->placeWithin50m($venue->name, (float) $venue->lat, (float) $venue->lng);
 
             if ($place) {
                 $venue->update(['place_id' => $place->id, 'veedel' => $place->veedel]);
@@ -35,9 +35,13 @@ class VenueResolver
         return $venue;
     }
 
-    private function placeWithin50m(float $lat, float $lng): ?Spot
+    /**
+     * Proximity alone mislinks (a venue 40m from an unrelated business);
+     * the candidate must also share a meaningful name token.
+     */
+    private function placeWithin50m(string $venueName, float $lat, float $lng): ?Spot
     {
-        return Spot::query()
+        $candidates = Spot::query()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->whereRaw(
@@ -48,7 +52,24 @@ class VenueResolver
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))))',
                 [$lat, $lng, $lat],
             )
-            ->first();
+            ->limit(5)
+            ->get();
+
+        $venueTokens = $this->nameTokens($venueName);
+
+        return $candidates->first(
+            fn (Spot $spot) => array_intersect($venueTokens, $this->nameTokens($spot->name)) !== [],
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function nameTokens(string $name): array
+    {
+        preg_match_all('/[\p{L}]{4,}/u', mb_strtolower($name), $matches);
+
+        return $matches[0] ?? [];
     }
 
     private function nearestVeedel(float $lat, float $lng): ?string

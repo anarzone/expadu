@@ -89,10 +89,11 @@ class ImportManualEvents extends Command
 
             // The old scraper seeded the same community events as one
             // row per week — hide those so the catalogue is canonical.
+            // (NULL-safe: legacy rows have source = NULL.)
             Event::query()
                 ->where('title', $record['title'])
                 ->where('id', '!=', $event->id)
-                ->where('source', '!=', 'manual')
+                ->whereRaw("source IS DISTINCT FROM 'manual'")
                 ->update(['status' => 'hidden']);
 
             $imported++;

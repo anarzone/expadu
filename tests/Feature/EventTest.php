@@ -1,39 +1,54 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Event;
 use App\Models\User;
+use App\Models\Venue;
 
-test('events page renders with upcoming events', function () {
+test('events page renders the shell with filters from the URL', function () {
     $user = User::factory()->onboarded()->create();
-    Event::factory()->count(3)->create(['starts_at' => now()->addDays(2)]);
     $this->actingAs($user);
 
-    $response = $this->get(route('events'));
+    $response = $this->get(route('events', ['window' => 'weekend', 'category' => 'sports', 'free' => 1]));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('events')
-        ->missing('dbEvents')
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->has('dbEvents.data', 3)
-        )
+        ->where('filters.window', 'weekend')
+        ->where('filters.category', 'sports')
+        ->where('filters.free', true)
     );
 });
 
-test('events can be filtered by category', function () {
-    $user = User::factory()->onboarded()->create();
-    Event::factory()->create(['category' => 'language', 'starts_at' => now()->addDay()]);
-    Event::factory()->create(['category' => 'sports', 'starts_at' => now()->addDay()]);
-    $this->actingAs($user);
+test('an invalid window falls back to today', function () {
+    $this->actingAs(User::factory()->onboarded()->create());
 
-    $response = $this->get(route('events', ['category' => 'language']));
+    $this->get(route('events', ['window' => 'someday']))
+        ->assertInertia(fn ($page) => $page->where('filters.window', 'today'));
+});
 
-    $response->assertInertia(fn ($page) => $page
-        ->missing('dbEvents')
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->has('dbEvents.data', 1)
-        )
-    );
+test('veedel options list only veedels with upcoming events', function () {
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    $active = Venue::create(['name' => 'A', 'veedel' => 'Ehrenfeld']);
+    $stale = Venue::create(['name' => 'B', 'veedel' => 'Porz']);
+    Event::factory()->create(['venue_id' => $active->id, 'starts_at' => now()->addDay()]);
+    Event::factory()->create(['venue_id' => $stale->id, 'starts_at' => now()->subDays(30), 'status' => 'expired']);
+
+    $this->get(route('events'), [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => 'events',
+        'X-Inertia-Partial-Data' => 'veedelOptions',
+    ])->assertOk()->assertJsonPath('props.veedelOptions', ['Ehrenfeld']);
+});
+
+test('legacy detail and saved URLs redirect to the events page', function () {
+    $this->actingAs(User::factory()->onboarded()->create());
+    $event = Event::factory()->create();
+
+    $this->get(route('events.show', $event))->assertRedirect(route('events'));
+    $this->get(route('events.saved'))->assertRedirect(route('events'));
 });
 
 test('user can join an event', function () {
@@ -55,21 +70,4 @@ test('user can leave an event', function () {
     $this->delete(route('events.leave', $event));
 
     expect($user->attendingEvents()->where('events.id', $event->id)->exists())->toBeFalse();
-});
-
-test('saved events page shows joined events', function () {
-    $user = User::factory()->onboarded()->create();
-    $event = Event::factory()->create(['starts_at' => now()->addDays(3)]);
-    $user->attendingEvents()->attach($event->id, ['joined_at' => now()]);
-    $this->actingAs($user);
-
-    $response = $this->get(route('events.saved'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->missing('dbEvents')
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->has('dbEvents.data', 1)
-        )
-    );
 });

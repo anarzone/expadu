@@ -34,6 +34,8 @@ export function ContentCard({
     chips = [],
     tip,
     action,
+    secondaryAction,
+    live = false,
     count,
     active = false,
     expanded = false,
@@ -51,6 +53,10 @@ export function ContentCard({
     chips?: CardChip[];
     tip?: string | null;
     action?: ReactNode;
+    /** Lighter companion to the primary action (e.g. "Remind me"). */
+    secondaryAction?: ReactNode;
+    /** Pulsing dot next to the meta — "starting soon". */
+    live?: boolean;
     count?: number;
     active?: boolean;
     expanded?: boolean;
@@ -159,8 +165,14 @@ export function ContentCard({
 
                             {/* Meta line */}
                             {meta && (
-                                <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                                    {meta}
+                                <div className="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-muted-foreground">
+                                    {live && (
+                                        <span
+                                            className="size-1.5 shrink-0 animate-pulse rounded-full bg-success"
+                                            aria-label="starting soon"
+                                        />
+                                    )}
+                                    <span className="truncate">{meta}</span>
                                 </div>
                             )}
                         </div>
@@ -187,9 +199,11 @@ export function ContentCard({
                         </div>
                     )}
 
-                    {/* Action — bottom-anchored so grid rows stay even */}
-                    {action && (
-                        <div className="mt-auto flex justify-end pt-3">
+                    {/* Actions — bottom-anchored so grid rows stay even;
+                        the secondary stays visually lighter */}
+                    {(action || secondaryAction) && (
+                        <div className="mt-auto flex items-center justify-end gap-2 pt-3">
+                            {secondaryAction}
                             {action}
                         </div>
                     )}

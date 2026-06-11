@@ -47,6 +47,8 @@ export type Destination = {
     lat: number;
     lng: number;
     address?: string;
+    /** ISO start time when navigating to a timed event. */
+    arriveBy?: string;
 };
 
 const CSRF = () =>
@@ -201,6 +203,17 @@ export function TakeMeThereSheet({
                     )}
                 </div>
             </div>
+
+            {/* Timed destination — what the journey must beat */}
+            {destination.arriveBy && (
+                <div className="mb-3 rounded-[9px] bg-warn-soft px-3 py-2 text-[13px] font-medium text-warn">
+                    🕐 Starts at{' '}
+                    {new Date(destination.arriveBy).toLocaleTimeString(
+                        'en-GB',
+                        { hour: '2-digit', minute: '2-digit' },
+                    )}
+                </div>
+            )}
 
             {/* Origin chip — confirm "I'm here" to replan from your real position */}
             {data?.from && (

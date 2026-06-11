@@ -42,6 +42,10 @@ export function PlaceRichDetail({
     showPhoto?: boolean;
 }) {
     const [context, setContext] = useState<PlaceContext | null>(null);
+    const [events, setEvents] = useState<{
+        count: number;
+        venueId: number | null;
+    } | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -58,6 +62,18 @@ export function PlaceRichDetail({
             .catch(() => {
                 // Context is enrichment — the detail works without it.
             });
+
+        fetch(`/api/places/${place.id}/events`, { credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+            .then((json) => {
+                if (!cancelled && (json.count ?? 0) > 0) {
+                    setEvents({
+                        count: json.count,
+                        venueId: json.data?.[0]?.venue_id ?? null,
+                    });
+                }
+            })
+            .catch(() => {});
 
         return () => {
             cancelled = true;
@@ -218,6 +234,24 @@ export function PlaceRichDetail({
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* Events at this place — the Places↔Events bridge */}
+            {events && (
+                <a
+                    href={
+                        events.venueId
+                            ? `/events?venue=${events.venueId}&window=week`
+                            : '/events?window=week'
+                    }
+                    className="mt-3 flex w-fit items-center gap-1.5 rounded-full border border-border bg-card py-1.5 pr-3 pl-2.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-primary"
+                >
+                    📅{' '}
+                    <b className="font-semibold text-foreground">
+                        {events.count} {events.count === 1 ? 'event' : 'events'}{' '}
+                        here this week
+                    </b>
+                </a>
             )}
 
             {/* Same-name cluster */}

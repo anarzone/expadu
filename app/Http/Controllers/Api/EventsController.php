@@ -126,6 +126,7 @@ class EventsController extends Controller
                 'place_name' => $venue?->place?->name,
             ],
             'source_url' => $event->source_url,
+            'venue_id' => $event->venue_id,
             'is_recurring' => $event->recurrence !== null,
             'recurrence_text' => $this->recurrenceText($event),
             'verified' => $event->verified_at !== null,

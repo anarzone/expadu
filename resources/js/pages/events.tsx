@@ -1,744 +1,563 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
-import { EventCard } from '@/components/events/event-card';
-import { EventDetailContent } from '@/components/events/event-detail-content';
-import { EventsHero } from '@/components/events/events-hero';
-import { EventsRightPanel } from '@/components/events/events-right-panel';
+import { Head, Deferred, usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { EventRichDetail } from '@/components/events/event-rich-detail';
+import { RemindMeButton } from '@/components/events/remind-me-button';
+import type {
+    EventOccurrence,
+    EventReminderEntry,
+} from '@/components/events/types';
+import { eventIllustrationKey } from '@/components/events/types';
+import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
+import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { CategoryIllustration } from '@/components/places/category-illustration';
+import { ContentCard } from '@/components/places/content-card';
+import type { CardChip } from '@/components/places/content-card';
+import { PlaceRichDetail } from '@/components/places/place-rich-detail';
+import type { Place } from '@/components/places/types';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
-import { useTabState } from '@/hooks/use-tab-state';
-import { useTracker } from '@/hooks/use-tracker';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
 
-// ============================================================
-// Types — exported so child components can import them
-// ============================================================
-
-export type EventTag = { l: string; bg: string; c: string };
-
-export type EventData = {
-    id: number;
-    date: string;
-    month: string;
-    day: string;
-    fullDate: string;
-    title: string;
-    emoji?: string;
-    venue: string;
-    area: string;
-    distance: string;
-    time: string;
-    duration: string | null;
-    price: string | null;
-    color: string;
-    barColor: string;
-    categories: string[];
-    englishFriendly: boolean;
-    free: boolean;
-    attending: number;
-    max: number | null;
-    going: boolean;
-    saved: boolean;
-    attendees: string[];
-    featured: boolean;
-    karneval: boolean;
-    desc: string;
-    tags: EventTag[];
-    organiser: string;
-    link: string | null;
-};
-
-// No more SEED_EVENTS — data comes from backend via dbEvents prop
-
-// ============================================================
-// Filter config
-// ============================================================
-
-const FILTERS = [
-    { id: 'all', label: 'All' },
-    { id: 'expat', label: 'Expat meetups' },
-    { id: 'language', label: 'Language exchange' },
-    { id: 'culture', label: 'Culture' },
-    { id: 'music', label: 'Music' },
-    { id: 'food', label: 'Food & drink' },
-    { id: 'sport', label: 'Sport' },
-    { id: 'english', label: '🇬🇧 English-friendly' },
-    { id: 'free', label: 'Free entry' },
+const WINDOWS: Array<{ id: string; label: string; emoji: string }> = [
+    { id: 'today', label: 'Today', emoji: '⚡' },
+    { id: 'tomorrow', label: 'Tomorrow', emoji: '🌅' },
+    { id: 'weekend', label: 'Weekend', emoji: '🎉' },
+    { id: 'week', label: 'Next week', emoji: '📅' },
 ];
 
-const TABS = [
-    { id: 'upcoming', label: 'Upcoming' },
-    { id: 'calendar', label: 'Calendar' },
-    { id: 'saved', label: 'Saved' },
+const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
+    { id: 'language_exchange', label: 'Language exchange', emoji: '🗣️' },
+    { id: 'stammtisch', label: 'Stammtisch', emoji: '🍻' },
+    { id: 'intl_meetup', label: 'International', emoji: '🌍' },
+    { id: 'sports', label: 'Sports', emoji: '⚽' },
+    { id: 'culture', label: 'Culture', emoji: '🎭' },
+    { id: 'party', label: 'Party', emoji: '🎉' },
 ];
 
-const MONTH_NAMES = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-];
-const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+function occurrenceKey(o: {
+    event_id?: number;
+    id?: number;
+    occurrence_start: string;
+}): string {
+    return `${o.event_id ?? o.id}|${new Date(o.occurrence_start).getTime()}`;
+}
 
-// ============================================================
-// Page Component
-// ============================================================
+function eventChips(occurrence: EventOccurrence): CardChip[] {
+    return occurrence.chips.slice(0, 4).map((chip) => ({
+        label: chip,
+        tone: chip === 'free' ? ('price' as const) : ('feature' as const),
+    }));
+}
+
+function startsWithinFourHours(occurrence: EventOccurrence): boolean {
+    const diff = new Date(occurrence.occurrence_start).getTime() - Date.now();
+
+    return diff > 0 && diff <= 4 * 3600 * 1000;
+}
+
+function placeMeta(place: Place): string {
+    return [
+        place.fine_label ?? 'Place',
+        place.park ?? place.veedel,
+        place.distance_min != null ? `${place.distance_min} min away` : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+}
 
 export default function Events() {
-    const { track } = useTracker();
-    const { dbEvents: dbEventsRaw } = usePage<{
-        dbEvents?: { data: EventData[] };
+    const { filters, veedelOptions } = usePage<{
+        filters: {
+            window: string;
+            category: string | null;
+            veedel: string | null;
+            free: boolean;
+            venue: string | null;
+        };
+        veedelOptions?: string[];
     }>().props;
-    const dbEvents = dbEventsRaw ?? { data: [] };
 
-    // Derive events from backend data
-    const [localOverrides, setLocalOverrides] = useState<
-        Record<number, { going?: boolean; saved?: boolean; attending?: number }>
-    >({});
-    const events = useMemo(() => {
-        return (dbEvents?.data ?? []).map((e) => ({
-            ...e,
-            ...localOverrides[e.id],
-        }));
-    }, [dbEvents, localOverrides]);
+    const [window_, setWindow] = useState(filters.window);
+    const [category, setCategory] = useState<string | null>(filters.category);
+    const [veedel, setVeedel] = useState<string | null>(filters.veedel);
+    const [free, setFree] = useState<boolean>(filters.free);
+    const [venueId] = useState<string | null>(filters.venue);
 
-    // UI state
-    const [activeTab, setActiveTab] = useTabState('upcoming');
-    const [activeFilter, setActiveFilter] = useState('all');
-    const [search, setSearch] = useState('');
-    const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+    const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
+    const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
+    const [reminders, setReminders] = useState<Set<string>>(new Set());
 
-    // Calendar state
-    const [calYear, setCalYear] = useState(() => new Date().getFullYear());
-    const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
-    const [selectedCalDay, setSelectedCalDay] = useState<number | null>(null);
+    const [expandedKey, setExpandedKey] = useState<string | null>(null);
+    const [detail, setDetail] = useState<EventOccurrence | null>(null);
+    const [placeDetail, setPlaceDetail] = useState<Place | null>(null);
+    const [destination, setDestination] = useState<Destination | null>(null);
 
-    // ── Filtering ──
-    const filtered = useMemo(() => {
-        return events.filter((e) => {
-            const matchFilter =
-                activeFilter === 'all'
-                    ? true
-                    : activeFilter === 'english'
-                      ? e.englishFriendly
-                      : activeFilter === 'free'
-                        ? e.free
-                        : e.categories.includes(activeFilter);
-            const q = search.toLowerCase().trim();
-            const matchSearch =
-                !q ||
-                e.title.toLowerCase().includes(q) ||
-                e.venue.toLowerCase().includes(q) ||
-                e.area.toLowerCase().includes(q) ||
-                e.categories.some((c) => c.includes(q));
+    const isMobile = useIsMobile();
+    const reqRef = useRef(0);
 
-            return matchFilter && matchSearch;
-        });
-    }, [events, activeFilter, search]);
+    const fetchEvents = useCallback(
+        (w: string, c: string | null, v: string | null, f: boolean) => {
+            const token = ++reqRef.current;
+            const params = new URLSearchParams({ window: w });
 
-    // ── Group events by date ──
-    const groupedByDate = useMemo(() => {
-        const map: Record<string, EventData[]> = {};
-
-        for (const e of filtered) {
-            const key = `${e.day} ${e.date} ${e.month}`;
-
-            if (!map[key]) {
-                map[key] = [];
+            if (c) {
+                params.set('category', c);
             }
 
-            map[key].push(e);
-        }
-
-        return map;
-    }, [filtered]);
-
-    // ── Saved events ──
-    const savedEvents = useMemo(() => events.filter((e) => e.saved), [events]);
-
-    // ── Calendar ──
-    const calEventDates = useMemo(() => {
-        const set = new Set<number>();
-        events.forEach((e) => {
-            const d = new Date(e.fullDate);
-
-            if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
-                set.add(parseInt(e.date));
+            if (v) {
+                params.set('veedel', v);
             }
-        });
 
-        return set;
-    }, [events, calYear, calMonth]);
+            if (f) {
+                params.set('free', '1');
+            }
 
-    const calDayEvents = useMemo(() => {
-        if (selectedCalDay === null) {
-            return [];
+            if (venueId) {
+                params.set('venue', venueId);
+            }
+
+            fetch(`/api/events?${params}`, { credentials: 'same-origin' })
+                .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+                .then((json) => {
+                    if (token !== reqRef.current) {
+                        return;
+                    }
+
+                    setOccurrences(json.data ?? []);
+                    setExpandedKey(null);
+                    setStatus('ok');
+                })
+                .catch(() => {
+                    if (token === reqRef.current) {
+                        setStatus('error');
+                    }
+                });
+        },
+        [venueId],
+    );
+
+    // Fetch on filter change + keep the URL shareable
+    useEffect(() => {
+        fetchEvents(window_, category, veedel, free);
+
+        const params = new URLSearchParams();
+
+        if (window_ !== 'today') {
+            params.set('window', window_);
         }
 
-        return events.filter((e) => {
-            const d = new Date(e.fullDate);
-
-            return (
-                d.getFullYear() === calYear &&
-                d.getMonth() === calMonth &&
-                parseInt(e.date) === selectedCalDay
-            );
-        });
-    }, [events, calYear, calMonth, selectedCalDay]);
-
-    // ── Handlers ──
-    function toggleRsvp(id: number) {
-        const ev = events.find((e) => e.id === id);
-
-        if (!ev) {
-            return;
+        if (category) {
+            params.set('category', category);
         }
 
-        if (!ev.going) {
-            track('event_rsvp', { event_id: id, event_title: ev.title });
+        if (veedel) {
+            params.set('veedel', veedel);
         }
 
-        const newGoing = !ev.going;
-        setLocalOverrides((prev) => ({
-            ...prev,
-            [id]: {
-                ...prev[id],
-                going: newGoing,
-                attending: newGoing ? ev.attending + 1 : ev.attending - 1,
-            },
-        }));
+        if (free) {
+            params.set('free', '1');
+        }
 
-        if (ev.going) {
-            router.delete(`/events/${id}/join`, {
-                preserveScroll: true,
-                preserveState: true,
-            });
+        if (venueId) {
+            params.set('venue', venueId);
+        }
+
+        const qs = params.toString();
+        globalThis.history.replaceState({}, '', `/events${qs ? `?${qs}` : ''}`);
+    }, [window_, category, veedel, free, venueId, fetchEvents]);
+
+    // Back/forward re-reads the URL
+    useEffect(() => {
+        function onPop() {
+            const sp = new URLSearchParams(globalThis.location.search);
+            setWindow(sp.get('window') ?? 'today');
+            setCategory(sp.get('category'));
+            setVeedel(sp.get('veedel'));
+            setFree(sp.get('free') === '1');
+        }
+        globalThis.addEventListener('popstate', onPop);
+
+        return () => globalThis.removeEventListener('popstate', onPop);
+    }, []);
+
+    // The user's pending reminders → filled-bell state
+    useEffect(() => {
+        fetch('/api/reminders', { credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+            .then((json) => {
+                setReminders(
+                    new Set(
+                        (json.data ?? []).map((r: EventReminderEntry) =>
+                            occurrenceKey(r),
+                        ),
+                    ),
+                );
+            })
+            .catch(() => {});
+    }, []);
+
+    function openOccurrence(occurrence: EventOccurrence) {
+        if (isMobile) {
+            const key = occurrenceKey(occurrence);
+            setExpandedKey((k) => (k === key ? null : key));
         } else {
-            router.post(
-                `/events/${id}/join`,
-                {},
-                { preserveScroll: true, preserveState: true },
-            );
+            setDetail(occurrence);
         }
     }
 
-    function toggleSave(id: number) {
-        const ev = events.find((e) => e.id === id);
-
-        if (!ev) {
+    function takeMeThere(occurrence: EventOccurrence) {
+        if (occurrence.venue.lat == null || occurrence.venue.lng == null) {
             return;
         }
 
-        if (!ev.saved) {
-            track('event_saved', { event_id: id });
-        }
-
-        setLocalOverrides((prev) => ({
-            ...prev,
-            [id]: { ...prev[id], saved: !ev.saved },
-        }));
+        setDetail(null);
+        setDestination({
+            name: occurrence.venue.name ?? occurrence.title,
+            emoji: occurrence.emoji,
+            lat: occurrence.venue.lat,
+            lng: occurrence.venue.lng,
+            arriveBy: occurrence.occurrence_start,
+        });
     }
 
-    function openEvent(id: number) {
-        const ev = events.find((e) => e.id === id);
-
-        if (ev) {
-            setSelectedEvent(ev);
-        }
+    function openPlace(placeId: number) {
+        fetch(`/api/places/${placeId}`, { credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+            .then((json) => {
+                setDetail(null);
+                setExpandedKey(null);
+                setPlaceDetail(json.data);
+            })
+            .catch(() => {});
     }
 
-    function changeMonth(dir: number) {
-        let m = calMonth + dir;
-        let y = calYear;
+    function setReminded(occurrence: EventOccurrence, reminded: boolean) {
+        setReminders((prev) => {
+            const next = new Set(prev);
+            const key = occurrenceKey(occurrence);
 
-        if (m > 11) {
-            m = 0;
-            y++;
-        }
+            if (reminded) {
+                next.add(key);
+            } else {
+                next.delete(key);
+            }
 
-        if (m < 0) {
-            m = 11;
-            y--;
-        }
-
-        setCalMonth(m);
-        setCalYear(y);
-        setSelectedCalDay(null);
+            return next;
+        });
     }
 
-    // Keep sheet event in sync with events state
-    const sheetEvent = selectedEvent
-        ? (events.find((e) => e.id === selectedEvent.id) ?? selectedEvent)
-        : null;
+    const windowLabel = WINDOWS.find((w) => w.id === window_)?.label ?? 'Today';
+    const railOptions = veedelOptions ?? [];
+
+    const detailBody = (occurrence: EventOccurrence) => (
+        <EventRichDetail
+            occurrence={occurrence}
+            onNavigate={() => takeMeThere(occurrence)}
+            onOpenPlace={openPlace}
+        />
+    );
 
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Events', href: '/events' }]}
-            rightPanel={<EventsRightPanel onSelectEvent={openEvent} />}
-            showBack
-        >
+        <AppLayout fullWidth>
             <Head title="Events" />
-            <div className="mx-auto w-full max-w-[680px]">
-                {/* ── Sticky header: title + pill tabs ── */}
-                <div className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/94 px-6 py-3.5 backdrop-blur-[16px]">
-                    <span
-                        className="shrink-0"
-                        style={{
-                            fontFamily: "'Fraunces', serif",
-                            fontSize: 20,
-                            fontWeight: 500,
-                            letterSpacing: '-0.01em',
-                        }}
-                    >
+            <div className="mx-auto h-full w-full max-w-[1120px] overflow-y-auto px-4 pt-6 pb-24 md:px-8">
+                {/* Header */}
+                <div className="mb-5">
+                    <h1 className="font-display text-[26px] font-medium tracking-tight">
                         Events
-                    </span>
-                    <div className="flex gap-1 rounded-full bg-surface-2 p-[3px]">
-                        {TABS.map((t) => (
-                            <button
-                                key={t.id}
-                                onClick={() => setActiveTab(t.id)}
-                                className={`cursor-pointer rounded-full border-none px-3.5 py-1.5 transition-all ${activeTab === t.id ? 'bg-card text-foreground shadow-[0_1px_4px_rgba(0,0,0,0.08)]' : 'bg-transparent text-muted-foreground'}`}
-                                style={{
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    fontFamily: "'Geist', sans-serif",
-                                }}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
+                    </h1>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">
+                        Show up alone, leave with a contact
+                    </p>
                 </div>
 
-                {/* ════ UPCOMING TAB ════ */}
-                {activeTab === 'upcoming' && (
-                    <>
-                        <EventsHero />
+                {/* Time rail — the opener is when, not where */}
+                <div
+                    className="mb-3 flex gap-2 overflow-x-auto pb-1"
+                    style={{ scrollbarWidth: 'none' }}
+                >
+                    {WINDOWS.map((w) => (
+                        <button
+                            key={w.id}
+                            onClick={() => setWindow(w.id)}
+                            aria-pressed={window_ === w.id}
+                            className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl border px-4 py-2.5 text-[14px] font-semibold transition-all ${
+                                window_ === w.id
+                                    ? 'border-primary bg-primary text-white'
+                                    : 'border-border bg-card text-foreground hover:border-primary'
+                            }`}
+                        >
+                            {w.emoji} {w.label}
+                        </button>
+                    ))}
+                </div>
 
-                        {/* Search + Filters */}
-                        <div className="border-b border-border px-6 pt-3.5 pb-3">
-                            {/* Search bar */}
-                            <div className="mb-2.5 flex cursor-text items-center gap-[9px] rounded-[9px] border border-border bg-surface-2 px-[13px] py-2.5 transition-all focus-within:border-primary focus-within:bg-card focus-within:shadow-[0_0_0_3px_#EBF0FD]">
-                                <span
-                                    style={{ fontSize: 15, color: '#AAA89F' }}
-                                >
-                                    🔍
-                                </span>
-                                <input
-                                    type="text"
-                                    placeholder="Search events…"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-[#AAA89F]"
-                                    style={{
-                                        fontFamily: "'Geist', sans-serif",
-                                        fontSize: 14,
-                                    }}
-                                />
-                                {search && (
-                                    <button
-                                        onClick={() => setSearch('')}
-                                        className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
+                {/* Category chips + free toggle */}
+                <div
+                    className="mb-2 flex gap-2 overflow-x-auto pb-1"
+                    style={{ scrollbarWidth: 'none' }}
+                >
+                    {CATEGORIES.map((c) => {
+                        const on = category === c.id;
 
-                            {/* Filter pills */}
-                            <div
-                                className="flex gap-1.5 overflow-x-auto"
-                                style={{ scrollbarWidth: 'none' }}
+                        return (
+                            <button
+                                key={c.id}
+                                onClick={() => setCategory(on ? null : c.id)}
+                                aria-pressed={on}
+                                className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                    on
+                                        ? 'border-primary bg-accent-soft text-primary'
+                                        : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                }`}
                             >
-                                {FILTERS.map((f) => (
-                                    <button
-                                        key={f.id}
-                                        onClick={() => setActiveFilter(f.id)}
-                                        className={`shrink-0 cursor-pointer rounded-full border px-3 py-[5px] transition-all ${activeFilter === f.id ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground'}`}
-                                        style={{
-                                            fontSize: 12,
-                                            fontWeight: 500,
-                                            fontFamily: "'Geist', sans-serif",
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        {f.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                                {c.emoji} {c.label}
+                            </button>
+                        );
+                    })}
+                    <button
+                        onClick={() => setFree((f) => !f)}
+                        aria-pressed={free}
+                        className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                            free
+                                ? 'border-success bg-success-soft text-success'
+                                : 'border-border bg-card text-muted-foreground hover:border-success hover:text-success'
+                        }`}
+                    >
+                        free
+                    </button>
+                </div>
 
-                        {/* Events feed */}
-                        <div className="px-6 py-4">
-                            {filtered.length === 0 ? (
-                                <div
-                                    className="py-12 text-center"
-                                    style={{ color: '#AAA89F' }}
+                {/* Veedel chips — secondary filter */}
+                <Deferred data="veedelOptions" fallback={null}>
+                    {railOptions.length > 0 ? (
+                        <div
+                            className="mb-4 flex gap-2 overflow-x-auto pb-1"
+                            style={{ scrollbarWidth: 'none' }}
+                        >
+                            {railOptions.map((name) => (
+                                <button
+                                    key={name}
+                                    onClick={() =>
+                                        setVeedel(veedel === name ? null : name)
+                                    }
+                                    aria-pressed={veedel === name}
+                                    className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                        veedel === name
+                                            ? 'border-primary bg-primary text-white'
+                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                    }`}
                                 >
-                                    <div
-                                        style={{
-                                            fontSize: 36,
-                                            marginBottom: 12,
-                                        }}
-                                    >
-                                        🔍
-                                    </div>
-                                    <div
-                                        className="text-muted-foreground"
-                                        style={{
-                                            fontSize: 15,
-                                            fontWeight: 600,
-                                            marginBottom: 6,
-                                        }}
-                                    >
-                                        No events found
-                                    </div>
-                                    <div style={{ fontSize: 13 }}>
-                                        Try a different filter or search term
-                                    </div>
-                                </div>
-                            ) : (
-                                Object.entries(groupedByDate).map(
-                                    ([label, evs], gi) => {
-                                        const now = new Date();
-                                        const todayDate = String(
-                                            now.getDate(),
-                                        ).padStart(2, '0');
-                                        const todayMonth = now.toLocaleString(
-                                            'en',
-                                            { month: 'short' },
-                                        );
-                                        const isToday =
-                                            label.includes(todayDate) &&
-                                            label.includes(todayMonth);
-
-                                        return (
-                                            <div key={label}>
-                                                {/* Day label with line */}
-                                                <div
-                                                    className="mb-2.5 flex items-center gap-2"
-                                                    style={{
-                                                        marginTop:
-                                                            gi === 0 ? 0 : 16,
-                                                    }}
-                                                >
-                                                    <span
-                                                        style={{
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            textTransform:
-                                                                'uppercase',
-                                                            letterSpacing:
-                                                                '0.08em',
-                                                            color: '#AAA89F',
-                                                        }}
-                                                    >
-                                                        {isToday
-                                                            ? 'Today — '
-                                                            : ''}
-                                                        {label}
-                                                    </span>
-                                                    <div className="h-px flex-1 bg-border" />
-                                                </div>
-
-                                                {evs.map((ev, i) => (
-                                                    <EventCard
-                                                        key={ev.id}
-                                                        event={ev}
-                                                        going={ev.going}
-                                                        saved={ev.saved}
-                                                        onRsvp={() =>
-                                                            toggleRsvp(ev.id)
-                                                        }
-                                                        onSave={() =>
-                                                            toggleSave(ev.id)
-                                                        }
-                                                        onClick={() =>
-                                                            openEvent(ev.id)
-                                                        }
-                                                        index={i}
-                                                    />
-                                                ))}
-                                            </div>
-                                        );
-                                    },
-                                )
-                            )}
+                                    {name}
+                                </button>
+                            ))}
                         </div>
-                    </>
-                )}
+                    ) : (
+                        <span />
+                    )}
+                </Deferred>
 
-                {/* ════ CALENDAR TAB ════ */}
-                {activeTab === 'calendar' && (
-                    <div className="px-6 py-5">
-                        {/* Month header */}
-                        <div className="mb-4 flex items-center justify-between">
-                            <span
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 18,
-                                    fontWeight: 500,
-                                }}
-                            >
-                                {MONTH_NAMES[calMonth]} {calYear}
-                            </span>
-                            <div className="flex gap-1.5">
-                                <CalNavBtn
-                                    label="‹"
-                                    onClick={() => changeMonth(-1)}
-                                />
-                                <CalNavBtn
-                                    label="›"
-                                    onClick={() => changeMonth(1)}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Calendar grid */}
-                        <CalendarGrid
-                            year={calYear}
-                            month={calMonth}
-                            eventDates={calEventDates}
-                            selectedDay={selectedCalDay}
-                            onSelectDay={setSelectedCalDay}
-                        />
-
-                        {/* Events for selected day */}
-                        {selectedCalDay !== null && calDayEvents.length > 0 && (
-                            <div className="mt-4 border-t border-border pt-4">
-                                <div
-                                    className="mb-2.5"
-                                    style={{
-                                        fontSize: 11,
-                                        fontWeight: 700,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.08em',
-                                        color: '#AAA89F',
-                                    }}
-                                >
-                                    Events on {selectedCalDay}{' '}
-                                    {MONTH_NAMES[calMonth]}
-                                </div>
-                                {calDayEvents.map((ev) => (
-                                    <EventCard
-                                        key={ev.id}
-                                        event={ev}
-                                        going={ev.going}
-                                        saved={ev.saved}
-                                        onRsvp={() => toggleRsvp(ev.id)}
-                                        onSave={() => toggleSave(ev.id)}
-                                        onClick={() => openEvent(ev.id)}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                {/* Result count */}
+                {status === 'ok' && (
+                    <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase">
+                        {occurrences.length}{' '}
+                        {occurrences.length === 1 ? 'event' : 'events'} ·{' '}
+                        {windowLabel}
                     </div>
                 )}
 
-                {/* ════ SAVED TAB ════ */}
-                {activeTab === 'saved' && (
-                    <div className="px-6 py-5">
-                        {savedEvents.length === 0 ? (
-                            <div className="py-12 text-center">
-                                <div style={{ fontSize: 40, marginBottom: 12 }}>
-                                    🔖
-                                </div>
-                                <div
-                                    className="text-muted-foreground"
-                                    style={{
-                                        fontSize: 16,
-                                        fontWeight: 600,
-                                        marginBottom: 6,
-                                    }}
+                {status === 'loading' ? (
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="h-56 animate-pulse rounded-2xl bg-secondary"
+                            />
+                        ))}
+                    </div>
+                ) : status === 'error' ? (
+                    <div className="rounded-2xl border border-border bg-card p-8 text-center">
+                        <p className="text-sm text-muted-foreground">
+                            Couldn't load events.
+                        </p>
+                        <button
+                            onClick={() =>
+                                fetchEvents(window_, category, veedel, free)
+                            }
+                            className="mt-3 rounded-[9px] bg-primary px-4 py-2 text-[13px] font-semibold text-white"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                ) : occurrences.length === 0 ? (
+                    <div className="rounded-2xl border border-border bg-card p-8 text-center">
+                        <p className="text-sm text-muted-foreground">
+                            Quiet {windowLabel.toLowerCase()} —{' '}
+                            {window_ === 'weekend' || window_ === 'week'
+                                ? 'try the whole week.'
+                                : 'the weekend looks better.'}
+                        </p>
+                        <button
+                            onClick={() => {
+                                setCategory(null);
+                                setFree(false);
+                                setWindow(
+                                    window_ === 'weekend' || window_ === 'week'
+                                        ? 'week'
+                                        : 'weekend',
+                                );
+                            }}
+                            className="mt-3 rounded-[9px] border border-border px-4 py-2 text-[13px] font-semibold text-primary"
+                        >
+                            {window_ === 'weekend' || window_ === 'week'
+                                ? 'See the whole week'
+                                : 'Jump to the weekend'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {occurrences.map((occurrence) => {
+                            const key = occurrenceKey(occurrence);
+
+                            return (
+                                <ContentCard
+                                    key={key}
+                                    variant="place"
+                                    coarse={eventIllustrationKey(
+                                        occurrence.category,
+                                    )}
+                                    title={occurrence.title}
+                                    emoji={occurrence.emoji}
+                                    meta={occurrence.meta}
+                                    live={startsWithinFourHours(occurrence)}
+                                    chips={eventChips(occurrence)}
+                                    tip={occurrence.tip}
+                                    expanded={isMobile && expandedKey === key}
+                                    onActivate={() =>
+                                        openOccurrence(occurrence)
+                                    }
+                                    secondaryAction={
+                                        <RemindMeButton
+                                            eventId={occurrence.id}
+                                            occurrenceStart={
+                                                occurrence.occurrence_start
+                                            }
+                                            reminded={reminders.has(key)}
+                                            onChange={(r) =>
+                                                setReminded(occurrence, r)
+                                            }
+                                        />
+                                    }
+                                    action={
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                takeMeThere(occurrence);
+                                            }}
+                                            className="rounded-[9px] bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
+                                        >
+                                            → Take me there
+                                        </button>
+                                    }
                                 >
-                                    No saved events yet
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: 13,
-                                        color: '#AAA89F',
-                                        lineHeight: 1.6,
-                                    }}
-                                >
-                                    Tap the ♡ on any event to save it here for
-                                    later.
-                                </div>
-                            </div>
-                        ) : (
-                            savedEvents.map((ev) => (
-                                <EventCard
-                                    key={ev.id}
-                                    event={ev}
-                                    going={ev.going}
-                                    saved={ev.saved}
-                                    onRsvp={() => toggleRsvp(ev.id)}
-                                    onSave={() => toggleSave(ev.id)}
-                                    onClick={() => openEvent(ev.id)}
-                                />
-                            ))
-                        )}
+                                    {isMobile ? (
+                                        <div className="border-t border-border px-4 py-4">
+                                            {detailBody(occurrence)}
+                                        </div>
+                                    ) : undefined}
+                                </ContentCard>
+                            );
+                        })}
                     </div>
                 )}
             </div>
 
-            {/* ── Detail bottom sheet ── */}
-            <BottomSheet
-                open={sheetEvent !== null}
-                onClose={() => setSelectedEvent(null)}
+            {/* Desktop detail — traditional centered modal */}
+            <Dialog
+                open={!isMobile && detail !== null}
+                onOpenChange={(open) => !open && setDetail(null)}
             >
-                {sheetEvent && (
-                    <EventDetailContent
-                        event={sheetEvent}
-                        going={sheetEvent.going}
-                        onRsvp={() => {
-                            toggleRsvp(sheetEvent.id);
-                        }}
-                    />
-                )}
-            </BottomSheet>
-        </AppLayout>
-    );
-}
-
-// ============================================================
-// Calendar sub-components
-// ============================================================
-
-function CalNavBtn({ label, onClick }: { label: string; onClick: () => void }) {
-    return (
-        <button
-            onClick={onClick}
-            className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-border bg-card transition-all hover:bg-surface-2"
-            style={{ fontSize: 14 }}
-        >
-            {label}
-        </button>
-    );
-}
-
-function CalendarGrid({
-    year,
-    month,
-    eventDates,
-    selectedDay,
-    onSelectDay,
-}: {
-    year: number;
-    month: number;
-    eventDates: Set<number>;
-    selectedDay: number | null;
-    onSelectDay: (d: number) => void;
-}) {
-    const firstDayOfWeek = new Date(year, month, 1).getDay();
-    const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrev = new Date(year, month, 0).getDate();
-
-    const today = new Date();
-    const isCurrentMonth =
-        today.getFullYear() === year && today.getMonth() === month;
-
-    // Next-month fill
-    const total = startOffset + daysInMonth;
-    const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
-
-    return (
-        <div className="grid grid-cols-7 gap-0.5">
-            {/* DOW headers */}
-            {DOW_NAMES.map((d) => (
-                <div
-                    key={d}
-                    className="py-1.5 text-center"
-                    style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
-                        color: '#AAA89F',
-                    }}
-                >
-                    {d}
-                </div>
-            ))}
-
-            {/* Prev month */}
-            {Array.from({ length: startOffset }, (_, i) => (
-                <div
-                    key={`prev-${i}`}
-                    className="flex aspect-square flex-col items-center justify-center rounded-[9px]"
-                    style={{ fontSize: 13, fontWeight: 500, color: '#AAA89F' }}
-                >
-                    {daysInPrev - startOffset + 1 + i}
-                </div>
-            ))}
-
-            {/* Current month */}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-                const d = i + 1;
-                const isTodayCell = isCurrentMonth && d === today.getDate();
-                const isSelected = selectedDay === d;
-                const hasEvents = eventDates.has(d);
-
-                let bg = 'transparent';
-                let color = 'var(--foreground)';
-                let fontWeight = 500;
-
-                if (isSelected) {
-                    bg = 'var(--primary)';
-                    color = 'white';
-                    fontWeight = 700;
-                } else if (isTodayCell) {
-                    bg = '#EBF0FD';
-                    color = 'var(--primary)';
-                    fontWeight = 700;
-                }
-
-                return (
-                    <div
-                        key={`day-${d}`}
-                        onClick={() => onSelectDay(d)}
-                        className="relative flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[9px] transition-all hover:bg-surface-2"
-                        style={{
-                            fontSize: 13,
-                            fontWeight,
-                            background: bg,
-                            color,
-                        }}
+                {detail && (
+                    <DialogContent
+                        aria-describedby={undefined}
+                        className="gap-0 overflow-hidden p-0 sm:max-w-md"
                     >
-                        {d}
-                        {hasEvents && (
-                            <div
-                                className="absolute bottom-[3px] rounded-full"
-                                style={{
-                                    width: 4,
-                                    height: 4,
-                                    background: isSelected
-                                        ? 'white'
-                                        : 'var(--primary)',
+                        <DialogTitle className="sr-only">
+                            {detail.title}
+                        </DialogTitle>
+                        <CategoryIllustration
+                            coarse={eventIllustrationKey(detail.category)}
+                            className="h-24 w-full"
+                            iconSize={34}
+                        />
+                        <div className="max-h-[72vh] overflow-y-auto p-5">
+                            <div className="mb-3 flex items-start gap-2.5">
+                                <span className="text-2xl leading-tight">
+                                    {detail.emoji}
+                                </span>
+                                <div className="min-w-0">
+                                    <h2 className="font-display text-xl leading-tight font-medium">
+                                        {detail.title}
+                                    </h2>
+                                    <div className="mt-0.5 text-[13px] text-muted-foreground">
+                                        {detail.meta}
+                                    </div>
+                                </div>
+                            </div>
+                            {detailBody(detail)}
+                        </div>
+                    </DialogContent>
+                )}
+            </Dialog>
+
+            {/* The linked place — same rich detail as the Places page */}
+            {placeDetail && !isMobile && (
+                <Dialog
+                    open
+                    onOpenChange={(open) => !open && setPlaceDetail(null)}
+                >
+                    <DialogContent
+                        aria-describedby={undefined}
+                        className="gap-0 overflow-hidden p-0 sm:max-w-md"
+                    >
+                        <DialogTitle className="sr-only">
+                            {placeDetail.name}
+                        </DialogTitle>
+                        <div className="max-h-[80vh] overflow-y-auto p-5">
+                            <PlaceRichDetail
+                                place={placeDetail}
+                                meta={placeMeta(placeDetail)}
+                                onNavigate={(target) => {
+                                    setPlaceDetail(null);
+                                    setDestination(target);
                                 }}
                             />
-                        )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+            {placeDetail && isMobile && (
+                <BottomSheet open onClose={() => setPlaceDetail(null)}>
+                    <div className="pb-24">
+                        <PlaceRichDetail
+                            place={placeDetail}
+                            meta={placeMeta(placeDetail)}
+                            onNavigate={(target) => {
+                                setPlaceDetail(null);
+                                setDestination(target);
+                            }}
+                        />
                     </div>
-                );
-            })}
+                </BottomSheet>
+            )}
 
-            {/* Next month */}
-            {Array.from({ length: remaining }, (_, i) => (
-                <div
-                    key={`next-${i}`}
-                    className="flex aspect-square flex-col items-center justify-center rounded-[9px]"
-                    style={{ fontSize: 13, fontWeight: 500, color: '#AAA89F' }}
-                >
-                    {i + 1}
-                </div>
-            ))}
-        </div>
+            {destination && (
+                <TakeMeThereSheet
+                    destination={destination}
+                    onClose={() => setDestination(null)}
+                />
+            )}
+        </AppLayout>
     );
 }

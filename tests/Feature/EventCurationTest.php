@@ -27,53 +27,18 @@ test('events:curate marks meet-people events', function () {
     expect($concert->fresh()->is_curated)->toBeFalse();
 });
 
-test('events page defaults to the curated subset when one exists', function () {
-    $user = User::factory()->onboarded()->create();
-    Event::factory()->create([
-        'title' => 'International Meetup',
-        'is_curated' => true,
-        'starts_at' => now()->addDay(),
-    ]);
-    Event::factory()->create([
-        'title' => 'Random Concert',
-        'is_curated' => false,
-        'starts_at' => now()->addDay(),
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('events'));
-    $response->assertInertia(fn ($page) => $page
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->has('dbEvents.data', 1)
-        )
-    );
-
-    $all = $this->get(route('events', ['all' => 'true']));
-    $all->assertInertia(fn ($page) => $page
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->has('dbEvents.data', 2)
-        )
-    );
-});
-
-test('translated events prefer the English title', function () {
+test('the events feed prefers the English title', function () {
     $user = User::factory()->onboarded()->create();
     Event::factory()->create([
         'title' => 'Sommerfest im Stadtgarten',
         'title_en' => 'Summer festival in the Stadtgarten',
         'source_lang' => 'de',
-        'is_curated' => true,
-        'starts_at' => now()->addDay(),
+        'starts_at' => now()->addHours(3),
+        'recurrence' => null,
     ]);
 
     $this->actingAs($user);
 
-    $response = $this->get(route('events'));
-    $response->assertInertia(fn ($page) => $page
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->where('dbEvents.data.0.title', 'Summer festival in the Stadtgarten')
-            ->where('dbEvents.data.0.title_original', 'Sommerfest im Stadtgarten')
-        )
-    );
+    $this->getJson('/api/events?window=today')
+        ->assertJsonPath('data.0.title', 'Summer festival in the Stadtgarten');
 });

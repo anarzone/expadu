@@ -127,8 +127,14 @@ test('the same scraped event processed twice stays one record', function () {
 });
 
 test('events:import-manual upserts the curated catalogue with recurring rules', function () {
+    // A legacy scraper row (source NULL) duplicating a catalogue title
+    $legacy = Event::factory()->create(['title' => 'Expat Stammtisch Cologne', 'source' => null]);
+
     $this->artisan('events:import-manual')->assertSuccessful();
     $this->artisan('events:import-manual')->assertSuccessful(); // idempotent
+
+    // NULL-source duplicates get hidden so the catalogue is canonical
+    expect($legacy->refresh()->status)->toBe('hidden');
 
     $exchange = Event::where('source', 'manual')->where('source_uid', 'cologne-language-exchange')->first();
     expect($exchange)->not->toBeNull();
