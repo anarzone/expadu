@@ -77,21 +77,29 @@ class PlacesController extends Controller
 
         $page = (int) ($validated['page'] ?? 1);
 
+        // OSM seeds many identically-named rows (e.g. three "Tischtennisplatte"
+        // in one park corner). Collapse same-name clusters within a ~100m grid
+        // cell into one card carrying cluster_size; distinct locations further
+        // apart stay separate.
         $query
             ->select('*')
             ->selectRaw(
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as distance_km',
                 [$anchorLat, $anchorLng, $anchorLat],
-            );
+            )
+            ->selectRaw('count(*) over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3)) as cluster_size')
+            ->selectRaw('row_number() over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3) order by id) as cluster_rank');
+
+        $outer = Spot::query()->fromSub($query, 'spots')->where('cluster_rank', 1);
 
         // The selected Veedel's own places come first — a page of "nearby"
         // results above them would read as broken filtering. Within each
         // group, closest to the user wins.
         if ($selectedVeedel !== null) {
-            $query->orderByRaw('(veedel = ?) desc', [$selectedVeedel]);
+            $outer->orderByRaw('(veedel = ?) desc', [$selectedVeedel]);
         }
 
-        $paginator = $query
+        $paginator = $outer
             ->orderBy('distance_km')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 

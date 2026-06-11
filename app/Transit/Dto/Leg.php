@@ -16,6 +16,7 @@ final readonly class Leg
         public ?string $lineName = null,
         public ?string $headsign = null,
         public ?string $polyline = null,
+        public ?int $stopsCount = null, // stops ridden until get-off (transit legs)
     ) {}
 
     public function isTransit(): bool
@@ -40,6 +41,7 @@ final readonly class Leg
             'arrive_time' => $this->arriveAt->format('H:i'),
             'duration_min' => $this->durationMin,
             'polyline' => $this->polyline,
+            'stops' => $this->stopsCount,
         ];
     }
 
@@ -58,6 +60,7 @@ final readonly class Leg
             lineName: $data['line'] ?? null,
             headsign: $data['headsign'] ?? null,
             polyline: $data['polyline'] ?? null,
+            stopsCount: isset($data['stops']) ? (int) $data['stops'] : null,
         );
     }
 }

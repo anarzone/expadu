@@ -126,8 +126,10 @@ class TransitousAdapter implements RouteService
                 return null;
             }
 
+            $mode = self::MODE_MAP[$rawLeg['mode'] ?? 'WALK'] ?? 'walk';
+
             $legs[] = new Leg(
-                mode: self::MODE_MAP[$rawLeg['mode'] ?? 'WALK'] ?? 'walk',
+                mode: $mode,
                 from: $this->mapPlace($from),
                 to: $this->mapPlace($to),
                 departAt: CarbonImmutable::parse($rawLeg['startTime'])->setTimezone('Europe/Berlin'),
@@ -136,6 +138,10 @@ class TransitousAdapter implements RouteService
                 lineName: $rawLeg['routeShortName'] ?? null,
                 headsign: $rawLeg['headsign'] ?? null,
                 polyline: $rawLeg['legGeometry']['points'] ?? null,
+                // Stops ridden = intermediate stops passed + the get-off stop.
+                stopsCount: $mode !== 'walk' && isset($rawLeg['intermediateStops'])
+                    ? count($rawLeg['intermediateStops']) + 1
+                    : null,
             );
         }
 

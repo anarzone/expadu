@@ -54,6 +54,7 @@ class PlaceResource extends JsonResource
             'feature_chips' => $this->resolveFeatureChips(),
             'tip' => $this->tip ?: (self::CATEGORY_TIPS[$coarse] ?? null),
             'tip_is_generic' => ! $this->tip,
+            'cluster_size' => (int) ($this->cluster_size ?? 1),
             'transit_hint' => $this->transit_hint ?? null,
             'facts' => $this->resolveFacts(),
         ];

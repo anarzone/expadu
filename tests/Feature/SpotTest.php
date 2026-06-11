@@ -77,6 +77,13 @@ test('default filters land on the home stadtteil inside its bezirk', function ()
         ->where('filters.veedel', null));
 });
 
+test('card showcase renders outside production', function () {
+    $user = User::factory()->onboarded()->create();
+    $this->actingAs($user);
+
+    $this->get(route('dev.cards'))->assertInertia(fn ($page) => $page->component('dev/cards'));
+});
+
 test('places page requires onboarding', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);

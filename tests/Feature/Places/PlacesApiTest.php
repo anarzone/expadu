@@ -121,6 +121,20 @@ test('filters by bezirk across its stadtteile', function () {
         ->toBe(['Ehrenfeld', 'Neuehrenfeld']);
 });
 
+test('collapses identically-named places within ~100m into one card', function () {
+    // Three same-name tables in one park corner → one card, cluster_size 3
+    foreach (range(1, 3) as $i) {
+        Spot::factory()->create(['name' => 'Tischtennisplatte', 'category' => 'table_tennis', 'veedel' => 'Ehrenfeld', 'lat' => 50.9481, 'lng' => 6.9211]);
+    }
+    // Same name but a different corner of the Veedel → stays its own card
+    Spot::factory()->create(['name' => 'Tischtennisplatte', 'category' => 'table_tennis', 'veedel' => 'Ehrenfeld', 'lat' => 50.9580, 'lng' => 6.9100]);
+
+    $response = $this->getJson('/api/places?veedel=Ehrenfeld');
+
+    expect($response->json('meta.total'))->toBe(2);
+    expect(collect($response->json('data'))->pluck('cluster_size')->sort()->values()->all())->toBe([1, 3]);
+});
+
 test('rejects an unknown coarse category', function () {
     $this->getJson('/api/places?category=nightclub')->assertUnprocessable();
 });

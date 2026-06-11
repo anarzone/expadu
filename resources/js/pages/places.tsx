@@ -42,6 +42,10 @@ function placeChips(place: Place): CardChip[] {
         chips.push({ label: f, tone: 'feature' });
     }
 
+    if (place.cluster_size > 1) {
+        chips.push({ label: `×${place.cluster_size} here`, tone: 'feature' });
+    }
+
     return chips;
 }
 

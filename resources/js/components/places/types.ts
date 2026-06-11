@@ -17,6 +17,7 @@ export type Place = {
     feature_chips: string[];
     tip: string | null;
     tip_is_generic: boolean;
+    cluster_size: number;
     transit_hint: string | null;
     facts: PlaceFact[];
 };

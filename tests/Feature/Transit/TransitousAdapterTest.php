@@ -28,6 +28,12 @@ test('maps a real MOTIS plan response to journeys', function () {
     expect($transitLegs)->not->toBeEmpty();
     expect($journey->lines())->toContain('S19');
 
+    // Stops ridden = intermediate stops + the get-off stop (fixture has 1
+    // intermediate stop on the transit leg); walk legs have none.
+    expect(array_values($transitLegs)[0]->stopsCount)->toBe(2);
+    $walkLegs = array_filter($journey->legs, fn ($leg) => ! $leg->isTransit());
+    expect(array_values($walkLegs)[0]->stopsCount)->toBeNull();
+
     // Times are normalized to Berlin local time
     expect($journey->departAt->tzName)->toBe('Europe/Berlin');
 });

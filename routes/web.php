@@ -99,6 +99,11 @@ $appRoutes = function () use ($appDomain) {
         // Explore / Spots
         Route::get('explore', [SpotController::class, 'index'])->name('explore');
 
+        // Card showcase — dev-only reference for ContentCard variants
+        if (! app()->environment('production')) {
+            Route::get('dev/cards', fn () => Inertia::render('dev/cards'))->name('dev.cards');
+        }
+
         // Events
         Route::get('events', [EventController::class, 'index'])->name('events');
         Route::get('events/saved', [EventController::class, 'saved'])->name('events.saved');

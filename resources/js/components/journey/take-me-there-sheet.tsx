@@ -12,6 +12,7 @@ type JourneyLeg = {
     depart_time: string;
     arrive_time: string;
     duration_min: number;
+    stops: number | null;
 };
 
 type Journey = {
@@ -87,7 +88,7 @@ function LegRow({ leg }: { leg: JourneyLeg }) {
                 </span>
                 <span className="block text-xs text-muted-foreground">
                     {isTransit
-                        ? `from ${leg.from.name} · get off at ${leg.to.name}`
+                        ? `${leg.stops ? `${leg.stops} ${leg.stops === 1 ? 'stop' : 'stops'} · ` : ''}get off at ${leg.to.name}`
                         : leg.from.name
                           ? `from ${leg.from.name}`
                           : `${leg.depart_time} departure`}
