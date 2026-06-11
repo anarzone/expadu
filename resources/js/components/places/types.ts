@@ -19,6 +19,7 @@ export type Place = {
     tip: string | null;
     tip_is_generic: boolean;
     cluster_size: number;
+    activities: Array<{ emoji: string; label: string }>;
     transit_hint: string | null;
     facts: PlaceFact[];
 };

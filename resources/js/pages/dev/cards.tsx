@@ -12,6 +12,7 @@ const SAMPLE: Place = {
     fine_label: 'Basketball court',
     emoji: '🏀',
     veedel: 'Ehrenfeld',
+    park: 'Grüngürtel',
     lat: 50.95,
     lng: 6.91,
     photo_url: null,
@@ -23,6 +24,7 @@ const SAMPLE: Place = {
     tip: 'Best in the afternoon — quiet before 17:00, busy after',
     tip_is_generic: false,
     cluster_size: 3,
+    activities: [],
     transit_hint: 'Line 5 to Lenauplatz, then 3 min walk',
     facts: [
         { label: 'hoops', value: '2' },
@@ -44,6 +46,7 @@ const MINIMAL: Place = {
     feature_chips: [],
     tip: null,
     cluster_size: 1,
+    park: null,
     facts: [],
 };
 

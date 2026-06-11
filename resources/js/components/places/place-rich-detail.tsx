@@ -216,9 +216,11 @@ export function PlaceRichDetail({
             {context && context.nearby.length > 0 && (
                 <>
                     <div className="mt-4 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-muted-foreground uppercase">
-                        {place.park
-                            ? `Also in ${place.park}`
-                            : 'Also around here · 300 m'}
+                        {place.category === 'park'
+                            ? 'What you can do here'
+                            : place.park
+                              ? `Also in ${place.park}`
+                              : 'Also around here · 300 m'}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                         {context.nearby.map((near) => (

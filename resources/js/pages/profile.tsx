@@ -1804,8 +1804,10 @@ export default function Profile() {
                                                         if (
                                                             addrSuggestions.length ===
                                                             0
-                                                        )
+                                                        ) {
                                                             return;
+                                                        }
+
                                                         if (
                                                             e.key ===
                                                             'ArrowDown'

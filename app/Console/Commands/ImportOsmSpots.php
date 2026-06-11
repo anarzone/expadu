@@ -44,6 +44,10 @@ class ImportOsmSpots extends Command
             'bbq' => "[out:json][timeout:40];nwr[\"amenity\"=\"bbq\"]({$bbox});out center;",
             'viewpoint' => "[out:json][timeout:40];nwr[\"tourism\"=\"viewpoint\"][\"name\"]({$bbox});out center;",
             'swimming' => "[out:json][timeout:40];(nwr[\"leisure\"=\"swimming_area\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"=\"swimming\"]({$bbox}););out center;",
+            'museum' => "[out:json][timeout:40];nwr[\"tourism\"=\"museum\"][\"name\"]({$bbox});out center;",
+            'gallery' => "[out:json][timeout:40];nwr[\"tourism\"=\"gallery\"][\"name\"]({$bbox});out center;",
+            'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center 200;",
+            'zoo' => "[out:json][timeout:40];nwr[\"tourism\"=\"zoo\"][\"name\"]({$bbox});out center;",
             'cafe' => "[out:json][timeout:25];node[\"amenity\"=\"cafe\"]({$innerBbox});out body;",
             'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$innerBbox});node[\"office\"=\"coworking\"]({$innerBbox}););out body;",
             'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
@@ -54,6 +58,7 @@ class ImportOsmSpots extends Command
         $mirrors = [
             'https://overpass.kumi.systems/api/interpreter',
             'https://overpass-api.de/api/interpreter',
+            'https://overpass.private.coffee/api/interpreter',
         ];
 
         $allElements = [];
@@ -246,6 +251,13 @@ class ImportOsmSpots extends Command
         }
         if ($amenity === 'library') {
             return 'library';
+        }
+
+        // The attraction query also returns museums/galleries/zoos —
+        // prefer the specific tourism tag over the query hint.
+        $tourism = $tags['tourism'] ?? '';
+        if (in_array($tourism, ['museum', 'gallery', 'zoo'], true)) {
+            return $tourism;
         }
 
         if ($hint === 'pitch') {

@@ -155,6 +155,75 @@ test('OSM tags surface as facts, chips and real opening hours', function () {
     expect(collect($place['facts'])->firstWhere('label', 'floodlit')['value'])->toBe('Yes');
 });
 
+test('facilities inside a park collapse into the park card with activity chips', function () {
+    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.962, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'veedel' => 'Neuehrenfeld', 'lat' => 50.9622, 'lng' => 6.9301]);
+    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'veedel' => 'Neuehrenfeld', 'lat' => 50.9623, 'lng' => 6.9302]);
+    // Standalone facility outside any park stays its own card
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => null, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+
+    $data = collect($this->getJson('/api/places')->json('data'));
+
+    // The in-park pitch and tennis court are NOT separate cards
+    expect($data->pluck('name')->all())->toContain('Blücherpark');
+    expect($data->where('name', 'Bolzplatz')->count())->toBe(1); // only the standalone one
+    expect($data->pluck('name')->all())->not->toContain('Tennisplatz');
+
+    // The park card says what you can do inside
+    $park = $data->firstWhere('name', 'Blücherpark');
+    expect(collect($park['activities'])->pluck('label')->all())->toBe(['Pitch', 'Tennis court']);
+});
+
+test('an activity filter returns parks containing it plus standalone facilities', function () {
+    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'lat' => 50.9622, 'lng' => 6.9301]);
+    Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'lat' => 50.945, 'lng' => 6.935]); // park without tennis
+    $standalone = Spot::factory()->create(['name' => 'Tennisclub Süd', 'category' => 'tennis', 'park_name' => null, 'lat' => 50.92, 'lng' => 6.94]);
+
+    $names = collect($this->getJson('/api/places?category=court')->json('data'))->pluck('name')->all();
+
+    expect($names)->toContain('Blücherpark');
+    expect($names)->toContain('Tennisclub Süd');
+    expect($names)->not->toContain('Stadtgarten');
+    expect($names)->not->toContain('Tennisplatz'); // collapsed into its park
+    expect($standalone)->not->toBeNull();
+});
+
+test('culture places are listed with the culture coarse bucket', function () {
+    Spot::factory()->create(['name' => 'Museum Ludwig', 'category' => 'museum', 'veedel' => 'Altstadt-Nord', 'lat' => 50.9403, 'lng' => 6.9602, 'tags' => ['fee' => 'no']]);
+
+    $data = $this->getJson('/api/places?category=culture')->json('data');
+
+    expect($data)->toHaveCount(1);
+    expect($data[0]['name'])->toBe('Museum Ludwig');
+    expect($data[0]['category'])->toBe('culture');
+    expect($data[0]['fine_label'])->toBe('Museum');
+    expect($data[0]['emoji'])->toBe('🏛️');
+    expect($data[0]['price_text'])->toBe('free');
+});
+
+test('named destinations rank above generic facilities', function () {
+    // The commodity facility is closer to home, the named park farther
+    Spot::factory()->create(['name' => 'Tischtennisplatte', 'category' => 'table_tennis', 'lat' => 50.948, 'lng' => 6.921]);
+    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
+
+    $names = collect($this->getJson('/api/places')->json('data'))->pluck('name')->all();
+
+    expect($names)->toBe(['Blücherpark', 'Tischtennisplatte']);
+});
+
+test("a park's context lists the facilities inside it", function () {
+    Http::fake();
+
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'lat' => 50.9685, 'lng' => 6.930]); // ~700m, still inside
+    Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'park_name' => null, 'lat' => 50.9621, 'lng' => 6.9301]); // close but outside
+
+    $nearby = $this->getJson("/api/places/{$park->id}/context")->json('nearby');
+
+    expect(collect($nearby)->pluck('name')->all())->toBe(['Bolzplatz']);
+});
+
 test('shows a single place with the full card contract', function () {
     $spot = Spot::factory()->create([
         'name' => 'Grüngürtel court',
@@ -192,9 +261,10 @@ test('context prefers facilities in the same park over the 300m radius', functio
 });
 
 test('places inside a park carry the park name', function () {
-    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'veedel' => 'Neuehrenfeld', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
+    // In-park facilities are reached via the detail (park hop), not the list
+    $pitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'veedel' => 'Neuehrenfeld', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
 
-    $this->getJson('/api/places')->assertJsonPath('data.0.park', 'Blücherpark');
+    $this->getJson("/api/places/{$pitch->id}")->assertJsonPath('data.park', 'Blücherpark');
 });
 
 test('place context lists nearby places, excluding same-name siblings', function () {

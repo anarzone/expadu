@@ -27,6 +27,7 @@ class PlaceResource extends JsonResource
         'swimming' => 'Check the day ticket price and lane times before you go — they vary by season.',
         'playground' => 'Most lively late afternoon; shade is limited, so pack a hat in summer.',
         'dog_park' => 'Busiest at dawn and after work — calmer in the early afternoon.',
+        'culture' => 'Check opening days before you go — most Cologne museums close on Mondays.',
     ];
 
     /**
@@ -56,6 +57,7 @@ class PlaceResource extends JsonResource
             'tip' => $this->tip ?: (self::CATEGORY_TIPS[$coarse] ?? null),
             'tip_is_generic' => ! $this->tip,
             'cluster_size' => (int) ($this->cluster_size ?? 1),
+            'activities' => $this->activities ?? [],
             'transit_hint' => $this->transit_hint ?? null,
             'facts' => $this->resolveFacts(),
         ];
@@ -108,6 +110,11 @@ class PlaceResource extends JsonResource
     private function resolvePriceText(string $coarse): ?string
     {
         if (in_array($coarse, self::FREE_OUTDOOR, true)) {
+            return 'free';
+        }
+
+        $tags = is_array($this->tags) ? $this->tags : [];
+        if (($tags['fee'] ?? null) === 'no') {
             return 'free';
         }
 

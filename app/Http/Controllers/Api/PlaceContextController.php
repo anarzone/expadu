@@ -89,7 +89,10 @@ class PlaceContextController extends Controller
             [$spot->lat, $spot->lng, $spot->lat],
         );
 
-        if ($spot->park_name) {
+        if ($spot->getRawOriginal('category') === 'park') {
+            // A park's "around here" is what's inside it.
+            $query->where('park_name', $spot->name);
+        } elseif ($spot->park_name) {
             // Same park = same venue, however large the park is.
             $query->where('park_name', $spot->park_name);
         } else {
@@ -101,7 +104,8 @@ class PlaceContextController extends Controller
 
         $rows = $query
             ->orderBy('km')
-            ->limit(self::NEARBY_LIMIT)
+            // A park venue gets more room — it's listing its own facilities
+            ->limit($spot->getRawOriginal('category') === 'park' ? 8 : self::NEARBY_LIMIT)
             ->get();
 
         return $rows->map(function (Spot $near) {

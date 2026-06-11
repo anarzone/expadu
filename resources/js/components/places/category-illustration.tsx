@@ -8,6 +8,7 @@ import {
     IconMapPin,
     IconBuildings,
     IconBuildingBridge,
+    IconBuildingMonument,
     IconFountain,
     IconBike,
     IconBuildingCarousel,
@@ -48,6 +49,10 @@ const VISUALS: Record<string, Visual> = {
     dog_park: {
         Icon: IconDog,
         tint: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+    },
+    culture: {
+        Icon: IconBuildingMonument,
+        tint: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
     },
     veedel: {
         Icon: IconMapPin,
@@ -98,6 +103,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
     swimming: '🏊',
     playground: '🛝',
     dog_park: '🐕',
+    culture: '🏛️',
 };
 
 export function categoryEmoji(coarse: string): string {

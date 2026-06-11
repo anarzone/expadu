@@ -9,6 +9,7 @@ use App\Models\Spot;
 use App\Profile\ProfileEngine;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,7 +24,13 @@ class PlacesController extends Controller
 {
     private const PER_PAGE = 20;
 
-    private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park'];
+    private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park', 'culture'];
+
+    /**
+     * Synthesised names from the OSM import — commodity facilities, not
+     * destinations. They rank below named venues in the list.
+     */
+    private const GENERIC_NAME_REGEX = '^(Spielplatz|Bolzplatz|Basketballplatz|Tennisplatz|Tischtennisplatte|Boulebahn|Skatepark|Hundewiese|Grillplatz)';
 
     /**
      * One place with the full card contract — used when the detail swaps
@@ -35,6 +42,7 @@ class PlacesController extends Controller
 
         $spot->distance_km = $this->haversineKm($anchorLat, $anchorLng, (float) $spot->lat, (float) $spot->lng);
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
+        $spot->activities = $this->activitiesForParks(collect([$spot]))[$spot->name] ?? [];
         $spot->cluster_size = Spot::query()
             ->where('name', $spot->name)
             ->where('veedel', $spot->veedel)
@@ -60,8 +68,30 @@ class PlacesController extends Controller
             ->whereNotNull('lng')
             ->whereIn('category', SpotCategory::placesFines());
 
-        if (! empty($validated['category'])) {
-            $query->whereIn('category', SpotCategory::finesForCoarse($validated['category']));
+        // Venue-first: facilities inside a park collapse into the park's
+        // card (its activity chips), so only the park itself and
+        // standalone places are list entries.
+        if (! empty($validated['category']) && $validated['category'] !== 'park') {
+            $fines = SpotCategory::finesForCoarse($validated['category']);
+
+            // An activity filter matches standalone facilities of that
+            // kind AND the parks that contain such a facility.
+            $query->where(function ($q) use ($fines) {
+                $q->where(fn ($standalone) => $standalone
+                    ->whereIn('category', $fines)
+                    ->whereNull('park_name'))
+                    ->orWhere(fn ($venue) => $venue
+                        ->where('category', 'park')
+                        ->whereIn('name', Spot::query()
+                            ->select('park_name')
+                            ->whereIn('category', $fines)
+                            ->whereNotNull('park_name')));
+            });
+        } elseif (! empty($validated['category'])) {
+            $query->whereIn('category', SpotCategory::finesForCoarse('park'))
+                ->whereNull('park_name');
+        } else {
+            $query->whereNull('park_name');
         }
 
         $nearbyIncluded = false;
@@ -113,23 +143,66 @@ class PlacesController extends Controller
 
         // The selected Veedel's own places come first — a page of "nearby"
         // results above them would read as broken filtering. Within each
-        // group, closest to the user wins.
+        // group, named destinations beat commodity facilities, then
+        // closest to the user wins.
         if ($selectedVeedel !== null) {
             $outer->orderByRaw('(veedel = ?) desc', [$selectedVeedel]);
         }
 
         $paginator = $outer
+            ->orderByRaw("(name !~ '".self::GENERIC_NAME_REGEX."') desc")
             ->orderBy('distance_km')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 
-        $paginator->getCollection()->transform(function (Spot $spot) {
+        $activities = $this->activitiesForParks($paginator->getCollection());
+
+        $paginator->getCollection()->transform(function (Spot $spot) use ($activities) {
             $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
+            $spot->activities = $activities[$spot->name] ?? [];
 
             return $spot;
         });
 
         return PlaceResource::collection($paginator)
             ->additional(['nearby_included' => $nearbyIncluded]);
+    }
+
+    /**
+     * What you can do in each park on this page — the distinct facility
+     * kinds inside it, as ready-to-render chips.
+     *
+     * @param  Collection<int, Spot>  $places
+     * @return array<string, list<array{emoji: string, label: string}>>
+     */
+    private function activitiesForParks($places): array
+    {
+        $parkNames = $places
+            ->filter(fn (Spot $spot) => $spot->getRawOriginal('category') === 'park')
+            ->pluck('name')
+            ->all();
+
+        if ($parkNames === []) {
+            return [];
+        }
+
+        return DB::table('spots')
+            ->whereIn('park_name', $parkNames)
+            ->whereIn('category', SpotCategory::placesFines())
+            ->distinct()
+            ->get(['park_name', 'category'])
+            ->groupBy('park_name')
+            ->map(fn ($group) => $group
+                ->map(fn ($row) => SpotCategory::tryFrom($row->category))
+                ->filter()
+                ->unique()
+                ->sortBy(fn (SpotCategory $category) => $category->value)
+                ->map(fn (SpotCategory $category) => [
+                    'emoji' => $category->emoji(),
+                    'label' => $category->label(),
+                ])
+                ->values()
+                ->all())
+            ->all();
     }
 
     private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float

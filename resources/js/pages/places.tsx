@@ -20,6 +20,7 @@ import AppLayout from '@/layouts/app-layout';
 
 const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
     { id: 'park', label: 'Parks', emoji: '🌳' },
+    { id: 'culture', label: 'Culture', emoji: '🏛️' },
     { id: 'pitch', label: 'Pitches', emoji: '⚽' },
     { id: 'court', label: 'Courts', emoji: '🏀' },
     { id: 'swimming', label: 'Swimming', emoji: '🏊' },
@@ -28,6 +29,14 @@ const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
 ];
 
 function placeChips(place: Place): CardChip[] {
+    // Venue cards lead with what you can do there — that IS the card.
+    if (place.activities.length > 0) {
+        return place.activities.map((activity) => ({
+            label: `${activity.emoji} ${activity.label}`,
+            tone: 'feature' as const,
+        }));
+    }
+
     const chips: CardChip[] = [];
 
     if (place.open_now === true) {

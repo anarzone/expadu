@@ -19,6 +19,12 @@ enum SpotCategory: string
     case Bbq = 'bbq';
     case Viewpoint = 'viewpoint';
 
+    // Culture & sights — named destinations, not facilities
+    case Museum = 'museum';
+    case Gallery = 'gallery';
+    case Attraction = 'attraction';
+    case Zoo = 'zoo';
+
     // Indoor / legacy categories — kept so existing rows stay valid and the
     // composer can still mix in cafés on rainy days; de-emphasised in the UI.
     case Cafe = 'cafe';
@@ -34,7 +40,8 @@ enum SpotCategory: string
         return match ($this) {
             self::Park, self::Playground, self::Pitch, self::Basketball,
             self::Tennis, self::Skatepark, self::Lake, self::DogPark,
-            self::TableTennis, self::Boules, self::Bbq, self::Viewpoint => true,
+            self::TableTennis, self::Boules, self::Bbq, self::Viewpoint,
+            self::Zoo => true,
             default => false,
         };
     }
@@ -55,6 +62,10 @@ enum SpotCategory: string
             self::Boules => '🎯',
             self::Bbq => '🧺',
             self::Viewpoint => '🌅',
+            self::Museum => '🏛️',
+            self::Gallery => '🖼️',
+            self::Attraction => '🎡',
+            self::Zoo => '🦁',
             self::Cafe => '☕',
             self::Coworking => '💻',
             self::Library => '📚',
@@ -81,6 +92,10 @@ enum SpotCategory: string
             self::Boules => 'Boules',
             self::Bbq => 'BBQ spot',
             self::Viewpoint => 'Viewpoint',
+            self::Museum => 'Museum',
+            self::Gallery => 'Gallery',
+            self::Attraction => 'Attraction',
+            self::Zoo => 'Zoo',
             self::Cafe => 'Café',
             self::Coworking => 'Coworking',
             self::Library => 'Library',
@@ -104,6 +119,7 @@ enum SpotCategory: string
             self::Swimming, self::Lake => 'swimming',
             self::Playground => 'playground',
             self::DogPark => 'dog_park',
+            self::Museum, self::Gallery, self::Attraction, self::Zoo => 'culture',
             default => 'other',
         };
     }
@@ -139,6 +155,7 @@ enum SpotCategory: string
             'swimming' => 'Swimming',
             'playground' => 'Playgrounds',
             'dog_park' => 'Dog parks',
+            'culture' => 'Culture',
             default => ucfirst($coarse),
         };
     }
