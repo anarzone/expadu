@@ -31,9 +31,10 @@ type JourneyResponse = {
             direction: string;
             departures: number[];
         }>;
+        nearest_stop: { name: string; walk_min: number | null } | null;
         deep_links: { google: string; kvb: string };
     } | null;
-    from: { name: string };
+    from: { name: string; lat: number; lng: number };
     to: { name: string };
     ticket: { advice: string; label: string; reason: string };
     disruptions: Array<{ title: string; severity: string; lines: string[] }>;
@@ -46,6 +47,11 @@ export type Destination = {
     lng: number;
     address?: string;
 };
+
+const CSRF = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') || '';
 
 const MODE_EMOJI: Record<string, string> = {
     walk: '🚶',
@@ -81,8 +87,10 @@ function LegRow({ leg }: { leg: JourneyLeg }) {
                 </span>
                 <span className="block text-xs text-muted-foreground">
                     {isTransit
-                        ? `${leg.from.name} → ${leg.to.name}`
-                        : leg.from.name || `${leg.depart_time} departure`}
+                        ? `from ${leg.from.name} · get off at ${leg.to.name}`
+                        : leg.from.name
+                          ? `from ${leg.from.name}`
+                          : `${leg.depart_time} departure`}
                 </span>
             </span>
             <span className="shrink-0 font-mono text-xs text-muted-foreground">
@@ -101,6 +109,11 @@ export function TakeMeThereSheet({
 }) {
     const [data, setData] = useState<JourneyResponse | null>(null);
     const [error, setError] = useState(false);
+    const [fromOverride, setFromOverride] = useState<{
+        lat: number;
+        lng: number;
+    } | null>(null);
+    const [confirming, setConfirming] = useState(false);
     const isMobile = useIsMobile();
 
     useEffect(() => {
@@ -110,6 +123,11 @@ export function TakeMeThereSheet({
             to_lng: String(destination.lng),
             to_name: destination.name,
         });
+
+        if (fromOverride) {
+            params.set('from_lat', String(fromOverride.lat));
+            params.set('from_lng', String(fromOverride.lng));
+        }
 
         fetch(`/api/journey?${params}`, { credentials: 'same-origin' })
             .then((res) => res.json())
@@ -127,7 +145,40 @@ export function TakeMeThereSheet({
         return () => {
             cancelled = true;
         };
-    }, [destination.lat, destination.lng, destination.name]);
+    }, [destination.lat, destination.lng, destination.name, fromOverride]);
+
+    // "I'm here →" — confirm the user's real position as the journey
+    // origin (and as the app-wide location anchor), then replan from it.
+    function confirmHere() {
+        if (confirming || !navigator.geolocation) {
+            return;
+        }
+
+        setConfirming(true);
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude: lat, longitude: lng } = pos.coords;
+
+                fetch('/api/location/confirm', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': CSRF(),
+                    },
+                    body: JSON.stringify({ lat, lng }),
+                }).catch(() => {});
+
+                setConfirming(false);
+                setData(null); // back to the loading skeleton while replanning
+                setError(false);
+                setFromOverride({ lat, lng });
+            },
+            () => setConfirming(false),
+            { enableHighAccuracy: true, timeout: 8000 },
+        );
+    }
 
     const journey = data?.journeys?.[0] ?? null;
 
@@ -149,6 +200,27 @@ export function TakeMeThereSheet({
                     )}
                 </div>
             </div>
+
+            {/* Origin chip — confirm "I'm here" to replan from your real position */}
+            {data?.from && (
+                <div className="mb-4 flex items-center justify-between gap-2 rounded-full border border-border bg-card py-1.5 pr-1.5 pl-3.5">
+                    <span className="truncate text-[13px] text-muted-foreground">
+                        📍 Starting from{' '}
+                        <b className="font-semibold text-foreground">
+                            {fromOverride ? 'Your location' : data.from.name}
+                        </b>
+                    </span>
+                    {!fromOverride && (
+                        <button
+                            onClick={confirmHere}
+                            disabled={confirming}
+                            className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
+                        >
+                            {confirming ? 'Locating…' : "I'm here →"}
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Loading */}
             {!data && !error && (
@@ -183,7 +255,7 @@ export function TakeMeThereSheet({
                         <div className="font-display text-xl font-medium">
                             Leave by {journey.depart_time}
                         </div>
-                        <div className="text-[13px] text-muted-foreground">
+                        <div className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
                             arrive {journey.arrive_time} ·{' '}
                             {journey.duration_min} min
                             {journey.transfers > 0 &&
@@ -218,8 +290,15 @@ export function TakeMeThereSheet({
             {data?.source === 'degraded' && (
                 <div>
                     <div className="mb-2 rounded-[9px] bg-secondary px-3 py-2.5 text-[13px] text-muted-foreground">
-                        Live routing is unavailable right now — here are
-                        departures near you.
+                        ⚡ Live routing unavailable — next departures from{' '}
+                        {data.degraded?.nearest_stop
+                            ? `your nearest stop, ${data.degraded.nearest_stop.name}${
+                                  data.degraded.nearest_stop.walk_min
+                                      ? ` (${data.degraded.nearest_stop.walk_min} min walk)`
+                                      : ''
+                              }`
+                            : 'stops near you'}
+                        .
                     </div>
                     <div className="mb-3 overflow-hidden rounded-[14px] border border-border">
                         {(data.degraded?.departures ?? []).map((dep, i) => (

@@ -81,7 +81,7 @@ test('degrades to nearest-stop departures when both providers die', function () 
     test()->mock(NearbyStopService::class, function ($mock) {
         $mock->shouldReceive('getDeparturesByType')->andReturn([
             'kvb' => [
-                ['line' => '5', 'direction' => 'Butzweilerhof', 'departures' => [3, 13]],
+                ['line' => '5', 'direction' => 'Butzweilerhof', 'departures' => [3, 13], 'stop_name' => 'Friesenplatz', 'walk_min' => 4],
             ],
             'db' => [],
             'stops_used' => ['Friesenplatz'],
@@ -93,6 +93,7 @@ test('degrades to nearest-stop departures when both providers die', function () 
     expect($result->source)->toBe('degraded');
     expect($result->journeys)->toBeEmpty();
     expect($result->degraded['departures'])->not->toBeEmpty();
+    expect($result->degraded['nearest_stop'])->toBe(['name' => 'Friesenplatz', 'walk_min' => 4]);
     expect($result->degraded['deep_links']['google'])->toContain('travelmode=transit');
 });
 

@@ -117,16 +117,26 @@ class FailoverRouteService implements RouteService
     private function degraded(GeoPoint $from, GeoPoint $to): JourneyResult
     {
         $departures = [];
+        $nearestStop = null;
 
         try {
             $board = $this->nearbyStops->getDeparturesByType($from->lat, $from->lng, null, null, null);
             $departures = array_slice($board['kvb'] ?? [], 0, 6);
+
+            $first = $departures[0] ?? null;
+            if (is_array($first) && isset($first['stop_name'])) {
+                $nearestStop = [
+                    'name' => $first['stop_name'],
+                    'walk_min' => $first['walk_min'] ?? null,
+                ];
+            }
         } catch (\Throwable $e) {
             Log::warning('degraded departures failed', ['error' => $e->getMessage()]);
         }
 
         return new JourneyResult([], 'degraded', [
             'departures' => $departures,
+            'nearest_stop' => $nearestStop,
             'deep_links' => [
                 'google' => sprintf(
                     'https://www.google.com/maps/dir/?api=1&origin=%F,%F&destination=%F,%F&travelmode=transit',

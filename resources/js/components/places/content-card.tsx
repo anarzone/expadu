@@ -18,6 +18,10 @@ const CHIP_TONE: Record<NonNullable<CardChip['tone']>, string> = {
  * Skeleton (top→bottom): image area · title row · meta · chip row · tip ·
  * action. Generic slots (meta/chips/tip/action) keep it ready for event
  * and home-tile variants without restructuring.
+ *
+ * Responsive shape: compact emoji-tile row on mobile (the magazine-list
+ * feel), image-top card in the desktop grid. The accordion children are
+ * always mounted and animate open/closed via the grid-rows trick.
  */
 export function ContentCard({
     variant = 'place',
@@ -56,7 +60,7 @@ export function ContentCard({
             <button
                 onClick={onActivate}
                 aria-pressed={active}
-                className={`group flex w-[150px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-sm md:w-[180px] ${
+                className={`group flex w-[165px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-sm md:w-[180px] ${
                     active
                         ? 'border-primary ring-1 ring-primary'
                         : 'border-border'
@@ -72,6 +76,7 @@ export function ContentCard({
                     ) : (
                         <CategoryIllustration
                             coarse="veedel"
+                            seed={title}
                             className="h-full w-full"
                             iconSize={26}
                         />
@@ -96,7 +101,7 @@ export function ContentCard({
 
     return (
         <div
-            className={`overflow-hidden rounded-2xl border bg-card transition-all ${
+            className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all ${
                 expanded
                     ? 'border-primary shadow-sm'
                     : 'border-border hover:border-primary/30'
@@ -113,10 +118,10 @@ export function ContentCard({
                         onActivate?.();
                     }
                 }}
-                className={interactive ? 'cursor-pointer' : ''}
+                className={`flex flex-1 flex-col ${interactive ? 'cursor-pointer' : ''}`}
             >
-                {/* Image area */}
-                <div className="relative h-24 w-full">
+                {/* Image area — desktop grid only; mobile uses the emoji tile */}
+                <div className="relative hidden h-24 w-full md:block">
                     {photoUrl ? (
                         <img
                             src={photoUrl}
@@ -131,25 +136,32 @@ export function ContentCard({
                     )}
                 </div>
 
-                <div className="p-4">
+                <div className="flex flex-1 flex-col p-4">
                     {/* Title row */}
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-3">
                         {emoji && (
-                            <span className="text-lg leading-none">
+                            <span className="flex size-11 shrink-0 items-center justify-center rounded-[9px] bg-secondary text-xl md:hidden">
                                 {emoji}
                             </span>
                         )}
-                        <h3 className="line-clamp-2 flex-1 text-[15px] leading-snug font-semibold">
-                            {title}
-                        </h3>
-                    </div>
+                        <div className="min-w-0 flex-1">
+                            <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold">
+                                {emoji && (
+                                    <span className="mr-1.5 hidden md:inline">
+                                        {emoji}
+                                    </span>
+                                )}
+                                {title}
+                            </h3>
 
-                    {/* Meta line */}
-                    {meta && (
-                        <div className="mt-1 truncate text-[13px] text-muted-foreground">
-                            {meta}
+                            {/* Meta line */}
+                            {meta && (
+                                <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                                    {meta}
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
 
                     {/* Chip row */}
                     {chips.length > 0 && (
@@ -172,15 +184,25 @@ export function ContentCard({
                         </div>
                     )}
 
-                    {/* Action */}
+                    {/* Action — bottom-anchored so grid rows stay even */}
                     {action && (
-                        <div className="mt-3 flex justify-end">{action}</div>
+                        <div className="mt-auto flex justify-end pt-3">
+                            {action}
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Expanded content (mobile accordion) */}
-            {children}
+            {/* Expanded content (mobile accordion, smooth height animation) */}
+            {children !== undefined && (
+                <div
+                    className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                        expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                    }`}
+                >
+                    <div className="overflow-hidden">{children}</div>
+                </div>
+            )}
         </div>
     );
 }

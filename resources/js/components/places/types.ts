@@ -4,6 +4,8 @@ export type Place = {
     id: number;
     name: string;
     category: string;
+    fine_label: string | null;
+    emoji: string | null;
     veedel: string | null;
     lat: number;
     lng: number;
@@ -14,6 +16,7 @@ export type Place = {
     price_text: string | null;
     feature_chips: string[];
     tip: string | null;
+    tip_is_generic: boolean;
     transit_hint: string | null;
     facts: PlaceFact[];
 };

@@ -65,6 +65,32 @@ enum SpotCategory: string
         };
     }
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Park => 'Park',
+            self::Playground => 'Playground',
+            self::Pitch => 'Pitch',
+            self::Basketball => 'Basketball court',
+            self::Tennis => 'Tennis court',
+            self::Skatepark => 'Skatepark',
+            self::Swimming => 'Swimming',
+            self::Lake => 'Lake',
+            self::DogPark => 'Dog park',
+            self::TableTennis => 'Table tennis',
+            self::Boules => 'Boules',
+            self::Bbq => 'BBQ spot',
+            self::Viewpoint => 'Viewpoint',
+            self::Cafe => 'Café',
+            self::Coworking => 'Coworking',
+            self::Library => 'Library',
+            self::Restaurant => 'Restaurant',
+            self::FastFood => 'Fast food',
+            self::Bar => 'Bar',
+            self::Bakery => 'Bakery',
+        };
+    }
+
     /**
      * The six coarse Places filter buckets the UI exposes. Indoor/legacy
      * categories map to 'other' and are excluded from the Places page.

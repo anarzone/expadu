@@ -44,8 +44,28 @@ class PlacesController extends Controller
             $query->whereIn('category', SpotCategory::finesForCoarse($validated['category']));
         }
 
+        $nearbyIncluded = false;
         if (! empty($validated['veedel']) && $validated['veedel'] !== 'all') {
-            $query->where('veedel', $validated['veedel']);
+            $veedel = $validated['veedel'];
+            $centroid = DB::table('veedels')
+                ->where('name', $veedel)
+                ->whereNotNull('centroid_lat')
+                ->first(['centroid_lat', 'centroid_lng']);
+
+            if ($centroid) {
+                // "{Veedel} & nearby" — the Veedel itself plus anything
+                // within ~2 km of its centroid, so the line in the UI is true.
+                $nearbyIncluded = true;
+                $query->where(function ($q) use ($veedel, $centroid) {
+                    $q->where('veedel', $veedel)
+                        ->orWhereRaw(
+                            '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= 2',
+                            [$centroid->centroid_lat, $centroid->centroid_lng, $centroid->centroid_lat],
+                        );
+                });
+            } else {
+                $query->where('veedel', $veedel);
+            }
         }
 
         $page = (int) ($validated['page'] ?? 1);
@@ -65,7 +85,8 @@ class PlacesController extends Controller
             return $spot;
         });
 
-        return PlaceResource::collection($paginator);
+        return PlaceResource::collection($paginator)
+            ->additional(['nearby_included' => $nearbyIncluded]);
     }
 
     /**

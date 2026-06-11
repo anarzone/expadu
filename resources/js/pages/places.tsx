@@ -47,7 +47,9 @@ function placeChips(place: Place): CardChip[] {
 
 function placeMeta(place: Place): string {
     const cat =
-        CATEGORIES.find((c) => c.id === place.category)?.label ?? 'Place';
+        place.fine_label ??
+        CATEGORIES.find((c) => c.id === place.category)?.label ??
+        'Place';
 
     return [
         cat,
@@ -56,6 +58,10 @@ function placeMeta(place: Place): string {
     ]
         .filter(Boolean)
         .join(' · ');
+}
+
+function placeEmoji(place: Place): string {
+    return place.emoji ?? categoryEmoji(place.category);
 }
 
 export default function Places() {
@@ -73,6 +79,7 @@ export default function Places() {
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
+    const [nearbyIncluded, setNearbyIncluded] = useState(false);
     const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
 
     const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -108,6 +115,7 @@ export default function Places() {
                         (json.meta?.current_page ?? p) <
                             (json.meta?.last_page ?? p),
                     );
+                    setNearbyIncluded(json.nearby_included === true);
                     setPage(p);
 
                     if (!append) {
@@ -172,7 +180,7 @@ export default function Places() {
     function takeMeThere(place: Place) {
         setDestination({
             name: place.name,
-            emoji: categoryEmoji(place.category),
+            emoji: placeEmoji(place),
             lat: place.lat,
             lng: place.lng,
         });
@@ -317,7 +325,7 @@ export default function Places() {
                     <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase">
                         {total} {total === 1 ? 'place' : 'places'} ·{' '}
                         {veedelLabel}
-                        {veedel !== 'all' && ' & nearby'}
+                        {veedel !== 'all' && nearbyIncluded && ' & nearby'}
                     </div>
                 )}
 
@@ -386,10 +394,12 @@ export default function Places() {
                                     variant="place"
                                     coarse={place.category}
                                     title={place.name}
-                                    emoji={categoryEmoji(place.category)}
+                                    emoji={placeEmoji(place)}
                                     meta={placeMeta(place)}
                                     chips={placeChips(place)}
-                                    tip={place.tip}
+                                    tip={
+                                        place.tip_is_generic ? null : place.tip
+                                    }
                                     photoUrl={place.photo_url}
                                     expanded={
                                         isMobile && expandedId === place.id
@@ -397,11 +407,11 @@ export default function Places() {
                                     onActivate={() => openPlace(place)}
                                     action={takeMeThereButton(place)}
                                 >
-                                    {isMobile && expandedId === place.id && (
+                                    {isMobile ? (
                                         <div className="border-t border-border px-4 py-4">
                                             <PlaceDetail place={place} />
                                         </div>
-                                    )}
+                                    ) : undefined}
                                 </ContentCard>
                             ))}
                         </div>
@@ -442,7 +452,7 @@ export default function Places() {
                         <div className="p-5">
                             <div className="mb-3 flex items-start gap-2">
                                 <span className="text-2xl leading-none">
-                                    {categoryEmoji(detail.category)}
+                                    {placeEmoji(detail)}
                                 </span>
                                 <div className="min-w-0">
                                     <h2 className="font-display text-xl font-medium">

@@ -33,17 +33,31 @@ class SpotController extends Controller
         ]);
     }
 
+    /** How many Veedel cards the browse rail shows (home + nearest). */
+    private const RAIL_SIZE = 12;
+
     /**
+     * Nearest-first so the rail reads as "your corner of Cologne", not an
+     * alphabet or raw-count dump that surfaces the outskirts.
+     *
      * @return list<array{name: string, count: int, photo_url: ?string}>
      */
     private function veedelRail(?string $homeVeedel): array
     {
+        [$anchorLat, $anchorLng] = $this->railAnchor($homeVeedel);
+
         $rows = DB::table('spots')
-            ->select('veedel', DB::raw('count(*) as n'))
-            ->whereNotNull('veedel')
-            ->whereIn('category', SpotCategory::placesFines())
-            ->groupBy('veedel')
-            ->orderByDesc('n')
+            ->join('veedels', 'veedels.name', '=', 'spots.veedel')
+            ->whereNotNull('spots.veedel')
+            ->whereIn('spots.category', SpotCategory::placesFines())
+            ->groupBy('spots.veedel', 'veedels.centroid_lat', 'veedels.centroid_lng')
+            ->select('spots.veedel', DB::raw('count(*) as n'))
+            ->selectRaw(
+                '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(veedels.centroid_lat)) * cos(radians(veedels.centroid_lng) - radians(?)) + sin(radians(?)) * sin(radians(veedels.centroid_lat))))) as anchor_km',
+                [$anchorLat, $anchorLng, $anchorLat],
+            )
+            ->orderByRaw('anchor_km asc nulls last')
+            ->limit(self::RAIL_SIZE)
             ->get();
 
         $rail = $rows->map(fn ($r) => [
@@ -58,5 +72,23 @@ class SpotController extends Controller
         }
 
         return $rail;
+    }
+
+    /**
+     * @return array{0: float, 1: float}
+     */
+    private function railAnchor(?string $homeVeedel): array
+    {
+        if ($homeVeedel) {
+            $row = DB::table('veedels')
+                ->where('name', $homeVeedel)
+                ->whereNotNull('centroid_lat')
+                ->first(['centroid_lat', 'centroid_lng']);
+            if ($row) {
+                return [(float) $row->centroid_lat, (float) $row->centroid_lng];
+            }
+        }
+
+        return [50.9375, 6.9603]; // Cologne centre
     }
 }

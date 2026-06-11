@@ -3,6 +3,7 @@
 use App\Models\Spot;
 use App\Models\User;
 use App\Models\UserPlace;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld']);
@@ -31,10 +32,14 @@ test('lists leisure places with the full contract shape', function () {
         'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'photo_url', 'distance_min', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'tip', 'transit_hint', 'facts']],
         'meta' => ['total'],
     ]);
-    // basketball rolls up to the coarse 'court' bucket
+    // basketball rolls up to the coarse 'court' bucket but keeps its fine identity
     $response->assertJsonPath('data.0.category', 'court');
+    $response->assertJsonPath('data.0.fine_label', 'Basketball court');
+    $response->assertJsonPath('data.0.emoji', '🏀');
     $response->assertJsonPath('data.0.open_now', true);
     $response->assertJsonPath('data.0.price_text', 'free');
+    // no per-place tip stored → the category fallback is marked generic
+    $response->assertJsonPath('data.0.tip_is_generic', true);
 });
 
 test('excludes indoor/legacy categories from Places', function () {
@@ -61,8 +66,33 @@ test('filters by veedel and lifts the filter with all', function () {
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Nippes', 'lat' => 50.96, 'lng' => 6.95]);
 
-    expect($this->getJson('/api/places?veedel=Ehrenfeld')->json('meta.total'))->toBe(1);
+    // No veedels centroid seeded → strict filter, no "& nearby" claim.
+    $response = $this->getJson('/api/places?veedel=Ehrenfeld');
+    expect($response->json('meta.total'))->toBe(1);
+    expect($response->json('nearby_included'))->toBeFalse();
     expect($this->getJson('/api/places?veedel=all')->json('meta.total'))->toBe(2);
+});
+
+test('includes places within 2km of the veedel centroid as nearby', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Ehrenfeld',
+        'bezirk' => 'Ehrenfeld',
+        'centroid_lat' => 50.949,
+        'centroid_lng' => 6.917,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    // Neighbouring Veedel but ~1km from the Ehrenfeld centroid → nearby
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.957, 'lng' => 6.920]);
+    // Other side of the city, well outside 2km → excluded
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Porz', 'lat' => 50.886, 'lng' => 7.058]);
+
+    $response = $this->getJson('/api/places?veedel=Ehrenfeld');
+
+    expect($response->json('meta.total'))->toBe(2);
+    expect($response->json('nearby_included'))->toBeTrue();
 });
 
 test('rejects an unknown coarse category', function () {

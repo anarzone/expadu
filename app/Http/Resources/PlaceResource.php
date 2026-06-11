@@ -34,12 +34,15 @@ class PlaceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $coarse = $this->categoryEnum()?->coarse() ?? 'park';
+        $fine = $this->categoryEnum();
+        $coarse = $fine?->coarse() ?? 'park';
 
         return [
             'id' => $this->id,
             'name' => $this->name,
             'category' => $coarse,
+            'fine_label' => $fine?->label(),
+            'emoji' => $fine?->emoji(),
             'veedel' => $this->veedel,
             'lat' => (float) $this->lat,
             'lng' => (float) $this->lng,
@@ -50,6 +53,7 @@ class PlaceResource extends JsonResource
             'price_text' => $this->resolvePriceText($coarse),
             'feature_chips' => $this->resolveFeatureChips(),
             'tip' => $this->tip ?: (self::CATEGORY_TIPS[$coarse] ?? null),
+            'tip_is_generic' => ! $this->tip,
             'transit_hint' => $this->transit_hint ?? null,
             'facts' => $this->resolveFacts(),
         ];
