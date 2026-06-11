@@ -532,6 +532,7 @@ export default function Places() {
                                     setDetail(null);
                                     setDestination(target);
                                 }}
+                                onOpenPlace={setDetail}
                             />
                         </div>
                     </DialogContent>
@@ -550,6 +551,7 @@ export default function Places() {
                                 setRichPlace(null);
                                 setDestination(target);
                             }}
+                            onOpenPlace={setRichPlace}
                         />
                     </div>
                 </BottomSheet>

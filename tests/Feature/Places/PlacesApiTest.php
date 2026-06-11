@@ -155,6 +155,28 @@ test('OSM tags surface as facts, chips and real opening hours', function () {
     expect(collect($place['facts'])->firstWhere('label', 'floodlit')['value'])->toBe('Yes');
 });
 
+test('shows a single place with the full card contract', function () {
+    $spot = Spot::factory()->create([
+        'name' => 'Grüngürtel court',
+        'category' => 'basketball',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'tags' => ['surface' => 'asphalt'],
+    ]);
+    // Cluster sibling at the same corner
+    Spot::factory()->create(['name' => 'Grüngürtel court', 'category' => 'basketball', 'veedel' => 'Ehrenfeld', 'lat' => 50.9491, 'lng' => 6.9221]);
+
+    $response = $this->getJson("/api/places/{$spot->id}");
+
+    $response->assertOk();
+    $response->assertJsonPath('data.id', $spot->id);
+    $response->assertJsonPath('data.category', 'court');
+    $response->assertJsonPath('data.cluster_size', 2);
+    expect($response->json('data.distance_min'))->toBeGreaterThanOrEqual(1);
+    expect(collect($response->json('data.facts'))->pluck('label')->all())->toContain('surface');
+});
+
 test('place context lists nearby places, excluding same-name siblings', function () {
     Http::fake();
 

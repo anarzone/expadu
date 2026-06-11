@@ -1,7 +1,11 @@
 import { IconClock, IconTicket, IconTrain } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { MiniMap } from '@/components/places/mini-map';
-import type { Place, PlaceContext } from '@/components/places/types';
+import type {
+    NearbyPlace,
+    Place,
+    PlaceContext,
+} from '@/components/places/types';
 import { ICON_STROKE } from '@/constants/icons';
 
 export type NavigateTarget = {
@@ -21,10 +25,13 @@ export function PlaceRichDetail({
     place,
     meta,
     onNavigate,
+    onOpenPlace,
 }: {
     place: Place;
     meta: string;
     onNavigate: (target: NavigateTarget) => void;
+    /** Swap the detail to another place (nearby chips). */
+    onOpenPlace?: (place: Place) => void;
 }) {
     const [context, setContext] = useState<PlaceContext | null>(null);
 
@@ -56,6 +63,22 @@ export function PlaceRichDetail({
             lat: place.lat,
             lng: place.lng,
         });
+
+    // A nearby chip is a place, not a route — open its detail here;
+    // its own "Take me there" is one tap away. Falls back to routing
+    // if the place can't be fetched.
+    function openNearby(near: NearbyPlace) {
+        if (!onOpenPlace) {
+            onNavigate(near);
+
+            return;
+        }
+
+        fetch(`/api/places/${near.id}`, { credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+            .then((json) => onOpenPlace(json.data))
+            .catch(() => onNavigate(near));
+    }
 
     const hasFacts = place.facts && place.facts.length > 0;
 
@@ -184,7 +207,7 @@ export function PlaceRichDetail({
                         {context.nearby.map((near) => (
                             <button
                                 key={near.id}
-                                onClick={() => onNavigate(near)}
+                                onClick={() => openNearby(near)}
                                 className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card py-1.5 pr-3 pl-2 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-primary"
                             >
                                 {near.emoji}{' '}

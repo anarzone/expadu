@@ -25,7 +25,26 @@ class PlacesController extends Controller
 
     private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park'];
 
-    public function __invoke(Request $request, ProfileEngine $profiles): AnonymousResourceCollection
+    /**
+     * One place with the full card contract — used when the detail swaps
+     * to a nearby place without going through the list.
+     */
+    public function show(Request $request, Spot $spot, ProfileEngine $profiles): PlaceResource
+    {
+        [$anchorLat, $anchorLng] = $this->anchor($request, $profiles);
+
+        $spot->distance_km = $this->haversineKm($anchorLat, $anchorLng, (float) $spot->lat, (float) $spot->lng);
+        $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
+        $spot->cluster_size = Spot::query()
+            ->where('name', $spot->name)
+            ->where('veedel', $spot->veedel)
+            ->whereRaw('round(lat::numeric, 3) = round(?::numeric, 3) and round(lng::numeric, 3) = round(?::numeric, 3)', [$spot->lat, $spot->lng])
+            ->count();
+
+        return new PlaceResource($spot);
+    }
+
+    public function index(Request $request, ProfileEngine $profiles): AnonymousResourceCollection
     {
         $validated = $request->validate([
             'veedel' => ['nullable', 'string', 'max:100'],
@@ -111,6 +130,11 @@ class PlacesController extends Controller
 
         return PlaceResource::collection($paginator)
             ->additional(['nearby_included' => $nearbyIncluded]);
+    }
+
+    private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        return 6371 * acos(min(1, cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($lng2) - deg2rad($lng1)) + sin(deg2rad($lat1)) * sin(deg2rad($lat2))));
     }
 
     /**
