@@ -1,0 +1,155 @@
+situation: eu_employee
+
+tasks:
+  - title: Register your address (Anmeldung)
+    key: eue.anmeldung
+    depends_on: []
+    description: |
+      As an EU citizen you don't need a visa or residence permit — freedom of movement
+      covers you. The one thing you can't skip: register your address at the Bürgeramt
+      within 14 days of moving in. The Meldebescheinigung unlocks everything else —
+      Steuer-ID, bank account, health insurance.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 14
+    booking_service_key: anmeldung
+    documents_required:
+      - National ID card (Personalausweis) or passport
+      - Wohnungsgeberbestätigung (signed by your landlord)
+    links:
+      - https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
+    how_to_steps:
+      - title: Get a Wohnungsgeberbestätigung from your landlord
+        body: Your landlord must give you this confirmation within two weeks of moving in. The Bürgeramt won't register you without it — it cannot be submitted later.
+      - title: Book an appointment, or walk in on Monday/Wednesday
+        body: Cologne Kundenzentren take walk-ins on Mondays and Wednesdays; Tuesday, Thursday and Friday require an appointment. New online slots often appear overnight, so try early mornings.
+        link: https://termine.stadt-koeln.de/
+      - title: Or register fully online
+        body: Cologne supports the elektronische Wohnsitzanmeldung — register without showing up in person; the address sticker for your ID is mailed to you. Registration is free either way.
+        link: https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
+      - title: Make digital copies of the Meldebescheinigung
+        body: Photograph it and back it up. You'll need it for almost everything else on this list.
+
+  - title: Wait for your Steuer-ID (tax identification number)
+    key: eue.steuer_id
+    depends_on: [eue.anmeldung]
+    description: |
+      The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
+      within 2–4 weeks of Anmeldung — no application needed. Your employer needs it to
+      run payroll correctly; without it you're taxed at the maximum rate until corrected.
+    phase: arrival
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 28
+    documents_required: []
+    links:
+      - https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+    how_to_steps:
+      - title: Check your post daily
+        body: It arrives as a plain letter from Bonn — easy to mistake for junk mail. Don't throw anything away in your first month.
+      - title: If nothing arrives after 4 weeks, request a copy
+        body: Use the BZSt input form — for data-protection reasons they only send it by post, to your registered address.
+        link: https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+      - title: Give it to your employer immediately
+        body: Without your Steuer-ID, payroll defaults to the highest tax class — you'll be over-taxed every payslip until you fix it.
+
+  - title: Sign up for German health insurance
+    key: eue.health_insurance
+    depends_on: [eue.anmeldung]
+    description: |
+      Your EHIC card from home is only for temporary stays — once you live and work in
+      Germany, you must be insured here. As an employee you'll be enrolled in statutory
+      insurance (gesetzliche Krankenversicherung); your employer handles the paperwork,
+      but you pick the insurer (Krankenkasse).
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - ID card or passport
+      - Meldebescheinigung
+      - Employment contract
+    links:
+      - https://www.krankenkassen.de/
+      - https://europa.eu/youreurope/citizens/health/unplanned-healthcare/temporary-stays/index_en.htm
+    how_to_steps:
+      - title: Don't rely on your EHIC
+        body: The European Health Insurance Card covers unexpected illness during temporary stays. Once you move to Germany to work, you must register with the German system — your employer can't run payroll without a Krankenkasse on file.
+      - title: Compare public insurers
+        body: TK, AOK, Barmer, DAK — baseline coverage is identical by law; they differ on extras like English service, app quality and dental add-ons. For most expats, TK has the best English support.
+      - title: Apply online and name your insurer to HR
+        body: Most insurers let you sign up online with ID + Meldebescheinigung. They confirm membership to your employer, who then registers you for social insurance. The card arrives by post 2–3 weeks later.
+
+  - title: Open a German bank account
+    key: eue.bank_account
+    depends_on: [eue.anmeldung]
+    description: |
+      Strictly speaking, any EU IBAN works for salary — under the EU SEPA Regulation,
+      employers may not insist the account be in a specific country. In practice some
+      payroll and rent systems still choke on foreign IBANs, so a German Girokonto
+      saves you arguments.
+    phase: first_30_days
+    urgency: high
+    deadline_type: days_since_arrival
+    deadline_days: 30
+    documents_required:
+      - ID card or passport
+      - Meldebescheinigung
+      - Tax ID (if available)
+    links:
+      - https://www.n26.com/en-de
+      - https://www.ing.de/girokonto/
+      - https://www.sparkasse-koelnbonn.de/
+    how_to_steps:
+      - title: Know your rights, then be pragmatic
+        body: IBAN discrimination is prohibited by EU Regulation 260/2012 — you can cite it if an employer or landlord refuses your home-country IBAN. But opening a German account is usually faster than the argument.
+        link: https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32012R0260
+      - title: Pick an account type
+        body: Online-only banks (N26, C24) open accounts in days with in-app verification. ING is a popular middle ground; Sparkasse KölnBonn is useful if you want branches and cash-deposit machines around Cologne.
+      - title: Share the IBAN with employer + landlord
+        body: Get your IBAN into the HR portal before the payroll cut-off, and set up the rent transfer or direct debit.
+
+  - title: Settle your Rundfunkbeitrag (broadcasting fee)
+    key: eue.rundfunkbeitrag
+    depends_on: [eue.anmeldung]
+    description: |
+      Every household in Germany pays €18.36/month for public broadcasting — one fee per
+      dwelling, regardless of how many people live there or whether anyone owns a TV.
+      The Beitragsservice is notified of your Anmeldung automatically and will write to you.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 60
+    documents_required: []
+    links:
+      - https://www.rundfunkbeitrag.de/welcome/english
+    how_to_steps:
+      - title: Check whether your household already pays
+        body: One fee per Wohnung. If a flatmate or partner already pays, don't register again — just reply to the Beitragsservice letter with their Beitragsnummer.
+      - title: Register and set up SEPA direct debit
+        body: Registering yourself is faster than waiting for the letter chain. Direct debit saves you from missed quarterly invoices.
+        link: https://www.rundfunkbeitrag.de/welcome/english
+      - title: Apply for exemption or reduction if eligible
+        body: Recipients of BAföG or Bürgergeld can be exempted; people with an RF disability code pay a reduced €6.12/month. Details and forms are on the official site.
+
+  - title: Get private liability insurance (Haftpflichtversicherung)
+    key: eue.liability_insurance
+    depends_on: [eue.bank_account]
+    description: |
+      Not legally required, but most Germans have it and landlords increasingly expect
+      it — it covers damage you accidentally cause to other people or their property.
+      Costs roughly €30–50/year and caps what could otherwise be an unlimited bill.
+    phase: settling
+    urgency: medium
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.check24.de/haftpflichtversicherung/
+    how_to_steps:
+      - title: Compare on Check24 or Verivox
+        body: Look for "Privathaftpflicht" with at least €10M coverage and no deductible. Annual payment is usually cheaper than monthly.
+      - title: Check for double cover from home
+        body: Some EU home-country policies cover you abroad for the first months — read your existing policy before buying twice.
+      - title: Note your policy number
+        body: You'll need it the day you break something — a friend's laptop, a rented e-scooter, a neighbour's window.

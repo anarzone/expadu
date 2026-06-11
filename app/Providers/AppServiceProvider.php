@@ -17,6 +17,8 @@ use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
 use App\Listeners\CreateAlertFromNotification;
+use App\Transit\Contracts\RouteService;
+use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
@@ -34,7 +36,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(
+            RouteService::class,
+            FailoverRouteService::class,
+        );
     }
 
     /**

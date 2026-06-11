@@ -47,6 +47,10 @@ return [
         'redirect' => env('APPLE_REDIRECT_URI'),
     ],
 
+    'transitous' => [
+        'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
+    ],
+
     'valhalla' => [
         'url' => env('VALHALLA_URL'),
     ],
