@@ -29,6 +29,7 @@ class PlacesController extends Controller
     {
         $validated = $request->validate([
             'veedel' => ['nullable', 'string', 'max:100'],
+            'bezirk' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'in:'.implode(',', self::COARSE)],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
@@ -67,6 +68,11 @@ class PlacesController extends Controller
             } else {
                 $query->where('veedel', $veedel);
             }
+        } elseif (! empty($validated['bezirk']) && $validated['bezirk'] !== 'all') {
+            // Bezirk level: every Stadtteil of the district, no nearby ring.
+            $query->whereIn('veedel', DB::table('veedels')
+                ->where('bezirk', $validated['bezirk'])
+                ->pluck('name'));
         }
 
         $page = (int) ($validated['page'] ?? 1);

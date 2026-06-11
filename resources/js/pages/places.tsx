@@ -65,14 +65,21 @@ function placeEmoji(place: Place): string {
 }
 
 export default function Places() {
-    const { homeVeedel, filters, veedels, allVeedels } = usePage<{
-        homeVeedel: string | null;
-        filters: { veedel: string; category: string | null };
-        veedels?: VeedelOption[];
-        allVeedels?: string[];
-    }>().props;
+    const { homeVeedel, homeBezirk, filters, bezirke, veedelsByBezirk } =
+        usePage<{
+            homeVeedel: string | null;
+            homeBezirk: string | null;
+            filters: {
+                bezirk: string;
+                veedel: string | null;
+                category: string | null;
+            };
+            bezirke?: VeedelOption[];
+            veedelsByBezirk?: Record<string, string[]>;
+        }>().props;
 
-    const [veedel, setVeedel] = useState(filters.veedel ?? 'all');
+    const [bezirk, setBezirk] = useState(filters.bezirk ?? 'all');
+    const [veedel, setVeedel] = useState<string | null>(filters.veedel);
     const [category, setCategory] = useState<string | null>(filters.category);
     const [view, setView] = useState<'list' | 'map'>('list');
 
@@ -91,9 +98,22 @@ export default function Places() {
     const reqRef = useRef(0);
 
     const fetchPage = useCallback(
-        (v: string, c: string | null, p: number, append: boolean) => {
+        (
+            b: string,
+            v: string | null,
+            c: string | null,
+            p: number,
+            append: boolean,
+        ) => {
             const token = ++reqRef.current;
-            const params = new URLSearchParams({ veedel: v, page: String(p) });
+            const params = new URLSearchParams({ page: String(p) });
+
+            // Stadtteil beats Bezirk; neither means all of Cologne.
+            if (v) {
+                params.set('veedel', v);
+            } else if (b && b !== 'all') {
+                params.set('bezirk', b);
+            }
 
             if (c) {
                 params.set('category', c);
@@ -136,11 +156,15 @@ export default function Places() {
 
     // Fetch on filter change + sync URL (shareable, back-safe)
     useEffect(() => {
-        fetchPage(veedel, category, 1, false);
+        fetchPage(bezirk, veedel, category, 1, false);
 
         const params = new URLSearchParams();
 
-        if (veedel && veedel !== 'all') {
+        if (bezirk && bezirk !== 'all') {
+            params.set('bezirk', bezirk);
+        }
+
+        if (veedel) {
             params.set('veedel', veedel);
         }
 
@@ -150,24 +174,33 @@ export default function Places() {
 
         const qs = params.toString();
         window.history.replaceState({}, '', `/explore${qs ? `?${qs}` : ''}`);
-    }, [veedel, category, fetchPage]);
+    }, [bezirk, veedel, category, fetchPage]);
 
     // Back/forward button re-reads the URL
     useEffect(() => {
         function onPop() {
             const sp = new URLSearchParams(window.location.search);
-            setVeedel(sp.get('veedel') ?? homeVeedel ?? 'all');
+            const hasGeo = sp.has('veedel') || sp.has('bezirk');
+            setBezirk(
+                sp.get('bezirk') ?? (hasGeo ? 'all' : (homeBezirk ?? 'all')),
+            );
+            setVeedel(sp.get('veedel') ?? (hasGeo ? null : homeVeedel));
             setCategory(sp.get('category'));
         }
         window.addEventListener('popstate', onPop);
 
         return () => window.removeEventListener('popstate', onPop);
-    }, [homeVeedel]);
+    }, [homeVeedel, homeBezirk]);
 
     function showMore() {
         const next = page + 1;
         setPage(next);
-        fetchPage(veedel, category, next, true);
+        fetchPage(bezirk, veedel, category, next, true);
+    }
+
+    function pickBezirk(name: string) {
+        setBezirk(name);
+        setVeedel(null);
     }
 
     function openPlace(place: Place) {
@@ -187,15 +220,17 @@ export default function Places() {
         });
     }
 
-    const veedelLabel = veedel === 'all' ? 'All Cologne' : veedel;
-    const railOptions = veedels ?? [];
-    const chipOptions = allVeedels ?? [];
+    const areaLabel =
+        veedel ?? (bezirk === 'all' ? 'All Cologne' : `Bezirk ${bezirk}`);
+    const railOptions = bezirke ?? [];
+    const chipOptions =
+        bezirk !== 'all' ? (veedelsByBezirk?.[bezirk] ?? []) : [];
 
-    // With ~80 chips, keep the active one visible when it's picked
-    // elsewhere (rail card, URL, back button).
+    // Keep the active chip visible when it's picked elsewhere (URL,
+    // back button).
     useEffect(() => {
         document
-            .querySelector(`[data-veedel-chip="${CSS.escape(veedel)}"]`)
+            .querySelector(`[data-veedel-chip="${CSS.escape(veedel ?? '')}"]`)
             ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
     }, [veedel, chipOptions.length]);
 
@@ -240,15 +275,15 @@ export default function Places() {
                     </button>
                 </div>
 
-                {/* Veedel browse rail */}
+                {/* Bezirk browse rail — Cologne's 9 city districts */}
                 <Deferred
-                    data="veedels"
+                    data="bezirke"
                     fallback={
                         <div className="mb-4 flex gap-3 overflow-hidden">
                             {[1, 2, 3, 4].map((i) => (
                                 <div
                                     key={i}
-                                    className="h-[118px] w-[150px] shrink-0 animate-pulse rounded-2xl bg-secondary md:w-[180px]"
+                                    className="h-[118px] w-[165px] shrink-0 animate-pulse rounded-2xl bg-secondary md:w-[180px]"
                                 />
                             ))}
                         </div>
@@ -258,49 +293,53 @@ export default function Places() {
                         className="mb-4 flex gap-3 overflow-x-auto pb-1"
                         style={{ scrollbarWidth: 'none' }}
                     >
-                        {railOptions.map((v) => (
+                        {railOptions.map((b) => (
                             <ContentCard
-                                key={v.name}
+                                key={b.name}
                                 variant="veedel"
                                 coarse="veedel"
-                                title={v.name}
-                                count={v.count}
-                                photoUrl={v.photo_url}
-                                active={veedel === v.name}
-                                onActivate={() => setVeedel(v.name)}
+                                title={b.name}
+                                count={b.count}
+                                photoUrl={b.photo_url}
+                                active={bezirk === b.name}
+                                onActivate={() => pickBezirk(b.name)}
                             />
                         ))}
                         <ContentCard
                             variant="veedel"
                             coarse="veedel"
                             title="All Cologne"
-                            active={veedel === 'all'}
-                            onActivate={() => setVeedel('all')}
+                            active={bezirk === 'all'}
+                            onActivate={() => pickBezirk('all')}
                         />
                     </div>
                 </Deferred>
 
-                {/* Veedel chips — the exhaustive A→Z list (rail is the teaser) */}
+                {/* Veedel chips — the Stadtteile of the selected Bezirk */}
                 {chipOptions.length > 0 && (
                     <div
                         className="mb-2 flex gap-2 overflow-x-auto pb-1"
                         style={{ scrollbarWidth: 'none' }}
                     >
-                        {['all', ...chipOptions].map((name) => (
-                            <button
-                                key={name}
-                                data-veedel-chip={name}
-                                onClick={() => setVeedel(name)}
-                                aria-pressed={veedel === name}
-                                className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
-                                    veedel === name
-                                        ? 'border-primary bg-primary text-white'
-                                        : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
-                                }`}
-                            >
-                                {name === 'all' ? 'All Cologne' : name}
-                            </button>
-                        ))}
+                        {[null, ...chipOptions].map((name) => {
+                            const on = veedel === name;
+
+                            return (
+                                <button
+                                    key={name ?? 'all'}
+                                    data-veedel-chip={name ?? ''}
+                                    onClick={() => setVeedel(name)}
+                                    aria-pressed={on}
+                                    className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                        on
+                                            ? 'border-primary bg-primary text-white'
+                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                    }`}
+                                >
+                                    {name ?? `All of ${bezirk}`}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
 
@@ -332,9 +371,8 @@ export default function Places() {
                 {/* Result count */}
                 {status === 'ok' && view === 'list' && (
                     <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase">
-                        {total} {total === 1 ? 'place' : 'places'} ·{' '}
-                        {veedelLabel}
-                        {veedel !== 'all' && nearbyIncluded && ' & nearby'}
+                        {total} {total === 1 ? 'place' : 'places'} · {areaLabel}
+                        {veedel !== null && nearbyIncluded && ' & nearby'}
                     </div>
                 )}
 
@@ -366,7 +404,7 @@ export default function Places() {
                         </p>
                         <button
                             onClick={() =>
-                                fetchPage(veedel, category, 1, false)
+                                fetchPage(bezirk, veedel, category, 1, false)
                             }
                             className="mt-3 rounded-[9px] bg-primary px-4 py-2 text-[13px] font-semibold text-white"
                         >
@@ -382,11 +420,11 @@ export default function Places() {
                                       (c) => c.id === category,
                                   )?.label.toLowerCase()
                                 : 'places'}{' '}
-                            in {veedelLabel} yet — try nearby.
+                            in {areaLabel} yet — try nearby.
                         </p>
                         <button
                             onClick={() => {
-                                setVeedel('all');
+                                pickBezirk('all');
                                 setCategory(null);
                             }}
                             className="mt-3 rounded-[9px] border border-border px-4 py-2 text-[13px] font-semibold text-primary"

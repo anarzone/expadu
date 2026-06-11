@@ -15,21 +15,26 @@ test('places page renders the placeholder', function () {
     $response->assertInertia(fn ($page) => $page->component('places'));
 });
 
-test('veedel rail is a short teaser while the chips list is exhaustive', function () {
-    $user = User::factory()->onboarded()->create(['veedel' => 'Veedel-01']);
+test('rail shows bezirke and chips map stadtteile per bezirk', function () {
+    $user = User::factory()->onboarded()->create(['veedel' => 'Neuehrenfeld']);
     $this->actingAs($user);
 
-    foreach (range(1, 10) as $i) {
-        $name = sprintf('Veedel-%02d', $i);
-        DB::table('veedels')->insert([
-            'name' => $name,
-            'bezirk' => 'Test',
-            'centroid_lat' => 50.93 + $i * 0.01,
-            'centroid_lng' => 6.95,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        Spot::factory()->create(['category' => 'park', 'veedel' => $name, 'lat' => 50.93 + $i * 0.01, 'lng' => 6.95]);
+    $stadtteile = [
+        'Ehrenfeld' => ['Ehrenfeld', 'Neuehrenfeld', 'Bickendorf'],
+        'Nippes' => ['Nippes', 'Mauenheim'],
+    ];
+    foreach ($stadtteile as $bezirk => $veedels) {
+        foreach ($veedels as $i => $name) {
+            DB::table('veedels')->insert([
+                'name' => $name,
+                'bezirk' => $bezirk,
+                'centroid_lat' => 50.93 + $i * 0.01,
+                'centroid_lng' => 6.95,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            Spot::factory()->create(['category' => 'park', 'veedel' => $name, 'lat' => 50.93 + $i * 0.01, 'lng' => 6.95]);
+        }
     }
 
     // Partial reload evaluates the deferred props.
@@ -37,13 +42,39 @@ test('veedel rail is a short teaser while the chips list is exhaustive', functio
         'X-Inertia' => 'true',
         'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
         'X-Inertia-Partial-Component' => 'places',
-        'X-Inertia-Partial-Data' => 'veedels,allVeedels',
+        'X-Inertia-Partial-Data' => 'bezirke,veedelsByBezirk',
     ])->assertOk()->json('props');
 
-    expect(count($props['veedels']))->toBe(6);
-    expect($props['veedels'][0]['name'])->toBe('Veedel-01'); // home pinned first
-    expect($props['allVeedels'])->toHaveCount(10);
-    expect($props['allVeedels'])->toBe(collect($props['allVeedels'])->sort()->values()->all());
+    // Rail: one card per Bezirk, the home Bezirk pinned first.
+    expect(collect($props['bezirke'])->pluck('name')->all())->toBe(['Ehrenfeld', 'Nippes']);
+    expect($props['bezirke'][0]['count'])->toBe(3);
+
+    // Chips: stadtteile grouped per bezirk, A→Z.
+    expect($props['veedelsByBezirk']['Ehrenfeld'])->toBe(['Bickendorf', 'Ehrenfeld', 'Neuehrenfeld']);
+    expect($props['veedelsByBezirk']['Nippes'])->toBe(['Mauenheim', 'Nippes']);
+});
+
+test('default filters land on the home stadtteil inside its bezirk', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Neuehrenfeld',
+        'bezirk' => 'Ehrenfeld',
+        'centroid_lat' => 50.95,
+        'centroid_lng' => 6.92,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $user = User::factory()->onboarded()->create(['veedel' => 'Neuehrenfeld']);
+    $this->actingAs($user);
+
+    $this->get(route('explore'))->assertInertia(fn ($page) => $page
+        ->component('places')
+        ->where('filters.bezirk', 'Ehrenfeld')
+        ->where('filters.veedel', 'Neuehrenfeld'));
+
+    // An explicit bezirk in the URL beats the home default.
+    $this->get(route('explore', ['bezirk' => 'Nippes']))->assertInertia(fn ($page) => $page
+        ->where('filters.bezirk', 'Nippes')
+        ->where('filters.veedel', null));
 });
 
 test('places page requires onboarding', function () {

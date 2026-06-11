@@ -100,6 +100,27 @@ test('includes places within 2km of the veedel centroid as nearby', function () 
     expect($response->json('data.1.id'))->toBe($nearby->id);
 });
 
+test('filters by bezirk across its stadtteile', function () {
+    foreach (['Ehrenfeld' => 'Ehrenfeld', 'Neuehrenfeld' => 'Ehrenfeld', 'Nippes' => 'Nippes'] as $name => $bezirk) {
+        DB::table('veedels')->insert([
+            'name' => $name,
+            'bezirk' => $bezirk,
+            'centroid_lat' => 50.94,
+            'centroid_lng' => 6.92,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        Spot::factory()->create(['category' => 'park', 'veedel' => $name, 'lat' => 50.94, 'lng' => 6.92]);
+    }
+
+    $response = $this->getJson('/api/places?bezirk=Ehrenfeld');
+
+    expect($response->json('meta.total'))->toBe(2);
+    expect($response->json('nearby_included'))->toBeFalse();
+    expect(collect($response->json('data'))->pluck('veedel')->sort()->values()->all())
+        ->toBe(['Ehrenfeld', 'Neuehrenfeld']);
+});
+
 test('rejects an unknown coarse category', function () {
     $this->getJson('/api/places?category=nightclub')->assertUnprocessable();
 });
