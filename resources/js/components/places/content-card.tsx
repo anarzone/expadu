@@ -29,6 +29,7 @@ export function ContentCard({
     seed,
     photoUrl,
     emoji,
+    badge,
     title,
     meta,
     chips = [],
@@ -49,6 +50,8 @@ export function ContentCard({
     seed?: string | null;
     photoUrl?: string | null;
     emoji?: string;
+    /** Calendar-style block (e.g. FRI/12) — the event card's identity. */
+    badge?: { top: string; bottom: string };
     title: string;
     meta?: string;
     chips?: CardChip[];
@@ -132,7 +135,7 @@ export function ContentCard({
                 }}
                 className={`flex flex-1 flex-col ${interactive ? 'cursor-pointer' : ''}`}
             >
-                {/* Image area — desktop grid only; mobile uses the emoji tile */}
+                {/* Image area — desktop grid only; mobile uses the tile */}
                 <div className="relative hidden h-24 w-full md:block">
                     {photoUrl ? (
                         <img
@@ -146,15 +149,36 @@ export function ContentCard({
                             className="h-full w-full"
                         />
                     )}
+                    {badge && (
+                        <span className="absolute top-2 left-2 flex min-w-11 flex-col items-center rounded-[9px] border border-border bg-card px-2 py-1 shadow-sm">
+                            <span className="font-mono text-[9px] leading-tight font-medium tracking-[0.08em] text-danger uppercase">
+                                {badge.top}
+                            </span>
+                            <span className="text-[15px] leading-tight font-bold">
+                                {badge.bottom}
+                            </span>
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex flex-1 flex-col p-4">
-                    {/* Title row */}
+                    {/* Title row — mobile tile is the date badge when given */}
                     <div className="flex items-start gap-3">
-                        {emoji && (
-                            <span className="flex size-11 shrink-0 items-center justify-center rounded-[9px] bg-secondary text-xl md:hidden">
-                                {emoji}
+                        {badge ? (
+                            <span className="flex size-11 shrink-0 flex-col items-center justify-center rounded-[9px] border border-border bg-secondary/60 md:hidden">
+                                <span className="font-mono text-[9px] leading-tight font-medium tracking-[0.08em] text-danger uppercase">
+                                    {badge.top}
+                                </span>
+                                <span className="text-[15px] leading-tight font-bold">
+                                    {badge.bottom}
+                                </span>
                             </span>
+                        ) : (
+                            emoji && (
+                                <span className="flex size-11 shrink-0 items-center justify-center rounded-[9px] bg-secondary text-xl md:hidden">
+                                    {emoji}
+                                </span>
+                            )
                         )}
                         <div className="min-w-0 flex-1">
                             <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold">

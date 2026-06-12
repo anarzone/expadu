@@ -66,6 +66,18 @@ function startsWithinFourHours(occurrence: EventOccurrence): boolean {
     return diff > 0 && diff <= 4 * 3600 * 1000;
 }
 
+function dateBadge(occurrence: EventOccurrence): {
+    top: string;
+    bottom: string;
+} {
+    const start = new Date(occurrence.occurrence_start);
+
+    return {
+        top: start.toLocaleDateString('en-GB', { weekday: 'short' }),
+        bottom: String(start.getDate()),
+    };
+}
+
 function placeMeta(place: Place): string {
     return [
         place.fine_label ?? 'Place',
@@ -439,6 +451,7 @@ export default function Events() {
                                     )}
                                     title={occurrence.title}
                                     emoji={occurrence.emoji}
+                                    badge={dateBadge(occurrence)}
                                     meta={occurrence.meta}
                                     photoUrl={occurrence.photo_url}
                                     live={startsWithinFourHours(occurrence)}

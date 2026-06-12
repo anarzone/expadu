@@ -30,7 +30,8 @@ test('today window returns chronological occurrences with server-built meta', fu
     $venue = makeVenue();
     Event::factory()->create([
         'title' => 'Sprachabend', 'title_en' => 'Language night',
-        'starts_at' => '2026-06-12 19:00:00', 'recurrence' => null,
+        'starts_at' => '2026-06-12 19:00:00', 'ends_at' => '2026-06-12 22:00:00',
+        'recurrence' => null,
         'category' => 'language_exchange', 'chips' => ['English-friendly'],
         'is_free' => true, 'venue_id' => $venue->id, 'summary_en' => 'Two short sentences.',
     ]);
@@ -45,9 +46,21 @@ test('today window returns chronological occurrences with server-built meta', fu
     expect($data)->toHaveCount(2);
     expect($data[0]['title'])->toBe('Morning run');
     expect($data[1]['title'])->toBe('Language night');
-    expect($data[1]['meta'])->toBe('Tonight 19:00 · Gilden im Zims · Altstadt-Nord');
+    expect($data[1]['meta'])->toBe('Tonight 19:00–22:00 · Gilden im Zims · Altstadt-Nord');
     expect($data[1]['chips'])->toBe(['English-friendly', 'free']); // free chip derived
     expect($data[1]['category'])->toBe('language_exchange');
+});
+
+test('placeholder venue text is never shown as a venue', function () {
+    Event::factory()->create([
+        'starts_at' => '2026-06-12 21:00:00', 'recurrence' => null,
+        'location_name' => 'Siehe Beschreibung', 'venue_id' => null,
+    ]);
+
+    $data = $this->getJson('/api/events?window=today')->assertOk()->json('data');
+
+    expect($data[0]['venue']['name'])->toBeNull();
+    expect($data[0]['meta'])->not->toContain('Siehe');
 });
 
 test('the venue\'s place photo richens the card', function () {

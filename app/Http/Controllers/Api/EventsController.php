@@ -103,6 +103,7 @@ class EventsController extends Controller
     {
         $category = EventCategory::fromLegacy($event->category);
         $venue = $event->venue;
+        $venueName = $this->venueName($venue->name ?? $event->location_name);
 
         return [
             'id' => $event->id,
@@ -112,7 +113,7 @@ class EventsController extends Controller
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
-            'meta' => $this->meta($startsAt, $venue->name ?? $event->location_name, $venue?->veedel),
+            'meta' => $this->meta($startsAt, $endsAt, $venueName, $venue?->veedel),
             // The venue's place photo richens the card (Commons, credited)
             'photo_url' => $venue?->place?->photo_url,
             'photo_attribution' => $venue?->place?->photo_attribution,
@@ -121,7 +122,7 @@ class EventsController extends Controller
             'summary' => $event->summary_en ?: ($event->description_en ?: null),
             'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
             'venue' => [
-                'name' => $venue->name ?? $event->location_name,
+                'name' => $venueName,
                 'veedel' => $venue->veedel ?? null,
                 'lat' => $venue->lat ?? $event->lat,
                 'lng' => $venue->lng ?? $event->lng,
@@ -136,7 +137,7 @@ class EventsController extends Controller
         ];
     }
 
-    private function meta(CarbonImmutable $startsAt, ?string $venueName, ?string $veedel): string
+    private function meta(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt, ?string $venueName, ?string $veedel): string
     {
         $now = CarbonImmutable::now('Europe/Berlin');
 
@@ -146,11 +147,30 @@ class EventsController extends Controller
             default => $startsAt->format('l'),
         };
 
+        $time = $endsAt && $endsAt->isSameDay($startsAt) && $endsAt->greaterThan($startsAt)
+            ? "{$startsAt->format('H:i')}–{$endsAt->format('H:i')}"
+            : $startsAt->format('H:i');
+
         return implode(' · ', array_filter([
-            "{$day} {$startsAt->format('H:i')}",
+            "{$day} {$time}",
             $venueName,
             $veedel,
         ]));
+    }
+
+    /**
+     * Sources sometimes ship placeholder text instead of a venue name —
+     * "Siehe Beschreibung" is not a place.
+     */
+    private function venueName(?string $name): ?string
+    {
+        if ($name === null) {
+            return null;
+        }
+
+        return preg_match('/siehe|s\. beschreibung|^online$|^div\.|^verschiedene/i', trim($name))
+            ? null
+            : $name;
     }
 
     /**
