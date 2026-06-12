@@ -94,6 +94,7 @@ $appRoutes = function () use ($appDomain) {
 
         Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboarding');
         Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
+        Route::post('onboarding/restart', [OnboardingController::class, 'restart'])->name('onboarding.restart');
 
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
 

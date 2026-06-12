@@ -213,3 +213,47 @@ test('entry mode and housing status land in the attribute bag with audit log', f
     expect($user->profile_attributes['housing_status'])->toBe('temporary');
     expect($user->attributeChanges()->where('source', 'onboarding')->count())->toBe(2);
 });
+
+test('redo onboarding re-asks everything but keeps all progress', function () {
+    Task::factory()->create([
+        'key' => 'rd.anmeldung',
+        'situation' => ['eu_employee'],
+        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'eu']],
+        'documents_required' => ['Passport'],
+    ]);
+
+    $user = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
+    $this->actingAs($user);
+    $this->get(route('bureaucracy')); // materialise
+
+    $userTask = $user->userTasks()->first();
+    $userTask->update(['documents_checked' => ['Passport']]); // real progress
+
+    $this->post(route('onboarding.restart'))->assertRedirect(route('onboarding'));
+
+    $user->refresh();
+    expect($user->onboarded_at)->toBeNull();
+    // Answers stay (they're re-asked and overwritten) and progress is KEPT.
+    expect($user->situation->value)->toBe('eu_employee');
+    expect($user->userTasks()->count())->toBe(1);
+    expect($userTask->fresh()->documents_checked)->toBe(['Passport']);
+
+    // Protected pages bounce back to onboarding until it's completed again.
+    $this->get(route('explore'))->assertRedirect(route('onboarding'));
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'student',
+        'is_eu' => true,
+        'veedel' => 'Nippes',
+        'arrival_date' => now()->subDays(3)->toDateString(),
+        'housing_status' => 'long_term',
+    ])->assertRedirect(route('dashboard'));
+
+    // The touched old-path task survives in the records lane.
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $ghosts = collect($page->toArray()['props']['tasks']['no_longer_relevant'])->pluck('key');
+        expect($ghosts)->toContain('rd.anmeldung');
+
+        return true;
+    });
+});

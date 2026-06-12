@@ -1629,6 +1629,35 @@ export default function Profile() {
                                 onCancel={cancelEdit}
                                 isLast
                             />
+
+                            {/* Redo onboarding: re-asks every answer, the
+                                plan recomputes, nothing is deleted. */}
+                            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-[#EFEDE7] px-3.5 py-3 dark:bg-[#2A2920]">
+                                <div className="min-w-0">
+                                    <div className="text-[13px] font-semibold">
+                                        Situation changed?
+                                    </div>
+                                    <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                        Walk through the welcome questions again
+                                        — your plan adapts, and nothing you've
+                                        done is lost.
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (
+                                            window.confirm(
+                                                'Redo onboarding? Your answers will be re-asked and your plan recomputed. All progress is kept.',
+                                            )
+                                        ) {
+                                            router.post('/onboarding/restart');
+                                        }
+                                    }}
+                                    className="shrink-0 cursor-pointer rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-xs font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                                >
+                                    🔄 Redo onboarding
+                                </button>
+                            </div>
                         </SettingsSection>
 
                         {/* YOUR PLACES */}
