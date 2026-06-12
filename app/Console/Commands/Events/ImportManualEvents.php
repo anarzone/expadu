@@ -39,7 +39,18 @@ class ImportManualEvents extends Command
 
         $imported = 0;
         foreach ($records as $record) {
-            $startsAt = $this->startsAt($record['schedule']);
+            // INTERVAL>1 series anchor their phase on DTSTART's week, so
+            // re-imports must NOT re-derive it — the run date would
+            // silently shift which week an every-4-weeks event lands on.
+            $existing = Event::query()
+                ->where('source', 'manual')
+                ->where('source_uid', $record['uid'])
+                ->first();
+
+            $startsAt = $existing && $existing->recurrence
+                ? CarbonImmutable::parse($existing->starts_at)
+                : $this->startsAt($record['schedule']);
+
             $endsAt = isset($record['schedule']['duration_min'])
                 ? $startsAt->addMinutes((int) $record['schedule']['duration_min'])
                 : null;

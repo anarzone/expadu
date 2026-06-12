@@ -43,7 +43,9 @@ class RecurrenceExpander
 
         $seriesEnd = collect([
             $rule['until'],
-            $event->recurrence_until ? CarbonImmutable::parse($event->recurrence_until) : null,
+            // endOfDay like the in-rule UNTIL — a date-valued (midnight)
+            // recurrence_until must not drop its own final day.
+            $event->recurrence_until ? CarbonImmutable::parse($event->recurrence_until)->endOfDay() : null,
         ])->filter()->min() ?? $to;
 
         $windowEnd = $to->min($seriesEnd);
@@ -92,25 +94,32 @@ class RecurrenceExpander
     }
 
     /**
+     * Occurrence n is always derived FROM DTSTART (not by walking a
+     * cursor) so month-end overflow stays deterministic regardless of
+     * where the window starts: Jan 31 + n months (no overflow) is the
+     * same series whether you ask for March or for June.
+     *
      * @return list<CarbonImmutable>
      */
     private function stepped(CarbonImmutable $start, CarbonImmutable $from, CarbonImmutable $to, int $interval, string $unit): array
     {
-        $occurrences = [];
-        $cursor = $start;
+        $occurrenceAt = fn (int $n): CarbonImmutable => $unit === 'days'
+            ? $start->addDays($n * $interval)
+            : $start->addMonthsNoOverflow($n * $interval);
 
         // Jump close to the window instead of iterating from DTSTART
-        if ($cursor->lessThan($from)) {
+        $n = 0;
+        if ($start->lessThan($from)) {
             $perStep = $unit === 'days' ? $interval : $interval * 28; // months: conservative
-            $steps = intdiv(max(0, (int) $cursor->diffInDays($from)), max(1, $perStep));
-            $cursor = $cursor->add($unit, $steps * $interval);
+            $n = intdiv(max(0, (int) $start->diffInDays($from)), max(1, $perStep));
         }
 
-        while ($cursor->lessThanOrEqualTo($to)) {
-            if ($cursor->greaterThanOrEqualTo($from) && $cursor->greaterThanOrEqualTo($start)) {
-                $occurrences[] = $cursor;
+        $occurrences = [];
+        while (($occurrence = $occurrenceAt($n))->lessThanOrEqualTo($to)) {
+            if ($occurrence->greaterThanOrEqualTo($from)) {
+                $occurrences[] = $occurrence;
             }
-            $cursor = $cursor->add($unit, $interval);
+            $n++;
         }
 
         return $occurrences;

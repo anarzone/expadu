@@ -105,18 +105,16 @@ class Event extends Model
             ->values();
     }
 
+    /** @var array{lat: ?float, lng: ?float}|null memoized PostGIS point */
+    private ?array $resolvedPoint = null;
+
     /**
-     * Extract latitude from PostGIS location column.
+     * Extract latitude from PostGIS location column (memoized — the
+     * events feed reads this per occurrence).
      */
     public function getLatAttribute(): ?float
     {
-        if (! $this->location) {
-            return null;
-        }
-
-        $result = \DB::selectOne('SELECT ST_Y(location::geometry) as lat FROM events WHERE id = ?', [$this->id]);
-
-        return $result?->lat ? (float) $result->lat : null;
+        return $this->resolvePoint()['lat'];
     }
 
     /**
@@ -124,13 +122,31 @@ class Event extends Model
      */
     public function getLngAttribute(): ?float
     {
-        if (! $this->location) {
-            return null;
+        return $this->resolvePoint()['lng'];
+    }
+
+    /**
+     * @return array{lat: ?float, lng: ?float}
+     */
+    private function resolvePoint(): array
+    {
+        if ($this->resolvedPoint !== null) {
+            return $this->resolvedPoint;
         }
 
-        $result = \DB::selectOne('SELECT ST_X(location::geometry) as lng FROM events WHERE id = ?', [$this->id]);
+        if (! $this->location) {
+            return $this->resolvedPoint = ['lat' => null, 'lng' => null];
+        }
 
-        return $result?->lng ? (float) $result->lng : null;
+        $result = \DB::selectOne(
+            'SELECT ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng FROM events WHERE id = ?',
+            [$this->id],
+        );
+
+        return $this->resolvedPoint = [
+            'lat' => $result?->lat !== null ? (float) $result->lat : null,
+            'lng' => $result?->lng !== null ? (float) $result->lng : null,
+        ];
     }
 
     /** @return BelongsTo<User, $this> */

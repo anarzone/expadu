@@ -116,6 +116,7 @@ export default function Places() {
 
     const isMobile = useIsMobile();
     const reqRef = useRef(0);
+    const busyRef = useRef(false);
 
     const fetchPage = useCallback(
         (
@@ -126,6 +127,7 @@ export default function Places() {
             append: boolean,
         ) => {
             const token = ++reqRef.current;
+            busyRef.current = true;
             const params = new URLSearchParams({ page: String(p) });
 
             // Stadtteil beats Bezirk; neither means all of Cologne.
@@ -149,6 +151,7 @@ export default function Places() {
                         return; // a newer request superseded this one
                     }
 
+                    busyRef.current = false;
                     const data: Place[] = json.data ?? [];
                     setPlaces((prev) => (append ? [...prev, ...data] : data));
                     setTotal(json.meta?.total ?? data.length);
@@ -167,6 +170,7 @@ export default function Places() {
                 })
                 .catch(() => {
                     if (token === reqRef.current) {
+                        busyRef.current = false;
                         setStatus('error');
                     }
                 });
@@ -193,12 +197,23 @@ export default function Places() {
         }
 
         const qs = params.toString();
-        window.history.replaceState({}, '', `/explore${qs ? `?${qs}` : ''}`);
+        // Preserve history.state — Inertia v2 stores its page snapshot
+        // there; replacing it with {} breaks back/forward app-wide.
+        window.history.replaceState(
+            window.history.state,
+            '',
+            `/explore${qs ? `?${qs}` : ''}`,
+        );
     }, [bezirk, veedel, category, fetchPage]);
 
     // Back/forward button re-reads the URL
     useEffect(() => {
         function onPop() {
+            // Also fires when leaving the page — don't touch state then
+            if (window.location.pathname !== '/explore') {
+                return;
+            }
+
             const sp = new URLSearchParams(window.location.search);
             const hasGeo = sp.has('veedel') || sp.has('bezirk');
             setBezirk(
@@ -213,9 +228,13 @@ export default function Places() {
     }, [homeVeedel, homeBezirk]);
 
     function showMore() {
-        const next = page + 1;
-        setPage(next);
-        fetchPage(bezirk, veedel, category, next, true);
+        // A double-click would skip a page: the optimistic page bump plus
+        // the token guard discarded the in-flight response. One at a time.
+        if (busyRef.current) {
+            return;
+        }
+
+        fetchPage(bezirk, veedel, category, page + 1, true);
     }
 
     function pickBezirk(name: string) {

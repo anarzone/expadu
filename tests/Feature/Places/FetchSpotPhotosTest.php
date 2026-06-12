@@ -49,31 +49,46 @@ test('resolves photos from wikidata P18 claims with commons attribution', functi
     expect($spot->photo_attribution)->toBe('Jane Doe · CC BY-SA 4.0 · Wikimedia Commons');
 });
 
-test('falls back to the wikipedia page image when there is no wikidata tag', function () {
+test('falls back to the wikipedia page image, surviving redirects and underscored names', function () {
     $spot = Spot::factory()->create([
         'name' => 'Blücherpark',
         'category' => 'park',
         'lat' => 50.962,
         'lng' => 6.930,
-        'tags' => ['wikipedia' => 'de:Blücherpark'],
+        'tags' => ['wikipedia' => 'de:Bluecherpark Koeln'], // redirect-reached title
     ]);
 
     Http::fake([
         'de.wikipedia.org/*' => Http::response([
             'query' => [
+                // The API resolves to the canonical title and returns an
+                // underscored pageimage — both must still map back.
+                'redirects' => [['from' => 'Bluecherpark Koeln', 'to' => 'Blücherpark']],
                 'pages' => [
-                    '42' => ['title' => 'Blücherpark', 'pageimage' => 'Bluecherpark Pavillon.jpg'],
+                    '42' => ['title' => 'Blücherpark', 'pageimage' => 'Bluecherpark_Pavillon.jpg'],
                 ],
             ],
         ]),
-        'commons.wikimedia.org/*' => Http::response(['query' => ['pages' => []]]),
+        'commons.wikimedia.org/*' => Http::response([
+            'query' => [
+                'pages' => [
+                    '7' => [
+                        'title' => 'File:Bluecherpark Pavillon.jpg', // Commons answers with spaces
+                        'imageinfo' => [['extmetadata' => [
+                            'Artist' => ['value' => 'Max'],
+                            'LicenseShortName' => ['value' => 'CC BY 4.0'],
+                        ]]],
+                    ],
+                ],
+            ],
+        ]),
     ]);
 
     $this->artisan('spots:fetch-photos')->assertSuccessful();
 
     $spot->refresh();
-    expect($spot->photo_url)->toContain('Special:FilePath/Bluecherpark%20Pavillon.jpg');
-    expect($spot->photo_attribution)->toBe('Wikimedia Commons');
+    expect($spot->photo_url)->toContain('Special:FilePath/Bluecherpark_Pavillon.jpg');
+    expect($spot->photo_attribution)->toBe('Max · CC BY 4.0 · Wikimedia Commons');
 });
 
 test('leaves unlinked spots untouched', function () {

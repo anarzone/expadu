@@ -104,7 +104,8 @@ export default function Events() {
     const [category, setCategory] = useState<string | null>(filters.category);
     const [veedel, setVeedel] = useState<string | null>(filters.veedel);
     const [free, setFree] = useState<boolean>(filters.free);
-    const [venueId] = useState<string | null>(filters.venue);
+    // Venue deep-link from a place's events strip — dismissible chip
+    const [venueId, setVenueId] = useState<string | null>(filters.venue);
 
     const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
     const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
@@ -186,17 +187,29 @@ export default function Events() {
         }
 
         const qs = params.toString();
-        globalThis.history.replaceState({}, '', `/events${qs ? `?${qs}` : ''}`);
+        // Preserve history.state — Inertia v2 stores its page snapshot
+        // there; replacing it with {} breaks back/forward app-wide.
+        globalThis.history.replaceState(
+            globalThis.history.state,
+            '',
+            `/events${qs ? `?${qs}` : ''}`,
+        );
     }, [window_, category, veedel, free, venueId, fetchEvents]);
 
     // Back/forward re-reads the URL
     useEffect(() => {
         function onPop() {
+            // Also fires when leaving the page — don't touch state then
+            if (globalThis.location.pathname !== '/events') {
+                return;
+            }
+
             const sp = new URLSearchParams(globalThis.location.search);
             setWindow(sp.get('window') ?? 'today');
             setCategory(sp.get('category'));
             setVeedel(sp.get('veedel'));
             setFree(sp.get('free') === '1');
+            setVenueId(sp.get('venue'));
         }
         globalThis.addEventListener('popstate', onPop);
 
@@ -349,6 +362,15 @@ export default function Events() {
                     >
                         free
                     </button>
+                    {venueId && (
+                        <button
+                            onClick={() => setVenueId(null)}
+                            title="Showing one venue — tap to clear"
+                            className="shrink-0 cursor-pointer rounded-full border border-primary bg-primary px-3 py-1.5 text-[13px] font-medium text-white"
+                        >
+                            📍 this venue ✕
+                        </button>
+                    )}
                 </div>
 
                 {/* Veedel chips — secondary filter */}
@@ -424,17 +446,31 @@ export default function Events() {
                             onClick={() => {
                                 setCategory(null);
                                 setFree(false);
-                                setWindow(
-                                    window_ === 'weekend' || window_ === 'week'
-                                        ? 'week'
-                                        : 'weekend',
-                                );
+                                setVeedel(null);
+                                setVenueId(null);
+
+                                if (window_ === 'weekend') {
+                                    setWindow('week');
+                                } else if (window_ !== 'week') {
+                                    setWindow('weekend');
+                                } else if (
+                                    !category &&
+                                    !free &&
+                                    !veedel &&
+                                    !venueId
+                                ) {
+                                    // week + no filters: nothing would change —
+                                    // make the button an explicit retry
+                                    fetchEvents('week', null, null, false);
+                                }
                             }}
                             className="mt-3 rounded-[9px] border border-border px-4 py-2 text-[13px] font-semibold text-primary"
                         >
-                            {window_ === 'weekend' || window_ === 'week'
+                            {window_ === 'weekend'
                                 ? 'See the whole week'
-                                : 'Jump to the weekend'}
+                                : window_ === 'week'
+                                  ? 'Clear filters & retry'
+                                  : 'Jump to the weekend'}
                         </button>
                     </div>
                 ) : (

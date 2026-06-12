@@ -146,7 +146,10 @@ class PlacesController extends Controller
         // group, named destinations beat commodity facilities, then
         // closest to the user wins.
         if ($selectedVeedel !== null) {
-            $outer->orderByRaw('(veedel = ?) desc', [$selectedVeedel]);
+            // IS NOT DISTINCT FROM: a plain equals yields NULL for
+            // NULL-veedel rows, which DESC sorts FIRST in Postgres —
+            // floating unassigned spots above the selected Veedel's own.
+            $outer->orderByRaw('(veedel IS NOT DISTINCT FROM ?) desc', [$selectedVeedel]);
         }
 
         $paginator = $outer
@@ -155,9 +158,10 @@ class PlacesController extends Controller
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 
         $activities = $this->activitiesForParks($paginator->getCollection());
+        $stopHints = $this->stopHintsForPage($paginator->getCollection());
 
-        $paginator->getCollection()->transform(function (Spot $spot) use ($activities) {
-            $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
+        $paginator->getCollection()->transform(function (Spot $spot) use ($activities, $stopHints) {
+            $spot->transit_hint = $stopHints[$spot->id] ?? null;
             $spot->activities = $activities[$spot->name] ?? [];
 
             return $spot;
@@ -234,6 +238,51 @@ class PlacesController extends Controller
         }
 
         return [50.9375, 6.9603]; // Cologne centre
+    }
+
+    /**
+     * Nearest-stop hints for a whole page in ONE query (lateral join) —
+     * the per-row version was 20 sequential queries per request.
+     *
+     * @param  Collection<int, Spot>  $places
+     * @return array<int, string>
+     */
+    private function stopHintsForPage($places): array
+    {
+        if ($places->isEmpty()) {
+            return [];
+        }
+
+        try {
+            $values = $places
+                ->map(fn (Spot $spot) => sprintf('(%d, %.7F, %.7F)', $spot->id, $spot->lat, $spot->lng))
+                ->implode(', ');
+
+            $rows = DB::select(
+                "SELECT p.id, s.stop_name, s.meters
+                 FROM (VALUES {$values}) AS p(id, lat, lng)
+                 CROSS JOIN LATERAL (
+                     SELECT stop_name,
+                            (6371000 * acos(LEAST(1, cos(radians(p.lat)) * cos(radians(stop_lat)) * cos(radians(stop_lng) - radians(p.lng)) + sin(radians(p.lat)) * sin(radians(stop_lat))))) AS meters
+                     FROM gtfs_stops
+                     WHERE location_type = 0
+                       AND stop_lat BETWEEN p.lat - 0.0075 AND p.lat + 0.0075
+                       AND stop_lng BETWEEN p.lng - 0.0075 AND p.lng + 0.0075
+                     ORDER BY meters
+                     LIMIT 1
+                 ) s",
+            );
+
+            $hints = [];
+            foreach ($rows as $row) {
+                $walkMin = max(1, (int) round(($row->meters / 4.5 / 1000) * 60));
+                $hints[(int) $row->id] = "Nearest stop: {$row->stop_name} (~{$walkMin} min walk)";
+            }
+
+            return $hints;
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**

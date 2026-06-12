@@ -55,7 +55,7 @@ class FetchSpotPhotos extends Command
             $spot->update([
                 'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/'
                     .rawurlencode($file).'?width=800',
-                'photo_attribution' => $meta[$file] ?? 'Wikimedia Commons',
+                'photo_attribution' => $meta[str_replace('_', ' ', $file)] ?? 'Wikimedia Commons',
             ]);
             $saved++;
         }
@@ -73,9 +73,12 @@ class FetchSpotPhotos extends Command
      */
     private function filesFromWikidata($spots): array
     {
+        // Several spots may share one QID (e.g. duplicate OSM rows) —
+        // group, don't overwrite.
         $byQid = $spots
             ->filter(fn (Spot $spot) => preg_match('/^Q\d+$/', $spot->tags['wikidata'] ?? ''))
-            ->mapWithKeys(fn (Spot $spot) => [$spot->tags['wikidata'] => $spot->id]);
+            ->groupBy(fn (Spot $spot) => $spot->tags['wikidata'])
+            ->map(fn ($group) => $group->pluck('id')->all());
 
         $files = [];
         foreach (array_chunk($byQid->keys()->all(), self::BATCH) as $chunk) {
@@ -97,7 +100,9 @@ class FetchSpotPhotos extends Command
             foreach ($entities as $qid => $entity) {
                 $file = $entity['claims']['P18'][0]['mainsnak']['datavalue']['value'] ?? null;
                 if ($file && isset($byQid[$qid])) {
-                    $files[$byQid[$qid]] = (string) $file;
+                    foreach ($byQid[$qid] as $spotId) {
+                        $files[$spotId] = (string) $file;
+                    }
                 }
             }
         }
@@ -128,7 +133,7 @@ class FetchSpotPhotos extends Command
         foreach ($byLang as $lang => $titles) {
             foreach (array_chunk(array_keys($titles), self::BATCH) as $chunk) {
                 try {
-                    $pages = Http::withUserAgent(self::USER_AGENT)->timeout(30)
+                    $query = Http::withUserAgent(self::USER_AGENT)->timeout(30)
                         ->get("https://{$lang}.wikipedia.org/w/api.php", [
                             'action' => 'query',
                             'titles' => implode('|', $chunk),
@@ -137,18 +142,28 @@ class FetchSpotPhotos extends Command
                             'redirects' => 1,
                             'format' => 'json',
                         ])
-                        ->json('query.pages', []);
+                        ->json('query', []);
                 } catch (\Exception $e) {
                     $this->warn("  {$lang}.wikipedia batch failed: {$e->getMessage()}");
 
                     continue;
                 }
 
-                foreach ($pages as $page) {
+                // The API returns canonical titles — map them back to the
+                // titles we asked for, through normalization + redirects,
+                // or every redirect-reached page silently loses its photo.
+                $requestedFor = [];
+                foreach (array_merge($query['normalized'] ?? [], $query['redirects'] ?? []) as $mapping) {
+                    $original = $requestedFor[$mapping['from']] ?? $mapping['from'];
+                    $requestedFor[$mapping['to']] = $original;
+                }
+
+                foreach ($query['pages'] ?? [] as $page) {
                     $title = $page['title'] ?? '';
+                    $requested = $requestedFor[$title] ?? $title;
                     $file = $page['pageimage'] ?? null;
-                    if ($file && isset($titles[$title])) {
-                        $files[$titles[$title]] = (string) $file;
+                    if ($file && isset($titles[$requested])) {
+                        $files[$titles[$requested]] = (string) $file;
                     }
                 }
             }
@@ -184,7 +199,9 @@ class FetchSpotPhotos extends Command
             }
 
             foreach ($pages as $page) {
-                $file = preg_replace('/^File:/', '', $page['title'] ?? '');
+                // Commons answers with spaces; pageimage names arrive
+                // underscored — normalize so the attribution lookup hits.
+                $file = str_replace('_', ' ', preg_replace('/^File:/', '', $page['title'] ?? ''));
                 $ext = $page['imageinfo'][0]['extmetadata'] ?? [];
 
                 $artist = trim(strip_tags($ext['Artist']['value'] ?? ''));

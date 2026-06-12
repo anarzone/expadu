@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\Spot;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class ImportOsmSpots extends Command
@@ -192,7 +191,7 @@ class ImportOsmSpots extends Command
             // Build address from OSM tags
             $address = $this->buildAddress($tags);
 
-            $spot = Spot::create([
+            Spot::create([
                 'name' => $name,
                 'category' => $category,
                 'address' => $address,
@@ -204,12 +203,7 @@ class ImportOsmSpots extends Command
                 'rating' => null,
             ]);
 
-            // Set PostGIS location
-            DB::statement(
-                'UPDATE spots SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
-                [$lng, $lat, $spot->id]
-            );
-
+            // PostGIS `location` is synced by Spot's saved() hook.
             $imported++;
         }
 

@@ -65,6 +65,24 @@ test('handles the late-night timezone edge near midnight', function () {
     expect(Event::occurringBetween($from, $to))->toHaveCount(0);
 });
 
+test('monthly series on day 31 stay deterministic across window starts', function () {
+    Event::factory()->create([
+        'starts_at' => '2026-01-31 18:00:00',
+        'recurrence' => 'FREQ=MONTHLY',
+    ]);
+
+    // Occurrence n is derived from DTSTART with no-overflow months —
+    // Feb 28, Mar 31, Apr 30 — regardless of where the window begins.
+    [$from, $to] = window('2026-02-01 00:00', '2026-04-30 23:59');
+    $dates = Event::occurringBetween($from, $to)->pluck('starts_at')->map->format('Y-m-d')->all();
+    expect($dates)->toBe(['2026-02-28', '2026-03-31', '2026-04-30']);
+
+    // Same series asked later must agree
+    [$from, $to] = window('2026-04-01 00:00', '2026-04-30 23:59');
+    $dates = Event::occurringBetween($from, $to)->pluck('starts_at')->map->format('Y-m-d')->all();
+    expect($dates)->toBe(['2026-04-30']);
+});
+
 test('one-off events appear once and only inside their window', function () {
     Event::factory()->create(['starts_at' => '2026-06-10 11:00:00', 'recurrence' => null]);
 

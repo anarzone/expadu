@@ -29,7 +29,11 @@ class EventReminderController extends Controller
         [$offsetMinutes, $remindAt] = match ($validated['offset']) {
             '1h' => [60, $occurrenceStart->subHour()],
             '3h' => [180, $occurrenceStart->subHours(3)],
-            'morning' => [0, $occurrenceStart->setTime(8, 0)],
+            // "Morning of" an event that starts before 08:00 would land
+            // AFTER the start and never fire — fall back to 1h before.
+            'morning' => $occurrenceStart->hour < 8
+                ? [60, $occurrenceStart->subHour()]
+                : [0, $occurrenceStart->setTime(8, 0)],
         };
 
         $reminder = EventReminder::query()->updateOrCreate(

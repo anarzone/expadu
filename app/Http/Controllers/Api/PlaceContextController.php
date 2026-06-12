@@ -102,11 +102,17 @@ class PlaceContextController extends Controller
             );
         }
 
+        $limit = $spot->getRawOriginal('category') === 'park' ? 8 : self::NEARBY_LIMIT;
+
         $rows = $query
             ->orderBy('km')
-            // A park venue gets more room — it's listing its own facilities
-            ->limit($spot->getRawOriginal('category') === 'park' ? 8 : self::NEARBY_LIMIT)
-            ->get();
+            // Over-fetch, then collapse same-name rows (three OSM
+            // "Tischtennisplatte" entries are one chip, not three).
+            ->limit($limit * 3)
+            ->get()
+            ->unique('name')
+            ->take($limit)
+            ->values();
 
         return $rows->map(function (Spot $near) {
             $category = $near->category instanceof SpotCategory

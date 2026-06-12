@@ -136,6 +136,15 @@ test('events:import-manual upserts the curated catalogue with recurring rules', 
     // NULL-source duplicates get hidden so the catalogue is canonical
     expect($legacy->refresh()->status)->toBe('hidden');
 
+    // Re-imports must not re-anchor recurring DTSTARTs — an INTERVAL=4
+    // series' phase depends on it.
+    $stammtisch = Event::where('source', 'manual')->where('source_uid', 'expat-stammtisch-frueh')->first();
+    $anchor = $stammtisch->starts_at;
+    $this->travelTo(now()->addDays(9));
+    $this->artisan('events:import-manual')->assertSuccessful();
+    expect($stammtisch->refresh()->starts_at->equalTo($anchor))->toBeTrue();
+    $this->travelBack();
+
     $exchange = Event::where('source', 'manual')->where('source_uid', 'cologne-language-exchange')->first();
     expect($exchange)->not->toBeNull();
     expect(Event::where('source', 'manual')->count())->toBe(10);

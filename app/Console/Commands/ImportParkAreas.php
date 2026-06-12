@@ -50,6 +50,11 @@ class ImportParkAreas extends Command
                 continue;
             }
 
+            // OSM ways and relations are separate id spaces — encode the
+            // type into the stored id (…1 = way, …2 = relation) so an id
+            // clash can't overwrite the other's polygon.
+            $osmId = $osmId * 10 + (($element['type'] ?? null) === 'relation' ? 2 : 1);
+
             $wkt = $this->toWkt($element);
             if ($wkt === null) {
                 $skipped++;

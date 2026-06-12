@@ -154,6 +154,19 @@ test('reminders can be set, listed and removed per occurrence', function () {
     expect(EventReminder::count())->toBe(0);
 });
 
+test('a morning reminder for a pre-8:00 event falls back to one hour before', function () {
+    $event = Event::factory()->create(['starts_at' => '2026-06-13 07:00:00', 'recurrence' => null]);
+
+    $this->postJson('/api/reminders', [
+        'event_id' => $event->id,
+        'occurrence_start' => '2026-06-13T07:00:00+02:00',
+        'offset' => 'morning',
+    ])->assertOk();
+
+    // 08:00 would be AFTER the start and never fire — clamped to 06:00
+    expect(EventReminder::first()->remind_at->format('H:i'))->toBe('06:00');
+});
+
 test('due reminders are delivered once through the notification channel', function () {
     Notification::fake();
 
