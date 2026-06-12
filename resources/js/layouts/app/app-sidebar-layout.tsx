@@ -34,7 +34,11 @@ export default function AppSidebarLayout({
                     <div className="flex-1 overflow-hidden">{children}</div>
                 ) : (
                     <div className="flex min-h-0 flex-1 justify-center">
-                        <div className="w-full shrink-0 border-[#E2DFD6] pb-28 md:w-[600px] md:border-r md:pb-0 dark:border-[#3A3930]">
+                        {/* 600px is a CAP, not a fixed width: at tablet
+                            widths the column must shrink with the expanded
+                            sidebar instead of sliding underneath it (which
+                            buried the header and the sidebar toggle). */}
+                        <div className="w-full min-w-0 flex-1 border-[#E2DFD6] pb-28 md:max-w-[600px] md:border-r md:pb-0 dark:border-[#3A3930]">
                             <MobileTopBar showBack={showBack} />
                             {children}
                         </div>

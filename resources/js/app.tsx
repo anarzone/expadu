@@ -72,7 +72,13 @@ createInertiaApp({
             import.meta.glob('./pages/**/*.tsx'),
         ),
     setup({ el, App, props }) {
-        const root = createRoot(el);
+        // Guard against double createRoot on the same element (SW replays /
+        // duplicate module evaluation log a React warning otherwise).
+        type RootEl = HTMLElement & {
+            __inertiaRoot?: ReturnType<typeof createRoot>;
+        };
+        const rootEl = el as RootEl;
+        const root = (rootEl.__inertiaRoot ??= createRoot(el));
 
         root.render(
             <StrictMode>

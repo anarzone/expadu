@@ -19,6 +19,8 @@ export function useTracker() {
 
         fetch('/api/track', {
             method: 'POST',
+            // Survive page navigations — aborted beacons log console errors.
+            keepalive: true,
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN':
