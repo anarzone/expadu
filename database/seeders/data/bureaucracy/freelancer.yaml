@@ -24,6 +24,7 @@ tasks:
       - label: Passport or EU ID card
       - label: Wohnungsgeberbescheinigung (Cologne form, signed by your landlord)
         note: A rental contract or informal letter is NOT sufficient, and it cannot be submitted later — without it the registration doesn't happen that day.
+        tone: warn
     links:
       - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:

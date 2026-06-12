@@ -30,6 +30,7 @@ tasks:
         note: Cologne wants the contract AND evidence of what you actually pay — e.g. a recent bank statement. Owners instead bring the purchase contract with the apartment size in m², loan-installment proofs and the monthly Hausgeld.
       - label: A1 German certificate for the joining spouse
         note: Only Goethe-Institut, TestDaF or telc certificates are accepted (e.g. "Deutsch-Test für Zuwanderer") — other certificates are rejected.
+        tone: warn
       - label: Livelihood proof for all working family members
         note: 'Employees: last 3 payslips. Self-employed: last income-tax assessment + current P&L from the tax advisor + Gewerbeanmeldung if applicable + pension/life-insurance proof.'
       - label: Birth certificates for joining children (§32)

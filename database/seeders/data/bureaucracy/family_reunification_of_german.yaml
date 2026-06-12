@@ -26,6 +26,7 @@ tasks:
       - label: Copy of the entry visa, if visa-required
       - label: A1 German certificate (spouses)
         note: Only Goethe-Institut, TestDaF or telc certificates are accepted — other certificates are rejected.
+        tone: warn
       - label: Marriage certificate / child's birth certificate
         note: Certified translations of all foreign certificates + apostille/legalization depending on the origin country.
       - label: Custody-exercise proof, if the German parent doesn't live with the child

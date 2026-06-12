@@ -43,6 +43,7 @@ tasks:
         note: Ask HR to fill it the week you sign — it's the document the BA approval waits on.
       - label: Proof of health insurance
         note: Trap — as a Chancenkarte holder you're not in statutory insurance yet; the gap between travel insurance and GKV is where people get burned. Sort GKV the day your job starts.
+        tone: warn
       - label: Housing proof (Mietvertrag)
       - label: Biometric photo
     links:

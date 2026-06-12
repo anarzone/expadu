@@ -2,7 +2,10 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useRef, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
-import type { Buckets } from '@/components/bureaucracy/checklist-framing-b';
+import type {
+    Buckets,
+    PathProp,
+} from '@/components/bureaucracy/checklist-framing-b';
 import { DocumentCard } from '@/components/bureaucracy/document-card';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
 import { useTabState } from '@/hooks/use-tab-state';
@@ -397,6 +400,7 @@ export default function Bureaucracy() {
         slots,
         monitors,
         situation,
+        path,
         tasks: taskBuckets,
         progress,
         bookingServices: _bookingServices,
@@ -404,6 +408,7 @@ export default function Bureaucracy() {
         slots: Record<string, SlotData>;
         monitors: string[];
         situation: string | null;
+        path: PathProp | null;
         tasks: Buckets;
         progress: { done: number; total: number; percent: number };
         bookingServices?: BookingService[];
@@ -536,6 +541,7 @@ export default function Bureaucracy() {
                         situation={situation}
                         progress={progress}
                         tasks={taskBuckets}
+                        path={path}
                     />
                 )}
 

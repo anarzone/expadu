@@ -11,9 +11,19 @@ import {
 } from '@tabler/icons-react';
 import { useState } from 'react';
 
+export type DocEntry =
+    | string
+    | { label: string; note?: string | null; tone?: 'warn' | null };
+
+export function docLabel(doc: DocEntry): string {
+    return typeof doc === 'string' ? doc : doc.label;
+}
+
 export type FramingBTask = {
     id: number;
     task_id: number;
+    key: string | null;
+    type: 'task' | 'info';
     title: string;
     description: string | null;
     phase: string | null;
@@ -31,7 +41,8 @@ export type FramingBTask = {
         | 'on_track'
         | 'no_deadline'
         | 'none';
-    documents_required: string[];
+    documents_required: DocEntry[];
+    documents_checked: string[];
     how_to_steps: Array<{ title: string; body: string; link?: string }>;
     links: string[];
     booking_service_key: string | null;
@@ -125,6 +136,23 @@ export function TaskCardFramingB({
     const [expanded, setExpanded] = useState(defaultExpanded);
     const [busy, setBusy] = useState(false);
     const [reported, setReported] = useState(false);
+    // Optimistic local copy of the persisted per-document checklist.
+    const [checkedDocs, setCheckedDocs] = useState<string[]>(
+        task.documents_checked ?? [],
+    );
+
+    function toggleDoc(label: string) {
+        const next = checkedDocs.includes(label)
+            ? checkedDocs.filter((l) => l !== label)
+            : [...checkedDocs, label];
+
+        setCheckedDocs(next);
+        router.patch(
+            `/user-tasks/${task.id}`,
+            { documents_checked: next },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
 
     function updateStatus(nextStatus: FramingBTask['status']) {
         if (busy || nextStatus === task.status) {
@@ -330,33 +358,106 @@ export function TaskCardFramingB({
                     {task.documents_required.length > 0 && (
                         <div>
                             <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[#6B6860] uppercase dark:text-[#AAA89F]">
-                                <IconFile size={12} stroke={1.8} /> Documents
-                                needed
+                                <IconFile size={12} stroke={1.8} />
+                                Documents to bring ·{' '}
+                                {
+                                    task.documents_required.filter((d) =>
+                                        checkedDocs.includes(docLabel(d)),
+                                    ).length
+                                }{' '}
+                                of {task.documents_required.length} ready
                             </div>
-                            <ul className="flex flex-wrap gap-1.5">
-                                {task.documents_required.map((doc, i) => (
-                                    <li
-                                        key={i}
-                                        className="rounded-full border border-[#E2DFD6] bg-[#F6F5F1] px-2.5 py-1 text-xs text-[#6B6860] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]"
-                                    >
-                                        {doc}
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="divide-y divide-[#E2DFD6] overflow-hidden rounded-[9px] border border-[#E2DFD6] dark:divide-[#3A3930] dark:border-[#3A3930]">
+                                {task.documents_required.map((doc, i) => {
+                                    const label = docLabel(doc);
+                                    const note =
+                                        typeof doc === 'string'
+                                            ? null
+                                            : (doc.note ?? null);
+                                    const isWarn =
+                                        typeof doc !== 'string' &&
+                                        doc.tone === 'warn';
+                                    const isChecked =
+                                        checkedDocs.includes(label);
+
+                                    return (
+                                        <label
+                                            key={i}
+                                            className="flex cursor-pointer items-start gap-2.5 px-3 py-2.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() =>
+                                                    toggleDoc(label)
+                                                }
+                                                className="mt-0.5 size-4 shrink-0 cursor-pointer accent-[#1A4CD4]"
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                                <span
+                                                    className={`block text-[13px] font-semibold ${
+                                                        isChecked
+                                                            ? 'text-[#AAA89F] line-through dark:text-[#6B6860]'
+                                                            : 'text-[#18170F] dark:text-[#F6F5F1]'
+                                                    }`}
+                                                >
+                                                    {label}
+                                                </span>
+                                                {note &&
+                                                    (isWarn ? (
+                                                        <span className="mt-1 inline-block rounded-md bg-[#FDE8E6] px-2 py-0.5 text-[11.5px] leading-snug font-semibold text-[#C4271A] dark:bg-[#C4271A]/20 dark:text-[#FF7D70]">
+                                                            ⚠ {note}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="mt-0.5 block text-xs leading-snug text-[#6B6860] dark:text-[#AAA89F]">
+                                                            {note}
+                                                        </span>
+                                                    ))}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                            <div className="mt-1.5 font-mono text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
+                                Checked items are saved — pick up where you left
+                                off on any device.
+                            </div>
                         </div>
                     )}
 
-                    {task.booking_url && (
-                        <a
-                            href={task.booking_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1A4CD4] px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                        >
-                            Book appointment{' '}
-                            <IconExternalLink size={14} stroke={1.8} />
-                        </a>
+                    {(task.booking_url || task.links.length > 0) && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            {task.booking_url && (
+                                <a
+                                    href={task.booking_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#1A4CD4] px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                                >
+                                    Book appointment{' '}
+                                    <IconExternalLink size={14} stroke={1.8} />
+                                </a>
+                            )}
+                            {task.links.slice(0, 2).map((link) => (
+                                <a
+                                    key={link}
+                                    href={link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#5B8DEF]"
+                                >
+                                    {new URL(link).hostname.replace('www.', '')}{' '}
+                                    <IconExternalLink size={12} stroke={1.8} />
+                                </a>
+                            ))}
+                        </div>
                     )}
+
+                    <p className="text-[11.5px] leading-normal text-[#AAA89F] italic dark:text-[#6B6860]">
+                        In individual cases further documents may be requested
+                        at the appointment — that line is Cologne's own, and
+                        it's the honest truth of German bureaucracy.
+                    </p>
 
                     {/* Status pipeline */}
                     <div>

@@ -26,6 +26,7 @@ tasks:
         note: Plus residence documents if you already hold any — eAT, visa, or Fiktionsbescheinigung.
       - label: Wohnungsgeberbescheinigung (Cologne form, signed by landlord/main tenant)
         note: A rental contract or informal letter is NOT sufficient, and it cannot be submitted later — without it the registration doesn't happen that day.
+        tone: warn
       - label: Marriage/partnership certificate, if applicable
         note: Foreign certificates need a translation by a publicly appointed/sworn translator in Germany — originals + translations must be shown.
       - label: Birth certificates for children moving with you, if applicable

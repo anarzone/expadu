@@ -23,6 +23,7 @@ tasks:
         note: Bring the passport if you have one — the current address gets entered into it.
       - label: Wohnungsgeberbescheinigung (Cologne form, signed by landlord/main tenant)
         note: A rental contract or informal letter is NOT sufficient, the move-in date may not be in the future, and it cannot be submitted later — without it the registration simply doesn't happen that day.
+        tone: warn
     links:
       - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:

@@ -23,11 +23,13 @@ tasks:
         note: The same online form serves standard permit, Blue Card and student cases — the uploads differ, not the form.
       - label: Valid visa issued for work purposes
         note: Cologne explicitly warns that a visitor or business visa does NOT qualify — it can never be converted into a work permit.
+        tone: warn
       - label: Valid national passport
       - label: Mietvertrag (rental contract)
         note: The Ausländeramt wants the contract here — not the Meldebescheinigung you used at Anmeldung. Two offices, two different housing proofs.
       - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
         note: The job-description form is filled by your EMPLOYER for the BA approval — tell HR on day one, it's the slowest document to chase.
+        tone: warn
       - label: Proof of health insurance
         note: The insurance card alone suffices once issued; otherwise a confirmation letter from the Kasse.
       - label: Two current passport photos

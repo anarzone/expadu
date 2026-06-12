@@ -194,6 +194,7 @@ class BureaucracyController extends Controller
         return [
             'id' => $userTask->id,
             'task_id' => $task->id,
+            'key' => $task->key,
             'type' => $task->type,
             'title' => $task->title,
             'description' => $task->description,

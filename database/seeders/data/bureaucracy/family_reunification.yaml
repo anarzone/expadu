@@ -27,6 +27,7 @@ tasks:
         note: For every person 16+, a signed registration form is needed — plus a power of attorney if they don't appear in person.
       - label: Wohnungsgeberbescheinigung (Cologne form, signed by landlord/main tenant)
         note: A rental contract or informal letter is NOT sufficient, and it cannot be submitted later.
+        tone: warn
       - label: Marriage or partnership certificate
         note: Foreign certificates need a translation by a publicly appointed/sworn translator in Germany — originals + translations must be shown.
       - label: Birth certificates for children
