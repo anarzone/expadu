@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 
 /**
  * Production-safe, idempotent seeder.
@@ -14,8 +15,11 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Settlement task definitions (bureaucracy checklist)
-        $this->call(TaskSeeder::class);
+        // Bureaucracy catalogue: the YAML files are the single source of
+        // truth — the importer compiles + upserts them (idempotent). The
+        // legacy TaskSeeder is gone; it kept recreating keyless pre-v2 rows
+        // on every container start, racing the deploy-time prune.
+        Artisan::call('bureaucracy:import-tasks', ['--prune' => true]);
 
         // System user for scraped content attribution
         User::firstOrCreate(
