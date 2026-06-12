@@ -2,14 +2,13 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { ConfirmationStep } from '@/components/onboarding/confirmation-step';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
-import {
-    EU_AMBIGUOUS_SITUATIONS,
-    SituationStep,
-} from '@/components/onboarding/situation-step';
+import { SituationStep } from '@/components/onboarding/situation-step';
 import { VeedelStep } from '@/components/onboarding/veedel-step';
 import { WelcomeStep } from '@/components/onboarding/welcome-step';
 import { useTracker } from '@/hooks/use-tracker';
 
+// The form stores the friendly CHOICE ('job' | 'student' | …); the real
+// Situation enum value is derived from choice + is_eu at submit time.
 export type OnboardingData = {
     situation: string;
     is_eu: boolean | null;
@@ -18,11 +17,44 @@ export type OnboardingData = {
     arrival_date: string;
 };
 
+export type TaskPreview = {
+    title: string;
+    meta: string | null;
+    deadline_days: number | null;
+};
+
+export type TaskPreviews = Record<
+    string,
+    { eu: TaskPreview[]; non_eu: TaskPreview[] }
+>;
+
+/** 'job' resolves via the EU answer; everything else is already an enum value. */
+export function resolveSituation(choice: string, isEu: boolean | null): string {
+    if (choice === 'job') {
+        return isEu ? 'eu_employee' : 'non_eu_employee';
+    }
+
+    return choice;
+}
+
+// Family implies the path regardless of citizenship; everyone else gets the
+// EU follow-up (for 'job' it picks the enum value, for the rest it's stored).
+const EU_QUESTION_CHOICES = [
+    'job',
+    'student',
+    'freelancer',
+    'digital_nomad',
+    'other',
+];
+
 const TOTAL_STEPS = 4;
 
 export default function Onboarding() {
     const { track } = useTracker();
-    const { veedels } = usePage<{ veedels: Record<string, string[]> }>().props;
+    const { veedels, taskPreviews } = usePage<{
+        veedels: Record<string, string[]>;
+        taskPreviews: TaskPreviews;
+    }>().props;
     const [step, setStep] = useState(1);
 
     const form = useForm<OnboardingData>({
@@ -48,6 +80,10 @@ export default function Onboarding() {
 
     function submit() {
         track('onboarding_complete');
+        form.transform((data) => ({
+            ...data,
+            situation: resolveSituation(data.situation, data.is_eu),
+        }));
         form.post('/onboarding/complete');
     }
 
@@ -60,7 +96,7 @@ export default function Onboarding() {
                     return false;
                 }
 
-                return EU_AMBIGUOUS_SITUATIONS.includes(form.data.situation)
+                return EU_QUESTION_CHOICES.includes(form.data.situation)
                     ? form.data.is_eu !== null
                     : true;
             case 3:
@@ -75,9 +111,9 @@ export default function Onboarding() {
     const buttonLabel = () => {
         switch (step) {
             case 1:
-                return 'Get started';
+                return "Let's get started";
             case 4:
-                return 'Open Expadu';
+                return 'Open my plan';
             default:
                 return 'Continue';
         }
@@ -99,6 +135,9 @@ export default function Onboarding() {
                         <SituationStep
                             value={form.data.situation}
                             isEu={form.data.is_eu}
+                            showEuQuestion={EU_QUESTION_CHOICES.includes(
+                                form.data.situation,
+                            )}
                             onChange={(v) => form.setData('situation', v)}
                             onIsEuChange={(v) => form.setData('is_eu', v)}
                         />
@@ -118,7 +157,12 @@ export default function Onboarding() {
                             }
                         />
                     )}
-                    {step === 4 && <ConfirmationStep data={form.data} />}
+                    {step === 4 && (
+                        <ConfirmationStep
+                            data={form.data}
+                            previews={taskPreviews ?? {}}
+                        />
+                    )}
                 </div>
 
                 <div className="sticky bottom-0 border-t border-border bg-background px-6 py-4">

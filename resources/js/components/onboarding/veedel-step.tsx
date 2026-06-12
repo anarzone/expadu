@@ -14,7 +14,7 @@ const months = [
 ];
 
 const germanLevels = [
-    { value: 'none', label: 'None yet' },
+    { value: 'none', label: 'None' },
     { value: 'a1', label: 'A1' },
     { value: 'a2', label: 'A2' },
     { value: 'b1', label: 'B1' },
@@ -56,18 +56,21 @@ export function VeedelStep({
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
                 <h2 className="mb-2 font-display text-[26px] font-medium">
-                    Your Veedel & arrival
+                    Your corner of Cologne
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                    Your neighbourhood sets default areas for places and events;
-                    your arrival date computes your deadlines.
+                    So deadlines, offices and recommendations match where you
+                    actually live.
                 </p>
             </div>
 
             <div className="flex flex-col gap-5">
                 <div>
-                    <div className="mb-2 text-[11px] font-bold tracking-[0.07em] text-muted-foreground uppercase">
-                        Home Veedel (Stadtteil)
+                    <div className="mb-2 text-[13px] font-semibold">
+                        Which Veedel do you live in?{' '}
+                        <span className="font-normal text-muted-foreground">
+                            (your district)
+                        </span>
                     </div>
                     <select
                         value={veedel}
@@ -87,11 +90,15 @@ export function VeedelStep({
                             </optgroup>
                         ))}
                     </select>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        Not moved in yet or unsure? Pick the closest one — you
+                        can change it later.
+                    </p>
                 </div>
 
                 <div>
-                    <div className="mb-2 text-[11px] font-bold tracking-[0.07em] text-muted-foreground uppercase">
-                        Arrival date
+                    <div className="mb-2 text-[13px] font-semibold">
+                        When did you arrive in Germany?
                     </div>
                     <div className="flex gap-2.5">
                         <select
@@ -124,13 +131,17 @@ export function VeedelStep({
                             ))}
                         </select>
                     </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        We use this to compute your registration deadline —
+                        nothing else.
+                    </p>
                 </div>
 
                 <div>
-                    <div className="mb-2 text-[11px] font-bold tracking-[0.07em] text-muted-foreground uppercase">
-                        German level{' '}
-                        <span className="font-medium normal-case">
-                            (optional)
+                    <div className="mb-2 text-[13px] font-semibold">
+                        How's your German?{' '}
+                        <span className="font-normal text-muted-foreground">
+                            (optional — skip if you like)
                         </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -143,9 +154,9 @@ export function VeedelStep({
                                         germanLevel === l.value ? '' : l.value,
                                     )
                                 }
-                                className={`rounded-full border-[1.5px] px-3.5 py-1.5 text-[13px] font-semibold transition-all ${
+                                className={`rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[13px] transition-all ${
                                     germanLevel === l.value
-                                        ? 'border-primary bg-accent-soft text-primary'
+                                        ? 'border-primary bg-accent-soft font-semibold text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
                                 }`}
                             >

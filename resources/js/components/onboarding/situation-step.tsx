@@ -1,83 +1,71 @@
-const situations = [
+// Friendly first-person choices. 'job' resolves to eu_employee /
+// non_eu_employee via the EU follow-up (see resolveSituation in onboarding.tsx).
+const choices = [
     {
-        value: 'non_eu_employee',
+        value: 'job',
         emoji: '💼',
-        title: 'Non-EU employee',
-        subtitle: 'Work visa · Blue Card · Work permit',
-    },
-    {
-        value: 'eu_employee',
-        emoji: '🇪🇺',
-        title: 'EU employee',
-        subtitle: 'Freedom of movement · Registration only',
+        title: 'I have a job here',
+        subtitle: 'Employed by a company in Germany',
     },
     {
         value: 'student',
         emoji: '🎓',
-        title: 'Student',
-        subtitle: 'Enrolment · Health insurance · Semesterticket',
+        title: "I'm studying",
+        subtitle: 'University, Studienkolleg or study preparation',
     },
     {
         value: 'freelancer',
-        emoji: '🖥️',
-        title: 'Freelancer',
-        subtitle: 'Freiberufler · Tax registration · Clients',
+        emoji: '💻',
+        title: 'I work for myself',
+        subtitle: 'Freelance or my own business',
     },
     {
         value: 'family_reunification',
-        emoji: '👨‍👩‍👧',
-        title: 'Family reunification',
-        subtitle: 'Spouse/partner · Dependent visa',
+        emoji: '❤️',
+        title: "I'm joining family",
+        subtitle: 'My partner or family lives here',
     },
     {
         value: 'digital_nomad',
         emoji: '🌍',
-        title: 'Digital nomad',
-        subtitle: 'Remote work · Temporary stay',
+        title: 'I work remotely',
+        subtitle: 'Digital nomad, employer abroad',
     },
     {
         value: 'other',
-        emoji: '✈️',
+        emoji: '✨',
         title: 'Something else',
-        subtitle: 'Retirement · Long-stay · Other purpose',
+        subtitle: "We'll start with the essentials everyone needs",
     },
-];
-
-// Situations where citizenship isn't implied and changes the checklist
-// (residence permit, blocked account, §21 AufenthG, …).
-export const EU_AMBIGUOUS_SITUATIONS = [
-    'student',
-    'freelancer',
-    'digital_nomad',
-    'other',
 ];
 
 export function SituationStep({
     value,
     isEu,
+    showEuQuestion,
     onChange,
     onIsEuChange,
 }: {
     value: string;
     isEu: boolean | null;
+    showEuQuestion: boolean;
     onChange: (value: string) => void;
     onIsEuChange: (value: boolean) => void;
 }) {
-    const askEu = EU_AMBIGUOUS_SITUATIONS.includes(value);
-
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
                 <h2 className="mb-2 font-display text-[26px] font-medium">
-                    What's your situation?
+                    What brings you to Cologne?
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                    This shapes your checklist, deadlines, and ticket advice.
+                    This picks your paperwork path — each situation has
+                    different offices and documents.
                 </p>
             </div>
 
             <div className="flex flex-col gap-2.5">
-                {situations.map((s) => (
+                {choices.map((s) => (
                     <button
                         key={s.value}
                         type="button"
@@ -88,7 +76,9 @@ export function SituationStep({
                                 : 'border-border bg-card hover:border-primary/30'
                         }`}
                     >
-                        <span className="text-[22px]">{s.emoji}</span>
+                        <span className="w-8 text-center text-[22px]">
+                            {s.emoji}
+                        </span>
                         <div className="flex-1">
                             <div className="text-sm font-semibold">
                                 {s.title}
@@ -108,26 +98,27 @@ export function SituationStep({
                 ))}
             </div>
 
-            {askEu && (
-                <div className="mt-6">
-                    <div className="mb-2 text-[11px] font-bold tracking-[0.07em] text-muted-foreground uppercase">
-                        Are you an EU/EEA citizen?
+            {showEuQuestion && (
+                <div className="mt-4 animate-in rounded-xl border border-dashed border-border bg-card p-4 fade-in slide-in-from-bottom-2">
+                    <div className="mb-1 text-sm font-semibold">
+                        Are you an EU / EEA / Swiss citizen?
                     </div>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                        Non-EU citizens have extra steps (residence permit).
+                    <p className="mb-3 text-xs text-primary">
+                        Why we ask: EU citizens skip the residence-permit
+                        process entirely — it changes half your checklist.
                     </p>
                     <div className="flex gap-2.5">
                         {[
-                            { value: true, emoji: '🇪🇺', label: 'EU / EEA' },
-                            { value: false, emoji: '🌍', label: 'Non-EU' },
+                            { value: true, emoji: '🇪🇺', label: 'Yes' },
+                            { value: false, emoji: '🌐', label: 'No' },
                         ].map((opt) => (
                             <button
                                 key={String(opt.value)}
                                 type="button"
                                 onClick={() => onIsEuChange(opt.value)}
-                                className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-[1.5px] px-3.5 py-3 text-sm font-semibold transition-all ${
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] px-3.5 py-2.5 text-sm font-semibold transition-all ${
                                     isEu === opt.value
-                                        ? 'border-primary bg-accent-soft'
+                                        ? 'border-primary bg-accent-soft text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
                                 }`}
                             >

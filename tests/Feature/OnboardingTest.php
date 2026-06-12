@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Task;
 use App\Models\User;
 
 test('onboarding page renders for non-onboarded user', function () {
@@ -8,7 +9,53 @@ test('onboarding page renders for non-onboarded user', function () {
 
     $response = $this->get(route('onboarding'));
     $response->assertOk();
-    $response->assertInertia(fn ($page) => $page->has('veedels'));
+    $response->assertInertia(fn ($page) => $page->has('veedels')->has('taskPreviews'));
+});
+
+test('task previews show the first actionable tasks per branch, EU-filtered', function () {
+    Task::factory()->create([
+        'key' => 'ob.anmeldung',
+        'title' => 'Register your address (Anmeldung)',
+        'situation' => ['student'],
+        'phase' => 'arrival',
+        'deadline_type' => 'days_since_arrival',
+        'deadline_days' => 14,
+        'booking_service_key' => 'anmeldung',
+    ]);
+    Task::factory()->create([
+        'key' => 'ob.permit',
+        'title' => 'Student residence permit',
+        'situation' => ['student'],
+        'phase' => 'first_30_days',
+        'eu_filter' => 'non_eu_only',
+    ]);
+    Task::factory()->create([
+        'key' => 'ob.info',
+        'title' => 'Church tax',
+        'type' => 'info',
+        'situation' => ['student'],
+        'phase' => 'arrival',
+    ]);
+
+    $this->actingAs(User::factory()->notOnboarded()->create());
+    $response = $this->get(route('onboarding'));
+
+    $response->assertInertia(function ($page) {
+        $student = $page->toArray()['props']['taskPreviews']['student'];
+
+        // Anmeldung first (arrival phase, tightest deadline), with the booking hint
+        expect($student['eu'][0]['title'])->toBe('Register your address (Anmeldung)');
+        expect($student['eu'][0]['meta'])->toBe('Bürgeramt · walk-in Mon & Wed');
+        expect($student['eu'][0]['deadline_days'])->toBe(14);
+
+        $titles = array_column($student['eu'], 'title');
+        expect($titles)->not->toContain('Student residence permit'); // non_eu_only
+        expect($titles)->not->toContain('Church tax'); // info cards excluded
+
+        expect(array_column($student['non_eu'], 'title'))->toContain('Student residence permit');
+
+        return true;
+    });
 });
 
 test('onboarded user accessing onboarding is not redirected away', function () {

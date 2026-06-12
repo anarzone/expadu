@@ -91,9 +91,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
 
-        Route::get('onboarding', fn () => Inertia::render('onboarding', [
-            'veedels' => config('veedels'),
-        ]))->name('onboarding');
+        Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboarding');
         Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
