@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expadu — Onboarding v3 additions (entry mode + housing)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-soft: #EBF0FD;
+  --r: 14px; --r-sm: 9px;
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860;
+  --accent-soft: rgba(26,76,212,.2);
+}
+.dark .why { color: #8FAAF0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text-1); }
+.shell { max-width: 480px; margin: 0 auto; padding: 24px 16px 80px; }
+.mode-toggle { position: fixed; top: 14px; right: 14px; z-index: 90; width: 38px; height: 38px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-size: 16px; cursor: pointer; }
+h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 24px; letter-spacing: -.02em; }
+.note { background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 14px; font-size: 12px; color: var(--text-2); margin: 12px 0 22px; }
+.note b { color: var(--text-1); }
+.sect { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin: 24px 0 10px; }
+
+.followup { padding: 16px; border-radius: var(--r); background: var(--surface); border: 1px dashed var(--border); margin-bottom: 10px; }
+.followup .q { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.why { font-size: 12px; color: var(--accent); margin-bottom: 12px; }
+.pill-col { display: flex; flex-direction: column; gap: 8px; }
+.pill { padding: 12px 14px; border-radius: var(--r-sm); border: 1.5px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--text-1); text-align: left; }
+.pill span { display: block; font-weight: 400; font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.pill.on { border-color: var(--accent); background: var(--accent-soft); }
+.pill:hover { border-color: var(--accent); }
+
+label.f { display: block; font-size: 13px; font-weight: 600; margin: 18px 0 7px; }
+select { width: 100%; padding: 12px 14px; border-radius: var(--r-sm); border: 1.5px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 14px; color: var(--text-1); }
+.hint { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+.temp-row { display: flex; gap: 8px; margin-top: 8px; }
+.temp { flex: 1; padding: 10px; border-radius: var(--r-sm); border: 1.5px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-1); }
+.temp.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+</style>
+</head>
+<body>
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';">🌙</button>
+
+<div class="shell">
+  <h1>Onboarding — v3 additions</h1>
+  <div class="note"><b>Only two changes</b> to the shipped 4-step flow. Both prevent wrong deadlines — they don't add a fifth step. Driving licence stays OUT of onboarding (it's a teaser card on the bureaucracy page).</div>
+
+  <div class="sect">① Step 2 addition — appears only after "Non-EU" is picked</div>
+  <div class="followup">
+    <div class="q">How did you enter Germany?</div>
+    <div class="why">Why we ask: this sets your real permit deadline — the 90-day clock and the visa-expiry clock are different animals.</div>
+    <div class="pill-col">
+      <button class="pill">🛂 With a national D visa<span>Your permit application is due before the visa expires</span></button>
+      <button class="pill on">🛬 Visa-free (90-day window)<span>Permit due within 90 days — and no working before it's approved</span></button>
+      <button class="pill">💳 I already hold a German residence permit<span>We'll skip the first-permit tasks entirely</span></button>
+    </div>
+  </div>
+
+  <div class="sect">② Step 3 addition — under the Veedel picker</div>
+  <div>
+    <label class="f">Which Veedel do you live in? <span style="font-weight:400;color:var(--text-3)">(your district)</span></label>
+    <select><option>Ehrenfeld — Bezirk Ehrenfeld</option></select>
+    <div class="temp-row">
+      <button class="temp on">🏠 Long-term address</button>
+      <button class="temp">🧳 Still in temporary housing</button>
+    </div>
+    <div class="hint">Temporary housing (Airbnb, hotel, a friend's couch) can't be registered — we'll pause your Anmeldung deadline until you move in, so no false alarms.</div>
+  </div>
+</div>
+</body>
+</html>
