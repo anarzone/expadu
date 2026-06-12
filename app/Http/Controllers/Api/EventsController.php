@@ -112,7 +112,10 @@ class EventsController extends Controller
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
-            'meta' => $this->meta($startsAt, $venue?->veedel),
+            'meta' => $this->meta($startsAt, $venue->name ?? $event->location_name, $venue?->veedel),
+            // The venue's place photo richens the card (Commons, credited)
+            'photo_url' => $venue?->place?->photo_url,
+            'photo_attribution' => $venue?->place?->photo_attribution,
             'chips' => $this->chips($event),
             'tip' => $event->tip_en,
             'summary' => $event->summary_en ?: ($event->description_en ?: null),
@@ -133,7 +136,7 @@ class EventsController extends Controller
         ];
     }
 
-    private function meta(CarbonImmutable $startsAt, ?string $veedel): string
+    private function meta(CarbonImmutable $startsAt, ?string $venueName, ?string $veedel): string
     {
         $now = CarbonImmutable::now('Europe/Berlin');
 
@@ -145,6 +148,7 @@ class EventsController extends Controller
 
         return implode(' · ', array_filter([
             "{$day} {$startsAt->format('H:i')}",
+            $venueName,
             $veedel,
         ]));
     }

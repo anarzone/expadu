@@ -7,6 +7,8 @@ export type EventOccurrence = {
     category_label: string;
     emoji: string;
     meta: string;
+    photo_url: string | null;
+    photo_attribution: string | null;
     chips: string[];
     tip: string | null;
     summary: string | null;

@@ -45,9 +45,24 @@ test('today window returns chronological occurrences with server-built meta', fu
     expect($data)->toHaveCount(2);
     expect($data[0]['title'])->toBe('Morning run');
     expect($data[1]['title'])->toBe('Language night');
-    expect($data[1]['meta'])->toBe('Tonight 19:00 · Altstadt-Nord');
+    expect($data[1]['meta'])->toBe('Tonight 19:00 · Gilden im Zims · Altstadt-Nord');
     expect($data[1]['chips'])->toBe(['English-friendly', 'free']); // free chip derived
     expect($data[1]['category'])->toBe('language_exchange');
+});
+
+test('the venue\'s place photo richens the card', function () {
+    $place = Spot::factory()->create([
+        'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
+        'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
+        'photo_attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+    $venue = makeVenue(['name' => 'Volksgarten', 'place_id' => $place->id]);
+    Event::factory()->create(['starts_at' => '2026-06-12 12:00:00', 'recurrence' => null, 'venue_id' => $venue->id]);
+
+    $data = $this->getJson('/api/events?window=today')->assertOk()->json('data');
+
+    expect($data[0]['photo_url'])->toContain('Volksgarten.jpg');
+    expect($data[0]['photo_attribution'])->toContain('CC BY-SA');
 });
 
 test('weekend window catches a weekly recurring stammtisch', function () {

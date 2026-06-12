@@ -44,10 +44,20 @@ function occurrenceKey(o: {
 }
 
 function eventChips(occurrence: EventOccurrence): CardChip[] {
-    return occurrence.chips.slice(0, 4).map((chip) => ({
+    const chips: CardChip[] = occurrence.chips.slice(0, 3).map((chip) => ({
         label: chip,
         tone: chip === 'free' ? ('price' as const) : ('feature' as const),
     }));
+
+    // Paid events wear their price like places do
+    if (
+        occurrence.price_text &&
+        occurrence.price_text.toLowerCase() !== 'free'
+    ) {
+        chips.push({ label: occurrence.price_text, tone: 'price' });
+    }
+
+    return chips.slice(0, 4);
 }
 
 function startsWithinFourHours(occurrence: EventOccurrence): boolean {
@@ -430,8 +440,14 @@ export default function Events() {
                                     title={occurrence.title}
                                     emoji={occurrence.emoji}
                                     meta={occurrence.meta}
+                                    photoUrl={occurrence.photo_url}
                                     live={startsWithinFourHours(occurrence)}
                                     chips={eventChips(occurrence)}
+                                    excerpt={
+                                        occurrence.tip
+                                            ? null
+                                            : occurrence.summary
+                                    }
                                     tip={occurrence.tip}
                                     expanded={isMobile && expandedKey === key}
                                     onActivate={() =>
@@ -486,11 +502,26 @@ export default function Events() {
                         <DialogTitle className="sr-only">
                             {detail.title}
                         </DialogTitle>
-                        <CategoryIllustration
-                            coarse={eventIllustrationKey(detail.category)}
-                            className="h-24 w-full"
-                            iconSize={34}
-                        />
+                        {detail.photo_url ? (
+                            <div className="relative">
+                                <img
+                                    src={detail.photo_url}
+                                    alt={detail.title}
+                                    className="h-32 w-full object-cover"
+                                />
+                                {detail.photo_attribution && (
+                                    <span className="absolute right-1.5 bottom-1.5 max-w-[85%] truncate rounded bg-black/55 px-1.5 py-0.5 text-[9px] text-white/85">
+                                        {detail.photo_attribution}
+                                    </span>
+                                )}
+                            </div>
+                        ) : (
+                            <CategoryIllustration
+                                coarse={eventIllustrationKey(detail.category)}
+                                className="h-24 w-full"
+                                iconSize={34}
+                            />
+                        )}
                         <div className="max-h-[72vh] overflow-y-auto p-5">
                             <div className="mb-3 flex items-start gap-2.5">
                                 <span className="text-2xl leading-tight">

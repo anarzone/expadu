@@ -32,6 +32,7 @@ export function ContentCard({
     title,
     meta,
     chips = [],
+    excerpt,
     tip,
     action,
     secondaryAction,
@@ -51,6 +52,8 @@ export function ContentCard({
     title: string;
     meta?: string;
     chips?: CardChip[];
+    /** Short muted teaser (2-line clamp) — e.g. an event summary. */
+    excerpt?: string | null;
     tip?: string | null;
     action?: ReactNode;
     /** Lighter companion to the primary action (e.g. "Remind me"). */
@@ -190,6 +193,13 @@ export function ContentCard({
                                 </span>
                             ))}
                         </div>
+                    )}
+
+                    {/* Excerpt — short teaser in the source's place */}
+                    {excerpt && (
+                        <p className="mt-2.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
+                            {excerpt}
+                        </p>
                     )}
 
                     {/* Tip pill */}
