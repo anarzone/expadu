@@ -57,8 +57,14 @@ test.describe('Bureaucracy v2', () => {
         const after = page.locator('input[type="checkbox"]').first();
         expect(await after.isChecked()).toBe(!wasChecked);
 
-        // Restore for idempotent re-runs.
+        // Restore for idempotent re-runs — and await the state flip so the
+        // PATCH isn't cut off by test teardown.
         await after.click();
+        if (wasChecked) {
+            await expect(after).toBeChecked();
+        } else {
+            await expect(after).not.toBeChecked();
+        }
     });
 
     test('good-to-know lane opens with info cards', async ({ page }) => {

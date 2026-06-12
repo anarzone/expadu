@@ -115,10 +115,12 @@ class ImportTasksCommand extends Command
     }
 
     /**
-     * Remove catalogue-managed tasks whose key no longer appears in any YAML
-     * file — used after moving/renaming keys. Cascades to user_tasks, so it
-     * only runs on full-catalogue imports and lists what it deletes. Tasks
-     * without a key (e.g. created ad hoc in Filament) are never touched.
+     * Remove tasks that are not part of the catalogue: keyed rows whose key
+     * left the YAML (moved/renamed) AND keyless rows (legacy seeds, ad-hoc
+     * creations). The YAML files are the single source of truth — anything
+     * not in them would duplicate or contradict catalogue cards. Cascades
+     * to user_tasks, so it only runs on full-catalogue imports and lists
+     * everything it deletes.
      *
      * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
      */
@@ -133,19 +135,21 @@ class ImportTasksCommand extends Command
         $keys = array_column(array_column($entries, 'data'), 'key');
 
         $stale = Task::query()
-            ->whereNotNull('key')
-            ->whereNotIn('key', $keys)
+            ->where(function ($query) use ($keys) {
+                $query->whereNull('key')->orWhereNotIn('key', $keys);
+            })
             ->get();
 
         foreach ($stale as $task) {
+            $label = $task->key ?? "(keyless) {$task->title}";
             $progress = $task->userTasks()->count();
             if ($this->option('dry-run')) {
-                $this->line("  [dry] would prune: {$task->key} ({$progress} user task(s))");
+                $this->line("  [dry] would prune: {$label} ({$progress} user task(s))");
 
                 continue;
             }
             $task->delete();
-            $this->warn("  pruned: {$task->key} ({$progress} user task(s) removed)");
+            $this->warn("  pruned: {$label} ({$progress} user task(s) removed)");
         }
     }
 

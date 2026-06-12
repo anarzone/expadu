@@ -354,15 +354,16 @@ test('importer reads the type field and defaults to task', function () {
     rmdir($dir);
 });
 
-test('prune removes catalogue keys that left the YAML but spares keyless tasks', function () {
-    // A task whose key is no longer in the catalogue, and an ad-hoc keyless one.
+test('prune removes everything outside the catalogue — moved keys AND keyless leftovers', function () {
+    // A task whose key left the catalogue, and a keyless legacy/ad-hoc row:
+    // YAML is the single source of truth, both must go.
     $stale = Task::factory()->create(['key' => 'zz.gone', 'situation' => ['core']]);
-    $adHoc = Task::factory()->create(['key' => null, 'situation' => ['core']]);
+    $keyless = Task::factory()->create(['key' => null, 'situation' => ['core']]);
 
     $this->artisan('bureaucracy:import-tasks', ['--prune' => true])->assertSuccessful();
 
     expect(Task::whereKey($stale->id)->exists())->toBeFalse();
-    expect(Task::whereKey($adHoc->id)->exists())->toBeTrue();
+    expect(Task::whereKey($keyless->id)->exists())->toBeFalse();
     // The real catalogue survives the prune.
     expect(Task::where('key', 'core.anmeldung')->exists())->toBeTrue();
 });

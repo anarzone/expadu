@@ -28,6 +28,10 @@ test('events:curate marks meet-people events', function () {
 });
 
 test('the events feed prefers the English title', function () {
+    // Pin the clock mid-morning: now()+3h must stay inside the "today"
+    // window, which a real 21:00+ test run would otherwise cross.
+    $this->travelTo(now()->setTime(10, 0));
+
     $user = User::factory()->onboarded()->create();
     Event::factory()->create([
         'title' => 'Sommerfest im Stadtgarten',

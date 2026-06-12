@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expadu v2 — Onboarding (friendly & secure)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-h: #1540B8; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --success-s: #D4F0E6; --warn: #C47D0E; --warn-s: #FDF0D4;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 6px 24px rgba(24,23,15,.06);
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860;
+  --accent-soft: rgba(26,76,212,.2);
+  --success-s: rgba(10,124,82,.18); --warn-s: rgba(196,125,14,.16);
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+}
+.dark .privacy, .dark .why { color: #8FAAF0; }
+.dark .preview-deadline { color: #E8B05B; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text-1); transition: background .25s, color .25s; }
+.shell { max-width: 480px; margin: 0 auto; padding: 20px 16px 80px; }
+
+.mode-toggle { position: fixed; top: 14px; right: 14px; z-index: 90; width: 38px; height: 38px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-size: 16px; cursor: pointer; box-shadow: var(--shadow); }
+
+/* progress */
+.progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.back-btn { width: 34px; height: 34px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text-2); font-size: 15px; }
+.bar { flex: 1; height: 5px; border-radius: 100px; background: var(--surface-2); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 100px; background: var(--accent); transition: width .4s ease; }
+.step-count { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text-3); }
+
+/* step switcher (prototype only) */
+.tabs { display: flex; gap: 6px; margin-bottom: 22px; flex-wrap: wrap; }
+.tabs button { padding: 6px 12px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 12px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.step { display: none; }
+.step.on { display: block; animation: fadeUp .35s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-spacing: -.02em; line-height: 1.18; }
+.sub { font-size: 14.5px; color: var(--text-2); margin-top: 8px; line-height: 1.55; }
+
+/* welcome */
+.hero-emoji { font-size: 44px; margin-bottom: 14px; }
+.benefit { display: flex; gap: 13px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; margin-top: 10px; }
+.benefit .e { font-size: 22px; }
+.benefit b { display: block; font-size: 14px; }
+.benefit span { font-size: 12.5px; color: var(--text-2); }
+
+.privacy { display: flex; gap: 8px; align-items: flex-start; margin-top: 18px; padding: 11px 14px; border-radius: var(--r-sm); background: var(--accent-soft); font-size: 12.5px; line-height: 1.5; color: var(--accent); font-weight: 500; }
+
+/* situation cards */
+.sit { display: flex; gap: 13px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 13px 15px; margin-top: 9px; cursor: pointer; transition: border-color .15s, transform .1s; font-family: 'Geist', sans-serif; }
+.sit:hover { border-color: var(--accent); }
+.sit.on { border-color: var(--accent); background: var(--accent-soft); }
+.sit .e { font-size: 24px; width: 32px; text-align: center; }
+.sit b { display: block; font-size: 14.5px; color: var(--text-1); }
+.sit span { font-size: 12px; color: var(--text-2); }
+
+.followup { margin-top: 16px; padding: 16px; border-radius: var(--r); background: var(--surface); border: 1px dashed var(--border); animation: fadeUp .3s ease; }
+.followup .q { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.why { font-size: 12px; color: var(--accent); margin-bottom: 12px; }
+.pill-row { display: flex; gap: 8px; }
+.pill { flex: 1; padding: 11px; border-radius: var(--r-sm); border: 1.5px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--text-1); }
+.pill.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+/* veedel + arrival */
+label.f { display: block; font-size: 13px; font-weight: 600; margin: 18px 0 7px; }
+label.f small { font-weight: 400; color: var(--text-3); }
+select, .sel { width: 100%; padding: 12px 14px; border-radius: var(--r-sm); border: 1.5px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 14px; color: var(--text-1); }
+.row2 { display: flex; gap: 10px; }
+.lvl-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.lvl { padding: 9px 14px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--surface); font-family: 'Geist Mono', monospace; font-size: 13px; cursor: pointer; color: var(--text-1); }
+.lvl.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.skip { display: inline-block; margin-top: 10px; font-size: 12.5px; color: var(--text-3); text-decoration: underline; cursor: pointer; }
+.hint { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+
+/* confirmation */
+.ready-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px; margin-top: 16px; }
+.ready-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.ready-head .e { font-size: 26px; }
+.ready-head b { font-size: 15px; }
+.ready-sub { font-size: 12.5px; color: var(--text-2); }
+.preview-title { font-family: 'Geist Mono', monospace; font-size: 10.5px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin: 18px 0 8px; }
+.ptask { display: flex; gap: 11px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-top: 8px; }
+.ptask .n { width: 24px; height: 24px; border-radius: 100px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.ptask b { display: block; font-size: 13.5px; }
+.ptask span { font-size: 11.5px; color: var(--text-2); }
+.preview-deadline { font-size: 11.5px; color: var(--warn); font-weight: 600; }
+.edit-note { font-size: 12px; color: var(--text-3); margin-top: 14px; text-align: center; }
+
+/* CTA */
+.cta { display: block; width: 100%; margin-top: 24px; min-height: 50px; border: none; border-radius: var(--r-sm); background: var(--accent); color: #fff; font-family: 'Geist', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+.cta:hover { background: var(--accent-h); }
+</style>
+</head>
+<body>
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';">🌙</button>
+
+<div class="shell">
+  <!-- prototype-only step switcher -->
+  <div class="tabs" id="tabs">
+    <button class="on" data-s="1">1 Welcome</button>
+    <button data-s="2">2 Situation</button>
+    <button data-s="3">3 Your corner</button>
+    <button data-s="4">4 Ready</button>
+  </div>
+
+  <div class="progress-row">
+    <button class="back-btn">←</button>
+    <div class="bar"><i id="bar" style="width:25%"></i></div>
+    <span class="step-count" id="count">1 / 4</span>
+  </div>
+
+  <!-- STEP 1 — Welcome -->
+  <section class="step on" data-step="1">
+    <div class="hero-emoji">👋</div>
+    <h1>Moving to Cologne is a lot.<br>Let's make it a list.</h1>
+    <p class="sub">Four quick questions and Expadu builds your personal plan — the offices, the documents, the deadlines. Nothing generic.</p>
+
+    <div class="benefit"><span class="e">📋</span><div><b>Your exact paperwork path</b><span>Only the tasks that apply to your situation — with every document named.</span></div></div>
+    <div class="benefit"><span class="e">⏰</span><div><b>Deadlines that find you</b><span>We compute them from your arrival date and remind you before they bite.</span></div></div>
+    <div class="benefit"><span class="e">🌳</span><div><b>A city to enjoy meanwhile</b><span>Parks, museums and people-meeting events around your Veedel.</span></div></div>
+
+    <div class="privacy">🔒 <span>Your answers stay in your profile. They only personalize your checklist — never shared, and you can change them anytime in Settings.</span></div>
+
+    <button class="cta">Let's get started</button>
+  </section>
+
+  <!-- STEP 2 — Situation -->
+  <section class="step" data-step="2">
+    <h1>What brings you to Cologne?</h1>
+    <p class="sub">This picks your paperwork path — each situation has different offices and documents.</p>
+
+    <button class="sit"><span class="e">💼</span><div><b>I have a job here</b><span>Employed by a company in Germany</span></div></button>
+    <button class="sit on"><span class="e">🎓</span><div><b>I'm studying</b><span>University, Studienkolleg or study preparation</span></div></button>
+    <button class="sit"><span class="e">💻</span><div><b>I work for myself</b><span>Freelance or my own business</span></div></button>
+    <button class="sit"><span class="e">❤️</span><div><b>I'm joining family</b><span>My partner or family lives here</span></div></button>
+    <button class="sit"><span class="e">🌍</span><div><b>I work remotely</b><span>Digital nomad, employer abroad</span></div></button>
+    <button class="sit"><span class="e">✨</span><div><b>Something else</b><span>We'll start with the essentials everyone needs</span></div></button>
+
+    <div class="followup">
+      <div class="q">Are you an EU / EEA / Swiss citizen?</div>
+      <div class="why">Why we ask: EU citizens skip the residence-permit process entirely — it changes half your checklist.</div>
+      <div class="pill-row">
+        <button class="pill on">🇪🇺 Yes</button>
+        <button class="pill">🌐 No</button>
+      </div>
+    </div>
+
+    <button class="cta">Continue</button>
+  </section>
+
+  <!-- STEP 3 — Veedel + arrival + German -->
+  <section class="step" data-step="3">
+    <h1>Your corner of Cologne</h1>
+    <p class="sub">So deadlines, offices and recommendations match where you actually live.</p>
+
+    <label class="f">Which Veedel do you live in? <small>(your district)</small></label>
+    <select><option>Ehrenfeld — Bezirk Ehrenfeld</option></select>
+    <div class="hint">Not moved in yet or unsure? Pick the closest one — you can change it later.</div>
+
+    <label class="f">When did you arrive in Germany?</label>
+    <div class="row2">
+      <select><option>June</option></select>
+      <select><option>2026</option></select>
+    </div>
+    <div class="hint">We use this to compute your registration deadline — nothing else.</div>
+
+    <label class="f">How's your German? <small>(optional)</small></label>
+    <div class="lvl-row">
+      <button class="lvl">None</button><button class="lvl on">A1</button><button class="lvl">A2</button><button class="lvl">B1</button><button class="lvl">B2</button><button class="lvl">C1</button><button class="lvl">C2</button>
+    </div>
+    <span class="skip">Skip — I'll add it later</span>
+
+    <button class="cta">Continue</button>
+  </section>
+
+  <!-- STEP 4 — Ready -->
+  <section class="step" data-step="4">
+    <div class="hero-emoji">🎉</div>
+    <h1>Your Cologne plan is ready</h1>
+    <p class="sub">Built for a <b>student (EU citizen)</b> living in <b>Ehrenfeld</b>, arrived <b>June 2026</b>.</p>
+
+    <div class="preview-title">First on your list</div>
+    <div class="ptask"><span class="n">1</span><div style="flex:1"><b>Register your address (Anmeldung)</b><span>Bürgeramt · walk-in Mon & Wed</span></div><span class="preview-deadline">due 26 Jun</span></div>
+    <div class="ptask"><span class="n">2</span><div style="flex:1"><b>Get your Steuer-ID</b><span>Arrives by post after Anmeldung</span></div></div>
+    <div class="ptask"><span class="n">3</span><div style="flex:1"><b>Sort health insurance</b><span>Required for enrollment</span></div></div>
+
+    <div class="privacy">🔒 <span>You can change any of these answers in Settings — your plan updates instantly.</span></div>
+
+    <button class="cta">Open my plan</button>
+    <div class="edit-note">No account data leaves Expadu. Ever.</div>
+  </section>
+</div>
+
+<script>
+const tabs = document.getElementById('tabs');
+tabs.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  tabs.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  const s = b.dataset.s;
+  document.querySelectorAll('.step').forEach(x => x.classList.toggle('on', x.dataset.step === s));
+  document.getElementById('bar').style.width = (s * 25) + '%';
+  document.getElementById('count').textContent = s + ' / 4';
+});
+</script>
+</body>
+</html>

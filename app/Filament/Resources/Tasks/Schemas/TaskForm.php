@@ -36,7 +36,7 @@ class TaskForm
                 TextInput::make('title')
                     ->required(),
                 TextInput::make('key')
-                    ->helperText('Stable catalogue slug — re-imports match on this. Leave empty only for ad-hoc tasks.'),
+                    ->helperText('Stable catalogue slug — re-imports match on this. Tasks WITHOUT a key are deleted on the next deploy (YAML is the source of truth); use this form for hotfixes, then port the fix to YAML.'),
                 Select::make('type')
                     ->options(['task' => 'Task (actionable)', 'info' => 'Info card (good to know)'])
                     ->default('task')

@@ -58,9 +58,10 @@ tasks:
     key: stu.health_insurance
     depends_on: []
     description: |
-      Students under 30 pay a discounted rate (~€110/month) for public insurance.
-      You must have proof of insurance before you can enrol — many universities won't
-      finalise enrolment without it.
+      Students under 30 pay a discounted statutory rate — for 2026 roughly €145/month
+      all-in (base contribution €87.38 + the insurer's Zusatzbeitrag + mandatory
+      long-term care insurance). You must have proof of insurance before you can
+      enrol — many universities won't finalise enrolment without it.
     phase: arrival
     urgency: critical
     deadline_type: days_since_arrival

@@ -1,37 +1,20 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
 import type {
     Buckets,
     PathProp,
 } from '@/components/bureaucracy/checklist-framing-b';
-import { DocumentCard } from '@/components/bureaucracy/document-card';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
+import type { FramingBTask } from '@/components/bureaucracy/task-card-framing-b';
+import { docLabel } from '@/components/bureaucracy/task-card-framing-b';
 import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
 // Types
 // ============================================================
-
-export type DocTag = { l: string; bg: string; c: string };
-
-export type DocData = {
-    emoji: string;
-    de: string;
-    en: string;
-    desc: string;
-    where: string;
-    validity: string;
-    tags: DocTag[];
-    detail: {
-        what: string;
-        when: string;
-        howToGet: string;
-        watchOut: string;
-    };
-};
 
 export type OfficeData = {
     id: string;
@@ -48,133 +31,6 @@ export type OfficeData = {
     bookingUrl: string;
     mapsUrl: string;
 };
-
-type AiResponse = {
-    type: string;
-    summary: string;
-    action: string;
-    deadline: string | null;
-    urgency: 'low' | 'medium' | 'high';
-};
-
-// ============================================================
-// Hardcoded data from prototype
-// ============================================================
-
-// No more SEED_TASKS — data comes from backend via dbTasks prop
-
-const SEED_DOCS: DocData[] = [
-    {
-        emoji: '📋',
-        de: 'Meldebescheinigung',
-        en: 'Address Registration Certificate',
-        desc: 'Proof that you have registered your address in Germany. Required for almost everything: bank accounts, Ausländerbehörde, tax office.',
-        where: 'Issued at the Bürgeramt after Anmeldung',
-        validity: 'Unlimited (content may go out of date)',
-        tags: [
-            { l: 'Essential', bg: '#FDE8E6', c: '#C4271A' },
-            { l: 'Free', bg: '#D4F0E6', c: '#0A7C52' },
-        ],
-        detail: {
-            what: 'A simple A4 document with your name, address, and registration date. Stamped by the Bürgeramt.',
-            when: 'Any time you need to prove your German address to a third party.',
-            howToGet:
-                'Automatically issued after Anmeldung. Extra copies cost ~€5 at the Bürgeramt.',
-            watchOut: 'Some services require it to be less than 3 months old.',
-        },
-    },
-    {
-        emoji: '🆔',
-        de: 'Steuer-Identifikationsnummer',
-        en: 'Tax Identification Number',
-        desc: 'Your permanent 11-digit German tax number. Never changes, even if you move. Required by employers for payroll.',
-        where: 'Sent by post from Bundeszentralamt für Steuern after Anmeldung',
-        validity: 'Permanent — never expires',
-        tags: [
-            { l: 'Essential', bg: '#FDE8E6', c: '#C4271A' },
-            { l: 'Automatic', bg: '#EBF0FD', c: '#1A4CD4' },
-        ],
-        detail: {
-            what: 'An 11-digit number uniquely identifying you for tax purposes in Germany. Different from your Steuernummer (which is employer-specific).',
-            when: 'Give it to your employer before your first payslip. Needed for tax returns.',
-            howToGet:
-                'Arrives automatically 2–4 weeks after Anmeldung. If lost, request at bundeszentralamt.de.',
-            watchOut:
-                'Do not confuse with Steuernummer (changes when you move) or USt-ID (for businesses).',
-        },
-    },
-    {
-        emoji: '🏥',
-        de: 'Versicherungskarte',
-        en: 'Health Insurance Card',
-        desc: 'Your electronic health insurance card. Show it at every doctor visit, pharmacy, and hospital in Germany.',
-        where: 'Sent by your health insurer after enrolment',
-        validity: 'Renewed annually by insurer',
-        tags: [{ l: 'Essential', bg: '#FDE8E6', c: '#C4271A' }],
-        detail: {
-            what: 'A chip card issued by your public health insurer (Krankenkasse). Contains your insurance data electronically.',
-            when: 'Required at every healthcare appointment. Without it, you may be billed privately.',
-            howToGet:
-                'Automatically sent after enrolling with a Krankenkasse. Allow 1–2 weeks.',
-            watchOut:
-                'If you change insurers, your old card becomes invalid immediately.',
-        },
-    },
-    {
-        emoji: '📄',
-        de: 'Lohnsteuerbescheinigung',
-        en: 'Annual Payroll Tax Certificate',
-        desc: 'Issued by your employer every January for the previous year. Needed for your tax return and proof of income.',
-        where: 'Issued by your employer annually',
-        validity: 'Annual document',
-        tags: [{ l: 'Tax', bg: '#FDF0D4', c: '#C47D0E' }],
-        detail: {
-            what: 'A detailed breakdown of your gross pay, tax paid, social security contributions, and other deductions for the whole year.',
-            when: 'Needed when filing a Steuererklärung (tax return). Also useful as proof of income for rental applications.',
-            howToGet:
-                'Your employer sends it electronically to the Finanzamt and gives you a copy in January/February.',
-            watchOut:
-                'Check it carefully — errors in the document affect your tax calculation.',
-        },
-    },
-    {
-        emoji: '📝',
-        de: 'Wohnungsgeberbestätigung',
-        en: 'Landlord Registration Confirmation',
-        desc: 'A form your landlord must sign confirming you live at their property. Required for Anmeldung.',
-        where: 'Provided by your landlord',
-        validity: 'One-time use for Anmeldung',
-        tags: [{ l: 'Required for Anmeldung', bg: '#EBF0FD', c: '#1A4CD4' }],
-        detail: {
-            what: 'A standardised form (Formular 18) that confirms your landlord has accepted you as a tenant at the registered address.',
-            when: 'Must be presented at the Bürgeramt for Anmeldung. Without it, registration is impossible.',
-            howToGet:
-                'Download the form from the Bürgeramt website and ask your landlord to sign it. Some landlords provide it directly.',
-            watchOut:
-                'Your landlord is legally required to provide this within 2 weeks of you moving in.',
-        },
-    },
-    {
-        emoji: '🛂',
-        de: 'Aufenthaltstitel',
-        en: 'Residence Permit',
-        desc: 'For non-EU citizens: official permit to live and work in Germany. Contains your visa conditions.',
-        where: 'Issued by Ausländerbehörde',
-        validity: 'Varies — typically 1–3 years initially',
-        tags: [
-            { l: 'Non-EU only', bg: '#EDE9FE', c: '#7C3AED' },
-            { l: 'Critical', bg: '#FDE8E6', c: '#C4271A' },
-        ],
-        detail: {
-            what: 'A physical card (since 2011) that serves as your official permission to reside in Germany. Contains biometric data and specifies what you are allowed to do.',
-            when: 'Required to prove your legal right to work and live in Germany to employers, landlords, and authorities.',
-            howToGet:
-                'Apply at the Ausländerbehörde with extensive documentation. Allow 4–8 weeks for the card to be produced.',
-            watchOut:
-                'Apply before your current visa or entry stamp expires. Overstaying has serious consequences.',
-        },
-    },
-];
 
 // Slot data from the backend (BuergeramtService)
 type SlotData = {
@@ -271,116 +127,61 @@ function slotsToOffices(
     });
 }
 
-const EXAMPLE_TEXTS: Record<string, string> = {
-    finanzamt: `Sehr geehrte Damen und Herren,
-
-hiermit teilen wir Ihnen mit, dass Ihre Steuererklärung für das Jahr 2023 bei uns eingegangen ist und derzeit bearbeitet wird. Aufgrund des hohen Aufkommens kann die Bearbeitung bis zu 8 Wochen in Anspruch nehmen.
-
-Sie erhalten einen Steuerbescheid per Post, sobald die Prüfung abgeschlossen ist. Bei Rückfragen wenden Sie sich bitte an das Finanzamt Köln-West unter der Telefonnummer 0221 / 965 04-0.
-
-Mit freundlichen Grüßen
-Finanzamt Köln-West`,
-
-    krankenkasse: `Sehr geehrte/r Versicherte/r,
-
-Ihr Beitrag zur gesetzlichen Krankenversicherung wird ab dem 1. April 2024 auf monatlich 285,50 Euro festgesetzt. Dies entspricht dem allgemeinen Beitragssatz von 14,6% zuzüglich des kassenindividuellen Zusatzbeitrags von 1,3%.
-
-Der Beitrag wird weiterhin per SEPA-Lastschrift von Ihrem Konto eingezogen. Bitte stellen Sie sicher, dass Ihr Konto ausreichend gedeckt ist.
-
-Mit freundlichen Grüßen
-Techniker Krankenkasse`,
-
-    vermieter: `Abmahnung
-
-Sehr geehrte/r Herr/Frau [Name],
-
-wir weisen Sie hiermit darauf hin, dass in Ihrer Wohnung wiederholt gegen die Hausordnung verstoßen wurde. Konkret handelt es sich um das Abstellen von Fahrrädern im Treppenhaus sowie um Lärmbelästigung nach 22:00 Uhr.
-
-Wir fordern Sie auf, dieses Verhalten umgehend einzustellen. Bei weiteren Verstößen behalten wir uns vor, das Mietverhältnis zu kündigen.
-
-Mit freundlichen Grüßen
-Hausverwaltung Köln GmbH`,
-
-    auslaender: `Sehr geehrte Frau/Herr [Name],
-
-Ihr Antrag auf Verlängerung der Aufenthaltserlaubnis wurde geprüft. Wir teilen Ihnen mit, dass zusätzliche Unterlagen für die Bearbeitung erforderlich sind.
-
-Bitte reichen Sie innerhalb von 4 Wochen folgende Dokumente nach: aktueller Arbeitsvertrag, letzte drei Gehaltsabrechnungen sowie Nachweis über ausreichenden Krankenversicherungsschutz.
-
-Ihr Aufenthaltsstatus gilt bis zur Entscheidung als rechtmäßig (§ 81 Abs. 4 AufenthG).
-
-Ausländerbehörde Köln`,
-
-    jobcenter: `Bescheid über Leistungen zur Sicherung des Lebensunterhalts
-
-Sehr geehrte/r [Name],
-
-aufgrund Ihres Antrags vom 15. Februar 2024 haben wir Ihren Anspruch auf Bürgergeld geprüft. Ab dem 1. März 2024 erhalten Sie monatlich 563,00 Euro Regelleistung.
-
-Der Betrag wird am Monatsanfang auf das von Ihnen angegebene Konto überwiesen. Bitte melden Sie Änderungen in Ihren Einkommens- und Vermögensverhältnissen unverzüglich.
-
-Jobcenter Köln`,
+// One row of the derived document library: a unique document and every
+// task on the user's path that asks for it.
+type DerivedDoc = {
+    label: string;
+    note: string | null;
+    warn: boolean;
+    tasks: Array<{ title: string; checked: boolean; done: boolean }>;
 };
 
-const AI_RESPONSES: Record<string, AiResponse> = {
-    finanzamt: {
-        type: 'Finanzamt (Tax Office)',
-        summary:
-            'The tax office has received your 2023 tax return and is processing it. They say it may take up to 8 weeks due to high volume. You will receive your tax assessment (Steuerbescheid) by post once complete.',
-        action: "No action required right now. Wait for the Steuerbescheid letter by post. If you haven't received anything in 8 weeks, call Finanzamt Köln-West on 0221 / 965 04-0.",
-        deadline: null,
-        urgency: 'low',
-    },
-    krankenkasse: {
-        type: 'Health Insurance (Krankenkasse)',
-        summary:
-            "Your monthly health insurance contribution is changing to €285.50 from 1 April 2024. This is calculated from the standard rate of 14.6% plus your insurer's additional contribution of 1.3%. The payment will continue to be taken by direct debit from your bank account.",
-        action: 'Make sure your bank account has enough funds on the first of each month. No other action needed — this change is automatic.',
-        deadline: 'Effective from 1 April 2024',
-        urgency: 'low',
-    },
-    vermieter: {
-        type: 'Warning letter from landlord (Abmahnung)',
-        summary:
-            'This is a formal warning (Abmahnung) from your landlord or property management. They are warning you about two specific violations: parking bikes in the stairwell and making noise after 10pm. They are threatening to terminate your tenancy if this continues.',
-        action: 'Stop the behaviours mentioned immediately. Move your bike from the stairwell today. Be quiet after 22:00. An Abmahnung is a legal document — a second one can be grounds for eviction. Consider writing a brief reply acknowledging receipt.',
-        deadline: 'Immediate — stop today',
-        urgency: 'high',
-    },
-    auslaender: {
-        type: 'Ausländerbehörde (Immigration Office)',
-        summary:
-            'The immigration office is requesting additional documents to process your residence permit renewal. They need: your current work contract, your last 3 payslips, and proof of health insurance coverage.',
-        action: 'Gather all three documents within 4 weeks and submit them to the Ausländerbehörde. Good news: your current residence status is legally valid while they process your application (§ 81 AufenthG), so you can continue working.',
-        deadline: 'Within 4 weeks of letter date',
-        urgency: 'medium',
-    },
-    jobcenter: {
-        type: 'Jobcenter (Social Benefits Office)',
-        summary:
-            "This is a benefits decision letter. You have been approved for Bürgergeld (citizen's allowance) of €563 per month starting 1 March 2024. The money will be transferred to your bank account at the start of each month.",
-        action: 'No action needed to receive the payments. However, you must immediately report any changes to your income or assets to the Jobcenter — failure to do so can result in repayment demands.',
-        deadline: 'Report any income changes immediately',
-        urgency: 'low',
-    },
-};
+/**
+ * The document library is DERIVED from the user's actual tasks — the union
+ * of every document across the path, with which task needs it and whether
+ * it's already ticked there. No hand-maintained list to go stale.
+ */
+function deriveDocuments(buckets: Buckets): DerivedDoc[] {
+    const map = new Map<string, DerivedDoc>();
 
-const EXAMPLE_PILLS = [
-    { key: 'finanzamt', emoji: '📋', label: 'Finanzamt letter' },
-    { key: 'krankenkasse', emoji: '🏥', label: 'Krankenkasse notice' },
-    { key: 'vermieter', emoji: '🏠', label: 'Vermieter warning' },
-    { key: 'auslaender', emoji: '🏛️', label: 'Ausländerbehörde' },
-    { key: 'jobcenter', emoji: '💼', label: 'Jobcenter notice' },
-];
+    const lanes: FramingBTask[] = [
+        ...(buckets.active ?? []),
+        ...(buckets.upcoming ?? []),
+        ...(buckets.completed ?? []),
+    ];
+
+    for (const task of lanes) {
+        for (const doc of task.documents_required ?? []) {
+            const label = docLabel(doc);
+            const note = typeof doc === 'string' ? null : (doc.note ?? null);
+            const warn = typeof doc !== 'string' && doc.tone === 'warn';
+
+            const entry = map.get(label) ?? {
+                label,
+                note,
+                warn,
+                tasks: [],
+            };
+            // Prefer the first non-empty note if duplicates differ.
+            entry.note = entry.note ?? note;
+            entry.warn = entry.warn || warn;
+            entry.tasks.push({
+                title: task.title,
+                checked: (task.documents_checked ?? []).includes(label),
+                done: task.status === 'done',
+            });
+            map.set(label, entry);
+        }
+    }
+
+    return [...map.values()].sort((a, b) => b.tasks.length - a.tasks.length);
+}
 
 const TABS = [
     { id: 'checklist', label: 'Checklist' },
     { id: 'documents', label: 'Documents' },
-    { id: 'slots', label: 'Slots' },
-    { id: 'translator', label: 'AI Translator' },
+    { id: 'slots', label: 'Offices & Slots' },
 ];
-
-// Filter labels are dynamic — computed from real task counts below
 
 // ============================================================
 // Page
@@ -418,86 +219,36 @@ export default function Bureaucracy() {
         () => slotsToOffices(slots ?? {}, monitors ?? []),
         [slots, monitors],
     );
-    const _monitoringCount = offices.filter((o) => o.monitoring).length;
 
     const [activeTab, setActiveTab] = useTabState('checklist');
-    const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
     const [docSearch, setDocSearch] = useState('');
     const [slotFilter, setSlotFilter] = useState('all');
     const [slotSearch, setSlotSearch] = useState('');
 
-    // AI Translator state
-    const [pasteText, setPasteText] = useState('');
-    const [currentExample, setCurrentExample] = useState<string | null>(null);
-    const [translating, setTranslating] = useState(false);
-    const [translationResult, setTranslationResult] =
-        useState<AiResponse | null>(null);
-    const resultRef = useRef<HTMLDivElement>(null);
+    const derivedDocs = useMemo(
+        () => deriveDocuments(taskBuckets),
+        [taskBuckets],
+    );
 
     const filteredDocs = useMemo(() => {
         const q = docSearch.toLowerCase().trim();
 
         if (!q) {
-            return SEED_DOCS;
+            return derivedDocs;
         }
 
-        return SEED_DOCS.filter(
+        return derivedDocs.filter(
             (d) =>
-                d.de.toLowerCase().includes(q) ||
-                d.en.toLowerCase().includes(q) ||
-                d.desc.toLowerCase().includes(q),
+                d.label.toLowerCase().includes(q) ||
+                (d.note ?? '').toLowerCase().includes(q) ||
+                d.tasks.some((t) => t.title.toLowerCase().includes(q)),
         );
-    }, [docSearch]);
-
-    function loadExample(key: string) {
-        setPasteText(EXAMPLE_TEXTS[key] || '');
-        setCurrentExample(key);
-        setTranslationResult(null);
-    }
-
-    async function translateLetter() {
-        if (!pasteText.trim()) {
-            return;
-        }
-
-        setTranslating(true);
-        setTranslationResult(null);
-
-        // Simulate API delay
-        await new Promise((r) => setTimeout(r, 1500 + Math.random() * 1000));
-
-        const resp =
-            currentExample && AI_RESPONSES[currentExample]
-                ? AI_RESPONSES[currentExample]
-                : {
-                      type: 'German Official Document',
-                      summary:
-                          'This appears to be an official German document. The sender is requesting your attention to an administrative matter. The document outlines specific requirements or changes that affect you.',
-                      action: 'Read the document carefully and note any deadlines. If unsure, contact the issuing office directly or seek advice from a local expat support organisation.',
-                      deadline: null,
-                      urgency: 'medium' as const,
-                  };
-
-        setTranslating(false);
-        setTranslationResult(resp);
-
-        // Scroll into view
-        setTimeout(() => {
-            resultRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest',
-            });
-        }, 100);
-    }
-
-    function switchTab(tab: string) {
-        setActiveTab(tab);
-    }
+    }, [derivedDocs, docSearch]);
 
     return (
         <AppLayout
             breadcrumbs={[{ title: 'Bureaucracy', href: '/bureaucracy' }]}
-            rightPanel={<BureaucracyRightPanel onSwitchTab={switchTab} />}
+            rightPanel={<BureaucracyRightPanel tasks={taskBuckets} />}
             showBack
         >
             <Head title="Bureaucracy" />
@@ -505,16 +256,8 @@ export default function Bureaucracy() {
                 {/* ── Sticky header: title + tabs ── */}
                 <div className="sticky top-0 z-50 border-b border-[#E2DFD6] bg-[rgba(246,245,241,0.94)] px-6 py-3.5 backdrop-blur-[16px] dark:border-[#3A3930] dark:bg-[rgba(15,14,12,0.94)]">
                     <div className="flex items-center justify-between">
-                        <span
-                            className="shrink-0"
-                            style={{
-                                fontFamily: "'Fraunces', serif",
-                                fontSize: 20,
-                                fontWeight: 500,
-                                letterSpacing: '-0.01em',
-                            }}
-                        >
-                            Bureaucracy Helper
+                        <span className="shrink-0 font-display text-xl font-medium tracking-[-0.01em]">
+                            Bureaucracy
                         </span>
                     </div>
                     <div className="mt-2 flex gap-0">
@@ -527,7 +270,6 @@ export default function Bureaucracy() {
                                         ? 'border-[#1A4CD4] text-[#1A4CD4] dark:border-[#5B8DEF] dark:text-[#5B8DEF]'
                                         : 'border-transparent text-[#6B6860] dark:text-[#AAA89F]'
                                 }`}
-                                style={{ fontFamily: "'Geist', sans-serif" }}
                             >
                                 {t.label}
                             </button>
@@ -535,7 +277,7 @@ export default function Bureaucracy() {
                     </div>
                 </div>
 
-                {/* ════ CHECKLIST TAB — framing-B rebuild ════ */}
+                {/* ════ CHECKLIST TAB ════ */}
                 {activeTab === 'checklist' && (
                     <ChecklistFramingB
                         situation={situation}
@@ -545,35 +287,34 @@ export default function Bureaucracy() {
                     />
                 )}
 
-                {/* ════ DOCUMENTS TAB ════ */}
+                {/* ════ DOCUMENTS TAB — derived from the user's path ════ */}
                 {activeTab === 'documents' && (
-                    <div style={{ padding: '20px 24px' }}>
-                        {/* Section header */}
-                        <div className="mb-3 flex items-center justify-between">
-                            <span style={{ fontSize: 15, fontWeight: 700 }}>
-                                Document Library
+                    <div className="px-6 py-5">
+                        <div className="mb-1 flex items-center justify-between">
+                            <span className="text-[15px] font-bold">
+                                Every document on your path
                             </span>
-                            <span style={{ fontSize: 12, color: '#6B6860' }}>
-                                32 documents
+                            <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                {derivedDocs.length} documents
                             </span>
                         </div>
+                        <p className="mb-4 text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                            Built from your own checklist — tick documents off
+                            inside each task; this view shows where each paper
+                            is needed.
+                        </p>
 
                         {/* Search */}
-                        <div className="mb-4 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
-                            <span style={{ fontSize: 15, color: '#AAA89F' }}>
+                        <div className="mb-4 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
+                            <span className="text-[15px] text-[#AAA89F]">
                                 🔍
                             </span>
                             <input
                                 type="text"
-                                placeholder="Search German documents…"
+                                placeholder="Search documents or tasks…"
                                 value={docSearch}
                                 onChange={(e) => setDocSearch(e.target.value)}
-                                className="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-[#AAA89F]"
-                                style={{
-                                    fontFamily: "'Geist', sans-serif",
-                                    fontSize: 14,
-                                    color: '#18170F',
-                                }}
+                                className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F6F5F1]"
                             />
                             {docSearch && (
                                 <button
@@ -585,105 +326,90 @@ export default function Bureaucracy() {
                             )}
                         </div>
 
-                        {/* Document cards */}
-                        {filteredDocs.map((doc) => (
-                            <DocumentCard
-                                key={doc.de}
-                                doc={doc}
-                                expanded={expandedDoc === doc.de}
-                                onToggle={() =>
-                                    setExpandedDoc(
-                                        expandedDoc === doc.de ? null : doc.de,
-                                    )
-                                }
-                            />
-                        ))}
+                        {filteredDocs.map((doc) => {
+                            const allChecked = doc.tasks.every(
+                                (t) => t.checked || t.done,
+                            );
+
+                            return (
+                                <div
+                                    key={doc.label}
+                                    className="mb-2.5 rounded-[14px] border border-[#E2DFD6] bg-white p-4 dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-sm font-semibold">
+                                                {doc.label}
+                                            </div>
+                                            {doc.note &&
+                                                (doc.warn ? (
+                                                    <span className="mt-1 inline-block rounded-md bg-[#FDE8E6] px-2 py-0.5 text-[11.5px] leading-snug font-semibold text-[#C4271A] dark:bg-[#C4271A]/20 dark:text-[#FF7D70]">
+                                                        ⚠ {doc.note}
+                                                    </span>
+                                                ) : (
+                                                    <p className="mt-0.5 text-xs leading-snug text-[#6B6860] dark:text-[#AAA89F]">
+                                                        {doc.note}
+                                                    </p>
+                                                ))}
+                                        </div>
+                                        {allChecked && (
+                                            <span className="shrink-0 rounded-full bg-[#D4F0E6] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20 dark:text-[#4FB489]">
+                                                Ready
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                        {doc.tasks.map((t) => (
+                                            <span
+                                                key={t.title}
+                                                className={`rounded-full border px-2.5 py-1 text-[11px] ${
+                                                    t.checked || t.done
+                                                        ? 'border-transparent bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20 dark:text-[#4FB489]'
+                                                        : 'border-[#E2DFD6] bg-[#F6F5F1] text-[#6B6860] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]'
+                                                }`}
+                                            >
+                                                {t.checked || t.done
+                                                    ? '✓ '
+                                                    : ''}
+                                                {t.title}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
 
                         {filteredDocs.length === 0 && (
-                            <div
-                                className="py-12 text-center"
-                                style={{ color: '#AAA89F' }}
-                            >
-                                <div style={{ fontSize: 36, marginBottom: 12 }}>
-                                    🔍
+                            <div className="py-12 text-center text-[#AAA89F]">
+                                <div className="mb-3 text-4xl">🔍</div>
+                                <div className="mb-1.5 text-[15px] font-semibold text-[#6B6860] dark:text-[#AAA89F]">
+                                    {derivedDocs.length === 0
+                                        ? 'No documents yet'
+                                        : 'No documents found'}
                                 </div>
-                                <div
-                                    style={{
-                                        fontSize: 15,
-                                        fontWeight: 600,
-                                        color: '#6B6860',
-                                        marginBottom: 6,
-                                    }}
-                                >
-                                    No documents found
-                                </div>
-                                <div style={{ fontSize: 13 }}>
-                                    Try a different search term
+                                <div className="text-[13px]">
+                                    {derivedDocs.length === 0
+                                        ? 'Your tasks will list every paper you need.'
+                                        : 'Try a different search term'}
                                 </div>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* ════ SLOTS TAB ════ */}
+                {/* ════ OFFICES & SLOTS TAB ════ */}
                 {activeTab === 'slots' && (
-                    <div style={{ padding: '20px 24px' }}>
+                    <div className="px-6 py-5">
                         {/* Hero */}
-                        <div
-                            style={{
-                                background: '#1A4CD4',
-                                borderRadius: 20,
-                                padding: '20px 22px',
-                                color: 'white',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                marginBottom: 16,
-                            }}
-                        >
-                            <div
-                                className="pointer-events-none absolute"
-                                style={{
-                                    bottom: -40,
-                                    right: -40,
-                                    width: 140,
-                                    height: 140,
-                                    background: 'rgba(255,255,255,.06)',
-                                    borderRadius: '50%',
-                                }}
-                            />
-                            <div
-                                style={{
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.10em',
-                                    opacity: 0.65,
-                                    marginBottom: 5,
-                                }}
-                            >
+                        <div className="relative mb-4 overflow-hidden rounded-[20px] bg-[#1A4CD4] px-[22px] py-5 text-white">
+                            <div className="pointer-events-none absolute -right-10 -bottom-10 size-[140px] rounded-full bg-white/5" />
+                            <div className="mb-1.5 text-[10px] font-bold tracking-[0.10em] uppercase opacity-65">
                                 Appointments · Cologne
                             </div>
-                            <div
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 20,
-                                    fontWeight: 400,
-                                    marginBottom: 12,
-                                    position: 'relative',
-                                    zIndex: 1,
-                                }}
-                            >
+                            <div className="relative z-[1] mb-3 font-display text-xl">
                                 Government offices &amp; locations
                             </div>
-                            <div
-                                style={{
-                                    fontSize: 13,
-                                    opacity: 0.8,
-                                    position: 'relative',
-                                    zIndex: 1,
-                                    marginBottom: 14,
-                                }}
-                            >
+                            <div className="relative z-[1] mb-3.5 text-[13px] opacity-80">
                                 Book online — select your service, then the
                                 system shows available offices and times.
                             </div>
@@ -691,20 +417,15 @@ export default function Bureaucracy() {
                                 href="https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="relative z-[1] inline-flex items-center gap-2 rounded-[9px] px-5 py-[10px] text-sm font-semibold transition-all hover:bg-white"
-                                style={{
-                                    background: 'rgba(255,255,255,.9)',
-                                    color: '#1A4CD4',
-                                    textDecoration: 'none',
-                                }}
+                                className="relative z-[1] inline-flex items-center gap-2 rounded-[9px] bg-white/90 px-5 py-[10px] text-sm font-semibold text-[#1A4CD4] no-underline transition-all hover:bg-white"
                             >
                                 🏛️ Book Bürgeramt appointment →
                             </a>
                         </div>
 
                         {/* Search */}
-                        <div className="mb-3 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
-                            <span style={{ fontSize: 15, color: '#AAA89F' }}>
+                        <div className="mb-3 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
+                            <span className="text-[15px] text-[#AAA89F]">
                                 🔍
                             </span>
                             <input
@@ -712,11 +433,7 @@ export default function Bureaucracy() {
                                 placeholder="Search offices…"
                                 value={slotSearch}
                                 onChange={(e) => setSlotSearch(e.target.value)}
-                                className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F]"
-                                style={{
-                                    fontFamily: "'Geist', sans-serif",
-                                    fontSize: 14,
-                                }}
+                                className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F6F5F1]"
                             />
                             {slotSearch && (
                                 <button
@@ -755,25 +472,11 @@ export default function Bureaucracy() {
                                 <button
                                     key={f.id}
                                     onClick={() => setSlotFilter(f.id)}
-                                    className="shrink-0 cursor-pointer rounded-full border px-3 py-[5px] transition-all"
-                                    style={{
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        fontFamily: "'Geist', sans-serif",
-                                        whiteSpace: 'nowrap',
-                                        background:
-                                            slotFilter === f.id
-                                                ? '#1A4CD4'
-                                                : 'white',
-                                        color:
-                                            slotFilter === f.id
-                                                ? 'white'
-                                                : '#6B6860',
-                                        borderColor:
-                                            slotFilter === f.id
-                                                ? '#1A4CD4'
-                                                : '#E2DFD6',
-                                    }}
+                                    className={`shrink-0 cursor-pointer rounded-full border px-3 py-[5px] text-xs font-medium whitespace-nowrap transition-all ${
+                                        slotFilter === f.id
+                                            ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white'
+                                            : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'
+                                    }`}
                                 >
                                     {f.label}
                                 </button>
@@ -797,29 +500,12 @@ export default function Bureaucracy() {
 
                             if (filtered.length === 0) {
                                 return (
-                                    <div
-                                        className="py-12 text-center"
-                                        style={{ color: '#AAA89F' }}
-                                    >
-                                        <div
-                                            style={{
-                                                fontSize: 36,
-                                                marginBottom: 12,
-                                            }}
-                                        >
-                                            🔍
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: 15,
-                                                fontWeight: 600,
-                                                color: '#6B6860',
-                                                marginBottom: 6,
-                                            }}
-                                        >
+                                    <div className="py-12 text-center text-[#AAA89F]">
+                                        <div className="mb-3 text-4xl">🔍</div>
+                                        <div className="mb-1.5 text-[15px] font-semibold text-[#6B6860] dark:text-[#AAA89F]">
                                             No offices found
                                         </div>
-                                        <div style={{ fontSize: 13 }}>
+                                        <div className="text-[13px]">
                                             Try a different filter or search
                                             term
                                         </div>
@@ -864,12 +550,7 @@ export default function Bureaucracy() {
                                 return (
                                     <div key={group.key} className="mb-5">
                                         <div className="mb-2 flex items-center justify-between">
-                                            <span
-                                                style={{
-                                                    fontSize: 14,
-                                                    fontWeight: 700,
-                                                }}
-                                            >
+                                            <span className="text-sm font-bold">
                                                 {group.emoji} {group.label}
                                             </span>
                                             {bookingUrl && (
@@ -877,13 +558,7 @@ export default function Bureaucracy() {
                                                     href={bookingUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="transition-colors hover:text-[#1540B8]"
-                                                    style={{
-                                                        fontSize: 12,
-                                                        color: '#1A4CD4',
-                                                        fontWeight: 600,
-                                                        textDecoration: 'none',
-                                                    }}
+                                                    className="text-xs font-semibold text-[#1A4CD4] no-underline transition-colors hover:text-[#1540B8] dark:text-[#5B8DEF]"
                                                 >
                                                     Book appointment →
                                                 </a>
@@ -913,467 +588,7 @@ export default function Bureaucracy() {
                         })()}
                     </div>
                 )}
-
-                {/* ════ AI TRANSLATOR TAB ════ */}
-                {activeTab === 'translator' && (
-                    <div style={{ padding: '20px 24px' }}>
-                        {/* Hero */}
-                        <div
-                            style={{
-                                background: '#EFEDE7',
-                                borderRadius: 20,
-                                padding: '20px 22px',
-                                marginBottom: 16,
-                                border: '1px solid #E2DFD6',
-                            }}
-                        >
-                            <div style={{ fontSize: 32, marginBottom: 10 }}>
-                                🤖
-                            </div>
-                            <div
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 20,
-                                    fontWeight: 500,
-                                    marginBottom: 4,
-                                }}
-                            >
-                                AI Letter Translator
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: 13,
-                                    color: '#6B6860',
-                                    lineHeight: 1.5,
-                                }}
-                            >
-                                Paste any German official letter or document.
-                                Anker will explain what it means in plain
-                                English and tell you exactly what to do next.
-                            </div>
-                        </div>
-
-                        {/* Paste area */}
-                        <div
-                            className="paste-area-wrapper transition-all focus-within:shadow-[0_0_0_3px_#EBF0FD]"
-                            style={{
-                                background: 'white',
-                                border: '1.5px dashed #E2DFD6',
-                                borderRadius: 14,
-                                padding: 16,
-                                marginBottom: 12,
-                                position: 'relative',
-                            }}
-                        >
-                            <div
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.08em',
-                                    color: '#AAA89F',
-                                    marginBottom: 8,
-                                }}
-                            >
-                                Paste German text here
-                            </div>
-                            <textarea
-                                value={pasteText}
-                                onChange={(e) => {
-                                    setPasteText(e.target.value);
-                                    setCurrentExample(null);
-                                    setTranslationResult(null);
-                                }}
-                                placeholder="Sehr geehrte Damen und Herren, hiermit teilen wir Ihnen mit…"
-                                rows={5}
-                                className="placeholder:text-[#AAA89F]"
-                                style={{
-                                    width: '100%',
-                                    border: 'none',
-                                    background: 'transparent',
-                                    fontFamily: "'Geist', sans-serif",
-                                    fontSize: 14,
-                                    color: '#18170F',
-                                    outline: 'none',
-                                    resize: 'none',
-                                    lineHeight: 1.6,
-                                    minHeight: 100,
-                                }}
-                            />
-                            <div
-                                style={{
-                                    fontSize: 11,
-                                    color: '#AAA89F',
-                                    marginTop: 8,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 5,
-                                }}
-                            >
-                                🔒 Your text is never stored or used for
-                                training
-                            </div>
-                        </div>
-
-                        {/* Example pills */}
-                        <div style={{ marginBottom: 12 }}>
-                            <div
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.08em',
-                                    color: '#AAA89F',
-                                    marginBottom: 8,
-                                }}
-                            >
-                                Or try an example
-                            </div>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    gap: 6,
-                                    flexWrap: 'wrap',
-                                    marginBottom: 12,
-                                }}
-                            >
-                                {EXAMPLE_PILLS.map((pill) => (
-                                    <button
-                                        key={pill.key}
-                                        onClick={() => loadExample(pill.key)}
-                                        className="cursor-pointer transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4]"
-                                        style={{
-                                            fontSize: 12,
-                                            padding: '5px 11px',
-                                            borderRadius: 100,
-                                            background: 'white',
-                                            border: '1px solid #E2DFD6',
-                                            color: '#6B6860',
-                                            whiteSpace: 'nowrap',
-                                            fontFamily: "'Geist', sans-serif",
-                                        }}
-                                    >
-                                        {pill.emoji} {pill.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Translate button */}
-                        <button
-                            onClick={translateLetter}
-                            disabled={translating || !pasteText.trim()}
-                            className="cursor-pointer transition-all hover:enabled:bg-[#1540B8]"
-                            style={{
-                                width: '100%',
-                                padding: 13,
-                                borderRadius: 9,
-                                border: 'none',
-                                background: '#1A4CD4',
-                                color: 'white',
-                                fontFamily: "'Geist', sans-serif",
-                                fontSize: 15,
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 8,
-                                marginBottom: 16,
-                                opacity:
-                                    translating || !pasteText.trim() ? 0.5 : 1,
-                            }}
-                        >
-                            {translating ? (
-                                <>
-                                    <div
-                                        style={{
-                                            width: 16,
-                                            height: 16,
-                                            border: '2px solid rgba(255,255,255,.3)',
-                                            borderTopColor: 'white',
-                                            borderRadius: '50%',
-                                            animation:
-                                                'spin .7s linear infinite',
-                                        }}
-                                    />
-                                    <span>Translating…</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>✨</span>
-                                    <span>Translate & Explain</span>
-                                </>
-                            )}
-                        </button>
-
-                        {/* Translation result */}
-                        {translationResult && (
-                            <div
-                                ref={resultRef}
-                                style={{
-                                    background: 'white',
-                                    border: '1px solid #E2DFD6',
-                                    borderRadius: 14,
-                                    overflow: 'hidden',
-                                    animation: 'fadeUp .4s ease both',
-                                }}
-                            >
-                                {/* Header */}
-                                <div
-                                    style={{
-                                        padding: '14px 16px',
-                                        background: '#D4F0E6',
-                                        borderBottom:
-                                            '1px solid rgba(10,124,82,.15)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                    }}
-                                >
-                                    <span style={{ fontSize: 18 }}>✅</span>
-                                    <div>
-                                        <div
-                                            style={{
-                                                fontSize: 14,
-                                                fontWeight: 700,
-                                                color: '#0A7C52',
-                                            }}
-                                        >
-                                            Translation complete
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: 12,
-                                                color: '#0A7C52',
-                                                opacity: 0.8,
-                                            }}
-                                        >
-                                            {translationResult.type}
-                                        </div>
-                                    </div>
-                                    <span
-                                        style={{
-                                            marginLeft: 'auto',
-                                            fontSize: 10,
-                                            fontWeight: 700,
-                                            padding: '3px 9px',
-                                            borderRadius: 20,
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.05em',
-                                            background:
-                                                translationResult.urgency ===
-                                                'high'
-                                                    ? '#FDE8E6'
-                                                    : translationResult.urgency ===
-                                                        'medium'
-                                                      ? '#FDF0D4'
-                                                      : '#D4F0E6',
-                                            color:
-                                                translationResult.urgency ===
-                                                'high'
-                                                    ? '#C4271A'
-                                                    : translationResult.urgency ===
-                                                        'medium'
-                                                      ? '#C47D0E'
-                                                      : '#0A7C52',
-                                        }}
-                                    >
-                                        {translationResult.urgency} priority
-                                    </span>
-                                </div>
-
-                                {/* Body */}
-                                <div style={{ padding: 16 }}>
-                                    {/* Summary */}
-                                    <div style={{ marginBottom: 16 }}>
-                                        <div
-                                            style={{
-                                                fontSize: 10,
-                                                fontWeight: 700,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.08em',
-                                                color: '#AAA89F',
-                                                marginBottom: 6,
-                                            }}
-                                        >
-                                            What this letter says
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: 14,
-                                                color: '#18170F',
-                                                lineHeight: 1.6,
-                                            }}
-                                        >
-                                            {translationResult.summary}
-                                        </div>
-                                    </div>
-
-                                    {/* Action */}
-                                    <div style={{ marginBottom: 16 }}>
-                                        <div
-                                            style={{
-                                                fontSize: 10,
-                                                fontWeight: 700,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.08em',
-                                                color: '#AAA89F',
-                                                marginBottom: 6,
-                                            }}
-                                        >
-                                            What you need to do
-                                        </div>
-                                        <div
-                                            style={{
-                                                background: '#EBF0FD',
-                                                borderRadius: 9,
-                                                padding: '12px 14px',
-                                                display: 'flex',
-                                                alignItems: 'flex-start',
-                                                gap: 10,
-                                            }}
-                                        >
-                                            <span
-                                                style={{
-                                                    fontSize: 18,
-                                                    flexShrink: 0,
-                                                }}
-                                            >
-                                                👉
-                                            </span>
-                                            <div
-                                                style={{
-                                                    fontSize: 13,
-                                                    color: '#1A4CD4',
-                                                    lineHeight: 1.5,
-                                                    fontWeight: 500,
-                                                }}
-                                            >
-                                                {translationResult.action}
-                                            </div>
-                                        </div>
-
-                                        {/* Deadline */}
-                                        {translationResult.deadline && (
-                                            <div
-                                                style={{
-                                                    background: '#FDF0D4',
-                                                    borderRadius: 9,
-                                                    padding: '10px 14px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 10,
-                                                    marginTop: 10,
-                                                }}
-                                            >
-                                                <span
-                                                    style={{
-                                                        fontSize: 16,
-                                                        flexShrink: 0,
-                                                    }}
-                                                >
-                                                    ⏰
-                                                </span>
-                                                <span
-                                                    style={{
-                                                        fontSize: 13,
-                                                        color: '#C47D0E',
-                                                        fontWeight: 600,
-                                                    }}
-                                                >
-                                                    Deadline:{' '}
-                                                    {translationResult.deadline}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Action buttons */}
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            gap: 8,
-                                            marginTop: 14,
-                                        }}
-                                    >
-                                        <button
-                                            className="cursor-pointer transition-all hover:bg-[#E2DFD6]"
-                                            style={{
-                                                flex: 1,
-                                                padding: 10,
-                                                borderRadius: 9,
-                                                border: '1px solid #E2DFD6',
-                                                background: '#EFEDE7',
-                                                fontFamily:
-                                                    "'Geist', sans-serif",
-                                                fontSize: 13,
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            💾 Save translation
-                                        </button>
-                                        <button
-                                            className="cursor-pointer transition-all hover:bg-[#E2DFD6]"
-                                            style={{
-                                                flex: 1,
-                                                padding: 10,
-                                                borderRadius: 9,
-                                                border: '1px solid #E2DFD6',
-                                                background: '#EFEDE7',
-                                                fontFamily:
-                                                    "'Geist', sans-serif",
-                                                fontSize: 13,
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            📋 Copy
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                setActiveTab('checklist')
-                                            }
-                                            className="cursor-pointer transition-all hover:bg-[#1540B8]"
-                                            style={{
-                                                flex: 1,
-                                                padding: 10,
-                                                borderRadius: 9,
-                                                border: 'none',
-                                                background: '#1A4CD4',
-                                                color: 'white',
-                                                fontFamily:
-                                                    "'Geist', sans-serif",
-                                                fontSize: 13,
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Add to checklist
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
-
-            {/* CSS keyframe animations */}
-            <style>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.5; transform: scale(0.7); }
-                }
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-                @keyframes fadeUp {
-                    from { opacity: 0; transform: translateY(12px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .paste-area-wrapper:focus-within {
-                    border-style: solid;
-                    border-color: #1A4CD4;
-                }
-            `}</style>
         </AppLayout>
     );
 }
