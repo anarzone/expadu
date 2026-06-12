@@ -43,9 +43,10 @@ class Event extends Model
     }
 
     /**
-     * What any consumer (UI or composer) is allowed to see: active and
-     * either relevance-approved or not yet AI-scored (legacy rows stay
-     * visible until reprocessed).
+     * What any consumer (UI or composer) is allowed to see. Curation is
+     * a filter, not a feed: relevance-approved events, plus unscored
+     * legacy rows ONLY when the old curation heuristic vouched for them
+     * — an unscored museum-programme dump must never flood the feed.
      *
      * @param  Builder<Event>  $query
      */
@@ -53,8 +54,10 @@ class Event extends Model
     {
         $query->where('status', 'active')
             ->where(fn (Builder $q) => $q
-                ->whereNull('relevance')
-                ->orWhere('relevance', '>=', config('events.relevance_threshold', 0.5)));
+                ->where('relevance', '>=', config('events.relevance_threshold', 0.5))
+                ->orWhere(fn (Builder $legacy) => $legacy
+                    ->whereNull('relevance')
+                    ->where('is_curated', true)));
     }
 
     /**

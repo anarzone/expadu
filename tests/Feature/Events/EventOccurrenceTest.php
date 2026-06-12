@@ -75,20 +75,22 @@ test('one-off events appear once and only inside their window', function () {
     expect(Event::occurringBetween($from, $to))->toHaveCount(0);
 });
 
-test('expired, hidden and low-relevance events are invisible', function () {
+test('expired, hidden, low-relevance and uncurated-unscored events are invisible', function () {
     $base = ['starts_at' => '2026-06-10 11:00:00', 'recurrence' => null];
 
     Event::factory()->create([...$base, 'status' => 'expired']);
     Event::factory()->create([...$base, 'status' => 'hidden']);
     Event::factory()->create([...$base, 'relevance' => 0.2]);
+    // Unscored AND uncurated (a scraped programme dump) — never shown
+    Event::factory()->create([...$base, 'relevance' => null, 'is_curated' => false]);
     $visible = Event::factory()->create([...$base, 'relevance' => 0.9]);
-    $legacy = Event::factory()->create([...$base, 'relevance' => null]);
+    $curatedLegacy = Event::factory()->create([...$base, 'relevance' => null, 'is_curated' => true]);
 
     [$from, $to] = window('2026-06-10 00:00', '2026-06-10 23:59');
     $ids = Event::occurringBetween($from, $to)->pluck('event.id')->all();
 
     expect($ids)->toContain($visible->id);
-    expect($ids)->toContain($legacy->id); // unscored legacy rows stay visible
+    expect($ids)->toContain($curatedLegacy->id);
     expect($ids)->toHaveCount(2);
 });
 
