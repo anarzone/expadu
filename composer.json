@@ -18,7 +18,8 @@
         "laravel/wayfinder": "^0.1.14",
         "livewire/blaze": "^1.0",
         "resend/resend-laravel": "^1.3",
-        "sentry/sentry-laravel": "^4.24"
+        "sentry/sentry-laravel": "^4.24",
+        "symfony/yaml": "^8.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
