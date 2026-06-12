@@ -53,6 +53,7 @@ export type FramingBTask = {
         | 'paused'
         | 'none';
     deadline_note: string | null;
+    deadline_action: 'moved_in' | 'visa_expiry' | null;
     documents_required: DocEntry[];
     documents_checked: string[];
     decision_options: Array<{ label: string; body: string }>;
@@ -173,6 +174,8 @@ export function TaskCardFramingB({
     const [checkedDocs, setCheckedDocs] = useState<string[]>(
         task.documents_checked ?? [],
     );
+    // Local value for the visa-expiry strip (D-visa permit window).
+    const [visaDraft, setVisaDraft] = useState('');
     // Local value for the appointment picker (ISO date-time, local zone).
     const [appointmentDraft, setAppointmentDraft] = useState<string>(() =>
         task.appointment_at ? task.appointment_at.slice(0, 16) : '',
@@ -280,6 +283,7 @@ export function TaskCardFramingB({
 
     return (
         <div
+            id={`task-${task.task_id}`}
             className={`rounded-[14px] border border-[#E2DFD6] bg-white p-4 transition-colors dark:border-[#3A3930] dark:bg-[#1E1D15] ${
                 isDone ? 'opacity-70' : ''
             }`}
@@ -360,7 +364,7 @@ export function TaskCardFramingB({
                                     : '⏰ '}
                                 {task.deadline_note}
                             </span>
-                            {task.deadline_tier === 'paused' && (
+                            {task.deadline_action === 'moved_in' && (
                                 <button
                                     onClick={() => {
                                         router.post(
@@ -379,6 +383,37 @@ export function TaskCardFramingB({
                                 >
                                     I've moved in →
                                 </button>
+                            )}
+                            {task.deadline_action === 'visa_expiry' && (
+                                <span className="flex shrink-0 items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={visaDraft}
+                                        onChange={(e) =>
+                                            setVisaDraft(e.target.value)
+                                        }
+                                        className="rounded-lg border border-[#E2DFD6] bg-white px-2 py-1.5 text-xs dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                    />
+                                    {visaDraft !== '' && (
+                                        <button
+                                            onClick={() => {
+                                                router.post(
+                                                    '/profile/attributes',
+                                                    {
+                                                        attribute:
+                                                            'visa_expires_at',
+                                                        value: visaDraft,
+                                                        source: 'banner',
+                                                    },
+                                                    { preserveScroll: true },
+                                                );
+                                            }}
+                                            className="cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                                        >
+                                            Set expiry
+                                        </button>
+                                    )}
+                                </span>
                             )}
                         </div>
                     )}

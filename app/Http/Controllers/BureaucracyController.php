@@ -87,7 +87,6 @@ class BureaucracyController extends Controller
         $pathOptions = $profileEngine->pathOptionsFor($user);
 
         $slots = $buergeramtService->checkSlots();
-        $monitors = $user->slotMonitors()->where('is_active', true)->pluck('office_id')->all();
 
         return Inertia::render('bureaucracy', [
             'situation' => $user->situation?->value,
@@ -113,7 +112,6 @@ class BureaucracyController extends Controller
                 'percent' => $totalActionable > 0 ? (int) round(($doneCount / $totalActionable) * 100) : 0,
             ],
             'slots' => $slots,
-            'monitors' => $monitors,
             'bookingServices' => collect(BuergeramtService::SERVICES)->map(fn ($s, $key) => [
                 'key' => $key,
                 'name' => $s['name'],
@@ -269,6 +267,15 @@ class BureaucracyController extends Controller
         if ($userTask->appointment_at && $status !== TaskStatus::Done) {
             $deadlineNote = 'Your appointment: '.$userTask->appointment_at->format('D j M, H:i');
         }
+        // What the note strip can DO about a missing date.
+        $deadlineAction = match (true) {
+            $deadlineTier === 'paused' => 'moved_in',
+            $deadline === null
+                && $task->deadline_type === DeadlineType::PermitWindow
+                && ($profile->attributes['entry_mode'] ?? null) === 'd_visa'
+                && $status !== TaskStatus::Done => 'visa_expiry',
+            default => null,
+        };
         $bucket = $this->bucket($userTask, $deadlineTier);
 
         $blockedBy = collect($task->depends_on ?? [])
@@ -303,6 +310,7 @@ class BureaucracyController extends Controller
             'days_remaining' => $daysRemaining,
             'deadline_tier' => $deadlineTier,
             'deadline_note' => $deadlineNote,
+            'deadline_action' => $deadlineAction,
             'documents_required' => $documents,
             'documents_checked' => $userTask->documents_checked ?? [],
             'decision_options' => $task->decision_options ?? [],
@@ -344,10 +352,21 @@ class BureaucracyController extends Controller
 
             if ($task->deadline_type === DeadlineType::PermitWindow
                 && ($profile->attributes['entry_mode'] ?? null) === 'd_visa') {
-                return ['urgent', 'Due before your visa expires — apply well ahead of that date.'];
+                return ['urgent', 'Due before your visa expires — tell us the expiry date and this becomes a real countdown.'];
             }
 
             return ['no_deadline', null];
+        }
+
+        if ($task->deadline_type === DeadlineType::PermitWindow
+            && ($profile->attributes['entry_mode'] ?? null) === 'd_visa') {
+            return [match (true) {
+                $daysRemaining < 0 => 'overdue',
+                $daysRemaining <= 7 => 'critical',
+                $daysRemaining <= 21 => 'urgent',
+                $daysRemaining <= 45 => 'approaching',
+                default => 'on_track',
+            }, 'Anchored to your visa expiry — the application must be in before then.'];
         }
 
         return [match (true) {

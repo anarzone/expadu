@@ -28,7 +28,11 @@ class ProfileAttributeController extends Controller
         $source = $data['source'] ?? 'teaser';
 
         if (in_array($data['attribute'], ProfileEngine::DATE_ATTRIBUTES, true)) {
-            $request->validate(['value' => ['date', 'before_or_equal:today']]);
+            // Life events lie in the past; a visa expiry is usually ahead.
+            $request->validate(['value' => $data['attribute'] === 'visa_expires_at'
+                ? ['date']
+                : ['date', 'before_or_equal:today'],
+            ]);
             $user->setProfileAttribute($data['attribute'], $data['value'], $source);
 
             // Moving in ends temporary housing by definition.

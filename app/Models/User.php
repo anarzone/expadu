@@ -122,12 +122,6 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(UserEvent::class);
     }
 
-    /** @return HasMany<SlotMonitor, $this> */
-    public function slotMonitors(): HasMany
-    {
-        return $this->hasMany(SlotMonitor::class);
-    }
-
     /** @return HasOne<NotificationPreference, $this> */
     public function notificationPreference(): HasOne
     {

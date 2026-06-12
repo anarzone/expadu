@@ -13,6 +13,7 @@ export type OnboardingData = {
     situation: string;
     is_eu: boolean | null;
     entry_mode: string;
+    visa_expires_at: string;
     veedel: string;
     housing_status: string;
     german_level: string;
@@ -69,6 +70,7 @@ export default function Onboarding() {
         situation: '',
         is_eu: null,
         entry_mode: '',
+        visa_expires_at: '',
         veedel: '',
         housing_status: 'long_term',
         german_level: '',
@@ -163,6 +165,10 @@ export default function Onboarding() {
                             onIsEuChange={(v) => form.setData('is_eu', v)}
                             onEntryModeChange={(v) =>
                                 form.setData('entry_mode', v)
+                            }
+                            visaExpiresAt={form.data.visa_expires_at}
+                            onVisaExpiresAtChange={(v) =>
+                                form.setData('visa_expires_at', v)
                             }
                         />
                     )}

@@ -96,7 +96,8 @@ class OnboardingController extends Controller
         // not to user columns.
         $entryMode = $validated['entry_mode'] ?? null;
         $housing = $validated['housing_status'] ?? null;
-        unset($validated['entry_mode'], $validated['housing_status']);
+        $visaExpires = $validated['visa_expires_at'] ?? null;
+        unset($validated['entry_mode'], $validated['housing_status'], $validated['visa_expires_at']);
 
         $user->update([
             ...$validated,
@@ -109,6 +110,9 @@ class OnboardingController extends Controller
         }
         if ($housing !== null) {
             $user->setProfileAttribute('housing_status', $housing, 'onboarding');
+        }
+        if ($visaExpires !== null && $entryMode === 'd_visa') {
+            $user->setProfileAttribute('visa_expires_at', $visaExpires, 'onboarding');
         }
 
         // Auto-create required Home + Work places if they don't exist

@@ -2,6 +2,7 @@
 
 use App\Models\Task;
 use App\Models\User;
+use App\Notifications\BureaucracyDeadlineNotification;
 use App\Profile\Applicability;
 use Carbon\Carbon;
 
@@ -626,4 +627,75 @@ test('user:reset-journey sends a user back through onboarding for a clean replay
 
         return true;
     });
+});
+
+// ── Visa expiry anchoring ──────────────────────────────────────────────
+
+test('a D-visa holder who gives the expiry date gets a real countdown', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'profile_attributes' => [
+            'entry_mode' => 'd_visa',
+            'visa_expires_at' => now()->addDays(30)->toDateString(),
+        ],
+    ]);
+
+    $this->actingAs($user);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $card = collect($page->toArray()['props']['tasks'])->flatten(1)
+            ->firstWhere('key', 'nee.submit_application');
+
+        expect($card['deadline'])->toBe(now()->addDays(30)->toDateString());
+        expect($card['deadline_tier'])->toBe('approaching'); // 30 days on the visa scale
+        expect($card['deadline_note'])->toContain('visa expiry');
+        expect($card['deadline_action'])->toBeNull();
+
+        return true;
+    });
+});
+
+test('without the expiry date the card offers to capture it', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'profile_attributes' => ['entry_mode' => 'd_visa'],
+    ]);
+
+    $this->actingAs($user);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $card = collect($page->toArray()['props']['tasks'])->flatten(1)
+            ->firstWhere('key', 'nee.submit_application');
+
+        expect($card['deadline'])->toBeNull();
+        expect($card['deadline_action'])->toBe('visa_expiry');
+
+        return true;
+    });
+
+    // The strip posts a FUTURE date — the endpoint must accept it.
+    $this->post(route('profile.attributes'), [
+        'attribute' => 'visa_expires_at',
+        'value' => now()->addMonths(2)->toDateString(),
+        'source' => 'banner',
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($user->fresh()->profile_attributes['visa_expires_at'])
+        ->toBe(now()->addMonths(2)->toDateString());
+});
+
+// ── Push deep links ────────────────────────────────────────────────────
+
+test('deadline notifications deep-link to the specific task', function () {
+    $n = new BureaucracyDeadlineNotification(
+        taskTitle: 'Anmeldung',
+        tier: 'critical',
+        daysRemaining: 2,
+        deadline: now()->addDays(2)->toDateString(),
+        taskId: 42,
+    );
+
+    expect($n->toArray(null)['url'])->toBe('/bureaucracy?focus=42');
 });

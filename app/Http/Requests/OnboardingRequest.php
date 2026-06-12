@@ -37,6 +37,9 @@ class OnboardingRequest extends FormRequest
             // Asked only when the EU follow-up was answered "No" — it sets
             // the real permit deadline (visa expiry vs the 90-day window).
             'entry_mode' => ['nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit'])],
+            // D-visa holders can give their expiry — it becomes the real
+            // permit deadline instead of a vague warning.
+            'visa_expires_at' => ['nullable', 'date'],
             // Temporary housing pauses the Anmeldung clock instead of
             // showing a false overdue.
             'housing_status' => ['required', 'string', Rule::in(['long_term', 'temporary'])],

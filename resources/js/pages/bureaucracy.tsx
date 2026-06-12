@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
@@ -32,7 +32,6 @@ export type OfficeData = {
     status: string;
     nextSlot: string;
     distance: string;
-    monitoring: boolean;
     color: string;
     colorS: string;
     statusLabel: string;
@@ -54,10 +53,7 @@ type SlotData = {
 /**
  * Convert backend slot data + monitors into OfficeData for the UI.
  */
-function slotsToOffices(
-    slots: Record<string, SlotData>,
-    monitors: string[],
-): OfficeData[] {
+function slotsToOffices(slots: Record<string, SlotData>): OfficeData[] {
     return Object.entries(slots).map(([key, slot]) => {
         const isAvailable = slot.status === 'available';
         const isMostlyBooked = slot.status === 'mostly_booked';
@@ -123,7 +119,6 @@ function slotsToOffices(
             status: slot.status,
             nextSlot,
             distance: '',
-            monitoring: monitors.includes(key),
             color,
             colorS,
             statusLabel,
@@ -207,7 +202,6 @@ export default function Bureaucracy() {
 
     const {
         slots,
-        monitors,
         situation,
         path,
         tasks: taskBuckets,
@@ -219,7 +213,6 @@ export default function Bureaucracy() {
         bookingServices: _bookingServices,
     } = usePage<{
         slots: Record<string, SlotData>;
-        monitors: string[];
         situation: string | null;
         path: PathProp | null;
         tasks: Buckets;
@@ -231,14 +224,17 @@ export default function Bureaucracy() {
         bookingServices?: BookingService[];
     }>().props;
 
-    const offices = useMemo(
-        () => slotsToOffices(slots ?? {}, monitors ?? []),
-        [slots, monitors],
-    );
+    const offices = useMemo(() => slotsToOffices(slots ?? {}), [slots]);
 
     const [activeTab, setActiveTab] = useTabState('checklist');
     const [docSearch, setDocSearch] = useState('');
     const [destination, setDestination] = useState<Destination | null>(null);
+    // Push deep-links land here as /bureaucracy?focus={task_id}.
+    const focusTaskId = useMemo(() => {
+        const raw = new URLSearchParams(window.location.search).get('focus');
+
+        return raw ? Number(raw) : null;
+    }, []);
 
     // "Take me there" on a task office: addresses are geocoded on tap via
     // the live geocoder — no hand-maintained coordinates to go stale.
@@ -332,6 +328,7 @@ export default function Bureaucracy() {
                         phases={phases ?? null}
                         lifeEvents={lifeEvents ?? {}}
                         eligibility={eligibility ?? null}
+                        focusTaskId={focusTaskId}
                         onTakeMeThere={takeMeThereToOffice}
                     />
                 )}
@@ -617,18 +614,12 @@ export default function Bureaucracy() {
                                             <OfficeCard
                                                 key={office.id}
                                                 office={office}
-                                                onToggleMonitor={() => {
-                                                    router.post(
-                                                        '/slots/toggle',
-                                                        {
-                                                            office_id:
-                                                                office.id,
-                                                        },
-                                                        {
-                                                            preserveScroll: true,
-                                                        },
-                                                    );
-                                                }}
+                                                onTakeMeThere={() =>
+                                                    takeMeThereToOffice({
+                                                        name: office.name,
+                                                        address: office.address,
+                                                    })
+                                                }
                                             />
                                         ))}
                                     </div>

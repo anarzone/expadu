@@ -4,7 +4,6 @@ namespace App\Listeners;
 
 use App\Enums\AlertType;
 use App\Models\Alert;
-use App\Notifications\BuergeramtSlotNotification;
 use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\EventReminderNotification;
 use App\Notifications\MarketClosureNotification;
@@ -67,7 +66,6 @@ class CreateAlertFromNotification
             $notification instanceof TransitDelayNotification => 'transit_delay',
             $notification instanceof WeatherAlertNotification => 'weather',
             $notification instanceof RhineFloodNotification => 'rhine',
-            $notification instanceof BuergeramtSlotNotification => 'buergeramt',
             $notification instanceof BureaucracyDeadlineNotification => 'bureaucracy_deadline',
             $notification instanceof EventReminderNotification => 'event_reminder',
             $notification instanceof MarketClosureNotification => 'market_closure',

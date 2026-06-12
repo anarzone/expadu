@@ -2,9 +2,10 @@ import type { OfficeData } from '@/pages/bureaucracy';
 
 export function OfficeCard({
     office,
+    onTakeMeThere,
 }: {
     office: OfficeData;
-    onToggleMonitor?: () => void;
+    onTakeMeThere?: () => void;
 }) {
     return (
         <div className="mb-2 rounded-[14px] border border-[#E2DFD6] bg-white px-3.5 py-3 dark:border-[#3A3930] dark:bg-[#1E1D15]">
@@ -18,6 +19,14 @@ export function OfficeCard({
                         {office.address}
                     </div>
                 </div>
+                {onTakeMeThere && (
+                    <button
+                        onClick={onTakeMeThere}
+                        className="shrink-0 cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-3 py-[6px] text-xs font-semibold text-[#18170F] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] hover:text-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF] dark:hover:text-[#5B8DEF]"
+                    >
+                        🚌 Take me there
+                    </button>
+                )}
                 <a
                     href={office.mapsUrl}
                     target="_blank"

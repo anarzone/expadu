@@ -69,6 +69,8 @@ export function SituationStep({
     onChange,
     onIsEuChange,
     onEntryModeChange,
+    visaExpiresAt,
+    onVisaExpiresAtChange,
 }: {
     value: string;
     isEu: boolean | null;
@@ -77,6 +79,8 @@ export function SituationStep({
     onChange: (value: string) => void;
     onIsEuChange: (value: boolean) => void;
     onEntryModeChange: (value: string) => void;
+    visaExpiresAt: string;
+    onVisaExpiresAtChange: (value: string) => void;
 }) {
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
@@ -187,6 +191,26 @@ export function SituationStep({
                             </button>
                         ))}
                     </div>
+                    {entryMode === 'd_visa' && (
+                        <div className="mt-3">
+                            <label className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                When does your visa expire?
+                                <input
+                                    type="date"
+                                    value={visaExpiresAt}
+                                    onChange={(e) =>
+                                        onVisaExpiresAtChange(e.target.value)
+                                    }
+                                    className="rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                />
+                            </label>
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                Optional — but with it, your permit deadline
+                                becomes a real countdown instead of a vague
+                                warning.
+                            </p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

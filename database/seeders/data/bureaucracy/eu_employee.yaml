@@ -158,3 +158,28 @@ tasks:
         body: Some EU home-country policies cover you abroad for the first months — read your existing policy before buying twice.
       - title: Note your policy number
         body: You'll need it the day you break something — a friend's laptop, a rented e-scooter, a neighbour's window.
+
+  - title: File your annual tax return (Einkommensteuererklärung)
+    key: eue.tax_return
+    depends_on: [eue.steuer_id]
+    description: |
+      Mandatory if you had multiple employers in a year, received unemployment benefits,
+      or want to claim deductions (commute, work-from-home, professional fees, etc.).
+      Most expats get money back — average refund is ~€1,000.
+    phase: ongoing
+    urgency: medium
+    deadline_type: none
+    recurrence_months: 12
+    documents_required:
+      - Lohnsteuerbescheinigung from each employer
+      - Receipts for deductible expenses
+      - Bank statements showing tax-relevant transactions
+    links:
+      - https://www.elster.de/eportal/start
+    how_to_steps:
+      - title: Pick a filing method
+        body: ELSTER (free, German-only, complex) or commercial tools like Taxfix, Wundertax, Steuerbot (English, ~€40, much easier).
+      - title: Gather your Lohnsteuerbescheinigung
+        body: Your employer sends this by end of February each year. It's the tax summary for the previous year.
+      - title: File by July 31
+        body: Standard deadline if filing yourself; later if a Steuerberater files for you. Late penalties accrue if missed.

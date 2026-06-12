@@ -25,7 +25,6 @@ use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServicesController;
-use App\Http\Controllers\SlotMonitorController;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TaskController;
@@ -150,7 +149,6 @@ $appRoutes = function () use ($appDomain) {
         Route::post('explore/{spot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
 
         // Slot monitoring
-        Route::post('slots/toggle', [SlotMonitorController::class, 'toggle'])->name('slots.toggle');
 
         // User places
         Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');

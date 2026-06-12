@@ -103,11 +103,17 @@ class Task extends Model
             DeadlineType::DaysSinceMoveIn => ($attributes['moved_in_at'] ?? null)
                 ? Carbon::parse($attributes['moved_in_at'])->addDays($this->deadline_days)
                 : null,
-            // Visa-free entrants get the 90-day clock; D-visa holders' real
-            // deadline is their visa expiry — no computable date here.
-            DeadlineType::PermitWindow => ($attributes['entry_mode'] ?? 'visa_free') === 'visa_free' && $user->arrival_date
-                ? Carbon::parse($user->arrival_date)->addDays($this->deadline_days)
-                : null,
+            // Visa-free entrants get the 90-day clock; D-visa holders'
+            // real deadline is their visa expiry (when they've told us).
+            DeadlineType::PermitWindow => match ($attributes['entry_mode'] ?? 'visa_free') {
+                'visa_free' => $user->arrival_date
+                    ? Carbon::parse($user->arrival_date)->addDays($this->deadline_days)
+                    : null,
+                'd_visa' => ($attributes['visa_expires_at'] ?? null)
+                    ? Carbon::parse($attributes['visa_expires_at'])
+                    : null,
+                default => null,
+            },
             // Life-event tasks anchor on the recorded event date.
             DeadlineType::DaysSinceEvent => $this->trigger_event && ($attributes["{$this->trigger_event}_at"] ?? null)
                 ? Carbon::parse($attributes["{$this->trigger_event}_at"])->addDays($this->deadline_days)

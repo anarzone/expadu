@@ -4,7 +4,6 @@ namespace App\ContextEngine\Listeners;
 
 use App\ContextEngine\ScoredAction;
 use App\Events\Context\ScoredActionInserted;
-use App\Notifications\BuergeramtSlotNotification;
 use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\MarketClosureNotification;
 use App\Notifications\RhineFloodNotification;
@@ -90,7 +89,6 @@ class ScoredActionPushDispatcher
             'transit_disruption' => $this->buildTransitDisruption($action),
             'transit_delay' => $this->buildTransitDelay($action),
             'weather_alert' => $this->buildWeatherAlert($action),
-            'buergeramt_slot' => $this->buildBuergeramt($action),
             'rhine_level' => $this->buildRhine($action),
             'market_closure' => $this->buildMarketClosure($action),
             'bureaucracy_task' => $this->buildBureaucracyTask($action),
@@ -112,6 +110,7 @@ class ScoredActionPushDispatcher
             tier: (string) ($action->payload['tier'] ?? 'urgent'),
             daysRemaining: (int) ($action->payload['days_remaining'] ?? 0),
             deadline: (string) ($action->payload['deadline'] ?? ''),
+            taskId: isset($action->payload['task_id']) ? (int) $action->payload['task_id'] : null,
         );
     }
 
@@ -158,23 +157,6 @@ class ScoredActionPushDispatcher
         }
 
         return new WeatherAlertNotification($title, $description);
-    }
-
-    private function buildBuergeramt(ScoredAction $action): ?BuergeramtSlotNotification
-    {
-        $officeId = $action->payload['office_id'] ?? null;
-        $dates = $action->payload['dates'] ?? [];
-        if ($officeId === null) {
-            return null;
-        }
-
-        // The legacy notification expects an array of "office_id => slot info".
-        return new BuergeramtSlotNotification([
-            $officeId => [
-                'name' => $officeId,
-                'next_slot' => $dates[0] ?? null,
-            ],
-        ]);
     }
 
     private function buildRhine(ScoredAction $action): ?RhineFloodNotification

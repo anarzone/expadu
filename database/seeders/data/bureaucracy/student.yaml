@@ -300,3 +300,20 @@ tasks:
         body: Fully digital application; takes 6–10 weeks to process. Submit early in the semester to start receiving funds sooner.
       - title: Submit yearly updates
         body: BAföG is recalculated each year — keep income + enrolment docs ready every September.
+
+  - title: 'Your first tax return: often a refund'
+    key: stu.tax_return
+    type: info
+    depends_on: []
+    description: |
+      Worked a mini-job, Werkstudent contract or tutoring gig? Filing a tax return is
+      usually voluntary for students — and usually money back, because tax withheld on
+      part-year work overshoots. Tools like Taxfix or Wundertax do it in English for
+      ~€40; ELSTER is the free official route. Study costs (laptop, semester fees for a
+      second degree) can even carry forward as future deductions.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.elster.de/eportal/start

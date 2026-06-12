@@ -4,7 +4,7 @@ import {
     IconChevronRight,
     IconExternalLink,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TaskCardFramingB } from './task-card-framing-b';
 import type { FramingBTask, TaskOffice } from './task-card-framing-b';
 
@@ -83,6 +83,7 @@ export function ChecklistFramingB({
     phases = null,
     lifeEvents = {},
     eligibility = null,
+    focusTaskId = null,
     onTakeMeThere,
 }: {
     situation: string | null;
@@ -93,13 +94,39 @@ export function ChecklistFramingB({
     phases?: Phases | null;
     lifeEvents?: Record<string, boolean>;
     eligibility?: Eligibility | null;
+    focusTaskId?: number | null;
     onTakeMeThere?: (office: TaskOffice, arriveBy?: string) => void;
 }) {
-    const [upcomingOpen, setUpcomingOpen] = useState(false);
-    const [completedOpen, setCompletedOpen] = useState(false);
-    const [naOpen, setNaOpen] = useState(false);
-    const [infoOpen, setInfoOpen] = useState(false);
-    const [ghostsOpen, setGhostsOpen] = useState(false);
+    // A push deep-link opens the lane holding the focused task.
+    const inLane = (lane: FramingBTask[]) =>
+        focusTaskId !== null && lane.some((t) => t.task_id === focusTaskId);
+    const [upcomingOpen, setUpcomingOpen] = useState(() =>
+        inLane(tasks.upcoming ?? []),
+    );
+    const [completedOpen, setCompletedOpen] = useState(() =>
+        inLane(tasks.completed ?? []),
+    );
+    const [naOpen, setNaOpen] = useState(() =>
+        inLane(tasks.not_applicable ?? []),
+    );
+    const [infoOpen, setInfoOpen] = useState(() => inLane(tasks.info ?? []));
+    const [ghostsOpen, setGhostsOpen] = useState(() =>
+        inLane(tasks.no_longer_relevant ?? []),
+    );
+
+    useEffect(() => {
+        if (focusTaskId === null) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            document
+                .getElementById(`task-${focusTaskId}`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 250);
+
+        return () => clearTimeout(timer);
+    }, [focusTaskId]);
 
     const situationLabel = situation
         ? (SITUATION_LABELS[situation] ?? situation)
@@ -247,7 +274,9 @@ export function ChecklistFramingB({
                                     <TaskCardFramingB
                                         key={t.id}
                                         task={t}
-                                        defaultExpanded={i === 0}
+                                        defaultExpanded={
+                                            i === 0 || t.task_id === focusTaskId
+                                        }
                                         onTakeMeThere={onTakeMeThere}
                                     />
                                 ))}
@@ -286,6 +315,9 @@ export function ChecklistFramingB({
                                     <TaskCardFramingB
                                         key={t.id}
                                         task={t}
+                                        defaultExpanded={
+                                            t.task_id === focusTaskId
+                                        }
                                         onTakeMeThere={onTakeMeThere}
                                     />
                                 ))}

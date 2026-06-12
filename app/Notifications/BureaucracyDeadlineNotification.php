@@ -17,7 +17,16 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
         public string $tier,
         public int $daysRemaining,
         public string $deadline,
+        public ?int $taskId = null,
     ) {}
+
+    /**
+     * Deep-link straight to the task card (the page auto-expands + scrolls).
+     */
+    private function url(): string
+    {
+        return $this->taskId ? "/bureaucracy?focus={$this->taskId}" : '/bureaucracy';
+    }
 
     /**
      * @return array<int, string>
@@ -35,7 +44,7 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
             ->body($this->body())
             ->action('Open checklist', 'view_bureaucracy')
             ->options(['TTL' => 3600])
-            ->data(['url' => '/bureaucracy']);
+            ->data(['url' => $this->url()]);
     }
 
     /**
@@ -50,7 +59,7 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
             'tier' => $this->tier,
             'days_remaining' => $this->daysRemaining,
             'deadline' => $this->deadline,
-            'url' => '/bureaucracy',
+            'url' => $this->url(),
         ];
     }
 

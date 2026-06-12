@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\SlotMonitor;
 use App\Models\User;
 use App\Services\BuergeramtService;
 
@@ -14,7 +13,6 @@ test('bureaucracy page renders with slot data for onboarded user', function () {
     $response->assertInertia(fn ($page) => $page
         ->component('bureaucracy')
         ->has('slots')
-        ->has('monitors')
     );
 });
 
@@ -35,32 +33,6 @@ test('bureaucracy page includes correct slot structure', function () {
 
             return true;
         })
-    );
-});
-
-test('bureaucracy page includes active monitors for authenticated user', function () {
-    $user = User::factory()->onboarded()->create();
-
-    SlotMonitor::factory()->create([
-        'user_id' => $user->id,
-        'office_id' => 'deutz',
-        'is_active' => true,
-    ]);
-
-    SlotMonitor::factory()->create([
-        'user_id' => $user->id,
-        'office_id' => 'kalk',
-        'is_active' => false,
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('bureaucracy')
-        ->where('monitors', ['deutz'])
     );
 });
 

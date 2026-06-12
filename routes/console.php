@@ -19,9 +19,6 @@ Schedule::command('events:curate')->hourly()->withoutOverlapping();
 Schedule::command('events:expire')->dailyAt('03:30')->withoutOverlapping();
 Schedule::command('events:send-occurrence-reminders')->everyFiveMinutes()->withoutOverlapping();
 
-// Bürgeramt slot monitoring — rare + time-sensitive, keep frequent
-Schedule::command('buergeramt:check')->everyFiveMinutes()->withoutOverlapping();
-
 // Transit delay alerts — check every 15 min, only notify for >10 min delays
 Schedule::command('transit:check-delays')->everyFifteenMinutes()->withoutOverlapping();
 
