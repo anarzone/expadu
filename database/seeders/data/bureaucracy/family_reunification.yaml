@@ -1,61 +1,48 @@
-situation: family_reunification
+# Shared spine for all family-reunification sub-paths. The permit task
+# differs per sponsor and lives in family_reunification_standard.yaml
+# (joining a non-EU sponsor, §§29–32), _of_german.yaml (§28) and
+# _of_eu_citizen.yaml (FreizügG). Source: docs/bureaucracy-sources.md.
+situation:
+  - family_reunification
+  - family_reunification_of_german
+  - family_reunification_of_eu_citizen
 
 tasks:
   - title: Register your family's address (Anmeldung)
     key: fam.anmeldung
     depends_on: []
+    verified_at: 2026-06-11
     description: |
-      Within 14 days of arrival, every family member must be registered at the Bürgeramt
-      — including children. Book a single appointment for the whole family.
+      Within 2 weeks of arrival, every family member must be registered at the Bürgeramt
+      — including children. Arriving from abroad, you must appear in person (the proxy
+      route only exists for domestic moves). Book a single appointment for the whole
+      family.
     phase: arrival
     urgency: critical
     deadline_type: days_since_arrival
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
-      - Passports for every family member
-      - Wohnungsgeberbestätigung
-      - Marriage certificate (apostilled + translated)
-      - Birth certificates for children (apostilled + translated)
+      - label: ID documents of ALL persons moving in
+        note: For every person 16+, a signed registration form is needed — plus a power of attorney if they don't appear in person.
+      - label: Wohnungsgeberbescheinigung (Cologne form, signed by landlord/main tenant)
+        note: A rental contract or informal letter is NOT sufficient, and it cannot be submitted later.
+      - label: Marriage or partnership certificate
+        note: Foreign certificates need a translation by a publicly appointed/sworn translator in Germany — originals + translations must be shown.
+      - label: Birth certificates for children
+        note: Same sworn-translation rule. A minor moving with only one parent also needs the other parent's consent declaration (Cologne form).
     links:
-      - https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung
+      - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:
-      - title: Confirm certificates are recognised
-        body: Marriage + birth certificates from outside the EU usually need an Apostille and a German translation by a sworn translator. The Bürgeramt will reject untranslated documents.
+      - title: Have the certificates translated by a sworn translator in Germany
+        body: '"Any translation" fails — the legal standard is a publicly appointed/sworn translator in Germany. Getting originals + apostilles from abroad later is the single most painful retrofit, so bring them now.'
       - title: Book a family Anmeldung slot
-        body: Specify "Familienanmeldung" so the Bürgeramt allocates enough time. Trying to register everyone in a 15-minute slot causes appointments to overrun and get cancelled.
-      - title: Receive separate Meldebescheinigung per person
-        body: Each family member needs their own — for school, daycare, health insurance, and visa processing.
-
-  - title: Apply for residence permits for the whole family
-    key: fam.residence_permits
-    depends_on: [fam.anmeldung]
-    description: |
-      Reunifying family members need their own residence permits, even if the sponsoring
-      spouse already has one. Apply at the Ausländerbehörde within 90 days.
-    phase: first_30_days
-    urgency: critical
-    deadline_type: days_since_arrival
-    deadline_days: 90
-    booking_service_key: auslaenderbehoerde
-    documents_required:
-      - Sponsor's residence permit + passport
-      - Family member passports + entry visas
-      - Marriage certificate (apostilled + translated)
-      - Birth certificates for children
-      - Sponsor's employment contract + salary statements
-      - Proof of accommodation (rental contract, size requirements)
-      - Health insurance for every family member
-      - Basic German certificate (A1) for spouse — unless exempted
-    links:
-      - https://www.stadt-koeln.de/service/produkt/aufenthaltserlaubnis-zum-zweck-des-familiennachzugs
-    how_to_steps:
-      - title: Confirm the sponsor's residence permit covers family reunification
-        body: Not all permit types qualify. Skilled-worker (§ 18) and Blue Card (§ 18b) typically do; short-term work permits do not.
-      - title: Book a single Ausländerbehörde appointment for the whole family
-        body: Mention you're bringing dependents when booking — they'll allocate ~1 hour instead of 20 min.
-      - title: Bring originals AND certified translations
-        body: For non-German documents, you need the original + an apostille + a sworn German translation. The Ausländerbehörde keeps copies but checks the originals.
+        body: Specify the number of persons so the Bürgeramt allocates enough time. Walk-ins work on Mondays and Wednesdays; other days need an appointment.
+        link: https://termine.stadt-koeln.de/
+      - title: Mind the religion field on the form
+        body: Declaring a recognized denomination enrols the earners in church tax — 9% of income tax in NRW, per person. Answer accurately, but know what it means.
+      - title: Receive a separate Meldebescheinigung per person
+        body: Each family member needs their own — for school, daycare, health insurance, and the permit applications.
 
   - title: Enrol health insurance for every dependent
     key: fam.health_insurance
@@ -198,11 +185,12 @@ tasks:
 
   - title: Sign up for an Integration Course
     key: fam.integration_course
-    depends_on: [fam.residence_permits]
+    depends_on: []
     description: |
       The Integrationskurs is a subsidised 600-700 hour German + civics course. Mandatory
       for some residence permit holders, optional but strongly recommended for others —
-      provides A1–B1 German plus orientation on German society.
+      provides A1–B1 German plus orientation on German society. The B1 it ends with is
+      also exactly what permanent residency later requires.
     phase: settling
     urgency: low
     deadline_type: days_since_arrival

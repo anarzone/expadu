@@ -1,0 +1,60 @@
+# Joining a German citizen (§28 AufenthG). Source: stadt-koeln.de product
+# 20334, verified — see docs/bureaucracy-sources.md (Case 7 variant).
+situation: family_reunification_of_german
+
+tasks:
+  - title: Apply for your residence permit (§28 — family of a German citizen)
+    key: famde.residence_permit
+    depends_on: [fam.anmeldung]
+    verified_at: 2026-06-11
+    description: |
+      Spouses, minor children and parents of minor German children apply under §28 —
+      the privileged family track. Notably absent compared to other family permits:
+      the livelihood-proof block (no payslip parade). The A1 German requirement for
+      spouses still applies. Cologne publishes an official "Checkliste Unterlagen"
+      PDF for this case — treat it as the canonical list.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Application form (online Erstantrag 33-F07; renewals 33-F06)
+      - label: National passport of the applying family member
+      - label: 'German spouse: their Personalausweis'
+        note: 'The German partner only shows their ID card. German children: a birth certificate suffices.'
+      - label: Copy of the entry visa, if visa-required
+      - label: A1 German certificate (spouses)
+        note: Only Goethe-Institut, TestDaF or telc certificates are accepted — other certificates are rejected.
+      - label: Marriage certificate / child's birth certificate
+        note: Certified translations of all foreign certificates + apostille/legalization depending on the origin country.
+      - label: Custody-exercise proof, if the German parent doesn't live with the child
+        note: Required whenever you apply as the parent of a German child without cohabiting.
+      - label: Digital biometric photo
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20334/index.html
+    how_to_steps:
+      - title: Download Cologne's official checklist
+        body: This case has an official "Checkliste Unterlagen" PDF on the product page — print it and tick it off; it's the list the case worker uses.
+        link: https://www.stadt-koeln.de/service/produkte/20334/index.html
+      - title: Submit the online Erstantrag
+        body: Same online form as all first applications (33-F07), with the §28 uploads.
+      - title: Bring originals AND certified translations
+        body: Foreign certificates need apostille/legalization + a sworn German translation — "any translation" fails.
+
+  - title: 'Permanent residency after just 3 years (§28 Abs. 2)'
+    key: famde.ne_three_years
+    type: info
+    depends_on: []
+    description: |
+      Family members of German citizens qualify for the Niederlassungserlaubnis after
+      only 3 years — not the usual 5 — if the family community continues (cohabiting,
+      or regularly caring for German children), the livelihood works without benefits,
+      and you have B1 German. Book the Integrationskurs early; its closing B1 exam is
+      exactly the certificate you'll need.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01008/index.html

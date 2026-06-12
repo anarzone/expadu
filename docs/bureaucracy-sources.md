@@ -77,3 +77,65 @@ Check these before setting `verified_at` on the affected tasks:
 | non_eu_employee.yaml, student.yaml, family_reunification.yaml → rundfunkbeitrag tasks | `https://www.rundfunkbeitrag.de/en/` now **301-redirects**; €18.36/month itself is still correct ✅ | Direct URL: `https://www.rundfunkbeitrag.de/welcome/english` |
 | family_reunification.yaml (residence permit task) | Link `…/service/produkt/aufenthaltserlaubnis-zum-zweck-des-familiennachzugs` returns **404** | Find current product URL on stadt-koeln.de |
 | student.yaml → stu.enrolment | "Semesterticket … free public transit in NRW" — since 2024 students get the **Deutschlandsemesterticket** (Germany-wide) | Not fetched from an official source — verify with Uni Köln / KSTW before correcting |
+
+---
+
+# 2026-06-12 — Full transposition of the consolidated checklist (Cases 0–23)
+
+The owner's consolidated "Bureaucracy Document Checklists (FINAL)" doc (compiled
+2026-06-11 against stadt-koeln.de product pages) was transposed into the catalogue.
+**verified_at policy applied:** tasks whose facts carry the doc's ✅ legend (read
+directly on Stadt Köln pages during the 2026-06-11 compile) are stamped
+`verified_at: 2026-06-11`. ◐ items (official federal/other sources) ship published
+WITHOUT the badge. ⚠ items ship with "typical requirements" framing.
+
+## Catalogue structure after the transposition
+
+| File | situation header | Content |
+|---|---|---|
+| core.yaml | core | Civilian spine for digital nomads/other (Case 0/1) |
+| eu_employee.yaml | eu_employee | Case 1 — spine only |
+| non_eu_employee.yaml | non_eu_employee + _blue_card + _chancenkarte | Shared spine for all employee sub-paths |
+| non_eu_employee_standard.yaml | non_eu_employee | Case 2 — §18a/b permit (produkt 01083 ✅) + NE-check info |
+| non_eu_employee_blue_card.yaml | non_eu_employee_blue_card | Case 3 — §18g (produkt 20321 ✅, incl. Addendum-2 tail) + fast-track info |
+| non_eu_employee_chancenkarte.yaml | non_eu_employee_chancenkarte | Case 8 ◐ — work limits info + conversion task |
+| student.yaml | student | Case 4 — §16b permit upgraded (produkt 00973 ✅: €11,904 Sperrkonto 2025/26, all-pages copies, parents' declaration), 140-day work account, post-graduation §20(3) info ◐ |
+| freelancer.yaml | freelancer + freelancer_gewerbe | Shared spine incl. tax track (ELSTER/Fragebogen/§19 UStG) |
+| freelancer_liberal.yaml | freelancer | Case 5 ◐/⚠ — §21(5) "typical requirements", Servicestelle routing, Gewerbe-check task |
+| freelancer_gewerbe.yaml | freelancer_gewerbe | Case 13 ◐ — §21(1) permit, Gewerbeanmeldung €26 (produkt 00268 ✅) |
+| family_reunification.yaml | family_reunification + _of_german + _of_eu_citizen | Shared family spine (Anmeldung family variant ✅) |
+| family_reunification_standard.yaml | family_reunification | Case 7 — §§29–32 (produkt 20335 ✅: A1 Goethe/TestDaF/telc only, rent-level proof, livelihood block) |
+| family_reunification_of_german.yaml | family_reunification_of_german | Case 7 variant — §28 (produkt 20334 ✅: Personalausweis only, no livelihood block, custody proof) + 3-year NE info |
+| family_reunification_of_eu_citizen.yaml | family_reunification_of_eu_citizen | Case 10 ◐ — Aufenthaltskarte, typical-requirements framing |
+| shared_info.yaml | ALL branches | Case 6 driving licence (articles 06292/60839 + produkte 00834/00836 ✅, 3 branches, 180-day deadline), church tax ◐, Schufa ⚠-phrased, Verpflichtungserklärung ✅-adjacent, Fiktionsbescheinigung ◐, passport Übertrag ✅, long-game NE/citizenship (✅ Köln NE pages + ◐ StAG incl. Oct-2025 fast-track abolition), recognition §16d ◐, ARB 1/80 ◐ (+ ✅ Köln reduced fees €22.80/€37), child born §33 ✅/◐, other-permits routing card (Cases 11/12/14/17–22) |
+
+## € figures and time-sensitive values now in the catalogue (re-check yearly)
+
+| Figure | Value | Where | Source tier |
+|---|---|---|---|
+| Anmeldung fine ceiling | up to €1,000 (§54 BMG), tolerated in practice | core/nee anmeldung | ◐ statute |
+| eAT first issue / renewal | ~€100 / €93–96 | standard + blue card | ✅ Köln (renewal), ⚠ first-issue federal standard |
+| Blue Card salary thresholds | €50,700 / €45,934.20 (2026) | bc.blue_card, ck.convert | ✅ Köln 20321 |
+| Sperrkonto students | €11,904 (2025/26) | stu.residence_permit | ✅ Köln 00973 |
+| Chancenkarte finance | €13,092/12mo (~€1,091/mo, 2026) | ck.work_limits | ◐ federal |
+| Gewerbeanmeldung | €26 | gw.gewerbeanmeldung | ✅ Köln 00268 |
+| Driving licence fees | €35 EU exchange / €36.30 Anlage-11 | shared.driving_licence | ✅ Köln |
+| Rundfunkbeitrag | €18.36/mo (€6.12 reduced) | all spines | ✅ rundfunkbeitrag.de |
+| Kindergeld | €250/mo/child | fam.kindergeld | ◐ |
+| Verpflichtungserklärung | ~€29 | shared.verpflichtungserklaerung | ◐ |
+| Citizenship fee | €255; 3-yr fast track abolished 2025-10-30 | shared.long_game | ◐ |
+| ARB 1/80 reduced fees | €22.80 (<24) / €37 (24+) | bc.blue_card, shared.arb_turkish | ✅ Köln 20321 |
+| Child permit fee | from ~€25 | shared.child_born | ◐ federal |
+| Turkish/§21 NE fees | €113 ⚠ / €124 self-employed ✅ | shared.long_game (not asserted numerically) | mixed |
+
+## Conscious exclusions (unchanged)
+- Case 23 returnees (§37/38), humanitarian/asylum §§22–26, §104c — excluded with reason.
+- Pre-arrival mode — onboarding has no "not yet arrived" answer yet; revisit with that feature.
+- Au pair/WHV/language-course/training-search/researchers/ICT personas get the routing
+  card (shared.other_permits) only — no full paths until those personas exist in onboarding.
+
+## Path-refinement model
+`users.bureaucracy_path` + ProfileEngine::PATH_OPTIONS map sub-paths:
+non_eu_employee → standard | blue_card | chancenkarte; family_reunification →
+of a non-EU citizen (base) | of_german | of_eu_citizen; freelancer → liberal (base) | gewerbe.
+Shared-spine tasks carry multi-branch situation headers so progress survives path switches.

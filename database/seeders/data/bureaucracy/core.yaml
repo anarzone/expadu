@@ -1,31 +1,40 @@
+# Core branch — digital nomads + "other". The shortest path: the civilian
+# spine only. Content source: docs/bureaucracy-sources.md (Case 0/1).
 situation: core
 
 tasks:
   - title: Register your address (Anmeldung)
     key: core.anmeldung
     depends_on: []
+    verified_at: 2026-06-11
     description: |
-      Every resident in Germany must register their address at the Bürgeramt within 14
-      days of moving in. The Meldebescheinigung is the document everything else hangs
-      off — tax ID, bank account, insurance.
+      Every resident in Germany must register their address within 2 weeks of
+      moving in (§17 BMG). The Meldebescheinigung is the document everything
+      else hangs off — tax ID, bank account, insurance. Missing the deadline
+      is technically finable (up to €1,000), but in practice tolerated when no
+      appointment was available — register as soon as you can, don't panic.
     phase: arrival
     urgency: critical
     deadline_type: days_since_arrival
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
-      - Passport or EU ID card
-      - Wohnungsgeberbestätigung (signed by your landlord)
+      - label: Passport or EU ID card
+        note: Bring the passport if you have one — the current address gets entered into it.
+      - label: Wohnungsgeberbescheinigung (Cologne form, signed by landlord/main tenant)
+        note: A rental contract or informal letter is NOT sufficient, the move-in date may not be in the future, and it cannot be submitted later — without it the registration simply doesn't happen that day.
     links:
-      - https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
+      - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:
-      - title: Get a Wohnungsgeberbestätigung from your landlord
-        body: Your landlord must give you this confirmation within two weeks of moving in. Without it the Bürgeramt won't register you — it cannot be submitted later.
-      - title: Book an appointment, or walk in on Monday/Wednesday
-        body: Cologne Kundenzentren take walk-ins on Mondays and Wednesdays; Tuesday, Thursday and Friday require an appointment. Registration is free.
+      - title: Get the Wohnungsgeberbescheinigung from your landlord
+        body: It's Cologne's own form (Formular-Server 02-F17) — send it to your landlord or main tenant before moving day. If you live in your own property, the self-declaration on the same form suffices.
+      - title: Pick your route — online, walk-in, or appointment
+        body: Cologne now offers Anmeldung fully online via the Serviceportal ("Gemeinsam Online"). In person, Kundenzentren take walk-ins on Mondays and Wednesdays; Tuesday, Thursday and Friday require an appointment. Registration is free.
         link: https://termine.stadt-koeln.de/
+      - title: Mind the religion field on the form
+        body: Declaring a recognized denomination (Catholic, Protestant, Jewish…) enrols you in church tax — 9% of your income tax in NRW, deducted automatically. Leaving later requires a formal, fee-charged Kirchenaustritt at the Amtsgericht. Answer accurately, but know what it means.
       - title: Make digital copies of the Meldebescheinigung
-        body: Photograph it and back it up — you'll need it for almost everything else on this list.
+        body: You get it on the spot. Photograph it and back it up — you'll need it for almost everything else on this list.
 
   - title: Wait for your Steuer-ID (tax identification number)
     key: core.steuer_id
@@ -125,9 +134,10 @@ tasks:
     key: core.liability_insurance
     depends_on: [core.bank_account]
     description: |
-      Not legally required, but most Germans have it and landlords increasingly expect
-      it — it covers damage you accidentally cause to other people or their property.
-      Costs roughly €30–50/year and caps what could otherwise be an unlimited bill.
+      Not legally required, but culturally near-universal (~85% of Germans have it) and
+      landlords increasingly expect it — it covers damage you accidentally cause to other
+      people or their property. In Germany you are personally liable without limit;
+      €3–6/month caps what could otherwise be an unbounded bill.
     phase: settling
     urgency: low
     deadline_type: none

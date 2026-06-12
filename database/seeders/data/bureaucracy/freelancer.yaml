@@ -1,30 +1,39 @@
-situation: freelancer
+# Shared spine for both self-employment sub-paths. The §21 residence permit
+# differs per path: freelancer_liberal.yaml (§21 Abs. 5, freie Berufe) and
+# freelancer_gewerbe.yaml (§21 Abs. 1, trade). Source: docs/bureaucracy-sources.md.
+situation:
+  - freelancer
+  - freelancer_gewerbe
 
 tasks:
   - title: Register your address (Anmeldung)
     key: fre.anmeldung
     depends_on: []
+    verified_at: 2026-06-11
     description: |
-      Every resident in Germany must register their address at the Bürgeramt within 14
-      days of moving in. For freelancers it's doubly important — the Meldebescheinigung
-      is the key to your Steuer-ID, your bank account, and the tax office knowing where
-      to send your Steuernummer.
+      Every resident must register their address within 2 weeks of moving in (§17 BMG).
+      For freelancers it's doubly important — the Meldebescheinigung is the key to your
+      Steuer-ID, your bank account, and the tax office knowing where to send your
+      Steuernummer.
     phase: arrival
     urgency: critical
     deadline_type: days_since_arrival
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
-      - Passport or EU ID card
-      - Wohnungsgeberbestätigung (signed by your landlord)
+      - label: Passport or EU ID card
+      - label: Wohnungsgeberbescheinigung (Cologne form, signed by your landlord)
+        note: A rental contract or informal letter is NOT sufficient, and it cannot be submitted later — without it the registration doesn't happen that day.
     links:
-      - https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
+      - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:
-      - title: Get a Wohnungsgeberbestätigung from your landlord
-        body: Your landlord must issue this within two weeks of move-in. The Bürgeramt won't register you without it and it cannot be submitted later.
-      - title: Book an appointment, or walk in on Monday/Wednesday
-        body: Cologne Kundenzentren take walk-ins on Mondays and Wednesdays; other weekdays need an appointment. Registration is free.
+      - title: Get the Wohnungsgeberbescheinigung from your landlord
+        body: Cologne's own form (Formular-Server 02-F17) — your landlord must issue it within two weeks of move-in. This is the number-one trap.
+      - title: Pick your route — online, walk-in, or appointment
+        body: Cologne offers Anmeldung fully online via the Serviceportal. In person, Kundenzentren take walk-ins on Mondays and Wednesdays; other weekdays need an appointment. Free either way.
         link: https://termine.stadt-koeln.de/
+      - title: Mind the religion field on the form
+        body: Declaring a recognized denomination enrols you in church tax — 9% of your income tax in NRW. As a freelancer it lands in your prepayments. Leaving later costs a fee at the Amtsgericht.
       - title: Make digital copies
         body: You'll attach the Meldebescheinigung to bank, insurance and tax paperwork repeatedly — keep a PDF handy.
 
@@ -48,46 +57,6 @@ tasks:
       - title: Request a copy if it doesn't arrive in 4 weeks
         body: Use the BZSt input form — it's only ever sent by post to your registered address.
         link: https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
-
-  - title: Apply for a self-employment residence permit (§21 AufenthG)
-    key: fre.residence_permit
-    eu_filter: non_eu_only
-    depends_on: [fre.anmeldung, fre.health_insurance]
-    description: |
-      Non-EU freelancers need a residence permit for self-employment under §21 AufenthG
-      before working independently. Cologne's Ausländeramt assesses your business idea:
-      economic interest, secured financing, and your qualifications. Freelance professions
-      (freie Berufe) are judged more leniently than trade businesses (Gewerbe), but the
-      evidence pack is substantial either way.
-    phase: first_30_days
-    urgency: critical
-    deadline_type: days_since_arrival
-    deadline_days: 90
-    booking_service_key: auslaenderbehoerde
-    documents_required:
-      - Passport with entry visa
-      - Meldebescheinigung
-      - CV with education, training and work history
-      - Professional qualifications and certificates relevant to your business
-      - Business concept / business plan in German
-      - Financing plan + proof of capital (bank statement)
-      - Evidence of customer contacts / letters of intent
-      - Revenue and profit projections
-      - Proof of health insurance
-      - Biometric passport photo
-    links:
-      - https://www.stadt-koeln.de/service/produkte/00947/index.html
-      - https://www.gesetze-im-internet.de/aufenthg_2004/__21.html
-    how_to_steps:
-      - title: Work out if you're Freiberufler or Gewerbe first
-        body: Liberal professions (writers, designers, engineers, translators, teachers and similar — §18 EStG) apply under §21(5) AufenthG; commercial businesses face the full economic-interest test with business plan and capital proof. The document list differs, so settle this before the appointment.
-      - title: Build the business case in German
-        body: Cologne expects the business concept in German, covering activities, location, financing, your experience, existing client contacts and revenue projections. German language skills are generally expected, especially for client-facing work.
-      - title: Contact the Arbeitsmigration desk for an appointment
-        body: Applications go through the Ausländeramt's work-migration unit (Dillenburger Straße 56–66) — appointments are arranged by email, contact form or post, and you attend in person with an invitation letter. Start early; the document review takes time.
-        link: https://www.stadt-koeln.de/service/produkte/00947/index.html
-      - title: Bring originals plus copies of everything
-        body: A missing document means a rebooked appointment and weeks of waiting. Triple-check the financing evidence — it's the most common gap.
 
   - title: Submit the Fragebogen zur steuerlichen Erfassung
     key: fre.fragebogen
@@ -169,36 +138,6 @@ tasks:
       - title: Check the Künstlersozialkasse if you're a creative or publicist
         body: Designers, writers, journalists, musicians and similar professions can join the KSK, which gives self-employed artists employee-style social cover — you pay roughly the employee half of pension, health and care contributions and the KSK system covers the rest. Applications take months, so file early.
         link: https://www.kuenstlersozialkasse.de/
-
-  - title: Check whether your activity is a Gewerbe
-    key: fre.gewerbe_check
-    depends_on: [fre.anmeldung]
-    description: |
-      Germany splits the self-employed into freie Berufe (liberal professions — no trade
-      licence needed) and Gewerbe (commercial trade — must register at the Gewerbeamt).
-      Doctors, engineers, writers, translators, teachers, journalists and similar
-      professions under §18 EStG are frei; selling goods, e-commerce and most agency-style
-      businesses are Gewerbe. Registering when required costs €26 in Cologne.
-    phase: first_30_days
-    urgency: medium
-    deadline_type: none
-    documents_required:
-      - ID or passport
-      - Residence permit allowing self-employment (non-EU citizens)
-    links:
-      - https://www.gesetze-im-internet.de/estg/__18.html
-      - https://www.stadt-koeln.de/service/produkte/00268/index.html
-      - https://www.ihk.de/koeln/
-    how_to_steps:
-      - title: Classify your activity
-        body: Compare your work against the §18 EStG catalogue (scientific, artistic, writing, teaching activities; doctors, lawyers, engineers, architects, journalists, interpreters, translators and similar). Mixed activities are tricky — when in doubt, the Finanzamt's classification in response to your Fragebogen is what counts.
-        link: https://www.gesetze-im-internet.de/estg/__18.html
-      - title: If it's a Gewerbe, register online
-        body: Cologne accepts Gewerbeanmeldung through the NRW business portal — €26 for a sole proprietorship, and you receive the Gewerbeschein immediately as a PDF.
-        link: https://www.stadt-koeln.de/service/produkte/00268/index.html
-      - title: Expect IHK membership
-        body: Gewerbe registrations are forwarded to the IHK Köln, where membership is mandatory for trade businesses (freie Berufe are exempt). Small businesses pay little or nothing at low profit — but don't ignore their letters, the fees don't disappear.
-        link: https://www.ihk.de/koeln/
 
   - title: Open a bank account for your freelance work
     key: fre.bank_account

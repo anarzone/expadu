@@ -1,0 +1,58 @@
+# Chancenkarte / Opportunity Card path (§20a AufenthG) — the job-seeking
+# persona. Federal rules (◐): published without the verified badge until
+# confirmed against Köln practice. See docs/bureaucracy-sources.md (Case 8).
+situation: non_eu_employee_chancenkarte
+
+tasks:
+  - title: Know your Chancenkarte work limits
+    key: ck.work_limits
+    type: info
+    depends_on: []
+    description: |
+      While searching, the Chancenkarte allows part-time work up to 20 hours/week plus
+      unlimited 2-week trial employments (Probearbeiten). The card runs at most 12 months
+      and cannot be extended back-to-back — the plan is to convert it, not renew it.
+      Typical finance requirement at issue: €13,092 for 12 months (~€1,091/month, 2026
+      figure) via blocked account or a part-time contract meeting that income.
+    phase: arrival
+    urgency: medium
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.make-it-in-germany.com/en/visa-residence/types/chancenkarte
+
+  - title: Found a job? Convert to a work permit or Blue Card
+    key: ck.convert
+    depends_on: [nee.anmeldung]
+    description: |
+      The Chancenkarte's whole purpose is conversion: once you sign a qualifying job
+      offer, apply to switch to a standard work permit (§18a/b) or — if the salary
+      clears the threshold — the EU Blue Card (§18g), without leaving Germany. Start
+      the application as soon as you have the signed contract; don't wait for the
+      card's expiry to approach. Typical requirements mirror the standard permit:
+      passport, contract, the employer's job-description form, insurance proof,
+      housing proof, photo.
+    phase: ongoing
+    urgency: high
+    deadline_type: none
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Signed employment contract or binding offer
+      - label: Valid national passport + your Chancenkarte
+      - label: Employer's job-description form (Vordruck Stellenbeschreibung)
+        note: Ask HR to fill it the week you sign — it's the document the BA approval waits on.
+      - label: Proof of health insurance
+        note: Trap — as a Chancenkarte holder you're not in statutory insurance yet; the gap between travel insurance and GKV is where people get burned. Sort GKV the day your job starts.
+      - label: Housing proof (Mietvertrag)
+      - label: Biometric photo
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - https://www.stadt-koeln.de/service/produkte/20321/index.html
+    how_to_steps:
+      - title: Check which permit your offer qualifies for
+        body: Salary at or above €50,700/year (or €45,934.20 in shortage occupations/IT) means Blue Card — take it, the permanent-residency fast track is worth it. Below that, the standard §18a/b permit applies. In the app, switch your path accordingly once converted.
+      - title: Apply via Cologne's online Erstantrag
+        body: Same online form (33-F07) as all first applications, with the conversion uploads.
+        link: https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - title: Mind your card's expiry
+        body: Processing takes weeks — if your Chancenkarte would expire mid-application you'll get a Fiktionsbescheinigung bridging the gap, but only if the application is already filed.

@@ -4,6 +4,7 @@ tasks:
   - title: Register your address (Anmeldung)
     key: stu.anmeldung
     depends_on: []
+    verified_at: 2026-06-11
     description: |
       Every resident in Germany must register their address at the Bürgeramt within 14
       days of moving in. Without the Meldebescheinigung you can't enrol at university,
@@ -47,11 +48,11 @@ tasks:
       - https://www.portal.uni-koeln.de/
     how_to_steps:
       - title: Pay the Semesterbeitrag
-        body: ~€300/semester — includes the Semesterticket (free public transit in NRW). Pay by bank transfer; takes 1–2 working days to clear.
+        body: ~€300/semester — includes the Deutschlandsemesterticket (public transit across all of Germany). Pay by bank transfer; takes 1–2 working days to clear.
       - title: Submit enrolment documents
         body: Most German universities now accept digital uploads via the student portal. Some still require an in-person submission.
-      - title: Pick up your student ID + Semesterticket
-        body: Usually mailed within 2 weeks of enrolment. The Semesterticket lets you ride all public transit in North Rhine-Westphalia for free.
+      - title: Pick up your student ID + semester ticket
+        body: Usually mailed within 2 weeks of enrolment. Since 2024 the Semesterticket is the Deutschlandsemesterticket — it covers regional transit nationwide, not just NRW.
 
   - title: Sign up for student health insurance
     key: stu.health_insurance
@@ -78,33 +79,46 @@ tasks:
       - title: Forward the confirmation to your university
         body: Submit the insurance confirmation in the student portal — required to complete Immatrikulation.
 
-  - title: Apply for student residence permit
+  - title: Apply for your student residence permit (§16b)
     key: stu.residence_permit
     eu_filter: non_eu_only
     depends_on: [stu.anmeldung, stu.enrolment, stu.health_insurance]
+    verified_at: 2026-06-11
     description: |
-      Non-EU students must convert their entry visa into a student residence permit
-      within the first 90 days. The permit covers studies + 120 days of part-time work
-      per year.
+      Non-EU students must convert their entry visa into a student residence permit —
+      apply within the visa's validity, or within 90 days if you entered visa-free.
+      The permit covers your studies plus part-time work: 140 full working days per
+      year (half-days count as half; 20 hours/week during lecture time counts as 2.5
+      days).
     phase: first_30_days
     urgency: critical
     deadline_type: days_since_arrival
     deadline_days: 90
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - Passport with entry visa
-      - Meldebescheinigung
-      - Immatrikulationsbescheinigung
-      - Health insurance proof
-      - Proof of finances (€11,208/year — blocked account or scholarship letter)
-      - Biometric passport photo
+      - label: Application form (online Erstantrag 33-F07)
+      - label: Valid national passport including copies of ALL printed pages
+        note: Cologne is specific about the all-pages copies — bring them, don't count on the office copier.
+      - label: Biometric photo, not older than 3 months
+      - label: Valid study visa, if one was required for entry
+        note: A visitor visa is explicitly insufficient and cannot be converted.
+      - label: Immatrikulationsbescheinigung or conditional university admission
+        note: 'If you''re still in study preparation: language-course attendance proof stating at least 18 lessons/week, or Studienkolleg enrollment.'
+      - label: Studienverlaufsplan (study plan), if already in degree study
+        note: Renewals additionally need a certificate of orderly study progress.
+      - label: 'Finance proof: Sperrkonto with €11,904'
+        note: The 2025/2026 value per Cologne. Alternatives — Verpflichtungserklärung, scholarship certificate, or your parents' written declaration to fund the studies (an option most guides omit).
+      - label: Proof of health insurance
+        note: Renewals need confirmation of continuous coverage.
+      - label: Mietvertrag in copy
     links:
-      - https://www.stadt-koeln.de/service/produkt/aufenthaltstitel-zum-zweck-des-studiums
+      - https://www.stadt-koeln.de/service/produkte/00973/index.html
     how_to_steps:
-      - title: Open a blocked account or get a scholarship letter
-        body: To prove financial sufficiency, most students use a Sperrkonto (blocked account) at Fintiba, Expatrio, or Deutsche Bank, deposited with one year's living costs.
-      - title: Book the Ausländerbehörde appointment
-        body: Demand is heaviest in Sep/Oct. Try booking early August if you have an accepted offer.
+      - title: Open a blocked account or line up your finance proof
+        body: Most students use a Sperrkonto (Fintiba, Expatrio, Deutsche Bank) with one year's living costs — €11,904 for 2025/26. A scholarship letter or your parents' written funding declaration also works.
+      - title: Submit the online Erstantrag and book the appointment
+        body: Demand is heaviest in Sep/Oct. File the online form (33-F07) and try booking in early August if you have an accepted offer.
+        link: https://www.stadt-koeln.de/service/produkte/00973/index.html
       - title: Bring originals + colour copies of everything
         body: Even the smallest missing document means a rebooked appointment — currently a 6–12 week wait in Cologne.
 
@@ -191,6 +205,44 @@ tasks:
         body: One Beitrag per shared household. Ask flatmates for their Beitragsnummer before signing up separately.
       - title: Apply for BAföG exemption if eligible
         body: BAföG recipients pay €0/month — submit your BAföG-Bescheid as proof.
+
+  - title: 'Working as a student: your 140-day account'
+    key: stu.work_rules
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      Your student permit includes an Arbeitstagekonto: 140 full working days per year,
+      with half-days (up to 4 hours) counting as half a day. Working up to 20 hours/week
+      during lecture time burns 2.5 days a week. Werkstudent contracts, mini-jobs and
+      tutoring all count. Going over without BA permission risks your permit — keep a
+      simple tally.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00973/index.html
+
+  - title: 'After graduation: 18 months to find your job'
+    key: stu.post_graduation
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      Once you complete your degree, you can get a residence permit of up to 18 months
+      to find a qualified job — with unrestricted work allowed while you search (§20
+      Abs. 3 AufenthG). Two practical tips: the degree certificate often arrives months
+      late, but the university's official confirmation of completion suffices; and your
+      health insurance jumps off the student rate after exmatriculation — budget for it.
+      When you find the job, convert to a work permit or Blue Card without leaving
+      Germany.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
 
   - title: Apply for BAföG (if eligible)
     key: stu.bafoeg

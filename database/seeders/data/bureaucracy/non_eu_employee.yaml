@@ -1,34 +1,47 @@
-situation: non_eu_employee
+# Shared spine for all non-EU employee sub-paths. The residence-permit task
+# differs per path and lives in non_eu_employee_standard.yaml /
+# _blue_card.yaml / _chancenkarte.yaml. Source: docs/bureaucracy-sources.md.
+situation:
+  - non_eu_employee
+  - non_eu_employee_blue_card
+  - non_eu_employee_chancenkarte
 
 tasks:
   - title: Register your address (Anmeldung)
     key: nee.anmeldung
     depends_on: []
+    verified_at: 2026-06-11
     description: |
-      Every resident in Germany must register their address at the Bürgeramt within 14 days
-      of moving in. Without the Meldebescheinigung you can't open a bank account, get a
-      Steuer-ID, or finalise your residence permit.
+      Every resident must register their address within 2 weeks of moving in (§17 BMG).
+      Without the Meldebescheinigung you can't get a Steuer-ID, open a bank account, or
+      finalise your residence permit. Arriving from abroad you must appear in person —
+      the proxy route only exists for moves within Germany.
     phase: arrival
     urgency: critical
     deadline_type: days_since_arrival
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
-      - Passport (Reisepass)
-      - Wohnungsgeberbestätigung (signed by your landlord)
-      - Rental contract (Mietvertrag) — optional but useful
+      - label: National passport
+        note: Plus residence documents if you already hold any — eAT, visa, or Fiktionsbescheinigung.
+      - label: Wohnungsgeberbescheinigung (Cologne form, signed by landlord/main tenant)
+        note: A rental contract or informal letter is NOT sufficient, and it cannot be submitted later — without it the registration doesn't happen that day.
+      - label: Marriage/partnership certificate, if applicable
+        note: Foreign certificates need a translation by a publicly appointed/sworn translator in Germany — originals + translations must be shown.
+      - label: Birth certificates for children moving with you, if applicable
+        note: Same sworn-translation rule. A minor moving with only one parent also needs the other parent's consent declaration (Cologne form).
     links:
-      - https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung
+      - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:
-      - title: Get a Wohnungsgeberbestätigung from your landlord
-        body: Your landlord must give you this form within two weeks of moving in. It confirms you actually live at the address. Without it the Bürgeramt will reject the appointment.
-      - title: Book a Bürgeramt appointment online
-        body: The Cologne city website has online slots — they often release new slots overnight, so try early mornings if everything looks booked.
+      - title: Get the Wohnungsgeberbescheinigung from your landlord
+        body: Cologne's own form (Formular-Server 02-F17), filled and signed by the landlord or main tenant. This is the number-one trap — chase it before moving day.
+      - title: Pick your route — online, walk-in, or appointment
+        body: Cologne offers Anmeldung fully online via the Serviceportal. In person, Kundenzentren take walk-ins on Mondays and Wednesdays; Tuesday/Thursday/Friday need an appointment. Free either way.
         link: https://termine.stadt-koeln.de/
-      - title: Bring originals to the appointment
-        body: Passport, Wohnungsgeberbestätigung, and ideally your rental contract. The appointment takes ~15 minutes; you'll walk out with a printed Meldebescheinigung.
-      - title: Make digital copies
-        body: Photograph the Meldebescheinigung and back it up. You'll need it for almost everything else on this list.
+      - title: Mind the religion field on the form
+        body: Declaring a recognized denomination enrols you in church tax — 9% of your income tax in NRW, deducted from every payslip. Leaving later costs a fee at the Amtsgericht.
+      - title: Make digital copies of the Meldebescheinigung
+        body: You'll attach it to bank, insurance and permit paperwork repeatedly — keep a PDF handy.
 
   - title: Wait for your Steuer-ID (tax identification number)
     key: nee.steuer_id
@@ -75,37 +88,7 @@ tasks:
       - title: Apply online
         body: Most insurers let you sign up online with passport + Meldebescheinigung. They'll send a membership confirmation to your employer.
       - title: Wait for your insurance card
-        body: Arrives by post in 2–3 weeks. In the meantime, doctors will accept the membership confirmation letter.
-
-  - title: Apply for your residence permit (Aufenthaltstitel)
-    key: nee.residence_permit
-    depends_on: [nee.anmeldung, nee.health_insurance]
-    description: |
-      As a non-EU employee, you have 90 days from arrival to apply for a residence permit
-      at the Ausländerbehörde. Your entry visa expires; the permit is what lets you stay
-      and work long-term.
-    phase: first_30_days
-    urgency: critical
-    deadline_type: days_since_arrival
-    deadline_days: 90
-    booking_service_key: auslaenderbehoerde
-    documents_required:
-      - Passport with entry visa
-      - Meldebescheinigung
-      - Employment contract
-      - Proof of health insurance
-      - Biometric passport photos
-      - Proof of income / salary statement
-    links:
-      - https://www.stadt-koeln.de/service/produkt/aufenthaltstitel-erteilung
-    how_to_steps:
-      - title: Book an Ausländerbehörde appointment
-        body: Slots are scarce — book as soon as your Anmeldung is done. Wait times of 6–12 weeks are normal in Cologne.
-        link: https://termine.stadt-koeln.de/
-      - title: Gather every document on the list before the appointment
-        body: Missing one document means rebooking and another 6+ week wait. The biometric photo dimensions are strict — get them at the Bürgeramt's photo machine or a professional photographer.
-      - title: Pay the fee at the appointment
-        body: ~€100, card or cash. You'll get a temporary Fiktionsbescheinigung; the actual eAT card arrives by post 4–8 weeks later.
+        body: Arrives by post in 2–3 weeks. In the meantime, doctors will accept the membership confirmation letter — and your residence-permit appointment accepts the card alone once issued.
 
   - title: Open a German bank account
     key: nee.bank_account
@@ -158,9 +141,9 @@ tasks:
     key: nee.liability_insurance
     depends_on: [nee.bank_account]
     description: |
-      Not legally required, but socially expected — covers damage you accidentally cause
-      to other people's property. Costs €30–50/year and protects you against bills that
-      could otherwise wipe out your savings.
+      Not legally required, but culturally near-universal and landlords increasingly
+      expect it — covers damage you accidentally cause to other people's property.
+      €3–6/month against bills that are otherwise unlimited.
     phase: settling
     urgency: low
     deadline_type: none
@@ -172,34 +155,6 @@ tasks:
         body: Look for "Privathaftpflicht" with at least €10M coverage. Pay annually if you want a discount.
       - title: Note your policy number
         body: You'll need it if you ever cause damage (e.g., breaking a friend's TV, damaging a rented item).
-
-  - title: Convert your driving licence (if from a non-EU country)
-    key: nee.drivers_licence
-    depends_on: [nee.residence_permit]
-    description: |
-      EU/EEA licences are valid indefinitely. Licences from other countries are valid for
-      6 months after Anmeldung — after that you need a German one. Some countries (US,
-      Canada, etc.) allow direct conversion; others require a full test.
-    phase: settling
-    urgency: medium
-    deadline_type: days_since_arrival
-    deadline_days: 180
-    booking_service_key: kfz
-    documents_required:
-      - Original driving licence
-      - Translation (if not in German/English)
-      - Passport photo
-      - Eye-test certificate (≤2 years old)
-      - First-aid course certificate
-    links:
-      - https://www.stadt-koeln.de/service/produkt/umschreibung-eines-fuehrerscheins
-    how_to_steps:
-      - title: Check if your country qualifies for direct conversion
-        body: The Stadt Köln list shows which countries' licences convert without a test. If yours is not on the list, you'll need theory + practical exams.
-      - title: Book a KFZ-Zulassungsstelle appointment
-        body: Bring all documents at once — missing the first-aid certificate is the most common reason for rejection.
-      - title: Pay the conversion fee
-        body: ~€42, takes a few weeks to issue the German licence. You can keep driving on the original in the meantime if still within the 6-month window.
 
   - title: File your annual tax return (Einkommensteuererklärung)
     key: nee.tax_return

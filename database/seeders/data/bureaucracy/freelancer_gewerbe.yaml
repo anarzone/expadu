@@ -1,0 +1,71 @@
+# Trade-business path (Gewerbe, §21 Abs. 1 AufenthG). Conditions verified on
+# Cologne's page (economic interest + secured financing); the document detail
+# follows the federal standard (◐). See docs/bureaucracy-sources.md (Case 13).
+situation: freelancer_gewerbe
+
+tasks:
+  - title: Apply for the self-employment residence permit (§21 Abs. 1)
+    key: gw.residence_permit
+    eu_filter: non_eu_only
+    depends_on: [fre.anmeldung, fre.health_insurance]
+    description: |
+      Commercial self-employment needs the §21(1) permit before you trade. Cologne's
+      stated conditions: an overriding economic interest or regional need for your
+      business, and secured financing. The full business plan is what carries the
+      application — Cologne's dedicated desk for foreign academics and the self-employed
+      assesses it, often with an IHK opinion.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Application form (online Erstantrag 33-F07)
+      - label: Valid national passport + visa for self-employment
+        note: A tourist/Schengen visa can never be converted into a self-employment permit.
+      - label: Biometric photo
+      - label: Full business plan, in German
+        note: Activities, location, market, financing, your experience, existing client contacts and revenue projections — the decisive document for the economic-interest test.
+      - label: Financing plan + proof of capital (bank statements)
+      - label: CV + qualification proofs
+      - label: Proof of health insurance
+      - label: Housing proof (Mietvertrag)
+      - label: 'Age 45+: proof of adequate retirement provision'
+        note: A statutory requirement in §21.
+      - label: Trade-specific licences, where applicable
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__21.html
+    how_to_steps:
+      - title: Contact the Servicestelle for the current checklist
+        body: Cologne routes this group to its dedicated desk (Dillenburger Straße 56–66) — appointments by email, contact form or post. Confirm the document list for your specific business before the appointment.
+      - title: Build the business case in German
+        body: Cologne expects the plan in German. If your numbers are thin, an IHK Köln pre-assessment strengthens the file.
+      - title: Bring originals plus copies of everything
+        body: The financing evidence is the most common gap — triple-check it.
+
+  - title: Register your trade (Gewerbeanmeldung)
+    key: gw.gewerbeanmeldung
+    depends_on: [gw.residence_permit]
+    description: |
+      Once your permit allows it, register the trade at the Gewerbeamt — €26 for a sole
+      proprietorship in Cologne, fully online via the NRW business portal, with the
+      Gewerbeschein issued immediately as a PDF. The Finanzamt is notified automatically,
+      but the Fragebogen zur steuerlichen Erfassung is still required separately.
+    phase: first_30_days
+    urgency: high
+    deadline_type: none
+    documents_required:
+      - label: ID or passport
+      - label: Residence permit allowing self-employment (non-EU citizens)
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00268/index.html
+    how_to_steps:
+      - title: Register online via the NRW portal
+        body: €26, immediate PDF Gewerbeschein. Do it before your first invoice — trading without registration is an Ordnungswidrigkeit.
+        link: https://www.stadt-koeln.de/service/produkte/00268/index.html
+      - title: Expect IHK membership
+        body: Gewerbe registrations are forwarded to the IHK Köln, where membership is mandatory for trade businesses. Small businesses pay little or nothing at low profit — but don't ignore their letters, the fees don't disappear.
+        link: https://www.ihk.de/koeln/
+      - title: Still file the Fragebogen
+        body: The automatic Finanzamt notification does not replace the Fragebogen zur steuerlichen Erfassung — the one-month clock from your start of activity applies regardless.

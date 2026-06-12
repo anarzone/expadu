@@ -1,0 +1,256 @@
+# Cross-branch content: the driving-licence task (everyone with a foreign
+# licence) and the good-to-know info cards. Listed for every branch so each
+# user sees them regardless of path. See docs/bureaucracy-sources.md.
+situation:
+  - core
+  - eu_employee
+  - non_eu_employee
+  - non_eu_employee_blue_card
+  - non_eu_employee_chancenkarte
+  - student
+  - freelancer
+  - freelancer_gewerbe
+  - family_reunification
+  - family_reunification_of_german
+  - family_reunification_of_eu_citizen
+
+tasks:
+  - title: Sort out your driving licence
+    key: shared.driving_licence
+    depends_on: []
+    verified_at: 2026-06-11
+    description: |
+      A valid foreign licence works for 6 months after entry + Anmeldung. After that,
+      driving in Germany is driving WITHOUT a licence — a criminal offence, not a fine.
+      What you must do depends on where the licence was issued: EU/EEA licences keep
+      working indefinitely (mark this task as not applicable); "Anlage 11" countries
+      (Japan, South Korea, Switzerland, Israel, New Zealand, Singapore, parts of the
+      US/Australia and more) exchange test-free; everyone else needs German theory +
+      practical exams. Don't drive past month six.
+    phase: settling
+    urgency: medium
+    deadline_type: days_since_arrival
+    deadline_days: 180
+    booking_service_key: kfz
+    documents_required:
+      - label: Passport or ID
+      - label: The valid foreign licence
+        note: It must be surrendered when the German card is handed over — plan for that.
+      - label: Translation of the licence — by ADAC or a sworn translator
+        note: Some English-language licences are exempt; ask before paying.
+      - label: Biometric photo
+      - label: Proof of when you first registered in Germany, if not first registered in Cologne
+      - label: 'Exam route only: vision test certificate + first-aid course certificate'
+        note: Standard for exam-based applications — both are cheap and bookable within days.
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00834/index.html
+      - https://www.stadt-koeln.de/service/produkte/00836/index.html
+    how_to_steps:
+      - title: 'Branch A — EU/EEA licence: nothing to do'
+        body: Your licence keeps working indefinitely; an exchange is voluntary (€35, card by Bundesdruckerei in ~3–4 weeks). Mark this task as "doesn't apply to me".
+      - title: 'Branch B — Anlage 11 country: test-free exchange'
+        body: Fee €36.30, processing ~2–3 weeks at any Kundenzentrum. Bring the documents listed — the translation is the piece people forget.
+      - title: 'Branch C — all other countries: exams required'
+        body: Conversion needs German theory + practical exams, booked through a Fahrschule (no minimum lessons mandated, but the Fahrschule files the exam request). Realistic cost is several hundred euros and exam slots queue — start in month one, not month five.
+      - title: Started late? Stop driving, then fix it
+        body: 'The 6-month validity can only be extended (up to 6 more months) if you can show you''ll stay under 12 months total. Otherwise: no driving until the German licence is issued.'
+
+  - title: 'Church tax: know before you tick the box'
+    key: shared.church_tax
+    type: info
+    depends_on: []
+    description: |
+      The Anmeldung form asks your religion. Declaring a recognized denomination
+      (Catholic, Protestant, Jewish…) enrols you in Kirchensteuer — 9% of your income
+      tax in NRW, deducted automatically from every payslip. Leaving later requires a
+      formal, fee-charged Kirchenaustritt at the Amtsgericht. Answer accurately — but
+      know what the box means before you tick it.
+    phase: arrival
+    urgency: medium
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.kirchenaustritt.de/nrw
+
+  - title: 'Schufa: how Germany decides if it trusts you'
+    key: shared.schufa
+    type: info
+    depends_on: []
+    description: |
+      The Schufa is Germany's credit register. No history means no flat, no phone
+      contract, no credit card — landlords ask for it before they'll even show you in.
+      Bootstrap sequence: Anmeldung → bank account → pay everything on time. After a few
+      weeks, request the free Datenkopie (§34 BDSG) to check your record; the paid
+      BonitätsAuskunft (~€30) is the version landlords want to see.
+    phase: settling
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.meineschufa.de/
+
+  - title: 'Inviting family or friends to visit? Verpflichtungserklärung'
+    key: shared.verpflichtungserklaerung
+    type: info
+    depends_on: []
+    description: |
+      If you invite visa-required family or friends for a Schengen visit, the consulate
+      usually wants a Verpflichtungserklärung — a formal financial sponsorship you sign
+      at the Ausländeramt (~€29). You vouch for their costs during the stay. Book it a
+      few weeks before they apply for the visa, and bring your passport, residence
+      document and income proof.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00342/index.html
+
+  - title: 'Fiktionsbescheinigung: what that bridging paper really permits'
+    key: shared.fiktionsbescheinigung
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      While a permit application is processing you may get a Fiktionsbescheinigung —
+      and what it allows depends on WHICH of its three variants you hold. The
+      continuation variant (§81 Abs. 4) keeps your old permit's rights alive, including
+      work and travel. The first-application variants generally do NOT allow re-entry
+      after leaving Germany. People misread this, fly home, and get stranded — check
+      which box is ticked on yours before booking any flight.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
+
+  - title: 'New passport? Transfer your permit (Übertrag)'
+    key: shared.passport_transfer
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      When you renew your passport at your home consulate, your German residence
+      document must follow it. If the old passport number is printed on your card,
+      send a copy of the new passport via the Ausländeramt contact form — you'll get
+      an appointment invitation; bring the old passport, the new passport, and a
+      digital biometric photo. Also worth knowing: a permanent permit generally
+      expires on permanent departure or after more than 6 months abroad without an
+      approved longer window — plan long home-country stays accordingly.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/politik-und-verwaltung/auslaenderamt
+
+  - title: 'The long game: permanent residency and citizenship'
+    key: shared.long_game
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      Germany rewards staying. Niederlassungserlaubnis (permanent residency): usually
+      after 5 years — 60 months of pension contributions (in a marriage, the working
+      spouse's contributions can fulfil this for both), secured livelihood, B1 German,
+      the "Leben in Deutschland" test, and sufficient housing (12 m² per person 6+,
+      10 m² per child under 6). Faster tracks: 3 years on a skilled-worker permit (2
+      with a German degree), Blue Card 21–27 months, family of Germans 3 years. The
+      EU variant (Daueraufenthalt-EU) has the same bar but adds EU mobility — if you
+      might leave Germany one day, ask for that one. Citizenship: 5 years + B1 +
+      Einbürgerungstest, €255 (the 3-year fast track was abolished in October 2025 —
+      many blogs still advertise it). And when any renewal comes due: check whether
+      you already qualify for permanent residency instead of paying for a renewal.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01008/index.html
+
+  - title: 'Foreign professional qualification? Get it recognized'
+    key: shared.recognition
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      For regulated professions (healthcare, teaching, engineering titles…) and for
+      stronger job applications generally, get your foreign qualification recognized.
+      Check the Anabin database first; if your degree isn't listed as equivalent, order
+      a ZAB Zeugnisbewertung. Profession-specific authorities (IHK FOSA, Bezirksregierung,
+      Ärztekammer) handle regulated fields — start at the official "Anerkennung in
+      Deutschland" portal, which routes you to the right one.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.anerkennung-in-deutschland.de/en/
+      - https://anabin.kmk.org/anabin.html
+
+  - title: 'Turkish citizens: ask about your ARB 1/80 rights'
+    key: shared.arb_turkish
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      Turkish citizens accrue special rights under the EU–Turkey Association Agreement
+      (ARB 1/80): after 1 year with the same employer, a renewal right for that job;
+      after 3 years, applications in the same occupation; after 4 years, free
+      labour-market access. Family members accrue rights after 3–5 years too. It's
+      also concretely cheaper in Cologne — e.g. reduced permit fees (€22.80 under 24 /
+      €37 from 24). The rights attach automatically, but offices won't volunteer them:
+      ask specifically about ARB 1/80 status, and keep contracts, payslips and your
+      pension record as proof of the qualifying periods.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/politik-und-verwaltung/auslaenderamt
+
+  - title: 'A child born in Germany: check citizenship first'
+    key: shared.child_born
+    type: info
+    depends_on: []
+    description: |
+      Before any permit paperwork: your child may be German by birth — if at birth one
+      parent had 5+ years of lawful residence and holds a Niederlassungserlaubnis or
+      Daueraufenthalt-EU, or is an EU/EEA citizen with free movement. The Standesamt
+      registers citizenship when certifying the birth. If not German, the child gets
+      its own permit (§33) — often ex officio, no application — needing the birth
+      certificate (register the birth within one week!), the child's passport (the
+      consulate wait is the bottleneck; a Fiktionsbescheinigung bridges), one biometric
+      photo and the parents' documents; fee from ~€25. Then chain the good stuff:
+      Kindergeld, free family health insurance, and — if unmarried — the
+      Vaterschaftsanerkennung, ideally done before the birth.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00237/index.html
+
+  - title: 'Other permit types: where to look'
+    key: shared.other_permits
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      Some paths we don't model in full — here's the routing. Ausbildung (vocational
+      training, §16a): like the student permit with a signed, IHK/HWK-registered
+      training contract instead of enrollment. Researchers (§18d) and intra-corporate
+      transfers (§19): your institute's welcome office or HR department owns the
+      paperwork — Cologne even runs a dedicated service desk for academics. Au pair,
+      Working Holiday, language courses (§16f) and training-place search (§17): short-
+      horizon permits, usually issued by the consulate — check Make it in Germany. UK
+      citizens resident before 2021 hold Article-50 rights (Aufenthaltsdokument-GB);
+      post-Brexit arrivals follow the normal third-country paths.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.make-it-in-germany.com/en/
+      - https://www.stadt-koeln.de/politik-und-verwaltung/auslaenderamt

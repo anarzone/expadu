@@ -53,7 +53,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 class ImportTasksCommand extends Command
 {
-    protected $signature = 'bureaucracy:import-tasks {file? : Specific YAML file (default: import all)} {--dry-run : Show what would change without writing}';
+    protected $signature = 'bureaucracy:import-tasks {file? : Specific YAML file (default: import all)} {--dry-run : Show what would change without writing} {--prune : Delete tasks whose key left the catalogue (full imports only)}';
 
     protected $description = 'Upsert bureaucracy tasks from authored YAML files';
 
@@ -105,9 +105,48 @@ class ImportTasksCommand extends Command
             }
         }
 
+        if ($this->option('prune')) {
+            $this->pruneStaleTasks($entries);
+        }
+
         $this->info("Done. created={$created} updated={$updated} skipped_files={$skippedFiles}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Remove catalogue-managed tasks whose key no longer appears in any YAML
+     * file — used after moving/renaming keys. Cascades to user_tasks, so it
+     * only runs on full-catalogue imports and lists what it deletes. Tasks
+     * without a key (e.g. created ad hoc in Filament) are never touched.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function pruneStaleTasks(array $entries): void
+    {
+        if (is_string($this->argument('file')) && $this->argument('file') !== '') {
+            $this->warn('  --prune ignored: only allowed on full-catalogue imports');
+
+            return;
+        }
+
+        $keys = array_column(array_column($entries, 'data'), 'key');
+
+        $stale = Task::query()
+            ->whereNotNull('key')
+            ->whereNotIn('key', $keys)
+            ->get();
+
+        foreach ($stale as $task) {
+            $progress = $task->userTasks()->count();
+            if ($this->option('dry-run')) {
+                $this->line("  [dry] would prune: {$task->key} ({$progress} user task(s))");
+
+                continue;
+            }
+            $task->delete();
+            $this->warn("  pruned: {$task->key} ({$progress} user task(s) removed)");
+        }
     }
 
     /**

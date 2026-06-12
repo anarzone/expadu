@@ -354,6 +354,19 @@ test('importer reads the type field and defaults to task', function () {
     rmdir($dir);
 });
 
+test('prune removes catalogue keys that left the YAML but spares keyless tasks', function () {
+    // A task whose key is no longer in the catalogue, and an ad-hoc keyless one.
+    $stale = Task::factory()->create(['key' => 'zz.gone', 'situation' => ['core']]);
+    $adHoc = Task::factory()->create(['key' => null, 'situation' => ['core']]);
+
+    $this->artisan('bureaucracy:import-tasks', ['--prune' => true])->assertSuccessful();
+
+    expect(Task::whereKey($stale->id)->exists())->toBeFalse();
+    expect(Task::whereKey($adHoc->id)->exists())->toBeTrue();
+    // The real catalogue survives the prune.
+    expect(Task::where('key', 'core.anmeldung')->exists())->toBeTrue();
+});
+
 test('import sets verified_at only from YAML', function () {
     $dir = sys_get_temp_dir().'/bureaucracy_verified_'.uniqid();
     mkdir($dir);

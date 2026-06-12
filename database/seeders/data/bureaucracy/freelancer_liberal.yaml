@@ -1,0 +1,75 @@
+# Liberal-profession path (freie Berufe, §21 Abs. 5 AufenthG). Cologne does
+# not publish the document list for this case — it routes applicants to its
+# "Service für ausländische Akademiker*innen und Selbständige". The list below
+# is the federal standard, framed as typical requirements (◐/⚠, unverified
+# badge by design). See docs/bureaucracy-sources.md (Case 5).
+situation: freelancer
+
+tasks:
+  - title: Check whether your activity is a Gewerbe
+    key: fre.gewerbe_check
+    depends_on: [fre.anmeldung]
+    description: |
+      Germany splits the self-employed into freie Berufe (liberal professions — no trade
+      licence needed) and Gewerbe (commercial trade — must register at the Gewerbeamt).
+      Doctors, engineers, writers, translators, teachers, journalists and similar
+      professions under §18 EStG are frei; selling goods, e-commerce and most agency-style
+      businesses are Gewerbe. The answer changes your permit type, your taxes, and your
+      to-do list — settle it first.
+    phase: first_30_days
+    urgency: medium
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.gesetze-im-internet.de/estg/__18.html
+      - https://www.stadt-koeln.de/service/produkte/00268/index.html
+    how_to_steps:
+      - title: Classify your activity
+        body: Compare your work against the §18 EStG catalogue (scientific, artistic, writing, teaching activities; doctors, lawyers, engineers, architects, journalists, interpreters, translators and similar). Mixed activities are tricky — when in doubt, the Finanzamt's classification in response to your Fragebogen is what counts.
+        link: https://www.gesetze-im-internet.de/estg/__18.html
+      - title: If it's a Gewerbe, switch your path here
+        body: Use the path selector at the top of this page to switch to the Gewerbe track — it adds the Gewerbeanmeldung and the IHK steps, and swaps the permit requirements.
+
+  - title: Apply for the freelance residence permit (§21 Abs. 5)
+    key: fre.residence_permit
+    eu_filter: non_eu_only
+    depends_on: [fre.anmeldung, fre.health_insurance]
+    description: |
+      Non-EU freelancers in liberal professions need the §21(5) permit before working
+      independently — freelance work may not begin before the permit. The condition
+      Cologne states: a public interest in your activity. Cologne handles this group
+      through a dedicated service desk ("Service für ausländische Akademiker*innen und
+      Selbständige"), and the authoritative checklist comes from that desk — the list
+      below covers the typical requirements so you can prepare; treat the desk's word
+      as final.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Application form (online Erstantrag 33-F07)
+      - label: Valid national passport + visa for self-employment
+        note: Or the 90-day window if you entered visa-free. A tourist/Schengen visa can never be converted.
+      - label: Biometric photo
+      - label: CV + qualification proofs (degree, certificates, portfolio)
+      - label: Letters of intent (Absichtserklärungen) from prospective clients
+        note: The decisive document — ideally from German-based clients. Collect them before the appointment, not after.
+      - label: Revenue forecast / financing plan
+      - label: Proof of funds for living costs until revenue flows
+      - label: Proof of health insurance
+      - label: Housing proof (Mietvertrag)
+      - label: 'Age 45+: proof of adequate retirement provision'
+        note: A statutory requirement in §21 — pension entitlements, assets, or insurance.
+      - label: Professional licence, for regulated professions
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__21.html
+    how_to_steps:
+      - title: Contact the Servicestelle first
+        body: Cologne routes freelancers and academics to its dedicated desk (Dillenburger Straße 56–66) — appointments by email, contact form or post. Ask them for the current document list for your profession; it's the one list the city doesn't publish.
+        link: https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - title: Collect client letters of intent early
+        body: Two or three written statements from prospective clients — what work, roughly what volume — carry the application. German-based clients weigh most.
+      - title: Bring originals plus copies of everything
+        body: A missing document means a rebooked appointment and weeks of waiting. Triple-check the financing evidence — it's the most common gap.

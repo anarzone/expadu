@@ -1,0 +1,71 @@
+# EU Blue Card path (§18g AufenthG). Source: stadt-koeln.de product 20321,
+# fetched 2026-06 — see docs/bureaucracy-sources.md (Case 3).
+situation: non_eu_employee_blue_card
+
+tasks:
+  - title: Apply for your EU Blue Card (§18g)
+    key: bc.blue_card
+    depends_on: [nee.anmeldung, nee.health_insurance]
+    verified_at: 2026-06-11
+    description: |
+      The Blue Card is the privileged permit for qualified employees: faster permanent
+      residency (21 months with B1 German, 27 with A1), easy EU mobility, and privileged
+      family reunification (your spouse needs no German certificate and can work
+      immediately). Requirements: a job offer or contract of at least 6 months with an
+      employer that has a Betriebsstätte in Germany, and a salary of €50,700/year
+      (€4,225/month) — or €45,934.20/year (€3,827.85/month) for shortage occupations,
+      recent graduates, and IT specialists with 3 years' experience in the last 7 (no
+      degree needed for the IT route). Success bonuses and fully variable pay do NOT
+      count towards the threshold.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Application form (online Erstantrag 33-F07; renewals 33-F06)
+      - label: Valid national passport
+      - label: Entry visa, if you needed one
+      - label: Biometric photo, less than 3 months old
+        note: Bring it to the appointment — the ABH can also take a digital photo on site.
+      - label: Employment contract or binding job offer (≥ 6 months)
+      - label: Qualification proof (first application only)
+        note: 'German degree certificate; OR foreign degree + certified German or English translation + Anabin extract or ZAB Zeugnisbewertung; OR a recognized level-6 qualification (Meister, Techniker — min. 3-year training); OR for the IT route: proofs of 3-in-7-years professional experience + CV.'
+      - label: BA form "Erklärung zum Beschäftigungsverhältnis", if available
+        note: Your employer fills this for the Bundesagentur approval — handing it in up front shortens processing. Tell HR on day one.
+      - label: Mietvertrag + bank statement showing your current rent payment
+        note: Owners instead bring the Grundbuchauszug + monthly interest/amortization/Nebenkosten proofs.
+      - label: Proof of health insurance — only if not statutory (GKV)
+      - label: Berufsausübungserlaubnis, for regulated professions
+        note: Medicine and similar regulated fields need the professional licence on top of the degree.
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20321/index.html
+      - https://anabin.kmk.org/anabin.html
+    how_to_steps:
+      - title: Check Anabin on day one if your degree is foreign
+        body: Look your university and degree up in the Anabin database. If it's not listed as equivalent (H+), order a ZAB Zeugnisbewertung immediately — it takes weeks and the Blue Card waits for it. There's a dedicated ZAB assessment track for Blue Card applications.
+        link: https://anabin.kmk.org/anabin.html
+      - title: Submit the online Erstantrag
+        body: Cologne's online form 33-F07 — the same form as other permits, with Blue Card uploads. Apply at the Bezirksausländeramt of your Stadtteil.
+        link: https://www.stadt-koeln.de/service/produkte/20321/index.html
+      - title: Pay the fee at the appointment
+        body: First issue €100, renewal €93. Turkish nationals with association rights pay €22.80 (under 24) / €37 (24+).
+      - title: Know the job-change rule for your first 12 months
+        body: Changing employer in the first year must be reported via the Ausländeramt contact form with the old job's termination + the new contract. No permission needed — you can start immediately — but the ABH can suspend the change for 30 days.
+
+  - title: 'Blue Card fast track: permanent residency in 21–27 months'
+    key: bc.ne_fast_track
+    type: info
+    depends_on: []
+    description: |
+      Blue Card holders qualify for the Niederlassungserlaubnis (permanent residency)
+      after just 21 months with B1 German — or 27 months with A1. That's years earlier
+      than any other path. Keep your pension contributions running and book a German
+      course early; the language certificate is usually the only missing piece when the
+      window opens.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20321/index.html

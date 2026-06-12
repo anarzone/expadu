@@ -1,0 +1,45 @@
+# Joining a non-EU sponsor (§§29–32 AufenthG). Source: stadt-koeln.de
+# product 20335, fetched 2026-06 — see docs/bureaucracy-sources.md (Case 7).
+situation: family_reunification
+
+tasks:
+  - title: Apply for residence permits for the whole family
+    key: fam.residence_permits
+    depends_on: [fam.anmeldung]
+    verified_at: 2026-06-11
+    description: |
+      Reunifying family members need their own residence permits, even though the
+      sponsor already has one. Conditions: the sponsor holds an Aufenthalts- or
+      Niederlassungserlaubnis with habitual residence in Germany, both spouses are 18+,
+      the family's main residence is in Germany, the livelihood is fully secured
+      without Bürgergeld, and the joining spouse has German A1. Exception worth
+      knowing: spouses of Blue Card holders need no A1 and can work immediately.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Application form (online Erstantrag 33-F07; renewals 33-F06)
+      - label: Recognized, valid national passport (per family member)
+      - label: Copy of the entry visa, if visa-required
+      - label: Digital biometric photo
+      - label: Marriage/partnership certificate (first application only)
+        note: Foreign certificates need apostille/legalization + a sworn German translation.
+      - label: Mietvertrag + proof of the current rent level
+        note: Cologne wants the contract AND evidence of what you actually pay — e.g. a recent bank statement. Owners instead bring the purchase contract with the apartment size in m², loan-installment proofs and the monthly Hausgeld.
+      - label: A1 German certificate for the joining spouse
+        note: Only Goethe-Institut, TestDaF or telc certificates are accepted (e.g. "Deutsch-Test für Zuwanderer") — other certificates are rejected.
+      - label: Livelihood proof for all working family members
+        note: 'Employees: last 3 payslips. Self-employed: last income-tax assessment + current P&L from the tax advisor + Gewerbeanmeldung if applicable + pension/life-insurance proof.'
+      - label: Birth certificates for joining children (§32)
+        note: Plus custody proof where parents are separated. Sworn-translation rules apply.
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20335/index.html
+    how_to_steps:
+      - title: Confirm the sponsor's permit covers family reunification
+        body: Skilled-worker permits (§18a/b) and the Blue Card qualify; some short-term titles don't. If the sponsor holds a Blue Card, the spouse skips the A1 requirement entirely and gets immediate unrestricted work access.
+      - title: Book a single appointment for the whole family
+        body: Mention you're bringing dependents when booking — they'll allocate enough time instead of a 20-minute slot.
+      - title: Bring originals AND certified translations
+        body: For non-German documents you need the original + apostille + a sworn German translation. The Ausländerbehörde keeps copies but checks the originals.

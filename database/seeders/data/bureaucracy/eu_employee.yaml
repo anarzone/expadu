@@ -4,6 +4,7 @@ tasks:
   - title: Register your address (Anmeldung)
     key: eue.anmeldung
     depends_on: []
+    verified_at: 2026-06-11
     description: |
       As an EU citizen you don't need a visa or residence permit — freedom of movement
       covers you. The one thing you can't skip: register your address at the Bürgeramt

@@ -1,0 +1,61 @@
+# Standard work permit path (§18a/b AufenthG). Source: stadt-koeln.de
+# product 01083, fetched 2026-06 — see docs/bureaucracy-sources.md (Case 2).
+situation: non_eu_employee
+
+tasks:
+  - title: Apply for your residence permit (Aufenthaltserlaubnis, §18a/b)
+    key: nee.residence_permit
+    depends_on: [nee.anmeldung, nee.health_insurance]
+    verified_at: 2026-06-11
+    description: |
+      Your entry visa expires; the residence permit for employment is what lets you stay
+      and work long-term. Apply at the Bezirksausländeramt of your Stadtteil before the
+      visa runs out (90 days from arrival at the latest). The approval of the Bundesagentur
+      für Arbeit is handled internally between the authorities — that's what most of the
+      processing time is.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Application form (online Erstantrag 33-F07)
+        note: The same online form serves standard permit, Blue Card and student cases — the uploads differ, not the form.
+      - label: Valid visa issued for work purposes
+        note: Cologne explicitly warns that a visitor or business visa does NOT qualify — it can never be converted into a work permit.
+      - label: Valid national passport
+      - label: Mietvertrag (rental contract)
+        note: The Ausländeramt wants the contract here — not the Meldebescheinigung you used at Anmeldung. Two offices, two different housing proofs.
+      - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
+        note: The job-description form is filled by your EMPLOYER for the BA approval — tell HR on day one, it's the slowest document to chase.
+      - label: Proof of health insurance
+        note: The insurance card alone suffices once issued; otherwise a confirmation letter from the Kasse.
+      - label: Two current passport photos
+        note: Cologne's list says two (the ABH also takes digital photos on site — bring two anyway).
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+    how_to_steps:
+      - title: Submit the online Erstantrag as soon as Anmeldung is done
+        body: First applications go through Cologne's online form (33-F07). Processing includes the internal BA approval — weeks of silence are normal, not a bad sign.
+        link: https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - title: Gather every document before the appointment
+        body: A missing document means rebooking and another 6+ week wait. The employer's Stellenbeschreibung form is the most commonly missing piece.
+      - title: Pay the fee at the appointment
+        body: The work-permission check itself is free; the electronic residence card (eAT) costs about €100 on first issue (renewals €93–96). You'll get a Fiktionsbescheinigung as a bridge; the eAT card arrives by post 4–8 weeks later.
+
+  - title: 'Renewals: check permanent residency first'
+    key: nee.ne_check
+    type: info
+    depends_on: []
+    description: |
+      After 3 years on a skilled-worker permit (§18a/b) — or just 2 with a German degree
+      — you may qualify for the Niederlassungserlaubnis (permanent residency) instead of
+      another €93–96 renewal. Cologne's counters only mention this if you ask. Conditions:
+      pension contributions for the qualifying period, secured livelihood, B1 German.
+      When a renewal comes due, check NE eligibility before paying for a renewal.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01008/index.html

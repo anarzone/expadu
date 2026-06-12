@@ -1,0 +1,38 @@
+# Non-EU family member of an EU citizen (FreizügG — Aufenthaltskarte).
+# Freedom-of-movement law, not the AufenthG: easier, fee-free, declaratory.
+# Federal rules (◐); Köln intake flow unconfirmed → typical-requirements
+# framing, no verified badge. See docs/bureaucracy-sources.md (Case 10).
+situation: family_reunification_of_eu_citizen
+
+tasks:
+  - title: Get your Aufenthaltskarte (family member of an EU citizen)
+    key: fameu.aufenthaltskarte
+    depends_on: [fam.anmeldung]
+    description: |
+      As the non-EU family member of an EU citizen you're covered by freedom-of-movement
+      law, not the regular immigration law — a completely different, easier track. Your
+      right of residence exists by law; the Aufenthaltskarte (issued for 5 years) merely
+      documents it. No language requirement, no livelihood test of the family member,
+      and no fee. Report to the Ausländerbehörde after arrival; the documents below are
+      the typical requirements.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: days_since_arrival
+    deadline_days: 90
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: National passport
+      - label: Marriage or birth certificate proving the family link
+        note: Sworn-translation rules apply — translator publicly appointed/sworn in Germany.
+      - label: Proof the EU citizen exercises free movement in Germany
+        note: Their work contract, university enrollment, or sufficient funds + health insurance.
+      - label: Biometric photo
+    links:
+      - https://www.gesetze-im-internet.de/freiz_gg_eu_2004/
+    how_to_steps:
+      - title: Contact the Ausländeramt to start the process
+        body: Use Cologne's Ausländeramt contact form and state you're applying for an Aufenthaltskarte as the family member of a Union citizen — the office has limited discretion here; the right exists by law.
+      - title: Entering Germany, if visa-required
+        body: Visa-required nationals get a free, fast-tracked entry visa at the consulate; visa-free nationals can enter directly.
+      - title: Expect a 5-year card, free of charge
+        body: The Aufenthaltskarte is declaratory — while it's in production you're already legal; ask for a confirmation of application if you need to prove status.
