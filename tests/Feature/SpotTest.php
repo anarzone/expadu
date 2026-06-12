@@ -16,6 +16,10 @@ test('places page renders the placeholder', function () {
 });
 
 test('rail shows bezirke and chips map stadtteile per bezirk', function () {
+    // Pin the Inertia asset version — CI has no Vite manifest, so the
+    // partial-reload handshake would 409 with a file-derived version.
+    config(['app.asset_url' => 'testing']);
+
     $user = User::factory()->onboarded()->create(['veedel' => 'Neuehrenfeld']);
     $this->actingAs($user);
 

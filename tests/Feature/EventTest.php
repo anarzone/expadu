@@ -28,6 +28,10 @@ test('an invalid window falls back to today', function () {
 });
 
 test('veedel options list only veedels with upcoming events', function () {
+    // Pin the Inertia asset version — CI has no Vite manifest, so the
+    // partial-reload handshake would 409 with a file-derived version.
+    config(['app.asset_url' => 'testing']);
+
     $this->actingAs(User::factory()->onboarded()->create());
 
     $active = Venue::create(['name' => 'A', 'veedel' => 'Ehrenfeld']);
