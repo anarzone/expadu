@@ -82,9 +82,12 @@ export default defineConfig({
                         ) {
                             return 'vendor-react';
                         }
-                        if (id.includes('maplibre-gl')) {
-                            return 'vendor-maplibre';
-                        }
+                        // maplibre-gl is ONLY loaded via dynamic import
+                        // (MiniMap) — it gets its own async chunk naturally.
+                        // Forcing it into a manual chunk produced a broken
+                        // module ("Export 'maplibre_gl_exports' is not
+                        // defined") that silently killed every mini-map in
+                        // production builds.
                         if (id.includes('@radix-ui')) {
                             return 'vendor-radix';
                         }
