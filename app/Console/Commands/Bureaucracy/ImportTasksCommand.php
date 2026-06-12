@@ -32,6 +32,7 @@ use Symfony\Component\Yaml\Yaml;
  *   tasks:
  *     - key: anmeldung                # stable slug, unique across catalogue
  *       title: Register your address (Anmeldung)
+ *       type: task                    # task (default) | info (good-to-know card)
  *       eu_filter: null               # eu_only | non_eu_only | null (both)
  *       depends_on: []                # task keys that must be done first
  *       verified_at: 2026-06-10       # HUMAN-set date, omit if unverified
@@ -264,6 +265,8 @@ class ImportTasksCommand extends Command
 
         $payload = [
             'title' => $title,
+            // 'task' = actionable; 'info' = good-to-know card (no checkbox).
+            'type' => ($data['type'] ?? 'task') === 'info' ? 'info' : 'task',
             'description' => $data['description'] ?? null,
             'situation' => $situations,
             'eu_filter' => $data['eu_filter'] ?? null,

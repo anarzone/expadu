@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['key', 'title', 'description', 'situation', 'eu_filter', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published'])]
+#[Fillable(['key', 'type', 'title', 'description', 'situation', 'eu_filter', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -51,6 +51,14 @@ class Task extends Model
     public function isRecurring(): bool
     {
         return $this->recurrence_months !== null;
+    }
+
+    /**
+     * Info cards are good-to-know content: no checkbox, no progress weight.
+     */
+    public function isInfo(): bool
+    {
+        return $this->type === 'info';
     }
 
     /** @return BelongsToMany<User, $this> */

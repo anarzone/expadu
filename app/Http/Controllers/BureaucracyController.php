@@ -9,7 +9,9 @@ use App\Models\UserTask;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\BuergeramtService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,16 +59,27 @@ class BureaucracyController extends Controller
             'upcoming' => $cards->filter(fn ($c) => $c['bucket'] === 'upcoming')->values(),
             'completed' => $cards->filter(fn ($c) => $c['bucket'] === 'completed')->values(),
             'not_applicable' => $cards->filter(fn ($c) => $c['bucket'] === 'not_applicable')->values(),
+            'info' => $cards->filter(fn ($c) => $c['bucket'] === 'info')->values(),
         ];
 
+        // Info cards live outside the progress ring — only actionable tasks count.
         $totalActionable = $buckets['active']->count() + $buckets['upcoming']->count() + $buckets['completed']->count();
         $doneCount = $buckets['completed']->count();
+
+        $pathOptions = $profileEngine->pathOptionsFor($user);
 
         $slots = $buergeramtService->checkSlots();
         $monitors = $user->slotMonitors()->where('is_active', true)->pluck('office_id')->all();
 
         return Inertia::render('bureaucracy', [
             'situation' => $user->situation?->value,
+            'path' => [
+                'current' => $user->bureaucracy_path,
+                'branch' => $profile->bureaucracyBranch,
+                'options' => collect($pathOptions)
+                    ->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])
+                    ->values(),
+            ],
             'tasks' => $buckets,
             'progress' => [
                 'done' => $doneCount,
@@ -84,6 +97,50 @@ class BureaucracyController extends Controller
                 'url' => BuergeramtService::BOOKING_URLS[$s['category']].'&service='.$s['uid'],
             ])->values(),
         ]);
+    }
+
+    /**
+     * One-time path refinement: the user picks the sub-path that matches
+     * their permit type (e.g. Blue Card vs standard). Untouched tasks from
+     * the previous branch are pruned so the page reflects the new path.
+     */
+    public function setPath(Request $request, ProfileEngine $profileEngine): RedirectResponse
+    {
+        $user = $request->user();
+        $options = $profileEngine->pathOptionsFor($user);
+        abort_if($options === [], 404);
+
+        $data = $request->validate([
+            'path' => ['required', 'string', Rule::in(array_keys($options))],
+        ]);
+
+        $user->update(['bureaucracy_path' => $data['path']]);
+
+        $branch = $profileEngine->build($user)->bureaucracyBranch;
+        $this->pruneStaleUserTasks($user, $branch);
+
+        return back();
+    }
+
+    /**
+     * Remove user_tasks that no longer match the branch AND were never
+     * touched (not started, no documents checked). Anything with progress
+     * — including done tasks — is kept as history.
+     */
+    private function pruneStaleUserTasks(User $user, string $branch): void
+    {
+        $user->userTasks()
+            ->with('task')
+            ->whereNull('completed_at')
+            ->where(function ($query) {
+                $query->whereNull('status')
+                    ->orWhere('status', TaskStatus::NotStarted->value);
+            })
+            ->get()
+            ->filter(fn (UserTask $ut) => $ut->task !== null
+                && ! in_array($branch, (array) $ut->task->situation, true)
+                && ($ut->documents_checked ?? []) === [])
+            ->each(fn (UserTask $ut) => $ut->delete());
     }
 
     /**
@@ -137,6 +194,7 @@ class BureaucracyController extends Controller
         return [
             'id' => $userTask->id,
             'task_id' => $task->id,
+            'type' => $task->type,
             'title' => $task->title,
             'description' => $task->description,
             'phase' => $task->phase,
@@ -148,6 +206,7 @@ class BureaucracyController extends Controller
             'days_remaining' => $daysRemaining,
             'deadline_tier' => $deadlineTier,
             'documents_required' => $task->documents_required ?? [],
+            'documents_checked' => $userTask->documents_checked ?? [],
             'how_to_steps' => $task->how_to_steps ?? [],
             'links' => $task->links ?? [],
             'booking_service_key' => $task->booking_service_key,
@@ -195,6 +254,10 @@ class BureaucracyController extends Controller
      */
     private function bucket(UserTask $userTask, string $tier): string
     {
+        // Info cards are reference content — no lifecycle, own lane.
+        if ($userTask->task->isInfo()) {
+            return 'info';
+        }
         if (! $userTask->is_applicable) {
             return 'not_applicable';
         }

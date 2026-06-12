@@ -71,6 +71,38 @@ test('missing situation falls back to the core branch', function () {
     expect($profile->bureaucracyBranch)->toBe('core');
 });
 
+dataset('path refinements', [
+    'blue card refines the branch' => ['non_eu_employee', 'non_eu_employee_blue_card', 'non_eu_employee_blue_card'],
+    'standard records but keeps the base' => ['non_eu_employee', 'non_eu_employee', 'non_eu_employee'],
+    'family of-German variant' => ['family_reunification', 'family_reunification_of_german', 'family_reunification_of_german'],
+    'gewerbe refines freelancer' => ['freelancer', 'freelancer_gewerbe', 'freelancer_gewerbe'],
+    'path from another branch is ignored' => ['non_eu_employee', 'freelancer_gewerbe', 'non_eu_employee'],
+    'unknown path is ignored' => ['freelancer', 'freelancer_unicorn', 'freelancer'],
+    'paths never apply to unambiguous branches' => ['eu_employee', 'non_eu_employee_blue_card', 'eu_employee'],
+]);
+
+test('stored bureaucracy_path refines the branch only when valid', function (string $situation, string $path, string $expectedBranch) {
+    $user = User::factory()->make([
+        'situation' => $situation,
+        'is_eu' => false,
+        'bureaucracy_path' => $path,
+    ]);
+
+    expect(app(ProfileEngine::class)->build($user)->bureaucracyBranch)->toBe($expectedBranch);
+})->with('path refinements');
+
+test('path options are offered only for ambiguous branches', function () {
+    $engine = app(ProfileEngine::class);
+
+    $nonEu = User::factory()->make(['situation' => 'non_eu_employee']);
+    expect($engine->pathOptionsFor($nonEu))->toHaveKeys([
+        'non_eu_employee', 'non_eu_employee_blue_card', 'non_eu_employee_chancenkarte',
+    ]);
+
+    $euEmployee = User::factory()->make(['situation' => 'eu_employee']);
+    expect($engine->pathOptionsFor($euEmployee))->toBe([]);
+});
+
 test('days since arrival computes from arrival date', function () {
     $user = User::factory()->make([
         'situation' => 'student',

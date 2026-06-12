@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'task_id', 'status', 'completed_at', 'next_due_at', 'is_applicable', 'snoozed_until', 'notes'])]
+#[Fillable(['user_id', 'task_id', 'status', 'completed_at', 'next_due_at', 'is_applicable', 'snoozed_until', 'notes', 'documents_checked'])]
 class UserTask extends Model
 {
     /** @use HasFactory<UserTaskFactory> */
@@ -29,6 +29,7 @@ class UserTask extends Model
             'next_due_at' => 'datetime',
             'snoozed_until' => 'datetime',
             'is_applicable' => 'boolean',
+            'documents_checked' => 'array',
         ];
     }
 

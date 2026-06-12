@@ -198,6 +198,162 @@ test('import aborts on unknown dependency key', function () {
     rmdir($dir);
 });
 
+// ── Path refinement ────────────────────────────────────────────────────
+
+test('refining the path swaps in the sub-path tasks and prunes untouched ones', function () {
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+
+    $shared = Task::factory()->create([
+        'key' => 'p.anmeldung',
+        'title' => 'Anmeldung',
+        'situation' => ['non_eu_employee', 'non_eu_employee_blue_card'],
+    ]);
+    $standardOnly = Task::factory()->create([
+        'key' => 'p.standard-permit',
+        'title' => 'Standard permit',
+        'situation' => ['non_eu_employee'],
+    ]);
+    $blueCardOnly = Task::factory()->create([
+        'key' => 'p.blue-card',
+        'title' => 'Blue Card application',
+        'situation' => ['non_eu_employee_blue_card'],
+    ]);
+
+    $this->actingAs($user);
+    $this->get(route('bureaucracy')); // materialises base-branch tasks
+
+    expect($user->userTasks()->pluck('task_id'))->toContain($standardOnly->id);
+
+    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card'])
+        ->assertRedirect();
+    $this->get(route('bureaucracy')); // materialises the refined branch
+
+    $taskIds = $user->userTasks()->pluck('task_id');
+    expect($user->fresh()->bureaucracy_path)->toBe('non_eu_employee_blue_card');
+    expect($taskIds)->toContain($shared->id);
+    expect($taskIds)->toContain($blueCardOnly->id);
+    expect($taskIds)->not->toContain($standardOnly->id); // untouched → pruned
+});
+
+test('refining the path keeps tasks with progress as history', function () {
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+
+    $doneTask = Task::factory()->create([
+        'key' => 'p.done',
+        'title' => 'Already done',
+        'situation' => ['non_eu_employee'],
+    ]);
+    UserTask::create([
+        'user_id' => $user->id,
+        'task_id' => $doneTask->id,
+        'status' => 'done',
+        'completed_at' => now(),
+    ]);
+
+    $this->actingAs($user);
+    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card']);
+
+    expect($user->userTasks()->pluck('task_id'))->toContain($doneTask->id);
+});
+
+test('path refinement rejects values outside the user branch', function () {
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+
+    $this->actingAs($user);
+    $this->post(route('bureaucracy.set-path'), ['path' => 'freelancer_gewerbe'])
+        ->assertSessionHasErrors('path');
+
+    $euUser = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
+    $this->actingAs($euUser);
+    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card'])
+        ->assertNotFound();
+});
+
+// ── Document checklists ────────────────────────────────────────────────
+
+test('checked documents persist and unknown entries are dropped', function () {
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+    $task = Task::factory()->create([
+        'key' => 'd.docs',
+        'situation' => ['non_eu_employee'],
+        'documents_required' => [
+            'Passport',
+            ['label' => 'Rental contract', 'note' => 'Original required'],
+        ],
+    ]);
+    $userTask = UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
+
+    $this->actingAs($user);
+    $this->patch(route('user-tasks.update', $userTask), [
+        'documents_checked' => ['Passport', 'Rental contract', 'Forged entry'],
+    ])->assertRedirect();
+
+    expect($userTask->fresh()->documents_checked)->toBe(['Passport', 'Rental contract']);
+});
+
+test('document checks are scoped to the owning user', function () {
+    $owner = User::factory()->onboarded()->create();
+    $task = Task::factory()->create(['key' => 'd.scope', 'situation' => ['core']]);
+    $userTask = UserTask::create(['user_id' => $owner->id, 'task_id' => $task->id]);
+
+    $this->actingAs(User::factory()->onboarded()->create());
+    $this->patch(route('user-tasks.update', $userTask), [
+        'documents_checked' => [],
+    ])->assertForbidden();
+});
+
+// ── Info cards ─────────────────────────────────────────────────────────
+
+test('info cards land in their own bucket and stay out of progress', function () {
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+
+    Task::factory()->create([
+        'key' => 'i.task',
+        'title' => 'Actionable',
+        'situation' => ['non_eu_employee'],
+    ]);
+    $info = Task::factory()->create([
+        'key' => 'i.church-tax',
+        'title' => 'Church tax',
+        'type' => 'info',
+        'situation' => ['non_eu_employee'],
+    ]);
+
+    $this->actingAs($user);
+    $response = $this->get(route('bureaucracy'));
+
+    $response->assertInertia(function ($page) use ($info) {
+        $props = $page->toArray()['props'];
+
+        $infoIds = collect($props['tasks']['info'])->pluck('task_id');
+        expect($infoIds)->toContain($info->id);
+        expect($props['progress']['total'])->toBe(1);
+
+        return true;
+    });
+});
+
+test('importer reads the type field and defaults to task', function () {
+    $dir = sys_get_temp_dir().'/bureaucracy_type_'.uniqid();
+    mkdir($dir);
+    $file = $dir.'/typed.yaml';
+    file_put_contents($file, Yaml::dump([
+        'situation' => 'core',
+        'tasks' => [
+            ['key' => 'ty.info', 'title' => 'Good to know', 'type' => 'info'],
+            ['key' => 'ty.plain', 'title' => 'Plain task'],
+        ],
+    ]));
+
+    $this->artisan('bureaucracy:import-tasks', ['file' => $file])->assertSuccessful();
+
+    expect(Task::where('key', 'ty.info')->first()->type)->toBe('info');
+    expect(Task::where('key', 'ty.plain')->first()->type)->toBe('task');
+
+    unlink($file);
+    rmdir($dir);
+});
+
 test('import sets verified_at only from YAML', function () {
     $dir = sys_get_temp_dir().'/bureaucracy_verified_'.uniqid();
     mkdir($dir);

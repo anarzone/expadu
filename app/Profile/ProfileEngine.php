@@ -15,6 +15,31 @@ use Carbon\CarbonImmutable;
  */
 class ProfileEngine
 {
+    /**
+     * Fine-grained path refinements per ambiguous base branch, chosen by
+     * the user on the bureaucracy page (stored in users.bureaucracy_path).
+     * The first option of each group equals the base branch — picking it
+     * still records the choice so the refinement banner collapses.
+     *
+     * @var array<string, array<string, string>> base branch → path slug → label
+     */
+    public const PATH_OPTIONS = [
+        'non_eu_employee' => [
+            'non_eu_employee' => 'Standard work permit',
+            'non_eu_employee_blue_card' => 'EU Blue Card',
+            'non_eu_employee_chancenkarte' => 'Chancenkarte (job-seeking)',
+        ],
+        'family_reunification' => [
+            'family_reunification' => 'Joining a non-EU citizen',
+            'family_reunification_of_german' => 'Joining a German citizen',
+            'family_reunification_of_eu_citizen' => 'Joining an EU citizen',
+        ],
+        'freelancer' => [
+            'freelancer' => 'Freelance work (freiberuflich)',
+            'freelancer_gewerbe' => 'Trade business (Gewerbe)',
+        ],
+    ];
+
     public function build(User $user): Profile
     {
         $situation = $user->situation ?? Situation::Other;
@@ -27,7 +52,7 @@ class ProfileEngine
                 ? CarbonImmutable::parse($user->arrival_date)->startOfDay()
                 : null,
             veedel: $user->veedel,
-            bureaucracyBranch: $this->resolveBranch($situation),
+            bureaucracyBranch: $this->resolveRefinedBranch($situation, $user->bureaucracy_path),
             ticketAdvice: $this->resolveTicket($situation),
             defaultAreas: $this->resolveAreas($user->veedel),
             germanLevel: $user->german_level,
@@ -48,6 +73,34 @@ class ProfileEngine
             Situation::NonEuEmployee, Situation::FamilyReunification => false,
             default => $explicit ?? false,
         };
+    }
+
+    /**
+     * Refinement options applicable to this user's base branch — empty for
+     * unambiguous branches (eu_employee, student, core).
+     *
+     * @return array<string, string> path slug → label
+     */
+    public function pathOptionsFor(User $user): array
+    {
+        $base = $this->resolveBranch($user->situation ?? Situation::Other);
+
+        return self::PATH_OPTIONS[$base] ?? [];
+    }
+
+    /**
+     * The branch the bureaucracy page reads: a user-chosen refinement when
+     * one is stored and still valid for the situation, else the base branch.
+     */
+    private function resolveRefinedBranch(Situation $situation, ?string $path): string
+    {
+        $base = $this->resolveBranch($situation);
+
+        if ($path !== null && isset(self::PATH_OPTIONS[$base][$path])) {
+            return $path;
+        }
+
+        return $base;
     }
 
     private function resolveBranch(Situation $situation): string
