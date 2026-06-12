@@ -98,7 +98,7 @@ class ProfileEngine
      *
      * @var list<string>
      */
-    public const DATE_ATTRIBUTES = ['moved_in_at', 'child_born_at', 'graduated_at', 'found_job_at'];
+    public const DATE_ATTRIBUTES = ['moved_in_at', 'child_born_at', 'graduated_at', 'found_job_at', 'permit_held_since'];
 
     /**
      * Known life-event names a task's trigger_event may reference.
@@ -183,6 +183,7 @@ class ProfileEngine
             'child_born_at' => $stored['child_born_at'] ?? null,
             'graduated_at' => $stored['graduated_at'] ?? null,
             'found_job_at' => $stored['found_job_at'] ?? null,
+            'permit_held_since' => $stored['permit_held_since'] ?? null,
             'arrival_date' => $user->arrival_date?->toDateString(),
             'veedel' => $user->veedel,
         ];

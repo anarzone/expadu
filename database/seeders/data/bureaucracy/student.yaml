@@ -82,26 +82,56 @@ tasks:
       - title: Forward the confirmation to your university
         body: Submit the insurance confirmation in the student portal — required to complete Immatrikulation.
 
-  - title: Apply for your student residence permit (§16b)
-    key: stu.residence_permit
+  # Book-before-ready: the online application can go in with the admission
+  # letter — don't wait for full enrolment, the queue is the bottleneck.
+  - title: Submit your student permit application online — today (§16b)
+    key: stu.submit_application
     eu_filter: non_eu_only
-    depends_on: [stu.anmeldung, stu.enrolment, stu.health_insurance]
+    depends_on: [stu.anmeldung]
     verified_at: 2026-06-11
     description: |
       Non-EU students must convert their entry visa into a student residence permit —
       apply within the visa's validity, or within 90 days if you entered visa-free.
-      The permit covers your studies plus part-time work: 140 full working days per
-      year (half-days count as half; 20 hours/week during lecture time counts as 2.5
-      days).
+      File Cologne's online Erstantrag as soon as your Anmeldung is done: a conditional
+      university admission is enough to apply, and the appointment wait (6–12 weeks,
+      worst around semester start) only begins at submission.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
     deadline_days: 90
     applies_if:
       entry_mode: [d_visa, visa_free]
+    documents_required:
+      - label: Online application form (Erstantrag 33-F07)
+        note: Upload scans of the documents listed on the appointment task — the conditional admission letter works if you're not enrolled yet.
+      - label: 'Finance proof: Sperrkonto with {{figure:sperrkonto_students}}'
+        note: The 2025/2026 value per Cologne. Alternatives — Verpflichtungserklärung, scholarship certificate, or your parents' written declaration to fund the studies (an option most guides omit).
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00973/index.html
+    how_to_steps:
+      - title: Open a blocked account or line up your finance proof
+        body: Most students use a Sperrkonto (Fintiba, Expatrio, Deutsche Bank) with one year's living costs — {{figure:sperrkonto_students}} for 2025/26. A scholarship letter or your parents' written funding declaration also works.
+      - title: File the online Erstantrag now
+        body: Demand is heaviest in Sep/Oct — submitting in early August beats the rush if you have an accepted offer.
+        link: https://www.stadt-koeln.de/service/produkte/00973/index.html
+
+  - title: Attend your permit appointment with the originals (§16b)
+    key: stu.residence_permit
+    eu_filter: non_eu_only
+    depends_on: [stu.submit_application, stu.enrolment, stu.health_insurance]
+    verified_at: 2026-06-11
+    description: |
+      After your online application, the Ausländerbehörde invites you to an appointment
+      — bring the originals of everything you uploaded. The permit covers your studies
+      plus part-time work: 140 full working days per year (half-days count as half;
+      20 hours/week during lecture time counts as 2.5 days).
+    phase: first_30_days
+    urgency: critical
+    deadline_type: none
+    applies_if:
+      entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Application form (online Erstantrag 33-F07)
       - label: Valid national passport including copies of ALL printed pages
         note: Cologne is specific about the all-pages copies — bring them, don't count on the office copier.
       - label: Biometric photo, not older than 3 months
@@ -112,18 +142,13 @@ tasks:
       - label: Studienverlaufsplan (study plan), if already in degree study
         note: Renewals additionally need a certificate of orderly study progress.
       - label: 'Finance proof: Sperrkonto with {{figure:sperrkonto_students}}'
-        note: The 2025/2026 value per Cologne. Alternatives — Verpflichtungserklärung, scholarship certificate, or your parents' written declaration to fund the studies (an option most guides omit).
+        note: The original confirmation of the blocked account, scholarship or funding declaration you uploaded.
       - label: Proof of health insurance
         note: Renewals need confirmation of continuous coverage.
       - label: Mietvertrag in copy
     links:
       - https://www.stadt-koeln.de/service/produkte/00973/index.html
     how_to_steps:
-      - title: Open a blocked account or line up your finance proof
-        body: Most students use a Sperrkonto (Fintiba, Expatrio, Deutsche Bank) with one year's living costs — {{figure:sperrkonto_students}} for 2025/26. A scholarship letter or your parents' written funding declaration also works.
-      - title: Submit the online Erstantrag and book the appointment
-        body: Demand is heaviest in Sep/Oct. File the online form (33-F07) and try booking in early August if you have an accepted offer.
-        link: https://www.stadt-koeln.de/service/produkte/00973/index.html
       - title: Bring originals + colour copies of everything
         body: Even the smallest missing document means a rebooked appointment — currently a 6–12 week wait in Cologne.
 

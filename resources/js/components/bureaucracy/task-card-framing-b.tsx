@@ -61,6 +61,7 @@ export type FramingBTask = {
     booking_service_key: string | null;
     booking_url: string | null;
     office: TaskOffice | null;
+    appointment_at: string | null;
     is_applicable: boolean;
     is_recurring: boolean;
     blocked: boolean;
@@ -163,7 +164,7 @@ export function TaskCardFramingB({
 }: {
     task: FramingBTask;
     defaultExpanded?: boolean;
-    onTakeMeThere?: (office: TaskOffice) => void;
+    onTakeMeThere?: (office: TaskOffice, arriveBy?: string) => void;
 }) {
     const [expanded, setExpanded] = useState(defaultExpanded);
     const [busy, setBusy] = useState(false);
@@ -172,6 +173,23 @@ export function TaskCardFramingB({
     const [checkedDocs, setCheckedDocs] = useState<string[]>(
         task.documents_checked ?? [],
     );
+    // Local value for the appointment picker (ISO date-time, local zone).
+    const [appointmentDraft, setAppointmentDraft] = useState<string>(() =>
+        task.appointment_at ? task.appointment_at.slice(0, 16) : '',
+    );
+
+    function saveAppointment() {
+        if (busy || appointmentDraft === '') {
+            return;
+        }
+
+        setBusy(true);
+        router.patch(
+            `/user-tasks/${task.id}`,
+            { appointment_at: appointmentDraft },
+            { preserveScroll: true, onFinish: () => setBusy(false) },
+        );
+    }
 
     function toggleDoc(label: string) {
         const next = checkedDocs.includes(label)
@@ -564,6 +582,43 @@ export function TaskCardFramingB({
                                     <IconExternalLink size={12} stroke={1.8} />
                                 </a>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Booked appointment: becomes the deadline + arrive-by anchor */}
+                    {task.booking_service_key && !isDone && (
+                        <div className="flex flex-wrap items-center gap-2 rounded-[9px] bg-[#EFEDE7] p-3 dark:bg-[#2A2920]">
+                            <label className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-[#6B6860] dark:text-[#AAA89F]">
+                                {task.appointment_at
+                                    ? '📅 Your appointment:'
+                                    : '📅 Got your appointment?'}
+                                <input
+                                    type="datetime-local"
+                                    value={appointmentDraft}
+                                    onChange={(e) =>
+                                        setAppointmentDraft(e.target.value)
+                                    }
+                                    className="rounded-lg border border-[#E2DFD6] bg-white px-2 py-1.5 text-xs font-normal dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                />
+                            </label>
+                            {appointmentDraft !== '' &&
+                                appointmentDraft !==
+                                    (task.appointment_at?.slice(0, 16) ??
+                                        '') && (
+                                    <button
+                                        onClick={saveAppointment}
+                                        disabled={busy}
+                                        className={`cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
+                                    >
+                                        Save
+                                    </button>
+                                )}
+                            {task.appointment_at && (
+                                <span className="text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                    We'll remind you — and "Take me there" plans
+                                    your arrival around it.
+                                </span>
+                            )}
                         </div>
                     )}
 

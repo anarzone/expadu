@@ -4,6 +4,7 @@ import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-righ
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
 import type {
     Buckets,
+    Eligibility,
     PathProp,
     Phases,
     Teaser,
@@ -213,6 +214,7 @@ export default function Bureaucracy() {
         teasers,
         phases,
         lifeEvents,
+        eligibility,
         progress,
         bookingServices: _bookingServices,
     } = usePage<{
@@ -224,6 +226,7 @@ export default function Bureaucracy() {
         teasers: Teaser[];
         phases: Phases | null;
         lifeEvents: Record<string, boolean>;
+        eligibility: Eligibility | null;
         progress: { done: number; total: number; percent: number };
         bookingServices?: BookingService[];
     }>().props;
@@ -239,7 +242,7 @@ export default function Bureaucracy() {
 
     // "Take me there" on a task office: addresses are geocoded on tap via
     // the live geocoder — no hand-maintained coordinates to go stale.
-    async function takeMeThereToOffice(office: TaskOffice) {
+    async function takeMeThereToOffice(office: TaskOffice, arriveBy?: string) {
         try {
             const res = await fetch(
                 `/api/geocode?q=${encodeURIComponent(`${office.address}, Köln`)}`,
@@ -256,6 +259,7 @@ export default function Bureaucracy() {
                     lat: hit.lat,
                     lng: hit.lng,
                     address: office.address,
+                    arriveBy,
                 });
             }
         } catch {
@@ -327,6 +331,7 @@ export default function Bureaucracy() {
                         teasers={teasers ?? []}
                         phases={phases ?? null}
                         lifeEvents={lifeEvents ?? {}}
+                        eligibility={eligibility ?? null}
                         onTakeMeThere={takeMeThereToOffice}
                     />
                 )}

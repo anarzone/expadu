@@ -27,6 +27,8 @@ class UserTaskController extends Controller
             'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'documents_checked' => ['sometimes', 'array', 'max:50'],
             'documents_checked.*' => ['string', 'max:500'],
+            // The booked office appointment — becomes the effective deadline.
+            'appointment_at' => ['sometimes', 'nullable', 'date'],
         ]);
 
         if (array_key_exists('documents_checked', $data)) {

@@ -12,6 +12,7 @@ use App\Profile\Applicability;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\BuergeramtService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -100,6 +101,7 @@ class BureaucracyController extends Controller
             'tasks' => $buckets,
             'teasers' => $generator->teasers($profile),
             'phases' => $this->phases($profile, $buckets['active']->count()),
+            'eligibility' => $this->permanentResidencyHint($profile),
             // Which life events the user has recorded — drives the info-card
             // buttons ("We just had a baby" hides once recorded).
             'lifeEvents' => collect(ProfileEngine::DATE_ATTRIBUTES)
@@ -190,6 +192,42 @@ class BureaucracyController extends Controller
         return ['current' => $current, 'blurb' => $blurb, 'steps' => $steps];
     }
 
+    /**
+     * The eligibility watcher's first incarnation: when the permit has been
+     * held past the track's Niederlassungserlaubnis threshold, say so —
+     * Cologne's counters only mention it if you ask. Date math only; the
+     * remaining conditions (pension months, B1, livelihood) are listed for
+     * the user to check, never asserted.
+     *
+     * @return array{months_held: int, threshold_months: int, track_note: string}|null
+     */
+    private function permanentResidencyHint(Profile $profile): ?array
+    {
+        $heldSince = $profile->attributes['permit_held_since'] ?? null;
+        if ($heldSince === null || $profile->isEu) {
+            return null;
+        }
+
+        [$threshold, $trackNote] = match (true) {
+            ($profile->attributes['permit_track'] ?? null) === 'blue_card' => [21, 'Blue Card holders qualify after 21 months with B1 German (27 with A1).'],
+            ($profile->attributes['sponsor'] ?? null) === 'german' && ($profile->attributes['purpose'] ?? null) === 'family' => [36, 'Family members of German citizens qualify after 3 years (§28 Abs. 2).'],
+            ($profile->attributes['purpose'] ?? null) === 'employment' => [36, 'Skilled workers qualify after 3 years — just 2 with a German degree (§18c).'],
+            default => [60, 'The general route opens after 5 years (§9).'],
+        };
+
+        $monthsHeld = (int) now()->startOfDay()->diffInMonths(Carbon::parse($heldSince), true);
+
+        if ($monthsHeld < $threshold) {
+            return null;
+        }
+
+        return [
+            'months_held' => $monthsHeld,
+            'threshold_months' => $threshold,
+            'track_note' => $trackNote,
+        ];
+    }
+
     private function hasProgress(UserTask $userTask): bool
     {
         return ($userTask->status ?? TaskStatus::NotStarted) !== TaskStatus::NotStarted
@@ -206,7 +244,10 @@ class BureaucracyController extends Controller
     private function formatCard(UserTask $userTask, User $user, Profile $profile, array $doneKeys, array $titlesByKey, BuergeramtService $buergeramtService): array
     {
         $task = $userTask->task;
-        $deadline = $task->computeDeadlineFor($user, $profile->attributes);
+        // A booked appointment IS the deadline.
+        $deadline = $userTask->appointment_at
+            ? $userTask->appointment_at->copy()
+            : $task->computeDeadlineFor($user, $profile->attributes);
 
         // Documents may cross-link the task that produces them
         // ("Meldebescheinigung ← from Anmeldung").
@@ -225,6 +266,9 @@ class BureaucracyController extends Controller
 
         $status = $userTask->status ?? TaskStatus::NotStarted;
         [$deadlineTier, $deadlineNote] = $this->deadlineState($task, $profile, $daysRemaining, $status);
+        if ($userTask->appointment_at && $status !== TaskStatus::Done) {
+            $deadlineNote = 'Your appointment: '.$userTask->appointment_at->format('D j M, H:i');
+        }
         $bucket = $this->bucket($userTask, $deadlineTier);
 
         $blockedBy = collect($task->depends_on ?? [])
@@ -267,6 +311,7 @@ class BureaucracyController extends Controller
             'booking_service_key' => $task->booking_service_key,
             'booking_url' => $bookingUrl,
             'office' => $buergeramtService->officeForTask($task->booking_service_key, $user->veedel),
+            'appointment_at' => $userTask->appointment_at?->toIso8601String(),
             'is_applicable' => $userTask->is_applicable,
             'is_recurring' => $task->isRecurring(),
             'blocked' => $blockedBy !== [] && $status !== TaskStatus::Done,

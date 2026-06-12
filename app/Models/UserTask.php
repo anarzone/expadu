@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'task_id', 'status', 'completed_at', 'next_due_at', 'is_applicable', 'snoozed_until', 'notes', 'documents_checked'])]
+#[Fillable(['user_id', 'task_id', 'status', 'completed_at', 'next_due_at', 'is_applicable', 'snoozed_until', 'notes', 'documents_checked', 'appointment_at'])]
 class UserTask extends Model
 {
     /** @use HasFactory<UserTaskFactory> */
@@ -29,6 +29,7 @@ class UserTask extends Model
             'snoozed_until' => 'datetime',
             'is_applicable' => 'boolean',
             'documents_checked' => 'array',
+            'appointment_at' => 'datetime',
         ];
     }
 
@@ -45,10 +46,15 @@ class UserTask extends Model
     }
 
     /**
-     * Compute the absolute deadline date for this user+task pair.
+     * Compute the absolute deadline date for this user+task pair. A booked
+     * appointment IS the deadline — reminders fire off it automatically.
      */
     public function getAbsoluteDeadlineAttribute(): ?Carbon
     {
+        if ($this->appointment_at !== null) {
+            return Carbon::parse($this->appointment_at);
+        }
+
         $task = $this->task;
         $user = $this->user;
 

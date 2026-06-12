@@ -269,12 +269,15 @@ test('a D-visa holder sees the visa-expiry framing instead of a 90-day date', fu
     $response = $this->get(route('bureaucracy'));
 
     $response->assertInertia(function ($page) {
-        $card = collect($page->toArray()['props']['tasks'])->flatten(1)
-            ->firstWhere('key', 'nee.residence_permit');
+        $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
-        expect($card['deadline'])->toBeNull();
-        expect($card['deadline_note'])->toContain('visa expires');
-        expect($card['deadline_tier'])->toBe('urgent');
+        // The submit task carries the permit window…
+        expect($cards['nee.submit_application']['deadline'])->toBeNull();
+        expect($cards['nee.submit_application']['deadline_note'])->toContain('visa expires');
+        expect($cards['nee.submit_application']['deadline_tier'])->toBe('urgent');
+        // …the attend task is gated on it, no clock of its own.
+        expect($cards['nee.residence_permit']['blocked'])->toBeTrue();
+        expect($cards['nee.residence_permit']['deadline'])->toBeNull();
 
         return true;
     });
@@ -285,7 +288,7 @@ test('a D-visa holder sees the visa-expiry framing instead of a 90-day date', fu
 test('imported content carries substituted figures and cards explain themselves', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
-    $blueCard = Task::where('key', 'bc.blue_card')->first();
+    $blueCard = Task::where('key', 'bc.submit_application')->first();
     expect($blueCard->description)->toContain('€50,700');
     expect($blueCard->description)->not->toContain('{{figure:');
 
@@ -459,6 +462,121 @@ test('task cards resolve their office (Bezirk Bürgeramt) and document origins',
         $taxDoc = collect($cards['nee.bank_account']['documents_required'])
             ->first(fn ($d) => is_array($d) && str_contains($d['label'], 'Tax ID'));
         expect($taxDoc['from_title'])->toContain('Steuer-ID');
+
+        return true;
+    });
+});
+
+// ── Book/attend split ──────────────────────────────────────────────────
+
+test('the submit task is actionable on day one; attend waits for it', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+
+    $this->actingAs($user);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
+
+        // Submit: blocked only by Anmeldung — NOT by health insurance.
+        expect($cards['nee.submit_application']['blocked_by'])
+            ->not->toContain('Sign up for German health insurance');
+        // Submit carries the 90-day window; attend has no clock of its own.
+        expect($cards['nee.submit_application']['deadline'])->not->toBeNull();
+        expect($cards['nee.residence_permit']['deadline'])->toBeNull();
+        // Attend is gated on submit.
+        expect($cards['nee.residence_permit']['blocked_by'])
+            ->toContain('Submit your permit application online — today (§18a/b)');
+
+        return true;
+    });
+});
+
+// ── Appointment tracking ───────────────────────────────────────────────
+
+test('a booked appointment becomes the effective deadline and feeds reminders', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+    $this->actingAs($user);
+    $this->get(route('bureaucracy')); // materialise
+
+    $userTask = $user->userTasks()
+        ->whereHas('task', fn ($q) => $q->where('key', 'nee.residence_permit'))
+        ->first();
+
+    $appointment = now()->addDays(2)->setTime(9, 40);
+    $this->patch(route('user-tasks.update', $userTask), [
+        'appointment_at' => $appointment->toDateTimeString(),
+    ])->assertRedirect();
+
+    // The push pipeline reads absolute_deadline — the appointment wins.
+    expect($userTask->fresh()->absolute_deadline->toDateTimeString())
+        ->toBe($appointment->toDateTimeString());
+
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) use ($appointment) {
+        $card = collect($page->toArray()['props']['tasks'])->flatten(1)
+            ->firstWhere('key', 'nee.residence_permit');
+
+        expect($card['deadline'])->toBe($appointment->toDateString());
+        expect($card['deadline_tier'])->toBe('critical'); // 2 days out
+        expect($card['deadline_note'])->toContain('Your appointment');
+        expect($card['appointment_at'])->not->toBeNull();
+
+        return true;
+    });
+});
+
+// ── Permanent-residency eligibility hint ───────────────────────────────
+
+test('the NE hint appears once the permit has been held past the track threshold', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    // Standard employee, 4 years in → past the 36-month skilled-worker mark.
+    $eligible = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'profile_attributes' => ['permit_held_since' => now()->subYears(4)->toDateString()],
+    ]);
+
+    $this->actingAs($eligible);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $hint = $page->toArray()['props']['eligibility'];
+
+        expect($hint)->not->toBeNull();
+        expect($hint['threshold_months'])->toBe(36);
+        expect($hint['track_note'])->toContain('Skilled workers');
+
+        return true;
+    });
+
+    // One year in → no hint; never recorded → no hint.
+    $early = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'profile_attributes' => ['permit_held_since' => now()->subYear()->toDateString()],
+    ]);
+    $this->actingAs($early);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        expect($page->toArray()['props']['eligibility'])->toBeNull();
+
+        return true;
+    });
+});
+
+test('Blue Card holders cross the NE mark at 21 months', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee_blue_card',
+        'profile_attributes' => ['permit_held_since' => now()->subMonths(22)->toDateString()],
+    ]);
+
+    $this->actingAs($user);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $hint = $page->toArray()['props']['eligibility'];
+
+        expect($hint)->not->toBeNull();
+        expect($hint['threshold_months'])->toBe(21);
 
         return true;
     });

@@ -32,6 +32,12 @@ export type Teaser = {
     options: Array<{ value: string; label: string }>;
 };
 
+export type Eligibility = {
+    months_held: number;
+    threshold_months: number;
+    track_note: string;
+};
+
 export type Phases = {
     current: string;
     blurb: string;
@@ -76,6 +82,7 @@ export function ChecklistFramingB({
     teasers = [],
     phases = null,
     lifeEvents = {},
+    eligibility = null,
     onTakeMeThere,
 }: {
     situation: string | null;
@@ -85,7 +92,8 @@ export function ChecklistFramingB({
     teasers?: Teaser[];
     phases?: Phases | null;
     lifeEvents?: Record<string, boolean>;
-    onTakeMeThere?: (office: TaskOffice) => void;
+    eligibility?: Eligibility | null;
+    onTakeMeThere?: (office: TaskOffice, arriveBy?: string) => void;
 }) {
     const [upcomingOpen, setUpcomingOpen] = useState(false);
     const [completedOpen, setCompletedOpen] = useState(false);
@@ -186,6 +194,34 @@ export function ChecklistFramingB({
 
             {/* One-time path refinement */}
             {path && path.options.length > 0 && <PathRefinement path={path} />}
+
+            {/* Eligibility watcher: permanent residency window is open */}
+            {eligibility && (
+                <div className="rounded-[14px] border border-[#0A7C52] bg-[#D4F0E6] p-4 dark:border-[#4FB489]/60 dark:bg-[#0A7C52]/15">
+                    <div className="text-sm font-bold text-[#0A7C52] dark:text-[#4FB489]">
+                        🏡 You may already qualify for permanent residency
+                    </div>
+                    <p className="mt-1 text-[12.5px] leading-relaxed text-[#18170F] dark:text-[#F6F5F1]">
+                        You've held your permit for ~
+                        {Math.floor(eligibility.months_held / 12) > 0
+                            ? `${Math.floor(eligibility.months_held / 12)} year${Math.floor(eligibility.months_held / 12) === 1 ? '' : 's'}`
+                            : `${eligibility.months_held} months`}{' '}
+                        — past the {eligibility.threshold_months}-month mark.{' '}
+                        {eligibility.track_note} Before paying for any renewal,
+                        check the remaining conditions (pension months, B1
+                        German, livelihood) — the Niederlassungserlaubnis ends
+                        the renewal treadmill for good.
+                    </p>
+                    <a
+                        href="https://www.stadt-koeln.de/service/produkte/01008/index.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-xs font-semibold text-[#0A7C52] underline dark:text-[#4FB489]"
+                    >
+                        Official conditions on stadt-koeln.de →
+                    </a>
+                </div>
+            )}
 
             {allDone ? (
                 <div className="rounded-[14px] border border-[#E2DFD6] bg-white p-6 text-center dark:border-[#3A3930] dark:bg-[#1E1D15]">
@@ -534,6 +570,11 @@ const LIFE_EVENT_ACTIONS: Record<
         attribute: 'graduated_at',
         label: '🎓 I completed my degree — what now?',
         dateLabel: 'Graduation date',
+    },
+    'shared.long_game': {
+        attribute: 'permit_held_since',
+        label: '📅 Check my eligibility',
+        dateLabel: 'My current permit was issued on',
     },
 };
 

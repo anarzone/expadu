@@ -3,32 +3,60 @@
 situation: family_reunification_of_german
 
 tasks:
-  - title: Apply for your residence permit (§28 — family of a German citizen)
-    key: famde.residence_permit
+  # Book-before-ready: file the online application on day one — the
+  # appointment wait starts at submission.
+  - title: Submit your §28 permit application online — today
+    key: famde.submit_application
     depends_on: [fam.anmeldung]
     verified_at: 2026-06-11
     description: |
       Spouses, minor children and parents of minor German children apply under §28 —
       the privileged family track. Notably absent compared to other family permits:
       the livelihood-proof block (no payslip parade). The A1 German requirement for
-      spouses still applies. Cologne publishes an official "Checkliste Unterlagen"
-      PDF for this case — treat it as the canonical list.
+      spouses still applies. File Cologne's online Erstantrag as soon as the family's
+      Anmeldung is done — the appointment wait only starts when you submit.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
     deadline_days: 90
     applies_if:
       entry_mode: [d_visa, visa_free]
+    documents_required:
+      - label: Online application form (Erstantrag 33-F07; renewals 33-F06)
+        note: Upload scans of the documents listed on the appointment task.
+      - label: A1 German certificate (spouses)
+        note: Only Goethe-Institut, TestDaF or telc certificates are accepted — other certificates are rejected.
+        tone: warn
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20334/index.html
+    how_to_steps:
+      - title: Download Cologne's official checklist
+        body: This case has an official "Checkliste Unterlagen" PDF on the product page — print it and tick it off; it's the list the case worker uses.
+        link: https://www.stadt-koeln.de/service/produkte/20334/index.html
+      - title: Submit the online Erstantrag now
+        body: Same online form as all first applications (33-F07), with the §28 uploads.
+
+  - title: Attend your permit appointment with the originals (§28)
+    key: famde.residence_permit
+    depends_on: [famde.submit_application]
+    verified_at: 2026-06-11
+    description: |
+      After the online application, the Bezirksausländeramt invites you to an
+      appointment — bring the originals of everything you uploaded. Assemble them with
+      the checklist below while you wait.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: none
+    applies_if:
+      entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Application form (online Erstantrag 33-F07; renewals 33-F06)
       - label: National passport of the applying family member
       - label: 'German spouse: their Personalausweis'
         note: 'The German partner only shows their ID card. German children: a birth certificate suffices.'
       - label: Copy of the entry visa, if visa-required
       - label: A1 German certificate (spouses)
-        note: Only Goethe-Institut, TestDaF or telc certificates are accepted — other certificates are rejected.
-        tone: warn
+        note: The original of the certificate you uploaded — Goethe-Institut, TestDaF or telc only.
       - label: Marriage certificate / child's birth certificate
         note: Certified translations of all foreign certificates + apostille/legalization depending on the origin country.
       - label: Custody-exercise proof, if the German parent doesn't live with the child
@@ -37,11 +65,6 @@ tasks:
     links:
       - https://www.stadt-koeln.de/service/produkte/20334/index.html
     how_to_steps:
-      - title: Download Cologne's official checklist
-        body: This case has an official "Checkliste Unterlagen" PDF on the product page — print it and tick it off; it's the list the case worker uses.
-        link: https://www.stadt-koeln.de/service/produkte/20334/index.html
-      - title: Submit the online Erstantrag
-        body: Same online form as all first applications (33-F07), with the §28 uploads.
       - title: Bring originals AND certified translations
         body: Foreign certificates need apostille/legalization + a sworn German translation — "any translation" fails.
 

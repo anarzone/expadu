@@ -3,26 +3,56 @@
 situation: non_eu_employee
 
 tasks:
-  - title: Apply for your residence permit (Aufenthaltserlaubnis, §18a/b)
-    key: nee.residence_permit
-    depends_on: [nee.anmeldung, nee.health_insurance]
+  # Book-before-ready: the online application goes in on day one — the
+  # 6–12 week wait must start ticking while the documents are assembled.
+  - title: Submit your permit application online — today (§18a/b)
+    key: nee.submit_application
+    depends_on: [nee.anmeldung]
     verified_at: 2026-06-11
     description: |
       Your entry visa expires; the residence permit for employment is what lets you stay
-      and work long-term. Apply at the Bezirksausländeramt of your Stadtteil before the
-      visa runs out (90 days from arrival at the latest). The approval of the Bundesagentur
-      für Arbeit is handled internally between the authorities — that's what most of the
-      processing time is.
+      and work long-term. First applications go through Cologne's online Erstantrag —
+      file it the moment your Anmeldung is done, before your documents are complete:
+      the wait for the appointment invitation runs 6–12 weeks and it only starts when
+      you submit. The Bundesagentur für Arbeit approval is handled internally between
+      the authorities meanwhile.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
     deadline_days: 90
     applies_if:
       entry_mode: [d_visa, visa_free]
+    documents_required:
+      - label: Online application form (Erstantrag 33-F07)
+        note: The same online form serves standard permit, Blue Card and student cases — the uploads differ, not the form. Upload scans of the documents listed on the appointment task.
+      - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
+        note: The job-description form is filled by your EMPLOYER for the BA approval — tell HR on day one, it's the slowest document to chase.
+        tone: warn
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+    how_to_steps:
+      - title: File the online Erstantrag now
+        body: Cologne's online form (33-F07) starts the clock. Weeks of silence afterwards are normal, not a bad sign — the BA approval runs internally.
+        link: https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - title: Entered visa-free? Don't start working yet
+        body: Visa-free entrants may generally not start working before the permit (or BA approval) — your D-visa colleagues can. Worth a sentence with HR.
+
+  - title: Attend your permit appointment with the originals (§18a/b)
+    key: nee.residence_permit
+    depends_on: [nee.submit_application, nee.health_insurance]
+    verified_at: 2026-06-11
+    description: |
+      After your online application, the Bezirksausländeramt of your Stadtteil invites
+      you to an appointment. Bring the originals of everything you uploaded — use the
+      waiting weeks to assemble them with the checklist below. Fingerprints are taken
+      for the eAT card at the appointment.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: none
+    applies_if:
+      entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Application form (online Erstantrag 33-F07)
-        note: The same online form serves standard permit, Blue Card and student cases — the uploads differ, not the form.
       - label: Valid visa issued for work purposes
         note: Cologne explicitly warns that a visitor or business visa does NOT qualify — it can never be converted into a work permit.
         tone: warn
@@ -30,8 +60,7 @@ tasks:
       - label: Mietvertrag (rental contract)
         note: The Ausländeramt wants the contract here — not the Meldebescheinigung you used at Anmeldung. Two offices, two different housing proofs.
       - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
-        note: The job-description form is filled by your EMPLOYER for the BA approval — tell HR on day one, it's the slowest document to chase.
-        tone: warn
+        note: The original of the form your employer filled for the online application.
       - label: Proof of health insurance
         note: The insurance card alone suffices once issued; otherwise a confirmation letter from the Kasse.
       - label: Two current passport photos
@@ -39,10 +68,7 @@ tasks:
     links:
       - https://www.stadt-koeln.de/service/produkte/01083/index.html
     how_to_steps:
-      - title: Submit the online Erstantrag as soon as Anmeldung is done
-        body: First applications go through Cologne's online form (33-F07). Processing includes the internal BA approval — weeks of silence are normal, not a bad sign.
-        link: https://www.stadt-koeln.de/service/produkte/01083/index.html
-      - title: Gather every document before the appointment
+      - title: Gather every document while you wait
         body: A missing document means rebooking and another 6+ week wait. The employer's Stellenbeschreibung form is the most commonly missing piece.
       - title: Pay the fee at the appointment
         body: The work-permission check itself is free; the electronic residence card (eAT) costs about €100 on first issue (renewals €93–96). You'll get a Fiktionsbescheinigung as a bridge; the eAT card arrives by post 4–8 weeks later.
