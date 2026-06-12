@@ -77,11 +77,25 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
+        $validated = $request->validated();
+        // Long-tail attributes go to the attribute bag (with audit log),
+        // not to user columns.
+        $entryMode = $validated['entry_mode'] ?? null;
+        $housing = $validated['housing_status'] ?? null;
+        unset($validated['entry_mode'], $validated['housing_status']);
+
         $user->update([
-            ...$request->validated(),
+            ...$validated,
             'city' => 'Köln', // Cologne-only for now; the field unlocks other NRW cities later
             'onboarded_at' => now(),
         ]);
+
+        if ($entryMode !== null) {
+            $user->setProfileAttribute('entry_mode', $entryMode, 'onboarding');
+        }
+        if ($housing !== null) {
+            $user->setProfileAttribute('housing_status', $housing, 'onboarding');
+        }
 
         // Auto-create required Home + Work places if they don't exist
         if (! $user->places()->where('category', 'home')->exists()) {

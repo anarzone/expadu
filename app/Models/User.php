@@ -18,7 +18,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'bureaucracy_path', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
+#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'bureaucracy_path', 'profile_attributes', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -45,7 +45,38 @@ class User extends Authenticatable implements FilamentUser
             'situation' => Situation::class,
             'german_level' => GermanLevel::class,
             'is_eu' => 'boolean',
+            'profile_attributes' => 'array',
         ];
+    }
+
+    /**
+     * Set one long-tail profile attribute with an append-only audit entry —
+     * the log powers "why am I seeing this" and later eligibility math.
+     */
+    public function setProfileAttribute(string $attribute, mixed $value, string $source = 'system'): void
+    {
+        $current = $this->profile_attributes ?? [];
+        $old = $current[$attribute] ?? null;
+
+        if ($old === $value) {
+            return;
+        }
+
+        $this->attributeChanges()->create([
+            'attribute' => $attribute,
+            'old_value' => $old,
+            'new_value' => $value,
+            'source' => $source,
+        ]);
+
+        $current[$attribute] = $value;
+        $this->update(['profile_attributes' => $current]);
+    }
+
+    /** @return HasMany<ProfileAttributeChange, $this> */
+    public function attributeChanges(): HasMany
+    {
+        return $this->hasMany(ProfileAttributeChange::class);
     }
 
     public function isOnboarded(): bool

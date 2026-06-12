@@ -31,17 +31,21 @@ export function VeedelStep({
     veedel,
     arrivalDate,
     germanLevel,
+    housingStatus,
     onVeedelChange,
     onArrivalDateChange,
     onGermanLevelChange,
+    onHousingStatusChange,
 }: {
     veedels: Record<string, string[]>;
     veedel: string;
     arrivalDate: string;
     germanLevel: string;
+    housingStatus: string;
     onVeedelChange: (value: string) => void;
     onArrivalDateChange: (value: string) => void;
     onGermanLevelChange: (value: string) => void;
+    onHousingStatusChange: (value: string) => void;
 }) {
     const parsed = arrivalDate ? new Date(arrivalDate) : null;
     const selectedMonth = parsed ? parsed.getMonth() : new Date().getMonth();
@@ -90,9 +94,37 @@ export function VeedelStep({
                             </optgroup>
                         ))}
                     </select>
+                    <div className="mt-2 flex gap-2">
+                        {[
+                            {
+                                value: 'long_term',
+                                emoji: '🏠',
+                                label: 'Long-term address',
+                            },
+                            {
+                                value: 'temporary',
+                                emoji: '🧳',
+                                label: 'Still in temporary housing',
+                            },
+                        ].map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => onHousingStatusChange(opt.value)}
+                                className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                    housingStatus === opt.value
+                                        ? 'border-primary bg-accent-soft text-primary'
+                                        : 'border-border bg-card hover:border-primary/30'
+                                }`}
+                            >
+                                {opt.emoji} {opt.label}
+                            </button>
+                        ))}
+                    </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                        Not moved in yet or unsure? Pick the closest one — you
-                        can change it later.
+                        {housingStatus === 'temporary'
+                            ? "Temporary housing (Airbnb, hotel, a friend's couch) can't be registered — we'll pause your Anmeldung deadline until you move in, so no false alarms."
+                            : 'Not moved in yet or unsure? Pick the closest Veedel — you can change it later.'}
                     </p>
                 </div>
 

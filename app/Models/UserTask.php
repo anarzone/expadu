@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\DeadlineType;
 use App\Enums\TaskStatus;
 use Carbon\Carbon;
 use Database\Factories\UserTaskFactory;
@@ -53,15 +52,11 @@ class UserTask extends Model
         $task = $this->task;
         $user = $this->user;
 
-        if (! $task || ! $user || ! $task->deadline_days) {
+        if (! $task || ! $user) {
             return null;
         }
 
-        if ($task->deadline_type === DeadlineType::DaysSinceArrival && $user->arrival_date) {
-            return Carbon::parse($user->arrival_date)->addDays($task->deadline_days);
-        }
-
-        return null;
+        return $task->computeDeadlineFor($user);
     }
 
     /**

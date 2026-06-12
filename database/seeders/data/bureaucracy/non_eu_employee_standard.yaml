@@ -15,8 +15,10 @@ tasks:
       processing time is.
     phase: first_30_days
     urgency: critical
-    deadline_type: days_since_arrival
+    deadline_type: permit_window
     deadline_days: 90
+    applies_if:
+      entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
       - label: Application form (online Erstantrag 33-F07)

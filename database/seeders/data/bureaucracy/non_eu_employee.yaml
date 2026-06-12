@@ -18,7 +18,7 @@ tasks:
       the proxy route only exists for moves within Germany.
     phase: arrival
     urgency: critical
-    deadline_type: days_since_arrival
+    deadline_type: days_since_move_in
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
@@ -46,6 +46,7 @@ tasks:
 
   - title: Wait for your Steuer-ID (tax identification number)
     key: nee.steuer_id
+    type: wait
     depends_on: [nee.anmeldung]
     description: |
       The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post

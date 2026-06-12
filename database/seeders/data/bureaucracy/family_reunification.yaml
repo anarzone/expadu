@@ -19,7 +19,7 @@ tasks:
       family.
     phase: arrival
     urgency: critical
-    deadline_type: days_since_arrival
+    deadline_type: days_since_move_in
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
@@ -124,6 +124,7 @@ tasks:
 
   - title: Wait for everyone's Steuer-IDs
     key: fam.steuer_ids
+    type: wait
     depends_on: [fam.anmeldung]
     description: |
       Each family member, including children, gets their own 11-digit tax ID by post

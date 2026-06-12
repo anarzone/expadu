@@ -20,6 +20,7 @@ use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ProfileAttributeController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReviewController;
@@ -158,6 +159,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
         Route::post('bureaucracy/path', [BureaucracyController::class, 'setPath'])->name('bureaucracy.set-path');
+        Route::post('profile/attributes', [ProfileAttributeController::class, 'store'])->name('profile.attributes');
         Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
         Route::post('tasks/{task}/report-outdated', [TaskController::class, 'reportOutdated'])->name('tasks.report-outdated');
         Route::patch('user-tasks/{userTask}', [UserTaskController::class, 'update'])->name('user-tasks.update');

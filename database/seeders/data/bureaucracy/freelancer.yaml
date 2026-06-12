@@ -17,7 +17,7 @@ tasks:
       Steuernummer.
     phase: arrival
     urgency: critical
-    deadline_type: days_since_arrival
+    deadline_type: days_since_move_in
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
@@ -40,6 +40,7 @@ tasks:
 
   - title: Wait for your Steuer-ID (tax identification number)
     key: fre.steuer_id
+    type: wait
     depends_on: [fre.anmeldung]
     description: |
       The Bundeszentralamt für Steuern automatically sends your 11-digit personal tax ID
@@ -90,6 +91,12 @@ tasks:
 
   - title: Decide on the Kleinunternehmerregelung (§19 UStG)
     key: fre.kleinunternehmer
+    type: decision
+    decision_options:
+      - label: Kleinunternehmer
+        body: No VAT on invoices, no VAT filings. Best when clients are consumers and revenue stays under the thresholds.
+      - label: Regular VAT
+        body: Charge 19%, reclaim VAT on your laptop, software and coworking. Best when clients are VAT-registered businesses.
     depends_on: [fre.fragebogen]
     description: |
       Inside the Fragebogen you choose whether to use the small-business VAT exemption.

@@ -18,6 +18,8 @@ tasks:
   - title: Sort out your driving licence
     key: shared.driving_licence
     depends_on: []
+    applies_if:
+      license_country: [other]
     verified_at: 2026-06-11
     description: |
       A valid foreign licence works for 6 months after entry + Anmeldung. After that,

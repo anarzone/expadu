@@ -14,12 +14,32 @@ export type Buckets = {
     completed: FramingBTask[];
     not_applicable: FramingBTask[];
     info: FramingBTask[];
+    no_longer_relevant: FramingBTask[];
 };
 
 export type PathProp = {
     current: string | null;
     branch: string;
     options: Array<{ value: string; label: string }>;
+};
+
+export type Teaser = {
+    task_id: number;
+    title: string;
+    attribute: string;
+    question: string;
+    hint: string;
+    options: Array<{ value: string; label: string }>;
+};
+
+export type Phases = {
+    current: string;
+    blurb: string;
+    steps: Array<{
+        key: string;
+        label: string;
+        state: 'done' | 'now' | 'ahead';
+    }>;
 };
 
 const SITUATION_LABELS: Record<string, string> = {
@@ -53,16 +73,21 @@ export function ChecklistFramingB({
     progress,
     tasks,
     path,
+    teasers = [],
+    phases = null,
 }: {
     situation: string | null;
     progress: { done: number; total: number; percent: number };
     tasks: Buckets;
     path: PathProp | null;
+    teasers?: Teaser[];
+    phases?: Phases | null;
 }) {
     const [upcomingOpen, setUpcomingOpen] = useState(false);
     const [completedOpen, setCompletedOpen] = useState(false);
     const [naOpen, setNaOpen] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
+    const [ghostsOpen, setGhostsOpen] = useState(false);
 
     const situationLabel = situation
         ? (SITUATION_LABELS[situation] ?? situation)
@@ -89,6 +114,39 @@ export function ChecklistFramingB({
 
     return (
         <div className="space-y-4 px-6 pt-5 pb-6">
+            {/* Roadmap phases — presentational narrative over the same tasks */}
+            {phases && (
+                <div className="rounded-[20px] border border-[#E2DFD6] bg-white p-[18px] dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                    <div className="text-base font-bold">{phases.blurb}</div>
+                    <div className="mt-3.5 flex gap-1.5">
+                        {phases.steps.map((step) => (
+                            <div key={step.key} className="flex-1 text-center">
+                                <div
+                                    className={`mb-1.5 h-[5px] rounded-full ${
+                                        step.state === 'done'
+                                            ? 'bg-[#0A7C52]'
+                                            : step.state === 'now'
+                                              ? 'bg-[#1A4CD4]'
+                                              : 'bg-[#EFEDE7] dark:bg-[#2A2920]'
+                                    }`}
+                                />
+                                <span
+                                    className={`font-mono text-[9.5px] tracking-[0.04em] uppercase ${
+                                        step.state === 'now'
+                                            ? 'font-semibold text-[#1A4CD4] dark:text-[#5B8DEF]'
+                                            : step.state === 'done'
+                                              ? 'text-[#0A7C52] dark:text-[#4FB489]'
+                                              : 'text-[#AAA89F] dark:text-[#6B6860]'
+                                    }`}
+                                >
+                                    {step.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Progress hero */}
             <div className="relative overflow-hidden rounded-[20px] bg-[#1A4CD4] p-6 text-white dark:bg-[#1A4CD4]">
                 <div className="absolute -top-12 -right-12 size-44 rounded-full bg-white/5" />
@@ -188,6 +246,23 @@ export function ChecklistFramingB({
                 </>
             )}
 
+            {/* Might apply to you — Layer-3 just-in-time questions */}
+            {teasers.length > 0 && (
+                <section>
+                    <h3 className="mb-2.5 text-[11px] font-bold tracking-wide text-[#6B6860] uppercase dark:text-[#AAA89F]">
+                        Might apply to you
+                    </h3>
+                    <div className="space-y-2.5">
+                        {teasers.map((t) => (
+                            <TeaserCard
+                                key={`${t.task_id}-${t.attribute}`}
+                                teaser={t}
+                            />
+                        ))}
+                    </div>
+                </section>
+            )}
+
             {/* Good to know — info cards, never part of progress */}
             {infoTasks.length > 0 && (
                 <CollapsibleSection
@@ -235,6 +310,69 @@ export function ChecklistFramingB({
                     </div>
                 </CollapsibleSection>
             )}
+
+            {/* For your records — touched tasks from a previous path. Never deleted. */}
+            {(tasks.no_longer_relevant ?? []).length > 0 && (
+                <CollapsibleSection
+                    label="For your records — no longer relevant"
+                    count={tasks.no_longer_relevant.length}
+                    open={ghostsOpen}
+                    onToggle={() => setGhostsOpen((v) => !v)}
+                >
+                    <div className="space-y-2.5 opacity-75">
+                        {tasks.no_longer_relevant.map((t) => (
+                            <TaskCardFramingB key={t.id} task={t} />
+                        ))}
+                    </div>
+                </CollapsibleSection>
+            )}
+        </div>
+    );
+}
+
+/**
+ * A locked card whose applicability hinges on one unanswered question —
+ * answering it recomputes the path (the card becomes a task or vanishes).
+ */
+function TeaserCard({ teaser }: { teaser: Teaser }) {
+    const [busy, setBusy] = useState(false);
+
+    function answer(value: string) {
+        if (busy) {
+            return;
+        }
+
+        setBusy(true);
+        router.post(
+            '/profile/attributes',
+            { attribute: teaser.attribute, value, source: 'teaser' },
+            { preserveScroll: true, onFinish: () => setBusy(false) },
+        );
+    }
+
+    return (
+        <div className="rounded-[14px] border-[1.5px] border-dashed border-[#E2DFD6] px-4 py-3.5 dark:border-[#3A3930]">
+            <div className="flex items-center gap-2.5 text-sm font-semibold text-[#6B6860] dark:text-[#AAA89F]">
+                🔒 {teaser.title}
+            </div>
+            <p className="mt-1.5 mb-2.5 text-[12.5px] text-[#1A4CD4] dark:text-[#8FAAF0]">
+                {teaser.question}
+            </p>
+            <div className="flex flex-wrap gap-2">
+                {teaser.options.map((opt) => (
+                    <button
+                        key={opt.value}
+                        onClick={() => answer(opt.value)}
+                        disabled={busy}
+                        className={`cursor-pointer rounded-full border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-2 text-[12.5px] font-semibold transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:border-[#5B8DEF] ${busy ? 'opacity-50' : ''}`}
+                    >
+                        {opt.label}
+                    </button>
+                ))}
+            </div>
+            <p className="mt-2 text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
+                {teaser.hint}
+            </p>
         </div>
     );
 }

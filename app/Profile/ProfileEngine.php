@@ -40,10 +40,63 @@ class ProfileEngine
         ],
     ];
 
+    /**
+     * Branch shorthand → applies_if AND-group. The importer compiles YAML
+     * `situation:` headers through this map, so content stays readable
+     * ("student") while the engine only ever evaluates flat predicates.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    public const BRANCH_PREDICATES = [
+        'core' => ['purpose' => ['digital_nomad', 'other']],
+        'eu_employee' => ['purpose' => 'employment', 'citizenship_group' => 'eu'],
+        'non_eu_employee' => ['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'standard'],
+        'non_eu_employee_blue_card' => ['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'blue_card'],
+        'non_eu_employee_chancenkarte' => ['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'chancenkarte'],
+        'student' => ['purpose' => 'study'],
+        'freelancer' => ['purpose' => 'freelance', 'business_type' => 'liberal'],
+        'freelancer_gewerbe' => ['purpose' => 'freelance', 'business_type' => 'gewerbe'],
+        'family_reunification' => ['purpose' => 'family', 'sponsor' => 'non_eu'],
+        'family_reunification_of_german' => ['purpose' => 'family', 'sponsor' => 'german'],
+        'family_reunification_of_eu_citizen' => ['purpose' => 'family', 'sponsor' => 'eu_citizen'],
+    ];
+
+    /**
+     * Layer-3 just-in-time questions: a task gated on one of these NULL
+     * attributes renders as a teaser card instead of being hidden. One tap
+     * answers the attribute and the path recomputes.
+     *
+     * @var array<string, array{question: string, hint: string, options: list<array{value: string, label: string}>}>
+     */
+    public const TEASER_QUESTIONS = [
+        'license_country' => [
+            'question' => "One question: do you have a driving licence you'll use here?",
+            'hint' => 'Foreign licences die quietly after 6 months — answering now sets your real deadline (or removes this card forever).',
+            'options' => [
+                ['value' => 'eu', 'label' => '🇪🇺 EU licence'],
+                ['value' => 'other', 'label' => '🌐 Other country'],
+                ['value' => 'none', 'label' => "Won't drive"],
+            ],
+        ],
+    ];
+
+    /**
+     * Writable long-tail attributes and their allowed values — the teaser /
+     * attribute endpoint validates against this whitelist.
+     *
+     * @var array<string, list<string>>
+     */
+    public const ATTRIBUTE_VALUES = [
+        'entry_mode' => ['d_visa', 'visa_free', 'has_permit'],
+        'housing_status' => ['long_term', 'temporary'],
+        'license_country' => ['eu', 'other', 'none'],
+    ];
+
     public function build(User $user): Profile
     {
         $situation = $user->situation ?? Situation::Other;
         $isEu = $this->resolveIsEu($situation, $user->is_eu);
+        $branch = $this->resolveRefinedBranch($situation, $user->bureaucracy_path);
 
         return new Profile(
             situation: $situation,
@@ -52,11 +105,69 @@ class ProfileEngine
                 ? CarbonImmutable::parse($user->arrival_date)->startOfDay()
                 : null,
             veedel: $user->veedel,
-            bureaucracyBranch: $this->resolveRefinedBranch($situation, $user->bureaucracy_path),
+            bureaucracyBranch: $branch,
             ticketAdvice: $this->resolveTicket($situation),
             defaultAreas: $this->resolveAreas($user->veedel),
             germanLevel: $user->german_level,
+            attributes: $this->resolveAttributes($user, $situation, $isEu, $branch),
         );
+    }
+
+    /**
+     * The flat attribute bag every applies_if is evaluated against. NULL
+     * means "not asked yet" — the evaluator treats it as unknown, which
+     * renders gated tasks as teasers instead of hiding them.
+     *
+     * @return array<string, mixed>
+     */
+    private function resolveAttributes(User $user, Situation $situation, bool $isEu, string $branch): array
+    {
+        $stored = $user->profile_attributes ?? [];
+
+        $purpose = match ($situation) {
+            Situation::NonEuEmployee, Situation::EuEmployee => 'employment',
+            Situation::Student => 'study',
+            Situation::Freelancer => 'freelance',
+            Situation::FamilyReunification => 'family',
+            Situation::DigitalNomad => 'digital_nomad',
+            Situation::Other => 'other',
+        };
+
+        // Refinements default to the base path: showing the standard track
+        // until the user sharpens it mirrors the path-banner behaviour.
+        $permitTrack = match ($branch) {
+            'non_eu_employee_blue_card' => 'blue_card',
+            'non_eu_employee_chancenkarte' => 'chancenkarte',
+            default => 'standard',
+        };
+        $sponsor = match ($branch) {
+            'family_reunification_of_german' => 'german',
+            'family_reunification_of_eu_citizen' => 'eu_citizen',
+            default => 'non_eu',
+        };
+        $businessType = $branch === 'freelancer_gewerbe' ? 'gewerbe' : 'liberal';
+
+        $housing = $stored['housing_status'] ?? 'long_term';
+        // The Anmeldung clock anchors to move-in: explicit date, else
+        // arrival for long-term housing, else null (= paused).
+        $movedInAt = $stored['moved_in_at']
+            ?? ($housing === 'long_term' ? $user->arrival_date?->toDateString() : null);
+
+        return [
+            'citizenship_group' => $isEu ? 'eu' : 'non_eu',
+            'purpose' => $purpose,
+            'permit_track' => $permitTrack,
+            'sponsor' => $sponsor,
+            'business_type' => $businessType,
+            // Legacy users answered before the question existed — visa_free
+            // preserves the old behaviour (permit tasks visible, 90-day clock).
+            'entry_mode' => $stored['entry_mode'] ?? 'visa_free',
+            'housing_status' => $housing,
+            'moved_in_at' => $movedInAt,
+            'license_country' => $stored['license_country'] ?? null,
+            'arrival_date' => $user->arrival_date?->toDateString(),
+            'veedel' => $user->veedel,
+        ];
     }
 
     /**

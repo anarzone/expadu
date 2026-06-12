@@ -12,8 +12,7 @@ tasks:
       While searching, the Chancenkarte allows part-time work up to 20 hours/week plus
       unlimited 2-week trial employments (Probearbeiten). The card runs at most 12 months
       and cannot be extended back-to-back — the plan is to convert it, not renew it.
-      Typical finance requirement at issue: €13,092 for 12 months (~€1,091/month, 2026
-      figure) via blocked account or a part-time contract meeting that income.
+      Typical finance requirement at issue: {{figure:chancenkarte_funds}} (2026 figure) via blocked account or a part-time contract meeting that income.
     phase: arrival
     urgency: medium
     deadline_type: none
@@ -51,7 +50,7 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
     how_to_steps:
       - title: Check which permit your offer qualifies for
-        body: Salary at or above €50,700/year (or €45,934.20 in shortage occupations/IT) means Blue Card — take it, the permanent-residency fast track is worth it. Below that, the standard §18a/b permit applies. In the app, switch your path accordingly once converted.
+        body: Salary at or above {{figure:blue_card_salary}} (or {{figure:blue_card_salary_shortage}} in shortage occupations/IT) means Blue Card — take it, the permanent-residency fast track is worth it. Below that, the standard §18a/b permit applies. In the app, switch your path accordingly once converted.
       - title: Apply via Cologne's online Erstantrag
         body: Same online form (33-F07) as all first applications, with the conversion uploads.
         link: https://www.stadt-koeln.de/service/produkte/01083/index.html

@@ -75,6 +75,8 @@ test('onboarding can be completed with valid data', function () {
         'veedel' => 'Ehrenfeld',
         'german_level' => 'a2',
         'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'entry_mode' => 'visa_free',
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -108,6 +110,7 @@ test('employee situations do not require the EU question', function () {
         'situation' => 'eu_employee',
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -122,6 +125,7 @@ test('german level is optional', function () {
         'is_eu' => true,
         'veedel' => 'Deutz',
         'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -159,7 +163,7 @@ test('onboarding fails without required fields', function () {
 
     $response = $this->post(route('onboarding.complete'), []);
 
-    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_date']);
+    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_date', 'housing_status']);
 });
 
 test('onboarding fails with future arrival date', function () {
@@ -190,4 +194,22 @@ test('onboarded user can access protected pages', function () {
 
     $response = $this->get(route('explore'));
     $response->assertOk();
+});
+
+test('entry mode and housing status land in the attribute bag with audit log', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'non_eu_employee',
+        'veedel' => 'Ehrenfeld',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'temporary',
+        'entry_mode' => 'd_visa',
+    ])->assertRedirect(route('dashboard'));
+
+    $user->refresh();
+    expect($user->profile_attributes['entry_mode'])->toBe('d_visa');
+    expect($user->profile_attributes['housing_status'])->toBe('temporary');
+    expect($user->attributeChanges()->where('source', 'onboarding')->count())->toBe(2);
 });

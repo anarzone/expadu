@@ -76,6 +76,22 @@ test.describe('Bureaucracy v2', () => {
             page.getByText('good to know', { exact: false }).first(),
         ).toBeVisible();
     });
+
+    test('phases roadmap and the licence teaser render', async ({ page }) => {
+        await page.goto('/bureaucracy');
+        await page.waitForLoadState('networkidle');
+
+        // Roadmap strip
+        await expect(page.getByText('First 90 days')).toBeVisible();
+
+        // The e2e user never answered the licence question — teaser shows
+        // (if a previous run answered it, the teaser is legitimately gone).
+        const teaser = page.getByText('Might apply to you', { exact: false });
+        const drivingTask = page.getByText('Sort out your driving licence', {
+            exact: false,
+        });
+        await expect(teaser.or(drivingTask).first()).toBeVisible();
+    });
 });
 
 test.describe('Onboarding v2', () => {
@@ -97,12 +113,18 @@ test.describe('Onboarding v2', () => {
         ).toBeVisible();
         await page.getByRole('button', { name: "Let's get started" }).click();
 
-        // Step 2 — situation + EU follow-up
+        // Step 2 — situation + EU follow-up + entry mode (non-EU only)
         await page.getByRole('button', { name: 'I have a job here' }).click();
         await expect(
             page.getByText('Why we ask', { exact: false }),
         ).toBeVisible();
         await page.getByRole('button', { name: '🌐 No' }).click();
+        await expect(
+            page.getByText('How did you enter Germany?', { exact: false }),
+        ).toBeVisible();
+        await page
+            .getByRole('button', { name: 'Visa-free (90-day window)' })
+            .click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
         // Step 3 — veedel + arrival

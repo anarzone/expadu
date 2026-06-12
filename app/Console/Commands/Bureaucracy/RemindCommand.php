@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands\Bureaucracy;
 
+use App\Bureaucracy\PathGenerator;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
-use App\Models\Task;
 use App\Models\User;
-use App\Profile\ProfileEngine;
+use App\Profile\Applicability;
 use Illuminate\Console\Command;
 
 /**
@@ -22,7 +22,7 @@ class RemindCommand extends Command
 
     protected $description = 'Score bureaucracy tasks for onboarded users and surface urgent ones via the action bus';
 
-    public function handle(BureaucracyEvaluator $evaluator): int
+    public function handle(BureaucracyEvaluator $evaluator, PathGenerator $generator): int
     {
         $usersProcessed = 0;
         $tasksEvaluated = 0;
@@ -32,13 +32,20 @@ class RemindCommand extends Command
             $query->where('id', (int) $specific);
         }
 
-        $query->chunkById(100, function ($users) use ($evaluator, &$usersProcessed, &$tasksEvaluated): void {
+        $query->chunkById(100, function ($users) use ($evaluator, $generator, &$usersProcessed, &$tasksEvaluated): void {
             foreach ($users as $user) {
-                $this->ensureUserTasks($user);
+                $profile = $generator->ensure($user);
                 $usersProcessed++;
 
                 $userTasks = $user->userTasks()->with('task')->open()->get();
                 foreach ($userTasks as $userTask) {
+                    // Tasks that stopped applying (path switch, attribute
+                    // change) must never push reminders.
+                    if ($userTask->task === null
+                        || $generator->applicability($userTask->task, $profile) !== Applicability::Yes) {
+                        continue;
+                    }
+
                     if ($this->option('dry-run')) {
                         $tasksEvaluated++;
 
@@ -53,26 +60,5 @@ class RemindCommand extends Command
         $this->info("Done. users={$usersProcessed} user_tasks_evaluated={$tasksEvaluated}");
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Materialise UserTask rows for every published Task that matches the
-     * user's bureaucracy branch but doesn't yet have a pivot. Idempotent.
-     */
-    private function ensureUserTasks(User $user): void
-    {
-        $profile = app(ProfileEngine::class)->build($user);
-
-        $existingTaskIds = $user->userTasks()->pluck('task_id')->all();
-
-        Task::query()
-            ->whereJsonContains('situation', $profile->bureaucracyBranch)
-            ->where('is_published', true)
-            ->whereNotIn('id', $existingTaskIds)
-            ->get()
-            ->filter(fn ($task) => $task->matchesEuStatus($profile->isEu))
-            ->each(fn ($task) => $user->userTasks()->create([
-                'task_id' => $task->id,
-            ]));
     }
 }

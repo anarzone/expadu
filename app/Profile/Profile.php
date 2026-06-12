@@ -22,6 +22,8 @@ final readonly class Profile
         /** @var list<string> Veedel names: the user's own + its Bezirk */
         public array $defaultAreas,
         public ?GermanLevel $germanLevel,
+        /** @var array<string, mixed> Flat bag every applies_if is evaluated against */
+        public array $attributes = [],
     ) {}
 
     public function daysSinceArrival(): ?int

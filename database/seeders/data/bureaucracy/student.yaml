@@ -11,7 +11,7 @@ tasks:
       open a bank account, or finalise your residence permit.
     phase: arrival
     urgency: critical
-    deadline_type: days_since_arrival
+    deadline_type: days_since_move_in
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
@@ -58,7 +58,7 @@ tasks:
     key: stu.health_insurance
     depends_on: []
     description: |
-      Students under 30 pay a discounted statutory rate — for 2026 roughly €145/month
+      Students under 30 pay a discounted statutory rate — for 2026 {{figure:student_insurance_monthly}}
       all-in (base contribution €87.38 + the insurer's Zusatzbeitrag + mandatory
       long-term care insurance). You must have proof of insurance before you can
       enrol — many universities won't finalise enrolment without it.
@@ -93,8 +93,10 @@ tasks:
       days).
     phase: first_30_days
     urgency: critical
-    deadline_type: days_since_arrival
+    deadline_type: permit_window
     deadline_days: 90
+    applies_if:
+      entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
       - label: Application form (online Erstantrag 33-F07)
@@ -107,7 +109,7 @@ tasks:
         note: 'If you''re still in study preparation: language-course attendance proof stating at least 18 lessons/week, or Studienkolleg enrollment.'
       - label: Studienverlaufsplan (study plan), if already in degree study
         note: Renewals additionally need a certificate of orderly study progress.
-      - label: 'Finance proof: Sperrkonto with €11,904'
+      - label: 'Finance proof: Sperrkonto with {{figure:sperrkonto_students}}'
         note: The 2025/2026 value per Cologne. Alternatives — Verpflichtungserklärung, scholarship certificate, or your parents' written declaration to fund the studies (an option most guides omit).
       - label: Proof of health insurance
         note: Renewals need confirmation of continuous coverage.
@@ -116,7 +118,7 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/00973/index.html
     how_to_steps:
       - title: Open a blocked account or line up your finance proof
-        body: Most students use a Sperrkonto (Fintiba, Expatrio, Deutsche Bank) with one year's living costs — €11,904 for 2025/26. A scholarship letter or your parents' written funding declaration also works.
+        body: Most students use a Sperrkonto (Fintiba, Expatrio, Deutsche Bank) with one year's living costs — {{figure:sperrkonto_students}} for 2025/26. A scholarship letter or your parents' written funding declaration also works.
       - title: Submit the online Erstantrag and book the appointment
         body: Demand is heaviest in Sep/Oct. File the online form (33-F07) and try booking in early August if you have an accepted offer.
         link: https://www.stadt-koeln.de/service/produkte/00973/index.html
@@ -125,6 +127,7 @@ tasks:
 
   - title: Wait for your Steuer-ID
     key: stu.steuer_id
+    type: wait
     depends_on: [stu.anmeldung]
     description: |
       Automatically sent by post 2–4 weeks after Anmeldung. As a student you'll need

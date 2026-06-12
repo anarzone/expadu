@@ -39,18 +39,44 @@ const choices = [
     },
 ];
 
+const entryModes = [
+    {
+        value: 'd_visa',
+        emoji: '🛂',
+        label: 'With a national D visa',
+        subtitle: 'Your permit application is due before the visa expires',
+    },
+    {
+        value: 'visa_free',
+        emoji: '🛬',
+        label: 'Visa-free (90-day window)',
+        subtitle:
+            "Permit due within 90 days — and no working before it's approved",
+    },
+    {
+        value: 'has_permit',
+        emoji: '💳',
+        label: 'I already hold a German residence permit',
+        subtitle: "We'll skip the first-permit tasks entirely",
+    },
+];
+
 export function SituationStep({
     value,
     isEu,
+    entryMode,
     showEuQuestion,
     onChange,
     onIsEuChange,
+    onEntryModeChange,
 }: {
     value: string;
     isEu: boolean | null;
+    entryMode: string;
     showEuQuestion: boolean;
     onChange: (value: string) => void;
     onIsEuChange: (value: boolean) => void;
+    onEntryModeChange: (value: string) => void;
 }) {
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
@@ -124,6 +150,40 @@ export function SituationStep({
                             >
                                 <span>{opt.emoji}</span>
                                 {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {isEu === false && (
+                <div className="mt-4 animate-in rounded-xl border border-dashed border-border bg-card p-4 fade-in slide-in-from-bottom-2">
+                    <div className="mb-1 text-sm font-semibold">
+                        How did you enter Germany?
+                    </div>
+                    <p className="mb-3 text-xs text-primary">
+                        Why we ask: this sets your real permit deadline — the
+                        90-day clock and the visa-expiry clock are different
+                        animals.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                        {entryModes.map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => onEntryModeChange(opt.value)}
+                                className={`rounded-[10px] border-[1.5px] px-3.5 py-3 text-left transition-all ${
+                                    entryMode === opt.value
+                                        ? 'border-primary bg-accent-soft'
+                                        : 'border-border bg-card hover:border-primary/30'
+                                }`}
+                            >
+                                <span className="text-sm font-semibold">
+                                    {opt.emoji} {opt.label}
+                                </span>
+                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                    {opt.subtitle}
+                                </span>
                             </button>
                         ))}
                     </div>

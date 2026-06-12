@@ -5,6 +5,7 @@ namespace App\Console\Commands\Bureaucracy;
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
 use App\Models\Task;
+use App\Profile\ProfileEngine;
 use Illuminate\Console\Command;
 use Symfony\Component\Yaml\Yaml;
 
@@ -308,11 +309,16 @@ class ImportTasksCommand extends Command
 
         $payload = [
             'title' => $title,
-            // 'task' = actionable; 'info' = good-to-know card (no checkbox).
-            'type' => ($data['type'] ?? 'task') === 'info' ? 'info' : 'task',
+            // task = actionable · info = good-to-know card · wait = arrives
+            // at the user (post) · decision = completable by deciding.
+            'type' => in_array($data['type'] ?? 'task', ['task', 'info', 'wait', 'decision'], true)
+                ? ($data['type'] ?? 'task')
+                : 'task',
             'description' => $data['description'] ?? null,
             'situation' => $situations,
             'eu_filter' => $data['eu_filter'] ?? null,
+            'applies_if' => $this->compileAppliesIf($situations, $data),
+            'decision_options' => $data['decision_options'] ?? null,
             'phase' => $data['phase'] ?? null,
             'depends_on' => array_values((array) ($data['depends_on'] ?? [])),
             'urgency' => $this->normalizeUrgency($data['urgency'] ?? 'medium'),
@@ -327,6 +333,12 @@ class ImportTasksCommand extends Command
             'verified_at' => $data['verified_at'] ?? null,
             'is_published' => (bool) ($data['is_published'] ?? true),
         ];
+
+        // Volatile numbers ({{figure:key}}) resolve from config at import.
+        foreach (['title', 'description', 'documents_required', 'how_to_steps', 'decision_options'] as $field) {
+            $payload[$field] = $this->substituteFigures($payload[$field] ?? null);
+        }
+        $title = $payload['title'];
 
         if ($this->option('dry-run')) {
             $this->line("  [dry] would upsert: {$key}");
@@ -356,6 +368,73 @@ class ImportTasksCommand extends Command
         return 'created';
     }
 
+    /**
+     * Compile the readable branch shorthand into applies_if predicate groups.
+     *
+     * Each `situation:` entry maps through ProfileEngine::BRANCH_PREDICATES
+     * to one AND-group (any group matching → task applies). eu_filter and an
+     * explicit YAML `applies_if:` map merge INTO every group — so authors
+     * write `applies_if: {entry_mode: [d_visa, visa_free]}` to gate a task
+     * without repeating the branch conditions.
+     *
+     * @param  array<int, string>  $situations
+     * @param  array<string, mixed>  $data
+     * @return list<array<string, mixed>>
+     */
+    private function compileAppliesIf(array $situations, array $data): array
+    {
+        $extra = (array) ($data['applies_if'] ?? []);
+
+        $euFilter = $data['eu_filter'] ?? null;
+        if ($euFilter === 'eu_only') {
+            $extra['citizenship_group'] = 'eu';
+        } elseif ($euFilter === 'non_eu_only') {
+            $extra['citizenship_group'] = 'non_eu';
+        }
+
+        $groups = [];
+        foreach ($situations as $branch) {
+            $base = ProfileEngine::BRANCH_PREDICATES[$branch] ?? null;
+            if ($base === null) {
+                $this->warn("  unknown branch `{$branch}` — applies_if group skipped");
+
+                continue;
+            }
+            // Explicit conditions override the branch defaults (e.g. a task
+            // narrowing permit_track inside a multi-track file).
+            $groups[] = array_merge($base, $extra);
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Substitute {{figure:key}} placeholders with the current value from
+     * config/bureaucracy_figures.php — volatile official numbers live in
+     * one annually-updated file, not scattered through content.
+     */
+    private function substituteFigures(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            return preg_replace_callback('/\{\{figure:([a-z0-9_]+)\}\}/', function (array $m): string {
+                $figure = config("bureaucracy_figures.{$m[1]}");
+                if ($figure === null) {
+                    $this->error("  ABORT-worthy: unknown figure `{$m[1]}` left verbatim");
+
+                    return $m[0];
+                }
+
+                return $figure['value'];
+            }, $value);
+        }
+
+        if (is_array($value)) {
+            return array_map(fn ($v) => $this->substituteFigures($v), $value);
+        }
+
+        return $value;
+    }
+
     private function normalizeUrgency(string $value): string
     {
         return match (strtolower($value)) {
@@ -372,6 +451,8 @@ class ImportTasksCommand extends Command
 
         return match ($normalized) {
             'days_since_arrival' => DeadlineType::DaysSinceArrival->value,
+            'days_since_move_in' => DeadlineType::DaysSinceMoveIn->value,
+            'permit_window' => DeadlineType::PermitWindow->value,
             default => DeadlineType::None->value,
         };
     }

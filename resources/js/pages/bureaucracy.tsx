@@ -5,6 +5,8 @@ import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b'
 import type {
     Buckets,
     PathProp,
+    Phases,
+    Teaser,
 } from '@/components/bureaucracy/checklist-framing-b';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
 import type { FramingBTask } from '@/components/bureaucracy/task-card-framing-b';
@@ -203,6 +205,8 @@ export default function Bureaucracy() {
         situation,
         path,
         tasks: taskBuckets,
+        teasers,
+        phases,
         progress,
         bookingServices: _bookingServices,
     } = usePage<{
@@ -211,6 +215,8 @@ export default function Bureaucracy() {
         situation: string | null;
         path: PathProp | null;
         tasks: Buckets;
+        teasers: Teaser[];
+        phases: Phases | null;
         progress: { done: number; total: number; percent: number };
         bookingServices?: BookingService[];
     }>().props;
@@ -284,6 +290,8 @@ export default function Bureaucracy() {
                         progress={progress}
                         tasks={taskBuckets}
                         path={path}
+                        teasers={teasers ?? []}
+                        phases={phases ?? null}
                     />
                 )}
 

@@ -12,15 +12,16 @@ tasks:
       residency (21 months with B1 German, 27 with A1), easy EU mobility, and privileged
       family reunification (your spouse needs no German certificate and can work
       immediately). Requirements: a job offer or contract of at least 6 months with an
-      employer that has a Betriebsstätte in Germany, and a salary of €50,700/year
-      (€4,225/month) — or €45,934.20/year (€3,827.85/month) for shortage occupations,
+      employer that has a Betriebsstätte in Germany, and a salary of {{figure:blue_card_salary}} — or {{figure:blue_card_salary_shortage}} for shortage occupations,
       recent graduates, and IT specialists with 3 years' experience in the last 7 (no
       degree needed for the IT route). Success bonuses and fully variable pay do NOT
       count towards the threshold.
     phase: first_30_days
     urgency: critical
-    deadline_type: days_since_arrival
+    deadline_type: permit_window
     deadline_days: 90
+    applies_if:
+      entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
       - label: Application form (online Erstantrag 33-F07; renewals 33-F06)

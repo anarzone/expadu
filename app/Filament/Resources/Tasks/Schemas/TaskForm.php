@@ -45,7 +45,7 @@ class TaskForm
                     ->multiple()
                     ->options(array_combine($branches, $branches))
                     ->required()
-                    ->helperText('Branches this task appears in (incl. refined sub-paths).'),
+                    ->helperText('Branches this task appears in. NOTE: path matching runs on compiled applies_if — changing this here does NOT recompile it; fix the YAML and re-import for branch changes.'),
                 Select::make('eu_filter')
                     ->options(['eu_only' => 'EU citizens only', 'non_eu_only' => 'Non-EU citizens only'])
                     ->placeholder('Everyone')

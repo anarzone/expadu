@@ -23,7 +23,7 @@ export type FramingBTask = {
     id: number;
     task_id: number;
     key: string | null;
-    type: 'task' | 'info';
+    type: 'task' | 'info' | 'wait' | 'decision';
     title: string;
     description: string | null;
     phase: string | null;
@@ -40,9 +40,12 @@ export type FramingBTask = {
         | 'approaching'
         | 'on_track'
         | 'no_deadline'
+        | 'paused'
         | 'none';
+    deadline_note: string | null;
     documents_required: DocEntry[];
     documents_checked: string[];
+    decision_options: Array<{ label: string; body: string }>;
     how_to_steps: Array<{ title: string; body: string; link?: string }>;
     links: string[];
     booking_service_key: string | null;
@@ -52,6 +55,7 @@ export type FramingBTask = {
     blocked: boolean;
     blocked_by: string[];
     verified_at: string | null;
+    why: string | null;
     next_due_at: string | null;
     completed_at: string | null;
 };
@@ -72,6 +76,7 @@ const TIER_LABELS: Record<FramingBTask['deadline_tier'], string> = {
     approaching: 'Approaching',
     on_track: 'On track',
     no_deadline: 'No deadline',
+    paused: '⏸ Deadline paused',
     none: '',
 };
 
@@ -87,7 +92,21 @@ const TIER_CLASSES: Record<FramingBTask['deadline_tier'], string> = {
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
     no_deadline:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
+    paused: 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
     none: '',
+};
+
+const TYPE_CHIPS: Partial<
+    Record<FramingBTask['type'], { label: string; cls: string }>
+> = {
+    wait: {
+        label: '📬 Arrives by post',
+        cls: 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#5B8DEF]',
+    },
+    decision: {
+        label: '⚖️ A decision, not a chore',
+        cls: 'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
+    },
 };
 
 function deadlineCopy(task: FramingBTask): string | null {
@@ -252,6 +271,13 @@ export function TaskCardFramingB({
                                 {tierLabel}
                             </span>
                         )}
+                        {TYPE_CHIPS[task.type] && (
+                            <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${TYPE_CHIPS[task.type]!.cls}`}
+                            >
+                                {TYPE_CHIPS[task.type]!.label}
+                            </span>
+                        )}
                         {task.is_recurring && (
                             <span className="rounded-full bg-[#EFEDE7] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#6B6860] uppercase dark:bg-[#2A2920] dark:text-[#AAA89F]">
                                 Recurs
@@ -295,6 +321,36 @@ export function TaskCardFramingB({
 
             {expanded && (
                 <div className="mt-4 space-y-4 border-t border-[#E2DFD6] pt-4 dark:border-[#3A3930]">
+                    {task.deadline_note && (
+                        <div className="flex flex-wrap items-center gap-3 rounded-[9px] bg-[#EFEDE7] p-3 text-[13px] leading-relaxed text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                            <span className="min-w-0 flex-1">
+                                {task.deadline_tier === 'paused'
+                                    ? '🏠 '
+                                    : '⏰ '}
+                                {task.deadline_note}
+                            </span>
+                            {task.deadline_tier === 'paused' && (
+                                <button
+                                    onClick={() => {
+                                        router.post(
+                                            '/profile/attributes',
+                                            {
+                                                attribute: 'moved_in_at',
+                                                value: new Date()
+                                                    .toISOString()
+                                                    .split('T')[0],
+                                                source: 'banner',
+                                            },
+                                            { preserveScroll: true },
+                                        );
+                                    }}
+                                    className="shrink-0 cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                                >
+                                    I've moved in →
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {task.blocked && task.blocked_by.length > 0 && (
                         <div className="flex items-start gap-2 rounded-[9px] bg-[#FDF0D4] p-3 text-[13px] leading-relaxed text-[#7A5208] dark:bg-[#C47D0E]/15 dark:text-[#E8A958]">
                             <IconLock
@@ -314,6 +370,33 @@ export function TaskCardFramingB({
                         <p className="text-sm leading-relaxed text-[#6B6860] dark:text-[#AAA89F]">
                             {task.description}
                         </p>
+                    )}
+
+                    {task.decision_options.length > 0 && (
+                        <div>
+                            <div className="mb-2 text-xs font-semibold tracking-wide text-[#6B6860] uppercase dark:text-[#AAA89F]">
+                                Your options
+                            </div>
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                                {task.decision_options.map((opt) => (
+                                    <div
+                                        key={opt.label}
+                                        className="flex-1 rounded-[9px] border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-3 dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                    >
+                                        <div className="text-[13px] font-semibold">
+                                            {opt.label}
+                                        </div>
+                                        <p className="mt-1 text-xs leading-snug text-[#6B6860] dark:text-[#AAA89F]">
+                                            {opt.body}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="mt-1.5 text-[11px] text-[#AAA89F] italic dark:text-[#6B6860]">
+                                We explain, you decide — Expadu never picks for
+                                you. Mark done once you've chosen.
+                            </p>
+                        </div>
                     )}
 
                     {task.how_to_steps.length > 0 && (
@@ -458,6 +541,12 @@ export function TaskCardFramingB({
                         at the appointment — that line is Cologne's own, and
                         it's the honest truth of German bureaucracy.
                     </p>
+
+                    {task.why && (
+                        <p className="text-[11px] text-[#AAA89F] dark:text-[#6B6860]">
+                            {task.why}
+                        </p>
+                    )}
 
                     {/* Status pipeline */}
                     <div>

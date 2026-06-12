@@ -12,7 +12,9 @@ import { useTracker } from '@/hooks/use-tracker';
 export type OnboardingData = {
     situation: string;
     is_eu: boolean | null;
+    entry_mode: string;
     veedel: string;
+    housing_status: string;
     german_level: string;
     arrival_date: string;
 };
@@ -66,7 +68,9 @@ export default function Onboarding() {
     const form = useForm<OnboardingData>({
         situation: '',
         is_eu: null,
+        entry_mode: '',
         veedel: '',
+        housing_status: 'long_term',
         german_level: '',
         arrival_date: defaultArrival,
     });
@@ -97,14 +101,24 @@ export default function Onboarding() {
         switch (step) {
             case 1:
                 return true;
-            case 2:
+            case 2: {
                 if (form.data.situation === '') {
                     return false;
                 }
 
-                return EU_QUESTION_CHOICES.includes(form.data.situation)
-                    ? form.data.is_eu !== null
+                if (
+                    EU_QUESTION_CHOICES.includes(form.data.situation) &&
+                    form.data.is_eu === null
+                ) {
+                    return false;
+                }
+
+                // Non-EU answer unlocks the entry-mode question — it sets
+                // the real permit deadline, so it must be answered.
+                return form.data.is_eu === false
+                    ? form.data.entry_mode !== ''
                     : true;
+            }
             case 3:
                 return form.data.veedel !== '' && form.data.arrival_date !== '';
             case 4:
@@ -141,11 +155,15 @@ export default function Onboarding() {
                         <SituationStep
                             value={form.data.situation}
                             isEu={form.data.is_eu}
+                            entryMode={form.data.entry_mode}
                             showEuQuestion={EU_QUESTION_CHOICES.includes(
                                 form.data.situation,
                             )}
                             onChange={(v) => form.setData('situation', v)}
                             onIsEuChange={(v) => form.setData('is_eu', v)}
+                            onEntryModeChange={(v) =>
+                                form.setData('entry_mode', v)
+                            }
                         />
                     )}
                     {step === 3 && (
@@ -154,12 +172,16 @@ export default function Onboarding() {
                             veedel={form.data.veedel}
                             arrivalDate={form.data.arrival_date}
                             germanLevel={form.data.german_level}
+                            housingStatus={form.data.housing_status}
                             onVeedelChange={(v) => form.setData('veedel', v)}
                             onArrivalDateChange={(v) =>
                                 form.setData('arrival_date', v)
                             }
                             onGermanLevelChange={(v) =>
                                 form.setData('german_level', v)
+                            }
+                            onHousingStatusChange={(v) =>
+                                form.setData('housing_status', v)
                             }
                         />
                     )}

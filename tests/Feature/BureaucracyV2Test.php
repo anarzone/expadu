@@ -200,23 +200,29 @@ test('import aborts on unknown dependency key', function () {
 
 // ── Path refinement ────────────────────────────────────────────────────
 
-test('refining the path swaps in the sub-path tasks and prunes untouched ones', function () {
+test('refining the path swaps in the sub-path tasks and hides untouched old-path ones', function () {
     $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
 
     $shared = Task::factory()->create([
         'key' => 'p.anmeldung',
         'title' => 'Anmeldung',
         'situation' => ['non_eu_employee', 'non_eu_employee_blue_card'],
+        'applies_if' => [
+            ['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'standard'],
+            ['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'blue_card'],
+        ],
     ]);
     $standardOnly = Task::factory()->create([
         'key' => 'p.standard-permit',
         'title' => 'Standard permit',
         'situation' => ['non_eu_employee'],
+        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'standard']],
     ]);
     $blueCardOnly = Task::factory()->create([
         'key' => 'p.blue-card',
         'title' => 'Blue Card application',
         'situation' => ['non_eu_employee_blue_card'],
+        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'blue_card']],
     ]);
 
     $this->actingAs($user);
@@ -226,13 +232,51 @@ test('refining the path swaps in the sub-path tasks and prunes untouched ones', 
 
     $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card'])
         ->assertRedirect();
-    $this->get(route('bureaucracy')); // materialises the refined branch
+    $response = $this->get(route('bureaucracy')); // recompute for the refined path
 
-    $taskIds = $user->userTasks()->pluck('task_id');
     expect($user->fresh()->bureaucracy_path)->toBe('non_eu_employee_blue_card');
-    expect($taskIds)->toContain($shared->id);
-    expect($taskIds)->toContain($blueCardOnly->id);
-    expect($taskIds)->not->toContain($standardOnly->id); // untouched → pruned
+    // The row is preserved (nothing a user has is deleted) — but the
+    // untouched old-path task is off the page entirely.
+    expect($user->userTasks()->pluck('task_id'))->toContain($standardOnly->id);
+
+    $response->assertInertia(function ($page) use ($shared, $blueCardOnly, $standardOnly) {
+        $ids = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('task_id');
+
+        expect($ids)->toContain($shared->id);
+        expect($ids)->toContain($blueCardOnly->id);
+        expect($ids)->not->toContain($standardOnly->id);
+
+        return true;
+    });
+});
+
+test('a touched old-path task survives a path switch in the no-longer-relevant lane', function () {
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+
+    $standardOnly = Task::factory()->create([
+        'key' => 'p.touched-standard',
+        'title' => 'Standard permit',
+        'situation' => ['non_eu_employee'],
+        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'standard']],
+        'documents_required' => ['Passport'],
+    ]);
+    UserTask::create([
+        'user_id' => $user->id,
+        'task_id' => $standardOnly->id,
+        'documents_checked' => ['Passport'], // the user ticked a document
+    ]);
+
+    $this->actingAs($user);
+    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card']);
+    $response = $this->get(route('bureaucracy'));
+
+    $response->assertInertia(function ($page) use ($standardOnly) {
+        $ghosts = collect($page->toArray()['props']['tasks']['no_longer_relevant'])->pluck('task_id');
+
+        expect($ghosts)->toContain($standardOnly->id);
+
+        return true;
+    });
 });
 
 test('refining the path keeps tasks with progress as history', function () {
