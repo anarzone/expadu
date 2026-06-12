@@ -16,7 +16,7 @@ test.describe('Authentication', () => {
     test('invalid credentials show an error', async ({ page }) => {
         await page.goto('/login');
         await page.getByLabel('Email').fill('nobody@example.com');
-        await page.locator('input[name="password"]').fill('wrong-password');
+        await page.locator('input#password').fill('wrong-password');
         await page.getByRole('button', { name: 'Log in' }).click();
 
         await expect(

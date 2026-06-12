@@ -57,12 +57,18 @@ export default function Onboarding() {
     }>().props;
     const [step, setStep] = useState(1);
 
+    // The arrival selects display the current month/year by default — the
+    // form must hold that same value, or Continue stays disabled with no
+    // visible reason for anyone who arrived this month.
+    const now = new Date();
+    const defaultArrival = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
     const form = useForm<OnboardingData>({
         situation: '',
         is_eu: null,
         veedel: '',
         german_level: '',
-        arrival_date: '',
+        arrival_date: defaultArrival,
     });
 
     function next() {

@@ -18,6 +18,9 @@ class TasksTable
             ->columns([
                 TextColumn::make('title')
                     ->searchable(),
+                TextColumn::make('type')
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'info' ? 'info' : 'gray'),
                 TextColumn::make('phase')
                     ->searchable(),
                 TextColumn::make('deadline_type')
