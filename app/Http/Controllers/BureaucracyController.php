@@ -58,7 +58,7 @@ class BureaucracyController extends Controller
                 // in the DB but off the page.
                 if ($this->hasProgress($userTask)) {
                     $cards->push([
-                        ...$this->formatCard($userTask, $user, $profile, $doneKeys, $titlesByKey),
+                        ...$this->formatCard($userTask, $user, $profile, $doneKeys, $titlesByKey, $buergeramtService),
                         'bucket' => 'no_longer_relevant',
                     ]);
                 }
@@ -66,7 +66,7 @@ class BureaucracyController extends Controller
                 continue;
             }
 
-            $cards->push($this->formatCard($userTask, $user, $profile, $doneKeys, $titlesByKey));
+            $cards->push($this->formatCard($userTask, $user, $profile, $doneKeys, $titlesByKey, $buergeramtService));
         }
         $cards = $cards->values();
 
@@ -100,6 +100,11 @@ class BureaucracyController extends Controller
             'tasks' => $buckets,
             'teasers' => $generator->teasers($profile),
             'phases' => $this->phases($profile, $buckets['active']->count()),
+            // Which life events the user has recorded — drives the info-card
+            // buttons ("We just had a baby" hides once recorded).
+            'lifeEvents' => collect(ProfileEngine::DATE_ATTRIBUTES)
+                ->mapWithKeys(fn (string $attr) => [$attr => ($profile->attributes[$attr] ?? null) !== null])
+                ->all(),
             'progress' => [
                 'done' => $doneCount,
                 'total' => $totalActionable,
@@ -198,10 +203,22 @@ class BureaucracyController extends Controller
      * @param  array<string, string>  $titlesByKey
      * @return array<string, mixed>
      */
-    private function formatCard(UserTask $userTask, User $user, Profile $profile, array $doneKeys, array $titlesByKey): array
+    private function formatCard(UserTask $userTask, User $user, Profile $profile, array $doneKeys, array $titlesByKey, BuergeramtService $buergeramtService): array
     {
         $task = $userTask->task;
         $deadline = $task->computeDeadlineFor($user, $profile->attributes);
+
+        // Documents may cross-link the task that produces them
+        // ("Meldebescheinigung ← from Anmeldung").
+        $documents = collect($task->documents_required ?? [])
+            ->map(function ($doc) use ($titlesByKey) {
+                if (is_array($doc) && isset($doc['from'])) {
+                    $doc['from_title'] = $titlesByKey[$doc['from']] ?? null;
+                }
+
+                return $doc;
+            })
+            ->all();
         $daysRemaining = $deadline
             ? (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false)
             : null;
@@ -220,6 +237,10 @@ class BureaucracyController extends Controller
         if ($task->booking_service_key && isset(BuergeramtService::SERVICES[$task->booking_service_key])) {
             $svc = BuergeramtService::SERVICES[$task->booking_service_key];
             $bookingUrl = (BuergeramtService::BOOKING_URLS[$svc['category']] ?? '').'&service='.$svc['uid'];
+        } elseif ($task->booking_service_key && isset(BuergeramtService::BOOKING_URLS[$task->booking_service_key])) {
+            // Category-level keys (auslaenderbehoerde, finanzamt, kfz) link
+            // to the category's booking calendar without a service deep-link.
+            $bookingUrl = BuergeramtService::BOOKING_URLS[$task->booking_service_key];
         }
 
         return [
@@ -238,13 +259,14 @@ class BureaucracyController extends Controller
             'days_remaining' => $daysRemaining,
             'deadline_tier' => $deadlineTier,
             'deadline_note' => $deadlineNote,
-            'documents_required' => $task->documents_required ?? [],
+            'documents_required' => $documents,
             'documents_checked' => $userTask->documents_checked ?? [],
             'decision_options' => $task->decision_options ?? [],
             'how_to_steps' => $task->how_to_steps ?? [],
             'links' => $task->links ?? [],
             'booking_service_key' => $task->booking_service_key,
             'booking_url' => $bookingUrl,
+            'office' => $buergeramtService->officeForTask($task->booking_service_key, $user->veedel),
             'is_applicable' => $userTask->is_applicable,
             'is_recurring' => $task->isRecurring(),
             'blocked' => $blockedBy !== [] && $status !== TaskStatus::Done,

@@ -13,7 +13,17 @@ import { useState } from 'react';
 
 export type DocEntry =
     | string
-    | { label: string; note?: string | null; tone?: 'warn' | null };
+    | {
+          label: string;
+          note?: string | null;
+          tone?: 'warn' | null;
+          /** Key of the task that produces this document. */
+          from?: string | null;
+          /** Resolved title of the producing task (server-side). */
+          from_title?: string | null;
+      };
+
+export type TaskOffice = { name: string; address: string };
 
 export function docLabel(doc: DocEntry): string {
     return typeof doc === 'string' ? doc : doc.label;
@@ -50,6 +60,7 @@ export type FramingBTask = {
     links: string[];
     booking_service_key: string | null;
     booking_url: string | null;
+    office: TaskOffice | null;
     is_applicable: boolean;
     is_recurring: boolean;
     blocked: boolean;
@@ -148,9 +159,11 @@ const STATUS_LABEL: Record<FramingBTask['status'], string> = {
 export function TaskCardFramingB({
     task,
     defaultExpanded = false,
+    onTakeMeThere,
 }: {
     task: FramingBTask;
     defaultExpanded?: boolean;
+    onTakeMeThere?: (office: TaskOffice) => void;
 }) {
     const [expanded, setExpanded] = useState(defaultExpanded);
     const [busy, setBusy] = useState(false);
@@ -496,6 +509,13 @@ export function TaskCardFramingB({
                                                             {note}
                                                         </span>
                                                     ))}
+                                                {typeof doc !== 'string' &&
+                                                    doc.from_title && (
+                                                        <span className="mt-0.5 block text-[11px] text-[#1A4CD4] dark:text-[#8FAAF0]">
+                                                            ← you get this from
+                                                            "{doc.from_title}"
+                                                        </span>
+                                                    )}
                                             </span>
                                         </label>
                                     );
@@ -508,7 +528,9 @@ export function TaskCardFramingB({
                         </div>
                     )}
 
-                    {(task.booking_url || task.links.length > 0) && (
+                    {(task.booking_url ||
+                        task.links.length > 0 ||
+                        (task.office && onTakeMeThere)) && (
                         <div className="flex flex-wrap items-center gap-2">
                             {task.booking_url && (
                                 <a
@@ -520,6 +542,15 @@ export function TaskCardFramingB({
                                     Book appointment{' '}
                                     <IconExternalLink size={14} stroke={1.8} />
                                 </a>
+                            )}
+                            {task.office && onTakeMeThere && (
+                                <button
+                                    onClick={() => onTakeMeThere(task.office!)}
+                                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                                    title={`${task.office.name} — ${task.office.address}`}
+                                >
+                                    🚌 Take me there
+                                </button>
                             )}
                             {task.links.slice(0, 2).map((link) => (
                                 <a

@@ -1,0 +1,186 @@
+# Life-event tasks: dormant until the user records the event (a dated
+# profile attribute), then they wake with deadlines anchored to the event
+# date. Sources: Addendum 3 of the consolidated checklist (Cases 16/24/25)
+# + Case 9 — see docs/bureaucracy-sources.md.
+situation:
+  - core
+  - eu_employee
+  - non_eu_employee
+  - non_eu_employee_blue_card
+  - non_eu_employee_chancenkarte
+  - student
+  - freelancer
+  - freelancer_gewerbe
+  - family_reunification
+  - family_reunification_of_german
+  - family_reunification_of_eu_citizen
+
+tasks:
+  - title: "Your baby's residence status — check citizenship first"
+    key: le.child_permit
+    trigger: child_born
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      Before any permit paperwork: your child may be German by birth — if at birth one
+      parent had 5+ years of lawful residence and holds a Niederlassungserlaubnis or
+      Daueraufenthalt-EU (or is an EU/EEA citizen with free movement). The Standesamt
+      registers citizenship when certifying the birth. If the child isn't German, it
+      gets its own §33 permit — often ex officio, with no application needed, when both
+      parents (or the sole custodian) held a residence title at birth.
+    phase: ongoing
+    urgency: high
+    deadline_type: none
+    documents_required:
+      - label: Child's birth certificate
+        note: Register the birth at the Standesamt within ONE WEEK — everything else hangs off this.
+        tone: warn
+      - label: "Child's passport (or entry in a parent's passport)"
+        note: The home-consulate passport wait is the bottleneck; a Fiktionsbescheinigung bridges the gap.
+      - label: One biometric photo (35×45, under 6 months old)
+      - label: Parents' passports + residence titles
+      - label: "Child's Meldebestätigung"
+        note: Register the child at the custodial parents' address.
+    links:
+      - https://www.stadt-koeln.de/service/produkte/00237/index.html
+    how_to_steps:
+      - title: Certify the birth at the Standesamt first
+        body: Within one week of the birth. Ask explicitly whether your child qualifies for German citizenship by birth — the Standesamt checks it when certifying.
+      - title: If not German, the §33 permit is often automatic
+        body: When both parents (or the sole custodian) held a residence title at birth, the permit is issued ex officio. If a parent was on a visa, the child's stay is automatically legal until that expires. Fee from ~€25.
+      - title: Unmarried? Sort the Vaterschaftsanerkennung
+        body: Ideally BEFORE the birth — it determines custody and the child's status from day one.
+
+  - title: Reserve a Kita place via LITTLE BIRD
+    key: le.kita
+    trigger: child_born
+    depends_on: []
+    verified_at: 2026-06-12
+    description: |
+      Cologne allocates childcare through the LITTLE BIRD parent portal (not the
+      Kita-Navigator other NRW towns use). The legal right to a place starts at the
+      child's FIRST birthday — but places are scarce, so reserve in month one. Key
+      rules: reservations are only possible AFTER the birth (registering a due date is
+      pointless — allocation isn't first-come-first-served), you can hold up to 5
+      simultaneous non-binding reservations per care year, and at least one parent
+      needs their Erstwohnsitz registered in Köln. Care bands are 25/35/45 hours/week;
+      reserving is free, parent contributions are income-based.
+    phase: ongoing
+    urgency: high
+    deadline_type: none
+    documents_required:
+      - label: LITTLE BIRD account (online registration)
+      - label: Child's birth certificate
+        from: le.child_permit
+      - label: Meldebescheinigung
+    links:
+      - https://portal-koeln.little-bird.de/
+      - https://www.stadt-koeln.de/leben-in-koeln/familie-kinder/kinderbetreuung
+    how_to_steps:
+      - title: Reserve in month one — five Kitas, mixed carriers
+        body: Spread your 5 reservations across municipal and free-carrier Kitas, near home AND near work. A municipal offer comes with an acceptance window; if everything is rejected centrally, re-reserve (Wiedervormerkung).
+      - title: Know your care band
+        body: 25, 35 or 45 hours/week — pick what you'll actually need; it affects allocation and the income-based contribution.
+      - title: Stuck? The Elternbüro helps
+        body: The Elternbüro of the Amt für Kinder, Jugend und Familie is the human escalation path when the portal gets you nowhere.
+
+  - title: Apply for Elterngeld — within 3 months of the birth
+    key: le.elterngeld
+    trigger: child_born
+    depends_on: []
+    verified_at: 2026-06-12
+    description: |
+      Parental allowance is applied for at Cologne's Elterngeldstelle — online via
+      Familienportal.NRW (guided form) or by PDF. You can only apply AFTER the birth,
+      and it's paid retroactively for at most 3 months — so the real deadline is the
+      end of the third life month. Good news: everything except the birth certificate
+      can be prepared during pregnancy.
+    phase: ongoing
+    urgency: critical
+    deadline_type: days_since_event
+    deadline_days: 90
+    documents_required:
+      - label: 'The special birth-certificate copy titled "Zur Beantragung von Elterngeld"'
+        note: The Standesamt issues several purpose-bound copies — mailing the wrong one is the classic delay.
+        tone: warn
+      - label: Krankenkasse certificate on Mutterschaftsgeld
+        note: Covering the full period before and after the birth.
+      - label: Employer certificate on the Mutterschaftsgeld top-up
+        note: Or payslips covering the entire Mutterschutz period.
+      - label: 12 payslips from the year before the birth (employees)
+        note: 'Self-employed: the last tax assessment or §4(3) EStG profit records instead; mixed income needs both sets.'
+    links:
+      - https://www.familienportal.nrw/
+    how_to_steps:
+      - title: Prepare the pack during pregnancy
+        body: Everything except the birth certificate can sit ready in a folder. The day the certificate arrives, you file.
+      - title: Decide the partner months with the official planner
+        body: Basis-Elterngeld vs ElterngeldPlus and the partner-month split is a real decision — use the official planner; we never recommend a split.
+      - title: Non-EU parents — check your title first
+        body: Eligibility depends on your residence title permitting work. If your permit is restricted, check with the Elterngeldstelle before planning around the money.
+
+  - title: Apply for Kindergeld
+    key: le.kindergeld
+    trigger: child_born
+    applies_if:
+      purpose: [employment, study, freelance, digital_nomad, other]
+    depends_on: []
+    description: |
+      €250/month per child, paid by the Familienkasse (separate from the tax office),
+      for most residents regardless of income. Payments are backdated at most 6 months
+      — apply once the child's Steuer-ID arrives.
+    phase: ongoing
+    urgency: high
+    deadline_type: none
+    documents_required:
+      - label: "Child's Steuer-ID"
+        note: Arrives by post a few weeks after the child's registration — you can't file without it.
+      - label: Birth certificate
+        from: le.child_permit
+      - label: Meldebescheinigung
+      - label: Residence permit(s), if non-EU
+    links:
+      - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld-beantragen
+    how_to_steps:
+      - title: File online via the Familienkasse portal
+        body: One application per family; processing takes 6–10 weeks and payments arrive backdated.
+      - title: Use your salary account
+        body: The Familienkasse pays into a single household account.
+
+  - title: Apply for your 18-month job-search permit (§20 Abs. 3)
+    key: le.job_search_permit
+    trigger: graduated
+    eu_filter: non_eu_only
+    applies_if:
+      purpose: [study]
+    depends_on: []
+    description: |
+      After completing your German degree you can get a residence permit of up to 18
+      months to find a qualified job — with unrestricted work allowed while you search.
+      Apply before your student permit expires. Practical tips: the degree certificate
+      often arrives months late, but the university's official confirmation of
+      completion suffices — and your health insurance leaves the student rate after
+      exmatriculation, so budget for the jump.
+    phase: ongoing
+    urgency: critical
+    deadline_type: none
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Application form (online 33-F06/F07)
+      - label: Passport + biometric photo
+      - label: Degree certificate OR university confirmation of completion
+        note: The confirmation letter is accepted — don't wait months for the printed certificate.
+      - label: Proof of health insurance
+        note: No longer the student rate after exmatriculation — expect the cost jump.
+        tone: warn
+      - label: Livelihood proof (bank statements or a part-time contract)
+      - label: Housing proof (Mietvertrag)
+    links:
+      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+    how_to_steps:
+      - title: Apply before the student permit expires
+        body: File the online form while your current permit is valid — a Fiktionsbescheinigung bridges the processing time.
+      - title: Work without limits while you search
+        body: Unlike the student permit's 140-day account, the job-search permit allows unrestricted work.
+      - title: Found the job? Convert without leaving Germany
+        body: Switch to a skilled-worker permit (§18a/b) or Blue Card directly from this permit — salary decides which.

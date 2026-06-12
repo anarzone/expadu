@@ -80,7 +80,8 @@ tasks:
     deadline_days: 30
     documents_required:
       - Passport
-      - Meldebescheinigung
+      - label: Meldebescheinigung
+        from: nee.anmeldung
       - Employment contract
     links:
       - https://www.krankenkassen.de/
@@ -104,8 +105,10 @@ tasks:
     deadline_days: 30
     documents_required:
       - Passport
-      - Meldebescheinigung
-      - Tax ID (if available)
+      - label: Meldebescheinigung
+        from: nee.anmeldung
+      - label: Tax ID (if available)
+        from: nee.steuer_id
     links:
       - https://www.n26.com/en-de
       - https://www.commerzbank.de/portal/en/englishsite/englishsite.html

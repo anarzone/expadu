@@ -39,11 +39,17 @@ class PathGenerator
     }
 
     /**
-     * Tri-state applicability. Tasks without compiled applies_if (ad-hoc
-     * Filament rows) fall back to legacy branch + EU matching.
+     * Tri-state applicability. Life-event tasks stay dormant (No, never a
+     * teaser) until the event is recorded. Tasks without compiled applies_if
+     * (ad-hoc Filament rows) fall back to legacy branch + EU matching.
      */
     public function applicability(Task $task, Profile $profile): Applicability
     {
+        if ($task->trigger_event !== null
+            && ($profile->attributes["{$task->trigger_event}_at"] ?? null) === null) {
+            return Applicability::No;
+        }
+
         if ($task->applies_if !== null && $task->applies_if !== []) {
             return Applicability::evaluate($task->applies_if, $profile->attributes);
         }

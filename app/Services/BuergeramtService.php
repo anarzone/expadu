@@ -33,6 +33,53 @@ class BuergeramtService
     ];
 
     /**
+     * The concrete office a task's "take me there" should target. Bürgeramt
+     * services route to the user's Bezirk office (any Kundenzentrum works,
+     * the local one is the natural pick); single-site services route to
+     * their one address.
+     *
+     * @return array{name: string, address: string}|null
+     */
+    public function officeForTask(?string $bookingServiceKey, ?string $veedel): ?array
+    {
+        if ($bookingServiceKey === null) {
+            return null;
+        }
+
+        // Booking keys are either a SERVICES entry (with a category) or a
+        // category name itself (auslaenderbehoerde, finanzamt, kfz).
+        $category = self::SERVICES[$bookingServiceKey]['category']
+            ?? (isset(self::BOOKING_URLS[$bookingServiceKey]) ? $bookingServiceKey : null);
+
+        $officeKey = match ($category) {
+            'auslaenderbehoerde' => 'auslaenderbehoerde',
+            'kfz' => 'kfz',
+            'finanzamt' => 'finanzamt_altstadt',
+            'buergeramt' => $this->bezirkOfficeKey($veedel),
+            default => null,
+        };
+
+        $office = $officeKey !== null ? (self::OFFICES[$officeKey] ?? null) : null;
+
+        return $office ? ['name' => $office['name'], 'address' => $office['address']] : null;
+    }
+
+    private function bezirkOfficeKey(?string $veedel): string
+    {
+        if ($veedel !== null) {
+            foreach (config('veedels', []) as $bezirk => $stadtteile) {
+                if (in_array($veedel, $stadtteile, true)) {
+                    $key = str_replace(['ü', 'ö', 'ä'], ['ue', 'oe', 'ae'], mb_strtolower($bezirk));
+
+                    return isset(self::OFFICES[$key]) ? $key : 'innenstadt';
+                }
+            }
+        }
+
+        return 'innenstadt';
+    }
+
+    /**
      * Booking URLs per category.
      */
     const BOOKING_URLS = [

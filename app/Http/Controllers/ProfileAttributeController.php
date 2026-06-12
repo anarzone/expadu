@@ -16,7 +16,7 @@ class ProfileAttributeController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
-        $writable = [...array_keys(ProfileEngine::ATTRIBUTE_VALUES), 'moved_in_at'];
+        $writable = [...array_keys(ProfileEngine::ATTRIBUTE_VALUES), ...ProfileEngine::DATE_ATTRIBUTES];
 
         $data = $request->validate([
             'attribute' => ['required', 'string', Rule::in($writable)],
@@ -27,11 +27,14 @@ class ProfileAttributeController extends Controller
         $user = $request->user();
         $source = $data['source'] ?? 'teaser';
 
-        if ($data['attribute'] === 'moved_in_at') {
+        if (in_array($data['attribute'], ProfileEngine::DATE_ATTRIBUTES, true)) {
             $request->validate(['value' => ['date', 'before_or_equal:today']]);
-            $user->setProfileAttribute('moved_in_at', $data['value'], $source);
+            $user->setProfileAttribute($data['attribute'], $data['value'], $source);
+
             // Moving in ends temporary housing by definition.
-            $user->setProfileAttribute('housing_status', 'long_term', $source);
+            if ($data['attribute'] === 'moved_in_at') {
+                $user->setProfileAttribute('housing_status', 'long_term', $source);
+            }
 
             return back();
         }

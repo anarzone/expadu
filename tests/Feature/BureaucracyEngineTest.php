@@ -3,6 +3,7 @@
 use App\Models\Task;
 use App\Models\User;
 use App\Profile\Applicability;
+use Carbon\Carbon;
 
 // ── Applicability evaluator (pure) ─────────────────────────────────────
 
@@ -332,6 +333,132 @@ test('the roadmap phase follows days since arrival', function () {
     $this->actingAs($settled);
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         expect($page->toArray()['props']['phases']['current'])->toBe('settled');
+
+        return true;
+    });
+});
+
+// ── Life events ────────────────────────────────────────────────────────
+
+test('life-event tasks stay dormant until the event is recorded — then wake with anchored deadlines', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+
+    $this->actingAs($user);
+
+    // Dormant: no kita/elterngeld anywhere, and no teaser either.
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $props = $page->toArray()['props'];
+        $keys = collect($props['tasks'])->flatten(1)->pluck('key');
+
+        expect($keys)->not->toContain('le.kita');
+        expect($keys)->not->toContain('le.elterngeld');
+        expect(collect($props['teasers'])->pluck('attribute'))->not->toContain('child_born_at');
+
+        return true;
+    });
+
+    // Record the birth — 40 days ago, so the Elterngeld window is ticking.
+    $birth = now()->subDays(40)->toDateString();
+    $this->post(route('profile.attributes'), [
+        'attribute' => 'child_born_at',
+        'value' => $birth,
+        'source' => 'life_event',
+    ])->assertRedirect();
+
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) use ($birth) {
+        $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
+
+        expect($cards)->toHaveKey('le.kita');
+        expect($cards)->toHaveKey('le.elterngeld');
+        expect($cards)->toHaveKey('le.child_permit'); // non-EU parent
+        expect($cards)->toHaveKey('le.kindergeld');
+
+        // Elterngeld deadline = birth + 90 days, anchored to the EVENT date.
+        $expected = Carbon::parse($birth)->addDays(90)->toDateString();
+        expect($cards['le.elterngeld']['deadline'])->toBe($expected);
+
+        return true;
+    });
+});
+
+test('the Kindergeld life-event task skips the family branch (it has its own)', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'family_reunification',
+        'profile_attributes' => ['child_born_at' => now()->subDays(10)->toDateString()],
+    ]);
+
+    $this->actingAs($user);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
+
+        expect($keys)->toContain('le.kita');
+        expect($keys)->toContain('le.elterngeld');
+        expect($keys)->not->toContain('le.kindergeld'); // fam.kindergeld covers it
+        expect($keys)->toContain('fam.kindergeld');
+
+        return true;
+    });
+});
+
+test('graduation wakes the 18-month job-search permit for non-EU students only', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $nonEuStudent = User::factory()->onboarded()->create([
+        'situation' => 'student',
+        'is_eu' => false,
+        'profile_attributes' => ['graduated_at' => now()->subDays(3)->toDateString()],
+    ]);
+
+    $this->actingAs($nonEuStudent);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
+        expect($keys)->toContain('le.job_search_permit');
+
+        return true;
+    });
+
+    $euStudent = User::factory()->onboarded()->create([
+        'situation' => 'student',
+        'is_eu' => true,
+        'profile_attributes' => ['graduated_at' => now()->subDays(3)->toDateString()],
+    ]);
+
+    $this->actingAs($euStudent);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
+        expect($keys)->not->toContain('le.job_search_permit');
+
+        return true;
+    });
+});
+
+// ── Office resolution + document cross-links ───────────────────────────
+
+test('task cards resolve their office (Bezirk Bürgeramt) and document origins', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'veedel' => 'Ehrenfeld',
+    ]);
+
+    $this->actingAs($user);
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
+
+        // Anmeldung routes to the user's Bezirk office…
+        expect($cards['nee.anmeldung']['office']['name'])->toBe('Bürgeramt Ehrenfeld');
+        // …the permit to the single Ausländerbehörde site.
+        expect($cards['nee.residence_permit']['office']['name'])->toBe('Ausländerbehörde Köln');
+
+        // The bank task's Tax ID document points at the task that produces it.
+        $taxDoc = collect($cards['nee.bank_account']['documents_required'])
+            ->first(fn ($d) => is_array($d) && str_contains($d['label'], 'Tax ID'));
+        expect($taxDoc['from_title'])->toContain('Steuer-ID');
 
         return true;
     });

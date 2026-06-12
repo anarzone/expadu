@@ -20,6 +20,12 @@ enum DeadlineType: string
      */
     case PermitWindow = 'permit_window';
 
+    /**
+     * Anchored to the task's life event (e.g. Elterngeld: birth + 3 months).
+     * The anchor date is the user's `{trigger_event}_at` attribute.
+     */
+    case DaysSinceEvent = 'days_since_event';
+
     case FixedDate = 'fixed_date';
     case None = 'none';
 }

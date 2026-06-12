@@ -9,8 +9,13 @@ import type {
     Teaser,
 } from '@/components/bureaucracy/checklist-framing-b';
 import { OfficeCard } from '@/components/bureaucracy/office-card';
-import type { FramingBTask } from '@/components/bureaucracy/task-card-framing-b';
+import type {
+    FramingBTask,
+    TaskOffice,
+} from '@/components/bureaucracy/task-card-framing-b';
 import { docLabel } from '@/components/bureaucracy/task-card-framing-b';
+import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
+import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
 
@@ -207,6 +212,7 @@ export default function Bureaucracy() {
         tasks: taskBuckets,
         teasers,
         phases,
+        lifeEvents,
         progress,
         bookingServices: _bookingServices,
     } = usePage<{
@@ -217,6 +223,7 @@ export default function Bureaucracy() {
         tasks: Buckets;
         teasers: Teaser[];
         phases: Phases | null;
+        lifeEvents: Record<string, boolean>;
         progress: { done: number; total: number; percent: number };
         bookingServices?: BookingService[];
     }>().props;
@@ -228,6 +235,33 @@ export default function Bureaucracy() {
 
     const [activeTab, setActiveTab] = useTabState('checklist');
     const [docSearch, setDocSearch] = useState('');
+    const [destination, setDestination] = useState<Destination | null>(null);
+
+    // "Take me there" on a task office: addresses are geocoded on tap via
+    // the live geocoder — no hand-maintained coordinates to go stale.
+    async function takeMeThereToOffice(office: TaskOffice) {
+        try {
+            const res = await fetch(
+                `/api/geocode?q=${encodeURIComponent(`${office.address}, Köln`)}`,
+                { headers: { Accept: 'application/json' } },
+            );
+            const results: Array<{ lat: number; lng: number }> =
+                await res.json();
+            const hit = results?.[0];
+
+            if (hit) {
+                setDestination({
+                    name: office.name,
+                    emoji: '🏛️',
+                    lat: hit.lat,
+                    lng: hit.lng,
+                    address: office.address,
+                });
+            }
+        } catch {
+            // Geocoder down — the booking link remains the fallback.
+        }
+    }
     const [slotFilter, setSlotFilter] = useState('all');
     const [slotSearch, setSlotSearch] = useState('');
 
@@ -292,6 +326,8 @@ export default function Bureaucracy() {
                         path={path}
                         teasers={teasers ?? []}
                         phases={phases ?? null}
+                        lifeEvents={lifeEvents ?? {}}
+                        onTakeMeThere={takeMeThereToOffice}
                     />
                 )}
 
@@ -597,6 +633,13 @@ export default function Bureaucracy() {
                     </div>
                 )}
             </div>
+
+            {destination && (
+                <TakeMeThereSheet
+                    destination={destination}
+                    onClose={() => setDestination(null)}
+                />
+            )}
         </AppLayout>
     );
 }

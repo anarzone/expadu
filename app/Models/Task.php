@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['key', 'type', 'title', 'description', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published'])]
+#[Fillable(['key', 'type', 'title', 'description', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'trigger_event', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -107,6 +107,10 @@ class Task extends Model
             // deadline is their visa expiry — no computable date here.
             DeadlineType::PermitWindow => ($attributes['entry_mode'] ?? 'visa_free') === 'visa_free' && $user->arrival_date
                 ? Carbon::parse($user->arrival_date)->addDays($this->deadline_days)
+                : null,
+            // Life-event tasks anchor on the recorded event date.
+            DeadlineType::DaysSinceEvent => $this->trigger_event && ($attributes["{$this->trigger_event}_at"] ?? null)
+                ? Carbon::parse($attributes["{$this->trigger_event}_at"])->addDays($this->deadline_days)
                 : null,
             default => null,
         };

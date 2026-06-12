@@ -6,7 +6,7 @@ import {
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { TaskCardFramingB } from './task-card-framing-b';
-import type { FramingBTask } from './task-card-framing-b';
+import type { FramingBTask, TaskOffice } from './task-card-framing-b';
 
 export type Buckets = {
     active: FramingBTask[];
@@ -75,6 +75,8 @@ export function ChecklistFramingB({
     path,
     teasers = [],
     phases = null,
+    lifeEvents = {},
+    onTakeMeThere,
 }: {
     situation: string | null;
     progress: { done: number; total: number; percent: number };
@@ -82,6 +84,8 @@ export function ChecklistFramingB({
     path: PathProp | null;
     teasers?: Teaser[];
     phases?: Phases | null;
+    lifeEvents?: Record<string, boolean>;
+    onTakeMeThere?: (office: TaskOffice) => void;
 }) {
     const [upcomingOpen, setUpcomingOpen] = useState(false);
     const [completedOpen, setCompletedOpen] = useState(false);
@@ -208,13 +212,18 @@ export function ChecklistFramingB({
                                         key={t.id}
                                         task={t}
                                         defaultExpanded={i === 0}
+                                        onTakeMeThere={onTakeMeThere}
                                     />
                                 ))}
                             </div>
                             {tasks.active.length > 3 && (
                                 <div className="mt-2.5 space-y-2.5">
                                     {tasks.active.slice(3).map((t) => (
-                                        <TaskCardFramingB key={t.id} task={t} />
+                                        <TaskCardFramingB
+                                            key={t.id}
+                                            task={t}
+                                            onTakeMeThere={onTakeMeThere}
+                                        />
                                     ))}
                                 </div>
                             )}
@@ -238,7 +247,11 @@ export function ChecklistFramingB({
                         >
                             <div className="space-y-2.5">
                                 {tasks.upcoming.map((t) => (
-                                    <TaskCardFramingB key={t.id} task={t} />
+                                    <TaskCardFramingB
+                                        key={t.id}
+                                        task={t}
+                                        onTakeMeThere={onTakeMeThere}
+                                    />
                                 ))}
                             </div>
                         </CollapsibleSection>
@@ -273,7 +286,11 @@ export function ChecklistFramingB({
                 >
                     <div className="space-y-2.5">
                         {infoTasks.map((t) => (
-                            <InfoCard key={t.id} task={t} />
+                            <InfoCard
+                                key={t.id}
+                                task={t}
+                                lifeEvents={lifeEvents}
+                            />
                         ))}
                     </div>
                 </CollapsibleSection>
@@ -289,7 +306,11 @@ export function ChecklistFramingB({
                 >
                     <div className="space-y-2.5">
                         {tasks.completed.map((t) => (
-                            <TaskCardFramingB key={t.id} task={t} />
+                            <TaskCardFramingB
+                                key={t.id}
+                                task={t}
+                                onTakeMeThere={onTakeMeThere}
+                            />
                         ))}
                     </div>
                 </CollapsibleSection>
@@ -305,7 +326,11 @@ export function ChecklistFramingB({
                 >
                     <div className="space-y-2.5">
                         {tasks.not_applicable.map((t) => (
-                            <TaskCardFramingB key={t.id} task={t} />
+                            <TaskCardFramingB
+                                key={t.id}
+                                task={t}
+                                onTakeMeThere={onTakeMeThere}
+                            />
                         ))}
                     </div>
                 </CollapsibleSection>
@@ -321,7 +346,11 @@ export function ChecklistFramingB({
                 >
                     <div className="space-y-2.5 opacity-75">
                         {tasks.no_longer_relevant.map((t) => (
-                            <TaskCardFramingB key={t.id} task={t} />
+                            <TaskCardFramingB
+                                key={t.id}
+                                task={t}
+                                onTakeMeThere={onTakeMeThere}
+                            />
                         ))}
                     </div>
                 </CollapsibleSection>
@@ -490,13 +519,60 @@ const INFO_EMOJI: Record<string, string> = {
     'famde.ne_three_years': '⚡',
 };
 
+// Info cards that double as life-event entry points: recording the event
+// (with its date) wakes the dormant tasks chained to it.
+const LIFE_EVENT_ACTIONS: Record<
+    string,
+    { attribute: string; label: string; dateLabel: string }
+> = {
+    'shared.child_born': {
+        attribute: 'child_born_at',
+        label: '👶 We just had a baby — build my checklist',
+        dateLabel: 'Date of birth',
+    },
+    'stu.post_graduation': {
+        attribute: 'graduated_at',
+        label: '🎓 I completed my degree — what now?',
+        dateLabel: 'Graduation date',
+    },
+};
+
 /**
  * Info cards are reference content: no checkbox, no progress weight.
  * Amber = good to know now; blue = for when the moment comes (ongoing).
  */
-function InfoCard({ task }: { task: FramingBTask }) {
+function InfoCard({
+    task,
+    lifeEvents = {},
+}: {
+    task: FramingBTask;
+    lifeEvents?: Record<string, boolean>;
+}) {
     const later = task.phase === 'ongoing';
     const emoji = (task.key && INFO_EMOJI[task.key]) || '💡';
+    const action = task.key ? LIFE_EVENT_ACTIONS[task.key] : undefined;
+    const recorded = action ? (lifeEvents[action.attribute] ?? false) : false;
+    const [eventDate, setEventDate] = useState(
+        () => new Date().toISOString().split('T')[0],
+    );
+    const [busy, setBusy] = useState(false);
+
+    function recordEvent() {
+        if (!action || busy) {
+            return;
+        }
+
+        setBusy(true);
+        router.post(
+            '/profile/attributes',
+            {
+                attribute: action.attribute,
+                value: eventDate,
+                source: 'life_event',
+            },
+            { preserveScroll: true, onFinish: () => setBusy(false) },
+        );
+    }
 
     return (
         <div
@@ -532,6 +608,32 @@ function InfoCard({ task }: { task: FramingBTask }) {
                     ))}
                 </div>
             )}
+            {action &&
+                (recorded ? (
+                    <p className="mt-3 text-xs font-semibold text-[#0A7C52] dark:text-[#4FB489]">
+                        ✓ Recorded — the follow-up tasks are on your checklist.
+                    </p>
+                ) : (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <label className="flex items-center gap-1.5 text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                            {action.dateLabel}
+                            <input
+                                type="date"
+                                value={eventDate}
+                                max={new Date().toISOString().split('T')[0]}
+                                onChange={(e) => setEventDate(e.target.value)}
+                                className="rounded-lg border border-[#E2DFD6] bg-white px-2 py-1.5 text-xs dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                            />
+                        </label>
+                        <button
+                            onClick={recordEvent}
+                            disabled={busy}
+                            className={`cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
+                        >
+                            {action.label}
+                        </button>
+                    </div>
+                ))}
         </div>
     );
 }

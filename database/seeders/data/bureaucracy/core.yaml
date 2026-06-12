@@ -72,7 +72,8 @@ tasks:
     deadline_days: 30
     documents_required:
       - Passport or ID
-      - Meldebescheinigung
+      - label: Meldebescheinigung
+        from: core.anmeldung
     links:
       - https://www.krankenkassen.de/
     how_to_steps:
@@ -95,8 +96,10 @@ tasks:
     deadline_days: 30
     documents_required:
       - Passport or ID
-      - Meldebescheinigung
-      - Tax ID (if available)
+      - label: Meldebescheinigung
+        from: core.anmeldung
+      - label: Tax ID (if available)
+        from: core.steuer_id
     links:
       - https://www.n26.com/en-de
       - https://www.ing.de/girokonto/

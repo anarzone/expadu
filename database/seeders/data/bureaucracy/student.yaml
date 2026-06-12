@@ -41,8 +41,10 @@ tasks:
     documents_required:
       - Admission letter (Zulassungsbescheid)
       - Passport
-      - Meldebescheinigung
-      - Health insurance confirmation
+      - label: Meldebescheinigung
+        from: stu.anmeldung
+      - label: Health insurance confirmation
+        from: stu.health_insurance
       - Proof of payment of Semesterbeitrag
     links:
       - https://www.portal.uni-koeln.de/
@@ -158,8 +160,10 @@ tasks:
     deadline_days: 30
     documents_required:
       - Passport
-      - Meldebescheinigung
-      - Immatrikulationsbescheinigung (proves student status)
+      - label: Meldebescheinigung
+        from: stu.anmeldung
+      - label: Immatrikulationsbescheinigung (proves student status)
+        from: stu.enrolment
     links:
       - https://www.n26.com/en-de
       - https://www.deutsche-bank.de/pk/konten-und-karten/girokonto/junges-konto.html

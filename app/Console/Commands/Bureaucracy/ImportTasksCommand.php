@@ -319,6 +319,10 @@ class ImportTasksCommand extends Command
             'eu_filter' => $data['eu_filter'] ?? null,
             'applies_if' => $this->compileAppliesIf($situations, $data),
             'decision_options' => $data['decision_options'] ?? null,
+            // Dormant until the named life event is recorded by the user.
+            'trigger_event' => in_array($data['trigger'] ?? null, ProfileEngine::LIFE_EVENTS, true)
+                ? $data['trigger']
+                : null,
             'phase' => $data['phase'] ?? null,
             'depends_on' => array_values((array) ($data['depends_on'] ?? [])),
             'urgency' => $this->normalizeUrgency($data['urgency'] ?? 'medium'),
@@ -453,6 +457,7 @@ class ImportTasksCommand extends Command
             'days_since_arrival' => DeadlineType::DaysSinceArrival->value,
             'days_since_move_in' => DeadlineType::DaysSinceMoveIn->value,
             'permit_window' => DeadlineType::PermitWindow->value,
+            'days_since_event' => DeadlineType::DaysSinceEvent->value,
             default => DeadlineType::None->value,
         };
     }

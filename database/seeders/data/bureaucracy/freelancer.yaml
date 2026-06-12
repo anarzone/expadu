@@ -131,7 +131,8 @@ tasks:
     deadline_days: 30
     documents_required:
       - Passport or ID
-      - Meldebescheinigung
+      - label: Meldebescheinigung
+        from: fre.anmeldung
       - Income estimate (for GKV contribution assessment)
     links:
       - https://www.krankenkassen.de/
@@ -161,8 +162,10 @@ tasks:
     deadline_days: 30
     documents_required:
       - Passport or ID
-      - Meldebescheinigung
-      - Tax ID (if available)
+      - label: Meldebescheinigung
+        from: fre.anmeldung
+      - label: Tax ID (if available)
+        from: fre.steuer_id
     links:
       - https://www.n26.com/en-de
       - https://www.qonto.com/de

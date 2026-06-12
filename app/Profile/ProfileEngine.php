@@ -92,6 +92,21 @@ class ProfileEngine
         'license_country' => ['eu', 'other', 'none'],
     ];
 
+    /**
+     * Date-valued attributes (life events + move-in). Recording one wakes
+     * up the tasks gated on it and anchors their deadlines.
+     *
+     * @var list<string>
+     */
+    public const DATE_ATTRIBUTES = ['moved_in_at', 'child_born_at', 'graduated_at', 'found_job_at'];
+
+    /**
+     * Known life-event names a task's trigger_event may reference.
+     *
+     * @var list<string>
+     */
+    public const LIFE_EVENTS = ['child_born', 'graduated', 'found_job'];
+
     public function build(User $user): Profile
     {
         $situation = $user->situation ?? Situation::Other;
@@ -165,6 +180,9 @@ class ProfileEngine
             'housing_status' => $housing,
             'moved_in_at' => $movedInAt,
             'license_country' => $stored['license_country'] ?? null,
+            'child_born_at' => $stored['child_born_at'] ?? null,
+            'graduated_at' => $stored['graduated_at'] ?? null,
+            'found_job_at' => $stored['found_job_at'] ?? null,
             'arrival_date' => $user->arrival_date?->toDateString(),
             'veedel' => $user->veedel,
         ];
