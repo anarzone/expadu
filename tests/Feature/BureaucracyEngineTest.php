@@ -581,3 +581,49 @@ test('Blue Card holders cross the NE mark at 21 months', function () {
         return true;
     });
 });
+
+// ── Journey reset (testing tool) ───────────────────────────────────────
+
+test('user:reset-journey sends a user back through onboarding for a clean replay', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee_blue_card',
+        'profile_attributes' => ['license_country' => 'other', 'child_born_at' => '2026-05-01'],
+    ]);
+    $this->actingAs($user);
+    $this->get(route('bureaucracy')); // materialise tasks + progress
+    expect($user->userTasks()->count())->toBeGreaterThan(0);
+
+    $this->artisan('user:reset-journey', ['email' => $user->email, '--force' => true])
+        ->assertSuccessful();
+
+    $user->refresh();
+    expect($user->onboarded_at)->toBeNull();
+    expect($user->situation)->toBeNull();
+    expect($user->bureaucracy_path)->toBeNull();
+    expect($user->profile_attributes)->toBeNull();
+    expect($user->userTasks()->count())->toBe(0);
+    expect($user->attributeChanges()->count())->toBe(0);
+
+    // The middleware sends them straight back to onboarding…
+    $this->get(route('explore'))->assertRedirect(route('onboarding'));
+
+    // …and a different persona replays cleanly on the same account.
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'student',
+        'is_eu' => true,
+        'veedel' => 'Nippes',
+        'arrival_date' => now()->subDays(3)->toDateString(),
+        'housing_status' => 'long_term',
+    ])->assertRedirect(route('dashboard'));
+
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
+        expect($keys)->toContain('stu.anmeldung');
+        expect($keys)->not->toContain('bc.blue_card');
+
+        return true;
+    });
+});
