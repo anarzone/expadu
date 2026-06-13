@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expadu — Composer v2 (universal prompt: plan · answer · find)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-h: #1540B8; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --success-s: #D4F0E6; --warn: #C47D0E; --warn-s: #FDF0D4;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 6px 24px rgba(24,23,15,.06);
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860;
+  --accent-soft: rgba(26,76,212,.2);
+  --success-s: rgba(10,124,82,.18); --warn-s: rgba(196,125,14,.16);
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+}
+.dark .verified, .dark .chip.on, .dark .why-link { color: #8FAAF0; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text-1); transition: background .25s; }
+.shell { max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; }
+.mode-toggle { position: fixed; top: 14px; right: 14px; z-index: 90; width: 38px; height: 38px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-size: 16px; cursor: pointer; box-shadow: var(--shadow); }
+h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 28px; letter-spacing: -.02em; }
+.page-sub { font-size: 14px; color: var(--text-2); margin-top: 5px; }
+.note { background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 14px; font-size: 12px; color: var(--text-2); margin: 14px 0 20px; }
+.note b { color: var(--text-1); }
+
+/* tabs (prototype only) */
+.tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.tabs button { padding: 7px 13px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 12px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.view { display: none; }
+.view.on { display: block; animation: fadeUp .3s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── THE UNIVERSAL PROMPT (Today screen + composer page) ── */
+.prompt { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-lg); padding: 6px 6px 6px 18px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow); }
+.prompt input { flex: 1; border: none; background: transparent; font-family: 'Geist', sans-serif; font-size: 15px; color: var(--text-1); outline: none; padding: 12px 0; }
+.prompt input::placeholder { color: var(--text-3); }
+.go { width: 42px; height: 42px; border-radius: 14px; border: none; background: var(--accent); color: #fff; font-size: 17px; cursor: pointer; flex-shrink: 0; }
+.examples { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+.ex { padding: 7px 13px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-family: 'Geist', sans-serif; font-size: 12.5px; color: var(--text-2); cursor: pointer; }
+.ex:hover { border-color: var(--accent); color: var(--accent); }
+.ex.kids { border-style: dashed; }
+.hint-line { font-size: 11px; color: var(--text-3); margin-top: 9px; }
+
+/* parsed chips */
+.parsed { display: flex; gap: 7px; flex-wrap: wrap; margin: 18px 0 6px; align-items: center; }
+.parsed-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); width: 100%; margin-bottom: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.chip s { opacity: .55; font-weight: 400; text-decoration: none; }
+.redo { font-size: 12px; color: var(--text-3); text-decoration: underline; cursor: pointer; margin-left: auto; }
+
+/* notice chips */
+.notices { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
+.notice { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 100px; background: var(--warn-s); color: var(--warn); }
+.notice.info { background: var(--accent-soft); color: var(--accent); }
+
+/* ── PLAN TIMELINE ── */
+.slot { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; display: flex; gap: 13px; align-items: flex-start; }
+.slot .t { font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text-2); width: 46px; flex-shrink: 0; padding-top: 2px; }
+.slot .e { font-size: 22px; flex-shrink: 0; }
+.slot b { display: block; font-size: 14.5px; }
+.slot .sub { font-size: 12px; color: var(--text-2); margin-top: 2px; line-height: 1.5; }
+.slot-actions { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+.sa { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 14px; color: var(--text-2); }
+.sa:hover { border-color: var(--accent); color: var(--accent); }
+.slot.anchor { border-color: var(--accent); background: var(--accent-soft); }
+.slot.anchor .pin { font-family: 'Geist Mono', monospace; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 2px; }
+.connector { display: flex; align-items: center; gap: 8px; padding: 6px 0 6px 24px; color: var(--text-3); font-size: 11.5px; font-family: 'Geist Mono', monospace; }
+.connector i { font-style: normal; }
+.plan-foot { display: flex; gap: 8px; margin-top: 16px; }
+.btn-primary { flex: 1; padding: 12px; border-radius: var(--r-sm); border: none; background: var(--accent); color: #fff; font-family: 'Geist', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-ghost { padding: 12px 16px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-family: 'Geist', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+/* ── ANSWER CARD (bureaucracy_q) — a sibling of the task card, NOT a chat bubble ── */
+.answer { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.answer-lead { padding: 14px 16px; font-size: 14.5px; line-height: 1.6; border-bottom: 1px solid var(--border); }
+.answer-lead b { color: var(--accent); }
+.grounded { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); display: block; margin-bottom: 6px; }
+.answer-task { padding: 13px 16px; display: flex; gap: 11px; align-items: center; }
+.answer-task .meta { flex: 1; min-width: 0; }
+.answer-task b { font-size: 13.5px; display: block; }
+.verified { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+.open-task { padding: 9px 14px; border-radius: var(--r-sm); border: none; background: var(--accent); color: #fff; font-size: 12.5px; font-weight: 600; cursor: pointer; flex-shrink: 0; font-family: 'Geist', sans-serif; }
+.answer-miss { background: var(--surface); border: 1px dashed var(--border); border-radius: var(--r); padding: 16px; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+.answer-miss b { color: var(--text-1); }
+
+/* ── FIND RESULTS ── */
+.result { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.result .e { font-size: 20px; }
+.result b { display: block; font-size: 13.5px; }
+.result span { font-size: 11.5px; color: var(--text-2); }
+.result .kind { margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); flex-shrink: 0; }
+
+/* degraded banner */
+.degraded { background: var(--warn-s); border-radius: var(--r-sm); padding: 10px 14px; font-size: 12.5px; color: var(--warn); font-weight: 600; margin-bottom: 14px; }
+
+.section-gap { margin-top: 26px; }
+.lane { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin: 20px 0 10px; }
+</style>
+</head>
+<body>
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';">🌙</button>
+
+<div class="shell">
+  <h1>Composer v2 — one box, four answers</h1>
+  <p class="page-sub">The LLM only translates. Verified content answers. The deterministic pipeline plans.</p>
+  <div class="note"><b>Flip the views:</b> ① the universal prompt (lives on Today + here) · ② a composed plan with a WOVEN-IN appointment anchor · ③ a bureaucracy question answered from the user's verified card · ④ find results · ⑤ honest degraded state.</div>
+
+  <div class="tabs" id="tabs">
+    <button class="on" data-v="1">1 Prompt</button>
+    <button data-v="2">2 Plan</button>
+    <button data-v="3">3 Answer</button>
+    <button data-v="4">4 Find</button>
+    <button data-v="5">5 Degraded</button>
+  </div>
+
+  <!-- ① PROMPT -->
+  <section class="view on" data-view="1">
+    <div class="prompt">
+      <input placeholder="Plan my day, ask about paperwork, find a place…">
+      <button class="go">→</button>
+    </div>
+    <div class="examples">
+      <button class="ex">🌳 Free Saturday afternoon</button>
+      <button class="ex">🍻 Meet people tonight</button>
+      <button class="ex kids">👶 Something with the kids tomorrow</button>
+      <button class="ex">📋 Do I need an appointment for Anmeldung?</button>
+    </div>
+    <p class="hint-line">The kids chip only appears for users who recorded the baby — the profile reaches the chips too. Questions are answered from your verified checklist, never invented.</p>
+  </section>
+
+  <!-- ② PLAN -->
+  <section class="view" data-view="2">
+    <div class="parsed">
+      <span class="parsed-label">I understood — tap to correct</span>
+      <span class="chip on">📅 Saturday 12:00–19:00</span>
+      <span class="chip on">📍 Ehrenfeld + nearby</span>
+      <span class="chip">👥 with a friend</span>
+      <span class="chip">💶 low budget</span>
+      <span class="redo">start over</span>
+    </div>
+    <div class="notices">
+      <span class="notice">🌧 Rain from 15:00 — indoor after lunch</span>
+      <span class="notice info">🏛️ Built around your 14:00 appointment</span>
+    </div>
+
+    <div class="slot">
+      <span class="t">12:10</span><span class="e">🥙</span>
+      <div><b>Markthalle Belgisches Viertel</b><div class="sub">Lunch · busy but quick on Saturdays · ~€</div></div>
+      <div class="slot-actions"><button class="sa" title="Swap">↻</button><button class="sa" title="Take me there">🚌</button></div>
+    </div>
+    <div class="connector">│ 🚶 8 min walk <i>· corrected to 11 min after tap</i></div>
+    <div class="slot">
+      <span class="t">13:00</span><span class="e">🌳</span>
+      <div><b>Stadtgarten</b><div class="sub">Catch the dry window · coffee kiosk at the east gate</div></div>
+      <div class="slot-actions"><button class="sa">↻</button><button class="sa">🚌</button></div>
+    </div>
+    <div class="connector">│ 🚇 U5 · 9 min + 4 min walk</div>
+    <div class="slot anchor">
+      <span class="t">14:00</span><span class="e">🏛️</span>
+      <div><span class="pin">Your appointment · not movable</span><b>Ausländerbehörde — permit appointment</b><div class="sub">7 documents on your checklist · leave Stadtgarten by 13:38</div></div>
+      <div class="slot-actions"><button class="sa">🚌</button></div>
+    </div>
+    <div class="connector">│ 🚇 back west · 12 min</div>
+    <div class="slot">
+      <span class="t">15:30</span><span class="e">🖼️</span>
+      <div><b>Museum Ludwig</b><div class="sub">Indoor for the rain · free first Thursday — today it's €11</div></div>
+      <div class="slot-actions"><button class="sa">↻</button><button class="sa">🚌</button></div>
+    </div>
+
+    <div class="plan-foot">
+      <button class="btn-primary">Save to Today</button>
+      <button class="btn-ghost">Recompose</button>
+    </div>
+  </section>
+
+  <!-- ③ ANSWER -->
+  <section class="view" data-view="3">
+    <div class="answer">
+      <div class="answer-lead">
+        <span class="grounded">From your checklist · verified 11 Jun 2026</span>
+        <b>No appointment needed on Mondays and Wednesdays</b> — Cologne's Kundenzentren take Anmeldung walk-ins those days. Tue/Thu/Fri need a booking, or you can register fully online via the Serviceportal.
+      </div>
+      <div class="answer-task">
+        <span style="font-size:20px">📋</span>
+        <div class="meta">
+          <b>Register your address (Anmeldung)</b>
+          <span class="verified">✓ Verified 11 Jun 2026 · 2 documents · due 21 Jun</span>
+        </div>
+        <button class="open-task">Open in checklist →</button>
+      </div>
+    </div>
+
+    <div class="lane">When retrieval finds nothing</div>
+    <div class="answer-miss">
+      <b>I don't have a verified answer for that.</b> Nothing in your checklist covers it — rather than guess, here's your <u>bureaucracy page</u> and the <u>Ausländeramt contact route</u>. Wrong info is worse than missing info.
+    </div>
+  </section>
+
+  <!-- ④ FIND -->
+  <section class="view" data-view="4">
+    <div class="result"><span class="e">🏀</span><div><b>Basketballplatz Grüngürtel</b><span>Ehrenfeld · outdoor · free</span></div><span class="kind">place</span></div>
+    <div class="result"><span class="e">🏀</span><div><b>Sportpark Müngersdorf courts</b><span>Müngersdorf · 14 min by U1</span></div><span class="kind">place</span></div>
+    <div class="result"><span class="e">🗓️</span><div><b>Pickup basketball — Saturdays</b><span>Tomorrow 16:00 · Grüngürtel</span></div><span class="kind">event</span></div>
+    <p class="hint-line" style="margin-top:10px">Same index as ⌘K search — typo-tolerant, trilingual synonyms (anmeldung = registration, führerschein = driving licence).</p>
+  </section>
+
+  <!-- ⑤ DEGRADED -->
+  <section class="view" data-view="5">
+    <div class="degraded">⚡ Interpreted roughly (assistant offline) — check the chips below or just browse the matches.</div>
+    <div class="parsed">
+      <span class="chip on">📅 today 14:00–19:00</span>
+      <span class="chip on">📍 your usual areas</span>
+    </div>
+    <div class="result"><span class="e">🌳</span><div><b>Stadtgarten</b><span>Ehrenfeld · open now</span></div><span class="kind">place</span></div>
+    <div class="result"><span class="e">☕</span><div><b>Café Sehnsucht</b><span>Ehrenfeld · open until 19:00</span></div><span class="kind">place</span></div>
+    <p class="hint-line" style="margin-top:10px">No spinner that ends in an apology: heuristics parse the time words, the box behaves as search, the plan button still works with profile defaults.</p>
+  </section>
+</div>
+
+<script>
+const tabs = document.getElementById('tabs');
+tabs.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  tabs.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.dataset.view === b.dataset.v));
+});
+</script>
+</body>
+</html>
