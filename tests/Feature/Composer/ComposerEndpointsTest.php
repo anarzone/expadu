@@ -234,6 +234,28 @@ test('the shops-shut notice respects the German week — Sunday, not Saturday', 
         ->toContain('most shops shut');
 });
 
+test('a pinned spot is anchored into the plan even when it ranks low', function () {
+    $user = composerUser();
+
+    // A low-rated pinned spot vs high-rated filler: only the pin boost
+    // should pull it into the plan.
+    $pinned = Spot::factory()->create(['name' => 'Pinned Lake', 'category' => 'lake', 'lat' => 50.95, 'lng' => 6.93, 'rating' => 1.0]);
+    Spot::factory()->count(5)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924, 'rating' => 5.0]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(12, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->copy()->addHours(6)->toIso8601String(),
+        ],
+        'pins' => ["spot:{$pinned->id}"],
+    ]);
+
+    $response->assertOk();
+    expect(collect($response->json('plan.slots'))->pluck('id'))->toContain("spot:{$pinned->id}");
+});
+
 test('swap without a stored plan 404s', function () {
     $this->actingAs(composerUser());
 

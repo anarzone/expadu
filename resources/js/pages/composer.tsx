@@ -282,9 +282,10 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
 }
 
 export default function Composer() {
-    const { prompt, homeVeedel } = usePage<{
+    const { prompt, homeVeedel, pins } = usePage<{
         prompt?: string;
         homeVeedel?: string | null;
+        pins?: string[];
     }>().props;
     const { track } = useTracker();
 
@@ -301,23 +302,28 @@ export default function Composer() {
     // double-invoke would otherwise fire two parse + compose round-trips).
     const parsedPrompt = useRef<string | null>(null);
 
-    const compose = useCallback(async (next: Constraints) => {
-        setComposing(true);
-        setError(null);
+    const compose = useCallback(
+        async (next: Constraints) => {
+            setComposing(true);
+            setError(null);
 
-        try {
-            const json = await post<{ plan: Plan; notices: Notice[] }>(
-                '/composer/compose',
-                { constraints: next },
-            );
-            setPlan(json.plan);
-            setNotices(json.notices ?? []);
-        } catch {
-            setError('Could not compose your day. Try adjusting the chips.');
-        } finally {
-            setComposing(false);
-        }
-    }, []);
+            try {
+                const json = await post<{ plan: Plan; notices: Notice[] }>(
+                    '/composer/compose',
+                    { constraints: next, pins: pins ?? [] },
+                );
+                setPlan(json.plan);
+                setNotices(json.notices ?? []);
+            } catch {
+                setError(
+                    'Could not compose your day. Try adjusting the chips.',
+                );
+            } finally {
+                setComposing(false);
+            }
+        },
+        [pins],
+    );
 
     // Parse the prompt handed over from the Today screen, then — for a
     // plan — compose straight away. A picked suggestion is high-confidence

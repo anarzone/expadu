@@ -101,6 +101,8 @@ $appRoutes = function () use ($appDomain) {
         Route::get('composer', fn () => Inertia::render('composer', [
             'prompt' => request()->query('prompt'),
             'homeVeedel' => request()->user()?->veedel,
+            // Spots the user pinned on the home feed → anchored in the plan.
+            'pins' => array_values(array_filter(explode(',', (string) request()->query('pins')))),
         ]))->name('composer');
         Route::post('composer/parse', [ComposerController::class, 'parse'])->name('composer.parse');
         Route::post('composer/compose', [ComposerController::class, 'compose'])->name('composer.compose');

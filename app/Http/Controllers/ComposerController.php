@@ -73,6 +73,8 @@ class ComposerController extends Controller
             'constraints.categories' => ['array'],
             'constraints.companions' => ['nullable', 'string'],
             'constraints.budget' => ['nullable', 'string'],
+            'pins' => ['array'],
+            'pins.*' => ['string'],
         ]);
 
         $user = $request->user();
@@ -89,18 +91,25 @@ class ComposerController extends Controller
             preferredAreas: $constraints->areas !== [] ? $constraints->areas : $profile->defaultAreas,
             intentWeights: $intents->for($user),
             companions: $constraints->companions,
+            pinnedIds: $validated['pins'] ?? [],
         );
 
         [$originLat, $originLng] = $this->origin($user);
 
-        // Leisure runs the feasibility gauntlet; the user's own booked
-        // appointments bypass it entirely and become immovable anchors.
+        // Leisure runs the feasibility gauntlet; appointments and pinned
+        // "plan around this" picks bypass it (the user chose them) and dedupe
+        // with the rest — the scorer's pin boost guarantees they get placed.
         $feasible = $filter->filter($constraints, $candidates->candidatesFor($constraints));
-        $anchored = [...$appointments->within($user, $constraints), ...$feasible];
-        $plan = $filler->fill($constraints, $anchored, $context, $originLat, $originLng);
+        $pinned = $candidates->byIds($validated['pins'] ?? []);
+        $pool = collect([...$appointments->within($user, $constraints), ...$pinned, ...$feasible])
+            ->unique(fn (Candidate $c) => $c->id)
+            ->values()
+            ->all();
+        $plan = $filler->fill($constraints, $pool, $context, $originLat, $originLng);
 
         Cache::put($this->planKey($user), $plan->toArray() + [
             'origin' => [$originLat, $originLng],
+            'pins' => $validated['pins'] ?? [],
         ], now()->addHours(self::PLAN_TTL_HOURS));
 
         return response()->json([
@@ -128,8 +137,9 @@ class ComposerController extends Controller
             return response()->json(['message' => 'No active plan — compose one first.'], 404);
         }
 
+        $pins = $stored['pins'] ?? [];
         $appointmentPool = $appointments->within($user, Constraints::fromArray($stored['constraints']));
-        $plan = $this->hydratePlan($stored, $candidates, $appointmentPool);
+        $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins));
         $slotIndex = (int) $validated['slot'];
         $rejected = $stored['rejected'][$slotIndex] ?? [];
 
@@ -162,6 +172,7 @@ class ComposerController extends Controller
             preferredAreas: $plan->constraints->areas !== [] ? $plan->constraints->areas : $profile->defaultAreas,
             intentWeights: $intents->for($user),
             companions: $plan->constraints->companions,
+            pinnedIds: $pins,
         );
 
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);
@@ -179,6 +190,7 @@ class ComposerController extends Controller
         Cache::put($this->planKey($user), $swapped->toArray() + [
             'origin' => [$originLat, $originLng],
             'rejected' => $rejectedMap,
+            'pins' => $pins,
         ], now()->addHours(self::PLAN_TTL_HOURS));
 
         return response()->json([
@@ -276,11 +288,12 @@ class ComposerController extends Controller
      *
      * @param  array<string, mixed>  $stored
      * @param  list<Candidate>  $appointmentPool
+     * @param  list<Candidate>  $pinnedPool
      */
-    private function hydratePlan(array $stored, CandidateRepository $candidates, array $appointmentPool = []): Plan
+    private function hydratePlan(array $stored, CandidateRepository $candidates, array $appointmentPool = [], array $pinnedPool = []): Plan
     {
         $constraints = Constraints::fromArray($stored['constraints']);
-        $pool = collect([...$candidates->candidatesFor($constraints), ...$appointmentPool])->keyBy('id');
+        $pool = collect([...$candidates->candidatesFor($constraints), ...$appointmentPool, ...$pinnedPool])->keyBy('id');
 
         $slots = [];
         foreach ($stored['slots'] as $slotData) {

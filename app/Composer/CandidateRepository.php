@@ -51,27 +51,59 @@ class CandidateRepository
             ->orderByDesc('rating')
             ->limit(150)
             ->get()
-            ->map(function (Spot $spot) {
-                $category = $spot->category instanceof \BackedEnum
-                    ? $spot->category->value
-                    : (string) $spot->category;
-
-                return new Candidate(
-                    id: "spot:{$spot->id}",
-                    type: 'spot',
-                    name: $spot->name,
-                    lat: (float) $spot->lat,
-                    lng: (float) $spot->lng,
-                    veedel: $spot->veedel ?? null,
-                    category: $category,
-                    outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true),
-                    typicalDurationMin: self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default'],
-                    costTier: $this->spotCostTier($spot),
-                    opensAt: null, // opening_hours parsing lands with the places reshape
-                    closesAt: null,
-                );
-            })
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot))
             ->all();
+    }
+
+    /**
+     * Load specific spots by candidate id ("spot:12") regardless of rating —
+     * so a "plan around this" pin from the home feed is guaranteed to be in
+     * the pool even if it falls outside the top-rated cap.
+     *
+     * @param  list<string>  $ids
+     * @return list<Candidate>
+     */
+    public function byIds(array $ids): array
+    {
+        $spotIds = collect($ids)
+            ->filter(fn ($id) => is_string($id) && str_starts_with($id, 'spot:'))
+            ->map(fn ($id) => (int) substr($id, 5))
+            ->filter()
+            ->all();
+
+        if ($spotIds === []) {
+            return [];
+        }
+
+        return Spot::query()
+            ->whereIn('id', $spotIds)
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->get()
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot))
+            ->all();
+    }
+
+    private function spotToCandidate(Spot $spot): Candidate
+    {
+        $category = $spot->category instanceof \BackedEnum
+            ? $spot->category->value
+            : (string) $spot->category;
+
+        return new Candidate(
+            id: "spot:{$spot->id}",
+            type: 'spot',
+            name: $spot->name,
+            lat: (float) $spot->lat,
+            lng: (float) $spot->lng,
+            veedel: $spot->veedel ?? null,
+            category: $category,
+            outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true),
+            typicalDurationMin: self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default'],
+            costTier: $this->spotCostTier($spot),
+            opensAt: null, // opening_hours parsing lands with the places reshape
+            closesAt: null,
+        );
     }
 
     /**

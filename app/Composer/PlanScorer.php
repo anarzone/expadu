@@ -81,6 +81,12 @@ class PlanScorer
         // space. Neutral (and so ranking-irrelevant) for other companions.
         $score += self::WEIGHTS['companion'] * $this->companionFit($candidate, $context->companions);
 
+        // Pinned "plan around this" picks from the home feed dominate so the
+        // filler places them wherever they're feasible.
+        if (in_array($candidate->id, $context->pinnedIds, true)) {
+            $score += 1000.0;
+        }
+
         return round($score, 2);
     }
 

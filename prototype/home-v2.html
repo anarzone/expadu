@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expadu — Home v2 (discovery rails + composer) & Plan result</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-h: #1540B8; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --success-s: #D4F0E6; --warn: #C47D0E; --warn-s: #FDF0D4;
+  --danger: #C0392B; --danger-s: #FBE6E3;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 6px 24px rgba(24,23,15,.06);
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860;
+  --accent-soft: rgba(26,76,212,.22);
+  --success-s: rgba(10,124,82,.18); --warn-s: rgba(196,125,14,.16); --danger-s: rgba(192,57,43,.18);
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+}
+.dark .verified, .dark .reason.accent, .dark .chip.on { color: #8FAAF0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text-1); transition: background .25s; }
+.shell { max-width: 680px; margin: 0 auto; padding: 22px 16px 90px; }
+.mode-toggle { position: fixed; top: 14px; right: 14px; z-index: 90; width: 38px; height: 38px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-size: 16px; cursor: pointer; box-shadow: var(--shadow); }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 22px; }
+.tabs button { padding: 7px 14px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-family: 'Geist'; font-size: 12px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.view { display: none; } .view.on { display: block; animation: fade .3s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* greeting */
+.greet { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.greet h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-spacing: -.02em; }
+.greet .wx { font-size: 13px; color: var(--text-2); }
+
+/* prompt */
+.prompt { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-lg); padding: 6px 6px 6px 18px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow); }
+.prompt input { flex: 1; border: none; background: transparent; font-family: 'Geist'; font-size: 15px; color: var(--text-1); outline: none; padding: 13px 0; }
+.prompt input::placeholder { color: var(--text-3); }
+.go { width: 42px; height: 42px; border-radius: 14px; border: none; background: var(--accent); color: #fff; font-size: 17px; cursor: pointer; flex-shrink: 0; }
+.chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+.sugg { padding: 7px 13px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-size: 12.5px; color: var(--text-2); cursor: pointer; }
+.sugg:hover { border-color: var(--accent); color: var(--accent); }
+.chips-hint { font-size: 11px; color: var(--text-3); margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+
+/* section heads */
+.sec { margin-top: 28px; }
+.sec-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.sec-head h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 18px; letter-spacing: -.01em; }
+.sec-head .why { font-size: 11.5px; color: var(--text-3); }
+.sec-head .more { margin-left: auto; font-size: 12px; color: var(--accent); cursor: pointer; }
+
+/* urgency strip */
+.urgent { display: flex; flex-direction: column; gap: 9px; }
+.u-card { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: var(--r); border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+.u-card.red { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); background: var(--danger-s); }
+.u-card .ic { font-size: 20px; flex-shrink: 0; }
+.u-card .body { flex: 1; min-width: 0; }
+.u-card b { font-size: 14px; display: block; }
+.u-card span { font-size: 12px; color: var(--text-2); }
+.u-card.red b, .u-card.red span { color: var(--danger); }
+.u-card .cta { font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.u-card.red .cta { color: var(--danger); }
+
+/* rails */
+.rail { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+.rail::-webkit-scrollbar { display: none; }
+.card { flex: 0 0 196px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer; box-shadow: var(--shadow); }
+.card:hover { border-color: var(--accent); }
+.card .thumb { height: 104px; display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; }
+.card .badge { position: absolute; top: 8px; left: 8px; font-family: 'Geist Mono'; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; background: rgba(0,0,0,.55); color: #fff; padding: 3px 7px; border-radius: 100px; }
+.card .meta { padding: 11px 12px 13px; }
+.card .meta b { font-size: 13.5px; display: block; line-height: 1.3; }
+.card .meta .sub { font-size: 11.5px; color: var(--text-2); margin-top: 3px; }
+.card .reason { font-size: 11px; color: var(--text-2); margin-top: 7px; display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); padding: 3px 8px; border-radius: 100px; }
+.reason.accent { color: var(--accent); background: var(--accent-soft); }
+/* thumb tints */
+.t-green { background: linear-gradient(135deg,#DCEFD9,#C3E3BD); } .dark .t-green { background: linear-gradient(135deg,#1f3a1c,#16301a); }
+.t-blue { background: linear-gradient(135deg,#D9E6FB,#BCD2F5); } .dark .t-blue { background: linear-gradient(135deg,#1b2a4a,#16223c); }
+.t-amber { background: linear-gradient(135deg,#FBEFD0,#F3DDA6); } .dark .t-amber { background: linear-gradient(135deg,#3a2f12,#30260e); }
+.t-rose { background: linear-gradient(135deg,#FBDDE0,#F3BCC4); } .dark .t-rose { background: linear-gradient(135deg,#3a1820,#301017); }
+.t-purple { background: linear-gradient(135deg,#E7DDFB,#CFBCF3); } .dark .t-purple { background: linear-gradient(135deg,#2a1f4a,#22183c); }
+
+/* paperwork mini-card */
+.task-card { flex: 0 0 230px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 13px 14px; box-shadow: var(--shadow); cursor: pointer; }
+.task-card .due { font-family: 'Geist Mono'; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--warn); }
+.task-card .due.soon { color: var(--danger); }
+.task-card b { display: block; font-size: 13.5px; margin: 5px 0 4px; }
+.task-card .verified { font-size: 11px; color: var(--accent); }
+
+/* getting around */
+.transit { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.dep { display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-bottom: 1px solid var(--border); }
+.dep:last-child { border-bottom: none; }
+.line { width: 34px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.dep .dest { flex: 1; min-width: 0; } .dep .dest b { font-size: 13.5px; } .dep .dest span { font-size: 11.5px; color: var(--text-2); }
+.dep .when { font-family: 'Geist Mono'; font-size: 13px; font-weight: 600; }
+.dep .when.now { color: var(--success); }
+
+.foot-note { text-align: center; font-size: 11.5px; color: var(--text-3); margin-top: 28px; line-height: 1.6; }
+
+/* "+ plan around this" on cards + floating plan pill */
+.card .thumb .add { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 100px; border: none; background: rgba(255,255,255,.92); color: var(--accent); font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.card .thumb .add.on { background: var(--accent); color: #fff; }
+.plan-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: 22px; background: var(--accent); color: #fff; padding: 13px 22px; border-radius: 100px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 28px rgba(26,76,212,.45); cursor: pointer; display: none; z-index: 80; }
+.plan-pill.show { display: block; animation: fade .25s; }
+
+/* ── PLAN view (mirrors what's built) ── */
+.parsed { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+.parsed .lbl { font-family: 'Geist Mono'; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); width: 100%; margin-bottom: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.chip .x { color: var(--text-3); }
+.chip.hint { border-style: dashed; font-weight: 500; color: var(--text-2); cursor: default; }
+.notices { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 16px; }
+.notice { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 100px; background: var(--warn-s); color: var(--warn); }
+.notice.info { background: var(--accent-soft); color: var(--accent); }
+.slot { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; display: flex; gap: 13px; align-items: flex-start; }
+.slot .t { font-family: 'Geist Mono'; font-size: 12px; font-weight: 600; color: var(--text-2); width: 46px; flex-shrink: 0; padding-top: 2px; }
+.slot .e { font-size: 22px; flex-shrink: 0; }
+.slot b { display: block; font-size: 14.5px; } .slot .sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.slot-actions { margin-left: auto; display: flex; gap: 6px; }
+.sa { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 14px; color: var(--text-2); }
+.slot.anchor { border-color: var(--accent); background: var(--accent-soft); }
+.slot.anchor .pin { font-family: 'Geist Mono'; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 2px; }
+.connector { display: flex; align-items: center; gap: 8px; padding: 6px 0 6px 24px; color: var(--text-3); font-size: 11.5px; font-family: 'Geist Mono'; }
+.plan-foot { display: flex; gap: 8px; margin-top: 16px; }
+.btn-primary { flex: 1; padding: 12px; border-radius: var(--r-sm); border: none; background: var(--accent); color: #fff; font-family: 'Geist'; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-ghost { padding: 12px 16px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';">🌙</button>
+
+<div class="shell">
+  <div class="tabs" id="tabs">
+    <button class="on" data-v="home">🏠 Home (discovery)</button>
+    <button data-v="plan">🗓️ Composer result</button>
+  </div>
+
+  <!-- ════════ HOME ════════ -->
+  <section class="view on" data-view="home">
+    <div class="greet">
+      <h1>Good afternoon, Anar</h1>
+      <div class="wx">⛅ 14° · Sun · rain later</div>
+    </div>
+
+    <!-- prompt + dynamic personal chips -->
+    <div class="prompt">
+      <input placeholder="Plan something, ask about paperwork, find a place…">
+      <button class="go">→</button>
+    </div>
+    <div class="chips">
+      <button class="sugg">🌧️ Indoor fun with the kids</button>
+      <button class="sugg">☕ Rainy-day cafés near you</button>
+      <button class="sugg">📋 Sort my Anmeldung</button>
+      <button class="sugg">🎭 What's on tonight</button>
+    </div>
+    <div class="chips-hint">✨ Suggestions built from your situation, the weather, and what you tap — not canned examples.</div>
+
+    <!-- RIGHT NOW (operating-manual urgency, pinned on top) -->
+    <div class="sec">
+      <div class="sec-head"><h2>Right now</h2><span class="why">time-sensitive for you</span></div>
+      <div class="urgent">
+        <div class="u-card red">
+          <span class="ic">📋</span>
+          <div class="body"><b>Anmeldung — register your address</b><span>Due in 3 days · 2 documents ready</span></div>
+          <span class="cta">Open →</span>
+        </div>
+        <div class="u-card">
+          <span class="ic">🚇</span>
+          <div class="body"><b>U5 part-suspended this weekend</b><span>Affects your usual route to Mitte</span></div>
+          <span class="cta">Details →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEXTUAL RAIL: weather-aware -->
+    <div class="sec">
+      <div class="sec-head"><h2>Made for your rainy Sunday</h2><span class="why">indoor · shops shut today</span><span class="more">See all</span></div>
+      <div class="rail">
+        <div class="card"><div class="thumb t-amber">🖼️<span class="badge">indoor</span></div><div class="meta"><b>Museum Ludwig</b><div class="sub">Altstadt · open till 18:00</div><span class="reason accent">☔ dry pick for the rain</span></div></div>
+        <div class="card"><div class="thumb t-blue">📚</div><div class="meta"><b>Stadtbibliothek</b><div class="sub">Altstadt-Süd · free</div><span class="reason">quiet · free entry</span></div></div>
+        <div class="card"><div class="thumb t-rose">☕</div><div class="meta"><b>Café Sehnsucht</b><div class="sub">Ehrenfeld · open now</div><span class="reason accent">📍 in your area</span></div></div>
+        <div class="card"><div class="thumb t-blue">🏊</div><div class="meta"><b>Agrippabad</b><div class="sub">Altstadt-Süd · €5.80</div><span class="reason">indoor pool</span></div></div>
+      </div>
+    </div>
+
+    <!-- EVENTS RAIL -->
+    <div class="sec">
+      <div class="sec-head"><h2>Tonight in Cologne</h2><span class="why">curated · in your window</span><span class="more">See all</span></div>
+      <div class="rail">
+        <div class="card"><div class="thumb t-purple">🎷<span class="badge">tonight</span></div><div class="meta"><b>Jazz at Stadtgarten</b><div class="sub">20:00 · Neustadt-Nord · €12</div><span class="reason">🚶 12 min away</span></div></div>
+        <div class="card"><div class="thumb t-amber">🍻</div><div class="meta"><b>Expat language stammtisch</b><div class="sub">19:00 · Ehrenfeld · free</div><span class="reason accent">👋 meet people</span></div></div>
+        <div class="card"><div class="thumb t-green">🎬</div><div class="meta"><b>Open-air cinema (covered)</b><div class="sub">21:00 · Rheinpark</div><span class="reason">dry venue</span></div></div>
+      </div>
+    </div>
+
+    <!-- FAMILIAR RAIL -->
+    <div class="sec">
+      <div class="sec-head"><h2>Around Ehrenfeld</h2><span class="why">your home Veedel</span><span class="more">See all</span></div>
+      <div class="rail">
+        <div class="card"><div class="thumb t-green">🌳</div><div class="meta"><b>Grüngürtel</b><div class="sub">Ehrenfeld · 6 min walk</div><span class="reason accent">📍 your usual</span></div></div>
+        <div class="card"><div class="thumb t-rose">🥙</div><div class="meta"><b>Markthalle</b><div class="sub">Belgisches Viertel</div><span class="reason">you've been before</span></div></div>
+        <div class="card"><div class="thumb t-amber">🛝</div><div class="meta"><b>Fröbelplatz playground</b><div class="sub">Ehrenfeld · free</div><span class="reason accent">👶 good with kids</span></div></div>
+      </div>
+    </div>
+
+    <!-- DISCOVERY RAIL: familiar + new mix -->
+    <div class="sec">
+      <div class="sec-head"><h2>Try something new</h2><span class="why">a Veedel you haven't explored</span></div>
+      <div class="rail">
+        <div class="card"><div class="thumb t-blue">🚡<span class="badge">new to you</span></div><div class="meta"><b>Rheinseilbahn</b><div class="sub">Deutz · €5</div><span class="reason">first time in Deutz</span></div></div>
+        <div class="card"><div class="thumb t-green">🦫</div><div class="meta"><b>Decksteiner Weiher</b><div class="sub">Lindenthal</div><span class="reason">new lake walk</span></div></div>
+        <div class="card"><div class="thumb t-amber">🎨</div><div class="meta"><b>Skulpturenpark</b><div class="sub">Riehl · free</div><span class="reason">unexplored area</span></div></div>
+      </div>
+    </div>
+
+    <!-- PAPERWORK RAIL -->
+    <div class="sec">
+      <div class="sec-head"><h2>Get your paperwork moving</h2><span class="why">your checklist</span><span class="more">Open checklist</span></div>
+      <div class="rail">
+        <div class="task-card"><span class="due soon">Due in 3 days</span><b>Register your address (Anmeldung)</b><span class="verified">✓ Verified 11 Jun · 2 docs</span></div>
+        <div class="task-card"><span class="due">No deadline</span><b>Open a bank account</b><span class="verified">✓ Verified 11 Jun</span></div>
+        <div class="task-card"><span class="due">After Anmeldung</span><b>Rundfunkbeitrag registration</b><span class="verified">€18.36/mo · one per home</span></div>
+      </div>
+    </div>
+
+    <!-- GETTING AROUND (the timetable/route piece, contextual) -->
+    <div class="sec">
+      <div class="sec-head"><h2>Getting around</h2><span class="why">from your nearest stop</span></div>
+      <div class="transit">
+        <div class="dep"><span class="line" style="background:#E2001A">1</span><div class="dest"><b>Bf Deutz/Messe</b><span>Venloer Str./Gürtel · platform 1</span></div><span class="when now">2 min</span></div>
+        <div class="dep"><span class="line" style="background:#0089CB">5</span><div class="dest"><b>Reichenspergerplatz</b><span>Venloer Str./Gürtel</span></div><span class="when">6 min</span></div>
+        <div class="dep"><span class="line" style="background:#F18800">13</span><div class="dest"><b>Sülzgürtel</b><span>Gürtel · ring line</span></div><span class="when">9 min</span></div>
+        <div class="dep" style="background:var(--surface-2)"><span class="ic" style="font-size:18px">🧭</span><div class="dest"><b>Take me somewhere…</b><span>live route · leave-by · ticket advice</span></div><span class="cta" style="color:var(--accent);font-weight:600;font-size:12.5px">Plan →</span></div>
+      </div>
+    </div>
+
+    <p class="foot-note">Ranked for your situation, your Veedel, the weather and what you actually tap.<br>No ads, no engagement-bait — the same engine that watches your deadlines picks these.</p>
+  </section>
+
+  <!-- ════════ COMPOSER RESULT (current build, refreshed) ════════ -->
+  <section class="view" data-view="plan">
+    <div class="greet" style="margin-bottom:6px"><h1>Your Saturday</h1></div>
+    <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">composed from “Free Saturday afternoon with the kids”</p>
+
+    <div class="parsed">
+      <span class="lbl">I understood — tap to edit (planned for Slice 5)</span>
+      <span class="chip">🕐 Sat 14:00–19:00</span>
+      <span class="chip hint">📍 around Ehrenfeld</span>
+      <span class="chip">👥 kids <span class="x">✕</span></span>
+    </div>
+    <div class="notices">
+      <span class="notice info">🏛️ Built around your 14:00 appointment</span>
+      <span class="notice">🌧 Rain from 17:00 — indoor after</span>
+    </div>
+
+    <div class="slot anchor">
+      <span class="t">14:00</span><span class="e">🏛️</span>
+      <div><span class="pin">Your appointment · not movable</span><b>Ausländerbehörde — permit appointment</b><div class="sub">7 documents on your checklist · leave by 13:38</div></div>
+      <div class="slot-actions"><button class="sa">🚌</button></div>
+    </div>
+    <div class="connector">│ 🚇 back west · 12 min</div>
+    <div class="slot">
+      <span class="t">15:30</span><span class="e">🛝</span>
+      <div><b>Fröbelplatz playground</b><div class="sub">Ehrenfeld · free · good with kids</div></div>
+      <div class="slot-actions"><button class="sa">↻</button><button class="sa">🚌</button></div>
+    </div>
+    <div class="connector">│ 🚶 8 min walk</div>
+    <div class="slot">
+      <span class="t">16:30</span><span class="e">🖼️</span>
+      <div><b>Museum Ludwig</b><div class="sub">Indoor before the rain · €11</div></div>
+      <div class="slot-actions"><button class="sa">↻</button><button class="sa">🚌</button></div>
+    </div>
+
+    <div class="plan-foot">
+      <button class="btn-primary">Save to Today</button>
+      <button class="btn-ghost">Recompose</button>
+    </div>
+    <p class="foot-note" style="margin-top:18px">This view is built &amp; live. The chip <b>editing</b> (tap to change time / area / companions) is the one piece still to add.</p>
+  </section>
+</div>
+
+<div class="plan-pill" id="pill" onclick="document.querySelector('[data-v=plan]').click()">🗓️ Plan around <span id="pc">0</span> spots →</div>
+
+<script>
+const tabs = document.getElementById('tabs');
+tabs.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  tabs.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.dataset.view === b.dataset.v));
+});
+
+// "+ plan around this" — one tap pins a card; the pill bridges browse → compose.
+let pinCount = 0;
+const pill = document.getElementById('pill');
+const pc = document.getElementById('pc');
+document.querySelectorAll('[data-view="home"] .card .thumb').forEach((th) => {
+  const btn = document.createElement('button');
+  btn.className = 'add'; btn.textContent = '＋'; btn.title = 'Plan around this';
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const on = btn.classList.toggle('on');
+    btn.textContent = on ? '✓' : '＋';
+    pinCount += on ? 1 : -1;
+    pc.textContent = pinCount;
+    pill.classList.toggle('show', pinCount > 0);
+  });
+  th.appendChild(btn);
+});
+</script>
+</body>
+</html>

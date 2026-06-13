@@ -32,6 +32,37 @@ class SlotFiller
         $slots = [];
         $used = [];
 
+        // 0. Pinned "plan around this" picks are placed first, chained from
+        //    the origin, so the user's explicit choices win the window before
+        //    any auto-anchored event can crowd them out.
+        $pinCursor = $constraints->windowStart;
+        $pinLat = $originLat;
+        $pinLng = $originLng;
+        foreach ($feasible as $pin) {
+            if (count($slots) >= self::MAX_SLOTS_PER_DAY) {
+                break;
+            }
+            if ($pin->isFixedTime() || isset($used[$pin->id]) || ! in_array($pin->id, $context->pinnedIds, true)) {
+                continue;
+            }
+
+            $travelMin = $this->travel->minutesBetween($pinLat, $pinLng, $pin->lat, $pin->lng);
+            $start = $pinCursor->addMinutes($travelMin);
+            if ($pin->opensAt !== null && $pin->opensAt->greaterThan($start)) {
+                $start = $pin->opensAt;
+            }
+            $end = $start->addMinutes($pin->typicalDurationMin);
+            if ($end->greaterThan($constraints->windowEnd)) {
+                continue; // genuinely no room, even for a pin
+            }
+
+            $slots[] = new PlanSlot($pin, $start, $end, $travelMin);
+            $used[$pin->id] = true;
+            $pinCursor = $end;
+            $pinLat = $pin->lat;
+            $pinLng = $pin->lng;
+        }
+
         // 1. Anchor fixed-time candidates. Appointments are sacred, so they
         //    claim their slot before curated events; then earliest first.
         $fixed = array_filter($feasible, fn (Candidate $c) => $c->isFixedTime());

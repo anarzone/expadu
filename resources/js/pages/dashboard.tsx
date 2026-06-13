@@ -1,5 +1,7 @@
-import { Head, Deferred, usePage, router, Link } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
+import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
 import AppLayout from '@/layouts/app-layout';
 
@@ -20,11 +22,68 @@ type Weather = {
     condition: string;
 } | null;
 
-const EXAMPLE_CHIPS = [
-    '🌳 Free Saturday afternoon',
-    '👶 Something with kids tomorrow',
-    '🍻 Meet people tonight',
-];
+type Chip = { label: string; prompt?: string; href?: string };
+
+type RailCard = {
+    id: string;
+    name: string;
+    veedel: string | null;
+    category: string;
+    cost: string | null;
+    lat: number;
+    lng: number;
+    is_new: boolean;
+    reason: string | null;
+};
+
+type Rail = { key: string; title: string; reason: string; cards: RailCard[] };
+
+const CATEGORY_EMOJI: Record<string, string> = {
+    park: '🌳',
+    playground: '🛝',
+    pitch: '⚽',
+    basketball: '🏀',
+    tennis: '🎾',
+    skatepark: '🛹',
+    swimming: '🏊',
+    lake: '🏞️',
+    dog_park: '🐕',
+    bbq: '🧺',
+    viewpoint: '🌅',
+    cafe: '☕',
+    library: '📚',
+    restaurant: '🍽️',
+    bar: '🍻',
+    culture: '🎨',
+    coworking: '💻',
+    community: '🤝',
+    event: '🎟️',
+};
+
+function categoryTint(category: string): string {
+    const green = 'bg-[#DCEFD9] dark:bg-[#1f3a1c]';
+    const blue = 'bg-[#D9E6FB] dark:bg-[#1b2a4a]';
+    const amber = 'bg-[#FBEFD0] dark:bg-[#3a2f12]';
+    const rose = 'bg-[#FBDDE0] dark:bg-[#3a1820]';
+    const purple = 'bg-[#E7DDFB] dark:bg-[#2a1f4a]';
+    const map: Record<string, string> = {
+        park: green,
+        playground: green,
+        lake: green,
+        dog_park: green,
+        pitch: green,
+        cafe: rose,
+        restaurant: rose,
+        bar: amber,
+        culture: amber,
+        library: blue,
+        swimming: blue,
+        viewpoint: blue,
+        event: purple,
+    };
+
+    return map[category] ?? 'bg-secondary';
+}
 
 const tileClasses: Record<Tile['severity'], string> = {
     danger: 'border-danger-soft border-l-danger bg-danger-soft',
@@ -87,14 +146,96 @@ function TileCard({ tile }: { tile: Tile }) {
     );
 }
 
+function DiscoveryCard({
+    card,
+    pinned,
+    onPin,
+    onOpen,
+}: {
+    card: RailCard;
+    pinned: boolean;
+    onPin: () => void;
+    onOpen: () => void;
+}) {
+    const isEvent = card.id.startsWith('event:');
+
+    return (
+        <div className="w-[196px] shrink-0 overflow-hidden rounded-[14px] border border-border bg-card shadow-sm transition-colors hover:border-primary">
+            {/* Thumb is a clickable div (not a button) so the pin button can
+                live inside it without nesting <button> in <button>. */}
+            <div
+                onClick={onOpen}
+                className="relative flex h-[104px] w-full cursor-pointer items-center justify-center text-[40px]"
+            >
+                <span
+                    className={`absolute inset-0 ${categoryTint(card.category)}`}
+                />
+                <span className="relative">
+                    {CATEGORY_EMOJI[card.category] ?? '📍'}
+                </span>
+                {card.is_new && (
+                    <span className="absolute top-2 left-2 rounded-full bg-black/55 px-1.5 py-0.5 font-mono text-[9px] tracking-wide text-white uppercase">
+                        new to you
+                    </span>
+                )}
+                {!isEvent && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onPin();
+                        }}
+                        title="Plan around this"
+                        aria-label={
+                            pinned
+                                ? `Remove ${card.name} from plan`
+                                : `Plan around ${card.name}`
+                        }
+                        className={`absolute top-2 right-2 flex size-[26px] items-center justify-center rounded-full text-[15px] font-bold shadow-sm transition-colors ${
+                            pinned
+                                ? 'bg-primary text-white'
+                                : 'bg-white/90 text-primary'
+                        }`}
+                    >
+                        {pinned ? '✓' : '＋'}
+                    </button>
+                )}
+            </div>
+            <button
+                onClick={onOpen}
+                aria-label={`Take me to ${card.name}`}
+                className="block w-full cursor-pointer px-3 pt-2.5 pb-3 text-left"
+            >
+                <span className="block text-[13.5px] leading-tight font-semibold">
+                    {card.name}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
+                    {[card.veedel, card.cost].filter(Boolean).join(' · ') ||
+                        'Cologne'}
+                </span>
+                {card.reason && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
+                        {card.reason}
+                    </span>
+                )}
+            </button>
+        </div>
+    );
+}
+
 export default function Dashboard() {
-    const { tiles, weather, auth } = usePage<{
+    const { tiles, rails, chips, weather, auth } = usePage<{
         tiles?: Tile[];
+        rails?: Rail[];
+        chips?: Chip[];
         weather?: Weather;
         auth: { user?: { name?: string } };
     }>().props;
 
     const [prompt, setPrompt] = useState('');
+    const [pins, setPins] = useState<Record<string, string>>({});
+    const [destination, setDestination] = useState<Destination | null>(null);
+
+    const pinnedIds = Object.keys(pins);
 
     function openComposer(text: string) {
         const trimmed = text.trim();
@@ -105,11 +246,37 @@ export default function Dashboard() {
         );
     }
 
+    function planAroundPins() {
+        router.visit(
+            `/composer?prompt=${encodeURIComponent('plan my day')}&pins=${encodeURIComponent(pinnedIds.join(','))}`,
+        );
+    }
+
+    function togglePin(card: RailCard) {
+        setPins((current) => {
+            const next = { ...current };
+
+            if (next[card.id]) {
+                delete next[card.id];
+            } else {
+                next[card.id] = card.name;
+            }
+
+            return next;
+        });
+    }
+
+    const fallbackChips: Chip[] = [
+        { label: '🌳 Free afternoon nearby', prompt: 'free afternoon nearby' },
+        { label: '🍻 Meet people this week', prompt: 'meet people this week' },
+    ];
+    const promptChips = chips && chips.length > 0 ? chips : fallbackChips;
+
     return (
         <AppLayout>
             <Head title="Today" />
             <ServiceErrorBanner />
-            <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-24 md:px-6">
+            <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-28 md:px-6">
                 {/* Date line */}
                 <div className="mb-1 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
                     {new Date().toLocaleDateString('en-GB', {
@@ -136,10 +303,10 @@ export default function Dashboard() {
                     </Deferred>
                 </div>
 
-                {/* Day Composer prompt box */}
+                {/* Prompt box */}
                 <div className="mb-3 rounded-[20px] border border-border bg-card p-[18px] shadow-sm transition-colors focus-within:border-primary">
                     <div className="mb-2.5 flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
-                        ✨ Day Composer
+                        ✨ Ask or plan
                     </div>
                     <div className="flex items-center gap-2.5">
                         <input
@@ -151,12 +318,12 @@ export default function Dashboard() {
                                     openComposer(prompt);
                                 }
                             }}
-                            placeholder="What do you want to do? Try: free Saturday afternoon…"
+                            placeholder="Plan something, ask about paperwork, find a place…"
                             className="min-w-0 flex-1 border-none bg-transparent text-base outline-none placeholder:text-muted-foreground/60"
                         />
                         <button
                             onClick={() => openComposer(prompt)}
-                            title="Compose"
+                            title="Go"
                             className="flex size-[38px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-base text-white transition-colors hover:bg-accent-hover"
                         >
                             →
@@ -164,30 +331,36 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Example chips */}
-                <div className="mb-7 flex flex-wrap gap-2">
-                    {EXAMPLE_CHIPS.map((chip) => (
+                {/* Dynamic personal chips */}
+                <div className="mb-1.5 flex flex-wrap gap-2">
+                    {promptChips.map((chip) => (
                         <button
-                            key={chip}
+                            key={chip.label}
                             onClick={() =>
-                                openComposer(chip.replace(/^\S+\s/, ''))
+                                chip.href
+                                    ? router.visit(chip.href)
+                                    : openComposer(chip.prompt ?? chip.label)
                             }
                             className="cursor-pointer rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition-all hover:border-primary hover:bg-accent-soft hover:text-primary"
                         >
-                            {chip}
+                            {chip.label}
                         </button>
                     ))}
                 </div>
+                <p className="mb-7 text-[11px] text-muted-foreground/70">
+                    ✨ Suggestions from your situation, the weather and what you
+                    tap.
+                </p>
 
-                {/* Urgency tiles */}
+                {/* Right now (urgency tiles) */}
                 <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
-                    Needs your attention
+                    Right now
                 </div>
                 <Deferred
                     data="tiles"
                     fallback={
                         <div className="flex flex-col gap-2.5">
-                            {[1, 2, 3].map((i) => (
+                            {[1, 2].map((i) => (
                                 <div
                                     key={i}
                                     className="h-[76px] animate-pulse rounded-[14px] bg-secondary"
@@ -207,7 +380,77 @@ export default function Dashboard() {
                         )}
                     </div>
                 </Deferred>
+
+                {/* Discovery rails */}
+                <Deferred
+                    data="rails"
+                    fallback={
+                        <div className="mt-8">
+                            <div className="mb-3 h-4 w-40 animate-pulse rounded bg-secondary" />
+                            <div className="flex gap-3">
+                                {[1, 2, 3].map((i) => (
+                                    <div
+                                        key={i}
+                                        className="h-[180px] w-[196px] shrink-0 animate-pulse rounded-[14px] bg-secondary"
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    }
+                >
+                    {(rails ?? []).map((rail) => (
+                        <section key={rail.key} className="mt-8">
+                            <div className="mb-3 flex items-baseline gap-2">
+                                <h2 className="font-display text-[18px] font-medium tracking-tight">
+                                    {rail.title}
+                                </h2>
+                                <span className="text-[11.5px] text-muted-foreground/70">
+                                    {rail.reason}
+                                </span>
+                            </div>
+                            <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1.5 [scrollbar-width:none] md:-mx-6 md:px-6">
+                                {rail.cards.map((card) => (
+                                    <DiscoveryCard
+                                        key={card.id}
+                                        card={card}
+                                        pinned={Boolean(pins[card.id])}
+                                        onPin={() => togglePin(card)}
+                                        onOpen={() =>
+                                            setDestination({
+                                                name: card.name,
+                                                emoji:
+                                                    CATEGORY_EMOJI[
+                                                        card.category
+                                                    ] ?? '📍',
+                                                lat: card.lat,
+                                                lng: card.lng,
+                                            })
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    ))}
+                </Deferred>
             </div>
+
+            {/* Browse → plan bridge */}
+            {pinnedIds.length > 0 && (
+                <button
+                    onClick={planAroundPins}
+                    className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-accent-hover md:bottom-8"
+                >
+                    🗓️ Plan around {pinnedIds.length}{' '}
+                    {pinnedIds.length === 1 ? 'spot' : 'spots'} →
+                </button>
+            )}
+
+            {destination && (
+                <TakeMeThereSheet
+                    destination={destination}
+                    onClose={() => setDestination(null)}
+                />
+            )}
         </AppLayout>
     );
 }

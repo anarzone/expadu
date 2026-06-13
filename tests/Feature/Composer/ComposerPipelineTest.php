@@ -256,6 +256,22 @@ test('an appointment anchors at its time and gets a travel buffer in', function 
     expect($anchor->travelMinFromPrevious)->toBeGreaterThan(0);
 });
 
+test('a pinned pick is placed even when a fixed event would fill the window', function () {
+    $filler = new SlotFiller(new PlanScorer(new TravelEstimator), new TravelEstimator);
+    $context = new ScoringContext(rainExpected: false, preferredAreas: [], pinnedIds: ['spot:pinned']);
+
+    $constraints = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('16:00'));
+    $candidates = [
+        makeCandidate(['id' => 'spot:pinned', 'category' => 'cafe', 'outdoor' => false, 'typicalDurationMin' => 60]),
+        // A 2-hour event that, anchored first, would otherwise swallow the window.
+        makeCandidate(['id' => 'event:big', 'type' => 'event', 'category' => 'community', 'outdoor' => false, 'fixedStart' => saturday('14:00'), 'typicalDurationMin' => 120]),
+    ];
+
+    $plan = $filler->fill($constraints, $candidates, $context, 50.9442, 6.9329);
+
+    expect(collect($plan->slots)->map(fn ($s) => $s->candidate->id))->toContain('spot:pinned');
+});
+
 // ── Swapper ────────────────────────────────────────────────────────────
 
 test('swap replaces only the target slot and freezes neighbors', function () {
