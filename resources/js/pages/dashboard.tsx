@@ -36,6 +36,11 @@ type RailCard = {
     reason: string | null;
     kind: string; // spot | event | task
     href: string | null; // tasks deep-link instead of take-me-there
+    // task-card fields (kind === 'task')
+    due_label?: string;
+    urgency?: string;
+    verified?: string | null;
+    docs?: number;
 };
 
 type Rail = {
@@ -249,6 +254,33 @@ function DiscoveryCard({
     );
 }
 
+function TaskCard({ card }: { card: RailCard }) {
+    const urgent =
+        card.urgency === 'overdue' ||
+        card.urgency === 'critical' ||
+        card.urgency === 'urgent';
+
+    return (
+        <Link
+            href={card.href ?? '/bureaucracy'}
+            className="block w-[230px] shrink-0 rounded-[14px] border border-border bg-card p-3.5 shadow-sm transition-colors hover:border-primary"
+        >
+            <span
+                className={`font-mono text-[10px] font-semibold tracking-wide uppercase ${urgent ? 'text-danger' : 'text-warn'}`}
+            >
+                {card.due_label ?? 'No deadline'}
+            </span>
+            <span className="mt-1.5 mb-1 block text-[13.5px] leading-snug font-semibold">
+                {card.name}
+            </span>
+            <span className="text-[11px] text-primary">
+                {card.verified ? `✓ Verified ${card.verified}` : 'Unverified'}
+                {card.docs ? ` · ${card.docs} docs` : ''}
+            </span>
+        </Link>
+    );
+}
+
 export default function Dashboard() {
     const { tiles, rails, chips, weather, auth } = usePage<{
         tiles?: Tile[];
@@ -442,27 +474,29 @@ export default function Dashboard() {
                                 </Link>
                             </div>
                             <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1.5 [scrollbar-width:none] md:-mx-6 md:px-6">
-                                {rail.cards.map((card) => (
-                                    <DiscoveryCard
-                                        key={card.id}
-                                        card={card}
-                                        pinned={Boolean(pins[card.id])}
-                                        onPin={() => togglePin(card)}
-                                        onOpen={() =>
-                                            card.href
-                                                ? router.visit(card.href)
-                                                : setDestination({
-                                                      name: card.name,
-                                                      emoji:
-                                                          CATEGORY_EMOJI[
-                                                              card.category
-                                                          ] ?? '📍',
-                                                      lat: card.lat,
-                                                      lng: card.lng,
-                                                  })
-                                        }
-                                    />
-                                ))}
+                                {rail.cards.map((card) =>
+                                    card.kind === 'task' ? (
+                                        <TaskCard key={card.id} card={card} />
+                                    ) : (
+                                        <DiscoveryCard
+                                            key={card.id}
+                                            card={card}
+                                            pinned={Boolean(pins[card.id])}
+                                            onPin={() => togglePin(card)}
+                                            onOpen={() =>
+                                                setDestination({
+                                                    name: card.name,
+                                                    emoji:
+                                                        CATEGORY_EMOJI[
+                                                            card.category
+                                                        ] ?? '📍',
+                                                    lat: card.lat,
+                                                    lng: card.lng,
+                                                })
+                                            }
+                                        />
+                                    ),
+                                )}
                             </div>
                         </section>
                     ))}

@@ -11,6 +11,7 @@ use App\Models\UserTask;
 use App\Profile\ProfileEngine;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -231,19 +232,29 @@ class DiscoveryFeed
             ->sortBy(fn (UserTask $ut) => $ut->deadline_status['days_remaining'] ?? 99999)
             ->take(8)
             ->values()
-            ->map(fn (UserTask $ut) => [
-                'id' => "task:{$ut->id}",
-                'name' => $ut->task?->title ?? 'Task',
-                'veedel' => null,
-                'category' => 'task',
-                'cost' => null,
-                'lat' => 0.0,
-                'lng' => 0.0,
-                'is_new' => false,
-                'kind' => 'task',
-                'href' => '/bureaucracy?focus='.($ut->task?->id ?? ''),
-                'reason' => $ut->deadline_status['label'] ?? null,
-            ])
+            ->map(function (UserTask $ut) {
+                $status = $ut->deadline_status;
+                $verifiedAt = $ut->task?->verified_at;
+
+                return [
+                    'id' => "task:{$ut->id}",
+                    'name' => $ut->task?->title ?? 'Task',
+                    'veedel' => null,
+                    'category' => 'task',
+                    'cost' => null,
+                    'lat' => 0.0,
+                    'lng' => 0.0,
+                    'is_new' => false,
+                    'kind' => 'task',
+                    'href' => '/bureaucracy?focus='.($ut->task?->id ?? ''),
+                    'reason' => null,
+                    // The dedicated task-card fields, matching the prototype.
+                    'due_label' => $status['label'],
+                    'urgency' => $status['urgency'],
+                    'verified' => $verifiedAt ? Carbon::parse($verifiedAt)->format('j M') : null,
+                    'docs' => is_array($ut->task?->documents_required) ? count($ut->task->documents_required) : 0,
+                ];
+            })
             ->all();
 
         return $this->rail('paperwork', 'Get your paperwork moving', 'your checklist', '/bureaucracy', $cards);
