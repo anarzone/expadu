@@ -208,6 +208,32 @@ test('swap exchanges one slot and records the negative signal', function () {
     expect(UserEvent::where('user_id', $user->id)->where('event_type', 'composer_swap_away')->exists())->toBeTrue();
 });
 
+test('the shops-shut notice respects the German week — Sunday, not Saturday', function () {
+    $this->actingAs(composerUser());
+
+    // 2026-06-13 is a Saturday: shops are OPEN today; only nudge about
+    // tomorrow (Sunday). The false "today shops shut" must not appear.
+    $sat = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => '2026-06-13T12:00:00+02:00',
+            'window_end' => '2026-06-13T18:00:00+02:00',
+        ],
+    ]);
+    $satText = collect($sat->json('notices'))->pluck('text')->implode(' | ');
+    expect($satText)->not->toContain('most shops shut');
+    expect($satText)->toContain('Grab groceries');
+
+    // 2026-06-14 is a Sunday: today's closure notice fires.
+    $sun = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => '2026-06-14T12:00:00+02:00',
+            'window_end' => '2026-06-14T18:00:00+02:00',
+        ],
+    ]);
+    expect(collect($sun->json('notices'))->pluck('text')->implode(' | '))
+        ->toContain('most shops shut');
+});
+
 test('swap without a stored plan 404s', function () {
     $this->actingAs(composerUser());
 

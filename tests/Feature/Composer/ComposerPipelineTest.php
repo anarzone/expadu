@@ -144,6 +144,47 @@ test('closes-soon boosts a venue that will not be possible later', function () {
     expect($soonScore)->toBeGreaterThan($lateScore);
 });
 
+test('companion fit favours kid-friendly places over a coworking space', function () {
+    $scorer = new PlanScorer(new TravelEstimator);
+    $kids = new ScoringContext(rainExpected: false, preferredAreas: [], companions: 'kids');
+
+    $playground = makeCandidate(['id' => 'spot:pg', 'category' => 'playground']);
+    $coworking = makeCandidate(['id' => 'spot:cw', 'category' => 'coworking', 'outdoor' => false]);
+
+    $pg = $scorer->score($playground, [], saturday('15:00'), 50.9442, 6.9329, $kids);
+    $cw = $scorer->score($coworking, [], saturday('15:00'), 50.9442, 6.9329, $kids);
+
+    expect($pg)->toBeGreaterThan($cw);
+});
+
+test('companions do not change ordering when none are set', function () {
+    $scorer = new PlanScorer(new TravelEstimator);
+    $a = makeCandidate(['id' => 'spot:a', 'category' => 'playground']);
+    $b = makeCandidate(['id' => 'spot:b', 'category' => 'coworking', 'outdoor' => false]);
+
+    // neutralContext() has companions = null → the term is a flat constant.
+    $sa = $scorer->score($a, [], saturday('15:00'), 50.9442, 6.9329, neutralContext());
+    $sb = $scorer->score($b, [], saturday('15:00'), 50.9442, 6.9329, neutralContext());
+
+    expect($sa)->toBe($sb);
+});
+
+test('a kids plan excludes bars at the feasibility stage', function () {
+    $filter = new FeasibilityFilter;
+    $constraints = new Constraints(
+        windowStart: saturday('14:00'),
+        windowEnd: saturday('20:00'),
+        companions: 'kids',
+    );
+
+    $bar = makeCandidate(['id' => 'spot:bar', 'category' => 'bar', 'outdoor' => false, 'costTier' => 'normal']);
+    $park = makeCandidate(['id' => 'spot:park', 'category' => 'park']);
+
+    $result = $filter->filter($constraints, [$bar, $park]);
+
+    expect(array_map(fn ($c) => $c->id, $result))->toBe(['spot:park']);
+});
+
 // ── SlotFiller ─────────────────────────────────────────────────────────
 
 function fixtureCandidates(): array

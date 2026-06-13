@@ -88,6 +88,7 @@ class ComposerController extends Controller
             rainExpected: $this->rainExpected(),
             preferredAreas: $constraints->areas !== [] ? $constraints->areas : $profile->defaultAreas,
             intentWeights: $intents->for($user),
+            companions: $constraints->companions,
         );
 
         [$originLat, $originLng] = $this->origin($user);
@@ -160,6 +161,7 @@ class ComposerController extends Controller
             rainExpected: $this->rainExpected(),
             preferredAreas: $plan->constraints->areas !== [] ? $plan->constraints->areas : $profile->defaultAreas,
             intentWeights: $intents->for($user),
+            companions: $plan->constraints->companions,
         );
 
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);
@@ -237,14 +239,17 @@ class ComposerController extends Controller
             $notices[] = ['type' => 'warn', 'text' => '🌧 '.(is_string($summary) && $summary !== '' ? $summary : 'Rain expected — indoor picks favoured')];
         }
 
+        // German shops shut on Sundays and public holidays — NOT Saturdays.
         $holidays = app(GermanHolidayService::class);
         $day = $constraints->windowStart;
+        $tomorrow = $day->addDay();
 
-        if ($holidays->isNonWorkingDay($day)) {
-            $name = $holidays->getHolidayName($day);
-            $notices[] = ['type' => 'warn', 'text' => ($name ?? 'Sunday').' — most shops shut; parks, museums and cafés are your best bets'];
-        } elseif ($holidays->isShopsClosedTomorrow($day)) {
-            $notices[] = ['type' => 'warn', 'text' => '🛒 Public holiday tomorrow — shops shut. Grab groceries today'];
+        if ($day->isSunday() || $holidays->isHoliday($day)) {
+            $label = $holidays->getHolidayName($day) ?? 'Sunday';
+            $notices[] = ['type' => 'warn', 'text' => "{$label} — most shops shut; parks, museums and cafés are your best bets"];
+        } elseif ($tomorrow->isSunday() || $holidays->isHoliday($tomorrow)) {
+            $label = $holidays->getHolidayName($tomorrow) ?? 'Sunday';
+            $notices[] = ['type' => 'warn', 'text' => "🛒 {$label} tomorrow — shops shut. Grab groceries today"];
         }
 
         return $notices;

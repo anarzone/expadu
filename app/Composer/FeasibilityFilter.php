@@ -38,6 +38,11 @@ class FeasibilityFilter
             return false;
         }
 
+        // A day with kids never routes through a bar.
+        if ($constraints->companions === 'kids' && $candidate->category === 'bar') {
+            return false;
+        }
+
         // Fixed-time events must start inside the window with room to attend.
         if ($candidate->isFixedTime()) {
             return $candidate->fixedStart->greaterThanOrEqualTo($constraints->windowStart)

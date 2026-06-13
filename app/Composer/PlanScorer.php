@@ -18,7 +18,13 @@ class PlanScorer
         'closes_soon' => 15.0,     // boost things that won't be possible later
         'area_match' => 10.0,      // inside the preferred Veedels
         'intent' => 15.0,          // learned taste, simple weighted counts
+        'companion' => 18.0,       // fits who you're going with (kids etc.)
     ];
+
+    /** Categories that suit each companion; everything else is neutral. */
+    private const KID_FRIENDLY = ['playground', 'park', 'swimming', 'lake', 'pitch', 'basketball', 'skatepark', 'dog_park', 'library', 'culture', 'viewpoint', 'bbq'];
+
+    private const KID_UNFRIENDLY = ['bar', 'coworking', 'cafe'];
 
     public function __construct(
         private readonly TravelEstimator $travel,
@@ -71,6 +77,25 @@ class PlanScorer
         $intentKey = "{$candidate->category}|{$candidate->veedel}";
         $score += self::WEIGHTS['intent'] * min(1.0, $context->intentWeights[$intentKey] ?? 0.0);
 
+        // Companion fit — keeps "with the kids" from suggesting a coworking
+        // space. Neutral (and so ranking-irrelevant) for other companions.
+        $score += self::WEIGHTS['companion'] * $this->companionFit($candidate, $context->companions);
+
         return round($score, 2);
+    }
+
+    private function companionFit(Candidate $candidate, ?string $companions): float
+    {
+        if ($companions === 'kids') {
+            return match (true) {
+                in_array($candidate->category, self::KID_FRIENDLY, true) => 1.0,
+                in_array($candidate->category, self::KID_UNFRIENDLY, true) => 0.0,
+                default => 0.5,
+            };
+        }
+
+        // Other companions carry no category bias yet — a flat term that
+        // doesn't change ordering.
+        return 0.5;
     }
 }

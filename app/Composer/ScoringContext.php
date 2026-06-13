@@ -16,5 +16,6 @@ final readonly class ScoringContext
         public bool $rainExpected,
         public array $preferredAreas,
         public array $intentWeights = [],
+        public ?string $companions = null, // alone | partner | friends | kids
     ) {}
 }

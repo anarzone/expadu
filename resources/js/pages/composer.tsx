@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { useTracker } from '@/hooks/use-tracker';
@@ -75,6 +75,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
     community: '🤝',
     language: '🗣️',
     event: '🎟️',
+    coworking: '💻',
     appointment: '🏛️',
 };
 
@@ -296,6 +297,9 @@ export default function Composer() {
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // Guards against parsing the same prompt twice (React strict-mode
+    // double-invoke would otherwise fire two parse + compose round-trips).
+    const parsedPrompt = useRef<string | null>(null);
 
     const compose = useCallback(async (next: Constraints) => {
         setComposing(true);
@@ -320,9 +324,11 @@ export default function Composer() {
     // intent; making the user press a second "compose" button was a v1
     // holdover. The chips stay above the plan for correction.
     useEffect(() => {
-        if (!prompt) {
+        if (!prompt || parsedPrompt.current === prompt) {
             return;
         }
+
+        parsedPrompt.current = prompt;
 
         setParsing(true);
         post<ParseResult>('/composer/parse', { text: prompt })
@@ -402,11 +408,32 @@ export default function Composer() {
         });
     }
 
-    const headline = constraints
+    const planMode = intent === 'plan_day';
+    const weekday = constraints
         ? new Date(constraints.window_start).toLocaleDateString('en-GB', {
               weekday: 'long',
           })
-        : 'Your day';
+        : null;
+
+    // Title + subtitle adapt to intent: only a plan is "composed", and the
+    // empty state must not read "Your Your day".
+    const title =
+        planMode && weekday
+            ? `Your ${weekday}`
+            : intent === 'bureaucracy_q'
+              ? 'Paperwork'
+              : intent === 'find'
+                ? 'Search'
+                : intent === 'take_me_there'
+                  ? 'Directions'
+                  : 'Day Composer';
+
+    const subtitle =
+        planMode && prompt
+            ? `composed from “${prompt}”`
+            : !planMode && prompt
+              ? `you asked: “${prompt}”`
+              : 'tell the composer what you want';
 
     const showInterim = !parsing && intent !== 'plan_day' && !plan;
 
@@ -415,13 +442,9 @@ export default function Composer() {
             <Head title="Day Composer" />
             <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-24 md:px-6">
                 <h1 className="mb-1 font-display text-[26px] font-medium tracking-tight">
-                    Your {headline}
+                    {title}
                 </h1>
-                <p className="mb-5 text-sm text-muted-foreground">
-                    {prompt
-                        ? `composed from “${prompt}”`
-                        : 'tell the composer what you want'}
-                </p>
+                <p className="mb-5 text-sm text-muted-foreground">{subtitle}</p>
 
                 {parsing && (
                     <div className="mb-4 flex gap-2">
