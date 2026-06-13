@@ -100,6 +100,7 @@ $appRoutes = function () use ($appDomain) {
         // Day Composer
         Route::get('composer', fn () => Inertia::render('composer', [
             'prompt' => request()->query('prompt'),
+            'homeVeedel' => request()->user()?->veedel,
         ]))->name('composer');
         Route::post('composer/parse', [ComposerController::class, 'parse'])->name('composer.parse');
         Route::post('composer/compose', [ComposerController::class, 'compose'])->name('composer.compose');

@@ -125,22 +125,34 @@ function chipTime(constraints: Constraints): string {
 
 function ConstraintChips({
     constraints,
+    homeVeedel,
     onRemove,
 }: {
     constraints: Constraints;
+    homeVeedel: string | null;
     onRemove: (
         kind: 'area' | 'category' | 'companions' | 'budget',
         value?: string,
     ) => void;
 }) {
+    // Areas the user actually named are removable chips. When they named
+    // none, show a single implicit "around {home}" hint instead of dumping
+    // the whole home Bezirk — the plan prefers home areas regardless.
+    const areaChips =
+        constraints.areas.length > 0
+            ? constraints.areas.slice(0, 3).map((area) => ({
+                  key: `area-${area}`,
+                  label: `📍 ${area}`,
+                  onRemove: () => onRemove('area', area),
+              }))
+            : homeVeedel
+              ? [{ key: 'area-home', label: `📍 around ${homeVeedel}` }]
+              : [];
+
     const chips: Array<{ key: string; label: string; onRemove?: () => void }> =
         [
             { key: 'time', label: `🕐 ${chipTime(constraints)}` },
-            ...constraints.areas.slice(0, 3).map((area) => ({
-                key: `area-${area}`,
-                label: `📍 ${area}`,
-                onRemove: () => onRemove('area', area),
-            })),
+            ...areaChips,
             ...constraints.categories.map((category) => ({
                 key: `cat-${category}`,
                 label: `🏷️ ${category}`,
@@ -269,7 +281,10 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
 }
 
 export default function Composer() {
-    const { prompt } = usePage<{ prompt?: string }>().props;
+    const { prompt, homeVeedel } = usePage<{
+        prompt?: string;
+        homeVeedel?: string | null;
+    }>().props;
     const { track } = useTracker();
 
     const [constraints, setConstraints] = useState<Constraints | null>(null);
@@ -300,7 +315,10 @@ export default function Composer() {
         }
     }, []);
 
-    // Parse the prompt handed over from the Today screen
+    // Parse the prompt handed over from the Today screen, then — for a
+    // plan — compose straight away. A picked suggestion is high-confidence
+    // intent; making the user press a second "compose" button was a v1
+    // holdover. The chips stay above the plan for correction.
     useEffect(() => {
         if (!prompt) {
             return;
@@ -313,13 +331,14 @@ export default function Composer() {
 
                 if (result.intent === 'plan_day' && result.constraints) {
                     setConstraints(result.constraints);
+                    void compose(result.constraints);
                 }
             })
             .catch(() =>
                 setError('Could not understand that — edit the chips below.'),
             )
             .finally(() => setParsing(false));
-    }, [prompt]);
+    }, [prompt, compose]);
 
     function removeConstraint(
         kind: 'area' | 'category' | 'companions' | 'budget',
@@ -343,10 +362,9 @@ export default function Composer() {
             budget: kind === 'budget' ? null : constraints.budget,
         };
         setConstraints(next);
-
-        if (plan) {
-            void compose(next);
-        }
+        // Always recompose — editing a chip is an explicit "redo it this way",
+        // and it also retries if the initial auto-compose failed.
+        void compose(next);
     }
 
     async function swap(index: number) {
@@ -423,20 +441,12 @@ export default function Composer() {
                 {constraints && (
                     <ConstraintChips
                         constraints={constraints}
+                        homeVeedel={homeVeedel ?? null}
                         onRemove={removeConstraint}
                     />
                 )}
 
                 {plan && <NoticeChips notices={notices} />}
-
-                {constraints && !plan && !composing && (
-                    <button
-                        onClick={() => compose(constraints)}
-                        className="mb-6 w-full cursor-pointer rounded-[9px] bg-primary py-3 text-[15px] font-semibold text-white transition-colors hover:bg-accent-hover"
-                    >
-                        Compose my day
-                    </button>
-                )}
 
                 {error && (
                     <div className="mb-4 rounded-[9px] bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger">

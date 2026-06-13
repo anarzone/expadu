@@ -32,7 +32,7 @@ test.describe('Composer (universal prompt)', () => {
         expect(errors).toHaveLength(0);
     });
 
-    test('a leisure prompt parses into editable constraint chips', async ({
+    test('a leisure prompt parses and composes straight away, no button gate', async ({
         page,
     }) => {
         const errors: string[] = [];
@@ -44,11 +44,12 @@ test.describe('Composer (universal prompt)', () => {
         );
         await page.waitForLoadState('networkidle');
 
-        // Heuristic parse → an area chip and the compose CTA appear.
+        // The named area shows as a chip…
         await expect(page.getByText('Ehrenfeld').first()).toBeVisible();
+        // …and the old "Compose my day" gate is gone (it auto-composes).
         await expect(
             page.getByRole('button', { name: /compose my day/i }),
-        ).toBeVisible();
+        ).toHaveCount(0);
         expect(errors).toHaveLength(0);
     });
 });

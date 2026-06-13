@@ -100,11 +100,13 @@ test('"something with the kids tomorrow" plans tomorrow with kids', function () 
         ->and($result->plan->windowStart->format('Y-m-d'))->toBe('2026-06-11');
 });
 
-test('a vague leisure prompt falls back to profile default areas', function () {
-    $result = parsePrompt('what should I do this afternoon');
+test('a prompt with no named area leaves areas empty (compose fills home areas)', function () {
+    $result = parsePrompt('tomorrow afternoon');
 
+    // The whole home Bezirk is no longer spelled out as chips; compose
+    // applies the profile's areas for scoring internally instead.
     expect($result->intent)->toBe(PromptIntent::PlanDay)
-        ->and($result->plan->areas)->toBe(['Ehrenfeld', 'Neuehrenfeld']);
+        ->and($result->plan->areas)->toBe([]);
 });
 
 test('the window is clamped to the 72h horizon', function () {
