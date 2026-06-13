@@ -34,9 +34,17 @@ type RailCard = {
     lng: number;
     is_new: boolean;
     reason: string | null;
+    kind: string; // spot | event | task
+    href: string | null; // tasks deep-link instead of take-me-there
 };
 
-type Rail = { key: string; title: string; reason: string; cards: RailCard[] };
+type Rail = {
+    key: string;
+    title: string;
+    reason: string;
+    see_all: string;
+    cards: RailCard[];
+};
 
 const CATEGORY_EMOJI: Record<string, string> = {
     park: '🌳',
@@ -58,6 +66,14 @@ const CATEGORY_EMOJI: Record<string, string> = {
     coworking: '💻',
     community: '🤝',
     event: '🎟️',
+    table_tennis: '🏓',
+    tennis_table: '🏓',
+    attraction: '🎡',
+    gallery: '🖼️',
+    museum: '🏛️',
+    zoo: '🦁',
+    boules: '🎱',
+    task: '📋',
 };
 
 function categoryTint(category: string): string {
@@ -72,14 +88,25 @@ function categoryTint(category: string): string {
         lake: green,
         dog_park: green,
         pitch: green,
+        basketball: green,
+        skatepark: green,
+        tennis: green,
+        table_tennis: green,
+        boules: green,
+        bbq: green,
         cafe: rose,
         restaurant: rose,
         bar: amber,
         culture: amber,
+        museum: amber,
+        gallery: amber,
+        attraction: amber,
+        zoo: amber,
         library: blue,
         swimming: blue,
         viewpoint: blue,
         event: purple,
+        task: blue,
     };
 
     return map[category] ?? 'bg-secondary';
@@ -157,7 +184,7 @@ function DiscoveryCard({
     onPin: () => void;
     onOpen: () => void;
 }) {
-    const isEvent = card.id.startsWith('event:');
+    const canPin = card.kind === 'spot';
 
     return (
         <div className="w-[196px] shrink-0 overflow-hidden rounded-[14px] border border-border bg-card shadow-sm transition-colors hover:border-primary">
@@ -178,7 +205,7 @@ function DiscoveryCard({
                         new to you
                     </span>
                 )}
-                {!isEvent && (
+                {canPin && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -407,6 +434,12 @@ export default function Dashboard() {
                                 <span className="text-[11.5px] text-muted-foreground/70">
                                     {rail.reason}
                                 </span>
+                                <Link
+                                    href={rail.see_all}
+                                    className="ml-auto shrink-0 text-[12px] font-medium text-primary hover:underline"
+                                >
+                                    See all
+                                </Link>
                             </div>
                             <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1.5 [scrollbar-width:none] md:-mx-6 md:px-6">
                                 {rail.cards.map((card) => (
@@ -416,15 +449,17 @@ export default function Dashboard() {
                                         pinned={Boolean(pins[card.id])}
                                         onPin={() => togglePin(card)}
                                         onOpen={() =>
-                                            setDestination({
-                                                name: card.name,
-                                                emoji:
-                                                    CATEGORY_EMOJI[
-                                                        card.category
-                                                    ] ?? '📍',
-                                                lat: card.lat,
-                                                lng: card.lng,
-                                            })
+                                            card.href
+                                                ? router.visit(card.href)
+                                                : setDestination({
+                                                      name: card.name,
+                                                      emoji:
+                                                          CATEGORY_EMOJI[
+                                                              card.category
+                                                          ] ?? '📍',
+                                                      lat: card.lat,
+                                                      lng: card.lng,
+                                                  })
                                         }
                                     />
                                 ))}

@@ -18,15 +18,19 @@ class TravelEstimator
 
     private const WALK_MAX_KM = 1.2;
 
+    /** Nothing in Cologne is further than this; beyond it the input coords
+     *  are bad (a mis-geocoded venue), so clamp rather than show 1500 min. */
+    private const MAX_MIN = 90;
+
     public function minutesBetween(float $fromLat, float $fromLng, float $toLat, float $toLng): int
     {
         $km = $this->haversineKm($fromLat, $fromLng, $toLat, $toLng);
 
-        if ($km <= self::WALK_MAX_KM) {
-            return max(1, (int) ceil($km / self::WALK_KMH * 60));
-        }
+        $minutes = $km <= self::WALK_MAX_KM
+            ? max(1, (int) ceil($km / self::WALK_KMH * 60))
+            : self::TRANSIT_OVERHEAD_MIN + (int) ceil($km / self::TRANSIT_KMH * 60);
 
-        return self::TRANSIT_OVERHEAD_MIN + (int) ceil($km / self::TRANSIT_KMH * 60);
+        return min(self::MAX_MIN, $minutes);
     }
 
     public function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float

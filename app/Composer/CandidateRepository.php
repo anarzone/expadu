@@ -5,6 +5,7 @@ namespace App\Composer;
 use App\Models\Event;
 use App\Models\Spot;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The impure boundary of the composer: snapshots spots and curated
@@ -45,11 +46,17 @@ class CandidateRepository
      */
     private function spotCandidates(): array
     {
+        // A diverse, bounded pool: top ~12 per category. Ordering by rating
+        // alone would fill the pool with cafés (only commercial venues are
+        // rated); a flat cap would fill it with playgrounds. Per-category
+        // ensures indoor culture competes with outdoor activities.
+        $ids = DB::table(DB::raw('(SELECT id, ROW_NUMBER() OVER (PARTITION BY category ORDER BY rating DESC NULLS LAST, id) AS rn FROM spots WHERE lat IS NOT NULL AND lng IS NOT NULL) AS ranked'))
+            ->where('rn', '<=', 12)
+            ->pluck('id')
+            ->all();
+
         return Spot::query()
-            ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->orderByDesc('rating')
-            ->limit(150)
+            ->whereIn('id', $ids)
             ->get()
             ->map(fn (Spot $spot) => $this->spotToCandidate($spot))
             ->all();

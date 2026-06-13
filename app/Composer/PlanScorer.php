@@ -19,6 +19,7 @@ class PlanScorer
         'area_match' => 10.0,      // inside the preferred Veedels
         'intent' => 15.0,          // learned taste, simple weighted counts
         'companion' => 18.0,       // fits who you're going with (kids etc.)
+        'appeal' => 18.0,          // activities lead; cafés/bars don't dominate
     ];
 
     /** Categories that suit each companion; everything else is neutral. */
@@ -80,6 +81,10 @@ class PlanScorer
         // Companion fit — keeps "with the kids" from suggesting a coworking
         // space. Neutral (and so ranking-irrelevant) for other companions.
         $score += self::WEIGHTS['companion'] * $this->companionFit($candidate, $context->companions);
+
+        // Category appeal — activities outrank a sit-down café for the same
+        // proximity, so a leisure plan isn't a coffee crawl.
+        $score += self::WEIGHTS['appeal'] * CategoryAppeal::score($candidate->category);
 
         // Pinned "plan around this" picks from the home feed dominate so the
         // filler places them wherever they're feasible.

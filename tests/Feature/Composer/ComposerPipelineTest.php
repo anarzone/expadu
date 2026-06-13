@@ -157,16 +157,28 @@ test('companion fit favours kid-friendly places over a coworking space', functio
     expect($pg)->toBeGreaterThan($cw);
 });
 
-test('companions do not change ordering when none are set', function () {
+test('companions other than kids do not change a score', function () {
     $scorer = new PlanScorer(new TravelEstimator);
-    $a = makeCandidate(['id' => 'spot:a', 'category' => 'playground']);
-    $b = makeCandidate(['id' => 'spot:b', 'category' => 'coworking', 'outdoor' => false]);
+    $candidate = makeCandidate(['id' => 'spot:x', 'category' => 'cafe', 'outdoor' => false]);
 
-    // neutralContext() has companions = null → the term is a flat constant.
-    $sa = $scorer->score($a, [], saturday('15:00'), 50.9442, 6.9329, neutralContext());
-    $sb = $scorer->score($b, [], saturday('15:00'), 50.9442, 6.9329, neutralContext());
+    $none = neutralContext();
+    $friends = new ScoringContext(rainExpected: false, preferredAreas: ['Neustadt-Nord', 'Ehrenfeld'], companions: 'friends');
 
-    expect($sa)->toBe($sb);
+    $a = $scorer->score($candidate, [], saturday('15:00'), 50.9442, 6.9329, $none);
+    $b = $scorer->score($candidate, [], saturday('15:00'), 50.9442, 6.9329, $friends);
+
+    expect($a)->toBe($b);
+});
+
+test('activities outrank a café at equal distance', function () {
+    $scorer = new PlanScorer(new TravelEstimator);
+    $playground = makeCandidate(['id' => 'spot:pg', 'category' => 'playground']);
+    $cafe = makeCandidate(['id' => 'spot:cf', 'category' => 'cafe', 'outdoor' => false]);
+
+    $pg = $scorer->score($playground, [], saturday('15:00'), 50.9442, 6.9329, neutralContext());
+    $cf = $scorer->score($cafe, [], saturday('15:00'), 50.9442, 6.9329, neutralContext());
+
+    expect($pg)->toBeGreaterThan($cf);
 });
 
 test('a kids plan excludes bars at the feasibility stage', function () {

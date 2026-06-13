@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expadu — KVB-style live timetable (for review)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --warn: #C47D0E; --danger: #C0392B;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 6px 24px rgba(24,23,15,.06);
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860; --accent-soft: rgba(26,76,212,.2);
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text-1); transition: background .25s; }
+.shell { max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; }
+.mode-toggle { position: fixed; top: 14px; right: 14px; z-index: 90; width: 38px; height: 38px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-size: 16px; cursor: pointer; box-shadow: var(--shadow); }
+h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-spacing: -.02em; }
+.sub { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+.note { background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 14px; font-size: 12px; color: var(--text-2); margin: 14px 0 18px; }
+.note b { color: var(--text-1); }
+
+/* leave-by tie-in (the moat) */
+.leaveby { display: flex; align-items: center; gap: 11px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: var(--r); padding: 13px 15px; margin-bottom: 18px; }
+.leaveby .ic { font-size: 20px; }
+.leaveby b { font-size: 14px; color: var(--accent); display: block; }
+.leaveby span { font-size: 12px; color: var(--text-2); }
+
+/* stop header */
+.stop { display: flex; align-items: center; gap: 10px; margin: 22px 0 4px; }
+.stop h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 18px; }
+.stop .walk { font-size: 12px; color: var(--text-2); }
+.stop .live { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--success); }
+.stop .live .dot { width: 7px; height: 7px; border-radius: 100px; background: var(--success); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* filter chips */
+.filters { display: flex; gap: 7px; margin: 14px 0; }
+.filters button { padding: 6px 13px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-family: 'Geist'; font-size: 12.5px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+.filters button.on { background: var(--text-1); border-color: var(--text-1); color: var(--bg); }
+
+/* departures board */
+.board { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow); }
+.dep { display: flex; align-items: center; gap: 13px; padding: 13px 15px; border-bottom: 1px solid var(--border); }
+.dep:last-child { border-bottom: none; }
+.line { min-width: 38px; height: 30px; padding: 0 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0; font-family: 'Geist'; }
+.dest { flex: 1; min-width: 0; }
+.dest b { font-size: 14.5px; display: block; line-height: 1.25; }
+.dest .plat { font-size: 11.5px; color: var(--text-2); margin-top: 1px; }
+.when { text-align: right; flex-shrink: 0; }
+.when .min { font-family: 'Geist Mono', monospace; font-size: 16px; font-weight: 600; }
+.when .min.now { color: var(--success); }
+.when .min.soon { color: var(--warn); }
+.when .delay { font-size: 11px; color: var(--danger); font-weight: 600; }
+.when .sched { font-size: 11px; color: var(--text-3); font-family: 'Geist Mono', monospace; }
+
+.disrupt { display: flex; gap: 9px; align-items: center; background: var(--surface-2); padding: 10px 15px; font-size: 12.5px; color: var(--warn); border-bottom: 1px solid var(--border); }
+.foot { font-size: 11.5px; color: var(--text-3); text-align: center; margin-top: 22px; line-height: 1.6; }
+.full-link { display: block; text-align: center; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--accent); }
+</style>
+</head>
+<body>
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';">🌙</button>
+
+<div class="shell">
+  <h1>Departures near you</h1>
+  <p class="sub">Live KVB times from your nearest stops · auto-refreshes</p>
+  <div class="note"><b>For review.</b> KVB-style live board to replace the generic "Getting around" widget. Real-time minutes, line colours, platform, delays — plus the leave-by tie-in only Expadu has. Not wired to data yet.</div>
+
+  <!-- the moat: timetable knows your appointment -->
+  <div class="leaveby">
+    <span class="ic">🏛️</span>
+    <div><b>Leave by 13:38 to make your 14:00 appointment</b><span>Take Line 9 → Königsforst, get off at Kalk Kapelle · 22 min</span></div>
+  </div>
+
+  <div class="filters">
+    <button class="on">All</button>
+    <button>🚊 Tram</button>
+    <button>🚌 Bus</button>
+  </div>
+
+  <!-- Stop 1 -->
+  <div class="stop">
+    <h2>Venloer Str./Gürtel</h2><span class="walk">· 4 min walk</span>
+    <span class="live"><span class="dot"></span>LIVE</span>
+  </div>
+  <div class="board">
+    <div class="dep">
+      <span class="line" style="background:#E2001A">1</span>
+      <div class="dest"><b>Bf Deutz/Messe</b><div class="plat">Platform 1 · towards Weiden West</div></div>
+      <div class="when"><div class="min now">now</div></div>
+    </div>
+    <div class="dep">
+      <span class="line" style="background:#0089CB">5</span>
+      <div class="dest"><b>Sparkasse Am Butzweilerhof</b><div class="plat">Platform 2</div></div>
+      <div class="when"><div class="min soon">3 min</div><div class="delay">+2 late</div></div>
+    </div>
+    <div class="dep">
+      <span class="line" style="background:#E2001A">1</span>
+      <div class="dest"><b>Weiden West</b><div class="plat">Platform 2</div></div>
+      <div class="when"><div class="min">7 min</div><div class="sched">17:42</div></div>
+    </div>
+    <div class="disrupt">⚠️ Line 13 — replacement buses between Sülzgürtel and Gürtel today</div>
+    <div class="dep">
+      <span class="line" style="background:#F18800">13</span>
+      <div class="dest"><b>Sülzgürtel (Bus SEV)</b><div class="plat">Bus stop · ring line</div></div>
+      <div class="when"><div class="min">9 min</div><div class="sched">17:44</div></div>
+    </div>
+    <div class="dep">
+      <span class="line" style="background:#4A4A4A">142</span>
+      <div class="dest"><b>Bf Ehrenfeld</b><div class="plat">Bus · towards Bocklemünd</div></div>
+      <div class="when"><div class="min">11 min</div></div>
+    </div>
+  </div>
+
+  <!-- Stop 2 -->
+  <div class="stop">
+    <h2>Ehrenfeldgürtel</h2><span class="walk">· 8 min walk</span>
+    <span class="live"><span class="dot"></span>LIVE</span>
+  </div>
+  <div class="board">
+    <div class="dep">
+      <span class="line" style="background:#C8027E">3</span>
+      <div class="dest"><b>Mengenich</b><div class="plat">Platform 1</div></div>
+      <div class="when"><div class="min soon">2 min</div></div>
+    </div>
+    <div class="dep">
+      <span class="line" style="background:#A01E5A">4</span>
+      <div class="dest"><b>Bocklemünd</b><div class="plat">Platform 1</div></div>
+      <div class="when"><div class="min">6 min</div></div>
+    </div>
+    <div class="dep">
+      <span class="line" style="background:#C8027E">3</span>
+      <div class="dest"><b>Holweide Vischeringstr.</b><div class="plat">Platform 2</div></div>
+      <div class="when"><div class="min">8 min</div><div class="sched">17:43</div></div>
+    </div>
+  </div>
+
+  <a class="full-link" href="#">Search another stop →</a>
+
+  <p class="foot">Powered by VRS/KVB real-time (GTFS-RT) when wired.<br>Falls back to the scheduled timetable if live data is unavailable — never a blank board.</p>
+</div>
+</body>
+</html>

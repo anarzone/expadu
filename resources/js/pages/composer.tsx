@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
@@ -577,10 +577,31 @@ export default function Composer() {
                         )}
 
                         {plan.slots.length > 0 && (
-                            <p className="mt-4 text-center text-xs text-muted-foreground/70">
-                                Every item is swappable — the plan adapts around
-                                your changes.
-                            </p>
+                            <>
+                                <div className="mt-4 flex gap-2">
+                                    <button
+                                        onClick={() =>
+                                            router.visit('/dashboard')
+                                        }
+                                        className="flex-1 cursor-pointer rounded-[9px] bg-primary py-3 text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
+                                    >
+                                        Save to Today
+                                    </button>
+                                    <button
+                                        onClick={() =>
+                                            constraints && compose(constraints)
+                                        }
+                                        disabled={composing}
+                                        className="cursor-pointer rounded-[9px] border border-border bg-card px-4 py-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                    >
+                                        Recompose
+                                    </button>
+                                </div>
+                                <p className="mt-3 text-center text-xs text-muted-foreground/70">
+                                    Every item is swappable — the plan adapts
+                                    around your changes.
+                                </p>
+                            </>
                         )}
                     </div>
                 )}
