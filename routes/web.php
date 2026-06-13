@@ -28,6 +28,7 @@ use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Controllers\SpotController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\UserPlaceController;
 use App\Http\Controllers\UserSettingController;
 use App\Http\Controllers\UserTaskController;
@@ -96,6 +97,9 @@ $appRoutes = function () use ($appDomain) {
         Route::post('onboarding/restart', [OnboardingController::class, 'restart'])->name('onboarding.restart');
 
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
+
+        // Live departures (KVB-style board)
+        Route::get('timetable', TimetableController::class)->name('timetable');
 
         // Day Composer
         Route::get('composer', fn () => Inertia::render('composer', [

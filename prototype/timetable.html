@@ -43,10 +43,13 @@ h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-s
 .stop .live .dot { width: 7px; height: 7px; border-radius: 100px; background: var(--success); animation: pulse 1.6s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
-/* filter chips */
-.filters { display: flex; gap: 7px; margin: 14px 0; }
+/* mode tabs — also pick the nearest stop serving that mode */
+.filters { display: flex; gap: 7px; margin: 14px 0 4px; }
 .filters button { padding: 6px 13px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font-family: 'Geist'; font-size: 12.5px; font-weight: 600; color: var(--text-2); cursor: pointer; }
 .filters button.on { background: var(--text-1); border-color: var(--text-1); color: var(--bg); }
+.tab-view { display: none; }
+.tab-view.on { display: block; animation: fadeUp .25s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* departures board */
 .board { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow); }
@@ -63,7 +66,10 @@ h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-s
 .when .delay { font-size: 11px; color: var(--danger); font-weight: 600; }
 .when .sched { font-size: 11px; color: var(--text-3); font-family: 'Geist Mono', monospace; }
 
-.disrupt { display: flex; gap: 9px; align-items: center; background: var(--surface-2); padding: 10px 15px; font-size: 12.5px; color: var(--warn); border-bottom: 1px solid var(--border); }
+.when .next { font-size: 11px; color: var(--text-3); font-family: 'Geist Mono', monospace; margin-top: 2px; white-space: nowrap; }
+.more-rows { max-height: 198px; overflow-y: auto; }
+.show-more { width: 100%; padding: 11px; background: var(--surface); border: none; border-top: 1px solid var(--border); font-family: 'Geist', sans-serif; font-size: 12.5px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.disrupt { display: flex; gap: 9px; align-items: center; background: var(--warn-s, var(--surface-2)); padding: 10px 15px; font-size: 12.5px; color: var(--warn); border-bottom: 1px solid var(--border); }
 .foot { font-size: 11.5px; color: var(--text-3); text-align: center; margin-top: 22px; line-height: 1.6; }
 .full-link { display: block; text-align: center; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--accent); }
 </style>
@@ -74,7 +80,7 @@ h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-s
 <div class="shell">
   <h1>Departures near you</h1>
   <p class="sub">Live KVB times from your nearest stops · auto-refreshes</p>
-  <div class="note"><b>For review.</b> KVB-style live board to replace the generic "Getting around" widget. Real-time minutes, line colours, platform, delays — plus the leave-by tie-in only Expadu has. Not wired to data yet.</div>
+  <div class="note"><b>For review.</b> One stop at a time — the tabs pick the mode <b>and the nearest stop serving it</b> (tap <b>Bus</b> → your nearest bus stop, often a different corner). One row per line, next departure big + the following times ("then 12, 20, 25 min"), up to <b>5 lines</b> then <b>Show more</b>. Real-time, with the leave-by tie-in only Expadu has. Not wired to data yet.</div>
 
   <!-- the moat: timetable knows your appointment -->
   <div class="leaveby">
@@ -82,72 +88,145 @@ h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-s
     <div><b>Leave by 13:38 to make your 14:00 appointment</b><span>Take Line 9 → Königsforst, get off at Kalk Kapelle · 22 min</span></div>
   </div>
 
-  <div class="filters">
-    <button class="on">All</button>
-    <button>🚊 Tram</button>
-    <button>🚌 Bus</button>
+  <div class="filters" id="tabs">
+    <button class="on" data-tab="all">All</button>
+    <button data-tab="tram">🚊 Tram</button>
+    <button data-tab="bus">🚌 Bus</button>
   </div>
 
-  <!-- Stop 1 -->
-  <div class="stop">
-    <h2>Venloer Str./Gürtel</h2><span class="walk">· 4 min walk</span>
-    <span class="live"><span class="dot"></span>LIVE</span>
-  </div>
-  <div class="board">
-    <div class="dep">
-      <span class="line" style="background:#E2001A">1</span>
-      <div class="dest"><b>Bf Deutz/Messe</b><div class="plat">Platform 1 · towards Weiden West</div></div>
-      <div class="when"><div class="min now">now</div></div>
+  <!-- ALL — your single nearest stop, both modes -->
+  <section class="tab-view on" data-view="all">
+    <div class="stop">
+      <h2>Venloer Str./Gürtel</h2><span class="walk">· 4 min walk</span>
+      <span class="live"><span class="dot"></span>LIVE</span>
     </div>
-    <div class="dep">
-      <span class="line" style="background:#0089CB">5</span>
-      <div class="dest"><b>Sparkasse Am Butzweilerhof</b><div class="plat">Platform 2</div></div>
-      <div class="when"><div class="min soon">3 min</div><div class="delay">+2 late</div></div>
+    <div class="board">
+      <div class="disrupt">⚠️ Line 13 — replacement buses between Sülzgürtel and Gürtel today</div>
+      <div class="dep">
+        <span class="line" style="background:#E2001A">1</span>
+        <div class="dest"><b>Bf Deutz/Messe</b><div class="plat">Platform 1</div></div>
+        <div class="when"><div class="min now">now</div><div class="next">then 12, 20, 25 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#0089CB">5</span>
+        <div class="dest"><b>Sparkasse Am Butzweilerhof</b><div class="plat">Platform 2</div></div>
+        <div class="when"><div class="min soon">3 min</div><div class="next">+2 late · then 13, 23 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#4A4A4A">142</span>
+        <div class="dest"><b>Bf Ehrenfeld</b><div class="plat">towards Bocklemünd</div></div>
+        <div class="when"><div class="min soon">4 min</div><div class="next">then 14, 24 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#E2001A">1</span>
+        <div class="dest"><b>Weiden West</b><div class="plat">Platform 2</div></div>
+        <div class="when"><div class="min">7 min</div><div class="next">then 17, 27 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#4A4A4A">143</span>
+        <div class="dest"><b>Chorweiler</b><div class="plat">towards Mengenich</div></div>
+        <div class="when"><div class="min">9 min</div><div class="next">then 24, 39 min</div></div>
+      </div>
+      <div class="more-rows" id="moreAll" hidden>
+        <div class="dep">
+          <span class="line" style="background:#F18800">13</span>
+          <div class="dest"><b>Sülzgürtel (Bus SEV)</b><div class="plat">ring line · replacement</div></div>
+          <div class="when"><div class="min">9 min</div><div class="next">then 19, 29 min</div></div>
+        </div>
+        <div class="dep">
+          <span class="line" style="background:#4A4A4A">145</span>
+          <div class="dest"><b>Ostheim</b><div class="plat">towards Kalk Post</div></div>
+          <div class="when"><div class="min">14 min</div><div class="next">then 34 min</div></div>
+        </div>
+      </div>
+      <button class="show-more" data-target="moreAll">Show 2 more lines ▾</button>
     </div>
-    <div class="dep">
-      <span class="line" style="background:#E2001A">1</span>
-      <div class="dest"><b>Weiden West</b><div class="plat">Platform 2</div></div>
-      <div class="when"><div class="min">7 min</div><div class="sched">17:42</div></div>
-    </div>
-    <div class="disrupt">⚠️ Line 13 — replacement buses between Sülzgürtel and Gürtel today</div>
-    <div class="dep">
-      <span class="line" style="background:#F18800">13</span>
-      <div class="dest"><b>Sülzgürtel (Bus SEV)</b><div class="plat">Bus stop · ring line</div></div>
-      <div class="when"><div class="min">9 min</div><div class="sched">17:44</div></div>
-    </div>
-    <div class="dep">
-      <span class="line" style="background:#4A4A4A">142</span>
-      <div class="dest"><b>Bf Ehrenfeld</b><div class="plat">Bus · towards Bocklemünd</div></div>
-      <div class="when"><div class="min">11 min</div></div>
-    </div>
-  </div>
+  </section>
 
-  <!-- Stop 2 -->
-  <div class="stop">
-    <h2>Ehrenfeldgürtel</h2><span class="walk">· 8 min walk</span>
-    <span class="live"><span class="dot"></span>LIVE</span>
-  </div>
-  <div class="board">
-    <div class="dep">
-      <span class="line" style="background:#C8027E">3</span>
-      <div class="dest"><b>Mengenich</b><div class="plat">Platform 1</div></div>
-      <div class="when"><div class="min soon">2 min</div></div>
+  <!-- TRAM — nearest tram stop -->
+  <section class="tab-view" data-view="tram">
+    <div class="stop">
+      <h2>Venloer Str./Gürtel</h2><span class="walk">· 4 min walk · trams</span>
+      <span class="live"><span class="dot"></span>LIVE</span>
     </div>
-    <div class="dep">
-      <span class="line" style="background:#A01E5A">4</span>
-      <div class="dest"><b>Bocklemünd</b><div class="plat">Platform 1</div></div>
-      <div class="when"><div class="min">6 min</div></div>
+    <div class="board">
+      <div class="disrupt">⚠️ Line 13 — replacement buses between Sülzgürtel and Gürtel today</div>
+      <div class="dep">
+        <span class="line" style="background:#E2001A">1</span>
+        <div class="dest"><b>Bf Deutz/Messe</b><div class="plat">Platform 1</div></div>
+        <div class="when"><div class="min now">now</div><div class="next">then 12, 20, 25 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#0089CB">5</span>
+        <div class="dest"><b>Sparkasse Am Butzweilerhof</b><div class="plat">Platform 2</div></div>
+        <div class="when"><div class="min soon">3 min</div><div class="next">+2 late · then 13, 23 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#E2001A">1</span>
+        <div class="dest"><b>Weiden West</b><div class="plat">Platform 2</div></div>
+        <div class="when"><div class="min">7 min</div><div class="next">then 17, 27 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#F18800">13</span>
+        <div class="dest"><b>Sülzgürtel (Bus SEV)</b><div class="plat">ring line · replacement</div></div>
+        <div class="when"><div class="min">9 min</div><div class="next">then 19, 29 min</div></div>
+      </div>
     </div>
-    <div class="dep">
-      <span class="line" style="background:#C8027E">3</span>
-      <div class="dest"><b>Holweide Vischeringstr.</b><div class="plat">Platform 2</div></div>
-      <div class="when"><div class="min">8 min</div><div class="sched">17:43</div></div>
+  </section>
+
+  <!-- BUS — nearest bus stop (often a different corner) -->
+  <section class="tab-view" data-view="bus">
+    <div class="stop">
+      <h2>Subbelrather Str./Gürtel</h2><span class="walk">· 6 min walk · buses</span>
+      <span class="live"><span class="dot"></span>LIVE</span>
     </div>
-  </div>
+    <div class="board">
+      <div class="dep">
+        <span class="line" style="background:#4A4A4A">142</span>
+        <div class="dest"><b>Bf Ehrenfeld</b><div class="plat">towards Bocklemünd</div></div>
+        <div class="when"><div class="min soon">4 min</div><div class="next">then 14, 24 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#4A4A4A">140</span>
+        <div class="dest"><b>Mülheim Wiener Platz</b><div class="plat">towards Mülheim</div></div>
+        <div class="when"><div class="min soon">5 min</div><div class="next">then 15, 35 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#4A4A4A">143</span>
+        <div class="dest"><b>Chorweiler</b><div class="plat">towards Mengenich</div></div>
+        <div class="when"><div class="min">9 min</div><div class="next">then 24, 39 min</div></div>
+      </div>
+      <div class="dep">
+        <span class="line" style="background:#4A4A4A">145</span>
+        <div class="dest"><b>Ostheim</b><div class="plat">towards Kalk Post</div></div>
+        <div class="when"><div class="min">14 min</div><div class="next">then 34 min</div></div>
+      </div>
+    </div>
+  </section>
 
   <a class="full-link" href="#">Search another stop →</a>
 
   <p class="foot">Powered by VRS/KVB real-time (GTFS-RT) when wired.<br>Falls back to the scheduled timetable if live data is unavailable — never a blank board.</p>
 </div>
+
+<script>
+// Mode tabs swap the board AND the stop (Bus → nearest bus stop).
+const tabs = document.getElementById('tabs');
+tabs.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  tabs.querySelectorAll('button').forEach((x) => x.classList.remove('on'));
+  b.classList.add('on');
+  document.querySelectorAll('.tab-view').forEach((v) => v.classList.toggle('on', v.dataset.view === b.dataset.tab));
+});
+
+document.querySelectorAll('.show-more').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const rows = document.getElementById(btn.dataset.target);
+    const opening = rows.hasAttribute('hidden');
+    rows.toggleAttribute('hidden');
+    btn.textContent = opening ? 'Show fewer ▴' : 'Show 2 more lines ▾';
+  });
+});
+</script>
 </body>
 </html>

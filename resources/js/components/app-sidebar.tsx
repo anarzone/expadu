@@ -6,6 +6,7 @@ import {
     IconCalendarEvent,
     IconFirstAidKit,
     IconFileText,
+    IconBus,
     IconUser,
     IconPalette,
     IconLogout,
@@ -43,6 +44,7 @@ function buildNavGroups(): NavGroup[] {
         {
             label: 'City',
             items: [
+                { title: 'Departures', href: '/timetable', icon: IconBus },
                 { title: 'Events', href: '/events', icon: IconCalendarEvent },
                 { title: 'Services', href: '/services', icon: IconFirstAidKit },
             ],
