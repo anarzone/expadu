@@ -193,6 +193,28 @@ test('composition is deterministic for identical input', function () {
     expect($a->toArray())->toBe($b->toArray());
 });
 
+test('an appointment anchors at its time and gets a travel buffer in', function () {
+    $filler = new SlotFiller(new PlanScorer(new TravelEstimator), new TravelEstimator);
+
+    // A nearby park fills the early gap; then a far appointment at 16:00.
+    $candidates = [
+        makeCandidate(['id' => 'spot:park', 'category' => 'park', 'lat' => 50.9442, 'lng' => 6.9329]),
+        makeCandidate([
+            'id' => 'appointment:1', 'type' => 'appointment', 'category' => 'appointment',
+            'outdoor' => false, 'typicalDurationMin' => 45, 'fixedStart' => saturday('16:00'),
+            'swappable' => false, 'lat' => 50.9700, 'lng' => 7.0100,
+        ]),
+    ];
+
+    $plan = $filler->fill(defaultConstraints(), $candidates, neutralContext(), 50.9442, 6.9329);
+
+    $anchor = collect($plan->slots)->first(fn ($s) => $s->candidate->isAppointment());
+    expect($anchor)->not->toBeNull();
+    expect($anchor->startAt->format('H:i'))->toBe('16:00');
+    expect($anchor->candidate->swappable)->toBeFalse();
+    expect($anchor->travelMinFromPrevious)->toBeGreaterThan(0);
+});
+
 // ── Swapper ────────────────────────────────────────────────────────────
 
 test('swap replaces only the target slot and freezes neighbors', function () {

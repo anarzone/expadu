@@ -32,18 +32,25 @@ class SlotFiller
         $slots = [];
         $used = [];
 
-        // 1. Anchor fixed-time events (earliest first; one per overlap window)
-        $events = array_filter($feasible, fn (Candidate $c) => $c->isFixedTime());
-        usort($events, fn (Candidate $a, Candidate $b) => $a->fixedStart <=> $b->fixedStart);
+        // 1. Anchor fixed-time candidates. Appointments are sacred, so they
+        //    claim their slot before curated events; then earliest first.
+        $fixed = array_filter($feasible, fn (Candidate $c) => $c->isFixedTime());
+        usort($fixed, function (Candidate $a, Candidate $b) {
+            if ($a->isAppointment() !== $b->isAppointment()) {
+                return $a->isAppointment() ? -1 : 1;
+            }
 
-        foreach ($events as $event) {
-            $start = $event->fixedStart;
-            $end = $start->addMinutes($event->typicalDurationMin);
+            return $a->fixedStart <=> $b->fixedStart;
+        });
+
+        foreach ($fixed as $anchor) {
+            $start = $anchor->fixedStart;
+            $end = $start->addMinutes($anchor->typicalDurationMin);
             if ($this->overlapsAny($slots, $start, $end)) {
                 continue;
             }
-            $slots[] = new PlanSlot($event, $start, $end, 0);
-            $used[$event->id] = true;
+            $slots[] = new PlanSlot($anchor, $start, $end, 0);
+            $used[$anchor->id] = true;
             if (count($slots) >= self::MAX_SLOTS_PER_DAY) {
                 break;
             }
@@ -96,7 +103,39 @@ class SlotFiller
             $cursorLng = $candidate->lng;
         }
 
-        return new Plan($constraints, array_values($slots));
+        return new Plan($constraints, $this->bufferAnchors(array_values($slots)));
+    }
+
+    /**
+     * Anchors are placed before the greedy fill, so their travel-from-
+     * previous is unknown at placement time. Once everything is laid out,
+     * annotate each anchor with the trip in from the slot before it — this
+     * is what powers the "leave {place} by 13:38" line on appointments.
+     *
+     * @param  list<PlanSlot>  $slots
+     * @return list<PlanSlot>
+     */
+    private function bufferAnchors(array $slots): array
+    {
+        foreach ($slots as $i => $slot) {
+            if ($i === 0 || ! $slot->candidate->isFixedTime() || $slot->travelMinFromPrevious > 0) {
+                continue;
+            }
+
+            $previous = $slots[$i - 1];
+            $travelMin = $this->travel->minutesBetween(
+                $previous->candidate->lat,
+                $previous->candidate->lng,
+                $slot->candidate->lat,
+                $slot->candidate->lng,
+            );
+
+            if ($travelMin > 0) {
+                $slots[$i] = new PlanSlot($slot->candidate, $slot->startAt, $slot->endAt, $travelMin);
+            }
+        }
+
+        return $slots;
     }
 
     /**

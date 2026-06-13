@@ -101,6 +101,7 @@ class CandidateRepository
                 opensAt: null,
                 closesAt: null,
                 fixedStart: CarbonImmutable::parse($event->starts_at),
+                swappable: false, // fixed-time, like appointments
             ))
             ->values()
             ->all();

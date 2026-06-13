@@ -1,7 +1,8 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
 type Constraints = {
@@ -17,21 +18,41 @@ type PlanSlot = {
     id: string;
     type: string;
     name: string;
+    subtitle: string | null;
     category: string;
     veedel: string | null;
     lat: number;
     lng: number;
     outdoor: boolean;
     cost_tier: string;
+    is_appointment: boolean;
+    swappable: boolean;
     start_time: string;
     end_time: string;
     travel_min_from_previous: number;
+    leave_by: string | null;
     closes_at: string | null;
 };
 
 type Plan = {
     constraints: Constraints;
     slots: PlanSlot[];
+};
+
+type Notice = { type: string; text: string };
+
+type Intent =
+    | 'plan_day'
+    | 'bureaucracy_q'
+    | 'find'
+    | 'take_me_there'
+    | 'unknown';
+
+type ParseResult = {
+    intent: Intent;
+    source: string;
+    constraints: Constraints | null;
+    query: string | null;
 };
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -54,7 +75,16 @@ const CATEGORY_EMOJI: Record<string, string> = {
     community: '🤝',
     language: '🗣️',
     event: '🎟️',
+    appointment: '🏛️',
 };
+
+function slotEmoji(slot: PlanSlot): string {
+    if (slot.is_appointment) {
+        return '🏛️';
+    }
+
+    return CATEGORY_EMOJI[slot.category] ?? '📍';
+}
 
 function csrfToken(): string {
     return (
@@ -156,11 +186,96 @@ function ConstraintChips({
     );
 }
 
+function NoticeChips({ notices }: { notices: Notice[] }) {
+    if (notices.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mb-4 flex flex-wrap gap-2">
+            {notices.map((notice, i) => (
+                <span
+                    key={i}
+                    className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+                        notice.type === 'info'
+                            ? 'bg-accent-soft text-primary'
+                            : 'bg-warn-soft text-warn'
+                    }`}
+                >
+                    {notice.text}
+                </span>
+            ))}
+        </div>
+    );
+}
+
+/**
+ * Interim routing for non-plan intents. Search and verified answers are
+ * separate slices; until they land, the box still understands the intent
+ * and points the user at the right page rather than composing a nonsense
+ * plan or dead-ending.
+ */
+function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
+    const config: Record<
+        string,
+        {
+            emoji: string;
+            title: string;
+            body: string;
+            href: string;
+            cta: string;
+        }
+    > = {
+        bureaucracy_q: {
+            emoji: '📋',
+            title: 'That looks like a paperwork question',
+            body: 'Answers come from your verified checklist — never guessed. Open it to find the task.',
+            href: '/bureaucracy',
+            cta: 'Open your checklist →',
+        },
+        find: {
+            emoji: '🔍',
+            title: 'Looks like you’re searching for a place',
+            body: 'The universal search lands next. For now, browse places and events.',
+            href: '/explore',
+            cta: 'Browse places →',
+        },
+        take_me_there: {
+            emoji: '🚌',
+            title: 'Looks like you want directions',
+            body: 'Find the place first and tap “take me there” on it.',
+            href: '/explore',
+            cta: 'Find a place →',
+        },
+    };
+
+    const c = config[intent] ?? config.find;
+
+    return (
+        <div className="rounded-[14px] border border-border bg-card p-6 text-center">
+            <div className="mb-2 text-3xl">{c.emoji}</div>
+            <p className="mb-1 text-[15px] font-semibold">{c.title}</p>
+            <p className="mb-4 text-sm text-muted-foreground">
+                {query ? `“${query}” — ${c.body}` : c.body}
+            </p>
+            <Link
+                href={c.href}
+                className="inline-block rounded-[9px] bg-primary px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
+            >
+                {c.cta}
+            </Link>
+        </div>
+    );
+}
+
 export default function Composer() {
     const { prompt } = usePage<{ prompt?: string }>().props;
+    const { track } = useTracker();
 
     const [constraints, setConstraints] = useState<Constraints | null>(null);
     const [plan, setPlan] = useState<Plan | null>(null);
+    const [notices, setNotices] = useState<Notice[]>([]);
+    const [intent, setIntent] = useState<Intent>('plan_day');
     const [parsing, setParsing] = useState(false);
     const [composing, setComposing] = useState(false);
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
@@ -172,10 +287,12 @@ export default function Composer() {
         setError(null);
 
         try {
-            const json = await post<{ plan: Plan }>('/composer/compose', {
-                constraints: next,
-            });
+            const json = await post<{ plan: Plan; notices: Notice[] }>(
+                '/composer/compose',
+                { constraints: next },
+            );
             setPlan(json.plan);
+            setNotices(json.notices ?? []);
         } catch {
             setError('Could not compose your day. Try adjusting the chips.');
         } finally {
@@ -190,8 +307,14 @@ export default function Composer() {
         }
 
         setParsing(true);
-        post<{ constraints: Constraints }>('/composer/parse', { text: prompt })
-            .then((json) => setConstraints(json.constraints))
+        post<ParseResult>('/composer/parse', { text: prompt })
+            .then((result) => {
+                setIntent(result.intent);
+
+                if (result.intent === 'plan_day' && result.constraints) {
+                    setConstraints(result.constraints);
+                }
+            })
             .catch(() =>
                 setError('Could not understand that — edit the chips below.'),
             )
@@ -230,10 +353,12 @@ export default function Composer() {
         setSwappingSlot(index);
 
         try {
-            const json = await post<{ plan: Plan }>('/composer/swap', {
-                slot: index,
-            });
+            const json = await post<{ plan: Plan; notices: Notice[] }>(
+                '/composer/swap',
+                { slot: index },
+            );
             setPlan(json.plan);
+            setNotices(json.notices ?? []);
         } catch {
             setError('No alternative fits that slot.');
         } finally {
@@ -241,11 +366,31 @@ export default function Composer() {
         }
     }
 
+    function takeMeThere(slot: PlanSlot) {
+        // Strongest intent signal — only for leisure, not appointments.
+        if (!slot.is_appointment) {
+            track('take_me_there', {
+                category: slot.category,
+                veedel: slot.veedel,
+            });
+        }
+
+        setDestination({
+            name: slot.name,
+            emoji: slotEmoji(slot),
+            lat: slot.lat,
+            lng: slot.lng,
+            arriveBy: slot.is_appointment ? slot.start_time : undefined,
+        });
+    }
+
     const headline = constraints
         ? new Date(constraints.window_start).toLocaleDateString('en-GB', {
               weekday: 'long',
           })
         : 'Your day';
+
+    const showInterim = !parsing && intent !== 'plan_day' && !plan;
 
     return (
         <AppLayout>
@@ -271,12 +416,18 @@ export default function Composer() {
                     </div>
                 )}
 
+                {showInterim && (
+                    <InterimRoute intent={intent} query={prompt ?? ''} />
+                )}
+
                 {constraints && (
                     <ConstraintChips
                         constraints={constraints}
                         onRemove={removeConstraint}
                     />
                 )}
+
+                {plan && <NoticeChips notices={notices} />}
 
                 {constraints && !plan && !composing && (
                     <button
@@ -314,17 +465,30 @@ export default function Composer() {
                                         <span className="absolute top-0 bottom-0 left-0 w-px bg-border" />
                                         🚶{' '}
                                         {slot.travel_min_from_previous || '~'}{' '}
-                                        min travel
+                                        min
+                                        {slot.is_appointment && slot.leave_by
+                                            ? ` · leave by ${slot.leave_by}`
+                                            : ' travel'}
                                     </div>
                                 )}
-                                <div className="rounded-[14px] border border-border bg-card p-4">
+                                <div
+                                    className={`rounded-[14px] border p-4 ${
+                                        slot.is_appointment
+                                            ? 'border-primary bg-accent-soft'
+                                            : 'border-border bg-card'
+                                    }`}
+                                >
+                                    {slot.is_appointment && (
+                                        <div className="mb-1 font-mono text-[10px] font-semibold tracking-wide text-primary uppercase">
+                                            Your appointment · not movable
+                                        </div>
+                                    )}
                                     <div className="mb-1 flex items-center justify-between gap-2">
                                         <span className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
                                             {slot.start_time}–{slot.end_time}
                                         </span>
                                         <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
-                                            {CATEGORY_EMOJI[slot.category] ??
-                                                '📍'}{' '}
+                                            {slotEmoji(slot)}{' '}
                                             {slot.category.replace('_', ' ')}
                                         </span>
                                     </div>
@@ -332,13 +496,19 @@ export default function Composer() {
                                         {slot.name}
                                     </div>
                                     <div className="mt-0.5 text-[13px] text-muted-foreground">
-                                        {slot.veedel ?? 'Cologne'}
-                                        {slot.closes_at &&
-                                            ` · closes ${slot.closes_at}`}
-                                        {slot.cost_tier === 'free' && ' · free'}
+                                        {slot.subtitle ??
+                                            `${slot.veedel ?? 'Cologne'}${
+                                                slot.closes_at
+                                                    ? ` · closes ${slot.closes_at}`
+                                                    : ''
+                                            }${
+                                                slot.cost_tier === 'free'
+                                                    ? ' · free'
+                                                    : ''
+                                            }`}
                                     </div>
                                     <div className="mt-3 flex gap-2">
-                                        {slot.type !== 'event' && (
+                                        {slot.swappable && (
                                             <button
                                                 onClick={() => swap(i)}
                                                 disabled={swappingSlot !== null}
@@ -350,16 +520,7 @@ export default function Composer() {
                                             </button>
                                         )}
                                         <button
-                                            onClick={() =>
-                                                setDestination({
-                                                    name: slot.name,
-                                                    emoji: CATEGORY_EMOJI[
-                                                        slot.category
-                                                    ],
-                                                    lat: slot.lat,
-                                                    lng: slot.lng,
-                                                })
-                                            }
+                                            onClick={() => takeMeThere(slot)}
                                             className="cursor-pointer rounded-[9px] bg-accent-soft px-3.5 py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
                                         >
                                             → Take me there
@@ -385,7 +546,7 @@ export default function Composer() {
                     </div>
                 )}
 
-                {!constraints && !parsing && (
+                {!constraints && !parsing && !showInterim && (
                     <div className="rounded-[14px] border border-border bg-card p-8 text-center">
                         <div className="mb-2 text-3xl">✨</div>
                         <p className="text-sm text-muted-foreground">

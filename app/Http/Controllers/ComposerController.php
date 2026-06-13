@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Composer\AppointmentRepository;
+use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
-use App\Composer\Contracts\ParsesConstraints;
+use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\Plan;
@@ -15,6 +17,7 @@ use App\Composer\Swapper;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Profile\ProfileEngine;
+use App\Services\GermanHolidayService;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -30,24 +33,33 @@ class ComposerController extends Controller
 {
     private const PLAN_TTL_HOURS = 72;
 
-    public function parse(Request $request, ParsesConstraints $parser, ProfileEngine $profiles): JsonResponse
+    private ?array $forecastCache = null;
+
+    /**
+     * The single parse call: classify intent + extract payload. The result
+     * carries the intent so the frontend renders the right surface (plan,
+     * verified answer, or search), plus `source` so a degraded parse is
+     * framed honestly. The parser never picks venues or answers questions.
+     */
+    public function parse(Request $request, ParsesPrompt $parser, ProfileEngine $profiles): JsonResponse
     {
         $validated = $request->validate([
             'text' => ['required', 'string', 'max:500'],
         ]);
 
-        $constraints = $parser->parse(
+        $parsed = $parser->parse(
             $validated['text'],
             $profiles->build($request->user()),
             CarbonImmutable::now('Europe/Berlin'),
         );
 
-        return response()->json(['constraints' => $constraints->toArray()]);
+        return response()->json($parsed->toArray());
     }
 
     public function compose(
         Request $request,
         CandidateRepository $candidates,
+        AppointmentRepository $appointments,
         FeasibilityFilter $filter,
         SlotFiller $filler,
         ProfileEngine $profiles,
@@ -80,19 +92,26 @@ class ComposerController extends Controller
 
         [$originLat, $originLng] = $this->origin($user);
 
+        // Leisure runs the feasibility gauntlet; the user's own booked
+        // appointments bypass it entirely and become immovable anchors.
         $feasible = $filter->filter($constraints, $candidates->candidatesFor($constraints));
-        $plan = $filler->fill($constraints, $feasible, $context, $originLat, $originLng);
+        $anchored = [...$appointments->within($user, $constraints), ...$feasible];
+        $plan = $filler->fill($constraints, $anchored, $context, $originLat, $originLng);
 
         Cache::put($this->planKey($user), $plan->toArray() + [
             'origin' => [$originLat, $originLng],
         ], now()->addHours(self::PLAN_TTL_HOURS));
 
-        return response()->json(['plan' => $plan->toArray()]);
+        return response()->json([
+            'plan' => $plan->toArray(),
+            'notices' => $this->notices($constraints, $plan),
+        ]);
     }
 
     public function swap(
         Request $request,
         CandidateRepository $candidates,
+        AppointmentRepository $appointments,
         FeasibilityFilter $filter,
         Swapper $swapper,
         ProfileEngine $profiles,
@@ -108,9 +127,17 @@ class ComposerController extends Controller
             return response()->json(['message' => 'No active plan — compose one first.'], 404);
         }
 
-        $plan = $this->hydratePlan($stored, $candidates);
+        $appointmentPool = $appointments->within($user, Constraints::fromArray($stored['constraints']));
+        $plan = $this->hydratePlan($stored, $candidates, $appointmentPool);
         $slotIndex = (int) $validated['slot'];
         $rejected = $stored['rejected'][$slotIndex] ?? [];
+
+        // Appointments and fixed-time events are anchors — refuse before
+        // recording a (spurious) negative signal for the scorer.
+        $target = $plan->slots[$slotIndex] ?? null;
+        if ($target !== null && ! $target->candidate->swappable) {
+            return response()->json(['message' => 'This slot is fixed and cannot be swapped.'], 422);
+        }
 
         if (isset($plan->slots[$slotIndex])) {
             $outgoing = $plan->slots[$slotIndex]->candidate;
@@ -152,7 +179,10 @@ class ComposerController extends Controller
             'rejected' => $rejectedMap,
         ], now()->addHours(self::PLAN_TTL_HOURS));
 
-        return response()->json(['plan' => $swapped->toArray()]);
+        return response()->json([
+            'plan' => $swapped->toArray(),
+            'notices' => $this->notices($swapped->constraints, $swapped),
+        ]);
     }
 
     private function planKey(User $user): string
@@ -160,13 +190,64 @@ class ComposerController extends Controller
         return "composer:plan:{$user->id}";
     }
 
+    /**
+     * Weather forecast for the composer, fetched at most once per request.
+     *
+     * @return array<string, mixed>
+     */
+    private function forecast(): array
+    {
+        if ($this->forecastCache !== null) {
+            return $this->forecastCache;
+        }
+
+        try {
+            return $this->forecastCache = app(WeatherService::class)->getForecast();
+        } catch (\Throwable) {
+            return $this->forecastCache = [];
+        }
+    }
+
     private function rainExpected(): bool
     {
-        try {
-            return (bool) (app(WeatherService::class)->getForecast()['rain_starts'] ?? false);
-        } catch (\Throwable) {
-            return false;
+        return (bool) ($this->forecast()['rain_starts'] ?? false);
+    }
+
+    /**
+     * Deterministic, honest plan annotations: the woven appointment, the
+     * weather call the scorer already acted on, and the German rhythm of
+     * the planned day (Sunday/holiday closures, a holiday-eve grocery
+     * nudge). Notices explain the plan; they never invent venue facts.
+     *
+     * @return list<array{type: string, text: string}>
+     */
+    private function notices(Constraints $constraints, Plan $plan): array
+    {
+        $notices = [];
+
+        foreach ($plan->slots as $slot) {
+            if ($slot->candidate->isAppointment()) {
+                $notices[] = ['type' => 'info', 'text' => '🏛️ Built around your '.$slot->startAt->format('H:i').' appointment'];
+                break;
+            }
         }
+
+        if ($this->rainExpected()) {
+            $summary = $this->forecast()['rain_summary'] ?? null;
+            $notices[] = ['type' => 'warn', 'text' => '🌧 '.(is_string($summary) && $summary !== '' ? $summary : 'Rain expected — indoor picks favoured')];
+        }
+
+        $holidays = app(GermanHolidayService::class);
+        $day = $constraints->windowStart;
+
+        if ($holidays->isNonWorkingDay($day)) {
+            $name = $holidays->getHolidayName($day);
+            $notices[] = ['type' => 'warn', 'text' => ($name ?? 'Sunday').' — most shops shut; parks, museums and cafés are your best bets'];
+        } elseif ($holidays->isShopsClosedTomorrow($day)) {
+            $notices[] = ['type' => 'warn', 'text' => '🛒 Public holiday tomorrow — shops shut. Grab groceries today'];
+        }
+
+        return $notices;
     }
 
     /**
@@ -183,15 +264,18 @@ class ComposerController extends Controller
     }
 
     /**
-     * Rebuild a Plan from its stored array using fresh candidate
-     * snapshots (so swapped-in venues carry current data).
+     * Rebuild a Plan from its stored array using fresh candidate snapshots
+     * (so swapped-in venues carry current data). Appointment anchors aren't
+     * in the leisure pool, so they're merged back in by id — otherwise a
+     * swap would silently drop the user's appointment from the plan.
      *
      * @param  array<string, mixed>  $stored
+     * @param  list<Candidate>  $appointmentPool
      */
-    private function hydratePlan(array $stored, CandidateRepository $candidates): Plan
+    private function hydratePlan(array $stored, CandidateRepository $candidates, array $appointmentPool = []): Plan
     {
         $constraints = Constraints::fromArray($stored['constraints']);
-        $pool = collect($candidates->candidatesFor($constraints))->keyBy('id');
+        $pool = collect([...$candidates->candidatesFor($constraints), ...$appointmentPool])->keyBy('id');
 
         $slots = [];
         foreach ($stored['slots'] as $slotData) {

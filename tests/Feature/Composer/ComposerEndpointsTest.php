@@ -2,26 +2,17 @@
 
 use App\Models\Event;
 use App\Models\Spot;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
+use App\Models\UserTask;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     Cache::flush();
 });
-
-function fakeAnthropicParse(array $input): void
-{
-    Http::fake([
-        'api.anthropic.com/v1/messages' => Http::response([
-            'content' => [
-                ['type' => 'tool_use', 'name' => 'set_constraints', 'input' => $input],
-            ],
-        ]),
-    ]);
-}
 
 function composerUser(): User
 {
@@ -36,36 +27,47 @@ function composerUser(): User
     return $user;
 }
 
-test('parse returns editable constraints from the LLM tool call', function () {
-    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
-    fakeAnthropicParse([
-        'window_start' => $start->toIso8601String(),
-        'window_end' => $start->addHours(6)->toIso8601String(),
-        'areas' => ['Ehrenfeld'],
-        'categories' => ['park', 'cafe'],
-        'companions' => 'friends',
-        'budget' => 'low',
+// ── parse: intent routing (heuristic — no key, no network) ───────────────
+
+test('parse classifies a leisure prompt as plan_day with editable constraints', function () {
+    $this->actingAs(composerUser());
+
+    $response = $this->postJson('/composer/parse', [
+        'text' => 'tomorrow afternoon in Ehrenfeld with friends',
     ]);
 
-    $this->actingAs(composerUser());
-    $response = $this->postJson('/composer/parse', ['text' => 'free Saturday afternoon in Ehrenfeld with friends, cheap']);
-
     $response->assertOk();
-    $response->assertJsonPath('constraints.areas.0', 'Ehrenfeld');
+    $response->assertJsonPath('intent', 'plan_day');
+    $response->assertJsonPath('source', 'heuristic');
     $response->assertJsonPath('constraints.companions', 'friends');
-    $response->assertJsonPath('constraints.budget', 'low');
-});
-
-test('parse falls back to profile defaults when the LLM fails', function () {
-    Http::fake(['api.anthropic.com/*' => Http::response('overloaded', 529)]);
-
-    $this->actingAs(composerUser());
-    $response = $this->postJson('/composer/parse', ['text' => 'anything']);
-
-    $response->assertOk();
-    // Profile defaults: home Veedel's Bezirk
     expect($response->json('constraints.areas'))->toContain('Ehrenfeld');
 });
+
+test('parse routes a paperwork question to bureaucracy, not a plan', function () {
+    $this->actingAs(composerUser());
+
+    $response = $this->postJson('/composer/parse', [
+        'text' => 'do I need an appointment for Anmeldung?',
+    ]);
+
+    $response->assertOk();
+    $response->assertJsonPath('intent', 'bureaucracy_q');
+    $response->assertJsonPath('constraints', null);
+    expect($response->json('query'))->not->toBeNull();
+});
+
+test('parse routes a place search to find', function () {
+    $this->actingAs(composerUser());
+
+    $response = $this->postJson('/composer/parse', [
+        'text' => 'basketball court near Ehrenfeld',
+    ]);
+
+    $response->assertOk();
+    $response->assertJsonPath('intent', 'find');
+});
+
+// ── compose / swap ───────────────────────────────────────────────────────
 
 test('compose builds a plan from real candidates and stores it', function () {
     $user = composerUser();
@@ -94,7 +96,83 @@ test('compose builds a plan from real candidates and stores it', function () {
 
     $response->assertOk();
     expect($response->json('plan.slots'))->not->toBeEmpty();
+    expect($response->json('notices'))->toBeArray();
     expect(Cache::get("composer:plan:{$user->id}"))->not->toBeNull();
+});
+
+test('compose weaves a booked appointment as an immovable anchor', function () {
+    Http::fake([
+        'photon.komoot.io/*' => Http::response([
+            'features' => [
+                ['geometry' => ['coordinates' => [7.0009, 50.9416]], 'properties' => ['name' => 'Ausländerbehörde']],
+            ],
+        ]),
+    ]);
+
+    $user = composerUser();
+    Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
+
+    $task = Task::factory()->create([
+        'booking_service_key' => 'auslaenderbehoerde',
+        'documents_required' => ['Passport', 'Biometric photo', 'Application form'],
+        'title' => 'Residence permit appointment',
+    ]);
+    UserTask::factory()->create([
+        'user_id' => $user->id,
+        'task_id' => $task->id,
+        'appointment_at' => now('Europe/Berlin')->addDay()->setTime(14, 0),
+    ]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(10, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->copy()->setTime(19, 0)->toIso8601String(),
+        ],
+    ]);
+
+    $response->assertOk();
+    $anchor = collect($response->json('plan.slots'))->firstWhere('is_appointment', true);
+
+    expect($anchor)->not->toBeNull();
+    expect($anchor['swappable'])->toBeFalse();
+    expect($anchor['start_time'])->toBe('14:00');
+    expect($anchor['subtitle'])->toContain('Ausländerbehörde');
+    expect($anchor['subtitle'])->toContain('3 documents');
+    expect(collect($response->json('notices'))->pluck('text')->implode(' '))
+        ->toContain('appointment');
+});
+
+test('an appointment anchor refuses to swap', function () {
+    Http::fake(['photon.komoot.io/*' => Http::response(['features' => []])]);
+
+    $user = composerUser();
+    Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
+
+    $task = Task::factory()->create(['booking_service_key' => 'auslaenderbehoerde', 'title' => 'Permit appointment']);
+    UserTask::factory()->create([
+        'user_id' => $user->id,
+        'task_id' => $task->id,
+        'appointment_at' => now('Europe/Berlin')->addDay()->setTime(14, 0),
+    ]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(10, 0);
+    $compose = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->copy()->setTime(19, 0)->toIso8601String(),
+        ],
+    ]);
+    $compose->assertOk();
+
+    $anchorIndex = collect($compose->json('plan.slots'))->search(fn ($s) => $s['is_appointment'] === true);
+    expect($anchorIndex)->not->toBeFalse();
+
+    $this->postJson('/composer/swap', ['slot' => $anchorIndex])->assertUnprocessable();
+    // The refusal must not record a negative intent signal.
+    expect(UserEvent::where('user_id', $user->id)->where('event_type', 'composer_swap_away')->exists())->toBeFalse();
 });
 
 test('swap exchanges one slot and records the negative signal', function () {

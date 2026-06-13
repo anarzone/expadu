@@ -52,6 +52,19 @@ return [
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
     ],
 
+    /*
+     * The composer's prompt parser. 'heuristic' (default) needs no key and
+     * runs the product today; set driver to 'openai' with a key to route
+     * through any OpenAI-compatible chat API (DeepSeek or OpenAI/GPT — same
+     * base URL + model knobs). The parser only classifies and parses.
+     */
+    'llm' => [
+        'driver' => env('LLM_DRIVER', 'heuristic'),
+        'base_url' => env('LLM_BASE_URL', 'https://api.deepseek.com'),
+        'model' => env('LLM_MODEL', 'deepseek-chat'),
+        'key' => env('LLM_KEY'),
+    ],
+
     'transitous' => [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
     ],

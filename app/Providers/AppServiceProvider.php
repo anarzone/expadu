@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use App\Composer\AnthropicConstraintParser;
-use App\Composer\Contracts\ParsesConstraints;
+use App\Composer\Contracts\ParsesPrompt;
+use App\Composer\HeuristicPromptParser;
+use App\Composer\OpenAiCompatiblePromptParser;
 use App\ContextEngine\Evaluators\MarketEvaluator;
 use App\ContextEngine\Evaluators\RhineEvaluator;
 use App\ContextEngine\Evaluators\TransitDelayEvaluator;
@@ -43,10 +44,18 @@ class AppServiceProvider extends ServiceProvider
             FailoverRouteService::class,
         );
 
-        $this->app->bind(
-            ParsesConstraints::class,
-            AnthropicConstraintParser::class,
-        );
+        // The composer parser: heuristic by default (no key), the
+        // OpenAI-compatible driver once a provider key is configured. The
+        // driver always wraps the heuristic as its degradation path.
+        $this->app->bind(ParsesPrompt::class, function ($app) {
+            $heuristic = $app->make(HeuristicPromptParser::class);
+
+            if (config('services.llm.driver') === 'openai' && config('services.llm.key')) {
+                return new OpenAiCompatiblePromptParser($heuristic);
+            }
+
+            return $heuristic;
+        });
 
         $this->app->bind(
             ClassifiesEvents::class,
