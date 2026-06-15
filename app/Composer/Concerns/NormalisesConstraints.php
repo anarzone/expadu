@@ -35,6 +35,8 @@ trait NormalisesConstraints
             categories: $constraints->categories,
             companions: $constraints->companions,
             budget: $constraints->budget,
+            archetype: $constraints->archetype,
+            vibe: $constraints->vibe,
         );
     }
 

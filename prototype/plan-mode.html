@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Expadu — Plan mode v2 (archetypes · soft timing · touchable)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #57544A; --text-3: #908C81;
+  --accent: #1A4CD4; --accent-h: #1540B8; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --success-s: #D4F0E6; --warn: #C47D0E; --warn-s: #FDF0D4;
+  --hero-s: #FBF3E2; --hero-b: #EBD9B0;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 6px 24px rgba(24,23,15,.06);
+}
+html.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #C9C6BC; --text-3: #8C897F;
+  --accent: #5B82E8; --accent-soft: rgba(26,76,212,.2);
+  --success-s: rgba(10,124,82,.18); --warn-s: rgba(196,125,14,.16);
+  --hero-s: rgba(196,125,14,.12); --hero-b: rgba(196,125,14,.35);
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text-1); transition: background .25s; padding: 28px 16px 80px; }
+.shell { max-width: 600px; margin: 0 auto; }
+.eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 27px; letter-spacing: -.02em; margin: 4px 0 4px; }
+.summary { font-size: 14.5px; color: var(--text-2); line-height: 1.5; margin-bottom: 18px; }
+.summary b { color: var(--text-1); font-weight: 600; }
+
+/* Archetype switcher */
+.arch-label { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.arch { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.arch button { display: flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); font: 600 12.5px 'Geist', sans-serif; color: var(--text-2); cursor: pointer; transition: all .15s; }
+.arch button:hover { border-color: var(--accent); color: var(--accent); }
+.arch button.on { background: var(--text-1); border-color: var(--text-1); color: var(--bg); }
+
+/* Filter bar */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 11px 13px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 22px; }
+.filter { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); }
+.filter .k { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+.filter select, .filter .pill { font: 600 12.5px 'Geist', sans-serif; color: var(--text-1); background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 4px 10px; cursor: pointer; }
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 2px; }
+.seg button { border: none; background: transparent; font: 600 11.5px 'Geist', sans-serif; color: var(--text-3); padding: 4px 10px; border-radius: 100px; cursor: pointer; }
+.seg button.on { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
+.dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-3); }
+
+/* Time band lane */
+.lane { display: flex; align-items: baseline; gap: 8px; margin: 22px 0 12px; }
+.lane:first-of-type { margin-top: 4px; }
+.lane .band { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500; color: var(--text-1); }
+.lane .soft { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text-3); }
+
+/* Pick card */
+.pick { position: relative; display: flex; gap: 13px; padding: 14px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); transition: opacity .2s, transform .2s; }
+.pick.hero { background: var(--hero-s); border-color: var(--hero-b); }
+.pick.locked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pick.fixed { background: var(--accent-soft); border-color: var(--accent); }
+.pick.removing { opacity: 0; transform: scale(.96); }
+.thumb { width: 52px; height: 52px; border-radius: 11px; flex-shrink: 0; display: grid; place-items: center; font-size: 26px; background: var(--surface-2); }
+.pick.hero .thumb { background: rgba(196,125,14,.18); }
+.body { flex: 1; min-width: 0; }
+.toprow { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.badge { font-family: 'Geist Mono', monospace; font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; padding: 2px 7px; border-radius: 100px; background: var(--surface-2); color: var(--text-3); }
+.badge.hero { background: var(--warn-s); color: var(--warn); }
+.badge.fixed { background: var(--accent); color: #fff; }
+.dur { margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 11.5px; color: var(--text-2); flex-shrink: 0; }
+.name { font-size: 15.5px; font-weight: 600; letter-spacing: -.01em; }
+.pick.hero .name { font-size: 17px; }
+.why { font-size: 12.5px; color: var(--text-2); margin-top: 3px; line-height: 1.45; }
+.why .tag { color: var(--success); font-weight: 600; }
+.why .warn { color: var(--warn); font-weight: 600; }
+.leaveby { display: inline-block; margin-top: 7px; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 3px 9px; border-radius: 100px; }
+
+/* per-pick touch controls */
+.ctrls { display: flex; gap: 6px; margin-top: 11px; flex-wrap: wrap; }
+.ic { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); font: 600 12px 'Geist', sans-serif; color: var(--text-2); cursor: pointer; transition: all .15s; }
+.ic:hover { border-color: var(--accent); color: var(--accent); }
+.ic.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.grip { position: absolute; top: 12px; right: 12px; color: var(--text-3); font-size: 14px; cursor: grab; letter-spacing: -2px; }
+
+/* connector */
+.connector { display: flex; align-items: center; gap: 7px; padding: 7px 0 7px 26px; color: var(--text-3); font-size: 11.5px; font-family: 'Geist Mono', monospace; position: relative; }
+.connector::before { content: ''; position: absolute; left: 13px; top: 0; bottom: 0; width: 1px; background: var(--border); }
+
+/* whole-plan controls */
+.plan-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 6px; }
+.tool { display: inline-flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: 100px; border: 1px dashed var(--border); background: transparent; font: 600 12.5px 'Geist', sans-serif; color: var(--text-2); cursor: pointer; }
+.tool:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
+.cta { display: flex; gap: 8px; margin-top: 16px; }
+.btn-primary { flex: 1; padding: 13px; border-radius: var(--r-sm); border: none; background: var(--accent); color: #fff; font: 600 14px 'Geist', sans-serif; cursor: pointer; }
+.btn-ghost { padding: 13px 16px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font: 600 13px 'Geist', sans-serif; cursor: pointer; }
+.foot-note { text-align: center; font-size: 11.5px; color: var(--text-3); margin-top: 12px; }
+
+.mode-toggle { position: fixed; top: 16px; right: 16px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); font-size: 16px; cursor: pointer; box-shadow: var(--shadow); }
+.note { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r-sm); padding: 11px 14px; font-size: 12.5px; color: var(--text-1); margin-bottom: 22px; line-height: 1.5; }
+.note b { font-weight: 600; }
+</style>
+</head>
+<body>
+<button class="mode-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';">🌙</button>
+
+<div class="shell">
+  <div class="eyebrow">Composer · plan result</div>
+  <h1 id="title">Your Saturday afternoon</h1>
+  <p class="summary" id="summary"></p>
+
+  <div class="note">
+    <b>What changed:</b> no rigid clock grid — a day with a <b>shape</b> (archetype), soft time bands,
+    a visible <b>why</b> per pick, and every pick is <b>touchable</b> (lock · swap · remove · reorder).
+    Tap the archetype chips and the controls — they're live.
+  </div>
+
+  <div class="arch-label">Shape of the day — tap to switch</div>
+  <div class="arch" id="arch"></div>
+
+  <div class="filters">
+    <div class="filter"><span class="k">Area</span><span class="pill">Ehrenfeld ▾</span></div>
+    <span class="dot"></span>
+    <div class="filter"><span class="k">Vibe</span>
+      <span class="seg" id="vibe"><button data-v="chill" class="on">Chill</button><button data-v="active">Active</button></span>
+    </div>
+    <span class="dot"></span>
+    <div class="filter"><span class="k">Budget</span><span class="pill">€ · low ▾</span></div>
+    <span class="dot"></span>
+    <div class="filter"><span class="k">With</span><span class="pill">Solo ▾</span></div>
+    <span class="dot"></span>
+    <div class="filter"><span class="k">Time</span><span class="pill">~4h ▾</span></div>
+  </div>
+
+  <div id="plan"></div>
+
+  <div class="plan-tools">
+    <button class="tool" onclick="shuffle()">🔀 Shuffle</button>
+    <button class="tool" onclick="addStop()">＋ Add a stop</button>
+    <button class="tool" onclick="render()">↺ Reset</button>
+  </div>
+
+  <div class="cta">
+    <button class="btn-primary">Save to Today</button>
+    <button class="btn-ghost">↻ Recompose</button>
+  </div>
+  <p class="foot-note">Locked picks (📌) are kept when you recompose or shuffle — the rest adapts around them.</p>
+</div>
+
+<script>
+const ARCH = [
+  { id: 'main',     label: '🎯 One main + supports' },
+  { id: 'veedel',   label: '🧭 Explore a Veedel' },
+  { id: 'chill',    label: '🌿 Chill nearby' },
+  { id: 'day',      label: '🌞 Make a day of it' },
+  { id: 'anchored', label: '📌 Around your appointment' },
+];
+
+const PLANS = {
+  main: {
+    title: 'Your Saturday afternoon',
+    summary: 'A relaxed afternoon with <b>one main thing</b> and a place to land after — kept close together so you’re not crossing the city.',
+    lanes: [
+      { band: 'Afternoon', soft: 'from ~14:00', picks: [
+        { hero: true, emoji: '🏛️', cat: 'museum', dur: '~2h', name: 'Museum Ludwig', why: '<span class="tag">⭐ landmark</span> · modern art, indoor · open till 18:00', lock: true },
+        { conn: '🚶 6 min · across Heinrich-Böll-Platz' },
+        { emoji: '☕', cat: 'café', dur: '~1h', name: 'Café Franck', why: 'quiet spot to land after · open till 19:00' },
+      ]},
+    ],
+  },
+  veedel: {
+    title: 'An afternoon in Ehrenfeld',
+    summary: 'Three stops <b>within a few minutes’ walk</b> — see one corner properly instead of zig-zagging across Köln.',
+    lanes: [
+      { band: 'Afternoon', soft: 'from ~14:30', picks: [
+        { emoji: '🎨', cat: 'gallery', dur: '~1h', name: 'Galerie Schmela', why: '<span class="tag">in Ehrenfeld</span> · small, free entry' },
+        { conn: '🚶 3 min · same street' },
+        { hero: true, emoji: '🌳', cat: 'park', dur: '~1h', name: 'Grüngürtel (Ehrenfeld)', why: '<span class="tag">⭐ green heart</span> · always open' },
+        { conn: '🚶 4 min · toward Venloer Str.' },
+        { emoji: '☕', cat: 'café', dur: '~45m', name: 'Kaffeesaurus', why: 'finish with coffee · open till 18:00' },
+      ]},
+    ],
+  },
+  chill: {
+    title: 'Something low-key',
+    summary: 'Two easy picks <b>close to home</b> — nothing that needs planning or a ticket.',
+    lanes: [
+      { band: 'Afternoon', soft: 'whenever', picks: [
+        { emoji: '🌳', cat: 'park', dur: '~1h', name: 'Stadtgarten', why: '5 min from you · always open' },
+        { conn: '🚶 4 min' },
+        { emoji: '📚', cat: 'library', dur: '~1h', name: 'Stadtbibliothek', why: 'warm, quiet · open till 19:00' },
+      ]},
+    ],
+  },
+  day: {
+    title: 'Make a day of it',
+    summary: 'A fuller day — <b>a main outing, a bite, and a wind-down</b>, flowing from energetic to calm.',
+    lanes: [
+      { band: 'Midday', soft: 'from ~12:00', picks: [
+        { hero: true, emoji: '🦁', cat: 'attraction', dur: '~2½h', name: 'Kölner Zoo', why: '<span class="tag">⭐ landmark</span> · open till 18:00' },
+      ]},
+      { band: 'Afternoon', soft: '~15:00', picks: [
+        { conn: '🚶 8 min · along the Rhine' },
+        { emoji: '☕', cat: 'café', dur: '~1h', name: 'Café Sehnsucht', why: 'a sit-down after the walking' },
+      ]},
+      { band: 'Early evening', soft: '~17:00', picks: [
+        { conn: '🚶 5 min' },
+        { emoji: '🌅', cat: 'viewpoint', dur: '~45m', name: 'Rheinpark riverside', why: 'wind down by the water · always open' },
+      ]},
+    ],
+  },
+  anchored: {
+    title: 'Around your 15:00 appointment',
+    summary: 'Your <b>Ausländerbehörde appointment is fixed</b> — the plan is built around it, with a leave-by time so you’re never late.',
+    lanes: [
+      { band: 'Early afternoon', soft: '~13:00', picks: [
+        { emoji: '☕', cat: 'café', dur: '~1h', name: 'Café Franck', why: 'a calm hour before — close to the office' },
+      ]},
+      { band: 'Appointment', soft: 'fixed', picks: [
+        { conn: '🚶 11 min · U5 from Christophstraße' },
+        { fixed: true, emoji: '📋', cat: 'appointment', time: '15:00', name: 'Ausländerbehörde Köln', why: 'Residence permit · bring passport + Anmeldung', leaveBy: 'Leave Café Franck by 14:38' },
+      ]},
+      { band: 'After', soft: '~16:00', picks: [
+        { conn: '🚶 6 min' },
+        { emoji: '🌳', cat: 'park', dur: '~1h', name: 'Stadtgarten', why: 'unwind once it’s done · always open' },
+      ]},
+    ],
+  },
+};
+
+let current = 'main';
+
+function renderArch() {
+  document.getElementById('arch').innerHTML = ARCH.map(a =>
+    `<button class="${a.id === current ? 'on' : ''}" onclick="pick('${a.id}')">${a.label}</button>`
+  ).join('');
+}
+
+function pickCard(p, i) {
+  if (p.conn) return `<div class="connector">${p.conn}</div>`;
+  const cls = ['pick', p.hero ? 'hero' : '', p.fixed ? 'fixed' : '', p.lock ? 'locked' : ''].filter(Boolean).join(' ');
+  const badge = p.fixed ? `<span class="badge fixed">${p.time} · fixed</span>`
+              : p.hero ? `<span class="badge hero">main</span>`
+              : `<span class="badge">${p.cat}</span>`;
+  const controls = p.fixed
+    ? `<div class="ctrls"><button class="ic">→ Take me there</button></div>`
+    : `<div class="ctrls">
+         <button class="ic ${p.lock ? 'on' : ''}" onclick="toggleLock(this)">📌 ${p.lock ? 'Locked' : 'Lock'}</button>
+         <button class="ic" onclick="this.textContent='↻ Swapping…'">↻ Swap</button>
+         <button class="ic" onclick="removeCard(this)">✕ Remove</button>
+         <button class="ic">→ Take me there</button>
+       </div>`;
+  return `<div class="${cls}">
+    ${p.fixed ? '' : '<span class="grip">⠿</span>'}
+    <div class="thumb">${p.emoji}</div>
+    <div class="body">
+      <div class="toprow">${badge}${p.fixed ? '' : `<span class="dur">${p.dur}</span>`}</div>
+      <div class="name">${p.name}</div>
+      <div class="why">${p.why}</div>
+      ${p.leaveBy ? `<span class="leaveby">⏱ ${p.leaveBy}</span>` : ''}
+      ${controls}
+    </div>
+  </div>`;
+}
+
+function render() {
+  const plan = PLANS[current];
+  document.getElementById('title').textContent = plan.title;
+  document.getElementById('summary').innerHTML = plan.summary;
+  document.getElementById('plan').innerHTML = plan.lanes.map(lane =>
+    `<div class="lane"><span class="band">${lane.band}</span><span class="soft">· ${lane.soft}</span></div>`
+    + lane.picks.map(pickCard).join('')
+  ).join('');
+  renderArch();
+}
+
+function pick(id) { current = id; render(); }
+function toggleLock(btn) { const c = btn.closest('.pick'); c.classList.toggle('locked'); const on = c.classList.contains('locked'); btn.classList.toggle('on', on); btn.textContent = on ? '📌 Locked' : '📌 Lock'; }
+function removeCard(btn) { const c = btn.closest('.pick'); c.classList.add('removing'); setTimeout(() => c.remove(), 200); }
+function shuffle() { render(); const note = document.querySelector('.foot-note'); note.textContent = 'Shuffled — locked picks kept, the rest re-rolled.'; }
+function addStop() {
+  const extra = document.createElement('div');
+  extra.innerHTML = `<div class="connector">🚶 5 min</div>` + pickCard({ emoji:'🍻', cat:'bar', dur:'~1h', name:'Hellers Brauhaus', why:'an optional last stop' });
+  document.getElementById('plan').appendChild(extra);
+}
+
+const vibe = document.getElementById('vibe');
+vibe.addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  vibe.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  e.target.classList.add('on');
+  current = e.target.dataset.v === 'active' ? 'day' : 'chill';
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -89,52 +89,56 @@ class SlotFiller
 
         usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
 
-        // 2. Greedy fill left→right
+        // 2. Fill the archetype's roles in order, left→right. Balanced (the
+        //    default) is one permissive role that fills the window — i.e. the
+        //    old greedy behaviour; specific archetypes shape the day instead.
+        $archetype = $constraints->archetype ?? Archetype::forVibe($constraints->vibe) ?? Archetype::Balanced;
+        $targetVeedel = $archetype->singleVeedel() ? ($context->preferredAreas[0] ?? null) : null;
+
         $cursor = $constraints->windowStart;
         $cursorLat = $originLat;
         $cursorLng = $originLng;
 
-        while (count($slots) < self::MAX_SLOTS_PER_DAY) {
-            // Jump the cursor past any anchored slot we've reached
-            foreach ($slots as $slot) {
-                if ($slot->startAt->lessThanOrEqualTo($cursor) && $slot->endAt->greaterThan($cursor)) {
-                    $cursor = $slot->endAt;
-                    $cursorLat = $slot->candidate->lat;
-                    $cursorLng = $slot->candidate->lng;
+        foreach ($archetype->roles() as $role) {
+            $placed = 0;
+
+            while ($placed < $role->count && count($slots) < self::MAX_SLOTS_PER_DAY) {
+                [$cursor, $cursorLat, $cursorLng] = $this->advancePastAnchors($slots, $cursor, $cursorLat, $cursorLng);
+
+                $gapEnd = $this->nextAnchorStart($slots, $cursor) ?? $constraints->windowEnd;
+                $best = $this->bestFor($feasible, $used, $slots, $cursor, $cursorLat, $cursorLng, $gapEnd, $context, $role->categories, $targetVeedel);
+
+                if ($best === null) {
+                    // Nothing for this role in this gap — jump past the next
+                    // anchor and retry; with no anchor ahead, the role is done.
+                    $nextAnchor = $this->nextAnchorStart($slots, $cursor);
+                    if ($nextAnchor === null) {
+                        break;
+                    }
+                    $cursor = $this->slotEndingAfter($slots, $nextAnchor);
+
+                    continue;
                 }
-            }
 
-            $gapEnd = $this->nextAnchorStart($slots, $cursor) ?? $constraints->windowEnd;
-            $best = $this->bestFor($feasible, $used, $slots, $cursor, $cursorLat, $cursorLng, $gapEnd, $context);
-
-            if ($best === null) {
-                // Nothing fits this gap — jump to after the next anchor, or stop.
-                $nextAnchor = $this->nextAnchorStart($slots, $cursor);
-                if ($nextAnchor === null) {
-                    break;
+                [$candidate, $travelMin] = $best;
+                $start = $cursor->addMinutes($travelMin);
+                if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
+                    $start = $candidate->opensAt;
                 }
-                $cursor = $this->slotEndingAfter($slots, $nextAnchor);
+                $end = $start->addMinutes($candidate->typicalDurationMin);
 
-                continue;
+                $slots[] = new PlanSlot($candidate, $start, $end, $travelMin);
+                $used[$candidate->id] = true;
+                usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
+
+                $cursor = $end;
+                $cursorLat = $candidate->lat;
+                $cursorLng = $candidate->lng;
+                $placed++;
             }
-
-            [$candidate, $travelMin] = $best;
-            $start = $cursor->addMinutes($travelMin);
-            if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
-                $start = $candidate->opensAt;
-            }
-            $end = $start->addMinutes($candidate->typicalDurationMin);
-
-            $slots[] = new PlanSlot($candidate, $start, $end, $travelMin);
-            $used[$candidate->id] = true;
-            usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
-
-            $cursor = $end;
-            $cursorLat = $candidate->lat;
-            $cursorLng = $candidate->lng;
         }
 
-        return new Plan($constraints, $this->bufferAnchors(array_values($slots)));
+        return new Plan($constraints, PlanNarrator::narrate($this->bufferAnchors(array_values($slots)), $context->rainExpected));
     }
 
     /**
@@ -170,11 +174,13 @@ class SlotFiller
     }
 
     /**
-     * Best non-fixed candidate that fits between cursor and gapEnd.
+     * Best non-fixed candidate that fits between cursor and gapEnd, optionally
+     * restricted to a role's categories and a single Veedel.
      *
      * @param  list<Candidate>  $feasible
      * @param  array<string, bool>  $used
      * @param  list<PlanSlot>  $slots
+     * @param  list<string>  $allowedCategories  empty = any category
      * @return array{0: Candidate, 1: int}|null
      */
     private function bestFor(
@@ -186,12 +192,22 @@ class SlotFiller
         float $cursorLng,
         CarbonImmutable $gapEnd,
         ScoringContext $context,
+        array $allowedCategories = [],
+        ?string $targetVeedel = null,
     ): ?array {
         $best = null;
         $bestScore = -INF;
 
         foreach ($feasible as $candidate) {
             if ($candidate->isFixedTime() || isset($used[$candidate->id])) {
+                continue;
+            }
+            // Role restrictions: a category set (empty = any) and, for
+            // explore-a-Veedel, a single neighbourhood.
+            if ($allowedCategories !== [] && ! in_array($candidate->category, $allowedCategories, true)) {
+                continue;
+            }
+            if ($targetVeedel !== null && $candidate->veedel !== $targetVeedel) {
                 continue;
             }
 
@@ -217,6 +233,26 @@ class SlotFiller
         }
 
         return $best;
+    }
+
+    /**
+     * Move the cursor (and its lat/lng) to the end of any anchored slot it
+     * currently sits inside, so the next pick is chained from there.
+     *
+     * @param  list<PlanSlot>  $slots
+     * @return array{0: CarbonImmutable, 1: float, 2: float}
+     */
+    private function advancePastAnchors(array $slots, CarbonImmutable $cursor, float $lat, float $lng): array
+    {
+        foreach ($slots as $slot) {
+            if ($slot->startAt->lessThanOrEqualTo($cursor) && $slot->endAt->greaterThan($cursor)) {
+                $cursor = $slot->endAt;
+                $lat = $slot->candidate->lat;
+                $lng = $slot->candidate->lng;
+            }
+        }
+
+        return [$cursor, $lat, $lng];
     }
 
     /**

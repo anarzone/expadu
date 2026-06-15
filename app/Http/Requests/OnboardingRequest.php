@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
+use App\Profile\Interest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -34,6 +35,10 @@ class OnboardingRequest extends FormRequest
             'arrival_date' => ['required', 'date', 'before_or_equal:today'],
             'veedel' => ['required', 'string', Rule::in($veedels)],
             'german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
+            // Explicit interests — a cold-start personalisation signal that
+            // shapes the home feed and composer (see Interest enum).
+            'interests' => ['required', 'array', 'min:'.Interest::MIN_SELECT, 'max:'.Interest::MAX_SELECT],
+            'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
             // Asked only when the EU follow-up was answered "No" — it sets
             // the real permit deadline (visa expiry vs the 90-day window).
             'entry_mode' => ['nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit'])],

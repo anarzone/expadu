@@ -3,24 +3,22 @@
 namespace App\Home;
 
 use App\Composer\CategoryAppeal;
-use App\Composer\IntentWeights;
 use App\Models\Event;
 use App\Models\Spot;
-use App\Models\User;
 use App\Models\UserTask;
-use App\Profile\ProfileEngine;
-use App\Services\WeatherService;
-use Carbon\CarbonImmutable;
+use App\Profile\CategoryAffinity;
+use App\Profile\Profile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * The browse half of the home screen: Netflix-style discovery rails, ranked
- * by deterministic signals — category appeal (activities lead, cafés don't),
- * learned IntentWeights, home-area match, and weather fit. No ML, no LLM.
- * Ratings are only a tiebreaker: they exist mostly for commercial venues, so
- * ranking by them would bury the actual things-to-do. Each rail carries a
- * personal, contextual title ("Made for your rainy Sunday").
+ * The browse half of the home screen: Netflix-style discovery rails, ranked by
+ * deterministic signals (no ML, no LLM) in priority order — the user's
+ * SITUATION (CategoryAffinity) leads, learned IntentWeights refine, category
+ * appeal demotes cafés, then home-area + weather. Each rail carries a personal,
+ * contextual title ("Made for your rainy Sunday"); some rails are themselves
+ * situation-specific (with the kids; get oriented).
  */
 class DiscoveryFeed
 {
@@ -29,41 +27,43 @@ class DiscoveryFeed
     /** Pull the whole light catalogue so every category can compete. */
     private const POOL = 2000;
 
+    /** The catalogue scan is global; cache it briefly so it isn't re-run per user. */
+    private const SCAN_CACHE_KEY = 'discovery:spot-scan';
+
+    private const SCAN_TTL = 300;
+
     /** Cap on sit-down/work venues per rail, so a rail isn't all cafés. */
     private const LOW_APPEAL_CAP = 2;
 
     /** Cap per category per rail, so a rail isn't 12 identical playgrounds. */
     private const CAP_PER_CATEGORY = 2;
 
-    public function __construct(
-        private readonly IntentWeights $intents,
-        private readonly ProfileEngine $profiles,
-        private readonly WeatherService $weather,
-    ) {}
-
     /**
      * @return list<array<string, mixed>>
      */
-    public function for(User $user): array
+    public function for(HomeContext $context): array
     {
-        $profile = $this->profiles->build($user);
-        $weights = $this->intents->for($user);
-        $rain = $this->rainExpected();
+        $profile = $context->profile;
+        $weights = $context->intentWeights;
+        $rain = $context->rainExpected;
         $homeAreas = $profile->defaultAreas;
-        $weekday = CarbonImmutable::now('Europe/Berlin')->format('l');
+        $weekday = $context->now->format('l');
+        $affinity = CategoryAffinity::map($profile);
 
-        // Pull the whole catalogue (light columns) so culture/indoor competes
-        // with activities — capping by category earlier hid museums entirely.
-        // Appeal + weather scoring then orders it; pickCards diversifies.
-        $scored = Spot::query()
-            ->select('id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating')
-            ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->limit(self::POOL)
-            ->get()
-            ->map(fn (Spot $spot) => $this->scoreSpot($spot, $weights, $homeAreas, $rain))
+        // The catalogue scan is global (no per-user data) so it's cached; the
+        // scoring below stays per-request. Pulling the whole light catalogue
+        // lets culture/indoor compete with activities; pickCards diversifies.
+        $scored = $this->spotPool()
+            ->map(fn (Spot $spot) => $this->scoreSpot($spot, $weights, $homeAreas, $rain, $affinity))
             ->sortByDesc('score')
             ->values();
+
+        // Cross-rail de-dup: a spot shown in an earlier (higher-priority) rail
+        // is skipped by later ones, so the leisure rails never repeat the same
+        // venue. Built in priority order — made_for_today claims its picks
+        // first; the situation/home/new rails then show their next-best
+        // *distinct* picks (the 2,000-spot pool is deep enough to still fill).
+        $shown = [];
 
         $rails = array_values(array_filter([
             $scored->isNotEmpty()
@@ -72,63 +72,109 @@ class DiscoveryFeed
                     $rain ? "Made for your rainy {$weekday}" : "Made for your {$weekday}",
                     'ranked for you',
                     '/explore',
-                    $this->pickCards($scored, 12, null, false, $rain),
+                    $this->pickCards($scored, 12, null, false, $rain, $shown),
                 )
                 : null,
-            $this->tonightRail(),
-            $this->homeRail($scored, $homeAreas, $profile->veedel, $rain),
-            $this->newRail($scored, $homeAreas, $rain),
-            $this->paperworkRail($user),
+            $this->situationRail($scored, $profile, $rain, $shown),
+            $this->tonightRail($context),
+            $this->homeRail($scored, $homeAreas, $profile->veedel, $rain, $shown),
+            $this->newRail($scored, $homeAreas, $rain, $shown),
+            $this->paperworkRail($context),
         ]));
 
         return $rails;
     }
 
     /**
+     * Situation drives, behaviour refines, appeal is the café-demoting
+     * baseline (rating is ~0% populated, so it's not a signal).
+     *
      * @param  array<string, float>  $weights
      * @param  list<string>  $homeAreas
+     * @param  array<string, float>  $affinity
      * @return array{spot: Spot, category: string, score: float}
      */
-    private function scoreSpot(Spot $spot, array $weights, array $homeAreas, bool $rain): array
+    private function scoreSpot(Spot $spot, array $weights, array $homeAreas, bool $rain, array $affinity): array
     {
         $category = $this->category($spot);
         $key = "{$category}|".($spot->veedel ?? '');
 
-        $score = CategoryAppeal::score($category) * 40.0
-            + ($weights[$key] ?? 0.0) * 25.0
-            + (in_array($spot->veedel, $homeAreas, true) ? 8.0 : 0.0)
-            + ($rain && in_array($category, self::OUTDOOR, true) ? -25.0 : 0.0)
-            + (float) ($spot->rating ?? 0) * 0.5; // gentle tiebreak only
+        $score = CategoryAffinity::score($category, $affinity) * 45.0   // situation drives
+            + ($weights[$key] ?? 0.0) * 25.0                            // behaviour refines
+            + CategoryAppeal::score($category) * 20.0                   // café-demoting baseline
+            + (in_array($spot->veedel, $homeAreas, true) ? 8.0 : 0.0)   // home-area nudge
+            + ($rain && in_array($category, self::OUTDOOR, true) ? -25.0 : 0.0);
 
         return ['spot' => $spot, 'category' => $category, 'score' => $score];
     }
 
     /**
      * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  array<int, true>  $shown  spot ids already placed in earlier rails
      */
-    private function homeRail(Collection $scored, array $homeAreas, ?string $veedel, bool $rain): ?array
+    private function homeRail(Collection $scored, array $homeAreas, ?string $veedel, bool $rain, array &$shown): ?array
     {
         $home = $scored->filter(fn ($x) => in_array($x['spot']->veedel, $homeAreas, true));
         if ($home->isEmpty()) {
             return null;
         }
 
-        return $this->rail('around_home', 'Around '.($veedel ?? 'you'), 'your home area', '/explore',
-            $this->pickCards($home, 12, '📍 in your area', false, $rain));
+        $cards = $this->pickCards($home, 12, '📍 in your area', false, $rain, $shown);
+        if ($cards === []) {
+            return null;
+        }
+
+        return $this->rail('around_home', 'Around '.($veedel ?? 'you'), 'your home area', '/explore', $cards);
     }
 
     /**
      * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  array<int, true>  $shown  spot ids already placed in earlier rails
      */
-    private function newRail(Collection $scored, array $homeAreas, bool $rain): ?array
+    private function newRail(Collection $scored, array $homeAreas, bool $rain, array &$shown): ?array
     {
         $new = $scored->filter(fn ($x) => $x['spot']->veedel && ! in_array($x['spot']->veedel, $homeAreas, true));
         if ($new->isEmpty()) {
             return null;
         }
 
-        return $this->rail('try_new', 'Somewhere new for you', "a corner you haven't explored", '/explore',
-            $this->pickCards($new, 12, 'new to you', true, $rain));
+        $cards = $this->pickCards($new, 12, 'new to you', true, $rain, $shown);
+        if ($cards === []) {
+            return null;
+        }
+
+        return $this->rail('try_new', 'Somewhere new for you', "a corner you haven't explored", '/explore', $cards);
+    }
+
+    /**
+     * A situation-specific rail: family → the kids; just-arrived → orientation.
+     *
+     * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  array<int, true>  $shown  spot ids already placed in earlier rails
+     */
+    private function situationRail(Collection $scored, Profile $profile, bool $rain, array &$shown): ?array
+    {
+        if (CategoryAffinity::hasKids($profile)) {
+            $kids = $scored->filter(fn ($x) => in_array($x['category'], CategoryAffinity::KID_FRIENDLY, true));
+            $cards = $this->pickCards($kids, 12, null, false, $rain, $shown);
+            if ($cards === []) {
+                return null;
+            }
+
+            return $this->rail('with_kids', 'With the kids', 'family-friendly picks', '/explore', $cards);
+        }
+
+        if (CategoryAffinity::isNewArrival($profile)) {
+            $landmarks = $scored->filter(fn ($x) => in_array($x['category'], CategoryAffinity::LANDMARK, true));
+            $cards = $this->pickCards($landmarks, 12, '🧭 worth knowing', false, $rain, $shown);
+            if ($cards === []) {
+                return null;
+            }
+
+            return $this->rail('get_oriented', 'Get oriented in '.($profile->veedel ?? 'Cologne'), 'landmarks to know', '/explore', $cards);
+        }
+
+        return null;
     }
 
     /**
@@ -136,9 +182,10 @@ class DiscoveryFeed
      * so a rail never becomes a coffee list.
      *
      * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  array<int, true>  $shown  spot ids already placed in earlier rails; placed ids are added back
      * @return list<array<string, mixed>>
      */
-    private function pickCards(Collection $scored, int $limit, ?string $cardReason, bool $markNew, bool $rain): array
+    private function pickCards(Collection $scored, int $limit, ?string $cardReason, bool $markNew, bool $rain, array &$shown = []): array
     {
         $cards = [];
         $lowAppeal = 0;
@@ -147,6 +194,13 @@ class DiscoveryFeed
         foreach ($scored as $x) {
             if (count($cards) >= $limit) {
                 break;
+            }
+            $dedupKey = $this->dedupKey($x['spot']);
+            // Cross-rail de-dup, keyed on what the user actually sees (name +
+            // Veedel) — not the id. Many OSM spots share a generic name like
+            // "Spielplatz", so two distinct rows would still READ as a repeat.
+            if (isset($shown[$dedupKey])) {
+                continue;
             }
             $category = $x['category'];
             // Variety: no more than CAP_PER_CATEGORY of any one category.
@@ -160,6 +214,7 @@ class DiscoveryFeed
                 $lowAppeal++;
             }
             $perCategory[$category] = ($perCategory[$category] ?? 0) + 1;
+            $shown[$dedupKey] = true;
 
             $reason = $cardReason
                 ?? ($rain && ! in_array($x['category'], self::OUTDOOR, true) ? 'dry pick' : null);
@@ -182,15 +237,11 @@ class DiscoveryFeed
         return $cards;
     }
 
-    private function tonightRail(): ?array
+    private function tonightRail(HomeContext $context): ?array
     {
-        $events = Event::query()
-            ->whereDate('starts_at', today())
-            ->where('starts_at', '>', now())
-            ->whereNotNull('location')
-            ->orderBy('starts_at')
-            ->limit(20)
-            ->get()
+        // Skip any event already surfaced as an urgent "Right now" tile.
+        $events = $context->tonightEvents
+            ->reject(fn (Event $e) => $context->isClaimed("event:{$e->id}"))
             ->filter(fn (Event $e) => $e->lat !== null && $e->lng !== null)
             ->take(12)
             ->values();
@@ -215,20 +266,13 @@ class DiscoveryFeed
             ])->all());
     }
 
-    private function paperworkRail(User $user): ?array
+    private function paperworkRail(HomeContext $context): ?array
     {
-        $tasks = UserTask::query()
-            ->where('user_id', $user->id)
-            ->open()
-            ->notSnoozed()
-            ->with('task')
-            ->get();
-
-        if ($tasks->isEmpty()) {
+        if ($context->openTasks->isEmpty()) {
             return null;
         }
 
-        $cards = $tasks
+        $cards = $context->openTasks
             ->sortBy(fn (UserTask $ut) => $ut->deadline_status['days_remaining'] ?? 99999)
             ->take(8)
             ->values()
@@ -275,6 +319,29 @@ class DiscoveryFeed
         ];
     }
 
+    /**
+     * The whole light spot catalogue, cached briefly — it's global (no per-user
+     * data), so the scan is shared while scoring stays per-request.
+     *
+     * @return Collection<int, Spot>
+     */
+    private function spotPool(): Collection
+    {
+        // Cache plain rows (not Eloquent models) and re-hydrate — serialising
+        // a model collection is fragile across cache drivers (it can come back
+        // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
+        $rows = Cache::remember(self::SCAN_CACHE_KEY, self::SCAN_TTL, fn () => Spot::query()
+            ->select('id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating')
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->orderBy('id')
+            ->limit(self::POOL)
+            ->get()
+            ->toArray());
+
+        return Spot::hydrate($rows);
+    }
+
     private function category(Spot $spot): string
     {
         return $spot->category instanceof \BackedEnum
@@ -282,12 +349,16 @@ class DiscoveryFeed
             : (string) $spot->category;
     }
 
-    private function rainExpected(): bool
+    /**
+     * The key a spot de-dups on across rails: its visible label (name +
+     * Veedel), lower-cased. Falls back to the id for the rare nameless spot.
+     */
+    private function dedupKey(Spot $spot): string
     {
-        try {
-            return (bool) ($this->weather->getForecast()['rain_starts'] ?? false);
-        } catch (\Throwable) {
-            return false;
-        }
+        $name = trim((string) $spot->name);
+
+        return $name !== ''
+            ? mb_strtolower($name).'|'.($spot->veedel ?? '')
+            : 'id:'.$spot->id;
     }
 }

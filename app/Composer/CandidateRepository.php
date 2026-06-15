@@ -35,7 +35,7 @@ class CandidateRepository
     public function candidatesFor(Constraints $constraints): array
     {
         return array_slice(
-            [...$this->spotCandidates(), ...$this->eventCandidates($constraints)],
+            [...$this->spotCandidates($constraints->windowStart), ...$this->eventCandidates($constraints)],
             0,
             self::MAX_CANDIDATES,
         );
@@ -44,7 +44,7 @@ class CandidateRepository
     /**
      * @return list<Candidate>
      */
-    private function spotCandidates(): array
+    private function spotCandidates(CarbonImmutable $day): array
     {
         // A diverse, bounded pool: top ~12 per category. Ordering by rating
         // alone would fill the pool with cafés (only commercial venues are
@@ -58,7 +58,7 @@ class CandidateRepository
         return Spot::query()
             ->whereIn('id', $ids)
             ->get()
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot))
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day))
             ->all();
     }
 
@@ -70,7 +70,7 @@ class CandidateRepository
      * @param  list<string>  $ids
      * @return list<Candidate>
      */
-    public function byIds(array $ids): array
+    public function byIds(array $ids, CarbonImmutable $day): array
     {
         $spotIds = collect($ids)
             ->filter(fn ($id) => is_string($id) && str_starts_with($id, 'spot:'))
@@ -87,15 +87,18 @@ class CandidateRepository
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->get()
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot))
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day))
             ->all();
     }
 
-    private function spotToCandidate(Spot $spot): Candidate
+    private function spotToCandidate(Spot $spot, CarbonImmutable $day): Candidate
     {
         $category = $spot->category instanceof \BackedEnum
             ? $spot->category->value
             : (string) $spot->category;
+
+        [$opensAt, $closesAt, $closedToday] = $this->hoursOn($spot->opening_hours, $day);
+        $tags = is_array($spot->tags) ? $spot->tags : [];
 
         return new Candidate(
             id: "spot:{$spot->id}",
@@ -108,9 +111,57 @@ class CandidateRepository
             outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true),
             typicalDurationMin: self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default'],
             costTier: $this->spotCostTier($spot),
-            opensAt: null, // opening_hours parsing lands with the places reshape
-            closesAt: null,
+            opensAt: $opensAt,
+            closesAt: $closesAt,
+            isLandmark: isset($tags['wikidata']) || isset($tags['wikipedia']),
+            closedToday: $closedToday,
         );
+    }
+
+    /**
+     * Resolve a spot's structured opening_hours into concrete open/close times
+     * on the plan's day. Unknown/empty hours → assume open; a weekday mapped to
+     * no intervals → closed.
+     *
+     * @param  array<string, mixed>|null  $hours
+     * @return array{0: ?CarbonImmutable, 1: ?CarbonImmutable, 2: bool} [opensAt, closesAt, closedToday]
+     */
+    private function hoursOn(?array $hours, CarbonImmutable $day): array
+    {
+        if (! is_array($hours) || $hours === []) {
+            return [null, null, false];
+        }
+
+        $weekday = strtolower($day->format('D'));
+        if (! array_key_exists($weekday, $hours)) {
+            return [null, null, false];
+        }
+
+        $intervals = $hours[$weekday];
+        if (! is_array($intervals) || $intervals === []) {
+            return [null, null, true];
+        }
+
+        $first = $intervals[0];
+        $last = $intervals[count($intervals) - 1];
+        if (! is_array($first) || ! is_array($last)) {
+            return [null, null, false];
+        }
+
+        $opensAt = $this->timeOn($day, (string) $first[0]);
+        $closesAt = $this->timeOn($day, (string) $last[1]);
+        if ($closesAt->lessThanOrEqualTo($opensAt)) {
+            $closesAt = $closesAt->addDay(); // crosses midnight
+        }
+
+        return [$opensAt, $closesAt, false];
+    }
+
+    private function timeOn(CarbonImmutable $day, string $hhmm): CarbonImmutable
+    {
+        [$h, $m] = array_pad(array_map('intval', explode(':', $hhmm)), 2, 0);
+
+        return $h >= 24 ? $day->startOfDay()->addDay() : $day->setTime($h, $m);
     }
 
     /**

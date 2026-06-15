@@ -43,6 +43,11 @@ class FeasibilityFilter
             return false;
         }
 
+        // Real opening hours say the venue is shut on the plan's day.
+        if (! $candidate->isFixedTime() && $candidate->closedToday) {
+            return false;
+        }
+
         // Fixed-time events must start inside the window with room to attend.
         if ($candidate->isFixedTime()) {
             return $candidate->fixedStart->greaterThanOrEqualTo($constraints->windowStart)

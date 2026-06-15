@@ -24,6 +24,8 @@ final readonly class Profile
         public ?GermanLevel $germanLevel,
         /** @var array<string, mixed> Flat bag every applies_if is evaluated against */
         public array $attributes = [],
+        /** @var list<string> user-picked interest keys (see Interest enum) */
+        public array $interests = [],
     ) {}
 
     public function daysSinceArrival(): ?int

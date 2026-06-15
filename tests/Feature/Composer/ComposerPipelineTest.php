@@ -1,8 +1,10 @@
 <?php
 
+use App\Composer\Archetype;
 use App\Composer\Candidate;
 use App\Composer\Constraints;
 use App\Composer\FeasibilityFilter;
+use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\ScoringContext;
@@ -53,6 +55,143 @@ function neutralContext(): ScoringContext
 {
     return new ScoringContext(rainExpected: false, preferredAreas: ['Neustadt-Nord', 'Ehrenfeld']);
 }
+
+function filler(): SlotFiller
+{
+    return new SlotFiller(new PlanScorer(new TravelEstimator), new TravelEstimator);
+}
+
+// ── Archetypes ─────────────────────────────────────────────────────────
+
+test('explore-a-Veedel clusters every pick into one neighbourhood', function () {
+    $constraints = new Constraints(
+        windowStart: saturday('14:00'),
+        windowEnd: saturday('20:00'),
+        areas: ['Neustadt-Nord'],
+        archetype: Archetype::ExploreVeedel,
+    );
+    $feasible = [
+        makeCandidate(['id' => 'spot:a', 'category' => 'park', 'veedel' => 'Neustadt-Nord', 'lat' => 50.944, 'lng' => 6.933]),
+        makeCandidate(['id' => 'spot:b', 'category' => 'cafe', 'outdoor' => false, 'veedel' => 'Neustadt-Nord', 'lat' => 50.945, 'lng' => 6.934]),
+        makeCandidate(['id' => 'spot:far', 'category' => 'park', 'veedel' => 'Porz', 'lat' => 50.88, 'lng' => 7.05]),
+    ];
+    $context = new ScoringContext(rainExpected: false, preferredAreas: ['Neustadt-Nord']);
+
+    $plan = filler()->fill($constraints, $feasible, $context, 50.944, 6.933);
+
+    expect($plan->slots)->not->toBeEmpty();
+    expect(array_map(fn ($s) => $s->candidate->veedel, $plan->slots))->not->toContain('Porz');
+});
+
+test('chill-nearby only places low-effort categories', function () {
+    $constraints = new Constraints(
+        windowStart: saturday('14:00'),
+        windowEnd: saturday('20:00'),
+        archetype: Archetype::ChillNearby,
+    );
+    $feasible = [
+        makeCandidate(['id' => 'spot:museum', 'category' => 'museum', 'outdoor' => false]),
+        makeCandidate(['id' => 'spot:park', 'category' => 'park']),
+        makeCandidate(['id' => 'spot:cafe', 'category' => 'cafe', 'outdoor' => false, 'lat' => 50.945, 'lng' => 6.934]),
+    ];
+
+    $plan = filler()->fill($constraints, $feasible, neutralContext(), 50.944, 6.933);
+
+    expect(array_map(fn ($s) => $s->candidate->category, $plan->slots))->not->toContain('museum');
+    expect(count($plan->slots))->toBeLessThanOrEqual(2); // two roles
+});
+
+test('one-main-plus-supports leads with the landmark hero', function () {
+    $constraints = new Constraints(
+        windowStart: saturday('14:00'),
+        windowEnd: saturday('20:00'),
+        archetype: Archetype::OneMainPlusSupports,
+    );
+    $feasible = [
+        makeCandidate(['id' => 'spot:plain', 'category' => 'museum', 'outdoor' => false, 'isLandmark' => false, 'lat' => 50.9445, 'lng' => 6.9335]),
+        makeCandidate(['id' => 'spot:famous', 'category' => 'museum', 'outdoor' => false, 'isLandmark' => true, 'lat' => 50.944, 'lng' => 6.933]),
+        makeCandidate(['id' => 'spot:cafe', 'category' => 'cafe', 'outdoor' => false, 'lat' => 50.945, 'lng' => 6.934]),
+    ];
+
+    $plan = filler()->fill($constraints, $feasible, neutralContext(), 50.944, 6.933);
+
+    expect($plan->slots[0]->candidate->id)->toBe('spot:famous'); // the notable place is the hero
+});
+
+test('a vibe implies an archetype when none is chosen', function () {
+    expect(Archetype::forVibe('chill'))->toBe(Archetype::ChillNearby)
+        ->and(Archetype::forVibe('active'))->toBe(Archetype::MakeADayOfIt)
+        ->and(Archetype::forVibe(null))->toBeNull();
+});
+
+test('interest affinity lifts a candidate score', function () {
+    $scorer = new PlanScorer(new TravelEstimator);
+    $cursor = saturday('15:00');
+    $museum = makeCandidate(['category' => 'museum', 'outdoor' => false]);
+
+    $neutral = $scorer->score($museum, [], $cursor, 50.9442, 6.9329, neutralContext());
+    $interested = $scorer->score(
+        $museum,
+        [],
+        $cursor,
+        50.9442,
+        6.9329,
+        new ScoringContext(rainExpected: false, preferredAreas: [], affinity: ['museum' => 1.0]),
+    );
+
+    expect($interested)->toBeGreaterThan($neutral);
+});
+
+// ── Soft timing + narrator ─────────────────────────────────────────────
+
+test('a slot exposes a soft time band and rough duration', function () {
+    $morning = new PlanSlot(makeCandidate(), saturday('10:00'), saturday('11:30'), 0);
+    $afternoon = new PlanSlot(makeCandidate(), saturday('15:00'), saturday('16:00'), 0);
+
+    expect($morning->toArray()['band'])->toBe('Morning')
+        ->and($morning->toArray()['duration_label'])->toBe('~1½h')
+        ->and($afternoon->toArray()['band'])->toBe('Afternoon')
+        ->and($afternoon->toArray()['duration_label'])->toBe('~1h');
+});
+
+test('the narrator explains a pick from the data we have', function () {
+    $indoorLandmark = new PlanSlot(
+        makeCandidate(['category' => 'museum', 'outdoor' => false, 'isLandmark' => true, 'closesAt' => saturday('18:00')]),
+        saturday('14:00'),
+        saturday('16:00'),
+        0,
+    );
+    $why = PlanNarrator::for($indoorLandmark, null, rain: true);
+    expect($why)->toContain('⭐ landmark')->toContain('indoor — beats the rain')->toContain('open till 18:00');
+
+    $prev = new PlanSlot(makeCandidate(['veedel' => 'Ehrenfeld']), saturday('14:00'), saturday('15:00'), 0);
+    $next = new PlanSlot(makeCandidate(['id' => 'spot:2', 'veedel' => 'Ehrenfeld']), saturday('15:10'), saturday('16:10'), 6);
+    expect(PlanNarrator::for($next, $prev, rain: false))->toContain('🚶 6 min · same area');
+});
+
+test('the narrator gives an appointment a leave-by line', function () {
+    $prev = new PlanSlot(makeCandidate(['name' => 'Café Franck']), saturday('13:00'), saturday('14:00'), 0);
+    $appt = new PlanSlot(
+        makeCandidate(['id' => 'appointment:1', 'type' => 'appointment', 'name' => 'Ausländerbehörde', 'fixedStart' => saturday('15:00')]),
+        saturday('15:00'),
+        saturday('15:30'),
+        11,
+    );
+
+    expect(PlanNarrator::for($appt, $prev, rain: false))->toBe('Leave Café Franck by 14:49');
+});
+
+test('narrate fills the why line for the whole sequence', function () {
+    $slots = [
+        new PlanSlot(makeCandidate(['category' => 'museum', 'outdoor' => false, 'isLandmark' => true]), saturday('14:00'), saturday('16:00'), 0),
+        new PlanSlot(makeCandidate(['id' => 'spot:2', 'category' => 'cafe', 'outdoor' => false, 'veedel' => 'Neustadt-Nord']), saturday('16:10'), saturday('17:10'), 6),
+    ];
+
+    $narrated = PlanNarrator::narrate($slots, false);
+
+    expect($narrated[0]->why)->toContain('⭐ landmark');
+    expect($narrated[1]->why)->toContain('🚶 6 min');
+});
 
 // ── FeasibilityFilter ──────────────────────────────────────────────────
 

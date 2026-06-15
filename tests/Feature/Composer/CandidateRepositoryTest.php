@@ -1,0 +1,67 @@
+<?php
+
+use App\Composer\CandidateRepository;
+use App\Composer\Constraints;
+use App\Composer\FeasibilityFilter;
+use App\Models\Spot;
+use Carbon\CarbonImmutable;
+
+function spotWithHours(array $overrides): Spot
+{
+    return Spot::factory()->create(array_merge([
+        'lat' => 50.94,
+        'lng' => 6.95,
+        'veedel' => 'Altstadt',
+    ], $overrides));
+}
+
+// 2026-06-15 is a Monday.
+function mondayWindow(): Constraints
+{
+    return new Constraints(
+        windowStart: CarbonImmutable::parse('2026-06-15 10:00', 'Europe/Berlin'),
+        windowEnd: CarbonImmutable::parse('2026-06-15 18:00', 'Europe/Berlin'),
+    );
+}
+
+test('a venue closed on the plan weekday is dropped by feasibility', function () {
+    spotWithHours([
+        'name' => 'Closed Mondays',
+        'category' => 'museum',
+        'opening_hours' => ['mon' => [], 'tue' => [['10:00', '18:00']]],
+    ]);
+
+    $constraints = mondayWindow();
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    $feasible = app(FeasibilityFilter::class)->filter($constraints, $candidates);
+
+    expect(collect($candidates)->firstWhere('name', 'Closed Mondays')->closedToday)->toBeTrue();
+    expect(collect($feasible)->pluck('name'))->not->toContain('Closed Mondays');
+});
+
+test('an open venue keeps real hours and survives feasibility', function () {
+    spotWithHours([
+        'name' => 'Open Museum',
+        'category' => 'museum',
+        'opening_hours' => ['mon' => [['09:00', '18:00']]],
+    ]);
+
+    $constraints = mondayWindow();
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    $cand = collect($candidates)->firstWhere('name', 'Open Museum');
+
+    expect($cand->closedToday)->toBeFalse();
+    expect($cand->closesAt?->format('H:i'))->toBe('18:00');
+    expect(collect(app(FeasibilityFilter::class)->filter($constraints, $candidates))->pluck('name'))
+        ->toContain('Open Museum');
+});
+
+test('wikidata or wikipedia tags mark a spot as a landmark', function () {
+    spotWithHours(['name' => 'Famous Park', 'category' => 'park', 'tags' => ['wikidata' => 'Q123']]);
+    spotWithHours(['name' => 'Plain Park', 'category' => 'park', 'tags' => ['wheelchair' => 'yes']]);
+
+    $candidates = app(CandidateRepository::class)->candidatesFor(mondayWindow());
+
+    expect(collect($candidates)->firstWhere('name', 'Famous Park')->isLandmark)->toBeTrue();
+    expect(collect($candidates)->firstWhere('name', 'Plain Park')->isLandmark)->toBeFalse();
+});

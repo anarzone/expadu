@@ -125,6 +125,7 @@ class ProfileEngine
             defaultAreas: $this->resolveAreas($user->veedel),
             germanLevel: $user->german_level,
             attributes: $this->resolveAttributes($user, $situation, $isEu, $branch),
+            interests: array_values((array) ($user->interests ?? [])),
         );
     }
 

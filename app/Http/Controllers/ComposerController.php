@@ -10,12 +10,14 @@ use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\Plan;
+use App\Composer\PlanNarrator;
 use App\Composer\PlanSlot;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
 use App\Models\User;
 use App\Models\UserEvent;
+use App\Profile\CategoryAffinity;
 use App\Profile\ProfileEngine;
 use App\Services\GermanHolidayService;
 use App\Services\WeatherService;
@@ -73,8 +75,14 @@ class ComposerController extends Controller
             'constraints.categories' => ['array'],
             'constraints.companions' => ['nullable', 'string'],
             'constraints.budget' => ['nullable', 'string'],
+            'constraints.archetype' => ['nullable', 'string'],
+            'constraints.vibe' => ['nullable', 'string'],
             'pins' => ['array'],
             'pins.*' => ['string'],
+            'locked' => ['array'],
+            'locked.*' => ['string'],
+            'excluded' => ['array'],
+            'excluded.*' => ['string'],
         ]);
 
         $user = $request->user();
@@ -86,22 +94,30 @@ class ComposerController extends Controller
         }
 
         $profile = $profiles->build($user);
+
+        // "Locked" picks from the result page are kept across recomposes —
+        // mechanically identical to home-feed pins, so they merge.
+        $pins = array_values(array_unique([...($validated['pins'] ?? []), ...($validated['locked'] ?? [])]));
+        $excluded = array_values($validated['excluded'] ?? []);
+
         $context = new ScoringContext(
             rainExpected: $this->rainExpected(),
             preferredAreas: $constraints->areas !== [] ? $constraints->areas : $profile->defaultAreas,
             intentWeights: $intents->for($user),
             companions: $constraints->companions,
-            pinnedIds: $validated['pins'] ?? [],
+            pinnedIds: $pins,
+            affinity: CategoryAffinity::map($profile),
         );
 
         [$originLat, $originLng] = $this->origin($user);
 
-        // Leisure runs the feasibility gauntlet; appointments and pinned
-        // "plan around this" picks bypass it (the user chose them) and dedupe
-        // with the rest — the scorer's pin boost guarantees they get placed.
+        // Leisure runs the feasibility gauntlet; appointments and pinned/locked
+        // picks bypass it (the user chose them). "Excluded" picks (removed, or
+        // dropped by Shuffle) are filtered out of the whole pool.
         $feasible = $filter->filter($constraints, $candidates->candidatesFor($constraints));
-        $pinned = $candidates->byIds($validated['pins'] ?? []);
+        $pinned = $candidates->byIds($pins, $constraints->windowStart);
         $pool = collect([...$appointments->within($user, $constraints), ...$pinned, ...$feasible])
+            ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
             ->unique(fn (Candidate $c) => $c->id)
             ->values()
             ->all();
@@ -109,7 +125,8 @@ class ComposerController extends Controller
 
         Cache::put($this->planKey($user), $plan->toArray() + [
             'origin' => [$originLat, $originLng],
-            'pins' => $validated['pins'] ?? [],
+            'pins' => $pins,
+            'excluded' => $excluded,
         ], now()->addHours(self::PLAN_TTL_HOURS));
 
         return response()->json([
@@ -138,8 +155,10 @@ class ComposerController extends Controller
         }
 
         $pins = $stored['pins'] ?? [];
-        $appointmentPool = $appointments->within($user, Constraints::fromArray($stored['constraints']));
-        $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins));
+        $excluded = $stored['excluded'] ?? [];
+        $storedConstraints = Constraints::fromArray($stored['constraints']);
+        $appointmentPool = $appointments->within($user, $storedConstraints);
+        $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins, $storedConstraints->windowStart));
         $slotIndex = (int) $validated['slot'];
         $rejected = $stored['rejected'][$slotIndex] ?? [];
 
@@ -173,16 +192,24 @@ class ComposerController extends Controller
             intentWeights: $intents->for($user),
             companions: $plan->constraints->companions,
             pinnedIds: $pins,
+            affinity: CategoryAffinity::map($profile),
         );
 
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);
 
-        $feasible = $filter->filter($plan->constraints, $candidates->candidatesFor($plan->constraints));
+        // Honour removed picks here too — a removed spot must not return via Swap.
+        $feasible = collect($filter->filter($plan->constraints, $candidates->candidatesFor($plan->constraints)))
+            ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
+            ->values()
+            ->all();
         $swapped = $swapper->swap($plan, $slotIndex, $feasible, $context, $originLat, $originLng, $rejected);
 
         if ($swapped === null) {
             return response()->json(['message' => 'No alternative fits this slot.'], 422);
         }
+
+        // Re-narrate so the swapped slot (and the one after it) keep their "why".
+        $swapped = new Plan($swapped->constraints, PlanNarrator::narrate($swapped->slots, $context->rainExpected));
 
         $rejectedMap = $stored['rejected'] ?? [];
         $rejectedMap[$slotIndex] = $rejected;
@@ -191,6 +218,7 @@ class ComposerController extends Controller
             'origin' => [$originLat, $originLng],
             'rejected' => $rejectedMap,
             'pins' => $pins,
+            'excluded' => $excluded,
         ], now()->addHours(self::PLAN_TTL_HOURS));
 
         return response()->json([

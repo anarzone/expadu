@@ -4,9 +4,6 @@ namespace App\Home;
 
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
-use App\Models\Event;
-use App\Models\User;
-use App\Models\UserTask;
 use App\Services\GermanHolidayService;
 
 /**
@@ -16,7 +13,7 @@ use App\Services\GermanHolidayService;
  *    (disruptions, delays, weather alerts, Bürgeramt slots, Rhine, markets).
  * 2. Synthetic always-on tiles computed at request time — bureaucracy
  *    deadlines, German-rhythm warnings (holiday/Sunday closures),
- *    tonight's events, and the weekend composer shortcut.
+ *    and tonight's events.
  *
  * A deadline three days away outranks a popular event: ranking is purely
  * by score, never by category.
@@ -34,7 +31,8 @@ class TileComposer
 
     private const SCORE_TONIGHT_EVENTS = 40.0;
 
-    private const SCORE_COMPOSER_SHORTCUT = 30.0;
+    /** Tonight's events only earn an urgency tile if the soonest is this close. */
+    private const TONIGHT_URGENT_MINUTES = 120;
 
     private const MAX_TILES = 8;
 
@@ -46,14 +44,13 @@ class TileComposer
     /**
      * @return list<array<string, mixed>>
      */
-    public function tiles(User $user): array
+    public function tiles(HomeContext $context): array
     {
         $tiles = [
-            ...$this->busTiles($user),
-            ...$this->deadlineTiles($user),
+            ...$this->busTiles($context),
+            ...$this->deadlineTiles($context),
             ...$this->rhythmTiles(),
-            ...$this->tonightEventsTile(),
-            ...$this->composerShortcutTile(),
+            ...$this->tonightEventsTile($context),
         ];
 
         usort($tiles, fn (Tile $a, Tile $b) => $b->score <=> $a->score);
@@ -67,11 +64,11 @@ class TileComposer
     /**
      * @return list<Tile>
      */
-    private function busTiles(User $user): array
+    private function busTiles(HomeContext $context): array
     {
         $tiles = [];
 
-        foreach ($this->bus->topK($user->id, 20) as $action) {
+        foreach ($this->bus->topK($context->userId, 20) as $action) {
             if (! in_array(ScoredAction::CHANNEL_DASHBOARD, $action->deliverChannels, true)) {
                 continue;
             }
@@ -175,18 +172,11 @@ class TileComposer
      *
      * @return list<Tile>
      */
-    private function deadlineTiles(User $user): array
+    private function deadlineTiles(HomeContext $context): array
     {
         $tiles = [];
 
-        $userTasks = UserTask::query()
-            ->where('user_id', $user->id)
-            ->open()
-            ->notSnoozed()
-            ->with('task')
-            ->get();
-
-        foreach ($userTasks as $userTask) {
+        foreach ($context->openTasks as $userTask) {
             $status = $userTask->deadline_status;
             $urgency = $status['urgency'];
 
@@ -262,62 +252,32 @@ class TileComposer
     }
 
     /**
-     * @return list<Tile>
-     */
-    private function tonightEventsTile(): array
-    {
-        $events = Event::query()
-            ->whereDate('starts_at', today())
-            ->where('starts_at', '>', now())
-            ->orderBy('starts_at')
-            ->limit(4)
-            ->get(['id', 'title', 'starts_at', 'location_name']);
-
-        if ($events->isEmpty()) {
-            return [];
-        }
-
-        $first = $events->first();
-        $more = $events->count() - 1;
-
-        return [new Tile(
-            type: 'tonight_events',
-            title: 'Tonight: '.$first->title,
-            subtitle: $first->starts_at->format('H:i')
-                .($first->location_name ? " · {$first->location_name}" : '')
-                .($more > 0 ? " · +{$more} more" : ''),
-            emoji: '🎟️',
-            severity: 'neutral',
-            score: self::SCORE_TONIGHT_EVENTS,
-            href: '/events',
-            meta: ['event_id' => $first->id],
-        )];
-    }
-
-    /**
-     * Weekend composer shortcut — Friday 15:00 through Sunday.
+     * Tonight's events earn a "Right now" tile ONLY when the soonest is
+     * genuinely imminent — otherwise the discovery rail covers them. The tile
+     * claims its event so the rail won't repeat it.
      *
      * @return list<Tile>
      */
-    private function composerShortcutTile(): array
+    private function tonightEventsTile(HomeContext $context): array
     {
-        $now = now();
-        $isWeekendWindow = ($now->isFriday() && $now->hour >= 15)
-            || $now->isSaturday()
-            || $now->isSunday();
+        $soon = $context->tonightEvents->first();
 
-        if (! $isWeekendWindow) {
+        if ($soon === null || $context->now->diffInMinutes($soon->starts_at, false) > self::TONIGHT_URGENT_MINUTES) {
             return [];
         }
 
+        $context->claim("event:{$soon->id}");
+
         return [new Tile(
-            type: 'composer_shortcut',
-            title: 'Plan your weekend',
-            subtitle: 'Tell the composer what kind of day you want.',
-            emoji: '🗓️',
-            severity: 'neutral',
-            score: self::SCORE_COMPOSER_SHORTCUT,
-            href: '/dashboard#composer',
+            type: 'tonight_events',
+            title: 'Soon: '.$soon->title,
+            subtitle: $soon->starts_at->format('H:i')
+                .($soon->location_name ? " · {$soon->location_name}" : ''),
+            emoji: '🎟️',
+            severity: 'info',
+            score: self::SCORE_TONIGHT_EVENTS,
+            href: '/events',
+            meta: ['event_id' => $soon->id],
         )];
     }
 }

@@ -28,6 +28,8 @@ final readonly class Candidate
         public ?CarbonImmutable $fixedStart = null, // events + appointments
         public bool $swappable = true,              // false for appointments
         public ?string $subtitle = null,            // e.g. office + documents line
+        public bool $isLandmark = false,            // notable (OSM wikidata/wikipedia) → hero pick
+        public bool $closedToday = false,           // real opening hours say shut on the plan's day
     ) {}
 
     public function isFixedTime(): bool

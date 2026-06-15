@@ -21,5 +21,7 @@ final readonly class ScoringContext
         public array $intentWeights = [],
         public ?string $companions = null, // alone | partner | friends | kids
         public array $pinnedIds = [],
+        /** @var array<string, float> category => situation/interest affinity */
+        public array $affinity = [],
     ) {}
 }

@@ -12,6 +12,8 @@ type Constraints = {
     categories: string[];
     companions: string | null;
     budget: string | null;
+    archetype?: string | null;
+    vibe?: string | null;
 };
 
 type PlanSlot = {
@@ -32,6 +34,10 @@ type PlanSlot = {
     travel_min_from_previous: number;
     leave_by: string | null;
     closes_at: string | null;
+    band: string;
+    duration_label: string;
+    why: string | null;
+    is_landmark: boolean;
 };
 
 type Plan = {
@@ -86,6 +92,15 @@ function slotEmoji(slot: PlanSlot): string {
 
     return CATEGORY_EMOJI[slot.category] ?? '📍';
 }
+
+const ARCHETYPES: { key: string; label: string }[] = [
+    { key: 'one_main', label: '🎯 One main + supports' },
+    { key: 'explore_veedel', label: '🧭 Explore a Veedel' },
+    { key: 'chill', label: '🌿 Chill nearby' },
+    { key: 'make_a_day', label: '🌞 Make a day of it' },
+];
+
+const BANDS = ['Morning', 'Midday', 'Afternoon', 'Evening'];
 
 function csrfToken(): string {
     return (
@@ -298,19 +313,37 @@ export default function Composer() {
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [archetype, setArchetype] = useState<string | null>(null);
+    const [locked, setLocked] = useState<string[]>([]);
+    const [excluded, setExcluded] = useState<string[]>([]);
     // Guards against parsing the same prompt twice (React strict-mode
     // double-invoke would otherwise fire two parse + compose round-trips).
     const parsedPrompt = useRef<string | null>(null);
 
-    const compose = useCallback(
-        async (next: Constraints) => {
+    const runCompose = useCallback(
+        async (
+            next: Constraints,
+            opts: {
+                archetype?: string | null;
+                locked?: string[];
+                excluded?: string[];
+            } = {},
+        ) => {
             setComposing(true);
             setError(null);
 
             try {
                 const json = await post<{ plan: Plan; notices: Notice[] }>(
                     '/composer/compose',
-                    { constraints: next, pins: pins ?? [] },
+                    {
+                        constraints: {
+                            ...next,
+                            archetype: opts.archetype ?? null,
+                        },
+                        pins: pins ?? [],
+                        locked: opts.locked ?? [],
+                        excluded: opts.excluded ?? [],
+                    },
                 );
                 setPlan(json.plan);
                 setNotices(json.notices ?? []);
@@ -343,14 +376,14 @@ export default function Composer() {
 
                 if (result.intent === 'plan_day' && result.constraints) {
                     setConstraints(result.constraints);
-                    void compose(result.constraints);
+                    void runCompose(result.constraints);
                 }
             })
             .catch(() =>
                 setError('Could not understand that — edit the chips below.'),
             )
             .finally(() => setParsing(false));
-    }, [prompt, compose]);
+    }, [prompt, runCompose]);
 
     function removeConstraint(
         kind: 'area' | 'category' | 'companions' | 'budget',
@@ -376,7 +409,7 @@ export default function Composer() {
         setConstraints(next);
         // Always recompose — editing a chip is an explicit "redo it this way",
         // and it also retries if the initial auto-compose failed.
-        void compose(next);
+        void runCompose(next, { archetype, locked, excluded });
     }
 
     async function swap(index: number) {
@@ -412,6 +445,59 @@ export default function Composer() {
             lng: slot.lng,
             arriveBy: slot.is_appointment ? slot.start_time : undefined,
         });
+    }
+
+    function pickArchetype(next: string) {
+        if (!constraints) {
+            return;
+        }
+
+        setArchetype(next);
+        void runCompose(constraints, { archetype: next, locked, excluded });
+    }
+
+    function toggleLock(id: string) {
+        setLocked((cur) =>
+            cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
+        );
+    }
+
+    function removePick(id: string) {
+        if (!constraints) {
+            return;
+        }
+
+        const nextExcluded = [...excluded, id];
+        setExcluded(nextExcluded);
+        void runCompose(constraints, {
+            archetype,
+            locked,
+            excluded: nextExcluded,
+        });
+    }
+
+    function shuffle() {
+        if (!constraints || !plan) {
+            return;
+        }
+
+        // Re-roll the unlocked picks for this recompose only (keeping locked).
+        const unlocked = plan.slots
+            .filter((s) => s.swappable && !locked.includes(s.id))
+            .map((s) => s.id);
+        void runCompose(constraints, {
+            archetype,
+            locked,
+            excluded: [...excluded, ...unlocked],
+        });
+    }
+
+    function recompose() {
+        if (!constraints) {
+            return;
+        }
+
+        void runCompose(constraints, { archetype, locked, excluded });
     }
 
     const planMode = intent === 'plan_day';
@@ -494,112 +580,215 @@ export default function Composer() {
                     </div>
                 )}
 
-                {/* Plan timeline */}
+                {/* Plan — archetype switcher + soft-band lanes */}
                 {plan && !composing && (
                     <div>
-                        {plan.slots.map((slot, i) => (
-                            <div key={slot.id}>
-                                {i > 0 && (
-                                    <div className="relative ml-5 flex items-center gap-2 py-2 pl-5 text-xs text-muted-foreground/70">
-                                        <span className="absolute top-0 bottom-0 left-0 w-px bg-border" />
-                                        🚶{' '}
-                                        {slot.travel_min_from_previous || '~'}{' '}
-                                        min
-                                        {slot.is_appointment && slot.leave_by
-                                            ? ` · leave by ${slot.leave_by}`
-                                            : ' travel'}
-                                    </div>
-                                )}
-                                <div
-                                    className={`rounded-[14px] border p-4 ${
-                                        slot.is_appointment
-                                            ? 'border-primary bg-accent-soft'
-                                            : 'border-border bg-card'
+                        <div className="mb-1.5 font-mono text-[10px] tracking-[0.1em] text-muted-foreground/70 uppercase">
+                            Shape of the day
+                        </div>
+                        <div className="mb-5 flex flex-wrap gap-2">
+                            {ARCHETYPES.map((a) => (
+                                <button
+                                    key={a.key}
+                                    onClick={() => pickArchetype(a.key)}
+                                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                                        archetype === a.key
+                                            ? 'border-foreground bg-foreground text-background'
+                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
                                     }`}
                                 >
-                                    {slot.is_appointment && (
-                                        <div className="mb-1 font-mono text-[10px] font-semibold tracking-wide text-primary uppercase">
-                                            Your appointment · not movable
-                                        </div>
-                                    )}
-                                    <div className="mb-1 flex items-center justify-between gap-2">
-                                        <span className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
-                                            {slot.start_time}–{slot.end_time}
-                                        </span>
-                                        <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
-                                            {slotEmoji(slot)}{' '}
-                                            {slot.category.replace('_', ' ')}
-                                        </span>
-                                    </div>
-                                    <div className="text-[15px] font-semibold">
-                                        {slot.name}
-                                    </div>
-                                    <div className="mt-0.5 text-[13px] text-muted-foreground">
-                                        {slot.subtitle ??
-                                            `${slot.veedel ?? 'Cologne'}${
-                                                slot.closes_at
-                                                    ? ` · closes ${slot.closes_at}`
-                                                    : ''
-                                            }${
-                                                slot.cost_tier === 'free'
-                                                    ? ' · free'
-                                                    : ''
-                                            }`}
-                                    </div>
-                                    <div className="mt-3 flex gap-2">
-                                        {slot.swappable && (
-                                            <button
-                                                onClick={() => swap(i)}
-                                                disabled={swappingSlot !== null}
-                                                className="cursor-pointer rounded-[9px] border border-border bg-card px-3.5 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                                            >
-                                                {swappingSlot === i
-                                                    ? 'Swapping…'
-                                                    : '↻ Swap'}
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => takeMeThere(slot)}
-                                            className="cursor-pointer rounded-[9px] bg-accent-soft px-3.5 py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
-                                        >
-                                            → Take me there
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                    {a.label}
+                                </button>
+                            ))}
+                        </div>
 
                         {plan.slots.length === 0 && (
                             <div className="rounded-[14px] border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-                                Nothing fits those constraints — try widening
-                                the time window or removing a filter chip.
+                                Nothing fits — try another shape, widen the
+                                time, or remove a filter.
                             </div>
                         )}
 
+                        {BANDS.map((band) => {
+                            const bandSlots = plan.slots.filter(
+                                (s) => s.band === band,
+                            );
+
+                            if (bandSlots.length === 0) {
+                                return null;
+                            }
+
+                            return (
+                                <section key={band} className="mb-1">
+                                    <h2 className="mt-4 mb-2 font-display text-[16px] font-medium tracking-tight">
+                                        {band}
+                                    </h2>
+                                    <div className="flex flex-col gap-3">
+                                        {bandSlots.map((slot) => {
+                                            const i = plan.slots.indexOf(slot);
+                                            const isLocked = locked.includes(
+                                                slot.id,
+                                            );
+
+                                            return (
+                                                <div
+                                                    key={slot.id}
+                                                    className={`rounded-[14px] border p-4 ${
+                                                        slot.is_appointment
+                                                            ? 'border-primary bg-accent-soft'
+                                                            : slot.is_landmark
+                                                              ? 'border-warn-soft bg-warn-soft'
+                                                              : 'border-border bg-card'
+                                                    }`}
+                                                >
+                                                    {slot.is_appointment && (
+                                                        <div className="mb-1 font-mono text-[10px] font-semibold tracking-wide text-primary uppercase">
+                                                            Your appointment ·
+                                                            not movable
+                                                        </div>
+                                                    )}
+                                                    <div className="mb-1 flex items-center justify-between gap-2">
+                                                        <span
+                                                            className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wide uppercase ${
+                                                                slot.is_appointment
+                                                                    ? 'bg-primary text-white'
+                                                                    : slot.is_landmark
+                                                                      ? 'bg-warn-soft text-warn'
+                                                                      : 'bg-secondary text-muted-foreground'
+                                                            }`}
+                                                        >
+                                                            {slot.is_appointment
+                                                                ? `${slot.start_time} · fixed`
+                                                                : slot.is_landmark
+                                                                  ? '⭐ main'
+                                                                  : `${slotEmoji(slot)} ${slot.category.replace('_', ' ')}`}
+                                                        </span>
+                                                        {!slot.is_appointment && (
+                                                            <span className="font-mono text-[12px] text-muted-foreground">
+                                                                {
+                                                                    slot.duration_label
+                                                                }
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div
+                                                        className={`font-semibold ${slot.is_landmark ? 'text-[17px]' : 'text-[15px]'}`}
+                                                    >
+                                                        {slot.name}
+                                                    </div>
+                                                    {(slot.is_appointment
+                                                        ? slot.subtitle
+                                                        : slot.why) && (
+                                                        <div className="mt-0.5 text-[13px] text-muted-foreground">
+                                                            {slot.is_appointment
+                                                                ? slot.subtitle
+                                                                : slot.why}
+                                                        </div>
+                                                    )}
+                                                    {slot.is_appointment &&
+                                                        slot.leave_by && (
+                                                            <span className="mt-2 inline-block rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[11px] font-semibold text-primary">
+                                                                ⏱ Leave by{' '}
+                                                                {slot.leave_by}
+                                                            </span>
+                                                        )}
+                                                    <div className="mt-3 flex flex-wrap gap-2">
+                                                        {!slot.is_appointment && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        toggleLock(
+                                                                            slot.id,
+                                                                        )
+                                                                    }
+                                                                    className={`cursor-pointer rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${
+                                                                        isLocked
+                                                                            ? 'border-primary bg-accent-soft text-primary'
+                                                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                                                    }`}
+                                                                >
+                                                                    📌{' '}
+                                                                    {isLocked
+                                                                        ? 'Locked'
+                                                                        : 'Lock'}
+                                                                </button>
+                                                                {slot.swappable && (
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            swap(
+                                                                                i,
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            swappingSlot !==
+                                                                            null
+                                                                        }
+                                                                        className="cursor-pointer rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                                                    >
+                                                                        {swappingSlot ===
+                                                                        i
+                                                                            ? 'Swapping…'
+                                                                            : '↻ Swap'}
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={() =>
+                                                                        removePick(
+                                                                            slot.id,
+                                                                        )
+                                                                    }
+                                                                    className="cursor-pointer rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger"
+                                                                >
+                                                                    ✕ Remove
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        <button
+                                                            onClick={() =>
+                                                                takeMeThere(
+                                                                    slot,
+                                                                )
+                                                            }
+                                                            className="cursor-pointer rounded-[9px] bg-accent-soft px-3 py-2 text-[12.5px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
+                                                        >
+                                                            → Take me there
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            );
+                        })}
+
                         {plan.slots.length > 0 && (
                             <>
-                                <div className="mt-4 flex gap-2">
+                                <div className="mt-5 flex flex-wrap gap-2">
                                     <button
-                                        onClick={() =>
-                                            router.visit('/dashboard')
-                                        }
-                                        className="flex-1 cursor-pointer rounded-[9px] bg-primary py-3 text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
+                                        onClick={shuffle}
+                                        disabled={composing}
+                                        className="cursor-pointer rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                                     >
-                                        Save to Today
+                                        🔀 Shuffle
                                     </button>
                                     <button
-                                        onClick={() =>
-                                            constraints && compose(constraints)
-                                        }
+                                        onClick={recompose}
                                         disabled={composing}
-                                        className="cursor-pointer rounded-[9px] border border-border bg-card px-4 py-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                        className="cursor-pointer rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                                     >
-                                        Recompose
+                                        ↻ Recompose
                                     </button>
                                 </div>
+                                <button
+                                    onClick={() => router.visit('/dashboard')}
+                                    className="mt-3 w-full cursor-pointer rounded-[9px] bg-primary py-3 text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
+                                >
+                                    Save to Today
+                                </button>
                                 <p className="mt-3 text-center text-xs text-muted-foreground/70">
-                                    Every item is swappable — the plan adapts
-                                    around your changes.
+                                    📌 Locked picks stay when you shuffle or
+                                    switch the shape.
                                 </p>
                             </>
                         )}

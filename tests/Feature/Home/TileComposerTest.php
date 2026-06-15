@@ -51,7 +51,7 @@ test('bus actions become tiles ranked with synthetic tiles by score', function (
         'stops_affected' => [],
     ]));
 
-    $tiles = app(TileComposer::class)->tiles($user);
+    $tiles = app(TileComposer::class)->tiles(homeContext($user));
 
     expect($tiles)->not->toBeEmpty();
 
@@ -75,7 +75,7 @@ test('bus bureaucracy_task actions are skipped in favour of live deadline tiles'
         'deadline' => now()->toDateString(),
     ]));
 
-    $tiles = app(TileComposer::class)->tiles($user);
+    $tiles = app(TileComposer::class)->tiles(homeContext($user));
 
     expect(collect($tiles)->pluck('title'))->not->toContain('Stale snapshot task');
 });
@@ -93,7 +93,7 @@ test('tile list is capped at eight', function () {
         ]));
     }
 
-    expect(app(TileComposer::class)->tiles($user))->toHaveCount(8);
+    expect(app(TileComposer::class)->tiles(homeContext($user)))->toHaveCount(8);
 });
 
 test('dashboard-only filtering respects deliver channels', function () {
@@ -105,7 +105,21 @@ test('dashboard-only filtering respects deliver channels', function () {
         'stops_affected' => [],
     ], [ScoredAction::CHANNEL_ALERT_PAGE]));
 
-    $tiles = app(TileComposer::class)->tiles($user);
+    $tiles = app(TileComposer::class)->tiles(homeContext($user));
 
     expect(collect($tiles)->pluck('type'))->not->toContain('transit_disruption');
+});
+
+test('no generic weekend composer shortcut tile, even inside the weekend window', function () {
+    // "Right now" is for time-sensitive items only. The prompt box and the
+    // "Plan my weekend" chip already cover planning — a duplicate tile here
+    // was removed. Travel to a Sunday afternoon (a weekend window).
+    $this->travelTo(CarbonImmutable::parse('2026-06-14 14:00', 'Europe/Berlin'));
+
+    $user = User::factory()->onboarded()->create();
+
+    $tiles = app(TileComposer::class)->tiles(homeContext($user));
+
+    expect(collect($tiles)->pluck('type'))->not->toContain('composer_shortcut');
+    expect(collect($tiles)->pluck('title'))->not->toContain('Plan your weekend');
 });

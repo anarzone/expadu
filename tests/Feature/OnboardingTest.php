@@ -77,6 +77,7 @@ test('onboarding can be completed with valid data', function () {
         'arrival_date' => '2026-01-15',
         'housing_status' => 'long_term',
         'entry_mode' => 'visa_free',
+        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -111,6 +112,7 @@ test('employee situations do not require the EU question', function () {
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
         'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -126,9 +128,25 @@ test('german level is optional', function () {
         'veedel' => 'Deutz',
         'arrival_date' => '2026-01-15',
         'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     $response->assertRedirect(route('dashboard'));
+});
+
+test('onboarding requires at least three interests', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->post(route('onboarding.complete'), [
+        'situation' => 'eu_employee',
+        'veedel' => 'Nippes',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums'], // only two
+    ]);
+
+    $response->assertSessionHasErrors('interests');
 });
 
 test('onboarding fails with invalid situation', function () {
@@ -206,6 +224,7 @@ test('entry mode and housing status land in the attribute bag with audit log', f
         'arrival_date' => '2026-01-15',
         'housing_status' => 'temporary',
         'entry_mode' => 'd_visa',
+        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     $user->refresh();
@@ -247,6 +266,7 @@ test('redo onboarding re-asks everything but keeps all progress', function () {
         'veedel' => 'Nippes',
         'arrival_date' => now()->subDays(3)->toDateString(),
         'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     // The touched old-path task survives in the records lane.

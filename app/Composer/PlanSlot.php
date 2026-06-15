@@ -11,6 +11,7 @@ final readonly class PlanSlot
         public CarbonImmutable $startAt,
         public CarbonImmutable $endAt,
         public int $travelMinFromPrevious,
+        public ?string $why = null,
     ) {}
 
     /**
@@ -42,6 +43,34 @@ final readonly class PlanSlot
                 ? $this->startAt->subMinutes($this->travelMinFromPrevious)->format('H:i')
                 : null,
             'closes_at' => $this->candidate->closesAt?->format('H:i'),
+            // Soft timing for the result UI: a time-of-day band + rough
+            // duration instead of a rigid clock range (hard times stay on
+            // fixed anchors via start_time/leave_by above).
+            'is_landmark' => $this->candidate->isLandmark,
+            'band' => $this->band(),
+            'duration_label' => $this->durationLabel(),
+            'why' => $this->why,
         ];
+    }
+
+    private function band(): string
+    {
+        $hour = (int) $this->startAt->format('G');
+
+        return match (true) {
+            $hour < 12 => 'Morning',
+            $hour < 14 => 'Midday',
+            $hour < 18 => 'Afternoon',
+            default => 'Evening',
+        };
+    }
+
+    private function durationLabel(): string
+    {
+        $halfHours = max(1, (int) round($this->startAt->diffInMinutes($this->endAt) / 30));
+        $hours = intdiv($halfHours, 2);
+        $half = ($halfHours % 2) === 1 ? '½' : '';
+
+        return '~'.($hours > 0 ? $hours : '').$half.'h';
     }
 }

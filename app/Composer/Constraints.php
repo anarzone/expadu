@@ -22,6 +22,8 @@ final readonly class Constraints
         public array $categories = [],
         public ?string $companions = null, // alone | partner | friends | kids
         public ?string $budget = null,     // free | low | normal
+        public ?Archetype $archetype = null, // day shape; null = Balanced
+        public ?string $vibe = null,         // chill | active
     ) {}
 
     public function windowMinutes(): int
@@ -41,6 +43,8 @@ final readonly class Constraints
             'categories' => $this->categories,
             'companions' => $this->companions,
             'budget' => $this->budget,
+            'archetype' => $this->archetype?->value,
+            'vibe' => $this->vibe,
         ];
     }
 
@@ -56,6 +60,8 @@ final readonly class Constraints
             categories: array_values((array) ($data['categories'] ?? [])),
             companions: $data['companions'] ?? null,
             budget: $data['budget'] ?? null,
+            archetype: isset($data['archetype']) ? Archetype::tryFrom((string) $data['archetype']) : null,
+            vibe: $data['vibe'] ?? null,
         );
     }
 }

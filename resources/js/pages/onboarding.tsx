@@ -1,6 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { ConfirmationStep } from '@/components/onboarding/confirmation-step';
+import { InterestsStep } from '@/components/onboarding/interests-step';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
 import { SituationStep } from '@/components/onboarding/situation-step';
 import { VeedelStep } from '@/components/onboarding/veedel-step';
@@ -18,6 +19,7 @@ export type OnboardingData = {
     housing_status: string;
     german_level: string;
     arrival_date: string;
+    interests: string[];
 };
 
 export type TaskPreview = {
@@ -50,7 +52,7 @@ const EU_QUESTION_CHOICES = [
     'other',
 ];
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export default function Onboarding() {
     const { track } = useTracker();
@@ -75,6 +77,7 @@ export default function Onboarding() {
         housing_status: 'long_term',
         german_level: '',
         arrival_date: defaultArrival,
+        interests: [],
     });
 
     function next() {
@@ -124,6 +127,8 @@ export default function Onboarding() {
             case 3:
                 return form.data.veedel !== '' && form.data.arrival_date !== '';
             case 4:
+                return form.data.interests.length >= 3; // at least 3 interests
+            case 5:
                 return true;
             default:
                 return false;
@@ -134,7 +139,7 @@ export default function Onboarding() {
         switch (step) {
             case 1:
                 return "Let's get started";
-            case 4:
+            case 5:
                 return 'Open my plan';
             default:
                 return 'Continue';
@@ -192,6 +197,21 @@ export default function Onboarding() {
                         />
                     )}
                     {step === 4 && (
+                        <InterestsStep
+                            interests={form.data.interests}
+                            onToggle={(v) =>
+                                form.setData(
+                                    'interests',
+                                    form.data.interests.includes(v)
+                                        ? form.data.interests.filter(
+                                              (x) => x !== v,
+                                          )
+                                        : [...form.data.interests, v],
+                                )
+                            }
+                        />
+                    )}
+                    {step === 5 && (
                         <ConfirmationStep
                             data={form.data}
                             previews={taskPreviews ?? {}}
@@ -203,7 +223,7 @@ export default function Onboarding() {
                     <div className="mx-auto flex max-w-[600px] items-center gap-3">
                         <button
                             type="button"
-                            onClick={step === 4 ? submit : next}
+                            onClick={step === 5 ? submit : next}
                             disabled={!canProceed() || form.processing}
                             className="ml-auto w-full rounded-xl bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto sm:min-w-[200px]"
                         >

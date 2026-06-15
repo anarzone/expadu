@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Profile\CategoryAffinity;
 use Carbon\CarbonImmutable;
 
 /**
@@ -20,12 +21,9 @@ class PlanScorer
         'intent' => 15.0,          // learned taste, simple weighted counts
         'companion' => 18.0,       // fits who you're going with (kids etc.)
         'appeal' => 18.0,          // activities lead; cafés/bars don't dominate
+        'landmark' => 12.0,        // notable places make the day's "main" pick
+        'affinity' => 22.0,        // the user's situation + picked interests
     ];
-
-    /** Categories that suit each companion; everything else is neutral. */
-    private const KID_FRIENDLY = ['playground', 'park', 'swimming', 'lake', 'pitch', 'basketball', 'skatepark', 'dog_park', 'library', 'culture', 'viewpoint', 'bbq'];
-
-    private const KID_UNFRIENDLY = ['bar', 'coworking', 'cafe'];
 
     public function __construct(
         private readonly TravelEstimator $travel,
@@ -86,6 +84,12 @@ class PlanScorer
         // proximity, so a leisure plan isn't a coffee crawl.
         $score += self::WEIGHTS['appeal'] * CategoryAppeal::score($candidate->category);
 
+        // Notable places (OSM wikidata/wikipedia) make the day's hero pick.
+        $score += self::WEIGHTS['landmark'] * ($candidate->isLandmark ? 1.0 : 0.0);
+
+        // Situation + picked interests — the same signal the home feed leads on.
+        $score += self::WEIGHTS['affinity'] * CategoryAffinity::score($candidate->category, $context->affinity);
+
         // Pinned "plan around this" picks from the home feed dominate so the
         // filler places them wherever they're feasible.
         if (in_array($candidate->id, $context->pinnedIds, true)) {
@@ -99,8 +103,8 @@ class PlanScorer
     {
         if ($companions === 'kids') {
             return match (true) {
-                in_array($candidate->category, self::KID_FRIENDLY, true) => 1.0,
-                in_array($candidate->category, self::KID_UNFRIENDLY, true) => 0.0,
+                in_array($candidate->category, CategoryAffinity::KID_FRIENDLY, true) => 1.0,
+                in_array($candidate->category, CategoryAffinity::KID_UNFRIENDLY, true) => 0.0,
                 default => 0.5,
             };
         }

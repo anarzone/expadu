@@ -618,6 +618,7 @@ test('user:reset-journey sends a user back through onboarding for a clean replay
         'veedel' => 'Nippes',
         'arrival_date' => now()->subDays(3)->toDateString(),
         'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {

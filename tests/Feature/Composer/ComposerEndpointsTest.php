@@ -100,6 +100,112 @@ test('compose builds a plan from real candidates and stores it', function () {
     expect(Cache::get("composer:plan:{$user->id}"))->not->toBeNull();
 });
 
+test('compose honours an explicit archetype', function () {
+    $user = composerUser();
+    Spot::factory()->create(['name' => 'Big Museum', 'category' => 'museum', 'lat' => 50.9480, 'lng' => 6.9240]);
+    Spot::factory()->create(['name' => 'Green Park', 'category' => 'park', 'lat' => 50.9481, 'lng' => 6.9241]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'archetype' => 'chill', // ChillNearby excludes culture
+        ],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('plan.slots'))->not->toBeEmpty();
+    expect(collect($response->json('plan.slots'))->pluck('category'))->not->toContain('museum');
+});
+
+test('compose excludes a removed pick', function () {
+    $user = composerUser();
+    Spot::factory()->create(['name' => 'Keep Park', 'category' => 'park', 'lat' => 50.9480, 'lng' => 6.9240]);
+    $remove = Spot::factory()->create(['name' => 'Remove Park', 'category' => 'park', 'lat' => 50.9481, 'lng' => 6.9241]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+        ],
+        'excluded' => ["spot:{$remove->id}"],
+    ]);
+
+    $response->assertOk();
+    expect(collect($response->json('plan.slots'))->pluck('id'))->not->toContain("spot:{$remove->id}");
+});
+
+test('a nightlife interest steers the composed plan toward a bar', function () {
+    // 'other' situation gives bars no default boost — so the bar leading the
+    // plan is the interest talking, not the situation.
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'other',
+        'is_eu' => true,
+        'veedel' => 'Ehrenfeld',
+        'interests' => ['nightlife'],
+    ]);
+    UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home', 'lat' => 50.9485, 'lng' => 6.9230]);
+    Spot::factory()->create(['name' => 'Late Bar', 'category' => 'bar', 'lat' => 50.9480, 'lng' => 6.9240]);
+    Spot::factory()->create(['name' => 'Quiet Cafe', 'category' => 'cafe', 'lat' => 50.9481, 'lng' => 6.9241]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+        ],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('plan.slots.0.category'))->toBe('bar');
+});
+
+test('the why lines survive a swap', function () {
+    $user = composerUser();
+    Spot::factory()->create(['name' => 'Famous Museum', 'category' => 'museum', 'lat' => 50.9480, 'lng' => 6.9240, 'tags' => ['wikidata' => 'Q1']]);
+    Spot::factory()->count(8)->create(['category' => 'cafe', 'lat' => 50.9481, 'lng' => 6.9241]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $compose = $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(),
+        'window_end' => $start->addHours(6)->toIso8601String(),
+    ]]);
+    $compose->assertOk();
+
+    // Swap a café (not the landmark) so the museum's "⭐ landmark" why persists.
+    $idx = collect($compose->json('plan.slots'))
+        ->search(fn ($s) => $s['swappable'] && $s['category'] === 'cafe');
+
+    $swap = $this->postJson('/composer/swap', ['slot' => $idx]);
+
+    $swap->assertOk();
+    expect(collect($swap->json('plan.slots'))->pluck('why')->filter()->values())->not->toBeEmpty();
+});
+
+test('a removed pick does not return via swap', function () {
+    $user = composerUser();
+    Spot::factory()->count(8)->create(['category' => 'cafe', 'lat' => 50.9480, 'lng' => 6.9240]);
+    $removed = Spot::factory()->create(['name' => 'Removed Cafe', 'category' => 'cafe', 'lat' => 50.9481, 'lng' => 6.9241]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', [
+        'constraints' => ['window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(6)->toIso8601String()],
+        'excluded' => ["spot:{$removed->id}"],
+    ])->assertOk();
+
+    $swap = $this->postJson('/composer/swap', ['slot' => 0]);
+
+    $swap->assertOk();
+    expect(collect($swap->json('plan.slots'))->pluck('id'))->not->toContain("spot:{$removed->id}");
+});
+
 test('compose weaves a booked appointment as an immovable anchor', function () {
     Http::fake([
         'photon.komoot.io/*' => Http::response([

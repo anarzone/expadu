@@ -1,7 +1,13 @@
 <?php
 
+use App\Home\HomeContext;
+use App\Models\User;
+use App\Models\UserTask;
+use App\Profile\ProfileEngine;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Vite;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\HtmlString;
 use Tests\TestCase;
@@ -20,6 +26,10 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(LazilyRefreshDatabase::class)
     ->beforeEach(function () {
+        // A clean cache per test — the discovery feed caches its global spot
+        // scan, which would otherwise leak across tests after DB rollback.
+        Cache::flush();
+
         // Mock Vite so tests don't need npm run build
         app()->instance(Vite::class, new class extends Vite
         {
@@ -111,4 +121,31 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Build a HomeContext for home-feed unit tests — real profile + open tasks,
+ * with controllable now/rain/weights/events.
+ *
+ * @param  array<string, mixed>  $overrides
+ */
+function homeContext(User $user, array $overrides = []): HomeContext
+{
+    return new HomeContext(
+        userId: $user->id,
+        profile: app(ProfileEngine::class)->build($user),
+        now: $overrides['now'] ?? CarbonImmutable::now('Europe/Berlin'),
+        rainExpected: $overrides['rainExpected'] ?? false,
+        rainSummary: $overrides['rainSummary'] ?? null,
+        intentWeights: $overrides['intentWeights'] ?? [],
+        isWeekendWindow: $overrides['isWeekendWindow'] ?? false,
+        isEvening: $overrides['isEvening'] ?? false,
+        openTasks: $overrides['openTasks'] ?? UserTask::query()
+            ->where('user_id', $user->id)
+            ->open()
+            ->notSnoozed()
+            ->with('task')
+            ->get(),
+        tonightEvents: $overrides['tonightEvents'] ?? collect(),
+    );
 }

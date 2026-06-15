@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Spot;
+use App\Services\OpeningHoursParser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -198,6 +199,7 @@ class ImportOsmSpots extends Command
                 'lat' => $lat,
                 'lng' => $lng,
                 'tags' => $keptTags ?: null,
+                'opening_hours' => OpeningHoursParser::parse($tags['opening_hours'] ?? null),
                 'wifi_speed' => null,
                 'noise_level' => null,
                 'rating' => null,
