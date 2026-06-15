@@ -192,3 +192,48 @@ test('broken weather never frames the feed as rainy', function () {
 
     expect($chips)->not->toContain('☔ Rainy-day picks');
 });
+
+test('a later-today rainy hour does not frame a dry morning as rainy', function () {
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'eu_employee',
+        'is_eu' => true,
+        'veedel' => 'Ehrenfeld',
+    ]);
+
+    // Forecast loaded, but rain is OUTSIDE the near-term window: `rain_starts`
+    // points at a later hour while the next hours are dry. The feed must follow
+    // `rain_soon` (the window the weather widget shows), not `rain_starts`.
+    $this->mock(WeatherService::class, function ($m) {
+        $m->shouldReceive('getForecast')->andReturn([
+            'available' => true,
+            'rain_starts' => '21:00',
+            'rain_soon' => false,
+            'rain_summary' => 'Dry next 8 hours',
+        ]);
+    });
+
+    $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
+
+    expect($chips)->not->toContain('☔ Rainy-day picks');
+});
+
+test('rain in the near-term window frames the feed as rainy', function () {
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'eu_employee',
+        'is_eu' => true,
+        'veedel' => 'Ehrenfeld',
+    ]);
+
+    $this->mock(WeatherService::class, function ($m) {
+        $m->shouldReceive('getForecast')->andReturn([
+            'available' => true,
+            'rain_starts' => '15:00',
+            'rain_soon' => true,
+            'rain_summary' => 'Rain from 15:00',
+        ]);
+    });
+
+    $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
+
+    expect($chips)->toContain('☔ Rainy-day picks');
+});

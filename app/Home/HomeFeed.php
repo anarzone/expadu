@@ -100,9 +100,12 @@ class HomeFeed
             userId: $user->id,
             profile: $profile,
             now: $now,
-            // Only frame the feed as "rainy" when the forecast genuinely loaded —
-            // broken/unavailable weather must never trigger it.
-            rainExpected: ($forecast['available'] ?? false) && (bool) ($forecast['rain_starts'] ?? false),
+            // Only frame the feed as "rainy" when the forecast genuinely loaded
+            // (broken/unavailable weather must never trigger it) AND rain falls
+            // in the near-term window — `rain_soon`, the same window the weather
+            // widget summarises. `rain_starts` alone pointed at any later hour of
+            // the day, so a dry morning was wrongly framed "rainy, keep it cosy".
+            rainExpected: ($forecast['available'] ?? false) && (bool) ($forecast['rain_soon'] ?? false),
             rainSummary: $forecast['rain_summary'] ?? null,
             intentWeights: $this->intents->for($user),
             isWeekendWindow: ($now->isFriday() && $now->hour >= 15) || $now->isSaturday() || $now->isSunday(),

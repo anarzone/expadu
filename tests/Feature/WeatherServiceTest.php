@@ -324,7 +324,37 @@ it('detects rain start from hourly forecast', function () {
     $forecast = $service->getForecast(50.9, 6.9);
 
     expect($forecast['rain_starts'])->toBe(str_pad((string) $rainHour, 2, '0', STR_PAD_LEFT).':00')
-        ->and($forecast['available'])->toBeTrue();
+        ->and($forecast['available'])->toBeTrue()
+        // Rain two hours out is within the near-term window → "soon".
+        ->and($forecast['rain_soon'])->toBeTrue();
+});
+
+it('does not flag rain beyond the near-term window as "soon"', function () {
+    $hour = now('Europe/Berlin')->hour;
+
+    if ($hour > 14) {
+        // Need room for a rainy hour 8+ slots ahead, still within the day.
+        $this->markTestSkipped('Test needs an out-of-window rain hour later today.');
+    }
+
+    // Dry from now through the 8-slot window; rain only at now+8 (just past it).
+    $rainHour = $hour + 8;
+    $hourly = [];
+    for ($h = $hour; $h <= $rainHour; $h++) {
+        $hourly[] = ['hour' => $h, 'precipitation' => $h === $rainHour ? 0.6 : 0.0];
+    }
+
+    $payload = samplePayload();
+    $payload['hourly'] = $hourly;
+
+    $service = new WeatherService([fakeProvider('test', $payload)]);
+    $service->fetchSync(50.9, 6.9);
+    $forecast = $service->getForecast(50.9, 6.9);
+
+    // `rain_starts` still names the later hour, but it is NOT "soon" — so the
+    // home feed (which keys off rain_soon) won't frame a dry morning as rainy.
+    expect($forecast['rain_starts'])->toBe(str_pad((string) $rainHour, 2, '0', STR_PAD_LEFT).':00')
+        ->and($forecast['rain_soon'])->toBeFalse();
 });
 
 it('brightsky provider uses station observations for current when available', function () {

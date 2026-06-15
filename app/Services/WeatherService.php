@@ -145,9 +145,18 @@ class WeatherService
         // Smart rain summary from hourly data
         $rainSummary = $this->buildRainSummary($nextHours, $isRainingNow);
 
+        // Rain within the actionable near-term window — the same 8 slots the
+        // summary describes — NOT merely some later hour of the day. `rain_starts`
+        // scans the whole rest of the day, so on a dry morning it can point at
+        // late-evening rain; framing the feed "rainy" off that contradicted the
+        // "Dry next N hours" the weather widget shows. This stays consistent.
+        $rainSoon = $isRainingNow
+            || array_filter($nextHours, fn ($h) => $h['precip'] > 0.1) !== [];
+
         return [
             'available' => $current['available'] ?? false,
             'rain_starts' => $isRainingNow && ! $rainStart ? 'now' : $rainStart,
+            'rain_soon' => $rainSoon,
             'bike_score' => $bikeScore,
             'rain_summary' => $rainSummary,
             'hourly' => $nextHours,
