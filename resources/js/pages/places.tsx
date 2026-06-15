@@ -3,18 +3,13 @@ import { IconMap, IconChevronDown } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import {
-    CategoryIllustration,
-    categoryEmoji,
-} from '@/components/places/category-illustration';
+import { categoryEmoji } from '@/components/places/category-illustration';
 import { ContentCard } from '@/components/places/content-card';
 import type { CardChip } from '@/components/places/content-card';
 import { PlaceDetail } from '@/components/places/place-detail';
+import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
-import { PlaceRichDetail } from '@/components/places/place-rich-detail';
 import type { Place, VeedelOption } from '@/components/places/types';
-import { BottomSheet } from '@/components/sheets/bottom-sheet';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
 import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -115,7 +110,7 @@ export default function Places() {
     // Breadcrumb of places hopped through via nearby chips ("← back")
     const [hopStack, setHopStack] = useState<Place[]>([]);
     const [destination, setDestination] = useState<Destination | null>(null);
-    const { stateFor, setFeedback, toast } = useFeedback();
+    const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
 
     const isMobile = useIsMobile();
     const reqRef = useRef(0);
@@ -527,8 +522,12 @@ export default function Places() {
                                             state:
                                                 stateFor(place.id) ??
                                                 place.feedback_state,
-                                            onAction: (action) =>
-                                                setFeedback(place.id, action),
+                                            onAction: (action, rating) =>
+                                                setFeedback(
+                                                    place.id,
+                                                    action,
+                                                    rating,
+                                                ),
                                         }}
                                         expanded={
                                             isMobile && expandedId === place.id
@@ -574,90 +573,61 @@ export default function Places() {
                 )}
             </div>
 
-            {/* Desktop detail — traditional centered modal (close via overlay or X) */}
-            <Dialog
-                open={!isMobile && detail !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
+            {/* Desktop detail — shared modal (photo/illustration hero) */}
+            {!isMobile && detail && (
+                <PlaceDetailModal
+                    place={detail}
+                    isMobile={false}
+                    meta={placeMeta(detail)}
+                    feedback={{
+                        state: stateFor(detail.id) ?? detail.feedback_state,
+                        rating: ratingFor(detail.id) ?? detail.feedback_rating,
+                        onAction: (action, rating) =>
+                            setFeedback(detail.id, action, rating),
+                    }}
+                    onClose={() => {
                         setDetail(null);
                         setHopStack([]);
-                    }
-                }}
-            >
-                {detail && (
-                    <DialogContent
-                        aria-describedby={undefined}
-                        className="gap-0 overflow-hidden p-0 sm:max-w-md"
-                    >
-                        <DialogTitle className="sr-only">
-                            {detail.name}
-                        </DialogTitle>
-                        {detail.photo_url ? (
-                            <div className="relative">
-                                <img
-                                    src={detail.photo_url}
-                                    alt={detail.name}
-                                    className="h-36 w-full object-cover"
-                                />
-                                {detail.photo_attribution && (
-                                    <span className="absolute right-1.5 bottom-1.5 max-w-[85%] truncate rounded bg-black/55 px-1.5 py-0.5 text-[9px] text-white/85">
-                                        {detail.photo_attribution}
-                                    </span>
-                                )}
-                            </div>
-                        ) : (
-                            <CategoryIllustration
-                                coarse={detail.category}
-                                className="h-28 w-full"
-                                iconSize={38}
-                            />
-                        )}
-                        <div className="max-h-[72vh] overflow-y-auto p-5">
-                            <PlaceRichDetail
-                                place={detail}
-                                meta={placeMeta(detail)}
-                                onNavigate={(target) => {
-                                    setDetail(null);
-                                    setHopStack([]);
-                                    setDestination(target);
-                                }}
-                                onOpenPlace={hopTo}
-                                onBack={
-                                    hopStack.length > 0 ? hopBack : undefined
-                                }
-                                backLabel={hopStack.at(-1)?.name}
-                            />
-                        </div>
-                    </DialogContent>
-                )}
-            </Dialog>
+                    }}
+                    onNavigate={(target) => {
+                        setDetail(null);
+                        setHopStack([]);
+                        setDestination(target);
+                    }}
+                    onOpenPlace={hopTo}
+                    onBack={hopStack.length > 0 ? hopBack : undefined}
+                    backLabel={hopStack.at(-1)?.name}
+                />
+            )}
 
-            {/* Mobile full detail — bottom sheet over the list */}
+            {/* Mobile full detail — shared modal renders a bottom sheet */}
             {isMobile && richPlace && (
-                <BottomSheet
-                    open
+                <PlaceDetailModal
+                    place={richPlace}
+                    isMobile
+                    meta={placeMeta(richPlace)}
+                    feedback={{
+                        state:
+                            stateFor(richPlace.id) ?? richPlace.feedback_state,
+                        rating:
+                            ratingFor(richPlace.id) ??
+                            richPlace.feedback_rating,
+                        onAction: (action, rating) =>
+                            setFeedback(richPlace.id, action, rating),
+                    }}
                     onClose={() => {
                         setRichPlace(null);
                         setHopStack([]);
                     }}
-                >
-                    {/* Bottom padding clears the floating mobile dock */}
-                    <div className="pb-24">
-                        <PlaceRichDetail
-                            place={richPlace}
-                            meta={placeMeta(richPlace)}
-                            showPhoto
-                            onNavigate={(target) => {
-                                setRichPlace(null);
-                                setHopStack([]);
-                                setDestination(target);
-                            }}
-                            onOpenPlace={hopTo}
-                            onBack={hopStack.length > 0 ? hopBack : undefined}
-                            backLabel={hopStack.at(-1)?.name}
-                        />
-                    </div>
-                </BottomSheet>
+                    onNavigate={(target) => {
+                        setRichPlace(null);
+                        setHopStack([]);
+                        setDestination(target);
+                    }}
+                    onOpenPlace={hopTo}
+                    onBack={hopStack.length > 0 ? hopBack : undefined}
+                    backLabel={hopStack.at(-1)?.name}
+                />
             )}
 
             {destination && (

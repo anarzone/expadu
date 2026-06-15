@@ -51,6 +51,15 @@ class PlacesController extends Controller
             ->whereRaw('round(lat::numeric, 3) = round(?::numeric, 3) and round(lng::numeric, 3) = round(?::numeric, 3)', [$spot->lat, $spot->lng])
             ->count();
 
+        // The user's standing feedback, so the detail modal (opened from the
+        // home rails or Places) reflects it.
+        $row = SpotFeedback::query()
+            ->where('user_id', $request->user()->id)
+            ->where('spot_id', $spot->id)
+            ->first();
+        $spot->feedback_state = $row?->state?->value;
+        $spot->feedback_rating = $row?->rating;
+
         return new PlaceResource($spot);
     }
 
@@ -69,7 +78,7 @@ class PlacesController extends Controller
         // entirely; the rest carry their state through to a card badge.
         $feedback = SpotFeedback::query()
             ->where('user_id', $request->user()->id)
-            ->get(['spot_id', 'state'])
+            ->get(['spot_id', 'state', 'rating'])
             ->keyBy('spot_id');
         $notInterestedIds = $feedback
             ->filter(fn (SpotFeedback $row) => $row->state === SpotFeedbackState::NotInterested)
@@ -177,7 +186,9 @@ class PlacesController extends Controller
         $paginator->getCollection()->transform(function (Spot $spot) use ($activities, $stopHints, $feedback) {
             $spot->transit_hint = $stopHints[$spot->id] ?? null;
             $spot->activities = $activities[$spot->name] ?? [];
-            $spot->feedback_state = $feedback->get($spot->id)?->state?->value;
+            $row = $feedback->get($spot->id);
+            $spot->feedback_state = $row?->state?->value;
+            $spot->feedback_rating = $row?->rating;
 
             return $spot;
         });

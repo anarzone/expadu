@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Spot;
+use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserPlace;
 use Illuminate\Support\Facades\DB;
@@ -296,4 +297,39 @@ test('orders by distance from the home anchor', function () {
 
     $ids = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
     expect(array_search($near->id, $ids))->toBeLessThan(array_search($far->id, $ids));
+});
+
+test('the show endpoint exposes the viewer’s feedback state and rating', function () {
+    $spot = Spot::factory()->create(['category' => 'museum', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    SpotFeedback::factory()->been('up')->create(['user_id' => $this->user->id, 'spot_id' => $spot->id]);
+
+    $response = $this->getJson("/api/places/{$spot->id}");
+
+    $response->assertOk();
+    $response->assertJsonPath('data.feedback_state', 'been');
+    $response->assertJsonPath('data.feedback_rating', 'up');
+});
+
+test('the show endpoint reports null feedback when the viewer has none', function () {
+    $spot = Spot::factory()->create(['category' => 'museum', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    // Another user's feedback must not leak into this viewer's response.
+    SpotFeedback::factory()->been('down')->create(['spot_id' => $spot->id]);
+
+    $response = $this->getJson("/api/places/{$spot->id}");
+
+    $response->assertJsonPath('data.feedback_state', null);
+    $response->assertJsonPath('data.feedback_rating', null);
+});
+
+test('the list carries feedback state and hides not-interested places', function () {
+    $saved = Spot::factory()->create(['name' => 'Saved park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $hidden = Spot::factory()->create(['name' => 'Hidden park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9482, 'lng' => 6.9212]);
+    SpotFeedback::factory()->create(['user_id' => $this->user->id, 'spot_id' => $saved->id]); // default: saved
+    SpotFeedback::factory()->notInterested()->create(['user_id' => $this->user->id, 'spot_id' => $hidden->id]);
+
+    $data = collect($this->getJson('/api/places?veedel=Ehrenfeld')->json('data'));
+
+    expect($data->pluck('name')->all())->toContain('Saved park');
+    expect($data->pluck('name')->all())->not->toContain('Hidden park');
+    expect($data->firstWhere('name', 'Saved park')['feedback_state'])->toBe('saved');
 });

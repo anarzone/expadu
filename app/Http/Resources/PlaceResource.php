@@ -61,6 +61,7 @@ class PlaceResource extends JsonResource
             'activities' => $this->activities ?? [],
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
+            'feedback_rating' => $this->feedback_rating ?? null,
             'facts' => $this->resolveFacts(),
         ];
     }

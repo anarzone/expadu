@@ -3,9 +3,12 @@ import { useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { ContentCard } from '@/components/places/content-card';
+import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
+import type { Place } from '@/components/places/types';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
 import { useFeedback } from '@/hooks/use-feedback';
+import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
 
 type Tile = {
@@ -113,6 +116,21 @@ function getGreeting(name?: string): string {
     return name ? `${part}, ${name.split(' ')[0]}` : part;
 }
 
+/** The detail-modal subtitle line — fine label · area · distance. */
+function detailMeta(place: Place): string {
+    const label =
+        place.fine_label ??
+        place.category.charAt(0).toUpperCase() + place.category.slice(1);
+
+    return [
+        label,
+        place.park ?? place.veedel,
+        place.distance_min != null ? `${place.distance_min} min away` : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+}
+
 function TileCard({ tile }: { tile: Tile }) {
     const body = (
         <div
@@ -187,9 +205,28 @@ export default function Dashboard() {
     const [prompt, setPrompt] = useState('');
     const [pins, setPins] = useState<Record<string, string>>({});
     const [destination, setDestination] = useState<Destination | null>(null);
-    const { stateFor, setFeedback, toast } = useFeedback();
+    const [detail, setDetail] = useState<Place | null>(null);
+    const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
+    const isMobile = useIsMobile();
 
     const pinnedIds = Object.keys(pins);
+
+    // A rail card opens the same rich detail as the Places page; its
+    // "Take me there" then hands off to the route sheet. Falls back to
+    // routing directly if the detail can't be fetched.
+    function openDetail(spotId: number, card: RailCard) {
+        fetch(`/api/places/${spotId}`, { credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+            .then((json) => setDetail(json.data))
+            .catch(() =>
+                setDestination({
+                    name: card.name,
+                    emoji: CATEGORY_EMOJI[card.category] ?? '📍',
+                    lat: card.lat,
+                    lng: card.lng,
+                }),
+            );
+    }
 
     function openComposer(text: string) {
         const trimmed = text.trim();
@@ -423,8 +460,12 @@ export default function Dashboard() {
                                             }
                                             feedback={{
                                                 state: stateFor(spotId),
-                                                onAction: (action) =>
-                                                    setFeedback(spotId, action),
+                                                onAction: (action, rating) =>
+                                                    setFeedback(
+                                                        spotId,
+                                                        action,
+                                                        rating,
+                                                    ),
                                             }}
                                             overlayTopRight={
                                                 <button
@@ -451,17 +492,7 @@ export default function Dashboard() {
                                                 </button>
                                             }
                                             onActivate={() =>
-                                                setDestination({
-                                                    name: card.name,
-                                                    emoji:
-                                                        CATEGORY_EMOJI[
-                                                            card.category
-                                                        ] ?? '📍',
-                                                    lat: card.lat,
-                                                    lng: card.lng,
-                                                    category: card.category,
-                                                    veedel: card.veedel,
-                                                })
+                                                openDetail(spotId, card)
                                             }
                                         />
                                     );
@@ -481,6 +512,25 @@ export default function Dashboard() {
                     🗓️ Plan around {pinnedIds.length}{' '}
                     {pinnedIds.length === 1 ? 'spot' : 'spots'} →
                 </button>
+            )}
+
+            {detail && (
+                <PlaceDetailModal
+                    place={detail}
+                    isMobile={isMobile}
+                    meta={detailMeta(detail)}
+                    feedback={{
+                        state: stateFor(detail.id) ?? detail.feedback_state,
+                        rating: ratingFor(detail.id) ?? detail.feedback_rating,
+                        onAction: (action, rating) =>
+                            setFeedback(detail.id, action, rating),
+                    }}
+                    onClose={() => setDetail(null)}
+                    onNavigate={(target) => {
+                        setDetail(null);
+                        setDestination(target);
+                    }}
+                />
             )}
 
             {destination && (

@@ -29,6 +29,7 @@ export type Place = {
         | 'been'
         | 'not_interested'
         | null;
+    feedback_rating: 'up' | 'down' | null;
 };
 
 export type VeedelOption = {

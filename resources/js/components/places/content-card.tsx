@@ -4,7 +4,11 @@ import {
     FeedbackBadge,
     PlaceFeedbackMenu,
 } from '@/components/places/place-feedback-menu';
-import type { FeedbackAction, FeedbackState } from '@/hooks/use-feedback';
+import type {
+    FeedbackAction,
+    FeedbackRating,
+    FeedbackState,
+} from '@/hooks/use-feedback';
 
 export type CardChip = {
     label: string;
@@ -13,7 +17,7 @@ export type CardChip = {
 
 export type CardFeedback = {
     state: FeedbackState | null;
-    onAction: (action: FeedbackAction) => void;
+    onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
 };
 
 const CHIP_TONE: Record<NonNullable<CardChip['tone']>, string> = {

@@ -5,6 +5,10 @@ import {
     IconBookmarkFilled,
     IconMapPinCheck,
     IconEyeOff,
+    IconThumbUp,
+    IconThumbUpFilled,
+    IconThumbDown,
+    IconThumbDownFilled,
 } from '@tabler/icons-react';
 import {
     DropdownMenu,
@@ -14,7 +18,11 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ICON_STROKE } from '@/constants/icons';
-import type { FeedbackAction, FeedbackState } from '@/hooks/use-feedback';
+import type {
+    FeedbackAction,
+    FeedbackRating,
+    FeedbackState,
+} from '@/hooks/use-feedback';
 
 /**
  * The social "⋯" feedback menu shared by every place card (home rails +
@@ -27,12 +35,15 @@ export function PlaceFeedbackMenu({
     onAction,
     variant = 'inline',
     label,
+    hideBeen = false,
 }: {
     state: FeedbackState | null;
-    onAction: (action: FeedbackAction) => void;
+    onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
     /** overlay = light-on-dark button for image corners; inline = bordered. */
     variant?: 'inline' | 'overlay';
     label?: string;
+    /** Hide "Been here" when a sibling rating control already owns it. */
+    hideBeen?: boolean;
 }) {
     const saved = state === 'saved';
     const been = state === 'been';
@@ -70,12 +81,14 @@ export function PlaceFeedbackMenu({
                     )}
                     {saved ? 'Saved' : 'Save for later'}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                    onSelect={() => onAction(been ? 'clear' : 'been')}
-                >
-                    <IconMapPinCheck stroke={ICON_STROKE} />
-                    {been ? 'Visited' : 'Been here'}
-                </DropdownMenuItem>
+                {!hideBeen && (
+                    <DropdownMenuItem
+                        onSelect={() => onAction(been ? 'clear' : 'been')}
+                    >
+                        <IconMapPinCheck stroke={ICON_STROKE} />
+                        {been ? 'Visited' : 'Been here'}
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                     className="text-danger focus:text-danger"
@@ -122,6 +135,73 @@ export function FeedbackBadge({
             )}
             {state === 'saved' ? 'Saved' : 'Visited'}
         </span>
+    );
+}
+
+/**
+ * Compact, modern feedback control for the detail modal: a "Been here?" rating
+ * (small thumb icons → been + rating) plus the ⋯ menu for the rest. Replaces
+ * the old big-emoji block that used to live in the route sheet.
+ */
+export function PlaceFeedbackBar({
+    state,
+    rating,
+    onAction,
+    label,
+}: {
+    state: FeedbackState | null;
+    rating: FeedbackRating | null;
+    onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
+    label?: string;
+}) {
+    const been = state === 'been';
+    const liked = been && rating === 'up';
+    const disliked = been && rating === 'down';
+
+    return (
+        <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-border bg-secondary/40 px-3 py-2">
+            <span className="text-[13px] font-medium text-muted-foreground">
+                {been ? 'You’ve been here' : 'Been here?'}
+            </span>
+            <div className="ml-auto flex items-center gap-1.5">
+                <button
+                    onClick={() => onAction('been', 'up')}
+                    aria-label="Loved it"
+                    className={`flex size-8 items-center justify-center rounded-full border transition-colors ${
+                        liked
+                            ? 'border-transparent bg-success-soft text-success'
+                            : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                    }`}
+                >
+                    {liked ? (
+                        <IconThumbUpFilled size={16} />
+                    ) : (
+                        <IconThumbUp size={16} stroke={ICON_STROKE} />
+                    )}
+                </button>
+                <button
+                    onClick={() => onAction('been', 'down')}
+                    aria-label="Not for me"
+                    className={`flex size-8 items-center justify-center rounded-full border transition-colors ${
+                        disliked
+                            ? 'border-transparent bg-danger-soft text-danger'
+                            : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                    }`}
+                >
+                    {disliked ? (
+                        <IconThumbDownFilled size={16} />
+                    ) : (
+                        <IconThumbDown size={16} stroke={ICON_STROKE} />
+                    )}
+                </button>
+                <PlaceFeedbackMenu
+                    state={state}
+                    onAction={onAction}
+                    label={label}
+                    hideBeen
+                />
+            </div>
+        </div>
     );
 }
 

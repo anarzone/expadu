@@ -7,15 +7,34 @@ export type FeedbackState =
     | 'not_interested';
 
 export type FeedbackAction = FeedbackState | 'clear';
+export type FeedbackRating = 'up' | 'down';
+
+type Entry = { state: FeedbackState | null; rating: FeedbackRating | null };
 
 /** Confirmation copy per action — the social "we heard you" nudge. */
-const TOAST: Record<FeedbackAction, string | null> = {
-    more_like_this: '✨ More like this — we’ll surface more spots like it',
-    saved: '🔖 Saved — find it later in your places',
-    been: '✓ Marked as visited — it’ll step aside in discovery',
-    not_interested: '🚫 Got it — you’ll see fewer like this',
-    clear: null,
-};
+function toastFor(
+    action: FeedbackAction,
+    rating: FeedbackRating | null,
+): string | null {
+    if (action === 'been') {
+        if (rating === 'up') {
+            return '👍 Glad you liked it — more like this';
+        }
+
+        if (rating === 'down') {
+            return '👎 Noted — fewer like this';
+        }
+
+        return '✓ Marked as visited — it’ll step aside in discovery';
+    }
+
+    return {
+        more_like_this: '✨ More like this — we’ll surface more spots like it',
+        saved: '🔖 Saved — find it later in your places',
+        not_interested: '🚫 Got it — you’ll see fewer like this',
+        clear: null,
+    }[action as Exclude<FeedbackAction, 'been'>];
+}
 
 function csrf(): string {
     return (
@@ -27,16 +46,13 @@ function csrf(): string {
 
 /**
  * Place feedback with optimistic state + a brief toast. One source of truth
- * for the ⋯ menu across the home rails and the Places page: it POSTs to
- * /api/places/{spot}/feedback (which persists the state AND emits the ranking
- * signal) and rolls back on failure.
+ * for the ⋯ menu and the detail-modal rating across the home rails and the
+ * Places page: it POSTs to /api/places/{spot}/feedback (which persists the
+ * state/rating AND emits the ranking signal) and rolls back on failure.
  */
-export function useFeedback(
-    initial: Record<string, FeedbackState | null> = {},
-) {
-    const [states, setStates] =
-        useState<Record<string, FeedbackState | null>>(initial);
-    const statesRef = useRef(initial);
+export function useFeedback(initial: Record<string, Entry> = {}) {
+    const [entries, setEntries] = useState<Record<string, Entry>>(initial);
+    const ref = useRef(initial);
     const [toast, setToast] = useState<string | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -53,14 +69,21 @@ export function useFeedback(
     }, []);
 
     const setFeedback = useCallback(
-        (spotId: number, action: FeedbackAction) => {
+        (
+            spotId: number,
+            action: FeedbackAction,
+            rating: FeedbackRating | null = null,
+        ) => {
             const key = String(spotId);
-            const prev = statesRef.current[key] ?? null;
-            const next = action === 'clear' ? null : action;
+            const prev = ref.current[key] ?? { state: null, rating: null };
+            const next: Entry = {
+                state: action === 'clear' ? null : action,
+                rating: action === 'been' ? rating : null,
+            };
 
-            statesRef.current = { ...statesRef.current, [key]: next };
-            setStates(statesRef.current);
-            flashToast(TOAST[action]);
+            ref.current = { ...ref.current, [key]: next };
+            setEntries(ref.current);
+            flashToast(toastFor(action, rating));
 
             fetch(`/api/places/${spotId}/feedback`, {
                 method: 'POST',
@@ -70,7 +93,7 @@ export function useFeedback(
                     Accept: 'application/json',
                     'X-CSRF-TOKEN': csrf(),
                 },
-                body: JSON.stringify({ action }),
+                body: JSON.stringify({ action, rating: next.rating }),
             })
                 .then((res) => {
                     if (!res.ok) {
@@ -78,8 +101,8 @@ export function useFeedback(
                     }
                 })
                 .catch(() => {
-                    statesRef.current = { ...statesRef.current, [key]: prev };
-                    setStates(statesRef.current);
+                    ref.current = { ...ref.current, [key]: prev };
+                    setEntries(ref.current);
                     flashToast('Could not save that — try again.');
                 });
         },
@@ -88,7 +111,9 @@ export function useFeedback(
 
     return {
         stateFor: (spotId: number | string): FeedbackState | null =>
-            states[String(spotId)] ?? null,
+            entries[String(spotId)]?.state ?? null,
+        ratingFor: (spotId: number | string): FeedbackRating | null =>
+            entries[String(spotId)]?.rating ?? null,
         setFeedback,
         toast,
         dismissToast: () => flashToast(null),

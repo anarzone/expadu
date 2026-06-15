@@ -1,12 +1,18 @@
 import { IconClock, IconTicket, IconTrain } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { MiniMap } from '@/components/places/mini-map';
+import { PlaceFeedbackBar } from '@/components/places/place-feedback-menu';
 import type {
     NearbyPlace,
     Place,
     PlaceContext,
 } from '@/components/places/types';
 import { ICON_STROKE } from '@/constants/icons';
+import type {
+    FeedbackAction,
+    FeedbackRating,
+    FeedbackState,
+} from '@/hooks/use-feedback';
 
 export type NavigateTarget = {
     name: string;
@@ -29,6 +35,7 @@ export function PlaceRichDetail({
     onBack,
     backLabel,
     showPhoto = false,
+    feedback,
 }: {
     place: Place;
     meta: string;
@@ -40,6 +47,12 @@ export function PlaceRichDetail({
     backLabel?: string;
     /** Render the photo inline (mobile sheet; the desktop modal has its own hero). */
     showPhoto?: boolean;
+    /** "Been here?" rating + ⋯ feedback, wired to useFeedback. */
+    feedback?: {
+        state: FeedbackState | null;
+        rating: FeedbackRating | null;
+        onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
+    };
 }) {
     const [context, setContext] = useState<PlaceContext | null>(null);
     const [events, setEvents] = useState<{
@@ -134,6 +147,16 @@ export function PlaceRichDetail({
                     </div>
                 </div>
             </div>
+
+            {/* Been-here rating + ⋯ feedback */}
+            {feedback && (
+                <PlaceFeedbackBar
+                    state={feedback.state}
+                    rating={feedback.rating}
+                    onAction={feedback.onAction}
+                    label={place.name}
+                />
+            )}
 
             {/* Photo (openly licensed — credit required) */}
             {showPhoto && place.photo_url && (
