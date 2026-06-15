@@ -100,6 +100,19 @@ test('"something with the kids tomorrow" plans tomorrow with kids', function () 
         ->and($result->plan->windowStart->format('Y-m-d'))->toBe('2026-06-11');
 });
 
+test('plural and umbrella category words are extracted', function () {
+    // "tomorrow" keeps the window in the future (now is an evening in the fixture).
+    // Plurals of singular synonyms (-s and -y→-ies) still resolve.
+    $culture = parsePrompt('see some museums and galleries tomorrow afternoon');
+    expect($culture->intent)->toBe(PromptIntent::PlanDay)
+        ->and($culture->plan->categories)->toContain('culture');
+
+    // "sports" is an umbrella that fans out to the active sport categories.
+    $sports = parsePrompt('a day of sports tomorrow');
+    expect($sports->plan->categories)->toContain('pitch')
+        ->and($sports->plan->categories)->toContain('basketball');
+});
+
 test('a prompt with no named area leaves areas empty (compose fills home areas)', function () {
     $result = parsePrompt('tomorrow afternoon');
 

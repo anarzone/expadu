@@ -215,9 +215,20 @@ class HeuristicPromptParser implements ParsesPrompt
     {
         $categories = [];
         foreach (self::CATEGORY_SYNONYMS as $term => $canonical) {
-            if ($this->containsWord($t, [$term])) {
+            // Match the term and its plural so "museums"/"galleries" land too
+            // (regular -s and -y→-ies). The map stays singular.
+            $variants = [$term, $term.'s'];
+            if (str_ends_with($term, 'y')) {
+                $variants[] = substr($term, 0, -1).'ies';
+            }
+            if ($this->containsWord($t, $variants)) {
                 $categories[] = $canonical;
             }
+        }
+
+        // "sport(s)" is an umbrella the 1:1 synonym map can't express.
+        if ($this->containsWord($t, ['sport', 'sports'])) {
+            array_push($categories, 'pitch', 'basketball', 'tennis', 'table_tennis', 'skatepark', 'boules');
         }
 
         return array_values(array_unique($categories));

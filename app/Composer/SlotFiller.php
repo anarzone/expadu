@@ -31,6 +31,11 @@ class SlotFiller
     ): Plan {
         $slots = [];
         $used = [];
+        // Visible-name de-dup: many OSM rows share a name (a big park split into
+        // polygons, generic "Bolzplatz"/"Spielplatz"), so id-only de-dup would
+        // place the same name twice and read as a bug. A day plan shows each
+        // name once.
+        $usedNames = [];
 
         // 0. Pinned "plan around this" picks are placed first, chained from
         //    the origin, so the user's explicit choices win the window before
@@ -58,6 +63,7 @@ class SlotFiller
 
             $slots[] = new PlanSlot($pin, $start, $end, $travelMin);
             $used[$pin->id] = true;
+            $usedNames[$this->nameKey($pin)] = true;
             $pinCursor = $end;
             $pinLat = $pin->lat;
             $pinLng = $pin->lng;
@@ -82,6 +88,7 @@ class SlotFiller
             }
             $slots[] = new PlanSlot($anchor, $start, $end, 0);
             $used[$anchor->id] = true;
+            $usedNames[$this->nameKey($anchor)] = true;
             if (count($slots) >= self::MAX_SLOTS_PER_DAY) {
                 break;
             }
@@ -106,7 +113,7 @@ class SlotFiller
                 [$cursor, $cursorLat, $cursorLng] = $this->advancePastAnchors($slots, $cursor, $cursorLat, $cursorLng);
 
                 $gapEnd = $this->nextAnchorStart($slots, $cursor) ?? $constraints->windowEnd;
-                $best = $this->bestFor($feasible, $used, $slots, $cursor, $cursorLat, $cursorLng, $gapEnd, $context, $role->categories, $targetVeedel);
+                $best = $this->bestFor($feasible, $used, $usedNames, $slots, $cursor, $cursorLat, $cursorLng, $gapEnd, $context, $role->categories, $targetVeedel);
 
                 if ($best === null) {
                     // Nothing for this role in this gap — jump past the next
@@ -129,6 +136,7 @@ class SlotFiller
 
                 $slots[] = new PlanSlot($candidate, $start, $end, $travelMin);
                 $used[$candidate->id] = true;
+                $usedNames[$this->nameKey($candidate)] = true;
                 usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
 
                 $cursor = $end;
@@ -179,6 +187,7 @@ class SlotFiller
      *
      * @param  list<Candidate>  $feasible
      * @param  array<string, bool>  $used
+     * @param  array<string, bool>  $usedNames  visible names already placed
      * @param  list<PlanSlot>  $slots
      * @param  list<string>  $allowedCategories  empty = any category
      * @return array{0: Candidate, 1: int}|null
@@ -186,6 +195,7 @@ class SlotFiller
     private function bestFor(
         array $feasible,
         array $used,
+        array $usedNames,
         array $slots,
         CarbonImmutable $cursor,
         float $cursorLat,
@@ -200,6 +210,11 @@ class SlotFiller
 
         foreach ($feasible as $candidate) {
             if ($candidate->isFixedTime() || isset($used[$candidate->id])) {
+                continue;
+            }
+            // Skip a venue whose visible name is already in the plan, even if
+            // it's a distinct OSM row (same-named park polygon, generic pitch).
+            if (isset($usedNames[$this->nameKey($candidate)])) {
                 continue;
             }
             // Role restrictions: a category set (empty = any) and, for
@@ -296,5 +311,16 @@ class SlotFiller
         }
 
         return $startAt;
+    }
+
+    /**
+     * The key a candidate de-dups on by sight: its visible name, lower-cased.
+     * Falls back to the id for the rare nameless candidate.
+     */
+    private function nameKey(Candidate $candidate): string
+    {
+        $name = mb_strtolower(trim($candidate->name));
+
+        return $name !== '' ? $name : 'id:'.$candidate->id;
     }
 }

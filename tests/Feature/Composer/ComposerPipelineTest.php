@@ -23,10 +23,14 @@ function saturday(string $time): CarbonImmutable
 
 function makeCandidate(array $overrides = []): Candidate
 {
+    $id = $overrides['id'] ?? 'spot:1';
+
     $defaults = [
-        'id' => 'spot:1',
+        'id' => $id,
         'type' => 'spot',
-        'name' => 'Stadtgarten',
+        // Unique by id so a multi-candidate plan never reads as duplicates —
+        // the SlotFiller de-dups by visible name, mirroring real OSM data.
+        'name' => 'Spot '.$id,
         'lat' => 50.9442,
         'lng' => 6.9329,
         'veedel' => 'Neustadt-Nord',
@@ -234,6 +238,35 @@ test('feasibility excludes events outside the window', function () {
     $result = $filter->filter(defaultConstraints(), [$inside, $tooLate]);
 
     expect(array_map(fn ($c) => $c->id, $result))->toBe(['event:in']);
+});
+
+test('a coarse category constraint admits its fine venues', function () {
+    $filter = new FeasibilityFilter;
+    $museum = makeCandidate(['id' => 'spot:m', 'category' => 'museum', 'outdoor' => false]);
+    $park = makeCandidate(['id' => 'spot:p', 'category' => 'park']);
+
+    // "culture" is a coarse bucket — museum/gallery/attraction/zoo roll into it.
+    $culture = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('20:00'), categories: ['culture']);
+    expect(array_map(fn ($c) => $c->id, $filter->filter($culture, [$museum, $park])))->toBe(['spot:m']);
+
+    // A fine value still matches itself.
+    $fine = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('20:00'), categories: ['museum']);
+    expect(array_map(fn ($c) => $c->id, $filter->filter($fine, [$museum, $park])))->toBe(['spot:m']);
+});
+
+test('a plan never places two venues that read by the same name', function () {
+    // Two distinct rows sharing a name (a park split across OSM polygons).
+    $candidates = [
+        makeCandidate(['id' => 'spot:g1', 'name' => 'Grüngürtel', 'category' => 'park', 'lat' => 50.9442, 'lng' => 6.9329]),
+        makeCandidate(['id' => 'spot:g2', 'name' => 'Grüngürtel', 'category' => 'park', 'lat' => 50.9450, 'lng' => 6.9340]),
+        makeCandidate(['id' => 'spot:other', 'name' => 'Rheinpark', 'category' => 'park', 'lat' => 50.9470, 'lng' => 6.9360]),
+    ];
+
+    $plan = filler()->fill(defaultConstraints(), $candidates, neutralContext(), 50.9442, 6.9329);
+    $names = collect($plan->slots)->map(fn ($s) => $s->candidate->name);
+
+    expect($names->count())->toBe($names->unique()->count())   // no repeated name
+        ->and($names)->toContain('Grüngürtel');                // one of the two, not both
 });
 
 // ── PlanScorer ─────────────────────────────────────────────────────────

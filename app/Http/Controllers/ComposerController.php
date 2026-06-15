@@ -252,7 +252,10 @@ class ComposerController extends Controller
 
     private function rainExpected(): bool
     {
-        return (bool) ($this->forecast()['rain_starts'] ?? false);
+        // `rain_soon`: rain within the near-term window the weather widget
+        // summarises — not `rain_starts`, which names any later hour of the day
+        // and so stamped "indoor — beats the rain" on every slot of a dry day.
+        return (bool) ($this->forecast()['rain_soon'] ?? false);
     }
 
     /**

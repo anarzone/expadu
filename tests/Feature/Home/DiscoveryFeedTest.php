@@ -226,7 +226,8 @@ test('an explicit interest boosts its categories in the affinity map', function 
 
     $map = CategoryAffinity::map(app(ProfileEngine::class)->build($user));
 
-    expect(CategoryAffinity::score('bar', $map))->toBe(1.0); // nightlife lifts bars
+    // A picked interest outranks a merely situation-fit category (1.5 > 1.0).
+    expect(CategoryAffinity::score('bar', $map))->toBe(1.5);
 });
 
 test('an interest never overrides a kid-safety demotion', function () {

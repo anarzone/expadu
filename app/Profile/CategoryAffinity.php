@@ -32,6 +32,9 @@ class CategoryAffinity
 
     private const SOCIAL = ['bar', 'cafe'];
 
+    /** A category the user explicitly picked outranks one that merely fits their situation. */
+    private const STRONG = 1.5;
+
     private const BOOST = 1.0;
 
     private const NEUTRAL = 0.5;
@@ -84,11 +87,13 @@ class CategoryAffinity
             }
         }
 
-        // Explicit interests (user-picked) — boost, but never lift a category
-        // we've demoted for kid-safety.
+        // Explicit interests (user-picked) are the strongest cold-start signal:
+        // they outrank a merely situation-fit category, so picking "Museums"
+        // surfaces museums above the parks a settled employee also gets. Never
+        // lifts a category we've demoted for kid-safety.
         foreach (Interest::categoriesFor($profile->interests) as $category) {
             if (($map[$category] ?? self::NEUTRAL) > self::DEMOTE) {
-                $map[$category] = self::BOOST;
+                $map[$category] = self::STRONG;
             }
         }
 
