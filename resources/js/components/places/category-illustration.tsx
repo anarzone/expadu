@@ -250,6 +250,10 @@ function nameHash(value: string): number {
     return Math.abs(hash);
 }
 
+/** Fine film grain (data-URI SVG) — gives the panels a printed, premium texture. */
+const GRAIN =
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
 export function CategoryIllustration({
     coarse,
     seed,
@@ -272,18 +276,30 @@ export function CategoryIllustration({
             className={`relative flex items-center justify-center overflow-hidden ${tint} ${className}`}
             aria-hidden="true"
         >
-            {/* Oversized faint echoes make it read as an illustration */}
-            <Icon
-                size={iconSize * 2.4}
-                stroke={1.2}
-                className="absolute -right-3 -bottom-4 rotate-12 opacity-15"
+            {/* Depth: a soft diagonal sheen lifts the flat tint into a panel. */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/45 via-transparent to-black/15 dark:from-white/10 dark:via-transparent dark:to-black/40" />
+            {/* A colour glow in the category hue, off-centre, for a crafted feel. */}
+            <div className="absolute -top-1/3 -left-1/4 h-[150%] w-[85%] rounded-full bg-current opacity-15 blur-2xl" />
+            {/* Fine grain — a premium, printed texture rather than a flat block. */}
+            <div
+                className="absolute inset-0 opacity-[0.04] mix-blend-overlay dark:opacity-[0.07]"
+                style={{
+                    backgroundImage: GRAIN,
+                    backgroundSize: '110px 110px',
+                }}
             />
+            {/* Oversized watermark glyph anchors the composition bottom-right. */}
             <Icon
-                size={iconSize * 1.4}
-                stroke={1.2}
-                className="absolute -top-3 -left-2 -rotate-12 opacity-10"
+                size={iconSize * 2.6}
+                stroke={1}
+                className="absolute -right-4 -bottom-5 rotate-6 opacity-20"
             />
-            <Icon size={iconSize} stroke={1.6} className="relative" />
+            {/* Hero glyph. */}
+            <Icon
+                size={iconSize}
+                stroke={1.7}
+                className="relative opacity-90 drop-shadow-sm"
+            />
         </div>
     );
 }
