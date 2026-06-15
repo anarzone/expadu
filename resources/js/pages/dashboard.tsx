@@ -495,7 +495,15 @@ export default function Dashboard() {
                     fallback={
                         <div className="mt-8">
                             <div className="mb-3 h-4 w-40 animate-pulse rounded bg-secondary" />
-                            <div className="flex gap-3">
+                            <div
+                                className="flex gap-3 overflow-hidden pb-1.5"
+                                style={{
+                                    maskImage:
+                                        'linear-gradient(to right, #000 calc(100% - 32px), transparent 100%)',
+                                    WebkitMaskImage:
+                                        'linear-gradient(to right, #000 calc(100% - 32px), transparent 100%)',
+                                }}
+                            >
                                 {[1, 2, 3].map((i) => (
                                     <div
                                         key={i}
