@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Cache;
  * deterministic signals (no ML, no LLM) in priority order — the user's
  * SITUATION (CategoryAffinity) leads, learned IntentWeights refine, category
  * appeal demotes cafés, then home-area + weather. Each rail carries a personal,
- * contextual title ("Made for your rainy Sunday"); some rails are themselves
- * situation-specific (with the kids; get oriented).
+ * contextual title (RailCopy — e.g. "Stay dry this Monday"); some rails are
+ * themselves situation-specific (with the kids; get oriented).
  */
 class DiscoveryFeed
 {
@@ -47,7 +47,6 @@ class DiscoveryFeed
         $weights = $context->intentWeights;
         $rain = $context->rainExpected;
         $homeAreas = $profile->defaultAreas;
-        $weekday = $context->now->format('l');
         $affinity = CategoryAffinity::map($profile);
 
         // The catalogue scan is global (no per-user data) so it's cached; the
@@ -65,12 +64,22 @@ class DiscoveryFeed
         // *distinct* picks (the 2,000-spot pool is deep enough to still fill).
         $shown = [];
 
+        // Situation- and context-aware title for the lead rail (deterministic
+        // template bank — no LLM): rain → weekend/evening → just-arrived → day.
+        [$leadTitle, $leadReason] = RailCopy::leadRail(
+            $context->now,
+            $rain,
+            $context->isWeekendWindow,
+            $context->isEvening,
+            CategoryAffinity::isNewArrival($profile),
+        );
+
         $rails = array_values(array_filter([
             $scored->isNotEmpty()
                 ? $this->rail(
                     'made_for_today',
-                    $rain ? "Made for your rainy {$weekday}" : "Made for your {$weekday}",
-                    'ranked for you',
+                    $leadTitle,
+                    $leadReason,
                     '/explore',
                     $this->pickCards($scored, 12, null, false, $rain, $shown),
                 )
