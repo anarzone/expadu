@@ -91,7 +91,7 @@ test('falls back to the wikipedia page image, surviving redirects and underscore
     expect($spot->photo_attribution)->toBe('Max · CC BY 4.0 · Wikimedia Commons');
 });
 
-test('leaves unlinked spots untouched', function () {
+test('leaves small unlinked spots untouched (no geosearch for point features)', function () {
     Http::fake();
     $spot = Spot::factory()->create([
         'name' => 'Tischtennisplatte',
@@ -104,5 +104,40 @@ test('leaves unlinked spots untouched', function () {
     $this->artisan('spots:fetch-photos')->assertSuccessful();
 
     expect($spot->refresh()->photo_url)->toBeNull();
-    Http::assertNothingSent();
+    Http::assertNothingSent(); // a court is not a geosearch category
+});
+
+test('geosearch backfills a large outdoor place with the nearest commons photo', function () {
+    $park = Spot::factory()->create([
+        'name' => 'Stadtwald',
+        'category' => 'park',
+        'lat' => 50.93,
+        'lng' => 6.89,
+        'tags' => ['leisure' => 'park'], // no wikidata/wikipedia link
+    ]);
+
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'geosearch')) {
+            // Nearest-first; index 1 is an SVG map (skip), 2 is the real photo.
+            return Http::response(['query' => ['pages' => [
+                '1' => ['title' => 'File:Köln Stadtwald Karte.svg', 'index' => 1, 'imageinfo' => [['mediatype' => 'DRAWING']]],
+                '2' => ['title' => 'File:Stadtwald Köln Teich.jpg', 'index' => 2, 'imageinfo' => [['mediatype' => 'BITMAP']]],
+                '3' => ['title' => 'File:Nachbarhaus.jpg', 'index' => 3, 'imageinfo' => [['mediatype' => 'BITMAP']]],
+            ]]]);
+        }
+
+        return Http::response(['query' => ['pages' => [
+            '9' => ['title' => 'File:Stadtwald Köln Teich.jpg', 'imageinfo' => [['extmetadata' => [
+                'Artist' => ['value' => 'Foto Fan'],
+                'LicenseShortName' => ['value' => 'CC BY-SA 3.0'],
+            ]]]],
+        ]]]);
+    });
+
+    $this->artisan('spots:fetch-photos')->assertSuccessful();
+
+    $park->refresh();
+    // Picks the nearest BITMAP, never the SVG map.
+    expect($park->photo_url)->toContain('Special:FilePath/Stadtwald%20K')
+        ->and($park->photo_attribution)->toBe('Foto Fan · CC BY-SA 3.0 · Wikimedia Commons');
 });

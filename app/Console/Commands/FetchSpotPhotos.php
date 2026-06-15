@@ -19,29 +19,91 @@ use Illuminate\Support\Facades\Http;
  */
 class FetchSpotPhotos extends Command
 {
-    protected $signature = 'spots:fetch-photos {--force : Refresh spots that already have a photo}';
+    protected $signature = 'spots:fetch-photos
+        {--force : Refresh spots that already have a photo}
+        {--geo=400 : Max Commons geosearch lookups for unlinked large outdoor places (0 = skip)}';
 
-    protected $description = 'Fetch place photos from Wikimedia Commons via wikidata/wikipedia OSM tags';
+    protected $description = 'Fetch place photos from Wikimedia Commons via wikidata/wikipedia OSM tags + geosearch';
 
     private const BATCH = 50; // both MediaWiki APIs cap batched ids/titles at 50
 
     /** Wikimedia's API policy 403s anonymous/default user agents. */
     private const USER_AGENT = 'Expadu/1.0 (https://expadu.com; contact@expadu.com)';
 
+    /**
+     * Large outdoor features where the nearest geotagged Commons photo is
+     * reliably OF the place. Small point features (playground, café, court)
+     * are excluded — a nearby photo there is as likely the building next door,
+     * and a wrong photo is worse than the category illustration fallback.
+     */
+    private const GEOSEARCH_CATEGORIES = ['park', 'viewpoint', 'lake'];
+
+    /** Tight radius so a hit is the place itself, not a neighbour. */
+    private const GEOSEARCH_RADIUS_M = 150;
+
     public function handle(): int
     {
-        $spots = Spot::query()
+        $linked = Spot::query()
             ->whereIn('category', SpotCategory::placesFines())
             ->whereNotNull('tags')
             ->when(! $this->option('force'), fn ($q) => $q->whereNull('photo_url'))
             ->get()
             ->filter(fn (Spot $spot) => ! empty($spot->tags['wikidata']) || ! empty($spot->tags['wikipedia']));
 
-        $this->info("Resolving photos for {$spots->count()} linked place(s)...");
+        $this->info("Resolving photos for {$linked->count()} linked place(s)...");
 
         // spot id => Commons file name
-        $files = $this->filesFromWikidata($spots)
-            + $this->filesFromWikipedia($spots);
+        $files = $this->filesFromWikidata($linked)
+            + $this->filesFromWikipedia($linked);
+
+        $saved = $this->save($linked, $files);
+        $this->info("Linked photos saved: {$saved}.");
+
+        $saved += $this->geosearchPass();
+
+        $this->info("Photos saved (total): {$saved}.");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Backfill large outdoor places that have no wikidata/wikipedia link by
+     * asking Commons for the nearest geotagged photo.
+     */
+    private function geosearchPass(): int
+    {
+        $limit = (int) $this->option('geo');
+        if ($limit <= 0) {
+            return 0;
+        }
+
+        $spots = Spot::query()
+            ->whereIn('category', self::GEOSEARCH_CATEGORIES)
+            ->when(! $this->option('force'), fn ($q) => $q->whereNull('photo_url'))
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+
+        $this->info("Geosearching photos for {$spots->count()} unlinked outdoor place(s)...");
+
+        $files = $this->filesFromGeoSearch($spots);
+
+        return $this->save($spots, $files);
+    }
+
+    /**
+     * Persist resolved files with their Commons attribution.
+     *
+     * @param  Collection<int, Spot>  $spots
+     * @param  array<int, string>  $files  spot id => Commons file name
+     */
+    private function save($spots, array $files): int
+    {
+        if ($files === []) {
+            return 0;
+        }
 
         $meta = $this->commonsMetadata(array_unique(array_values($files)));
 
@@ -60,9 +122,116 @@ class FetchSpotPhotos extends Command
             $saved++;
         }
 
-        $this->info("Photos saved: {$saved}.");
+        return $saved;
+    }
 
-        return self::SUCCESS;
+    /**
+     * Nearest geotagged Commons photo per spot (one geosearch call each — the
+     * API takes a single coordinate). Skips maps, diagrams, logos and vector
+     * files so a real photograph is chosen.
+     *
+     * @param  Collection<int, Spot>  $spots
+     * @return array<int, string> spot id => Commons file name
+     */
+    private function filesFromGeoSearch($spots): array
+    {
+        $files = [];
+        foreach ($spots as $spot) {
+            try {
+                $pages = Http::withUserAgent(self::USER_AGENT)->timeout(20)
+                    ->get('https://commons.wikimedia.org/w/api.php', [
+                        'action' => 'query',
+                        'generator' => 'geosearch',
+                        'ggsnamespace' => 6, // File:
+                        'ggscoord' => "{$spot->lat}|{$spot->lng}",
+                        'ggsradius' => self::GEOSEARCH_RADIUS_M,
+                        'ggslimit' => 12,
+                        'prop' => 'imageinfo',
+                        'iiprop' => 'mediatype',
+                        'format' => 'json',
+                    ])
+                    ->json('query.pages', []);
+            } catch (\Exception $e) {
+                $this->warn("  geosearch failed for spot {$spot->id}: {$e->getMessage()}");
+
+                continue;
+            }
+
+            $file = $this->pickGeoFile($pages ?? [], (string) $spot->name);
+            if ($file !== null) {
+                $files[$spot->id] = $file;
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * The nearest real photograph whose file name actually references the
+     * place. Proximity alone is unreliable — the closest geotagged file is
+     * often a neighbouring building, memorial or camera test — and a wrong
+     * photo is worse than the category illustration. So we require a name
+     * match (a distinctive word from the place name), trading recall for
+     * precision. Geosearch orders pages by distance via `index`.
+     *
+     * @param  array<int|string, array<string, mixed>>  $pages
+     */
+    private function pickGeoFile(array $pages, string $spotName): ?string
+    {
+        $tokens = $this->nameTokens($spotName);
+        if ($tokens === []) {
+            return null; // nothing distinctive to verify against → don't guess
+        }
+
+        $best = null;
+        $bestIndex = PHP_INT_MAX;
+
+        foreach ($pages as $page) {
+            $index = (int) ($page['index'] ?? PHP_INT_MAX);
+            if ($index >= $bestIndex) {
+                continue;
+            }
+            if (($page['imageinfo'][0]['mediatype'] ?? '') !== 'BITMAP') {
+                continue; // skip SVG maps, PDFs, audio
+            }
+            $title = mb_strtolower($page['title'] ?? '');
+            if (preg_match('/\b(map|karte|logo|icon|plan|diagram|seal|wappen|coat of arms|flag)\b/u', $title)) {
+                continue;
+            }
+
+            $matchesName = false;
+            foreach ($tokens as $token) {
+                if (str_contains($title, $token)) {
+                    $matchesName = true;
+                    break;
+                }
+            }
+            if (! $matchesName) {
+                continue;
+            }
+
+            $best = preg_replace('/^File:/', '', $page['title'] ?? '');
+            $bestIndex = $index;
+        }
+
+        return $best;
+    }
+
+    /**
+     * Distinctive words from a place name to verify a candidate photo against
+     * — long enough not to be generic, with bare type words dropped.
+     *
+     * @return list<string>
+     */
+    private function nameTokens(string $name): array
+    {
+        $stop = ['park', 'köln', 'koeln', 'cologne', 'platz', 'garten', 'der', 'die', 'das', 'und'];
+        $tokens = preg_split('/[^\p{L}]+/u', mb_strtolower($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_values(array_filter(
+            $tokens,
+            fn (string $token) => mb_strlen($token) >= 5 && ! in_array($token, $stop, true),
+        ));
     }
 
     /**

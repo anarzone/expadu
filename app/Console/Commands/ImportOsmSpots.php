@@ -227,7 +227,9 @@ class ImportOsmSpots extends Command
     private const KEPT_TAG_KEYS = [
         'surface', 'lit', 'covered', 'indoor', 'access', 'fee', 'opening_hours',
         'sport', 'hoops', 'wheelchair', 'drinking_water', 'barrier',
-        'wikidata', 'wikipedia',
+        // Photo links resolved later by spots:fetch-photos. wikimedia_commons
+        // and image are mapper-provided photos of the place itself.
+        'wikidata', 'wikipedia', 'wikimedia_commons', 'image',
     ];
 
     /**
