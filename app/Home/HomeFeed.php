@@ -100,7 +100,9 @@ class HomeFeed
             userId: $user->id,
             profile: $profile,
             now: $now,
-            rainExpected: (bool) ($forecast['rain_starts'] ?? false),
+            // Only frame the feed as "rainy" when the forecast genuinely loaded —
+            // broken/unavailable weather must never trigger it.
+            rainExpected: ($forecast['available'] ?? false) && (bool) ($forecast['rain_starts'] ?? false),
             rainSummary: $forecast['rain_summary'] ?? null,
             intentWeights: $this->intents->for($user),
             isWeekendWindow: ($now->isFriday() && $now->hour >= 15) || $now->isSaturday() || $now->isSunday(),

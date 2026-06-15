@@ -18,6 +18,7 @@ type Tile = {
 };
 
 type Weather = {
+    available?: boolean;
     temperature: number;
     emoji: string;
     condition: string;
@@ -401,7 +402,7 @@ export default function Dashboard() {
                         {getGreeting(auth?.user?.name)}
                     </h1>
                     <Deferred data="weather" fallback={null}>
-                        {weather ? (
+                        {weather && weather.available !== false ? (
                             <span className="mt-1 shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium">
                                 {weather.emoji}{' '}
                                 {Math.round(weather.temperature)}°C

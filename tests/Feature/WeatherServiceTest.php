@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\RefreshWeather;
 use App\Services\Weather\BrightSkyProvider;
 use App\Services\Weather\MetNoProvider;
 use App\Services\Weather\OpenMeteoProvider;
@@ -9,9 +10,13 @@ use App\Services\WeatherService;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Cache::flush();
+    // The request path queues a background refresh instead of fetching inline;
+    // fake the queue so it never runs the provider chain during a request.
+    Queue::fake();
 });
 
 /**
@@ -65,17 +70,45 @@ function samplePayload(float $temp = 12.0, string $icon = 'clear-day'): array
     ];
 }
 
+it('never blocks the page: the request path reads cache only and refreshes in the background', function () {
+    // A provider that records if it's called — the request path must NOT touch it.
+    $spy = new class implements WeatherProvider
+    {
+        public bool $called = false;
+
+        public function fetch(float $lat, float $lng): ?array
+        {
+            $this->called = true;
+
+            return null;
+        }
+
+        public function name(): string
+        {
+            return 'spy';
+        }
+    };
+
+    $weather = (new WeatherService([$spy]))->getCurrentWeather(50.9, 6.9);
+
+    expect($spy->called)->toBeFalse()              // the slow provider chain is never hit synchronously
+        ->and($weather['available'])->toBeFalse(); // …and it degrades honestly, not a fake 0°
+    Queue::assertPushed(RefreshWeather::class);     // the refresh is queued for the background worker
+});
+
 it('uses first successful provider', function () {
     $service = new WeatherService([
         fakeProvider('primary', samplePayload(14.5, 'clear-day')),
         fakeProvider('fallback', samplePayload(99.9, 'cloudy')),
     ]);
 
+    $service->fetchSync(50.9375, 6.9603); // warm the cache (the background path)
     $result = $service->getCurrentWeather(50.9375, 6.9603);
 
     expect($result['temperature'])->toBe(14)
         ->and($result['icon'])->toBe('clear-day')
-        ->and($result['condition'])->toBe('Clear sky');
+        ->and($result['condition'])->toBe('Clear sky')
+        ->and($result['available'])->toBeTrue();
 });
 
 it('falls back to next provider when primary returns null', function () {
@@ -84,6 +117,7 @@ it('falls back to next provider when primary returns null', function () {
         fakeProvider('fallback', samplePayload(8.0, 'rain')),
     ]);
 
+    $service->fetchSync(50.9375, 6.9603);
     $result = $service->getCurrentWeather(50.9375, 6.9603);
 
     expect($result['temperature'])->toBe(8)
@@ -91,16 +125,17 @@ it('falls back to next provider when primary returns null', function () {
         ->and($result['condition'])->toBe('Rain');
 });
 
-it('returns unavailable placeholder when all providers fail', function () {
+it('returns unavailable placeholder when there is no cached data', function () {
     $service = new WeatherService([
         fakeProvider('primary', null),
         fakeProvider('fallback', null),
     ]);
 
+    // Request path on a cold cache: never fetches, returns the honest placeholder.
     $result = $service->getCurrentWeather(50.9375, 6.9603);
 
     expect($result['condition'])->toBe('Unavailable')
-        ->and($result['temperature'])->toBe(0);
+        ->and($result['available'])->toBeFalse();
 });
 
 it('cools down a failing provider so it is skipped on the next call', function () {
@@ -122,8 +157,8 @@ it('cools down a failing provider so it is skipped on the next call', function (
     };
 
     $service = new WeatherService([$provider]);
-    $service->getCurrentWeather(50.9, 6.9);
-    $service->getCurrentWeather(50.9, 6.9);
+    $service->fetchSync(50.9, 6.9);
+    $service->fetchSync(50.9, 6.9);
 
     // First call hits the provider and blacklists it; the second call skips it.
     // This is the intended perf win — we don't pay HTTP cost on a known-failing
@@ -131,7 +166,7 @@ it('cools down a failing provider so it is skipped on the next call', function (
     expect($provider->calls)->toBe(1);
 });
 
-it('caches successful responses', function () {
+it('caches successful responses so the request path never re-fetches', function () {
     $provider = new class implements WeatherProvider
     {
         public int $calls = 0;
@@ -162,7 +197,8 @@ it('caches successful responses', function () {
     };
 
     $service = new WeatherService([$provider]);
-    $service->getCurrentWeather(50.9, 6.9);
+    $service->fetchSync(50.9, 6.9);          // one provider hit, warms the cache
+    $service->getCurrentWeather(50.9, 6.9);  // served from cache, no provider hit
     $service->getCurrentWeather(50.9, 6.9);
 
     expect($provider->calls)->toBe(1);
@@ -173,6 +209,7 @@ it('passes through feels_like when provider supplies it', function () {
     $payload['current']['feels_like'] = 18.4;
 
     $service = new WeatherService([fakeProvider('test', $payload)]);
+    $service->fetchSync(50.9, 6.9);
     $result = $service->getCurrentWeather(50.9, 6.9);
 
     expect($result['feels_like'])->toBe(18);
@@ -186,6 +223,7 @@ it('returns null feels_like when provider does not supply it', function () {
     $payload['current']['wind_speed'] = 30.0;
 
     $service = new WeatherService([fakeProvider('test', $payload)]);
+    $service->fetchSync(50.9, 6.9);
     $result = $service->getCurrentWeather(50.9, 6.9);
 
     expect($result['feels_like'])->toBeNull();
@@ -282,9 +320,11 @@ it('detects rain start from hourly forecast', function () {
     ];
 
     $service = new WeatherService([fakeProvider('test', $payload)]);
+    $service->fetchSync(50.9, 6.9);
     $forecast = $service->getForecast(50.9, 6.9);
 
-    expect($forecast['rain_starts'])->toBe(str_pad((string) $rainHour, 2, '0', STR_PAD_LEFT).':00');
+    expect($forecast['rain_starts'])->toBe(str_pad((string) $rainHour, 2, '0', STR_PAD_LEFT).':00')
+        ->and($forecast['available'])->toBeTrue();
 });
 
 it('brightsky provider uses station observations for current when available', function () {
@@ -445,6 +485,7 @@ it('returns wind_gust key not wind_gusts in getCurrentWeather', function () {
     $payload['current']['wind_gust'] = 65.0;
 
     $service = new WeatherService([fakeProvider('test', $payload)]);
+    $service->fetchSync(50.9, 6.9);
     $result = $service->getCurrentWeather(50.9, 6.9);
 
     expect($result)->toHaveKey('wind_gust')

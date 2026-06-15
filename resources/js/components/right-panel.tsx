@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 type WeatherData = {
+    available?: boolean;
     temperature: number;
     feels_like?: number;
     emoji: string;
@@ -79,6 +80,22 @@ function WeatherWidget({
     weather?: WeatherData;
     forecast?: ForecastData;
 }) {
+    // Weather loads async and can be unavailable — never show a misleading 0°.
+    if (!weather || weather.available === false) {
+        return (
+            <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                    <span className="text-[13px] font-bold">
+                        Weather · Cologne
+                    </span>
+                </div>
+                <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">
+                    🌥️ Weather unavailable right now — check back shortly.
+                </div>
+            </div>
+        );
+    }
+
     const temp = weather?.temperature ?? 0;
     const feelsLike = weather?.feels_like ?? temp;
     const emoji = weather?.emoji ?? '⛅';

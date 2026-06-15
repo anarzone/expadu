@@ -58,13 +58,16 @@ class WeatherService
         $data = $this->fetch($lat, $lng);
         $current = $data['current'] ?? null;
 
-        if (! $current) {
+        // No data, or a partial reading missing the temperature, is treated as
+        // unavailable — never render a misleading 0°.
+        if (! $current || ($current['temperature'] ?? null) === null) {
             return $this->unavailableWeather();
         }
 
         $icon = $current['icon'];
 
         return [
+            'available' => true,
             'temperature' => (int) floor($current['temperature']),
             'feels_like' => $current['feels_like'] !== null
                 ? (int) floor($current['feels_like'])
@@ -143,6 +146,7 @@ class WeatherService
         $rainSummary = $this->buildRainSummary($nextHours, $isRainingNow);
 
         return [
+            'available' => $current['available'] ?? false,
             'rain_starts' => $isRainingNow && ! $rainStart ? 'now' : $rainStart,
             'bike_score' => $bikeScore,
             'rain_summary' => $rainSummary,
@@ -167,20 +171,20 @@ class WeatherService
             return $fresh;
         }
 
-        $stale = Cache::get($staleKey);
-        if (is_array($stale) && ! empty($stale)) {
-            // Return stale immediately, refresh asynchronously so the next
-            // request gets fresh data without paying provider-chain cost.
-            try {
-                RefreshWeather::dispatch($lat, $lng);
-            } catch (Throwable $e) {
-                Log::warning('Weather refresh dispatch failed, returning stale', ['err' => $e->getMessage()]);
-            }
-
-            return $stale;
+        // Weather must NEVER block the page. The request path only reads cache
+        // and queues a background refresh — it never runs the slow, network-
+        // bound provider chain synchronously. A cold cache returns empty, so
+        // the UI shows an honest "unavailable" until the queued refresh lands
+        // (fetchSync runs only inside the RefreshWeather job).
+        try {
+            RefreshWeather::dispatch($lat, $lng);
+        } catch (Throwable $e) {
+            Log::warning('Weather refresh dispatch failed', ['err' => $e->getMessage()]);
         }
 
-        return $this->fetchSync($lat, $lng);
+        $stale = Cache::get($staleKey);
+
+        return is_array($stale) && ! empty($stale) ? $stale : [];
     }
 
     /**
@@ -231,6 +235,7 @@ class WeatherService
     protected function unavailableWeather(): array
     {
         return [
+            'available' => false,
             'temperature' => 0,
             'feels_like' => null,
             'icon' => 'cloudy',

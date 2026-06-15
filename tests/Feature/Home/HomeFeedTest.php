@@ -170,3 +170,25 @@ test('the kids chip fires for a user with a child_born_at attribute', function (
 
     expect($chips)->toContain('🧸 Something with the kids');
 });
+
+test('broken weather never frames the feed as rainy', function () {
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'eu_employee',
+        'is_eu' => true,
+        'veedel' => 'Ehrenfeld',
+    ]);
+
+    $this->mock(WeatherService::class, function ($m) {
+        // rain_starts is set, but the forecast didn't load — it must not count as rain.
+        $m->shouldReceive('getForecast')->andReturn([
+            'available' => false,
+            'rain_starts' => 'now',
+            'rain_summary' => null,
+        ]);
+        $m->shouldReceive('getCurrentWeather')->andReturn(['available' => false]);
+    });
+
+    $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
+
+    expect($chips)->not->toContain('☔ Rainy-day picks');
+});
