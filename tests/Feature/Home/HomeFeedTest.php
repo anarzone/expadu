@@ -4,7 +4,9 @@ use App\Composer\IntentWeights;
 use App\Home\HomeFeed;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Models\Task;
 use App\Models\User;
+use App\Models\UserTask;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +77,85 @@ test('a distant event stays a rail and earns no urgent tile', function () {
     $tonight = collect($feed->rails($user))->firstWhere('key', 'tonight');
     expect($tonight)->not->toBeNull();
     expect(collect($tonight['cards'])->pluck('name'))->toContain('Evening Jazz');
+});
+
+test('only still-applicable open tasks reach the urgent tile and paperwork rail', function () {
+    // Settled resident; the driving-licence question was never answered, so a
+    // conditional task gated on license_country is now Unknown for them.
+    $user = User::factory()->onboarded()->create([
+        'veedel' => 'Ehrenfeld',
+        'situation' => 'eu_employee',
+        'is_eu' => true,
+        'arrival_date' => now()->subYears(2),
+        'profile_attributes' => ['housing_status' => 'long_term'],
+    ]);
+
+    // Both are freshly overdue (~30 days) against a ~730-day-old arrival, so the
+    // applicable one earns a real tile — not softened away by the lapsed cap.
+    $applies = Task::factory()->create([
+        'key' => 'shared.test_applies',
+        'title' => 'Definitely Applies',
+        'is_published' => true,
+        'applies_if' => [['housing_status' => ['long_term']]],
+        'deadline_type' => 'days_since_arrival',
+        'deadline_days' => 700,
+    ]);
+    $unknown = Task::factory()->create([
+        'key' => 'shared.test_unknown',
+        'title' => 'Hinges On Unanswered',
+        'is_published' => true,
+        'applies_if' => [['license_country' => ['other']]],
+        'deadline_type' => 'days_since_arrival',
+        'deadline_days' => 700,
+    ]);
+
+    // Both already materialised as open rows — PathGenerator never deletes them.
+    UserTask::create(['user_id' => $user->id, 'task_id' => $applies->id]);
+    UserTask::create(['user_id' => $user->id, 'task_id' => $unknown->id]);
+
+    $feed = app(HomeFeed::class);
+    $deadlineTitles = collect($feed->tiles($user))->where('type', 'bureaucracy_deadline')->pluck('title');
+    $paperwork = collect($feed->rails($user))->firstWhere('key', 'paperwork');
+    $paperworkNames = $paperwork ? collect($paperwork['cards'])->pluck('name') : collect();
+
+    // The applicable task still surfaces; the now-Unknown one leaks into neither.
+    expect($deadlineTitles)->toContain('Definitely Applies')->not->toContain('Hinges On Unanswered');
+    expect($paperworkNames)->toContain('Definitely Applies')->not->toContain('Hinges On Unanswered');
+});
+
+test('a long-lapsed deadline drops out of the urgent tiles while a fresh overdue one stays', function () {
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'eu_employee',
+        'is_eu' => true,
+        'arrival_date' => now()->subYears(2),
+        'profile_attributes' => ['housing_status' => 'long_term'],
+    ]);
+
+    // Both applicable + overdue against a ~730-day-old arrival: one ~30 days
+    // past (fresh), one ~1.5 years past (lapsed).
+    $fresh = Task::factory()->create([
+        'title' => 'Fresh Overdue', 'key' => 'x.fresh', 'is_published' => true,
+        'applies_if' => [['housing_status' => ['long_term']]],
+        'deadline_type' => 'days_since_arrival', 'deadline_days' => 700,
+    ]);
+    $lapsed = Task::factory()->create([
+        'title' => 'Long Lapsed', 'key' => 'x.lapsed', 'is_published' => true,
+        'applies_if' => [['housing_status' => ['long_term']]],
+        'deadline_type' => 'days_since_arrival', 'deadline_days' => 180,
+    ]);
+    UserTask::create(['user_id' => $user->id, 'task_id' => $fresh->id]);
+    UserTask::create(['user_id' => $user->id, 'task_id' => $lapsed->id]);
+
+    // The status caps: fresh stays a sharp countdown, lapsed softens (no number).
+    $status = fn ($t) => $user->userTasks()->where('task_id', $t->id)->first()->deadline_status;
+    expect($status($fresh)['urgency'])->toBe('overdue')
+        ->and($status($lapsed)['urgency'])->toBe('lapsed')
+        ->and($status($lapsed)['label'])->not->toContain('days');
+
+    // Only the fresh miss reaches the urgent "Right now" tiles.
+    $titles = collect(app(HomeFeed::class)->tiles($user))
+        ->where('type', 'bureaucracy_deadline')->pluck('title');
+    expect($titles)->toContain('Fresh Overdue')->not->toContain('Long Lapsed');
 });
 
 test('the kids chip fires for a user with a child_born_at attribute', function () {

@@ -186,6 +186,9 @@ class ProfileEngine
             'found_job_at' => $stored['found_job_at'] ?? null,
             'permit_held_since' => $stored['permit_held_since'] ?? null,
             'visa_expires_at' => $stored['visa_expires_at'] ?? null,
+            // Set by the one-tap "I'm settled" action — retires arrival basics,
+            // the PR-journey content, and the "qualify for PR" hint.
+            'settled_at' => $stored['settled_at'] ?? null,
             'arrival_date' => $user->arrival_date?->toDateString(),
             'veedel' => $user->veedel,
         ];

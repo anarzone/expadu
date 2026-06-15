@@ -15,12 +15,28 @@ use App\Services\BuergeramtService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class BureaucracyController extends Controller
 {
+    /**
+     * The "I'm settled" bulk action. Arrival basics — matched by key SUFFIX so
+     * every branch variant (nee.anmeldung, core.anmeldung, stu.anmeldung …) is
+     * covered — are marked Done; the journey-to-permanent-residency content
+     * that's wrong once you hold PR is marked not-applicable. Everything else
+     * (Schufa, church tax, Haftpflicht, the annual tax return) is left as
+     * evergreen reference.
+     *
+     * @var list<string>
+     */
+    private const ARRIVAL_BASICS = ['anmeldung', 'steuer_id', 'health_insurance', 'bank_account', 'rundfunkbeitrag'];
+
+    /** @var list<string> Journey-to-PR content retired once the user holds permanent residency. */
+    private const PR_JOURNEY_KEYS = ['shared.long_game', 'bc.ne_fast_track', 'shared.fiktionsbescheinigung'];
+
     /**
      * The bureaucracy page payload. The path is recomputed from the profile
      * attribute bag on every load (idempotent); cards land in lanes the
@@ -86,6 +102,15 @@ class BureaucracyController extends Controller
 
         $pathOptions = $profileEngine->pathOptionsFor($user);
 
+        $settled = ($profile->attributes['settled_at'] ?? null) !== null;
+        // Detect-and-suggest: offer the one-tap "I'm settled" to long-term
+        // residents who still carry open arrival basics. Never auto-applied.
+        $settledSuggestion = ! $settled
+            && ($profile->daysSinceArrival() ?? 0) > 365
+            && $userTasks->contains(fn (UserTask $ut) => ($ut->status ?? TaskStatus::NotStarted) !== TaskStatus::Done
+                && $ut->is_applicable
+                && in_array(Str::afterLast($ut->task->key ?? '', '.'), self::ARRIVAL_BASICS, true));
+
         $slots = $buergeramtService->checkSlots();
 
         return Inertia::render('bureaucracy', [
@@ -101,6 +126,8 @@ class BureaucracyController extends Controller
             'teasers' => $generator->teasers($profile),
             'phases' => $this->phases($profile, $buckets['active']->count()),
             'eligibility' => $this->permanentResidencyHint($profile),
+            'settled' => $settled,
+            'settledSuggestion' => $settledSuggestion,
             // Which life events the user has recorded — drives the info-card
             // buttons ("We just had a baby" hides once recorded).
             'lifeEvents' => collect(ProfileEngine::DATE_ATTRIBUTES)
@@ -144,6 +171,43 @@ class BureaucracyController extends Controller
     }
 
     /**
+     * One-tap "I'm already settled here". Marks the arrival basics Done and
+     * retires the journey-to-permanent-residency content for residents who
+     * handled all this years ago — a fast, reversible bulk skip. Every task
+     * stays re-openable from its card; nothing is hidden silently.
+     */
+    public function settle(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $user->userTasks()->with('task')->get()->each(function (UserTask $userTask) {
+            $key = $userTask->task?->key;
+            if ($key === null) {
+                return;
+            }
+
+            if (in_array(Str::afterLast($key, '.'), self::ARRIVAL_BASICS, true)) {
+                if (($userTask->status ?? TaskStatus::NotStarted) !== TaskStatus::Done) {
+                    $userTask->markDone();
+                }
+            } elseif (in_array($key, self::PR_JOURNEY_KEYS, true)) {
+                $userTask->update(['is_applicable' => false]);
+            }
+        });
+
+        // Record the declaration: the suggestion banner won't return and the
+        // "you may qualify for permanent residency" hint stays suppressed.
+        $user->update([
+            'profile_attributes' => [
+                ...(array) ($user->profile_attributes ?? []),
+                'settled_at' => now()->toDateString(),
+            ],
+        ]);
+
+        return back();
+    }
+
+    /**
      * The presentational roadmap: phases are computed from dates, the
      * engine itself doesn't know them.
      *
@@ -155,6 +219,10 @@ class BureaucracyController extends Controller
 
         $current = match (true) {
             $days === null => 'before',
+            // Declaring "I'm settled" (holding permanent residency) reaches the
+            // final milestone — otherwise 'permanent' is never the current phase
+            // and dangles ahead forever, even once you already hold it.
+            ($profile->attributes['settled_at'] ?? null) !== null => 'permanent',
             $days <= 14 => 'first_14',
             $days <= 90 => 'first_90',
             default => 'settled',
@@ -169,6 +237,7 @@ class BureaucracyController extends Controller
             'first_90' => $activeCount > 0
                 ? "You're in your first 90 days — {$matterNow}."
                 : "You're in your first 90 days — nothing is on fire.",
+            'permanent' => 'You hold permanent residency — the renewal treadmill is over. Citizenship is the optional next chapter.',
             default => $activeCount > 0
                 ? "Settled — {$activeCount} loose end".($activeCount === 1 ? '' : 's').' to tie up.'
                 : 'Settled. Renewals and the long game are tracked for you.',
@@ -201,6 +270,12 @@ class BureaucracyController extends Controller
      */
     private function permanentResidencyHint(Profile $profile): ?array
     {
+        // Already declared settled (and typically already holding PR) — don't
+        // nudge them toward qualifying for what they have.
+        if (($profile->attributes['settled_at'] ?? null) !== null) {
+            return null;
+        }
+
         $heldSince = $profile->attributes['permit_held_since'] ?? null;
         if ($heldSince === null || $profile->isEu) {
             return null;
@@ -370,6 +445,9 @@ class BureaucracyController extends Controller
         }
 
         return [match (true) {
+            // Months past the deadline: the window has closed — soften from a
+            // precise "overdue by N days" countdown to a lapsed loose end.
+            $daysRemaining < -UserTask::STALE_OVERDUE_DAYS => 'lapsed',
             $daysRemaining < 0 => 'overdue',
             $daysRemaining <= 3 => 'critical',
             $daysRemaining <= 7 => 'urgent',
@@ -429,12 +507,15 @@ class BureaucracyController extends Controller
      */
     private function bucket(UserTask $userTask, string $tier): string
     {
+        // An explicit opt-out wins over everything — a "doesn't apply to me"
+        // card belongs in Not applicable, even when it's an info card (e.g. the
+        // PR-journey notes a settled resident retires via "I'm settled").
+        if (! $userTask->is_applicable) {
+            return 'not_applicable';
+        }
         // Info cards are reference content — no lifecycle, own lane.
         if ($userTask->task->isInfo()) {
             return 'info';
-        }
-        if (! $userTask->is_applicable) {
-            return 'not_applicable';
         }
         if (($userTask->status ?? TaskStatus::NotStarted) === TaskStatus::Done) {
             return 'completed';
@@ -442,7 +523,7 @@ class BureaucracyController extends Controller
 
         // Paused (move-in pending) stays in the attention lane — it's the
         // user's primary next thing even without a ticking clock.
-        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'paused'], true)
+        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'paused', 'lapsed'], true)
             ? 'active'
             : 'upcoming';
     }

@@ -45,6 +45,7 @@ export type FramingBTask = {
     days_remaining: number | null;
     deadline_tier:
         | 'overdue'
+        | 'lapsed'
         | 'critical'
         | 'urgent'
         | 'approaching'
@@ -84,6 +85,7 @@ const TONE_CLASSES: Record<FramingBTask['status_tone'], string> = {
 
 const TIER_LABELS: Record<FramingBTask['deadline_tier'], string> = {
     overdue: 'Overdue',
+    lapsed: 'Long overdue',
     critical: 'Critical',
     urgent: 'Urgent',
     approaching: 'Approaching',
@@ -96,6 +98,7 @@ const TIER_LABELS: Record<FramingBTask['deadline_tier'], string> = {
 const TIER_CLASSES: Record<FramingBTask['deadline_tier'], string> = {
     overdue:
         'bg-[#FDE8E6] text-[#C4271A] dark:bg-[#C4271A]/25 dark:text-[#FF7D70]',
+    lapsed: 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
     critical:
         'bg-[#FDE8E6] text-[#C4271A] dark:bg-[#C4271A]/25 dark:text-[#FF7D70]',
     urgent: 'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
@@ -127,6 +130,10 @@ function deadlineCopy(task: FramingBTask): string | null {
         return task.is_recurring && task.next_due_at
             ? `Recurs ${new Date(task.next_due_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
             : 'Done';
+    }
+
+    if (task.deadline_tier === 'lapsed') {
+        return 'Overdue — well past the deadline';
     }
 
     if (task.days_remaining === null) {

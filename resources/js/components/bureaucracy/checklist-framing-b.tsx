@@ -83,6 +83,7 @@ export function ChecklistFramingB({
     phases = null,
     lifeEvents = {},
     eligibility = null,
+    settledSuggestion = false,
     focusTaskId = null,
     onTakeMeThere,
 }: {
@@ -94,6 +95,7 @@ export function ChecklistFramingB({
     phases?: Phases | null;
     lifeEvents?: Record<string, boolean>;
     eligibility?: Eligibility | null;
+    settledSuggestion?: boolean;
     focusTaskId?: number | null;
     onTakeMeThere?: (office: TaskOffice, arriveBy?: string) => void;
 }) {
@@ -218,6 +220,9 @@ export function ChecklistFramingB({
                     <span>{progress.total - progress.done} remaining</span>
                 </div>
             </div>
+
+            {/* Detect-and-suggest: long-settled residents clear the basics in one tap */}
+            {settledSuggestion && <SettledBanner />}
 
             {/* One-time path refinement */}
             {path && path.options.length > 0 && <PathRefinement path={path} />}
@@ -563,6 +568,64 @@ function PathRefinement({ path }: { path: PathProp }) {
                 anytime and your checklist adapts. Tasks you've touched are
                 kept.
             </p>
+        </div>
+    );
+}
+
+/**
+ * Detect-and-suggest banner: offered to long-settled residents who still carry
+ * the arrival checklist. One tap marks the basics done and retires the
+ * working-toward-PR steps — transparent (it lists what it does) and reversible
+ * (every task stays re-openable). Dismissible for the session.
+ */
+function SettledBanner() {
+    const [busy, setBusy] = useState(false);
+    const [dismissed, setDismissed] = useState(false);
+
+    if (dismissed) {
+        return null;
+    }
+
+    function settle() {
+        if (busy) {
+            return;
+        }
+
+        setBusy(true);
+        router.post(
+            '/bureaucracy/settle',
+            {},
+            { preserveScroll: true, onFinish: () => setBusy(false) },
+        );
+    }
+
+    return (
+        <div className="rounded-[14px] border border-[#1A4CD4] bg-[#EBF0FD] p-4 dark:border-[#5B8DEF]/60 dark:bg-[#1A4CD4]/15">
+            <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
+                🏡 Already settled in Germany?
+            </div>
+            <p className="mt-0.5 mb-3 text-xs text-[#1A4CD4] dark:text-[#8FAAF0]">
+                You've been here a while. If you've handled the basics, we'll
+                mark Anmeldung, Steuer-ID, bank account, health insurance and
+                the Rundfunkbeitrag as done — and hide the steps for working
+                toward permanent residency. You can re-open anything later.
+            </p>
+            <div className="flex flex-wrap gap-2">
+                <button
+                    onClick={settle}
+                    disabled={busy}
+                    className={`cursor-pointer rounded-full border-[1.5px] border-[#1A4CD4] bg-[#1A4CD4] px-3.5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
+                >
+                    Yes, I'm settled
+                </button>
+                <button
+                    onClick={() => setDismissed(true)}
+                    disabled={busy}
+                    className="cursor-pointer rounded-full border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                >
+                    Not yet
+                </button>
+            </div>
         </div>
     );
 }

@@ -165,6 +165,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
         Route::post('bureaucracy/path', [BureaucracyController::class, 'setPath'])->name('bureaucracy.set-path');
+        Route::post('bureaucracy/settle', [BureaucracyController::class, 'settle'])->name('bureaucracy.settle');
         Route::post('profile/attributes', [ProfileAttributeController::class, 'store'])->name('profile.attributes');
         Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
         Route::post('tasks/{task}/report-outdated', [TaskController::class, 'reportOutdated'])->name('tasks.report-outdated');

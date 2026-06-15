@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTracker } from '@/hooks/use-tracker';
 
 type JourneyLeg = {
     mode: string;
@@ -49,6 +50,9 @@ export type Destination = {
     address?: string;
     /** ISO start time when navigating to a timed event. */
     arriveBy?: string;
+    /** Category + Veedel let a post-visit 👍/👎 tune intent weights. */
+    category?: string;
+    veedel?: string | null;
 };
 
 const CSRF = () =>
@@ -117,7 +121,26 @@ export function TakeMeThereSheet({
         lng: number;
     } | null>(null);
     const [confirming, setConfirming] = useState(false);
+    const [rated, setRated] = useState<'up' | 'down' | null>(null);
     const isMobile = useIsMobile();
+    const { track } = useTracker();
+
+    // Post-visit 👍/👎 — an explicit preference signal that tunes which
+    // categories × Veedels the home feed and composer surface next.
+    function rate(value: 'up' | 'down') {
+        if (rated) {
+            return;
+        }
+
+        setRated(value);
+        track(
+            value === 'up' ? 'post_trip_thumbs_up' : 'post_trip_thumbs_down',
+            {
+                category: destination.category,
+                veedel: destination.veedel ?? null,
+            },
+        );
+    }
 
     useEffect(() => {
         let cancelled = false;
@@ -203,6 +226,41 @@ export function TakeMeThereSheet({
                     )}
                 </div>
             </div>
+
+            {/* Post-visit rating — an explicit signal that tunes future suggestions */}
+            {destination.category && (
+                <div className="mb-4 flex items-center justify-between gap-2 rounded-[12px] border border-border bg-card px-3.5 py-2.5">
+                    {rated ? (
+                        <span className="text-[13px] font-medium text-muted-foreground">
+                            {rated === 'up'
+                                ? '👍 Thanks — more like this.'
+                                : '👎 Got it — fewer like this.'}
+                        </span>
+                    ) : (
+                        <>
+                            <span className="text-[13px] text-muted-foreground">
+                                Been here? Tune your suggestions
+                            </span>
+                            <span className="flex shrink-0 gap-1.5">
+                                <button
+                                    onClick={() => rate('up')}
+                                    aria-label="Thumbs up — more like this"
+                                    className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-base transition-colors hover:border-primary hover:bg-accent-soft"
+                                >
+                                    👍
+                                </button>
+                                <button
+                                    onClick={() => rate('down')}
+                                    aria-label="Thumbs down — fewer like this"
+                                    className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-base transition-colors hover:border-primary hover:bg-accent-soft"
+                                >
+                                    👎
+                                </button>
+                            </span>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* Timed destination — what the journey must beat */}
             {destination.arriveBy && (

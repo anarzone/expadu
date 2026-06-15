@@ -50,7 +50,14 @@ function deadlineTag(days: number | null): string {
 export function BureaucracyRightPanel({ tasks }: { tasks: Buckets }) {
     // The user's real next deadlines — closest first, max three.
     const upcoming = [...(tasks?.active ?? []), ...(tasks?.upcoming ?? [])]
-        .filter((t) => t.days_remaining !== null && t.status !== 'done')
+        .filter(
+            (t) =>
+                t.days_remaining !== null &&
+                t.status !== 'done' &&
+                // A months-lapsed deadline isn't a "next" deadline — it stays on
+                // the checklist, not in this panel.
+                t.deadline_tier !== 'lapsed',
+        )
         .sort((a, b) => (a.days_remaining ?? 0) - (b.days_remaining ?? 0))
         .slice(0, 3);
 

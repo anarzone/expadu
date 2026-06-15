@@ -209,6 +209,7 @@ export default function Bureaucracy() {
         phases,
         lifeEvents,
         eligibility,
+        settledSuggestion,
         progress,
         bookingServices: _bookingServices,
     } = usePage<{
@@ -220,6 +221,7 @@ export default function Bureaucracy() {
         phases: Phases | null;
         lifeEvents: Record<string, boolean>;
         eligibility: Eligibility | null;
+        settledSuggestion?: boolean;
         progress: { done: number; total: number; percent: number };
         bookingServices?: BookingService[];
     }>().props;
@@ -328,6 +330,7 @@ export default function Bureaucracy() {
                         phases={phases ?? null}
                         lifeEvents={lifeEvents ?? {}}
                         eligibility={eligibility ?? null}
+                        settledSuggestion={settledSuggestion ?? false}
                         focusTaskId={focusTaskId}
                         onTakeMeThere={takeMeThereToOffice}
                     />

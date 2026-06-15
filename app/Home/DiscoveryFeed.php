@@ -231,6 +231,8 @@ class DiscoveryFeed
                 'kind' => 'spot',
                 'href' => null,
                 'reason' => $reason,
+                'photo_url' => $x['spot']->photo_url,
+                'photo_attribution' => $x['spot']->photo_attribution,
             ];
         }
 
@@ -331,7 +333,7 @@ class DiscoveryFeed
         // a model collection is fragile across cache drivers (it can come back
         // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
         $rows = Cache::remember(self::SCAN_CACHE_KEY, self::SCAN_TTL, fn () => Spot::query()
-            ->select('id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating')
+            ->select('id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution')
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->orderBy('id')

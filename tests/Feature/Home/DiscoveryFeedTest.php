@@ -158,6 +158,27 @@ test('a spot never repeats across rails', function () {
     expect($rails->pluck('key'))->toContain('made_for_today', 'with_kids', 'around_home');
 });
 
+test('a spot photo and its attribution flow through to the rail card', function () {
+    $user = feedUser();
+    Spot::factory()->create([
+        'name' => 'Rheinpark',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.95,
+        'lng' => 6.92,
+        'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Test.jpg?width=800',
+        'photo_attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+
+    $card = collect(app(DiscoveryFeed::class)->for(homeContext($user)))
+        ->flatMap(fn ($r) => $r['cards'])
+        ->firstWhere('name', 'Rheinpark');
+
+    expect($card)->not->toBeNull()
+        ->and($card['photo_url'])->toContain('Special:FilePath')
+        ->and($card['photo_attribution'])->toContain('CC BY-SA 4.0');
+});
+
 test('a just-arrived user gets a get-oriented rail of landmarks', function () {
     $user = User::factory()->onboarded()->create([
         'situation' => 'eu_employee',

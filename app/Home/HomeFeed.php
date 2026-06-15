@@ -2,13 +2,17 @@
 
 namespace App\Home;
 
+use App\Bureaucracy\PathGenerator;
 use App\Composer\IntentWeights;
 use App\Models\Event;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Profile\Applicability;
+use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 
 /**
  * Orchestrates the home feed: builds one shared HomeContext and hands it to the
@@ -36,6 +40,7 @@ class HomeFeed
         private readonly TileComposer $tileComposer,
         private readonly DiscoveryFeed $discovery,
         private readonly PromptSuggestions $suggestions,
+        private readonly PathGenerator $paths,
     ) {}
 
     /**
@@ -89,22 +94,18 @@ class HomeFeed
 
         $now = CarbonImmutable::now('Europe/Berlin');
         $forecast = $this->safeForecast();
+        $profile = $this->profiles->build($user);
 
         return $this->context = new HomeContext(
             userId: $user->id,
-            profile: $this->profiles->build($user),
+            profile: $profile,
             now: $now,
             rainExpected: (bool) ($forecast['rain_starts'] ?? false),
             rainSummary: $forecast['rain_summary'] ?? null,
             intentWeights: $this->intents->for($user),
             isWeekendWindow: ($now->isFriday() && $now->hour >= 15) || $now->isSaturday() || $now->isSunday(),
             isEvening: $now->hour >= 17,
-            openTasks: UserTask::query()
-                ->where('user_id', $user->id)
-                ->open()
-                ->notSnoozed()
-                ->with('task')
-                ->get(),
+            openTasks: $this->applicableOpenTasks($user, $profile),
             tonightEvents: Event::query()
                 ->whereDate('starts_at', today())
                 ->where('starts_at', '>', now())
@@ -125,5 +126,28 @@ class HomeFeed
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    /**
+     * Open tasks that DEFINITELY still apply. A user_task is never deleted on
+     * recompute (progress is preserved), so a task whose applies_if now hinges
+     * on an unanswered attribute (Unknown — a bureaucracy-page teaser) or no
+     * longer matches the profile (No — "no longer relevant") can linger as an
+     * open row. Only Yes reaches the urgent tile + paperwork rail, so a stale
+     * conditional task can't sit "overdue by N days" on the home screen.
+     *
+     * @return Collection<int, UserTask>
+     */
+    private function applicableOpenTasks(User $user, Profile $profile): Collection
+    {
+        return UserTask::query()
+            ->where('user_id', $user->id)
+            ->open()
+            ->notSnoozed()
+            ->with('task')
+            ->get()
+            ->filter(fn (UserTask $ut) => $ut->task !== null
+                && $this->paths->applicability($ut->task, $profile) === Applicability::Yes)
+            ->values();
     }
 }

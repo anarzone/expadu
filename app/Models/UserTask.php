@@ -18,6 +18,15 @@ class UserTask extends Model
     use HasFactory;
 
     /**
+     * A deadline only weeks past is a fresh, chase-it miss; once it's months
+     * past, the precise "overdue by N days" countdown is noise (and the rule
+     * itself has often changed — e.g. a foreign licence past its 6-month
+     * conversion window). Beyond this many days overdue a deadline is "lapsed":
+     * softened and dropped out of the urgent hero, but still a visible loose end.
+     */
+    public const STALE_OVERDUE_DAYS = 60;
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -86,10 +95,25 @@ class UserTask extends Model
         $daysRemaining = (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false);
 
         if ($daysRemaining < 0) {
+            $daysOverdue = abs($daysRemaining);
+
+            // Lapsed: months past the deadline — the window has clearly closed.
+            // Stop the alarming countdown and drop it out of the urgent hero
+            // (TileComposer only tiles overdue/critical/urgent); it stays on the
+            // checklist as a loose end, just no longer "right now".
+            if ($daysOverdue > self::STALE_OVERDUE_DAYS) {
+                return [
+                    'days_remaining' => $daysRemaining,
+                    'urgency' => 'lapsed',
+                    'label' => 'Overdue — well past the deadline',
+                    'priority_boost' => 5,
+                ];
+            }
+
             return [
                 'days_remaining' => $daysRemaining,
                 'urgency' => 'overdue',
-                'label' => 'Overdue by '.abs($daysRemaining).' days',
+                'label' => 'Overdue by '.$daysOverdue.' days',
                 'priority_boost' => 50,
             ];
         }

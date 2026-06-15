@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
+import { useAppearance } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 
 type Tile = {
@@ -34,6 +35,8 @@ type RailCard = {
     lng: number;
     is_new: boolean;
     reason: string | null;
+    photo_url?: string | null;
+    photo_attribution?: string | null;
     kind: string; // spot | event | task
     href: string | null; // tasks deep-link instead of take-me-there
     // task-card fields (kind === 'task')
@@ -81,40 +84,59 @@ const CATEGORY_EMOJI: Record<string, string> = {
     task: '📋',
 };
 
-function categoryTint(category: string): string {
-    const green = 'bg-[#DCEFD9] dark:bg-[#1f3a1c]';
-    const blue = 'bg-[#D9E6FB] dark:bg-[#1b2a4a]';
-    const amber = 'bg-[#FBEFD0] dark:bg-[#3a2f12]';
-    const rose = 'bg-[#FBDDE0] dark:bg-[#3a1820]';
-    const purple = 'bg-[#E7DDFB] dark:bg-[#2a1f4a]';
-    const map: Record<string, string> = {
-        park: green,
-        playground: green,
-        lake: green,
-        dog_park: green,
-        pitch: green,
-        basketball: green,
-        skatepark: green,
-        tennis: green,
-        table_tennis: green,
-        boules: green,
-        bbq: green,
-        cafe: rose,
-        restaurant: rose,
-        bar: amber,
-        culture: amber,
-        museum: amber,
-        gallery: amber,
-        attraction: amber,
-        zoo: amber,
-        library: blue,
-        swimming: blue,
-        viewpoint: blue,
-        event: purple,
-        task: blue,
-    };
+// Per-category base hue. The thumb gradient starts here, then a deterministic
+// per-name jitter shifts it — so two cards of the same category (two museums,
+// two parks) never render as identical tiles.
+const CATEGORY_HUE: Record<string, number> = {
+    park: 135,
+    lake: 150,
+    dog_park: 120,
+    bbq: 110,
+    viewpoint: 165,
+    playground: 95,
+    pitch: 100,
+    basketball: 28,
+    skatepark: 200,
+    tennis: 85,
+    table_tennis: 85,
+    tennis_table: 85,
+    boules: 75,
+    swimming: 195,
+    cafe: 18,
+    restaurant: 12,
+    bar: 38,
+    culture: 45,
+    museum: 42,
+    gallery: 50,
+    attraction: 290,
+    zoo: 55,
+    library: 220,
+    coworking: 230,
+    community: 210,
+    event: 270,
+    task: 215,
+};
 
-    return map[category] ?? 'bg-secondary';
+/** Deterministic hue from a seed, jittered ±18 around the category base. */
+function thumbHue(seed: string, category: string): number {
+    let h = 0;
+
+    for (let i = 0; i < seed.length; i++) {
+        h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    }
+
+    return (CATEGORY_HUE[category] ?? 210) + ((h % 37) - 18);
+}
+
+/** A soft 140° gradient unique to each spot — light/dark aware. */
+function thumbStyle(card: RailCard, dark: boolean): { background: string } {
+    const hue = thumbHue(card.name || card.id, card.category);
+
+    return {
+        background: dark
+            ? `linear-gradient(140deg, hsl(${hue} 32% 23%), hsl(${hue} 38% 15%))`
+            : `linear-gradient(140deg, hsl(${hue} 58% 90%), hsl(${hue} 50% 79%))`,
+    };
 }
 
 const tileClasses: Record<Tile['severity'], string> = {
@@ -190,6 +212,9 @@ function DiscoveryCard({
     onOpen: () => void;
 }) {
     const canPin = card.kind === 'spot';
+    const { resolvedAppearance } = useAppearance();
+    // A dead Commons URL falls back to the gradient instead of a broken image.
+    const [imgFailed, setImgFailed] = useState(false);
 
     return (
         <div className="w-[196px] shrink-0 overflow-hidden rounded-[14px] border border-border bg-card shadow-sm transition-colors hover:border-primary">
@@ -197,14 +222,37 @@ function DiscoveryCard({
                 live inside it without nesting <button> in <button>. */}
             <div
                 onClick={onOpen}
-                className="relative flex h-[104px] w-full cursor-pointer items-center justify-center text-[40px]"
+                className="relative flex h-[104px] w-full cursor-pointer items-center justify-center overflow-hidden text-[40px]"
             >
-                <span
-                    className={`absolute inset-0 ${categoryTint(card.category)}`}
-                />
-                <span className="relative">
-                    {CATEGORY_EMOJI[card.category] ?? '📍'}
-                </span>
+                {card.photo_url && !imgFailed ? (
+                    <>
+                        <img
+                            src={card.photo_url}
+                            alt=""
+                            loading="lazy"
+                            onError={() => setImgFailed(true)}
+                            className="absolute inset-0 size-full object-cover"
+                        />
+                        {card.photo_attribution && (
+                            <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/55 to-transparent px-1.5 pt-3 pb-0.5 text-[8px] leading-tight text-white/85">
+                                {card.photo_attribution}
+                            </span>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <span
+                            className="absolute inset-0"
+                            style={thumbStyle(
+                                card,
+                                resolvedAppearance === 'dark',
+                            )}
+                        />
+                        <span className="relative">
+                            {CATEGORY_EMOJI[card.category] ?? '📍'}
+                        </span>
+                    </>
+                )}
                 {card.is_new && (
                     <span className="absolute top-2 left-2 rounded-full bg-black/55 px-1.5 py-0.5 font-mono text-[9px] tracking-wide text-white uppercase">
                         new to you
@@ -473,7 +521,15 @@ export default function Dashboard() {
                                     See all
                                 </Link>
                             </div>
-                            <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1.5 [scrollbar-width:none] md:-mx-6 md:px-6">
+                            <div
+                                className="flex gap-3 overflow-x-auto pb-1.5 [scrollbar-width:none]"
+                                style={{
+                                    maskImage:
+                                        'linear-gradient(to right, #000 calc(100% - 32px), transparent 100%)',
+                                    WebkitMaskImage:
+                                        'linear-gradient(to right, #000 calc(100% - 32px), transparent 100%)',
+                                }}
+                            >
                                 {rail.cards.map((card) =>
                                     card.kind === 'task' ? (
                                         <TaskCard key={card.id} card={card} />
@@ -492,6 +548,8 @@ export default function Dashboard() {
                                                         ] ?? '📍',
                                                     lat: card.lat,
                                                     lng: card.lng,
+                                                    category: card.category,
+                                                    veedel: card.veedel,
                                                 })
                                             }
                                         />
