@@ -60,6 +60,7 @@ class PlaceResource extends JsonResource
             'cluster_size' => (int) ($this->cluster_size ?? 1),
             'activities' => $this->activities ?? [],
             'transit_hint' => $this->transit_hint ?? null,
+            'feedback_state' => $this->feedback_state ?? null,
             'facts' => $this->resolveFacts(),
         ];
     }

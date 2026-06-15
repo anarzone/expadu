@@ -91,6 +91,12 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(UserPlace::class)->orderBy('sort_order');
     }
 
+    /** @return HasMany<SpotFeedback, $this> */
+    public function spotFeedback(): HasMany
+    {
+        return $this->hasMany(SpotFeedback::class);
+    }
+
     /** @return HasMany<UserTask, $this> */
     public function userTasks(): HasMany
     {

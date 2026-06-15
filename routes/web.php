@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\LocationConfirmController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\PlaceContextController;
+use App\Http\Controllers\Api\PlaceFeedbackController;
 use App\Http\Controllers\Api\PlacesController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\SpotSearchController;
@@ -83,6 +84,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/places/{spot}/context', PlaceContextController::class)->name('api.places.context');
         Route::get('api/places/{spot}/events', [EventsController::class, 'place'])->name('api.places.events');
         Route::get('api/places/{spot}', [PlacesController::class, 'show'])->name('api.places.show');
+        Route::post('api/places/{spot}/feedback', PlaceFeedbackController::class)->name('api.places.feedback');
         Route::get('api/events', [EventsController::class, 'index'])->name('api.events');
         Route::get('api/reminders', [EventReminderController::class, 'index'])->name('api.reminders.index');
         Route::post('api/reminders', [EventReminderController::class, 'store'])->name('api.reminders.store');

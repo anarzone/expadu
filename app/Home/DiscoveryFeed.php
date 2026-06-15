@@ -3,8 +3,10 @@
 namespace App\Home;
 
 use App\Composer\CategoryAppeal;
+use App\Enums\SpotFeedbackState;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Models\SpotFeedback;
 use App\Models\UserTask;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
@@ -49,10 +51,16 @@ class DiscoveryFeed
         $homeAreas = $profile->defaultAreas;
         $affinity = CategoryAffinity::map($profile);
 
+        // Drop places the user took out of discovery — "been" (consumed) or
+        // "not interested" (rejected). Per-user, so it sits outside the cached
+        // global scan below.
+        $hidden = $this->hiddenSpotIds($context->userId);
+
         // The catalogue scan is global (no per-user data) so it's cached; the
         // scoring below stays per-request. Pulling the whole light catalogue
         // lets culture/indoor compete with activities; pickCards diversifies.
         $scored = $this->spotPool()
+            ->reject(fn (Spot $spot) => isset($hidden[$spot->id]))
             ->map(fn (Spot $spot) => $this->scoreSpot($spot, $weights, $homeAreas, $rain, $affinity))
             ->sortByDesc('score')
             ->values();
@@ -371,5 +379,24 @@ class DiscoveryFeed
         return $name !== ''
             ? mb_strtolower($name).'|'.($spot->veedel ?? '')
             : 'id:'.$spot->id;
+    }
+
+    /**
+     * Spot ids the user has taken out of discovery — "been" (consumed) or
+     * "not interested" (rejected) — as an id-keyed set for O(1) rejection.
+     *
+     * @return array<int, int>
+     */
+    private function hiddenSpotIds(int $userId): array
+    {
+        return SpotFeedback::query()
+            ->where('user_id', $userId)
+            ->whereIn('state', array_map(
+                fn (SpotFeedbackState $state) => $state->value,
+                SpotFeedbackState::hiddenFromDiscovery(),
+            ))
+            ->pluck('spot_id')
+            ->flip()
+            ->all();
     }
 }

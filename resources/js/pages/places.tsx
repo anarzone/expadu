@@ -10,11 +10,13 @@ import {
 import { ContentCard } from '@/components/places/content-card';
 import type { CardChip } from '@/components/places/content-card';
 import { PlaceDetail } from '@/components/places/place-detail';
+import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { PlaceRichDetail } from '@/components/places/place-rich-detail';
 import type { Place, VeedelOption } from '@/components/places/types';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
+import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
 
@@ -113,6 +115,7 @@ export default function Places() {
     // Breadcrumb of places hopped through via nearby chips ("← back")
     const [hopStack, setHopStack] = useState<Place[]>([]);
     const [destination, setDestination] = useState<Destination | null>(null);
+    const { stateFor, setFeedback, toast } = useFeedback();
 
     const isMobile = useIsMobile();
     const reqRef = useRef(0);
@@ -498,42 +501,59 @@ export default function Places() {
                 ) : (
                     <>
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            {places.map((place) => (
-                                <ContentCard
-                                    key={place.id}
-                                    variant="place"
-                                    coarse={place.category}
-                                    title={place.name}
-                                    emoji={placeEmoji(place)}
-                                    meta={placeMeta(place)}
-                                    chips={placeChips(place)}
-                                    tip={
-                                        place.tip_is_generic ? null : place.tip
-                                    }
-                                    photoUrl={place.photo_url}
-                                    expanded={
-                                        isMobile && expandedId === place.id
-                                    }
-                                    onActivate={() => openPlace(place)}
-                                    action={takeMeThereButton(place)}
-                                >
-                                    {isMobile ? (
-                                        <div className="border-t border-border px-4 py-4">
-                                            <PlaceDetail place={place} />
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setHopStack([]);
-                                                    setRichPlace(place);
-                                                }}
-                                                className="mt-3 block min-h-11 w-full rounded-[9px] border border-border py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:border-primary"
-                                            >
-                                                Details — map, facts & nearby
-                                            </button>
-                                        </div>
-                                    ) : undefined}
-                                </ContentCard>
-                            ))}
+                            {places
+                                .filter(
+                                    (place) =>
+                                        (stateFor(place.id) ??
+                                            place.feedback_state) !==
+                                        'not_interested',
+                                )
+                                .map((place) => (
+                                    <ContentCard
+                                        key={place.id}
+                                        variant="place"
+                                        coarse={place.category}
+                                        title={place.name}
+                                        emoji={placeEmoji(place)}
+                                        meta={placeMeta(place)}
+                                        chips={placeChips(place)}
+                                        tip={
+                                            place.tip_is_generic
+                                                ? null
+                                                : place.tip
+                                        }
+                                        photoUrl={place.photo_url}
+                                        feedback={{
+                                            state:
+                                                stateFor(place.id) ??
+                                                place.feedback_state,
+                                            onAction: (action) =>
+                                                setFeedback(place.id, action),
+                                        }}
+                                        expanded={
+                                            isMobile && expandedId === place.id
+                                        }
+                                        onActivate={() => openPlace(place)}
+                                        action={takeMeThereButton(place)}
+                                    >
+                                        {isMobile ? (
+                                            <div className="border-t border-border px-4 py-4">
+                                                <PlaceDetail place={place} />
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setHopStack([]);
+                                                        setRichPlace(place);
+                                                    }}
+                                                    className="mt-3 block min-h-11 w-full rounded-[9px] border border-border py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:border-primary"
+                                                >
+                                                    Details — map, facts &
+                                                    nearby
+                                                </button>
+                                            </div>
+                                        ) : undefined}
+                                    </ContentCard>
+                                ))}
                         </div>
 
                         {hasMore && (
@@ -646,6 +666,8 @@ export default function Places() {
                     onClose={() => setDestination(null)}
                 />
             )}
+
+            <FeedbackToast message={toast} />
         </AppLayout>
     );
 }

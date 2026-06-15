@@ -2,8 +2,10 @@ import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { ContentCard } from '@/components/places/content-card';
+import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
-import { useAppearance } from '@/hooks/use-appearance';
+import { useFeedback } from '@/hooks/use-feedback';
 import AppLayout from '@/layouts/app-layout';
 
 type Tile = {
@@ -85,61 +87,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
     task: '📋',
 };
 
-// Per-category base hue. The thumb gradient starts here, then a deterministic
-// per-name jitter shifts it — so two cards of the same category (two museums,
-// two parks) never render as identical tiles.
-const CATEGORY_HUE: Record<string, number> = {
-    park: 135,
-    lake: 150,
-    dog_park: 120,
-    bbq: 110,
-    viewpoint: 165,
-    playground: 95,
-    pitch: 100,
-    basketball: 28,
-    skatepark: 200,
-    tennis: 85,
-    table_tennis: 85,
-    tennis_table: 85,
-    boules: 75,
-    swimming: 195,
-    cafe: 18,
-    restaurant: 12,
-    bar: 38,
-    culture: 45,
-    museum: 42,
-    gallery: 50,
-    attraction: 290,
-    zoo: 55,
-    library: 220,
-    coworking: 230,
-    community: 210,
-    event: 270,
-    task: 215,
-};
-
-/** Deterministic hue from a seed, jittered ±18 around the category base. */
-function thumbHue(seed: string, category: string): number {
-    let h = 0;
-
-    for (let i = 0; i < seed.length; i++) {
-        h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-    }
-
-    return (CATEGORY_HUE[category] ?? 210) + ((h % 37) - 18);
-}
-
-/** A soft 140° gradient unique to each spot — light/dark aware. */
-function thumbStyle(card: RailCard, dark: boolean): { background: string } {
-    const hue = thumbHue(card.name || card.id, card.category);
-
-    return {
-        background: dark
-            ? `linear-gradient(140deg, hsl(${hue} 32% 23%), hsl(${hue} 38% 15%))`
-            : `linear-gradient(140deg, hsl(${hue} 58% 90%), hsl(${hue} 50% 79%))`,
-    };
-}
-
 const tileClasses: Record<Tile['severity'], string> = {
     danger: 'border-danger-soft border-l-danger bg-danger-soft',
     warn: 'border-warn-soft border-l-warn bg-warn-soft',
@@ -201,108 +148,6 @@ function TileCard({ tile }: { tile: Tile }) {
     );
 }
 
-function DiscoveryCard({
-    card,
-    pinned,
-    onPin,
-    onOpen,
-}: {
-    card: RailCard;
-    pinned: boolean;
-    onPin: () => void;
-    onOpen: () => void;
-}) {
-    const canPin = card.kind === 'spot';
-    const { resolvedAppearance } = useAppearance();
-    // A dead Commons URL falls back to the gradient instead of a broken image.
-    const [imgFailed, setImgFailed] = useState(false);
-
-    return (
-        <div className="w-[196px] shrink-0 overflow-hidden rounded-[14px] border border-border bg-card shadow-sm transition-colors hover:border-primary">
-            {/* Thumb is a clickable div (not a button) so the pin button can
-                live inside it without nesting <button> in <button>. */}
-            <div
-                onClick={onOpen}
-                className="relative flex h-[104px] w-full cursor-pointer items-center justify-center overflow-hidden text-[40px]"
-            >
-                {card.photo_url && !imgFailed ? (
-                    <>
-                        <img
-                            src={card.photo_url}
-                            alt=""
-                            loading="lazy"
-                            onError={() => setImgFailed(true)}
-                            className="absolute inset-0 size-full object-cover"
-                        />
-                        {card.photo_attribution && (
-                            <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/55 to-transparent px-1.5 pt-3 pb-0.5 text-[8px] leading-tight text-white/85">
-                                {card.photo_attribution}
-                            </span>
-                        )}
-                    </>
-                ) : (
-                    <>
-                        <span
-                            className="absolute inset-0"
-                            style={thumbStyle(
-                                card,
-                                resolvedAppearance === 'dark',
-                            )}
-                        />
-                        <span className="relative">
-                            {CATEGORY_EMOJI[card.category] ?? '📍'}
-                        </span>
-                    </>
-                )}
-                {card.is_new && (
-                    <span className="absolute top-2 left-2 rounded-full bg-black/55 px-1.5 py-0.5 font-mono text-[9px] tracking-wide text-white uppercase">
-                        new to you
-                    </span>
-                )}
-                {canPin && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onPin();
-                        }}
-                        title="Plan around this"
-                        aria-label={
-                            pinned
-                                ? `Remove ${card.name} from plan`
-                                : `Plan around ${card.name}`
-                        }
-                        className={`absolute top-2 right-2 flex size-[26px] items-center justify-center rounded-full text-[15px] font-bold shadow-sm transition-colors ${
-                            pinned
-                                ? 'bg-primary text-white'
-                                : 'bg-white/90 text-primary'
-                        }`}
-                    >
-                        {pinned ? '✓' : '＋'}
-                    </button>
-                )}
-            </div>
-            <button
-                onClick={onOpen}
-                aria-label={`Take me to ${card.name}`}
-                className="block w-full cursor-pointer px-3 pt-2.5 pb-3 text-left"
-            >
-                <span className="block text-[13.5px] leading-tight font-semibold">
-                    {card.name}
-                </span>
-                <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
-                    {[card.veedel, card.cost].filter(Boolean).join(' · ') ||
-                        'Cologne'}
-                </span>
-                {card.reason && (
-                    <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
-                        {card.reason}
-                    </span>
-                )}
-            </button>
-        </div>
-    );
-}
-
 function TaskCard({ card }: { card: RailCard }) {
     const urgent =
         card.urgency === 'overdue' ||
@@ -342,6 +187,7 @@ export default function Dashboard() {
     const [prompt, setPrompt] = useState('');
     const [pins, setPins] = useState<Record<string, string>>({});
     const [destination, setDestination] = useState<Destination | null>(null);
+    const { stateFor, setFeedback, toast } = useFeedback();
 
     const pinnedIds = Object.keys(pins);
 
@@ -539,16 +385,72 @@ export default function Dashboard() {
                                         'linear-gradient(to right, #000 calc(100% - 32px), transparent 100%)',
                                 }}
                             >
-                                {rail.cards.map((card) =>
-                                    card.kind === 'task' ? (
-                                        <TaskCard key={card.id} card={card} />
-                                    ) : (
-                                        <DiscoveryCard
+                                {rail.cards.map((card) => {
+                                    if (card.kind === 'task') {
+                                        return (
+                                            <TaskCard
+                                                key={card.id}
+                                                card={card}
+                                            />
+                                        );
+                                    }
+
+                                    const spotId = Number(
+                                        card.id.replace('spot:', ''),
+                                    );
+                                    const planned = Boolean(pins[card.id]);
+
+                                    return (
+                                        <ContentCard
                                             key={card.id}
-                                            card={card}
-                                            pinned={Boolean(pins[card.id])}
-                                            onPin={() => togglePin(card)}
-                                            onOpen={() =>
+                                            variant="rail"
+                                            coarse={card.category}
+                                            title={card.name}
+                                            meta={
+                                                [card.veedel, card.cost]
+                                                    .filter(Boolean)
+                                                    .join(' · ') || 'Cologne'
+                                            }
+                                            photoUrl={card.photo_url}
+                                            photoAttribution={
+                                                card.photo_attribution
+                                            }
+                                            isNew={card.is_new}
+                                            chips={
+                                                card.reason
+                                                    ? [{ label: card.reason }]
+                                                    : []
+                                            }
+                                            feedback={{
+                                                state: stateFor(spotId),
+                                                onAction: (action) =>
+                                                    setFeedback(spotId, action),
+                                            }}
+                                            overlayTopRight={
+                                                <button
+                                                    onClick={() =>
+                                                        togglePin(card)
+                                                    }
+                                                    title={
+                                                        planned
+                                                            ? 'Remove from plan'
+                                                            : "Add to today's plan"
+                                                    }
+                                                    aria-label={
+                                                        planned
+                                                            ? `Remove ${card.name} from plan`
+                                                            : `Add ${card.name} to plan`
+                                                    }
+                                                    className={`flex size-[26px] items-center justify-center rounded-full text-[15px] font-bold shadow-sm transition-colors ${
+                                                        planned
+                                                            ? 'bg-primary text-white'
+                                                            : 'bg-white/90 text-primary'
+                                                    }`}
+                                                >
+                                                    {planned ? '✓' : '＋'}
+                                                </button>
+                                            }
+                                            onActivate={() =>
                                                 setDestination({
                                                     name: card.name,
                                                     emoji:
@@ -562,8 +464,8 @@ export default function Dashboard() {
                                                 })
                                             }
                                         />
-                                    ),
-                                )}
+                                    );
+                                })}
                             </div>
                         </section>
                     ))}
@@ -587,6 +489,8 @@ export default function Dashboard() {
                     onClose={() => setDestination(null)}
                 />
             )}
+
+            <FeedbackToast message={toast} />
         </AppLayout>
     );
 }

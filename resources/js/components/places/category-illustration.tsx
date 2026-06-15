@@ -19,6 +19,18 @@ import {
     IconMasksTheater,
     IconConfetti,
     IconCalendarEvent,
+    IconCoffee,
+    IconToolsKitchen2,
+    IconBooks,
+    IconDeviceLaptop,
+    IconUsers,
+    IconMountain,
+    IconRipple,
+    IconFlame,
+    IconPalette,
+    IconPaw,
+    IconBallTennis,
+    IconPingPong,
 } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
@@ -59,6 +71,89 @@ const VISUALS: Record<string, Visual> = {
     culture: {
         Icon: IconBuildingMonument,
         tint: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
+    },
+    // Finer categories the home discovery rails surface (Places shows coarse
+    // only) — so a no-photo café/museum card isn't a generic green box.
+    lake: {
+        Icon: IconRipple,
+        tint: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300',
+    },
+    viewpoint: {
+        Icon: IconMountain,
+        tint: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+    },
+    bbq: {
+        Icon: IconFlame,
+        tint: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
+    },
+    basketball: {
+        Icon: IconBallBasketball,
+        tint: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
+    },
+    tennis: {
+        Icon: IconBallTennis,
+        tint: 'bg-lime-100 text-lime-700 dark:bg-lime-950/50 dark:text-lime-300',
+    },
+    table_tennis: {
+        Icon: IconPingPong,
+        tint: 'bg-lime-100 text-lime-700 dark:bg-lime-950/50 dark:text-lime-300',
+    },
+    tennis_table: {
+        Icon: IconPingPong,
+        tint: 'bg-lime-100 text-lime-700 dark:bg-lime-950/50 dark:text-lime-300',
+    },
+    skatepark: {
+        Icon: IconBike,
+        tint: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
+    },
+    boules: {
+        Icon: IconBallBasketball,
+        tint: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    },
+    cafe: {
+        Icon: IconCoffee,
+        tint: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    },
+    restaurant: {
+        Icon: IconToolsKitchen2,
+        tint: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+    },
+    bar: {
+        Icon: IconBeer,
+        tint: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    },
+    library: {
+        Icon: IconBooks,
+        tint: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+    },
+    coworking: {
+        Icon: IconDeviceLaptop,
+        tint: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300',
+    },
+    community: {
+        Icon: IconUsers,
+        tint: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+    },
+    museum: {
+        Icon: IconBuildingMonument,
+        tint: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
+    },
+    gallery: {
+        Icon: IconPalette,
+        tint: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
+    },
+    attraction: {
+        Icon: IconBuildingCarousel,
+        tint: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-300',
+    },
+    zoo: {
+        Icon: IconPaw,
+        tint: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    },
+    // Neutral fallback — anything without a dedicated visual.
+    place: {
+        Icon: IconMapPin,
+        tint: 'bg-secondary text-muted-foreground',
     },
     // Event categories — same component, the Events page's fallback art
     language_exchange: {
@@ -170,7 +265,7 @@ export function CategoryIllustration({
     const { Icon, tint } =
         coarse === 'veedel' && seed
             ? VEEDEL_VISUALS[nameHash(seed) % VEEDEL_VISUALS.length]
-            : (VISUALS[coarse] ?? VISUALS.park);
+            : (VISUALS[coarse] ?? VISUALS.place);
 
     return (
         <div

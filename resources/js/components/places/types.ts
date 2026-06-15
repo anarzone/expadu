@@ -23,6 +23,12 @@ export type Place = {
     activities: Array<{ emoji: string; label: string }>;
     transit_hint: string | null;
     facts: PlaceFact[];
+    feedback_state:
+        | 'more_like_this'
+        | 'saved'
+        | 'been'
+        | 'not_interested'
+        | null;
 };
 
 export type VeedelOption = {

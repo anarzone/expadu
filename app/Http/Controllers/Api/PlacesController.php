@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\SpotCategory;
+use App\Enums\SpotFeedbackState;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
+use App\Models\SpotFeedback;
 use App\Profile\ProfileEngine;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -63,10 +65,22 @@ class PlacesController extends Controller
 
         [$anchorLat, $anchorLng] = $this->anchor($request, $profiles);
 
+        // The user's place feedback: "not interested" drops out of the list
+        // entirely; the rest carry their state through to a card badge.
+        $feedback = SpotFeedback::query()
+            ->where('user_id', $request->user()->id)
+            ->get(['spot_id', 'state'])
+            ->keyBy('spot_id');
+        $notInterestedIds = $feedback
+            ->filter(fn (SpotFeedback $row) => $row->state === SpotFeedbackState::NotInterested)
+            ->keys()
+            ->all();
+
         $query = Spot::query()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
-            ->whereIn('category', SpotCategory::placesFines());
+            ->whereIn('category', SpotCategory::placesFines())
+            ->when($notInterestedIds !== [], fn ($q) => $q->whereNotIn('id', $notInterestedIds));
 
         // Venue-first: facilities inside a park collapse into the park's
         // card (its activity chips), so only the park itself and
@@ -160,9 +174,10 @@ class PlacesController extends Controller
         $activities = $this->activitiesForParks($paginator->getCollection());
         $stopHints = $this->stopHintsForPage($paginator->getCollection());
 
-        $paginator->getCollection()->transform(function (Spot $spot) use ($activities, $stopHints) {
+        $paginator->getCollection()->transform(function (Spot $spot) use ($activities, $stopHints, $feedback) {
             $spot->transit_hint = $stopHints[$spot->id] ?? null;
             $spot->activities = $activities[$spot->name] ?? [];
+            $spot->feedback_state = $feedback->get($spot->id)?->state?->value;
 
             return $spot;
         });

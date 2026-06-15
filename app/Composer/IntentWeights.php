@@ -19,6 +19,13 @@ class IntentWeights
         'composer_swap_away' => -1.5,
         'post_trip_thumbs_up' => 3.0,
         'post_trip_thumbs_down' => -3.0,
+        // Place feedback (see PlaceFeedbackController). "More like this" is the
+        // forward-looking signal — no visit needed; "been" carries the taste.
+        'spot_more_like_this' => 2.5,
+        'spot_saved' => 2.0,
+        'spot_not_interested' => -2.5,
+        'spot_been_liked' => 3.0,
+        'spot_been_disliked' => -3.0,
     ];
 
     /**
