@@ -3,6 +3,9 @@ import { IconChevronDown } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { PlaceDetailModal } from '@/components/places/place-detail-modal';
+import { FeedbackToast } from '@/components/places/place-feedback-menu';
+import type { Place } from '@/components/places/types';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -12,6 +15,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ICON_STROKE } from '@/constants/icons';
+import { useFeedback } from '@/hooks/use-feedback';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
@@ -101,6 +106,21 @@ function slotEmoji(slot: PlanSlot): string {
     }
 
     return CATEGORY_EMOJI[slot.category] ?? '📍';
+}
+
+/** Meta line for the detail modal — same shape as the Places / Today cards. */
+function detailMeta(place: Place): string {
+    const label =
+        place.fine_label ??
+        place.category.charAt(0).toUpperCase() + place.category.slice(1);
+
+    return [
+        label,
+        place.park ?? place.veedel,
+        place.distance_min != null ? `${place.distance_min} min away` : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
 }
 
 const ARCHETYPES: { key: string; label: string }[] = [
@@ -544,10 +564,13 @@ export default function Composer() {
     const [composing, setComposing] = useState(false);
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
+    const [detail, setDetail] = useState<Place | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [archetype, setArchetype] = useState<string | null>(null);
     const [locked, setLocked] = useState<string[]>([]);
     const [excluded, setExcluded] = useState<string[]>([]);
+    const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
+    const isMobile = useIsMobile();
     // Guards against parsing the same prompt twice (React strict-mode
     // double-invoke would otherwise fire two parse + compose round-trips).
     const parsedPrompt = useRef<string | null>(null);
@@ -685,6 +708,22 @@ export default function Composer() {
             lng: slot.lng,
             arriveBy: slot.is_appointment ? slot.start_time : undefined,
         });
+    }
+
+    // Tapping a plan card opens the same rich detail modal as the Places / Today
+    // cards. Only real places (spot:*) have a detail page; appointments and
+    // fixed events aren't tappable. Falls back to the route sheet if the fetch
+    // fails.
+    function openSlotDetail(slot: PlanSlot) {
+        if (slot.is_appointment || !slot.id.startsWith('spot:')) {
+            return;
+        }
+
+        const spotId = slot.id.replace('spot:', '');
+        fetch(`/api/places/${spotId}`, { credentials: 'same-origin' })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+            .then((json) => setDetail(json.data))
+            .catch(() => takeMeThere(slot));
     }
 
     function pickArchetype(next: string) {
@@ -871,11 +910,53 @@ export default function Composer() {
                                             const isLocked = locked.includes(
                                                 slot.id,
                                             );
+                                            // Only real places open the detail
+                                            // modal; appointments/events don't.
+                                            const tappable =
+                                                !slot.is_appointment &&
+                                                slot.id.startsWith('spot:');
 
                                             return (
                                                 <div
                                                     key={slot.id}
+                                                    role={
+                                                        tappable
+                                                            ? 'button'
+                                                            : undefined
+                                                    }
+                                                    tabIndex={
+                                                        tappable ? 0 : undefined
+                                                    }
+                                                    onClick={
+                                                        tappable
+                                                            ? () =>
+                                                                  openSlotDetail(
+                                                                      slot,
+                                                                  )
+                                                            : undefined
+                                                    }
+                                                    onKeyDown={
+                                                        tappable
+                                                            ? (e) => {
+                                                                  if (
+                                                                      e.key ===
+                                                                          'Enter' ||
+                                                                      e.key ===
+                                                                          ' '
+                                                                  ) {
+                                                                      e.preventDefault();
+                                                                      openSlotDetail(
+                                                                          slot,
+                                                                      );
+                                                                  }
+                                                              }
+                                                            : undefined
+                                                    }
                                                     className={`rounded-[14px] border p-4 ${
+                                                        tappable
+                                                            ? 'cursor-pointer transition-colors hover:border-primary'
+                                                            : ''
+                                                    } ${
                                                         slot.is_appointment
                                                             ? 'border-primary bg-accent-soft'
                                                             : slot.is_landmark
@@ -938,11 +1019,14 @@ export default function Composer() {
                                                         {!slot.is_appointment && (
                                                             <>
                                                                 <button
-                                                                    onClick={() =>
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
                                                                         toggleLock(
                                                                             slot.id,
-                                                                        )
-                                                                    }
+                                                                        );
+                                                                    }}
                                                                     className={`cursor-pointer rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${
                                                                         isLocked
                                                                             ? 'border-primary bg-accent-soft text-primary'
@@ -956,11 +1040,14 @@ export default function Composer() {
                                                                 </button>
                                                                 {slot.swappable && (
                                                                     <button
-                                                                        onClick={() =>
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.stopPropagation();
                                                                             swap(
                                                                                 i,
-                                                                            )
-                                                                        }
+                                                                            );
+                                                                        }}
                                                                         disabled={
                                                                             swappingSlot !==
                                                                             null
@@ -974,11 +1061,14 @@ export default function Composer() {
                                                                     </button>
                                                                 )}
                                                                 <button
-                                                                    onClick={() =>
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
                                                                         removePick(
                                                                             slot.id,
-                                                                        )
-                                                                    }
+                                                                        );
+                                                                    }}
                                                                     className="cursor-pointer rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger"
                                                                 >
                                                                     ✕ Remove
@@ -986,11 +1076,12 @@ export default function Composer() {
                                                             </>
                                                         )}
                                                         <button
-                                                            onClick={() =>
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 takeMeThere(
                                                                     slot,
-                                                                )
-                                                            }
+                                                                );
+                                                            }}
                                                             className="cursor-pointer rounded-[9px] bg-accent-soft px-3 py-2 text-[12.5px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
                                                         >
                                                             → Take me there
@@ -1048,12 +1139,33 @@ export default function Composer() {
                 )}
             </div>
 
+            {detail && (
+                <PlaceDetailModal
+                    place={detail}
+                    isMobile={isMobile}
+                    meta={detailMeta(detail)}
+                    feedback={{
+                        state: stateFor(detail.id) ?? detail.feedback_state,
+                        rating: ratingFor(detail.id) ?? detail.feedback_rating,
+                        onAction: (action, rating) =>
+                            setFeedback(detail.id, action, rating),
+                    }}
+                    onClose={() => setDetail(null)}
+                    onNavigate={(target) => {
+                        setDetail(null);
+                        setDestination(target);
+                    }}
+                />
+            )}
+
             {destination && (
                 <TakeMeThereSheet
                     destination={destination}
                     onClose={() => setDestination(null)}
                 />
             )}
+
+            <FeedbackToast message={toast} />
         </AppLayout>
     );
 }
