@@ -217,6 +217,15 @@ class ImportOsmSpots extends Command
         $this->info("  Skipped (no name): {$skippedNoName}");
         $this->info("  Skipped (duplicate): {$skippedDuplicate}");
 
+        // Newly imported spots have no Veedel yet; assign it now (nearest
+        // centroid, since boundaries aren't loaded) so they appear in the
+        // Veedel-scoped Places filter immediately. Without this step the
+        // import is effectively invisible there.
+        if ($imported > 0) {
+            $this->newLine();
+            $this->call('spots:assign-veedel');
+        }
+
         return self::SUCCESS;
     }
 
