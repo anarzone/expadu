@@ -14,6 +14,14 @@ use Carbon\CarbonImmutable;
  */
 trait NormalisesConstraints
 {
+    /**
+     * Smallest window the composer can actually fill: a daypart clamped to
+     * "now" late in the day (e.g. "afternoon" at 17:00 → 17:00–18:00) is too
+     * short to fit any activity plus travel, and would dead-end at "nothing
+     * fits". When that happens we stretch the end forward so there is room.
+     */
+    private const MIN_WINDOW_MINUTES = 180;
+
     private function clampConstraints(Constraints $constraints, Profile $profile, CarbonImmutable $now): Constraints
     {
         $horizon = $now->addHours(72);
@@ -22,6 +30,14 @@ trait NormalisesConstraints
 
         if ($end->lessThanOrEqualTo($start)) {
             return $this->defaultConstraints($now);
+        }
+
+        // Rescue a too-short clamped window by extending the end (capped at the
+        // start day's end and the 72h horizon) so the plan isn't starved of time.
+        if ($start->diffInMinutes($end) < self::MIN_WINDOW_MINUTES) {
+            $end = $start->addMinutes(self::MIN_WINDOW_MINUTES)
+                ->min($start->endOfDay())
+                ->min($horizon);
         }
 
         return new Constraints(

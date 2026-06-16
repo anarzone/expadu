@@ -128,3 +128,22 @@ test('the window is clamped to the 72h horizon', function () {
     expect($result->plan->windowStart->diffInHours($result->plan->windowEnd))
         ->toBeLessThanOrEqual(72);
 });
+
+test('a daypart clamped late in the day is widened to a usable window', function () {
+    // "afternoon" (12:00–18:00) parsed at 16:45 would clamp to a ~75-min sliver
+    // that the composer can't fill; the min-window guard stretches the end so a
+    // plan still has room (the "free afternoon → nothing fits" bug).
+    $now = CarbonImmutable::parse('2026-06-10 16:45', 'Europe/Berlin');
+    $result = (new HeuristicPromptParser)->parse('free afternoon', heuristicProfile(), $now);
+
+    expect($result->plan)->not->toBeNull()
+        ->and($result->plan->windowMinutes())->toBeGreaterThanOrEqual(180);
+});
+
+test('a full daypart window is left untouched', function () {
+    $now = CarbonImmutable::parse('2026-06-10 09:00', 'Europe/Berlin');
+    $result = (new HeuristicPromptParser)->parse('free afternoon', heuristicProfile(), $now);
+
+    expect($result->plan->windowStart->format('H:i'))->toBe('12:00')
+        ->and($result->plan->windowEnd->format('H:i'))->toBe('18:00');
+});
