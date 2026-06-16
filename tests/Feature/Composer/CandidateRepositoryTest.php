@@ -56,6 +56,26 @@ test('an open venue keeps real hours and survives feasibility', function () {
         ->toContain('Open Museum');
 });
 
+test('a raw-string opening_hours does not break the candidate pool', function () {
+    // Scraped restaurants store a raw OSM string ("Mo-Fr 09:00-18:00"), which
+    // the array cast returns as a string rather than the importer's structured
+    // array. The pipeline must tolerate it (assume open), not fatal the plan —
+    // this is the prod-only crash that broke plan mode.
+    spotWithHours([
+        'name' => 'Scraped Bistro',
+        'category' => 'restaurant',
+        'opening_hours' => 'Mo-Fr 09:00-18:00; Sa 10:00-14:00',
+    ]);
+
+    $candidates = app(CandidateRepository::class)->candidatesFor(mondayWindow());
+    $cand = collect($candidates)->firstWhere('name', 'Scraped Bistro');
+
+    expect($cand)->not->toBeNull();
+    expect($cand->opensAt)->toBeNull();
+    expect($cand->closesAt)->toBeNull();
+    expect($cand->closedToday)->toBeFalse();
+});
+
 test('wikidata or wikipedia tags mark a spot as a landmark', function () {
     spotWithHours(['name' => 'Famous Park', 'category' => 'park', 'tags' => ['wikidata' => 'Q123']]);
     spotWithHours(['name' => 'Plain Park', 'category' => 'park', 'tags' => ['wheelchair' => 'yes']]);

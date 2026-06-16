@@ -123,10 +123,16 @@ class CandidateRepository
      * on the plan's day. Unknown/empty hours → assume open; a weekday mapped to
      * no intervals → closed.
      *
-     * @param  array<string, mixed>|null  $hours
+     * Accepts `mixed`, not `?array`: scraped spots (restaurants) can store a raw
+     * OSM string ("Mo-Fr 09:00-18:00") instead of the importer's structured
+     * array, and a hard `?array` hint would fatal the whole plan on the first
+     * such spot. Anything that isn't the structured array is treated as unknown
+     * hours (assume open) by the guard below.
+     *
+     * @param  array<string, mixed>|string|null  $hours
      * @return array{0: ?CarbonImmutable, 1: ?CarbonImmutable, 2: bool} [opensAt, closesAt, closedToday]
      */
-    private function hoursOn(?array $hours, CarbonImmutable $day): array
+    private function hoursOn(mixed $hours, CarbonImmutable $day): array
     {
         if (! is_array($hours) || $hours === []) {
             return [null, null, false];
