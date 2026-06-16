@@ -15,9 +15,11 @@ use App\Composer\PlanSlot;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
+use App\Enums\SpotCategory;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Profile\CategoryAffinity;
+use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\GermanHolidayService;
 use App\Services\WeatherService;
@@ -114,7 +116,8 @@ class ComposerController extends Controller
         // Leisure runs the feasibility gauntlet; appointments and pinned/locked
         // picks bypass it (the user chose them). "Excluded" picks (removed, or
         // dropped by Shuffle) are filtered out of the whole pool.
-        $feasible = $filter->filter($constraints, $candidates->candidatesFor($constraints));
+        $rawPool = $candidates->candidatesFor($constraints);
+        $feasible = $filter->filter($constraints, $rawPool);
         $pinned = $candidates->byIds($pins, $constraints->windowStart);
         $pool = collect([...$appointments->within($user, $constraints), ...$pinned, ...$feasible])
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
@@ -132,7 +135,49 @@ class ComposerController extends Controller
         return response()->json([
             'plan' => $plan->toArray(),
             'notices' => $this->notices($constraints, $plan),
+            'facets' => $this->facets($rawPool, $profile),
         ]);
+    }
+
+    /**
+     * Adaptive options for the editable filter chips: the coarse categories
+     * that actually have candidates, and real neighbourhoods to choose from
+     * (the user's home areas first, then the busiest others). So a dropdown
+     * offers real choices, not all 25 Veedels or categories with nothing in
+     * them.
+     *
+     * @param  list<Candidate>  $pool
+     * @return array{categories: list<array{value: string, label: string}>, areas: list<string>}
+     */
+    private function facets(array $pool, Profile $profile): array
+    {
+        $buckets = [];
+        $areas = [];
+        foreach ($pool as $candidate) {
+            $coarse = SpotCategory::tryFrom($candidate->category)?->coarse();
+            if ($coarse !== null && $coarse !== 'other') {
+                $buckets[$coarse] = true;
+            }
+            if ($candidate->veedel !== null && $candidate->veedel !== '') {
+                $areas[$candidate->veedel] = ($areas[$candidate->veedel] ?? 0) + 1;
+            }
+        }
+
+        ksort($buckets);
+        $categories = array_map(
+            fn (string $value) => ['value' => $value, 'label' => SpotCategory::coarseLabel($value)],
+            array_keys($buckets),
+        );
+
+        arsort($areas);
+        $areaList = collect($profile->defaultAreas)
+            ->merge(array_keys($areas))
+            ->unique()
+            ->values()
+            ->take(14)
+            ->all();
+
+        return ['categories' => $categories, 'areas' => $areaList];
     }
 
     public function swap(

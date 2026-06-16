@@ -1,7 +1,17 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { IconChevronDown } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ICON_STROKE } from '@/constants/icons';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
 
@@ -129,87 +139,305 @@ async function post<T>(url: string, body: unknown): Promise<T> {
     return res.json() as Promise<T>;
 }
 
-function chipTime(constraints: Constraints): string {
-    const start = new Date(constraints.window_start);
-    const end = new Date(constraints.window_end);
-    const day = start.toLocaleDateString('en-GB', { weekday: 'short' });
-    const fmt = (d: Date) =>
-        d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+type Facets = {
+    categories: { value: string; label: string }[];
+    areas: string[];
+};
 
-    return `${day} ${fmt(start)}–${fmt(end)}`;
+const COMPANION_OPTS = [
+    { value: '', label: 'Anyone' },
+    { value: 'alone', label: 'Just me' },
+    { value: 'partner', label: 'My partner' },
+    { value: 'friends', label: 'Friends' },
+    { value: 'kids', label: 'The kids' },
+];
+
+const BUDGET_OPTS = [
+    { value: '', label: 'Any budget' },
+    { value: 'free', label: 'Free only' },
+    { value: 'low', label: 'Low cost' },
+    { value: 'normal', label: 'Any price' },
+];
+
+const VIBE_OPTS = [
+    { value: '', label: 'Any vibe' },
+    { value: 'chill', label: 'Chill' },
+    { value: 'active', label: 'Active' },
+];
+
+const TIME_OPTS = [
+    { value: 'morning', label: 'Morning' },
+    { value: 'midday', label: 'Midday' },
+    { value: 'afternoon', label: 'Afternoon' },
+    { value: 'evening', label: 'Evening' },
+    { value: 'allday', label: 'All day' },
+];
+
+const TIME_RANGES: Record<string, [number, number]> = {
+    morning: [9, 12],
+    midday: [11, 15],
+    afternoon: [12, 18],
+    evening: [18, 22],
+    allday: [10, 20],
+};
+
+function toggleIn(list: string[], value: string): string[] {
+    return list.includes(value)
+        ? list.filter((v) => v !== value)
+        : [...list, value];
 }
 
-function ConstraintChips({
+/** A time preset → a window on the plan's existing day. */
+function timeWindowPatch(preset: string, c: Constraints): Partial<Constraints> {
+    const day = new Date(c.window_start);
+    const at = (h: number) => {
+        const d = new Date(day);
+        d.setHours(h, 0, 0, 0);
+
+        return d.toISOString();
+    };
+    const [s, e] = TIME_RANGES[preset] ?? TIME_RANGES.afternoon;
+
+    return { window_start: at(s), window_end: at(e) };
+}
+
+/** Which preset the current window reads as — for the chip + highlight. */
+function timePresetKey(c: Constraints): string {
+    const h = new Date(c.window_start).getHours();
+    const end = new Date(c.window_end).getHours();
+
+    if (end - h >= 9) {
+        return 'allday';
+    }
+
+    if (h < 11) {
+        return 'morning';
+    }
+
+    if (h < 12) {
+        return 'midday';
+    }
+
+    if (h < 17) {
+        return 'afternoon';
+    }
+
+    return 'evening';
+}
+
+const CHIP =
+    'flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium outline-none transition-colors';
+
+function FilterTrigger({ label, active }: { label: string; active: boolean }) {
+    return (
+        <DropdownMenuTrigger
+            className={`${CHIP} ${active ? 'border-primary bg-accent-soft text-primary' : 'border-border bg-card text-foreground hover:border-primary'}`}
+        >
+            {label}
+            <IconChevronDown
+                size={13}
+                stroke={ICON_STROKE}
+                className="opacity-60"
+            />
+        </DropdownMenuTrigger>
+    );
+}
+
+function SingleFilter({
+    label,
+    active,
+    value,
+    options,
+    onChange,
+}: {
+    label: string;
+    active: boolean;
+    value: string;
+    options: { value: string; label: string }[];
+    onChange: (value: string) => void;
+}) {
+    return (
+        <DropdownMenu>
+            <FilterTrigger label={label} active={active} />
+            <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
+                    {options.map((o) => (
+                        <DropdownMenuRadioItem key={o.value} value={o.value}>
+                            {o.label}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+function MultiFilter({
+    label,
+    active,
+    selected,
+    options,
+    onToggle,
+}: {
+    label: string;
+    active: boolean;
+    selected: string[];
+    options: { value: string; label: string }[];
+    onToggle: (value: string) => void;
+}) {
+    return (
+        <DropdownMenu>
+            <FilterTrigger label={label} active={active} />
+            <DropdownMenuContent
+                align="start"
+                className="max-h-72 w-52 overflow-y-auto"
+            >
+                {options.length === 0 ? (
+                    <div className="px-2 py-1.5 text-[13px] text-muted-foreground">
+                        Nothing to choose yet
+                    </div>
+                ) : (
+                    options.map((o) => (
+                        <DropdownMenuCheckboxItem
+                            key={o.value}
+                            checked={selected.includes(o.value)}
+                            onCheckedChange={() => onToggle(o.value)}
+                            onSelect={(e) => e.preventDefault()}
+                        >
+                            {o.label}
+                        </DropdownMenuCheckboxItem>
+                    ))
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+/** Short summary for a multi-select chip: "Culture +2", or a default. */
+function multiLabel(
+    icon: string,
+    selected: string[],
+    options: { value: string; label: string }[],
+    empty: string,
+): string {
+    if (selected.length === 0) {
+        return `${icon} ${empty}`;
+    }
+
+    const first =
+        options.find((o) => o.value === selected[0])?.label ?? selected[0];
+    const extra = selected.length - 1;
+
+    return `${icon} ${first}${extra > 0 ? ` +${extra}` : ''}`;
+}
+
+/**
+ * Editable, content-adaptive filter chips — the prototype's "I understood,
+ * tap to correct" bar. Each chip is a dropdown; changing any recomposes.
+ * Area + category options are facets (only what has candidates), so the
+ * dropdowns offer real choices, not all 25 Veedels.
+ */
+function EditableFilters({
     constraints,
+    facets,
     homeVeedel,
-    onRemove,
+    onChange,
+    onStartOver,
 }: {
     constraints: Constraints;
+    facets: Facets;
     homeVeedel: string | null;
-    onRemove: (
-        kind: 'area' | 'category' | 'companions' | 'budget',
-        value?: string,
-    ) => void;
+    onChange: (patch: Partial<Constraints>) => void;
+    onStartOver: () => void;
 }) {
-    // Areas the user actually named are removable chips. When they named
-    // none, show a single implicit "around {home}" hint instead of dumping
-    // the whole home Bezirk — the plan prefers home areas regardless.
-    const areaChips =
-        constraints.areas.length > 0
-            ? constraints.areas.slice(0, 3).map((area) => ({
-                  key: `area-${area}`,
-                  label: `📍 ${area}`,
-                  onRemove: () => onRemove('area', area),
-              }))
-            : homeVeedel
-              ? [{ key: 'area-home', label: `📍 around ${homeVeedel}` }]
-              : [];
-
-    const chips: Array<{ key: string; label: string; onRemove?: () => void }> =
-        [
-            { key: 'time', label: `🕐 ${chipTime(constraints)}` },
-            ...areaChips,
-            ...constraints.categories.map((category) => ({
-                key: `cat-${category}`,
-                label: `🏷️ ${category}`,
-                onRemove: () => onRemove('category', category),
-            })),
-        ];
-
-    if (constraints.companions) {
-        chips.push({
-            key: 'companions',
-            label: `👥 ${constraints.companions}`,
-            onRemove: () => onRemove('companions'),
-        });
-    }
-
-    if (constraints.budget) {
-        chips.push({
-            key: 'budget',
-            label: `💶 ${constraints.budget}`,
-            onRemove: () => onRemove('budget'),
-        });
-    }
+    const areaOptions = facets.areas.map((a) => ({ value: a, label: a }));
+    const companion = constraints.companions ?? '';
+    const budget = constraints.budget ?? '';
+    const vibe = constraints.vibe ?? '';
+    const edited =
+        constraints.areas.length > 0 ||
+        constraints.categories.length > 0 ||
+        companion !== '' ||
+        budget !== '' ||
+        vibe !== '';
 
     return (
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-            {chips.map((chip) => (
-                <span
-                    key={chip.key}
-                    className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium"
-                >
-                    {chip.label}
-                    {chip.onRemove && (
-                        <button
-                            onClick={chip.onRemove}
-                            className="cursor-pointer text-muted-foreground/70 hover:text-danger"
-                        >
-                            ✕
-                        </button>
+        <div className="mb-5">
+            <div className="mb-2 font-mono text-[10px] tracking-[0.1em] text-muted-foreground/70 uppercase">
+                I understood — tap any to change
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+                <SingleFilter
+                    label={`🕐 ${TIME_OPTS.find((o) => o.value === timePresetKey(constraints))?.label ?? 'When'}`}
+                    active
+                    value={timePresetKey(constraints)}
+                    options={TIME_OPTS}
+                    onChange={(v) => onChange(timeWindowPatch(v, constraints))}
+                />
+                <MultiFilter
+                    label={
+                        constraints.areas.length === 0 && homeVeedel
+                            ? `📍 Around ${homeVeedel}`
+                            : multiLabel(
+                                  '📍',
+                                  constraints.areas,
+                                  areaOptions,
+                                  'Any area',
+                              )
+                    }
+                    active={constraints.areas.length > 0}
+                    selected={constraints.areas}
+                    options={areaOptions}
+                    onToggle={(v) =>
+                        onChange({ areas: toggleIn(constraints.areas, v) })
+                    }
+                />
+                <MultiFilter
+                    label={multiLabel(
+                        '🏷️',
+                        constraints.categories,
+                        facets.categories,
+                        'Anything',
                     )}
-                </span>
-            ))}
+                    active={constraints.categories.length > 0}
+                    selected={constraints.categories}
+                    options={facets.categories}
+                    onToggle={(v) =>
+                        onChange({
+                            categories: toggleIn(constraints.categories, v),
+                        })
+                    }
+                />
+                <SingleFilter
+                    label={`👥 ${COMPANION_OPTS.find((o) => o.value === companion)?.label ?? 'Anyone'}`}
+                    active={companion !== ''}
+                    value={companion}
+                    options={COMPANION_OPTS}
+                    onChange={(v) => onChange({ companions: v || null })}
+                />
+                <SingleFilter
+                    label={`💶 ${BUDGET_OPTS.find((o) => o.value === budget)?.label ?? 'Any budget'}`}
+                    active={budget !== ''}
+                    value={budget}
+                    options={BUDGET_OPTS}
+                    onChange={(v) => onChange({ budget: v || null })}
+                />
+                <SingleFilter
+                    label={`🎚️ ${VIBE_OPTS.find((o) => o.value === vibe)?.label ?? 'Any vibe'}`}
+                    active={vibe !== ''}
+                    value={vibe}
+                    options={VIBE_OPTS}
+                    onChange={(v) => onChange({ vibe: v || null })}
+                />
+                {edited && (
+                    <button
+                        onClick={onStartOver}
+                        className="shrink-0 cursor-pointer px-2 text-[12px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    >
+                        start over
+                    </button>
+                )}
+            </div>
         </div>
     );
 }
@@ -305,6 +533,10 @@ export default function Composer() {
     const { track } = useTracker();
 
     const [constraints, setConstraints] = useState<Constraints | null>(null);
+    const [facets, setFacets] = useState<Facets>({
+        categories: [],
+        areas: [],
+    });
     const [plan, setPlan] = useState<Plan | null>(null);
     const [notices, setNotices] = useState<Notice[]>([]);
     const [intent, setIntent] = useState<Intent>('plan_day');
@@ -333,20 +565,25 @@ export default function Composer() {
             setError(null);
 
             try {
-                const json = await post<{ plan: Plan; notices: Notice[] }>(
-                    '/composer/compose',
-                    {
-                        constraints: {
-                            ...next,
-                            archetype: opts.archetype ?? null,
-                        },
-                        pins: pins ?? [],
-                        locked: opts.locked ?? [],
-                        excluded: opts.excluded ?? [],
+                const json = await post<{
+                    plan: Plan;
+                    notices: Notice[];
+                    facets?: Facets;
+                }>('/composer/compose', {
+                    constraints: {
+                        ...next,
+                        archetype: opts.archetype ?? null,
                     },
-                );
+                    pins: pins ?? [],
+                    locked: opts.locked ?? [],
+                    excluded: opts.excluded ?? [],
+                });
                 setPlan(json.plan);
                 setNotices(json.notices ?? []);
+
+                if (json.facets) {
+                    setFacets(json.facets);
+                }
             } catch {
                 setError(
                     'Could not compose your day. Try adjusting the chips.',
@@ -385,31 +622,34 @@ export default function Composer() {
             .finally(() => setParsing(false));
     }, [prompt, runCompose]);
 
-    function removeConstraint(
-        kind: 'area' | 'category' | 'companions' | 'budget',
-        value?: string,
-    ) {
+    // Editing any chip is an explicit "redo it this way" — merge the change and
+    // recompose (which also retries if the initial auto-compose failed).
+    function updateConstraint(patch: Partial<Constraints>) {
+        if (!constraints) {
+            return;
+        }
+
+        const next: Constraints = { ...constraints, ...patch };
+        setConstraints(next);
+        void runCompose(next, { archetype, locked, excluded });
+    }
+
+    function startOver() {
         if (!constraints) {
             return;
         }
 
         const next: Constraints = {
             ...constraints,
-            areas:
-                kind === 'area'
-                    ? constraints.areas.filter((a) => a !== value)
-                    : constraints.areas,
-            categories:
-                kind === 'category'
-                    ? constraints.categories.filter((c) => c !== value)
-                    : constraints.categories,
-            companions: kind === 'companions' ? null : constraints.companions,
-            budget: kind === 'budget' ? null : constraints.budget,
+            areas: [],
+            categories: [],
+            companions: null,
+            budget: null,
+            vibe: null,
         };
         setConstraints(next);
-        // Always recompose — editing a chip is an explicit "redo it this way",
-        // and it also retries if the initial auto-compose failed.
-        void runCompose(next, { archetype, locked, excluded });
+        setArchetype(null);
+        void runCompose(next, { archetype: null, locked, excluded });
     }
 
     async function swap(index: number) {
@@ -554,10 +794,12 @@ export default function Composer() {
                 )}
 
                 {constraints && (
-                    <ConstraintChips
+                    <EditableFilters
                         constraints={constraints}
+                        facets={facets}
                         homeVeedel={homeVeedel ?? null}
-                        onRemove={removeConstraint}
+                        onChange={updateConstraint}
+                        onStartOver={startOver}
                     />
                 )}
 

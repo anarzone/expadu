@@ -100,6 +100,32 @@ test('compose builds a plan from real candidates and stores it', function () {
     expect(Cache::get("composer:plan:{$user->id}"))->not->toBeNull();
 });
 
+test('compose returns adaptive facets for the editable filters', function () {
+    $user = composerUser();
+
+    Spot::factory()->create(['category' => 'museum', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.924]);
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Nippes', 'lat' => 50.96, 'lng' => 6.95]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => [],
+            'categories' => [],
+        ],
+    ]);
+
+    $response->assertOk();
+    // Category options are the coarse buckets present (museum → culture), labelled.
+    $categories = collect($response->json('facets.categories'));
+    expect($categories->pluck('value'))->toContain('culture')->toContain('park');
+    expect($categories->firstWhere('value', 'culture')['label'])->toBe('Culture');
+    // Area options list neighbourhoods that actually have candidates.
+    expect($response->json('facets.areas'))->toContain('Ehrenfeld');
+});
+
 test('compose honours an explicit archetype', function () {
     $user = composerUser();
     Spot::factory()->create(['name' => 'Big Museum', 'category' => 'museum', 'lat' => 50.9480, 'lng' => 6.9240]);
