@@ -139,9 +139,14 @@ export function FeedbackBadge({
 }
 
 /**
- * Compact, modern feedback control for the detail modal: a "Been here?" rating
- * (small thumb icons → been + rating) plus the ⋯ menu for the rest. Replaces
- * the old big-emoji block that used to live in the route sheet.
+ * Compact feedback control for the detail modal. Two clearly separate axes —
+ * never conflated:
+ *   1. "Been here?" is a single VISITED toggle (the success pill). It only
+ *      records the fact of a visit; no opinion is implied.
+ *   2. "How was it?" — a 👍/👎 rating — appears ONLY after the place is marked
+ *      visited, the way Maps / Foursquare / Beli reveal rating post-visit. A
+ *      thumb is always about quality, never "were you here", which is exactly
+ *      the misread we're fixing.
  */
 export function PlaceFeedbackBar({
     state,
@@ -159,48 +164,81 @@ export function PlaceFeedbackBar({
     const disliked = been && rating === 'down';
 
     return (
-        <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-border bg-secondary/40 px-3 py-2">
-            <span className="text-[13px] font-medium text-muted-foreground">
-                {been ? 'You’ve been here' : 'Been here?'}
-            </span>
-            <div className="ml-auto flex items-center gap-1.5">
-                <button
-                    onClick={() => onAction('been', 'up')}
-                    aria-label="Loved it"
-                    className={`flex size-8 items-center justify-center rounded-full border transition-colors ${
-                        liked
-                            ? 'border-transparent bg-success-soft text-success'
-                            : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
-                    }`}
-                >
-                    {liked ? (
-                        <IconThumbUpFilled size={16} />
-                    ) : (
-                        <IconThumbUp size={16} stroke={ICON_STROKE} />
-                    )}
-                </button>
-                <button
-                    onClick={() => onAction('been', 'down')}
-                    aria-label="Not for me"
-                    className={`flex size-8 items-center justify-center rounded-full border transition-colors ${
-                        disliked
-                            ? 'border-transparent bg-danger-soft text-danger'
-                            : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
-                    }`}
-                >
-                    {disliked ? (
-                        <IconThumbDownFilled size={16} />
-                    ) : (
-                        <IconThumbDown size={16} stroke={ICON_STROKE} />
-                    )}
-                </button>
-                <PlaceFeedbackMenu
-                    state={state}
-                    onAction={onAction}
-                    label={label}
-                    hideBeen
-                />
+        <div className="mt-4 rounded-[10px] border border-border bg-secondary/40 px-3 py-2.5">
+            {/* Axis 1 — the visited fact, as its own toggle. */}
+            <div className="flex items-center gap-2">
+                <span className="text-[13px] font-medium text-muted-foreground">
+                    {been ? 'You’ve been here' : 'Been here?'}
+                </span>
+                <div className="ml-auto flex items-center gap-1.5">
+                    <button
+                        onClick={() => onAction(been ? 'clear' : 'been')}
+                        aria-pressed={been}
+                        aria-label={
+                            been ? 'Visited — tap to undo' : 'Mark as visited'
+                        }
+                        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors ${
+                            been
+                                ? 'bg-success-soft text-success hover:bg-success-soft/70'
+                                : 'border border-border font-medium text-muted-foreground hover:border-primary hover:text-primary'
+                        }`}
+                    >
+                        <IconMapPinCheck size={14} stroke={ICON_STROKE} />
+                        {been ? 'Visited' : 'I’ve been'}
+                    </button>
+                    <PlaceFeedbackMenu
+                        state={state}
+                        onAction={onAction}
+                        label={label}
+                        hideBeen
+                    />
+                </div>
             </div>
+
+            {/* Axis 2 — quality rating, revealed only once visited. */}
+            {been && (
+                <div className="mt-2.5 flex items-center gap-2 border-t border-border/60 pt-2.5">
+                    <span className="text-[13px] font-medium text-muted-foreground">
+                        How was it?
+                    </span>
+                    <div className="ml-auto flex items-center gap-1.5">
+                        <button
+                            onClick={() => onAction('been', 'up')}
+                            aria-pressed={liked}
+                            aria-label="Loved it"
+                            className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                                liked
+                                    ? 'border-transparent bg-success-soft text-success'
+                                    : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                            }`}
+                        >
+                            {liked ? (
+                                <IconThumbUpFilled size={15} />
+                            ) : (
+                                <IconThumbUp size={15} stroke={ICON_STROKE} />
+                            )}
+                            Loved it
+                        </button>
+                        <button
+                            onClick={() => onAction('been', 'down')}
+                            aria-pressed={disliked}
+                            aria-label="Not for me"
+                            className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                                disliked
+                                    ? 'border-transparent bg-danger-soft text-danger'
+                                    : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                            }`}
+                        >
+                            {disliked ? (
+                                <IconThumbDownFilled size={15} />
+                            ) : (
+                                <IconThumbDown size={15} stroke={ICON_STROKE} />
+                            )}
+                            Not for me
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
