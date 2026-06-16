@@ -34,8 +34,12 @@ Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping
 // Notification health check — hourly automated monitoring
 Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 
-// Restaurant/spot data refresh — daily at 04:00 until coverage is complete, then switch to weekly
-Schedule::command('restaurants:scrape')->dailyAt('04:00')->withoutOverlapping();
+// Restaurant/café scraping is DISABLED for now. v2 de-emphasises the
+// restaurant/café layer, and the scraper stores raw OSM opening_hours strings
+// (the composer had to be hardened against them). The command still exists for
+// manual runs; re-enable here (weekly, not daily) only if that layer comes back
+// into scope.
+// Schedule::command('restaurants:scrape')->dailyAt('04:00')->withoutOverlapping();
 
 // Place photos from Wikimedia (wikidata/wikipedia links + Commons geosearch) —
 // weekly, so newly imported spots pick up an openly-licensed photo where one
