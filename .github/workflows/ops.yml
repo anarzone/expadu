@@ -1,0 +1,66 @@
+name: Ops Console
+
+# Manually-triggered ONLY. Runs a single `php artisan` command inside the app
+# container on staging or production. Never runs on push or schedule.
+#
+# Safety design:
+#  - workflow_dispatch only — nothing here fires automatically.
+#  - The command is scoped to `php artisan` and executed *inside the app
+#    container*, so it cannot run arbitrary host/root shell.
+#  - The command is passed to the remote shell as an environment variable (not
+#    interpolated into the script body), so a malicious input cannot inject
+#    extra shell operators (`;`, `&&`, backticks) — `set -f` also disables
+#    globbing. The artisan args are still word-split so flags work.
+#  - `environment:` ties each run to a GitHub Environment. Add required
+#    reviewers to the `production` environment in repo settings to gate prod
+#    runs behind manual approval.
+#
+# NOTE: `php artisan tinker --execute "..."` runs arbitrary PHP in the app
+# container — powerful (DB writes/deletes). Restrict who can trigger this
+# workflow accordingly.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        required: true
+        options:
+          - staging
+          - production
+      command:
+        description: 'artisan command WITHOUT "php artisan" (e.g. spots:fetch-photos --geo=400)'
+        type: string
+        required: true
+
+concurrency:
+  group: ops-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: artisan on ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Run artisan command via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          TARGET_ENV: ${{ inputs.environment }}
+          ARTISAN_CMD: ${{ inputs.command }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: TARGET_ENV,ARTISAN_CMD
+          script: |
+            set -ef
+            case "$TARGET_ENV" in
+              production) CONTAINER=app-eg4gsc4ok8g0cwkcsso48wso ;;
+              staging)    CONTAINER=staging-app ;;
+              *) echo "Unknown environment: $TARGET_ENV"; exit 1 ;;
+            esac
+            echo "[$TARGET_ENV / $CONTAINER] php artisan $ARTISAN_CMD"
+            docker exec "$CONTAINER" php artisan $ARTISAN_CMD
