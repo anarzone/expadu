@@ -6,6 +6,7 @@ import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { MobileDock } from '@/components/mobile-dock';
 import { MobileTopBar } from '@/components/mobile-top-bar';
 import { RightPanel } from '@/components/right-panel';
+import { useBackgroundLocation } from '@/hooks/use-background-location';
 import { useTracker } from '@/hooks/use-tracker';
 import type { AppLayoutProps } from '@/types';
 
@@ -17,6 +18,10 @@ export default function AppSidebarLayout({
     showBack,
 }: AppLayoutProps) {
     const { track } = useTracker();
+
+    // Keep the user's home Veedel current from background GPS (permission-aware;
+    // never prompts on its own). The server throttles updates to real moves.
+    useBackgroundLocation();
 
     useEffect(() => {
         track('page_viewed', { page: window.location.pathname });

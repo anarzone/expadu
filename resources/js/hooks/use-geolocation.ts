@@ -41,8 +41,10 @@ function distanceMeters(
 
 /** Check if location sharing is enabled via user settings */
 let locationSharingEnabled = true;
+
 try {
     const el = document.getElementById('app');
+
     if (el) {
         const pageData = JSON.parse(el.dataset.page || '{}');
         locationSharingEnabled =
@@ -60,7 +62,10 @@ function sendPing(
     quality?: string,
     rejected?: string,
 ) {
-    if (!locationSharingEnabled) return;
+    if (!locationSharingEnabled) {
+        return;
+    }
+
     fetch('/api/track', {
         method: 'POST',
         credentials: 'same-origin',
@@ -96,7 +101,10 @@ function sendPing(
  * - "stale": no update for > 30s, using last good position
  * - "estimated": GPS lost, using cached/estimated position
  */
-export function useGeolocation(pingIntervalMs = 300_000) {
+export function useGeolocation({
+    enabled = true,
+    pingIntervalMs = 300_000,
+}: { enabled?: boolean; pingIntervalMs?: number } = {}) {
     const [position, setPosition] = useState<GeoPosition | null>(null);
     const [quality, setQuality] = useState<GeoQuality>('high');
     const [error, setError] = useState<string | null>(null);
@@ -113,8 +121,14 @@ export function useGeolocation(pingIntervalMs = 300_000) {
     const staleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     function classifyQuality(accuracy: number): GeoQuality {
-        if (accuracy <= ACCURACY_HIGH) return 'high';
-        if (accuracy <= ACCURACY_MEDIUM) return 'medium';
+        if (accuracy <= ACCURACY_HIGH) {
+            return 'high';
+        }
+
+        if (accuracy <= ACCURACY_MEDIUM) {
+            return 'medium';
+        }
+
         return 'low';
     }
 
@@ -135,15 +149,18 @@ export function useGeolocation(pingIntervalMs = 300_000) {
                 'rejected',
                 `accuracy_${Math.round(raw.accuracy)}m`,
             );
+
             if (lastGoodRef.current) {
                 setPosition(lastGoodRef.current);
                 setQuality('low');
             }
+
             return;
         }
 
         // ── Filter 2: Speed-based rejection ──
         const lastGood = lastGoodRef.current;
+
         if (lastGood) {
             const dist = distanceMeters(
                 lastGood.lat,
@@ -167,6 +184,7 @@ export function useGeolocation(pingIntervalMs = 300_000) {
                     `speed_${Math.round(speedKmh)}kmh`,
                 );
                 setQuality('low');
+
                 return;
             }
         }
@@ -205,6 +223,7 @@ export function useGeolocation(pingIntervalMs = 300_000) {
 
     function handleError(err: GeolocationPositionError) {
         setError(err.message);
+
         // GPS error — mark as stale if we have a cached position
         if (lastGoodRef.current) {
             setQuality('stale');
@@ -224,8 +243,13 @@ export function useGeolocation(pingIntervalMs = 300_000) {
     }
 
     useEffect(() => {
+        if (!enabled) {
+            return;
+        }
+
         if (!navigator.geolocation) {
             setError('Geolocation not supported');
+
             return;
         }
 
@@ -254,6 +278,7 @@ export function useGeolocation(pingIntervalMs = 300_000) {
         // Check every 5s if position is going stale
         staleTimerRef.current = setInterval(() => {
             const age = Date.now() - lastUpdateRef.current;
+
             if (age > STALE_THRESHOLD_MS && lastGoodRef.current) {
                 setQuality((prev) =>
                     prev === 'high' || prev === 'medium' ? 'stale' : prev,
@@ -273,16 +298,22 @@ export function useGeolocation(pingIntervalMs = 300_000) {
 
         return () => {
             clearInterval(pingTimer);
-            if (staleTimerRef.current) clearInterval(staleTimerRef.current);
+
+            if (staleTimerRef.current) {
+                clearInterval(staleTimerRef.current);
+            }
+
             document.removeEventListener(
                 'visibilitychange',
                 onVisibilityChange,
             );
+
             if (watchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(watchIdRef.current);
             }
         };
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enabled, pingIntervalMs]);
 
     return { position, quality, error, refresh: fetchOnce };
 }

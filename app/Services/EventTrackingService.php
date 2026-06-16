@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Redis;
 
 class EventTrackingService
 {
+    public function __construct(private VeedelLocator $veedels) {}
+
     /**
      * Track a user event with an optional payload.
      * For location_ping events, also checks proximity to known spots.
@@ -34,9 +36,11 @@ class EventTrackingService
                 $payload['quality'] ?? null,
                 $payload['rejected'] ?? null,
             );
-            // Skip spot detection for rejected readings
+            // Skip spot + Veedel detection for rejected readings
             if (empty($payload['rejected'])) {
                 $this->detectNearbySpots($user, (float) $payload['lat'], (float) $payload['lng']);
+                // Keep the user's home Veedel current as they relocate (jitter-throttled).
+                $this->veedels->syncFromPing($user, (float) $payload['lat'], (float) $payload['lng']);
             }
         }
     }
