@@ -37,6 +37,11 @@ Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 // Restaurant/spot data refresh — daily at 04:00 until coverage is complete, then switch to weekly
 Schedule::command('restaurants:scrape')->dailyAt('04:00')->withoutOverlapping();
 
+// Place photos from Wikimedia (wikidata/wikipedia links + Commons geosearch) —
+// weekly, so newly imported spots pick up an openly-licensed photo where one
+// exists. Idempotent: only fills spots that still have no photo.
+Schedule::command('spots:fetch-photos')->weeklyOn(0, '04:30')->withoutOverlapping();
+
 // External API health monitoring — every 5 minutes
 Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping();
 
