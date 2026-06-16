@@ -846,8 +846,8 @@ export default function Composer() {
 
                         {plan.slots.length === 0 && (
                             <div className="rounded-[14px] border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-                                Nothing fits — try another shape, widen the
-                                time, or remove a filter.
+                                Nothing’s open across that window — try a wider
+                                time range or another day.
                             </div>
                         )}
 

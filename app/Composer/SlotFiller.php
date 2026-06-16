@@ -102,11 +102,56 @@ class SlotFiller
         $archetype = $constraints->archetype ?? Archetype::forVibe($constraints->vibe) ?? Archetype::Balanced;
         $targetVeedel = $archetype->singleVeedel() ? ($context->preferredAreas[0] ?? null) : null;
 
+        $beforeRoles = count($slots);
+        $this->fillRoles($archetype->roles(), $feasible, $slots, $used, $usedNames, $constraints, $context, $originLat, $originLng, $targetVeedel);
+
+        // Graceful degradation: a shaped archetype whose roles match nothing in
+        // the filtered pool — "make a day of it" over a pitches-only result, or
+        // "explore a Veedel" with no spots in that Veedel — would dead-end at
+        // "nothing fits". Fall back to a permissive fill (any feasible category,
+        // anywhere) so the user always gets a real plan, flagged as relaxed so
+        // the response can say so honestly.
+        $relaxed = false;
+        if ($archetype !== Archetype::Balanced && count($slots) === $beforeRoles) {
+            $this->fillRoles([new Role([], self::MAX_SLOTS_PER_DAY)], $feasible, $slots, $used, $usedNames, $constraints, $context, $originLat, $originLng, null);
+            $relaxed = count($slots) > $beforeRoles;
+        }
+
+        return new Plan(
+            $constraints,
+            PlanNarrator::narrate($this->bufferAnchors(array_values($slots)), $context->rainExpected),
+            $relaxed,
+        );
+    }
+
+    /**
+     * Fill an ordered list of roles, left→right, chaining the cursor across
+     * them from the window start (so a hero sets up the meal that follows).
+     * Mutates $slots / $used / $usedNames in place.
+     *
+     * @param  list<Role>  $roles
+     * @param  list<Candidate>  $feasible
+     * @param  list<PlanSlot>  $slots
+     * @param  array<string, bool>  $used
+     * @param  array<string, bool>  $usedNames
+     */
+    private function fillRoles(
+        array $roles,
+        array $feasible,
+        array &$slots,
+        array &$used,
+        array &$usedNames,
+        Constraints $constraints,
+        ScoringContext $context,
+        float $originLat,
+        float $originLng,
+        ?string $targetVeedel,
+    ): void {
         $cursor = $constraints->windowStart;
         $cursorLat = $originLat;
         $cursorLng = $originLng;
 
-        foreach ($archetype->roles() as $role) {
+        foreach ($roles as $role) {
             $placed = 0;
 
             while ($placed < $role->count && count($slots) < self::MAX_SLOTS_PER_DAY) {
@@ -145,8 +190,6 @@ class SlotFiller
                 $placed++;
             }
         }
-
-        return new Plan($constraints, PlanNarrator::narrate($this->bufferAnchors(array_values($slots)), $context->rainExpected));
     }
 
     /**

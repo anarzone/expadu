@@ -118,6 +118,22 @@ class ComposerController extends Controller
         // dropped by Shuffle) are filtered out of the whole pool.
         $rawPool = $candidates->candidatesFor($constraints);
         $feasible = $filter->filter($constraints, $rawPool);
+
+        // Never dead-end on an over-tight filter combination: if nothing is
+        // feasible, lift the category filter (keeping a "free" promise as long
+        // as possible), then the budget cap, until the pool has something. The
+        // plan then carries an honest "widened your picks" notice.
+        $poolRelaxed = false;
+        if ($feasible === []) {
+            foreach ([$constraints->withoutCategories(), $constraints->withoutBudget(), $constraints->withoutBudget()->withoutCategories()] as $relaxed) {
+                $feasible = $filter->filter($relaxed, $rawPool);
+                if ($feasible !== []) {
+                    $poolRelaxed = true;
+                    break;
+                }
+            }
+        }
+
         $pinned = $candidates->byIds($pins, $constraints->windowStart);
         $pool = collect([...$appointments->within($user, $constraints), ...$pinned, ...$feasible])
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
@@ -134,7 +150,7 @@ class ComposerController extends Controller
 
         return response()->json([
             'plan' => $plan->toArray(),
-            'notices' => $this->notices($constraints, $plan),
+            'notices' => $this->notices($constraints, $plan, $poolRelaxed),
             'facets' => $this->facets($rawPool, $profile),
         ]);
     }
@@ -311,9 +327,15 @@ class ComposerController extends Controller
      *
      * @return list<array{type: string, text: string}>
      */
-    private function notices(Constraints $constraints, Plan $plan): array
+    private function notices(Constraints $constraints, Plan $plan, bool $poolRelaxed = false): array
     {
         $notices = [];
+
+        // The plan was widened beyond the exact filters (a shaped day with no
+        // matching picks, or an over-tight combination) — say so honestly.
+        if ($poolRelaxed || $plan->relaxed) {
+            $notices[] = ['type' => 'info', 'text' => '✨ Few exact matches here — widened the picks so you still have a plan'];
+        }
 
         foreach ($plan->slots as $slot) {
             if ($slot->candidate->isAppointment()) {

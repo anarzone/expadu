@@ -406,3 +406,30 @@ test('compose rejects windows beyond 72 hours', function () {
 
     $response->assertUnprocessable();
 });
+
+test('a thin filter combination still returns a plan instead of nothing', function () {
+    $user = composerUser();
+
+    // The Merkenich + pitches + "make a day of it" combination from the bug
+    // report: a shaped day with no hero/meal/wind-down to fill. It must not
+    // dead-end at "nothing fits".
+    Spot::factory()->create(['name' => 'Bolzplatz Merkenich', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.039, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Sportplatz Fühlingen', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.041, 'lng' => 6.932]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => ['Merkenich'],
+            'categories' => ['pitch'],
+            'budget' => 'free',
+            'archetype' => 'make_a_day',
+        ],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('plan.slots'))->not->toBeEmpty();
+    expect(collect($response->json('notices'))->pluck('text')->implode(' '))->toContain('widened');
+});

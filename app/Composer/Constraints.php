@@ -31,6 +31,18 @@ final readonly class Constraints
         return max(0, (int) $this->windowStart->diffInMinutes($this->windowEnd));
     }
 
+    /** Same constraints with the budget cap lifted — used when a filter combination leaves nothing feasible. */
+    public function withoutBudget(): self
+    {
+        return new self($this->windowStart, $this->windowEnd, $this->areas, $this->categories, $this->companions, null, $this->archetype, $this->vibe);
+    }
+
+    /** Same constraints with the category filter lifted — the deepest relaxation before giving up. */
+    public function withoutCategories(): self
+    {
+        return new self($this->windowStart, $this->windowEnd, $this->areas, [], $this->companions, $this->budget, $this->archetype, $this->vibe);
+    }
+
     /**
      * @return array<string, mixed>
      */

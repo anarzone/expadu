@@ -562,3 +562,42 @@ test('rejected candidates never come back in the same slot', function () {
         ]);
     }
 });
+
+// ── Graceful degradation: filters never dead-end ───────────────────────
+
+test('a shaped archetype with no matching picks degrades to a real plan, flagged relaxed', function () {
+    $constraints = new Constraints(
+        windowStart: saturday('14:00'),
+        windowEnd: saturday('20:00'),
+        categories: ['pitch'],
+        archetype: Archetype::MakeADayOfIt, // wants hero/meal/wind-down — never a pitch
+    );
+    $feasible = [
+        makeCandidate(['id' => 'spot:p1', 'name' => 'Bolzplatz Nord', 'category' => 'pitch', 'lat' => 50.944, 'lng' => 6.933]),
+        makeCandidate(['id' => 'spot:p2', 'name' => 'Sportplatz Süd', 'category' => 'pitch', 'lat' => 50.946, 'lng' => 6.935]),
+    ];
+
+    $plan = filler()->fill($constraints, $feasible, neutralContext(), 50.944, 6.933);
+
+    expect($plan->slots)->not->toBeEmpty();
+    expect($plan->relaxed)->toBeTrue();
+    expect(array_map(fn ($s) => $s->candidate->category, $plan->slots))->toContain('pitch');
+});
+
+test('a shaped archetype that fills normally is not flagged relaxed', function () {
+    $constraints = new Constraints(
+        windowStart: saturday('14:00'),
+        windowEnd: saturday('20:00'),
+        archetype: Archetype::MakeADayOfIt,
+    );
+    $feasible = [
+        makeCandidate(['id' => 'spot:m', 'name' => 'Museum', 'category' => 'museum', 'outdoor' => false, 'lat' => 50.944, 'lng' => 6.933]),
+        makeCandidate(['id' => 'spot:c', 'name' => 'Café', 'category' => 'cafe', 'outdoor' => false, 'lat' => 50.945, 'lng' => 6.934]),
+        makeCandidate(['id' => 'spot:v', 'name' => 'Lookout', 'category' => 'viewpoint', 'lat' => 50.946, 'lng' => 6.935]),
+    ];
+
+    $plan = filler()->fill($constraints, $feasible, neutralContext(), 50.944, 6.933);
+
+    expect($plan->slots)->not->toBeEmpty();
+    expect($plan->relaxed)->toBeFalse();
+});
