@@ -18,6 +18,7 @@ export type OnboardingData = {
     veedel: string;
     housing_status: string;
     german_level: string;
+    has_deutschlandticket: boolean;
     arrival_date: string;
     interests: string[];
 };
@@ -76,6 +77,7 @@ export default function Onboarding() {
         veedel: '',
         housing_status: 'long_term',
         german_level: '',
+        has_deutschlandticket: false,
         arrival_date: defaultArrival,
         interests: [],
     });
@@ -184,6 +186,9 @@ export default function Onboarding() {
                             arrivalDate={form.data.arrival_date}
                             germanLevel={form.data.german_level}
                             housingStatus={form.data.housing_status}
+                            hasDeutschlandticket={
+                                form.data.has_deutschlandticket
+                            }
                             onVeedelChange={(v) => form.setData('veedel', v)}
                             onArrivalDateChange={(v) =>
                                 form.setData('arrival_date', v)
@@ -193,6 +198,9 @@ export default function Onboarding() {
                             }
                             onHousingStatusChange={(v) =>
                                 form.setData('housing_status', v)
+                            }
+                            onDticketChange={(v) =>
+                                form.setData('has_deutschlandticket', v)
                             }
                         />
                     )}

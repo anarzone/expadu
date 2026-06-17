@@ -114,3 +114,30 @@ test('an unknown interest key is rejected', function () {
         ])
         ->assertSessionHasErrors('interests.1');
 });
+
+test('the deutschlandticket flag can be toggled from the profile', function () {
+    $user = User::factory()->create(['has_deutschlandticket' => false]);
+
+    $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'has_deutschlandticket' => true,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    expect($user->refresh()->has_deutschlandticket)->toBeTrue();
+
+    $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'has_deutschlandticket' => false,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($user->refresh()->has_deutschlandticket)->toBeFalse();
+});

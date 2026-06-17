@@ -35,6 +35,9 @@ class OnboardingRequest extends FormRequest
             'arrival_date' => ['required', 'date', 'before_or_equal:today'],
             'veedel' => ['required', 'string', Rule::in($veedels)],
             'german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
+            // Whether they already hold a Deutschlandticket — drives the
+            // journey-aware fare advice ("covered" vs a single ticket).
+            'has_deutschlandticket' => ['nullable', 'boolean'],
             // Explicit interests — a cold-start personalisation signal that
             // shapes the home feed and composer (see Interest enum).
             'interests' => ['required', 'array', 'min:'.Interest::MIN_SELECT, 'max:'.Interest::MAX_SELECT],

@@ -32,20 +32,24 @@ export function VeedelStep({
     arrivalDate,
     germanLevel,
     housingStatus,
+    hasDeutschlandticket,
     onVeedelChange,
     onArrivalDateChange,
     onGermanLevelChange,
     onHousingStatusChange,
+    onDticketChange,
 }: {
     veedels: Record<string, string[]>;
     veedel: string;
     arrivalDate: string;
     germanLevel: string;
     housingStatus: string;
+    hasDeutschlandticket: boolean;
     onVeedelChange: (value: string) => void;
     onArrivalDateChange: (value: string) => void;
     onGermanLevelChange: (value: string) => void;
     onHousingStatusChange: (value: string) => void;
+    onDticketChange: (value: boolean) => void;
 }) {
     const parsed = arrivalDate ? new Date(arrivalDate) : null;
     const selectedMonth = parsed ? parsed.getMonth() : new Date().getMonth();
@@ -196,6 +200,38 @@ export function VeedelStep({
                             </button>
                         ))}
                     </div>
+                </div>
+
+                <div>
+                    <div className="mb-2 text-[13px] font-semibold">
+                        Do you have a Deutschlandticket?{' '}
+                        <span className="font-normal text-muted-foreground">
+                            (optional)
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        {[
+                            { value: true, label: 'Yes, I have one' },
+                            { value: false, label: 'Not yet' },
+                        ].map((opt) => (
+                            <button
+                                key={String(opt.value)}
+                                type="button"
+                                onClick={() => onDticketChange(opt.value)}
+                                className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                    hasDeutschlandticket === opt.value
+                                        ? 'border-primary bg-accent-soft text-primary'
+                                        : 'border-border bg-card hover:border-primary/30'
+                                }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        If you do, we'll show trips as covered instead of
+                        quoting a single fare.
+                    </p>
                 </div>
             </div>
         </div>

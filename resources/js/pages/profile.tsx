@@ -246,6 +246,10 @@ export default function Profile() {
     const [profileGerman, setProfileGerman] = useState(
         GERMAN_LABELS[(user.german_level as string) ?? ''] ?? '',
     );
+    // Drives the journey-aware fare advice ("covered" vs a single ticket).
+    const [hasDticket, setHasDticket] = useState<boolean>(
+        (user.has_deutschlandticket as boolean | undefined) ?? false,
+    );
 
     // Inline edit state
     const [editingField, setEditingField] = useState<string | null>(null);
@@ -391,7 +395,7 @@ export default function Profile() {
         field: string,
         value: string,
         extraInterests?: string[],
-    ): Record<string, string | string[] | null> {
+    ): Record<string, string | string[] | boolean | null> {
         const currentName = field === 'name' ? value : profileName;
         const currentEmail = field === 'email' ? value : profileEmail;
         const currentCity = field === 'city' ? value : profileCity;
@@ -410,8 +414,26 @@ export default function Profile() {
             city: currentCity || null,
             situation: currentSituation || null,
             german_level: currentGerman || null,
+            has_deutschlandticket: hasDticket,
             interests: extraInterests ?? interests,
         };
+    }
+
+    // The Deutschlandticket flag is a boolean profile field; toggling it
+    // PATCHes /settings/profile (the new value, since state updates async).
+    function toggleDticket() {
+        const next = !hasDticket;
+        setHasDticket(next);
+        router.patch(
+            '/settings/profile',
+            { ...buildProfilePayload('', ''), has_deutschlandticket: next },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () =>
+                    showToast(next ? '✓ Deutschlandticket saved' : '✓ Updated'),
+            },
+        );
     }
 
     // Inline edit handlers
@@ -1871,6 +1893,24 @@ export default function Profile() {
                                 sub="Help improve Expadu for all expats"
                                 on={toggles.shareAnonymised}
                                 onToggle={() => toggle('shareAnonymised')}
+                                isLast
+                            />
+                        </SettingsSection>
+
+                        {/* TRANSIT & TICKETS — drill-in */}
+                        <SettingsSection
+                            id="transit"
+                            icon={IconBusStop}
+                            title="Transit & tickets"
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
+                        >
+                            <SettingToggle
+                                label="I have a Deutschlandticket"
+                                sub="Shows trips as covered instead of a single fare"
+                                on={hasDticket}
+                                onToggle={toggleDticket}
                                 isLast
                             />
                         </SettingsSection>

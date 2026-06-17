@@ -77,6 +77,7 @@ test('onboarding can be completed with valid data', function () {
         'arrival_date' => '2026-01-15',
         'housing_status' => 'long_term',
         'entry_mode' => 'visa_free',
+        'has_deutschlandticket' => true,
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
@@ -87,6 +88,7 @@ test('onboarding can be completed with valid data', function () {
     expect($user->veedel)->toBe('Ehrenfeld');
     expect($user->city)->toBe('Köln');
     expect($user->german_level->value)->toBe('a2');
+    expect($user->has_deutschlandticket)->toBeTrue();
     expect($user->onboarded_at)->not->toBeNull();
 });
 
