@@ -5,6 +5,7 @@ namespace App\Concerns;
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
 use App\Models\User;
+use App\Profile\Interest;
 use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
@@ -22,6 +23,8 @@ trait ProfileValidationRules
             'city' => ['sometimes', 'nullable', 'string', 'max:255'],
             'situation' => ['sometimes', 'nullable', Rule::enum(Situation::class)],
             'german_level' => ['sometimes', 'nullable', Rule::enum(GermanLevel::class)],
+            'interests' => ['sometimes', 'nullable', 'array'],
+            'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
         ];
     }
 
