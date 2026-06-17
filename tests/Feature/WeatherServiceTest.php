@@ -96,6 +96,27 @@ it('never blocks the page: the request path reads cache only and refreshes in th
     Queue::assertPushed(RefreshWeather::class);     // the refresh is queued for the background worker
 });
 
+it('does not pin a queue connection in local so the dev (database) worker drains it', function () {
+    app()['env'] = 'local';
+
+    $job = new RefreshWeather(50.9375, 6.9603);
+
+    // No explicit connection → falls back to QUEUE_CONNECTION, which is the
+    // connection `composer run dev` actually consumes locally. Pinning redis
+    // here would strand the job and leave the weather widget "unavailable".
+    expect($job->connection)->toBeNull()
+        ->and($job->queue)->toBe('default');
+});
+
+it('pins the redis connection when deployed (non-local)', function () {
+    app()['env'] = 'production';
+
+    $job = new RefreshWeather(50.9375, 6.9603);
+
+    expect($job->connection)->toBe('redis')
+        ->and($job->queue)->toBe('default');
+});
+
 it('uses first successful provider', function () {
     $service = new WeatherService([
         fakeProvider('primary', samplePayload(14.5, 'clear-day')),

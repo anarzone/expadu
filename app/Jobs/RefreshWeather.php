@@ -27,13 +27,20 @@ class RefreshWeather implements ShouldBeUnique, ShouldQueue
         public float $lat,
         public float $lng,
     ) {
-        // Pin to the redis connection — prod's queue:work runs on
-        // `redis --queue=commute,default`. Without this the job dispatches
-        // to the app-default (database) and never gets processed.
-        // Set in constructor (not as class property) because the Queueable
-        // trait already declares these without defaults, and PHP 8.4 rejects
-        // a redeclaration whose definition differs from the trait's.
-        $this->onConnection('redis');
+        // Deployed environments (prod/staging) set QUEUE_CONNECTION=redis and
+        // run the worker on `redis --queue=commute,default`, so pinning redis
+        // keeps their behaviour identical. Local dev keeps QUEUE_CONNECTION=
+        // database and drains it via `composer run dev`; pinning redis there
+        // pushes this job onto a queue nothing consumes, so the weather cache
+        // never warms and the widget is stuck on "unavailable" forever. Only
+        // pin when deployed; locally fall back to the default connection the
+        // dev worker actually reads.
+        // (Set in the constructor, not as a typed property, because Queueable
+        // already declares $connection/$queue and PHP 8.4 rejects a differing
+        // redeclaration.)
+        if (! app()->isLocal()) {
+            $this->onConnection('redis');
+        }
         $this->onQueue('default');
     }
 
