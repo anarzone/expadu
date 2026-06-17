@@ -494,17 +494,20 @@ function FeaturedEventWidget({ event }: { event?: EventOccurrence | null }) {
     const hasCoords = event.venue.lat != null && event.venue.lng != null;
     const chips = (event.chips ?? []).filter((c) => c.toLowerCase() !== 'free');
 
+    // `event` is narrowed to EventOccurrence above, but TS widens it again
+    // inside this closure — bind a const so the narrowing carries through.
+    const ev = event;
     function takeMeThere() {
-        if (event.venue.lat == null || event.venue.lng == null) {
+        if (ev.venue.lat == null || ev.venue.lng == null) {
             return;
         }
 
         setDestination({
-            name: event.venue.name ?? event.title,
-            emoji: event.emoji,
-            lat: event.venue.lat,
-            lng: event.venue.lng,
-            arriveBy: event.occurrence_start,
+            name: ev.venue.name ?? ev.title,
+            emoji: ev.emoji,
+            lat: ev.venue.lat,
+            lng: ev.venue.lng,
+            arriveBy: ev.occurrence_start,
         });
     }
 
