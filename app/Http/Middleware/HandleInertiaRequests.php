@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Event;
+use App\Home\FeaturedEvent;
 use App\Models\NotificationPreference;
 use App\Models\UserSetting;
 use App\Services\DisruptionService;
@@ -73,7 +73,7 @@ class HandleInertiaRequests extends Middleware
             'weather' => Inertia::defer(fn () => $request->user() ? app(WeatherService::class)->getCurrentWeather() : null, 'widgets'),
             'forecast' => Inertia::defer(fn () => $request->user() ? app(WeatherService::class)->getForecast() : null, 'widgets'),
             'rhineLevel' => Inertia::defer(fn () => $request->user() ? app(RhineService::class)->getCurrentLevel() : null, 'widgets'),
-            'todayEvents' => Inertia::defer(fn () => $request->user() ? $this->todayEvents() : [], 'widgets'),
+            'featuredEvent' => Inertia::defer(fn () => $request->user() ? app(FeaturedEvent::class)->forToday() : null, 'widgets'),
             'activeDisruptions' => Inertia::defer(fn () => $request->user() ? $this->activeDisruptions() : [], 'widgets'),
         ];
     }
@@ -83,28 +83,6 @@ class HandleInertiaRequests extends Middleware
      *
      * @return list<array<string, mixed>>
      */
-    private function todayEvents(): array
-    {
-        return Event::query()
-            ->whereBetween('starts_at', [now('Europe/Berlin')->startOfDay(), now('Europe/Berlin')->endOfDay()])
-            ->orderBy('starts_at')
-            ->limit(6)
-            ->get()
-            ->map(fn (Event $event) => [
-                'time' => $event->starts_at->format('H:i'),
-                'emoji' => match ($event->category) {
-                    'music' => '🎵', 'sports' => '⚽', 'language' => '🗣️',
-                    'culture' => '🎭', 'community' => '🤝', 'food' => '🍽️', 'market' => '🛒',
-                    default => '📅',
-                },
-                'title' => $event->title,
-                'location' => $event->location_name,
-                'badge' => $event->is_free ? 'Free' : ucfirst((string) ($event->category ?? 'Event')),
-                'badgeType' => $event->is_free ? 'free' : 'category',
-            ])
-            ->all();
-    }
-
     /**
      * Active transit/city disruptions for the right-panel widget (top 2).
      *
