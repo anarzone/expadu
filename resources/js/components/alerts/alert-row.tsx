@@ -1,6 +1,20 @@
 import { router } from '@inertiajs/react';
+import {
+    IconBuildingBank,
+    IconBus,
+    IconCalendarEvent,
+    IconChecklist,
+    IconCloudRain,
+    IconConfetti,
+    IconMapPin,
+    IconMessages,
+    IconRipple,
+} from '@tabler/icons-react';
+import type { IconProps } from '@tabler/icons-react';
 import React from 'react';
+import type { ComponentType } from 'react';
 import { AlertActionsMenu } from '@/components/alerts/alert-actions-menu';
+import { ICON_STROKE } from '@/constants/icons';
 import { useTracker } from '@/hooks/use-tracker';
 
 export type AlertData = {
@@ -16,7 +30,7 @@ export type AlertData = {
 };
 
 type VisualConfig = {
-    emoji: string;
+    Icon: ComponentType<IconProps>;
     bg: string;
     tag: string;
     tagBg: string;
@@ -123,7 +137,7 @@ function matchConfig(alert: AlertData): VisualConfig {
 
 const systemConfigs: Record<string, VisualConfig> = {
     transit: {
-        emoji: '🚇',
+        Icon: IconBus,
         bg: 'bg-danger-soft',
         tag: 'Transit',
         tagBg: 'bg-danger-soft',
@@ -133,7 +147,7 @@ const systemConfigs: Record<string, VisualConfig> = {
         ctaColor: 'text-warn',
     },
     buergeramt: {
-        emoji: '🏛️',
+        Icon: IconBuildingBank,
         bg: 'bg-success-soft',
         tag: 'Bürgeramt',
         tagBg: 'bg-success-soft',
@@ -143,7 +157,7 @@ const systemConfigs: Record<string, VisualConfig> = {
         ctaColor: 'text-white',
     },
     rhine: {
-        emoji: '🌊',
+        Icon: IconRipple,
         bg: 'bg-accent-soft',
         tag: 'Rhine',
         tagBg: 'bg-accent-soft',
@@ -153,7 +167,7 @@ const systemConfigs: Record<string, VisualConfig> = {
         ctaColor: 'text-primary',
     },
     weather: {
-        emoji: '🌦️',
+        Icon: IconCloudRain,
         bg: 'bg-surface-2',
         tag: 'Weather',
         tagBg: 'bg-surface-2',
@@ -166,7 +180,7 @@ const systemConfigs: Record<string, VisualConfig> = {
 
 const socialConfigs: Record<string, VisualConfig> = {
     language: {
-        emoji: '🗣️',
+        Icon: IconMessages,
         bg: 'bg-accent-soft',
         tag: 'Language',
         tagBg: 'bg-accent-soft',
@@ -176,7 +190,7 @@ const socialConfigs: Record<string, VisualConfig> = {
         ctaColor: 'text-primary-foreground',
     },
     event: {
-        emoji: '🎉',
+        Icon: IconConfetti,
         bg: 'bg-purple-100 dark:bg-purple-900',
         tag: 'Events',
         tagBg: 'bg-purple-100 dark:bg-purple-900',
@@ -186,7 +200,7 @@ const socialConfigs: Record<string, VisualConfig> = {
         ctaColor: 'text-purple-700 dark:text-purple-300',
     },
     tip: {
-        emoji: '📍',
+        Icon: IconMapPin,
         bg: 'bg-accent-soft',
         tag: 'Explore',
         tagBg: 'bg-accent-soft',
@@ -199,7 +213,7 @@ const socialConfigs: Record<string, VisualConfig> = {
 
 const reminderConfigs: Record<string, VisualConfig> = {
     event: {
-        emoji: '📅',
+        Icon: IconCalendarEvent,
         bg: 'bg-warn-soft',
         tag: 'Reminder',
         tagBg: 'bg-warn-soft',
@@ -209,7 +223,7 @@ const reminderConfigs: Record<string, VisualConfig> = {
         ctaColor: 'text-warn',
     },
     bureaucracy: {
-        emoji: '📋',
+        Icon: IconChecklist,
         bg: 'bg-surface-2',
         tag: 'Bureaucracy',
         tagBg: 'bg-surface-2',
@@ -296,6 +310,7 @@ export function AlertRow({
     const { track } = useTracker();
     const isUnread = !alert.read_at;
     const config = matchConfig(alert);
+    const ConfigIcon = config.Icon;
     const hasAction =
         alert.deep_link &&
         alert.deep_link !== '/alerts' &&
@@ -341,9 +356,9 @@ export function AlertRow({
 
             {/* Icon bubble — 42x42 circle */}
             <div
-                className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-lg ${config.bg}`}
+                className={`flex size-[42px] shrink-0 items-center justify-center rounded-full ${config.bg} ${config.tagColor}`}
             >
-                {config.emoji}
+                <ConfigIcon size={20} stroke={ICON_STROKE} />
             </div>
 
             {/* Body */}

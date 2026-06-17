@@ -226,18 +226,55 @@ const VEEDEL_VISUALS: Visual[] = [
     },
 ];
 
+/**
+ * The single source of truth for category → emoji. Kept only for the few
+ * string-emoji consumers that remain (the deferred take-me-there destination
+ * glyph); UI chrome should use {@link categoryIcon} for the Tabler component.
+ */
 const CATEGORY_EMOJI: Record<string, string> = {
     park: '🌳',
+    playground: '🛝',
     pitch: '⚽',
     court: '🏀',
+    basketball: '🏀',
+    tennis: '🎾',
+    table_tennis: '🏓',
+    tennis_table: '🏓',
+    skatepark: '🛹',
     swimming: '🏊',
-    playground: '🛝',
+    lake: '🏞️',
     dog_park: '🐕',
+    bbq: '🧺',
+    viewpoint: '🌅',
+    cafe: '☕',
+    library: '📚',
+    restaurant: '🍽️',
+    bar: '🍻',
     culture: '🏛️',
+    coworking: '💻',
+    community: '🤝',
+    museum: '🏛️',
+    gallery: '🖼️',
+    attraction: '🎡',
+    zoo: '🦁',
+    boules: '🎱',
+    event: '🎟️',
+    language: '🗣️',
+    appointment: '🏛️',
+    task: '📋',
 };
 
 export function categoryEmoji(coarse: string): string {
     return CATEGORY_EMOJI[coarse] ?? '📍';
+}
+
+/**
+ * Category → Tabler icon component, drawn from the same canonical {@link VISUALS}
+ * map the illustration uses, so inline category chrome and the no-photo card
+ * art can never drift. Unknown categories fall back to the neutral pin.
+ */
+export function categoryIcon(coarse: string): ComponentType<IconProps> {
+    return (VISUALS[coarse] ?? VISUALS.place).Icon;
 }
 
 function nameHash(value: string): number {

@@ -1,19 +1,26 @@
-import type { ReactNode } from 'react';
+import { IconCalendarPlus, IconPhone, IconWorld } from '@tabler/icons-react';
+import type { IconProps } from '@tabler/icons-react';
+import type { ComponentType, ReactNode } from 'react';
 import type { Buckets } from '@/components/bureaucracy/checklist-framing-b';
+import { ICON_STROKE } from '@/constants/icons';
 
-const quickActions = [
+const quickActions: Array<{
+    Icon: ComponentType<IconProps>;
+    label: string;
+    url: string;
+}> = [
     {
-        emoji: '📋',
+        Icon: IconCalendarPlus,
         label: 'Book Bürgeramt',
         url: 'https://termine.stadt-koeln.de/m/buergeramt/',
     },
     {
-        emoji: '📞',
+        Icon: IconPhone,
         label: 'Ausländerbehörde Cologne',
         url: 'https://www.stadt-koeln.de/service/aemter/ordnungsamt-auslaenderangelegenheiten',
     },
     {
-        emoji: '🌐',
+        Icon: IconWorld,
         label: 'Cologne city portal',
         url: 'https://www.stadt-koeln.de',
     },
@@ -65,23 +72,27 @@ export function BureaucracyRightPanel({ tasks }: { tasks: Buckets }) {
         <>
             {/* Quick actions */}
             <RpBlock title="Quick actions">
-                {quickActions.map((qa, i) => (
-                    <a
-                        key={i}
-                        href={qa.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex cursor-pointer items-center gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] no-underline transition-colors last:border-b-0 hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                    >
-                        <span className="w-6 shrink-0 text-center text-base">
-                            {qa.emoji}
-                        </span>
-                        <span className="flex-1 text-[13px] font-medium text-[#18170F] dark:text-[#F6F5F1]">
-                            {qa.label}
-                        </span>
-                        <span className="text-sm text-[#AAA89F]">›</span>
-                    </a>
-                ))}
+                {quickActions.map((qa, i) => {
+                    const QaIcon = qa.Icon;
+
+                    return (
+                        <a
+                            key={i}
+                            href={qa.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex cursor-pointer items-center gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] no-underline transition-colors last:border-b-0 hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                        >
+                            <span className="flex w-6 shrink-0 justify-center text-[#6B6860] dark:text-[#AAA89F]">
+                                <QaIcon size={18} stroke={ICON_STROKE} />
+                            </span>
+                            <span className="flex-1 text-[13px] font-medium text-[#18170F] dark:text-[#F6F5F1]">
+                                {qa.label}
+                            </span>
+                            <span className="text-sm text-[#AAA89F]">›</span>
+                        </a>
+                    );
+                })}
             </RpBlock>
 
             {/* The user's actual upcoming deadlines */}

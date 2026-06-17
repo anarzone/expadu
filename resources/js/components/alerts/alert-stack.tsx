@@ -1,6 +1,15 @@
+import {
+    IconBell,
+    IconBus,
+    IconCloudRain,
+    IconMessages,
+} from '@tabler/icons-react';
+import type { IconProps } from '@tabler/icons-react';
 import { useState } from 'react';
+import type { ComponentType } from 'react';
 import { AlertRow } from '@/components/alerts/alert-row';
 import type { AlertData } from '@/components/alerts/alert-row';
+import { ICON_STROKE } from '@/constants/icons';
 
 export type AlertStack = {
     stackType: 'stack';
@@ -11,12 +20,15 @@ export type AlertStack = {
     alerts: AlertData[];
 };
 
-const subtypeLabels: Record<string, { emoji: string; label: string }> = {
-    transit_disruption: { emoji: '🚇', label: 'transit disruptions' },
-    transit_delay: { emoji: '🚇', label: 'transit delays' },
-    weather: { emoji: '🌦️', label: 'weather alerts' },
-    social_activity: { emoji: '🗣️', label: 'social updates' },
-    generic: { emoji: '🔔', label: 'notifications' },
+const subtypeLabels: Record<
+    string,
+    { Icon: ComponentType<IconProps>; label: string }
+> = {
+    transit_disruption: { Icon: IconBus, label: 'transit disruptions' },
+    transit_delay: { Icon: IconBus, label: 'transit delays' },
+    weather: { Icon: IconCloudRain, label: 'weather alerts' },
+    social_activity: { Icon: IconMessages, label: 'social updates' },
+    generic: { Icon: IconBell, label: 'notifications' },
 };
 
 export function AlertStackRow({
@@ -30,6 +42,7 @@ export function AlertStackRow({
 }) {
     const [expanded, setExpanded] = useState(false);
     const info = subtypeLabels[stack.subtype] ?? subtypeLabels.generic;
+    const InfoIcon = info.Icon;
     const unreadCount = stack.alerts.filter((a) => !a.read_at).length;
 
     function markAllInStackRead() {
@@ -49,7 +62,11 @@ export function AlertStackRow({
                     unreadCount > 0 ? 'bg-primary/[0.03]' : ''
                 }`}
             >
-                <span className="text-lg">{info.emoji}</span>
+                <InfoIcon
+                    size={18}
+                    stroke={ICON_STROKE}
+                    className="shrink-0 text-muted-foreground"
+                />
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold">

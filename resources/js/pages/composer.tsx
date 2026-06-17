@@ -1,8 +1,35 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { IconChevronDown } from '@tabler/icons-react';
+import {
+    IconAdjustmentsHorizontal,
+    IconArrowsShuffle,
+    IconBus,
+    IconChecklist,
+    IconChevronDown,
+    IconClock,
+    IconCoinEuro,
+    IconCompass,
+    IconLeaf,
+    IconMapPin,
+    IconPin,
+    IconRefresh,
+    IconSearch,
+    IconSparkles,
+    IconStar,
+    IconSun,
+    IconTag,
+    IconTarget,
+    IconUsers,
+    IconX,
+} from '@tabler/icons-react';
+import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ComponentType } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import {
+    categoryEmoji,
+    categoryIcon,
+} from '@/components/places/category-illustration';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import type { Place } from '@/components/places/types';
@@ -76,36 +103,8 @@ type ParseResult = {
     query: string | null;
 };
 
-const CATEGORY_EMOJI: Record<string, string> = {
-    park: '🌳',
-    playground: '🛝',
-    pitch: '⚽',
-    basketball: '🏀',
-    tennis: '🎾',
-    skatepark: '🛹',
-    swimming: '🏊',
-    lake: '🏞️',
-    dog_park: '🐕',
-    bbq: '🧺',
-    viewpoint: '🌅',
-    cafe: '☕',
-    library: '📚',
-    restaurant: '🍽️',
-    bar: '🍻',
-    culture: '🎨',
-    community: '🤝',
-    language: '🗣️',
-    event: '🎟️',
-    coworking: '💻',
-    appointment: '🏛️',
-};
-
 function slotEmoji(slot: PlanSlot): string {
-    if (slot.is_appointment) {
-        return '🏛️';
-    }
-
-    return CATEGORY_EMOJI[slot.category] ?? '📍';
+    return categoryEmoji(slot.is_appointment ? 'appointment' : slot.category);
 }
 
 /** Meta line for the detail modal — same shape as the Places / Today cards. */
@@ -123,11 +122,15 @@ function detailMeta(place: Place): string {
         .join(' · ');
 }
 
-const ARCHETYPES: { key: string; label: string }[] = [
-    { key: 'one_main', label: '🎯 One main + supports' },
-    { key: 'explore_veedel', label: '🧭 Explore a Veedel' },
-    { key: 'chill', label: '🌿 Chill nearby' },
-    { key: 'make_a_day', label: '🌞 Make a day of it' },
+const ARCHETYPES: {
+    key: string;
+    label: string;
+    Icon: ComponentType<IconProps>;
+}[] = [
+    { key: 'one_main', label: 'One main + supports', Icon: IconTarget },
+    { key: 'explore_veedel', label: 'Explore a Veedel', Icon: IconCompass },
+    { key: 'chill', label: 'Chill nearby', Icon: IconLeaf },
+    { key: 'make_a_day', label: 'Make a day of it', Icon: IconSun },
 ];
 
 const BANDS = ['Morning', 'Midday', 'Afternoon', 'Evening'];
@@ -248,11 +251,20 @@ function timePresetKey(c: Constraints): string {
 const CHIP =
     'flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium outline-none transition-colors';
 
-function FilterTrigger({ label, active }: { label: string; active: boolean }) {
+function FilterTrigger({
+    label,
+    active,
+    Icon,
+}: {
+    label: string;
+    active: boolean;
+    Icon: ComponentType<IconProps>;
+}) {
     return (
         <DropdownMenuTrigger
             className={`${CHIP} ${active ? 'border-primary bg-accent-soft text-primary' : 'border-border bg-card text-foreground hover:border-primary'}`}
         >
+            <Icon size={14} stroke={ICON_STROKE} className="opacity-70" />
             {label}
             <IconChevronDown
                 size={13}
@@ -269,16 +281,18 @@ function SingleFilter({
     value,
     options,
     onChange,
+    Icon,
 }: {
     label: string;
     active: boolean;
     value: string;
     options: { value: string; label: string }[];
     onChange: (value: string) => void;
+    Icon: ComponentType<IconProps>;
 }) {
     return (
         <DropdownMenu>
-            <FilterTrigger label={label} active={active} />
+            <FilterTrigger label={label} active={active} Icon={Icon} />
             <DropdownMenuContent align="start" className="w-48">
                 <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
                     {options.map((o) => (
@@ -298,16 +312,18 @@ function MultiFilter({
     selected,
     options,
     onToggle,
+    Icon,
 }: {
     label: string;
     active: boolean;
     selected: string[];
     options: { value: string; label: string }[];
     onToggle: (value: string) => void;
+    Icon: ComponentType<IconProps>;
 }) {
     return (
         <DropdownMenu>
-            <FilterTrigger label={label} active={active} />
+            <FilterTrigger label={label} active={active} Icon={Icon} />
             <DropdownMenuContent
                 align="start"
                 className="max-h-72 w-52 overflow-y-auto"
@@ -335,20 +351,19 @@ function MultiFilter({
 
 /** Short summary for a multi-select chip: "Culture +2", or a default. */
 function multiLabel(
-    icon: string,
     selected: string[],
     options: { value: string; label: string }[],
     empty: string,
 ): string {
     if (selected.length === 0) {
-        return `${icon} ${empty}`;
+        return empty;
     }
 
     const first =
         options.find((o) => o.value === selected[0])?.label ?? selected[0];
     const extra = selected.length - 1;
 
-    return `${icon} ${first}${extra > 0 ? ` +${extra}` : ''}`;
+    return `${first}${extra > 0 ? ` +${extra}` : ''}`;
 }
 
 /**
@@ -388,7 +403,12 @@ function EditableFilters({
             </div>
             <div className="flex flex-wrap items-center gap-2">
                 <SingleFilter
-                    label={`🕐 ${TIME_OPTS.find((o) => o.value === timePresetKey(constraints))?.label ?? 'When'}`}
+                    label={
+                        TIME_OPTS.find(
+                            (o) => o.value === timePresetKey(constraints),
+                        )?.label ?? 'When'
+                    }
+                    Icon={IconClock}
                     active
                     value={timePresetKey(constraints)}
                     options={TIME_OPTS}
@@ -397,14 +417,14 @@ function EditableFilters({
                 <MultiFilter
                     label={
                         constraints.areas.length === 0 && homeVeedel
-                            ? `📍 Around ${homeVeedel}`
+                            ? `Around ${homeVeedel}`
                             : multiLabel(
-                                  '📍',
                                   constraints.areas,
                                   areaOptions,
                                   'Any area',
                               )
                     }
+                    Icon={IconMapPin}
                     active={constraints.areas.length > 0}
                     selected={constraints.areas}
                     options={areaOptions}
@@ -414,11 +434,11 @@ function EditableFilters({
                 />
                 <MultiFilter
                     label={multiLabel(
-                        '🏷️',
                         constraints.categories,
                         facets.categories,
                         'Anything',
                     )}
+                    Icon={IconTag}
                     active={constraints.categories.length > 0}
                     selected={constraints.categories}
                     options={facets.categories}
@@ -429,21 +449,33 @@ function EditableFilters({
                     }
                 />
                 <SingleFilter
-                    label={`👥 ${COMPANION_OPTS.find((o) => o.value === companion)?.label ?? 'Anyone'}`}
+                    label={
+                        COMPANION_OPTS.find((o) => o.value === companion)
+                            ?.label ?? 'Anyone'
+                    }
+                    Icon={IconUsers}
                     active={companion !== ''}
                     value={companion}
                     options={COMPANION_OPTS}
                     onChange={(v) => onChange({ companions: v || null })}
                 />
                 <SingleFilter
-                    label={`💶 ${BUDGET_OPTS.find((o) => o.value === budget)?.label ?? 'Any budget'}`}
+                    label={
+                        BUDGET_OPTS.find((o) => o.value === budget)?.label ??
+                        'Any budget'
+                    }
+                    Icon={IconCoinEuro}
                     active={budget !== ''}
                     value={budget}
                     options={BUDGET_OPTS}
                     onChange={(v) => onChange({ budget: v || null })}
                 />
                 <SingleFilter
-                    label={`🎚️ ${VIBE_OPTS.find((o) => o.value === vibe)?.label ?? 'Any vibe'}`}
+                    label={
+                        VIBE_OPTS.find((o) => o.value === vibe)?.label ??
+                        'Any vibe'
+                    }
+                    Icon={IconAdjustmentsHorizontal}
                     active={vibe !== ''}
                     value={vibe}
                     options={VIBE_OPTS}
@@ -495,7 +527,7 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
     const config: Record<
         string,
         {
-            emoji: string;
+            Icon: ComponentType<IconProps>;
             title: string;
             body: string;
             href: string;
@@ -503,21 +535,21 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
         }
     > = {
         bureaucracy_q: {
-            emoji: '📋',
+            Icon: IconChecklist,
             title: 'That looks like a paperwork question',
             body: 'Answers come from your verified checklist — never guessed. Open it to find the task.',
             href: '/bureaucracy',
             cta: 'Open your checklist →',
         },
         find: {
-            emoji: '🔍',
+            Icon: IconSearch,
             title: 'Looks like you’re searching for a place',
             body: 'The universal search lands next. For now, browse places and events.',
             href: '/explore',
             cta: 'Browse places →',
         },
         take_me_there: {
-            emoji: '🚌',
+            Icon: IconBus,
             title: 'Looks like you want directions',
             body: 'Find the place first and tap “take me there” on it.',
             href: '/explore',
@@ -526,10 +558,15 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
     };
 
     const c = config[intent] ?? config.find;
+    const RouteIcon = c.Icon;
 
     return (
         <div className="rounded-[14px] border border-border bg-card p-6 text-center">
-            <div className="mb-2 text-3xl">{c.emoji}</div>
+            <RouteIcon
+                size={32}
+                stroke={ICON_STROKE}
+                className="mx-auto mb-2 text-muted-foreground"
+            />
             <p className="mb-1 text-[15px] font-semibold">{c.title}</p>
             <p className="mb-4 text-sm text-muted-foreground">
                 {query ? `“${query}” — ${c.body}` : c.body}
@@ -868,19 +905,27 @@ export default function Composer() {
                             Shape of the day
                         </div>
                         <div className="mb-5 flex flex-wrap gap-2">
-                            {ARCHETYPES.map((a) => (
-                                <button
-                                    key={a.key}
-                                    onClick={() => pickArchetype(a.key)}
-                                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                                        archetype === a.key
-                                            ? 'border-foreground bg-foreground text-background'
-                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
-                                    }`}
-                                >
-                                    {a.label}
-                                </button>
-                            ))}
+                            {ARCHETYPES.map((a) => {
+                                const ArchIcon = a.Icon;
+
+                                return (
+                                    <button
+                                        key={a.key}
+                                        onClick={() => pickArchetype(a.key)}
+                                        className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                                            archetype === a.key
+                                                ? 'border-foreground bg-foreground text-background'
+                                                : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                        }`}
+                                    >
+                                        <ArchIcon
+                                            size={14}
+                                            stroke={ICON_STROKE}
+                                        />
+                                        {a.label}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {plan.slots.length === 0 && (
@@ -909,6 +954,9 @@ export default function Composer() {
                                             const i = plan.slots.indexOf(slot);
                                             const isLocked = locked.includes(
                                                 slot.id,
+                                            );
+                                            const SlotCatIcon = categoryIcon(
+                                                slot.category,
                                             );
                                             // Only real places open the detail
                                             // modal; appointments/events don't.
@@ -972,7 +1020,7 @@ export default function Composer() {
                                                     )}
                                                     <div className="mb-1 flex items-center justify-between gap-2">
                                                         <span
-                                                            className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wide uppercase ${
+                                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wide uppercase ${
                                                                 slot.is_appointment
                                                                     ? 'bg-primary text-white'
                                                                     : slot.is_landmark
@@ -980,11 +1028,36 @@ export default function Composer() {
                                                                       : 'bg-secondary text-muted-foreground'
                                                             }`}
                                                         >
-                                                            {slot.is_appointment
-                                                                ? `${slot.start_time} · fixed`
-                                                                : slot.is_landmark
-                                                                  ? '⭐ main'
-                                                                  : `${slotEmoji(slot)} ${slot.category.replace('_', ' ')}`}
+                                                            {slot.is_appointment ? (
+                                                                `${slot.start_time} · fixed`
+                                                            ) : slot.is_landmark ? (
+                                                                <>
+                                                                    <IconStar
+                                                                        size={
+                                                                            11
+                                                                        }
+                                                                        stroke={
+                                                                            ICON_STROKE
+                                                                        }
+                                                                    />
+                                                                    main
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <SlotCatIcon
+                                                                        size={
+                                                                            11
+                                                                        }
+                                                                        stroke={
+                                                                            ICON_STROKE
+                                                                        }
+                                                                    />
+                                                                    {slot.category.replace(
+                                                                        '_',
+                                                                        ' ',
+                                                                    )}
+                                                                </>
+                                                            )}
                                                         </span>
                                                         {!slot.is_appointment && (
                                                             <span className="font-mono text-[12px] text-muted-foreground">
@@ -1010,8 +1083,14 @@ export default function Composer() {
                                                     )}
                                                     {slot.is_appointment &&
                                                         slot.leave_by && (
-                                                            <span className="mt-2 inline-block rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[11px] font-semibold text-primary">
-                                                                ⏱ Leave by{' '}
+                                                            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[11px] font-semibold text-primary">
+                                                                <IconClock
+                                                                    size={12}
+                                                                    stroke={
+                                                                        ICON_STROKE
+                                                                    }
+                                                                />
+                                                                Leave by{' '}
                                                                 {slot.leave_by}
                                                             </span>
                                                         )}
@@ -1027,13 +1106,20 @@ export default function Composer() {
                                                                             slot.id,
                                                                         );
                                                                     }}
-                                                                    className={`cursor-pointer rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${
+                                                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${
                                                                         isLocked
                                                                             ? 'border-primary bg-accent-soft text-primary'
                                                                             : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
                                                                     }`}
                                                                 >
-                                                                    📌{' '}
+                                                                    <IconPin
+                                                                        size={
+                                                                            14
+                                                                        }
+                                                                        stroke={
+                                                                            ICON_STROKE
+                                                                        }
+                                                                    />
                                                                     {isLocked
                                                                         ? 'Locked'
                                                                         : 'Lock'}
@@ -1052,12 +1138,24 @@ export default function Composer() {
                                                                             swappingSlot !==
                                                                             null
                                                                         }
-                                                                        className="cursor-pointer rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                                                                     >
                                                                         {swappingSlot ===
-                                                                        i
-                                                                            ? 'Swapping…'
-                                                                            : '↻ Swap'}
+                                                                        i ? (
+                                                                            'Swapping…'
+                                                                        ) : (
+                                                                            <>
+                                                                                <IconRefresh
+                                                                                    size={
+                                                                                        14
+                                                                                    }
+                                                                                    stroke={
+                                                                                        ICON_STROKE
+                                                                                    }
+                                                                                />
+                                                                                Swap
+                                                                            </>
+                                                                        )}
                                                                     </button>
                                                                 )}
                                                                 <button
@@ -1069,9 +1167,17 @@ export default function Composer() {
                                                                             slot.id,
                                                                         );
                                                                     }}
-                                                                    className="cursor-pointer rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger"
+                                                                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger"
                                                                 >
-                                                                    ✕ Remove
+                                                                    <IconX
+                                                                        size={
+                                                                            14
+                                                                        }
+                                                                        stroke={
+                                                                            ICON_STROKE
+                                                                        }
+                                                                    />
+                                                                    Remove
                                                                 </button>
                                                             </>
                                                         )}
@@ -1101,16 +1207,24 @@ export default function Composer() {
                                     <button
                                         onClick={shuffle}
                                         disabled={composing}
-                                        className="cursor-pointer rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                                     >
-                                        🔀 Shuffle
+                                        <IconArrowsShuffle
+                                            size={14}
+                                            stroke={ICON_STROKE}
+                                        />
+                                        Shuffle
                                     </button>
                                     <button
                                         onClick={recompose}
                                         disabled={composing}
-                                        className="cursor-pointer rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                                     >
-                                        ↻ Recompose
+                                        <IconRefresh
+                                            size={14}
+                                            stroke={ICON_STROKE}
+                                        />
+                                        Recompose
                                     </button>
                                 </div>
                                 <button
@@ -1119,9 +1233,10 @@ export default function Composer() {
                                 >
                                     Save to Today
                                 </button>
-                                <p className="mt-3 text-center text-xs text-muted-foreground/70">
-                                    📌 Locked picks stay when you shuffle or
-                                    switch the shape.
+                                <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-muted-foreground/70">
+                                    <IconPin size={12} stroke={ICON_STROKE} />
+                                    Locked picks stay when you shuffle or switch
+                                    the shape.
                                 </p>
                             </>
                         )}
@@ -1130,7 +1245,11 @@ export default function Composer() {
 
                 {!constraints && !parsing && !showInterim && (
                     <div className="rounded-[14px] border border-border bg-card p-8 text-center">
-                        <div className="mb-2 text-3xl">✨</div>
+                        <IconSparkles
+                            size={32}
+                            stroke={ICON_STROKE}
+                            className="mx-auto mb-2 text-muted-foreground"
+                        />
                         <p className="text-sm text-muted-foreground">
                             Tell me about your day on the Today screen and I'll
                             compose it.

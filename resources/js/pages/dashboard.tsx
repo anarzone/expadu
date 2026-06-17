@@ -1,12 +1,15 @@
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
+import { IconCalendarEvent, IconSparkles } from '@tabler/icons-react';
 import { useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { categoryEmoji } from '@/components/places/category-illustration';
 import { ContentCard } from '@/components/places/content-card';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import type { Place } from '@/components/places/types';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
+import { ICON_STROKE } from '@/constants/icons';
 import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
@@ -58,36 +61,6 @@ type Rail = {
     reason: string;
     see_all: string;
     cards: RailCard[];
-};
-
-const CATEGORY_EMOJI: Record<string, string> = {
-    park: '🌳',
-    playground: '🛝',
-    pitch: '⚽',
-    basketball: '🏀',
-    tennis: '🎾',
-    skatepark: '🛹',
-    swimming: '🏊',
-    lake: '🏞️',
-    dog_park: '🐕',
-    bbq: '🧺',
-    viewpoint: '🌅',
-    cafe: '☕',
-    library: '📚',
-    restaurant: '🍽️',
-    bar: '🍻',
-    culture: '🎨',
-    coworking: '💻',
-    community: '🤝',
-    event: '🎟️',
-    table_tennis: '🏓',
-    tennis_table: '🏓',
-    attraction: '🎡',
-    gallery: '🖼️',
-    museum: '🏛️',
-    zoo: '🦁',
-    boules: '🎱',
-    task: '📋',
 };
 
 const tileClasses: Record<Tile['severity'], string> = {
@@ -221,7 +194,7 @@ export default function Dashboard() {
             .catch(() =>
                 setDestination({
                     name: card.name,
-                    emoji: CATEGORY_EMOJI[card.category] ?? '📍',
+                    emoji: categoryEmoji(card.category),
                     lat: card.lat,
                     lng: card.lng,
                 }),
@@ -297,7 +270,8 @@ export default function Dashboard() {
                 {/* Prompt box */}
                 <div className="mb-3 rounded-[20px] border border-border bg-card p-[18px] shadow-sm transition-colors focus-within:border-primary">
                     <div className="mb-2.5 flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
-                        ✨ Ask or plan
+                        <IconSparkles size={12} stroke={ICON_STROKE} />
+                        Ask or plan
                     </div>
                     <div className="flex items-center gap-2.5">
                         <input
@@ -338,9 +312,16 @@ export default function Dashboard() {
                         </button>
                     ))}
                 </div>
-                <p className="mb-7 text-[11px] text-muted-foreground/70">
-                    ✨ Suggestions from your situation, the weather and what you
-                    tap.
+                <p className="mb-7 flex items-start gap-1 text-[11px] text-muted-foreground/70">
+                    <IconSparkles
+                        size={12}
+                        stroke={ICON_STROKE}
+                        className="mt-0.5 shrink-0"
+                    />
+                    <span>
+                        Suggestions from your situation, the weather and what
+                        you tap.
+                    </span>
                 </p>
 
                 {/* Right now (urgency tiles) */}
@@ -507,9 +488,10 @@ export default function Dashboard() {
             {pinnedIds.length > 0 && (
                 <button
                     onClick={planAroundPins}
-                    className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-accent-hover md:bottom-8"
+                    className="fixed bottom-24 left-1/2 z-40 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-accent-hover md:bottom-8"
                 >
-                    🗓️ Plan around {pinnedIds.length}{' '}
+                    <IconCalendarEvent size={16} stroke={ICON_STROKE} />
+                    Plan around {pinnedIds.length}{' '}
                     {pinnedIds.length === 1 ? 'spot' : 'spots'} →
                 </button>
             )}

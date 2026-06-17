@@ -1,4 +1,10 @@
+import {
+    IconAmbulance,
+    IconBuildingBank,
+    IconStethoscope,
+} from '@tabler/icons-react';
 import { useState } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
 
 export function ServicesRightPanel() {
     const [suggestHover, setSuggestHover] = useState(false);
@@ -13,9 +19,11 @@ export function ServicesRightPanel() {
                     </span>
                 </div>
                 <div className="flex cursor-pointer items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] transition-colors hover:bg-[#EFEDE7]">
-                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
-                        🚑
-                    </span>
+                    <IconAmbulance
+                        size={16}
+                        stroke={ICON_STROKE}
+                        className="mt-px shrink-0 text-[#6B6860]"
+                    />
                     <div className="min-w-0 flex-1">
                         <div
                             style={{
@@ -37,9 +45,11 @@ export function ServicesRightPanel() {
                         window.open('https://www.doctolib.de', '_blank')
                     }
                 >
-                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
-                        🩺
-                    </span>
+                    <IconStethoscope
+                        size={16}
+                        stroke={ICON_STROKE}
+                        className="mt-px shrink-0 text-[#6B6860]"
+                    />
                     <div className="min-w-0 flex-1">
                         <div
                             style={{
@@ -59,9 +69,11 @@ export function ServicesRightPanel() {
                     className="flex cursor-pointer items-start gap-2.5 px-[15px] py-[11px] transition-colors hover:bg-[#EFEDE7]"
                     onClick={() => window.open('https://n26.com', '_blank')}
                 >
-                    <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
-                        🏦
-                    </span>
+                    <IconBuildingBank
+                        size={16}
+                        stroke={ICON_STROKE}
+                        className="mt-px shrink-0 text-[#6B6860]"
+                    />
                     <div className="min-w-0 flex-1">
                         <div
                             style={{

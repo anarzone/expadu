@@ -1,3 +1,6 @@
+import { IconMapPin, IconPhone } from '@tabler/icons-react';
+import { ICON_STROKE } from '@/constants/icons';
+
 export type ServiceData = {
     id: number;
     cat: string;
@@ -162,7 +165,12 @@ export function ServiceCard({
                     className="flex flex-wrap gap-2.5"
                     style={{ fontSize: 12, color: '#6B6860' }}
                 >
-                    {service.address && <span>📍 {service.address}</span>}
+                    {service.address && (
+                        <span className="inline-flex items-center gap-1">
+                            <IconMapPin size={13} stroke={ICON_STROKE} />
+                            {service.address}
+                        </span>
+                    )}
                     {service.distance && <span>· {service.distance}</span>}
                 </div>
                 <div className="flex gap-[7px]">
@@ -172,7 +180,7 @@ export function ServiceCard({
                                 e.stopPropagation();
                                 window.location.href = 'tel:' + service.phone;
                             }}
-                            className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-1.5 transition-all hover:bg-[#E2DFD6]"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-1.5 transition-all hover:bg-[#E2DFD6]"
                             style={{
                                 fontSize: 12,
                                 fontWeight: 600,
@@ -180,7 +188,8 @@ export function ServiceCard({
                                 color: '#6B6860',
                             }}
                         >
-                            📞 Call
+                            <IconPhone size={13} stroke={ICON_STROKE} />
+                            Call
                         </button>
                     )}
                     <button
