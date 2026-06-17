@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { IconCalendar, IconClock } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
+import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth } from '@/types';
 
@@ -158,6 +159,11 @@ type ProfileStats = {
     days_in_germany: number | null;
 };
 
+const PROFILE_TABS: { id: string; label: string }[] = [
+    { id: 'profile', label: 'Profile' },
+    { id: 'account', label: 'Account' },
+];
+
 // ============================================================
 // Page Component
 // ============================================================
@@ -183,6 +189,29 @@ export default function Profile() {
         interests?: string[];
     }>().props;
     const user = auth.user;
+
+    // Two-tab layout: 'profile' (hero + editable sections) and 'account'
+    // (drill-in settings menu). Persisted in the URL hash via useTabState.
+    const [activeTab, setActiveTab] = useTabState('profile');
+
+    // Account drill-in: which sub-page is open (null = the menu itself).
+    const [settingsPage, setSettingsPage] = useState<string | null>(null);
+
+    // Profile drill-in: which sub-page is open (null = the menu itself).
+    // Kept independent from the Account tab's settingsPage so the two menus
+    // never share a stale state.
+    const [profilePage, setProfilePage] = useState<string | null>(null);
+
+    // Switch tabs and reset BOTH drill-in sub-pages, so the next visit to
+    // either tab starts at its menu rather than a stale drill-in.
+    const switchTab = useCallback(
+        (tab: string) => {
+            setActiveTab(tab);
+            setSettingsPage(null);
+            setProfilePage(null);
+        },
+        [setActiveTab],
+    );
 
     // Profile fields — seeded from backend user
     const [profileName, setProfileName] = useState(user.name || '');
@@ -723,980 +752,1226 @@ export default function Profile() {
         >
             <Head title="Profile" />
             <div className="mx-auto w-full max-w-[680px]">
-                {/* ── Profile Hero ── */}
+                {/* ── Tab bar ── */}
                 <div
-                    className="relative overflow-hidden"
-                    style={{
-                        background:
-                            'linear-gradient(145deg, #1A3A8F 0%, #1A4CD4 100%)',
-                        color: 'white',
-                        padding: '24px 20px 0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
+                    className="sticky top-0 z-40 flex border-b border-[#E2DFD6] bg-white dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                    style={{ scrollbarWidth: 'none' }}
                 >
-                    {/* Decorative circle */}
-                    <div
-                        className="pointer-events-none absolute"
-                        style={{
-                            top: -80,
-                            right: -60,
-                            width: 260,
-                            height: 260,
-                            background: 'rgba(255,255,255,.05)',
-                            borderRadius: '50%',
-                        }}
-                    />
-                    {/* Top row */}
-                    <div className="relative z-[1] mb-5 flex w-full items-center gap-3.5">
-                        <div
-                            className="flex shrink-0 items-center justify-center rounded-full"
+                    {PROFILE_TABS.map((t) => (
+                        <button
+                            key={t.id}
+                            onClick={() => switchTab(t.id)}
+                            className={`flex-1 cursor-pointer bg-transparent px-4 py-3 whitespace-nowrap transition-all hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920] ${activeTab === t.id ? 'text-[#1A4CD4]' : 'text-[#6B6860] dark:text-[#AAA89F]'}`}
                             style={{
-                                width: 60,
-                                height: 60,
-                                background: 'rgba(255,255,255,.2)',
-                                border: '2px solid rgba(255,255,255,.3)',
-                                fontSize: 24,
-                                fontWeight: 700,
-                            }}
-                        >
-                            {(profileName.charAt(0) || '?').toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <div
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 22,
-                                    fontWeight: 500,
-                                    lineHeight: 1.1,
-                                    marginBottom: 4,
-                                }}
-                            >
-                                {profileName || 'Your profile'}
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: 11,
-                                    opacity: 0.75,
-                                    lineHeight: 1.5,
-                                }}
-                            >
-                                {[profileSituation, profileCity]
-                                    .filter(Boolean)
-                                    .join(' · ') || 'Complete your profile'}
-                            </div>
-                        </div>
-                        <a
-                            href="#settings"
-                            className="shrink-0 cursor-pointer rounded-full border-none whitespace-nowrap transition-all hover:bg-[rgba(255,255,255,0.15)]"
-                            style={{
-                                padding: '7px 14px',
-                                border: '1.5px solid rgba(255,255,255,.4)',
-                                background: 'transparent',
-                                color: 'white',
-                                fontFamily: "'Geist', sans-serif",
                                 fontSize: 12,
                                 fontWeight: 600,
+                                border: 'none',
+                                borderBottomWidth: 2,
+                                borderBottomStyle: 'solid',
+                                borderBottomColor:
+                                    activeTab === t.id
+                                        ? '#1A4CD4'
+                                        : 'transparent',
+                                fontFamily: "'Geist', sans-serif",
                             }}
                         >
-                            Edit profile
-                        </a>
-                    </div>
-                    {/* Stats */}
-                    <div
-                        className="relative z-[1] flex w-full"
-                        style={{ borderTop: '1px solid rgba(255,255,255,.15)' }}
-                    >
-                        {[
-                            {
-                                num: String(stats?.events_joined ?? 0),
-                                lbl: 'Events',
-                            },
-                            {
-                                num: String(stats?.tasks_completed ?? 0),
-                                lbl: 'Tasks',
-                            },
-                            {
-                                num:
-                                    stats?.days_in_germany != null
-                                        ? String(stats.days_in_germany)
-                                        : '—',
-                                lbl: 'Days',
-                            },
-                            {
-                                num: germanBadge,
-                                lbl: 'German',
-                            },
-                        ].map((stat, i, arr) => (
-                            <div
-                                key={stat.lbl}
-                                className="flex-1 text-center"
-                                style={{
-                                    padding: '14px 4px',
-                                    borderRight:
-                                        i < arr.length - 1
-                                            ? '1px solid rgba(255,255,255,.1)'
-                                            : 'none',
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontFamily: "'Geist Mono', monospace",
-                                        fontSize: 20,
-                                        fontWeight: 600,
-                                        lineHeight: 1,
-                                    }}
-                                >
-                                    {stat.num}
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: 9,
-                                        opacity: 0.65,
-                                        marginTop: 3,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.07em',
-                                    }}
-                                >
-                                    {stat.lbl}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
 
-                {/* ── Profile Information ── */}
-                <FeedSection id="settings">
-                    <SectionHeader title="Profile information" />
-                    <InlineEditRow
-                        field="name"
-                        label="Name"
-                        value={profileName}
-                        editing={editingField}
-                        editValue={editValue}
-                        onStartEdit={startEdit}
-                        onEditValue={setEditValue}
-                        onSave={saveEdit}
-                        onCancel={cancelEdit}
-                    />
-                    <InlineEditRow
-                        field="email"
-                        label="Email"
-                        value={profileEmail}
-                        editing={editingField}
-                        editValue={editValue}
-                        onStartEdit={startEdit}
-                        onEditValue={setEditValue}
-                        onSave={saveEdit}
-                        onCancel={cancelEdit}
-                        inputType="email"
-                    />
-                    <InlineEditRow
-                        field="city"
-                        label="City"
-                        value={profileCity}
-                        editing={editingField}
-                        editValue={editValue}
-                        onStartEdit={startEdit}
-                        onEditValue={setEditValue}
-                        onSave={saveEdit}
-                        onCancel={cancelEdit}
-                    />
-                    <InlineEditRow
-                        field="situation"
-                        label="Situation"
-                        value={profileSituation}
-                        editing={editingField}
-                        editValue={editValue}
-                        onStartEdit={startEdit}
-                        onEditValue={setEditValue}
-                        onSave={saveEdit}
-                        onCancel={cancelEdit}
-                        selectOptions={[
-                            'Non-EU employee',
-                            'EU employee',
-                            'Student',
-                            'Freelancer',
-                            'Family reunification',
-                        ]}
-                        subText="Affects your checklist and visa guidance"
-                    />
-                    <InlineEditRow
-                        field="german"
-                        label="German level"
-                        value={profileGerman}
-                        editing={editingField}
-                        editValue={editValue}
-                        onStartEdit={startEdit}
-                        onEditValue={setEditValue}
-                        onSave={saveEdit}
-                        onCancel={cancelEdit}
-                        selectOptions={[
-                            'None yet',
-                            'A1 — Beginner',
-                            'A2 — Elementary',
-                            'B1 — Intermediate',
-                            'B2 — Upper-intermediate',
-                            'C1 — Advanced',
-                            'C2 — Fluent',
-                        ]}
-                        isLast
-                    />
-
-                    {/* Redo onboarding: re-asks every answer, the
-                        plan recomputes, nothing is deleted. */}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-[#EFEDE7] px-3.5 py-3 dark:bg-[#2A2920]">
-                        <div className="min-w-0">
-                            <div className="text-[13px] font-semibold">
-                                Situation changed?
-                            </div>
-                            <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
-                                Walk through the welcome questions again — your
-                                plan adapts, and nothing you've done is lost.
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => {
-                                if (
-                                    window.confirm(
-                                        'Redo onboarding? Your answers will be re-asked and your plan recomputed. All progress is kept.',
-                                    )
-                                ) {
-                                    router.post('/onboarding/restart');
-                                }
-                            }}
-                            className="shrink-0 cursor-pointer rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-xs font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
-                        >
-                            🔄 Redo onboarding
-                        </button>
-                    </div>
-                </FeedSection>
-
-                {/* ── Interests ── */}
-                <FeedSection>
-                    <SectionHeader
-                        title="Interests"
-                        badge={`${interests.length}/${INTEREST_MAX}`}
-                    />
-                    <p className="mb-3 text-xs text-[#6B6860] dark:text-[#AAA89F]">
-                        Pick {INTEREST_MIN}–{INTEREST_MAX}. We lead your home
-                        feed and day plans with these.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2.5">
-                        {INTEREST_OPTIONS.map((interest) => {
-                            const on = interests.includes(interest.value);
-                            const atMax = interests.length >= INTEREST_MAX;
-                            const disabled = !on && atMax;
-
-                            return (
-                                <button
-                                    key={interest.value}
-                                    type="button"
-                                    aria-pressed={on}
-                                    disabled={disabled}
-                                    onClick={() =>
-                                        toggleInterest(interest.value)
-                                    }
-                                    className={`flex items-center gap-2.5 rounded-[12px] border-[1.5px] px-4 py-3.5 text-left text-[14px] font-semibold transition-all ${
-                                        on
-                                            ? 'border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/15'
-                                            : disabled
-                                              ? 'border-[#E2DFD6] bg-white opacity-40 dark:border-[#3A3930] dark:bg-[#1E1D15]'
-                                              : 'border-[#E2DFD6] bg-white hover:border-[#1A4CD4]/30 dark:border-[#3A3930] dark:bg-[#1E1D15]'
-                                    }`}
-                                >
-                                    <span className="text-[20px] leading-none">
-                                        {interest.emoji}
-                                    </span>
-                                    {interest.label}
-                                    {on && (
-                                        <span className="ml-auto text-[#1A4CD4]">
-                                            ✓
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </FeedSection>
-
-                {/* ── Your Places ── */}
-                <FeedSection>
-                    <SectionHeader title="Your places" />
-                    {places.map((p) => (
+                {/* ════════════════════════════════════════════════════════════
+                   TAB: PROFILE
+                   ════════════════════════════════════════════════════════════ */}
+                {activeTab === 'profile' && (
+                    <>
+                        {/* ── Profile Hero ── */}
                         <div
-                            key={p.id}
-                            className="flex items-center justify-between border-b border-[#E2DFD6] py-3.5 last:border-b-0 dark:border-[#3A3930]"
-                            style={{ gap: 12 }}
+                            className="relative overflow-hidden"
+                            style={{
+                                background:
+                                    'linear-gradient(145deg, #1A3A8F 0%, #1A4CD4 100%)',
+                                color: 'white',
+                                padding: '24px 20px 0',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
                         >
-                            <span style={{ fontSize: 22, flexShrink: 0 }}>
-                                {p.emoji}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                                <div
-                                    style={{
-                                        fontSize: 14,
-                                        fontWeight: 500,
-                                    }}
-                                >
-                                    {p.name}
-                                </div>
-                                <div
-                                    className="text-[#AAA89F]"
-                                    style={{
-                                        fontSize: 12,
-                                        marginTop: 2,
-                                    }}
-                                >
-                                    {p.addr}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => openPlaceForm(p)}
-                                className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-2.5 py-1 text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
-                                style={{
-                                    fontFamily: "'Geist', sans-serif",
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    marginRight: 4,
-                                }}
-                            >
-                                Edit
-                            </button>
-                            {p.category !== 'home' && p.category !== 'work' && (
-                                <button
-                                    onClick={() => deletePlace(p.id)}
-                                    className="cursor-pointer rounded-[9px] border border-[#FDE8E6] bg-[#FDE8E6] px-2.5 py-1 transition-all hover:bg-[#F9CCC8]"
-                                    style={{
-                                        fontFamily: "'Geist', sans-serif",
-                                        fontSize: 11,
-                                        fontWeight: 600,
-                                        color: '#C4271A',
-                                    }}
-                                >
-                                    ✕
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    {showPlaceForm && (
-                        <div className="mt-2.5 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] p-3.5 dark:border-[#3A3930] dark:bg-[#2A2920]">
+                            {/* Decorative circle */}
                             <div
-                                className="text-[#6B6860] dark:text-[#AAA89F]"
+                                className="pointer-events-none absolute"
                                 style={{
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    marginBottom: 10,
+                                    top: -80,
+                                    right: -60,
+                                    width: 260,
+                                    height: 260,
+                                    background: 'rgba(255,255,255,.05)',
+                                    borderRadius: '50%',
+                                }}
+                            />
+                            {/* Top row */}
+                            <div className="relative z-[1] mb-5 flex w-full items-center gap-3.5">
+                                <div
+                                    className="flex shrink-0 items-center justify-center rounded-full"
+                                    style={{
+                                        width: 60,
+                                        height: 60,
+                                        background: 'rgba(255,255,255,.2)',
+                                        border: '2px solid rgba(255,255,255,.3)',
+                                        fontSize: 24,
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    {(
+                                        profileName.charAt(0) || '?'
+                                    ).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div
+                                        style={{
+                                            fontFamily: "'Fraunces', serif",
+                                            fontSize: 22,
+                                            fontWeight: 500,
+                                            lineHeight: 1.1,
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        {profileName || 'Your profile'}
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: 11,
+                                            opacity: 0.75,
+                                            lineHeight: 1.5,
+                                        }}
+                                    >
+                                        {[profileSituation, profileCity]
+                                            .filter(Boolean)
+                                            .join(' · ') ||
+                                            'Complete your profile'}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setProfilePage('details')}
+                                    className="shrink-0 cursor-pointer rounded-full border-none whitespace-nowrap transition-all hover:bg-[rgba(255,255,255,0.15)]"
+                                    style={{
+                                        padding: '7px 14px',
+                                        border: '1.5px solid rgba(255,255,255,.4)',
+                                        background: 'transparent',
+                                        color: 'white',
+                                        fontFamily: "'Geist', sans-serif",
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    Edit profile
+                                </button>
+                            </div>
+                            {/* Stats */}
+                            <div
+                                className="relative z-[1] flex w-full"
+                                style={{
+                                    borderTop:
+                                        '1px solid rgba(255,255,255,.15)',
                                 }}
                             >
-                                {editingPlaceId ? 'Edit place' : 'Add a place'}
-                            </div>
-                            {/* Icon picker — collapsed by default */}
-                            {showIconPicker ? (
-                                <>
-                                    <div className="mb-1 flex items-center justify-between">
-                                        <span className="text-[11px] font-bold tracking-[0.07em] text-[#AAA89F] uppercase">
-                                            Choose an icon
-                                        </span>
-                                        <button
-                                            onClick={() =>
-                                                setShowIconPicker(false)
-                                            }
-                                            className="text-[11px] font-semibold text-[#1A4CD4]"
+                                {[
+                                    {
+                                        num: String(stats?.events_joined ?? 0),
+                                        lbl: 'Events',
+                                    },
+                                    {
+                                        num: String(
+                                            stats?.tasks_completed ?? 0,
+                                        ),
+                                        lbl: 'Tasks',
+                                    },
+                                    {
+                                        num:
+                                            stats?.days_in_germany != null
+                                                ? String(stats.days_in_germany)
+                                                : '—',
+                                        lbl: 'Days',
+                                    },
+                                    {
+                                        num: germanBadge,
+                                        lbl: 'German',
+                                    },
+                                ].map((stat, i, arr) => (
+                                    <div
+                                        key={stat.lbl}
+                                        className="flex-1 text-center"
+                                        style={{
+                                            padding: '14px 4px',
+                                            borderRight:
+                                                i < arr.length - 1
+                                                    ? '1px solid rgba(255,255,255,.1)'
+                                                    : 'none',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                fontFamily:
+                                                    "'Geist Mono', monospace",
+                                                fontSize: 20,
+                                                fontWeight: 600,
+                                                lineHeight: 1,
+                                            }}
                                         >
-                                            Done
-                                        </button>
+                                            {stat.num}
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: 9,
+                                                opacity: 0.65,
+                                                marginTop: 3,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.07em',
+                                            }}
+                                        >
+                                            {stat.lbl}
+                                        </div>
                                     </div>
-                                    <div className="mb-3 flex flex-wrap gap-1.5">
-                                        {PLACE_ICONS.map((ico) => (
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* ── Profile drill-in menu ── */}
+                        <div className="py-2">
+                            {/* PERSONAL DETAILS — drill-in */}
+                            <SettingsSection
+                                id="details"
+                                icon="👤"
+                                title="Personal details"
+                                activePage={profilePage}
+                                onNavigate={setProfilePage}
+                                onBack={() => setProfilePage(null)}
+                                backLabel="← Back to Profile"
+                            >
+                                <InlineEditRow
+                                    field="name"
+                                    label="Name"
+                                    value={profileName}
+                                    editing={editingField}
+                                    editValue={editValue}
+                                    onStartEdit={startEdit}
+                                    onEditValue={setEditValue}
+                                    onSave={saveEdit}
+                                    onCancel={cancelEdit}
+                                />
+                                <InlineEditRow
+                                    field="email"
+                                    label="Email"
+                                    value={profileEmail}
+                                    editing={editingField}
+                                    editValue={editValue}
+                                    onStartEdit={startEdit}
+                                    onEditValue={setEditValue}
+                                    onSave={saveEdit}
+                                    onCancel={cancelEdit}
+                                    inputType="email"
+                                />
+                                <InlineEditRow
+                                    field="city"
+                                    label="City"
+                                    value={profileCity}
+                                    editing={editingField}
+                                    editValue={editValue}
+                                    onStartEdit={startEdit}
+                                    onEditValue={setEditValue}
+                                    onSave={saveEdit}
+                                    onCancel={cancelEdit}
+                                />
+                                <InlineEditRow
+                                    field="situation"
+                                    label="Situation"
+                                    value={profileSituation}
+                                    editing={editingField}
+                                    editValue={editValue}
+                                    onStartEdit={startEdit}
+                                    onEditValue={setEditValue}
+                                    onSave={saveEdit}
+                                    onCancel={cancelEdit}
+                                    selectOptions={[
+                                        'Non-EU employee',
+                                        'EU employee',
+                                        'Student',
+                                        'Freelancer',
+                                        'Family reunification',
+                                    ]}
+                                    subText="Affects your checklist and visa guidance"
+                                />
+                                <InlineEditRow
+                                    field="german"
+                                    label="German level"
+                                    value={profileGerman}
+                                    editing={editingField}
+                                    editValue={editValue}
+                                    onStartEdit={startEdit}
+                                    onEditValue={setEditValue}
+                                    onSave={saveEdit}
+                                    onCancel={cancelEdit}
+                                    selectOptions={[
+                                        'None yet',
+                                        'A1 — Beginner',
+                                        'A2 — Elementary',
+                                        'B1 — Intermediate',
+                                        'B2 — Upper-intermediate',
+                                        'C1 — Advanced',
+                                        'C2 — Fluent',
+                                    ]}
+                                    isLast
+                                />
+
+                                {/* Redo onboarding: re-asks every answer, the
+                        plan recomputes, nothing is deleted. */}
+                                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-[#EFEDE7] px-3.5 py-3 dark:bg-[#2A2920]">
+                                    <div className="min-w-0">
+                                        <div className="text-[13px] font-semibold">
+                                            Situation changed?
+                                        </div>
+                                        <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                            Walk through the welcome questions
+                                            again — your plan adapts, and
+                                            nothing you've done is lost.
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            if (
+                                                window.confirm(
+                                                    'Redo onboarding? Your answers will be re-asked and your plan recomputed. All progress is kept.',
+                                                )
+                                            ) {
+                                                router.post(
+                                                    '/onboarding/restart',
+                                                );
+                                            }
+                                        }}
+                                        className="shrink-0 cursor-pointer rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-xs font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                                    >
+                                        🔄 Redo onboarding
+                                    </button>
+                                </div>
+                            </SettingsSection>
+
+                            {/* INTERESTS — drill-in */}
+                            <SettingsSection
+                                id="interests"
+                                icon="⭐"
+                                title="Interests"
+                                activePage={profilePage}
+                                onNavigate={setProfilePage}
+                                onBack={() => setProfilePage(null)}
+                                backLabel="← Back to Profile"
+                            >
+                                <div className="mb-3 flex items-center justify-end">
+                                    <span
+                                        className="text-[#AAA89F]"
+                                        style={{
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.08em',
+                                        }}
+                                    >
+                                        {`${interests.length}/${INTEREST_MAX}`}
+                                    </span>
+                                </div>
+                                <p className="mb-3 text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                    Pick {INTEREST_MIN}–{INTEREST_MAX}. We lead
+                                    your home feed and day plans with these.
+                                </p>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {INTEREST_OPTIONS.map((interest) => {
+                                        const on = interests.includes(
+                                            interest.value,
+                                        );
+                                        const atMax =
+                                            interests.length >= INTEREST_MAX;
+                                        const disabled = !on && atMax;
+
+                                        return (
+                                            <button
+                                                key={interest.value}
+                                                type="button"
+                                                aria-pressed={on}
+                                                disabled={disabled}
+                                                onClick={() =>
+                                                    toggleInterest(
+                                                        interest.value,
+                                                    )
+                                                }
+                                                className={`flex items-center gap-2.5 rounded-[12px] border-[1.5px] px-4 py-3.5 text-left text-[14px] font-semibold transition-all ${
+                                                    on
+                                                        ? 'border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/15'
+                                                        : disabled
+                                                          ? 'border-[#E2DFD6] bg-white opacity-40 dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                                                          : 'border-[#E2DFD6] bg-white hover:border-[#1A4CD4]/30 dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                                                }`}
+                                            >
+                                                <span className="text-[20px] leading-none">
+                                                    {interest.emoji}
+                                                </span>
+                                                {interest.label}
+                                                {on && (
+                                                    <span className="ml-auto text-[#1A4CD4]">
+                                                        ✓
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </SettingsSection>
+
+                            {/* YOUR PLACES — drill-in */}
+                            <SettingsSection
+                                id="places"
+                                icon="📍"
+                                title="Your places"
+                                activePage={profilePage}
+                                onNavigate={setProfilePage}
+                                onBack={() => setProfilePage(null)}
+                                backLabel="← Back to Profile"
+                            >
+                                {places.map((p) => (
+                                    <div
+                                        key={p.id}
+                                        className="flex items-center justify-between border-b border-[#E2DFD6] py-3.5 last:border-b-0 dark:border-[#3A3930]"
+                                        style={{ gap: 12 }}
+                                    >
+                                        <span
+                                            style={{
+                                                fontSize: 22,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {p.emoji}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
                                             <div
-                                                key={ico}
-                                                onClick={() => {
-                                                    setPlaceEmoji(ico);
-                                                    setShowIconPicker(false);
-                                                }}
-                                                className={`flex cursor-pointer items-center justify-center rounded-[9px] transition-all ${placeEmoji === ico ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-transparent bg-white dark:bg-[#1E1D15]'}`}
                                                 style={{
-                                                    width: 40,
-                                                    height: 40,
-                                                    fontSize: 20,
+                                                    fontSize: 14,
+                                                    fontWeight: 500,
                                                 }}
                                             >
-                                                {ico}
+                                                {p.name}
                                             </div>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : null}
-                            <div className="mb-2 flex gap-2">
-                                <div
-                                    onClick={() =>
-                                        setShowIconPicker(!showIconPicker)
-                                    }
-                                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] transition-all hover:opacity-80"
-                                    style={{
-                                        width: 44,
-                                        height: 44,
-                                        background: '#EBF0FD',
-                                        border: '2px solid #1A4CD4',
-                                        fontSize: 22,
-                                    }}
-                                >
-                                    {placeEmoji}
-                                </div>
-                                <input
-                                    value={placeName}
-                                    onChange={(e) =>
-                                        setPlaceName(e.target.value)
-                                    }
-                                    placeholder="Name (e.g. Home)"
-                                    className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                    style={{
-                                        fontFamily: "'Geist', sans-serif",
-                                    }}
-                                />
-                            </div>
-                            <div className="relative mb-2.5">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="relative flex-1">
-                                        <input
-                                            value={placeAddr}
-                                            onChange={(e) => {
-                                                setPlaceAddr(e.target.value);
-                                                setAddrHighlight(-1);
-                                                addrTimerRef.search(
-                                                    e.target.value,
-                                                );
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (
-                                                    addrSuggestions.length === 0
-                                                ) {
-                                                    return;
-                                                }
-
-                                                if (e.key === 'ArrowDown') {
-                                                    e.preventDefault();
-                                                    setAddrHighlight((prev) =>
-                                                        Math.min(
-                                                            prev + 1,
-                                                            addrSuggestions.length -
-                                                                1,
-                                                        ),
-                                                    );
-                                                } else if (
-                                                    e.key === 'ArrowUp'
-                                                ) {
-                                                    e.preventDefault();
-                                                    setAddrHighlight((prev) =>
-                                                        Math.max(prev - 1, 0),
-                                                    );
-                                                } else if (
-                                                    e.key === 'Enter' &&
-                                                    addrHighlight >= 0
-                                                ) {
-                                                    e.preventDefault();
-                                                    const s =
-                                                        addrSuggestions[
-                                                            addrHighlight
-                                                        ];
-                                                    setPlaceAddr(
-                                                        s.address || s.name,
-                                                    );
-                                                    setPlaceLat(s.lat);
-                                                    setPlaceLng(s.lng);
-                                                    addrTimerRef.clear();
-                                                    setAddrHighlight(-1);
-                                                } else if (e.key === 'Escape') {
-                                                    addrTimerRef.clear();
-                                                    setAddrHighlight(-1);
-                                                }
-                                            }}
-                                            onBlur={() =>
-                                                setTimeout(() => {
-                                                    addrTimerRef.clear();
-                                                    setAddrHighlight(-1);
-                                                }, 200)
-                                            }
-                                            placeholder="Address or area (e.g. Ehrenfeld)"
-                                            className="w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                            <div
+                                                className="text-[#AAA89F]"
+                                                style={{
+                                                    fontSize: 12,
+                                                    marginTop: 2,
+                                                }}
+                                            >
+                                                {p.addr}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => openPlaceForm(p)}
+                                            className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-2.5 py-1 text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                                             style={{
                                                 fontFamily:
                                                     "'Geist', sans-serif",
+                                                fontSize: 11,
+                                                fontWeight: 600,
+                                                marginRight: 4,
                                             }}
-                                        />
-                                        {/* Address autocomplete dropdown */}
-                                        {addrSuggestions.length > 0 && (
-                                            <div className="absolute top-full right-0 left-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                                {addrSuggestions.map((s, i) => (
-                                                    <div
-                                                        key={i}
-                                                        onMouseDown={(e) => {
-                                                            e.preventDefault();
-                                                            setPlaceAddr(
-                                                                s.address ||
-                                                                    s.name,
-                                                            );
-                                                            setPlaceLat(s.lat);
-                                                            setPlaceLng(s.lng);
-                                                            addrTimerRef.clear();
-                                                        }}
-                                                        onMouseEnter={() =>
-                                                            setAddrHighlight(i)
-                                                        }
-                                                        className={`cursor-pointer px-3 py-2.5 transition-colors ${addrHighlight === i ? 'bg-[#EBF0FD] dark:bg-[#1A4CD4]/20' : 'hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]'}`}
-                                                        style={{
-                                                            borderBottom:
-                                                                i <
-                                                                addrSuggestions.length -
-                                                                    1
-                                                                    ? '1px solid #F0EDE7'
-                                                                    : 'none',
-                                                        }}
-                                                    >
-                                                        <div className="text-sm font-medium text-[#18170F] dark:text-[#F5F4F0]">
-                                                            {s.name}
-                                                        </div>
-                                                        <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
-                                                            {s.address}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {/* Use my location button */}
-                                    <button
-                                        type="button"
-                                        onClick={useMyLocation}
-                                        disabled={locating}
-                                        className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] disabled:opacity-50 dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                        }}
-                                        title="Use my current location"
-                                    >
-                                        {locating ? (
-                                            <div
-                                                style={{
-                                                    width: 14,
-                                                    height: 14,
-                                                    border: '2px solid #E2DFD6',
-                                                    borderTopColor: '#1A4CD4',
-                                                    borderRadius: '50%',
-                                                    animation:
-                                                        'spin .7s linear infinite',
-                                                }}
-                                            />
-                                        ) : (
-                                            <span style={{ fontSize: 18 }}>
-                                                📍
-                                            </span>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                            {/* Optional: Arrive by + Days — toggle buttons */}
-                            <div className="mb-2.5 flex gap-2">
-                                <button
-                                    onClick={() =>
-                                        setShowArriveBy(!showArriveBy)
-                                    }
-                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showArriveBy ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
-                                >
-                                    <IconClock size={14} stroke={1.7} /> Arrive
-                                    by
-                                </button>
-                                <button
-                                    onClick={() => setShowDays(!showDays)}
-                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showDays ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
-                                >
-                                    <IconCalendar size={14} stroke={1.7} /> Days
-                                </button>
-                            </div>
-
-                            {/* Arrive by time */}
-                            {showArriveBy && (
-                                <div className="mb-2.5 flex items-center gap-2">
-                                    <span
-                                        className="text-[#6B6860] dark:text-[#AAA89F]"
-                                        style={{
-                                            fontSize: 12,
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        Arrive by
-                                    </span>
-                                    <input
-                                        type="time"
-                                        value={placeArriveBy}
-                                        onChange={(e) =>
-                                            setPlaceArriveBy(e.target.value)
-                                        }
-                                        className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
-                                        style={{
-                                            fontFamily:
-                                                "'Geist Mono', monospace",
-                                            color: placeArriveBy
-                                                ? '#1A4CD4'
-                                                : '#AAA89F',
-                                        }}
-                                        placeholder="--:--"
-                                    />
-                                    <span
-                                        className="text-[#AAA89F]"
-                                        style={{ fontSize: 11 }}
-                                    >
-                                        For smart commute
-                                    </span>
-                                </div>
-                            )}
-                            {/* Active days */}
-                            {showDays && (
-                                <div className="mb-2.5">
-                                    <div className="mb-1.5 flex gap-1.5">
-                                        {[
-                                            {
-                                                id: 'all',
-                                                label: 'Every day',
-                                            },
-                                            {
-                                                id: 'weekdays',
-                                                label: 'Weekdays',
-                                            },
-                                            {
-                                                id: 'weekends',
-                                                label: 'Weekends',
-                                            },
-                                            {
-                                                id: 'custom',
-                                                label: 'Custom',
-                                            },
-                                        ].map((m) => (
-                                            <button
-                                                key={m.id}
-                                                type="button"
-                                                onClick={() =>
-                                                    setPlaceDayMode(m.id)
-                                                }
-                                                className={`cursor-pointer rounded-full border px-2.5 py-[4px] transition-all ${placeDayMode === m.id ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white' : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'}`}
-                                                style={{
-                                                    fontSize: 11,
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                {m.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {placeDayMode === 'custom' && (
-                                        <div className="flex gap-1">
-                                            {[
-                                                'mon',
-                                                'tue',
-                                                'wed',
-                                                'thu',
-                                                'fri',
-                                                'sat',
-                                                'sun',
-                                            ].map((d) => (
+                                        >
+                                            Edit
+                                        </button>
+                                        {p.category !== 'home' &&
+                                            p.category !== 'work' && (
                                                 <button
-                                                    key={d}
-                                                    type="button"
                                                     onClick={() =>
-                                                        setPlaceActiveDays(
-                                                            (prev) =>
-                                                                prev.includes(d)
-                                                                    ? prev.filter(
-                                                                          (x) =>
-                                                                              x !==
-                                                                              d,
-                                                                      )
-                                                                    : [
-                                                                          ...prev,
-                                                                          d,
-                                                                      ],
-                                                        )
+                                                        deletePlace(p.id)
                                                     }
-                                                    className={`flex cursor-pointer items-center justify-center transition-all ${placeActiveDays.includes(d) ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4]' : 'border-2 border-transparent bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920]'}`}
+                                                    className="cursor-pointer rounded-[9px] border border-[#FDE8E6] bg-[#FDE8E6] px-2.5 py-1 transition-all hover:bg-[#F9CCC8]"
                                                     style={{
-                                                        width: 32,
-                                                        height: 32,
-                                                        borderRadius: '50%',
+                                                        fontFamily:
+                                                            "'Geist', sans-serif",
                                                         fontSize: 11,
-                                                        fontWeight: 700,
+                                                        fontWeight: 600,
+                                                        color: '#C4271A',
                                                     }}
                                                 >
-                                                    {d.charAt(0).toUpperCase() +
-                                                        d.slice(1, 2)}
+                                                    ✕
                                                 </button>
-                                            ))}
+                                            )}
+                                    </div>
+                                ))}
+                                {showPlaceForm && (
+                                    <div className="mt-2.5 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] p-3.5 dark:border-[#3A3930] dark:bg-[#2A2920]">
+                                        <div
+                                            className="text-[#6B6860] dark:text-[#AAA89F]"
+                                            style={{
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                marginBottom: 10,
+                                            }}
+                                        >
+                                            {editingPlaceId
+                                                ? 'Edit place'
+                                                : 'Add a place'}
                                         </div>
-                                    )}
+                                        {/* Icon picker — collapsed by default */}
+                                        {showIconPicker ? (
+                                            <>
+                                                <div className="mb-1 flex items-center justify-between">
+                                                    <span className="text-[11px] font-bold tracking-[0.07em] text-[#AAA89F] uppercase">
+                                                        Choose an icon
+                                                    </span>
+                                                    <button
+                                                        onClick={() =>
+                                                            setShowIconPicker(
+                                                                false,
+                                                            )
+                                                        }
+                                                        className="text-[11px] font-semibold text-[#1A4CD4]"
+                                                    >
+                                                        Done
+                                                    </button>
+                                                </div>
+                                                <div className="mb-3 flex flex-wrap gap-1.5">
+                                                    {PLACE_ICONS.map((ico) => (
+                                                        <div
+                                                            key={ico}
+                                                            onClick={() => {
+                                                                setPlaceEmoji(
+                                                                    ico,
+                                                                );
+                                                                setShowIconPicker(
+                                                                    false,
+                                                                );
+                                                            }}
+                                                            className={`flex cursor-pointer items-center justify-center rounded-[9px] transition-all ${placeEmoji === ico ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-transparent bg-white dark:bg-[#1E1D15]'}`}
+                                                            style={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                fontSize: 20,
+                                                            }}
+                                                        >
+                                                            {ico}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        ) : null}
+                                        <div className="mb-2 flex gap-2">
+                                            <div
+                                                onClick={() =>
+                                                    setShowIconPicker(
+                                                        !showIconPicker,
+                                                    )
+                                                }
+                                                className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] transition-all hover:opacity-80"
+                                                style={{
+                                                    width: 44,
+                                                    height: 44,
+                                                    background: '#EBF0FD',
+                                                    border: '2px solid #1A4CD4',
+                                                    fontSize: 22,
+                                                }}
+                                            >
+                                                {placeEmoji}
+                                            </div>
+                                            <input
+                                                value={placeName}
+                                                onChange={(e) =>
+                                                    setPlaceName(e.target.value)
+                                                }
+                                                placeholder="Name (e.g. Home)"
+                                                className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                style={{
+                                                    fontFamily:
+                                                        "'Geist', sans-serif",
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="relative mb-2.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="relative flex-1">
+                                                    <input
+                                                        value={placeAddr}
+                                                        onChange={(e) => {
+                                                            setPlaceAddr(
+                                                                e.target.value,
+                                                            );
+                                                            setAddrHighlight(
+                                                                -1,
+                                                            );
+                                                            addrTimerRef.search(
+                                                                e.target.value,
+                                                            );
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (
+                                                                addrSuggestions.length ===
+                                                                0
+                                                            ) {
+                                                                return;
+                                                            }
+
+                                                            if (
+                                                                e.key ===
+                                                                'ArrowDown'
+                                                            ) {
+                                                                e.preventDefault();
+                                                                setAddrHighlight(
+                                                                    (prev) =>
+                                                                        Math.min(
+                                                                            prev +
+                                                                                1,
+                                                                            addrSuggestions.length -
+                                                                                1,
+                                                                        ),
+                                                                );
+                                                            } else if (
+                                                                e.key ===
+                                                                'ArrowUp'
+                                                            ) {
+                                                                e.preventDefault();
+                                                                setAddrHighlight(
+                                                                    (prev) =>
+                                                                        Math.max(
+                                                                            prev -
+                                                                                1,
+                                                                            0,
+                                                                        ),
+                                                                );
+                                                            } else if (
+                                                                e.key ===
+                                                                    'Enter' &&
+                                                                addrHighlight >=
+                                                                    0
+                                                            ) {
+                                                                e.preventDefault();
+                                                                const s =
+                                                                    addrSuggestions[
+                                                                        addrHighlight
+                                                                    ];
+                                                                setPlaceAddr(
+                                                                    s.address ||
+                                                                        s.name,
+                                                                );
+                                                                setPlaceLat(
+                                                                    s.lat,
+                                                                );
+                                                                setPlaceLng(
+                                                                    s.lng,
+                                                                );
+                                                                addrTimerRef.clear();
+                                                                setAddrHighlight(
+                                                                    -1,
+                                                                );
+                                                            } else if (
+                                                                e.key ===
+                                                                'Escape'
+                                                            ) {
+                                                                addrTimerRef.clear();
+                                                                setAddrHighlight(
+                                                                    -1,
+                                                                );
+                                                            }
+                                                        }}
+                                                        onBlur={() =>
+                                                            setTimeout(() => {
+                                                                addrTimerRef.clear();
+                                                                setAddrHighlight(
+                                                                    -1,
+                                                                );
+                                                            }, 200)
+                                                        }
+                                                        placeholder="Address or area (e.g. Ehrenfeld)"
+                                                        className="w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                        style={{
+                                                            fontFamily:
+                                                                "'Geist', sans-serif",
+                                                        }}
+                                                    />
+                                                    {/* Address autocomplete dropdown */}
+                                                    {addrSuggestions.length >
+                                                        0 && (
+                                                        <div className="absolute top-full right-0 left-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                            {addrSuggestions.map(
+                                                                (s, i) => (
+                                                                    <div
+                                                                        key={i}
+                                                                        onMouseDown={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.preventDefault();
+                                                                            setPlaceAddr(
+                                                                                s.address ||
+                                                                                    s.name,
+                                                                            );
+                                                                            setPlaceLat(
+                                                                                s.lat,
+                                                                            );
+                                                                            setPlaceLng(
+                                                                                s.lng,
+                                                                            );
+                                                                            addrTimerRef.clear();
+                                                                        }}
+                                                                        onMouseEnter={() =>
+                                                                            setAddrHighlight(
+                                                                                i,
+                                                                            )
+                                                                        }
+                                                                        className={`cursor-pointer px-3 py-2.5 transition-colors ${addrHighlight === i ? 'bg-[#EBF0FD] dark:bg-[#1A4CD4]/20' : 'hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]'}`}
+                                                                        style={{
+                                                                            borderBottom:
+                                                                                i <
+                                                                                addrSuggestions.length -
+                                                                                    1
+                                                                                    ? '1px solid #F0EDE7'
+                                                                                    : 'none',
+                                                                        }}
+                                                                    >
+                                                                        <div className="text-sm font-medium text-[#18170F] dark:text-[#F5F4F0]">
+                                                                            {
+                                                                                s.name
+                                                                            }
+                                                                        </div>
+                                                                        <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                                                            {
+                                                                                s.address
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {/* Use my location button */}
+                                                <button
+                                                    type="button"
+                                                    onClick={useMyLocation}
+                                                    disabled={locating}
+                                                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] disabled:opacity-50 dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                    style={{
+                                                        width: 40,
+                                                        height: 40,
+                                                    }}
+                                                    title="Use my current location"
+                                                >
+                                                    {locating ? (
+                                                        <div
+                                                            style={{
+                                                                width: 14,
+                                                                height: 14,
+                                                                border: '2px solid #E2DFD6',
+                                                                borderTopColor:
+                                                                    '#1A4CD4',
+                                                                borderRadius:
+                                                                    '50%',
+                                                                animation:
+                                                                    'spin .7s linear infinite',
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <span
+                                                            style={{
+                                                                fontSize: 18,
+                                                            }}
+                                                        >
+                                                            📍
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {/* Optional: Arrive by + Days — toggle buttons */}
+                                        <div className="mb-2.5 flex gap-2">
+                                            <button
+                                                onClick={() =>
+                                                    setShowArriveBy(
+                                                        !showArriveBy,
+                                                    )
+                                                }
+                                                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showArriveBy ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
+                                            >
+                                                <IconClock
+                                                    size={14}
+                                                    stroke={1.7}
+                                                />{' '}
+                                                Arrive by
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    setShowDays(!showDays)
+                                                }
+                                                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showDays ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
+                                            >
+                                                <IconCalendar
+                                                    size={14}
+                                                    stroke={1.7}
+                                                />{' '}
+                                                Days
+                                            </button>
+                                        </div>
+
+                                        {/* Arrive by time */}
+                                        {showArriveBy && (
+                                            <div className="mb-2.5 flex items-center gap-2">
+                                                <span
+                                                    className="text-[#6B6860] dark:text-[#AAA89F]"
+                                                    style={{
+                                                        fontSize: 12,
+                                                        whiteSpace: 'nowrap',
+                                                    }}
+                                                >
+                                                    Arrive by
+                                                </span>
+                                                <input
+                                                    type="time"
+                                                    value={placeArriveBy}
+                                                    onChange={(e) =>
+                                                        setPlaceArriveBy(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                    style={{
+                                                        fontFamily:
+                                                            "'Geist Mono', monospace",
+                                                        color: placeArriveBy
+                                                            ? '#1A4CD4'
+                                                            : '#AAA89F',
+                                                    }}
+                                                    placeholder="--:--"
+                                                />
+                                                <span
+                                                    className="text-[#AAA89F]"
+                                                    style={{ fontSize: 11 }}
+                                                >
+                                                    For smart commute
+                                                </span>
+                                            </div>
+                                        )}
+                                        {/* Active days */}
+                                        {showDays && (
+                                            <div className="mb-2.5">
+                                                <div className="mb-1.5 flex gap-1.5">
+                                                    {[
+                                                        {
+                                                            id: 'all',
+                                                            label: 'Every day',
+                                                        },
+                                                        {
+                                                            id: 'weekdays',
+                                                            label: 'Weekdays',
+                                                        },
+                                                        {
+                                                            id: 'weekends',
+                                                            label: 'Weekends',
+                                                        },
+                                                        {
+                                                            id: 'custom',
+                                                            label: 'Custom',
+                                                        },
+                                                    ].map((m) => (
+                                                        <button
+                                                            key={m.id}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setPlaceDayMode(
+                                                                    m.id,
+                                                                )
+                                                            }
+                                                            className={`cursor-pointer rounded-full border px-2.5 py-[4px] transition-all ${placeDayMode === m.id ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white' : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'}`}
+                                                            style={{
+                                                                fontSize: 11,
+                                                                fontWeight: 600,
+                                                            }}
+                                                        >
+                                                            {m.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                {placeDayMode === 'custom' && (
+                                                    <div className="flex gap-1">
+                                                        {[
+                                                            'mon',
+                                                            'tue',
+                                                            'wed',
+                                                            'thu',
+                                                            'fri',
+                                                            'sat',
+                                                            'sun',
+                                                        ].map((d) => (
+                                                            <button
+                                                                key={d}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setPlaceActiveDays(
+                                                                        (
+                                                                            prev,
+                                                                        ) =>
+                                                                            prev.includes(
+                                                                                d,
+                                                                            )
+                                                                                ? prev.filter(
+                                                                                      (
+                                                                                          x,
+                                                                                      ) =>
+                                                                                          x !==
+                                                                                          d,
+                                                                                  )
+                                                                                : [
+                                                                                      ...prev,
+                                                                                      d,
+                                                                                  ],
+                                                                    )
+                                                                }
+                                                                className={`flex cursor-pointer items-center justify-center transition-all ${placeActiveDays.includes(d) ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4]' : 'border-2 border-transparent bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920]'}`}
+                                                                style={{
+                                                                    width: 32,
+                                                                    height: 32,
+                                                                    borderRadius:
+                                                                        '50%',
+                                                                    fontSize: 11,
+                                                                    fontWeight: 700,
+                                                                }}
+                                                            >
+                                                                {d
+                                                                    .charAt(0)
+                                                                    .toUpperCase() +
+                                                                    d.slice(
+                                                                        1,
+                                                                        2,
+                                                                    )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={savePlace}
+                                                className="flex-1 cursor-pointer rounded-[9px] border-none bg-[#1A4CD4] py-[9px] text-[13px] font-semibold text-white"
+                                                style={{
+                                                    fontFamily:
+                                                        "'Geist', sans-serif",
+                                                }}
+                                            >
+                                                {editingPlaceId
+                                                    ? 'Update place'
+                                                    : 'Save place'}
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    setShowPlaceForm(false)
+                                                }
+                                                className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-[9px] text-[13px] text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
+                                                style={{
+                                                    fontFamily:
+                                                        "'Geist', sans-serif",
+                                                }}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                {!showPlaceForm && (
+                                    <button
+                                        onClick={() => openPlaceForm()}
+                                        className="mt-2.5 w-full cursor-pointer rounded-[9px] border-[1.5px] border-dashed border-[#E2DFD6] bg-transparent py-2.5 text-[13px] font-medium text-[#1A4CD4] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930]"
+                                        style={{
+                                            fontFamily: "'Geist', sans-serif",
+                                        }}
+                                    >
+                                        + Add a place
+                                    </button>
+                                )}
+                            </SettingsSection>
+
+                            {/* MY EVENTS — drill-in */}
+                            <SettingsSection
+                                id="events"
+                                icon="📅"
+                                title="My events"
+                                activePage={profilePage}
+                                onNavigate={setProfilePage}
+                                onBack={() => setProfilePage(null)}
+                                backLabel="← Back to Profile"
+                            >
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span
+                                        style={{
+                                            fontSize: 16,
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        Going
+                                    </span>
+                                    <span
+                                        className="text-[#AAA89F]"
+                                        style={{
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.08em',
+                                        }}
+                                    >
+                                        {`${(goingEvents ?? []).length} upcoming`}
+                                    </span>
                                 </div>
-                            )}
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={savePlace}
-                                    className="flex-1 cursor-pointer rounded-[9px] border-none bg-[#1A4CD4] py-[9px] text-[13px] font-semibold text-white"
-                                    style={{
-                                        fontFamily: "'Geist', sans-serif",
-                                    }}
-                                >
-                                    {editingPlaceId
-                                        ? 'Update place'
-                                        : 'Save place'}
-                                </button>
-                                <button
-                                    onClick={() => setShowPlaceForm(false)}
-                                    className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-[9px] text-[13px] text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
-                                    style={{
-                                        fontFamily: "'Geist', sans-serif",
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
+                                {(goingEvents ?? []).length > 0 ? (
+                                    (goingEvents ?? []).map((ev) => (
+                                        <CompactCard
+                                            key={ev.id}
+                                            barColor="#0A7C52"
+                                            title={ev.title}
+                                            sub={`${ev.date} · ${ev.time}${ev.venue ? ` · ${ev.venue}` : ''}`}
+                                            badge="✓ Going"
+                                            badgeBg="#D4F0E6"
+                                            badgeColor="#0A7C52"
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
+                                        No upcoming events. Browse the{' '}
+                                        <a
+                                            href="/events"
+                                            className="text-[#1A4CD4] underline"
+                                        >
+                                            Events
+                                        </a>{' '}
+                                        page to find something.
+                                    </div>
+                                )}
+                                {(pastEvents ?? []).length > 0 && (
+                                    <div className="mt-4">
+                                        <SectionHeader title="Past events" />
+                                        {(pastEvents ?? []).map((ev) => (
+                                            <CompactCard
+                                                key={ev.id}
+                                                barColor="#E2DFD6"
+                                                title={ev.title}
+                                                titleColor="#6B6860"
+                                                sub={`${ev.date}${ev.venue ? ` · ${ev.venue}` : ''}`}
+                                                badge="Attended"
+                                                badgeBg="#EFEDE7"
+                                                badgeColor="#AAA89F"
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </SettingsSection>
                         </div>
-                    )}
-                    {!showPlaceForm && (
-                        <button
-                            onClick={() => openPlaceForm()}
-                            className="mt-2.5 w-full cursor-pointer rounded-[9px] border-[1.5px] border-dashed border-[#E2DFD6] bg-transparent py-2.5 text-[13px] font-medium text-[#1A4CD4] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930]"
-                            style={{
-                                fontFamily: "'Geist', sans-serif",
-                            }}
-                        >
-                            + Add a place
-                        </button>
-                    )}
-                </FeedSection>
+                    </>
+                )}
 
-                {/* ── My Events ── */}
-                <FeedSection>
-                    <SectionHeader
-                        title="Going"
-                        badge={`${(goingEvents ?? []).length} upcoming`}
-                    />
-                    {(goingEvents ?? []).length > 0 ? (
-                        (goingEvents ?? []).map((ev) => (
-                            <CompactCard
-                                key={ev.id}
-                                barColor="#0A7C52"
-                                title={ev.title}
-                                sub={`${ev.date} · ${ev.time}${ev.venue ? ` · ${ev.venue}` : ''}`}
-                                badge="✓ Going"
-                                badgeBg="#D4F0E6"
-                                badgeColor="#0A7C52"
+                {/* ════════════════════════════════════════════════════════════
+                   TAB: ACCOUNT — drill-in settings menu
+                   ════════════════════════════════════════════════════════════ */}
+                {activeTab === 'account' && (
+                    <div className="py-2">
+                        {/* NOTIFICATIONS — drill-in */}
+                        <SettingsSection
+                            id="notifications"
+                            icon="🔔"
+                            title="Notifications"
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
+                        >
+                            <SettingToggle
+                                label="🚇 Transit disruptions"
+                                sub="Delays, closures on your routes"
+                                on={toggles.transitDisruptions}
+                                onToggle={() => toggle('transitDisruptions')}
                             />
-                        ))
-                    ) : (
-                        <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
-                            No upcoming events. Browse the{' '}
-                            <a
-                                href="/events"
-                                className="text-[#1A4CD4] underline"
-                            >
-                                Events
-                            </a>{' '}
-                            page to find something.
-                        </div>
-                    )}
-                    {(pastEvents ?? []).length > 0 && (
-                        <div className="mt-4">
-                            <SectionHeader title="Past events" />
-                            {(pastEvents ?? []).map((ev) => (
-                                <CompactCard
-                                    key={ev.id}
-                                    barColor="#E2DFD6"
-                                    title={ev.title}
-                                    titleColor="#6B6860"
-                                    sub={`${ev.date}${ev.venue ? ` · ${ev.venue}` : ''}`}
-                                    badge="Attended"
-                                    badgeBg="#EFEDE7"
-                                    badgeColor="#AAA89F"
+                            <SettingToggle
+                                label="🏛️ Bürgeramt slot alerts"
+                                sub="Notified when new slots open"
+                                on={toggles.buergermtSlots}
+                                onToggle={() => toggle('buergermtSlots')}
+                            />
+                            <SettingToggle
+                                label="📅 Event reminders"
+                                sub="1 hour before events you've joined"
+                                on={toggles.eventReminders}
+                                onToggle={() => toggle('eventReminders')}
+                            />
+                            <SettingToggle
+                                label="📋 Checklist reminders"
+                                sub="Weekly nudge on pending tasks"
+                                on={toggles.checklistReminders}
+                                onToggle={() => toggle('checklistReminders')}
+                            />
+                            <SettingToggle
+                                label="📰 Weekly city digest"
+                                sub="Events, spots, and expat tips"
+                                on={toggles.weeklyDigest}
+                                onToggle={() => toggle('weeklyDigest')}
+                                isLast
+                            />
+                        </SettingsSection>
+
+                        {/* PRIVACY & DATA — drill-in */}
+                        <SettingsSection
+                            id="privacy"
+                            icon="🔐"
+                            title="Privacy & data"
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
+                        >
+                            <SettingToggle
+                                label="Share location for transit"
+                                sub="Improves departure times accuracy"
+                                on={toggles.shareLocation}
+                                onToggle={() => toggle('shareLocation')}
+                            />
+                            <SettingToggle
+                                label="Personalised content"
+                                sub="Use activity to improve recommendations"
+                                on={toggles.personalised}
+                                onToggle={() => toggle('personalised')}
+                            />
+                            <SettingToggle
+                                label="Share anonymised data"
+                                sub="Help improve Expadu for all expats"
+                                on={toggles.shareAnonymised}
+                                onToggle={() => toggle('shareAnonymised')}
+                                isLast
+                            />
+                        </SettingsSection>
+
+                        {/* The nav-away + feedback rows only show on the menu
+                            itself (i.e. when no drill-in page is open). */}
+                        {settingsPage === null && (
+                            <>
+                                <SettingNavRow
+                                    icon="🔒"
+                                    label="Security"
+                                    sub="Password & 2FA"
+                                    onClick={() =>
+                                        router.visit('/settings/security')
+                                    }
                                 />
-                            ))}
-                        </div>
-                    )}
-                </FeedSection>
+                                <SettingNavRow
+                                    icon="🎨"
+                                    label="Appearance"
+                                    sub="Theme & dark mode"
+                                    onClick={() =>
+                                        router.visit('/settings/appearance')
+                                    }
+                                />
+                                <a
+                                    href="mailto:feedback@expadu.com"
+                                    className="flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                                >
+                                    <span className="shrink-0 text-base">
+                                        ✉️
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-[14px] font-medium">
+                                            Send feedback
+                                        </div>
+                                        <div
+                                            className="text-[#AAA89F]"
+                                            style={{
+                                                fontSize: 12,
+                                                marginTop: 2,
+                                            }}
+                                        >
+                                            Report a bug or suggest a feature
+                                        </div>
+                                    </div>
+                                    <span
+                                        className="text-[#AAA89F]"
+                                        style={{ fontSize: 16 }}
+                                    >
+                                        ›
+                                    </span>
+                                </a>
+                                <SettingNavRow
+                                    icon="🏛️"
+                                    label="Bureaucracy checklist"
+                                    sub="Your settling-in tasks & appointments"
+                                    onClick={() => router.visit('/bureaucracy')}
+                                />
+                            </>
+                        )}
 
-                {/* ── Notifications ── */}
-                <FeedSection>
-                    <SectionHeader title="Notifications" />
-                    <SettingToggle
-                        label="🚇 Transit disruptions"
-                        sub="Delays, closures on your routes"
-                        on={toggles.transitDisruptions}
-                        onToggle={() => toggle('transitDisruptions')}
-                    />
-                    <SettingToggle
-                        label="🏛️ Bürgeramt slot alerts"
-                        sub="Notified when new slots open"
-                        on={toggles.buergermtSlots}
-                        onToggle={() => toggle('buergermtSlots')}
-                    />
-                    <SettingToggle
-                        label="📅 Event reminders"
-                        sub="1 hour before events you've joined"
-                        on={toggles.eventReminders}
-                        onToggle={() => toggle('eventReminders')}
-                    />
-                    <SettingToggle
-                        label="📋 Checklist reminders"
-                        sub="Weekly nudge on pending tasks"
-                        on={toggles.checklistReminders}
-                        onToggle={() => toggle('checklistReminders')}
-                    />
-                    <SettingToggle
-                        label="📰 Weekly city digest"
-                        sub="Events, spots, and expat tips"
-                        on={toggles.weeklyDigest}
-                        onToggle={() => toggle('weeklyDigest')}
-                        isLast
-                    />
-                </FeedSection>
-
-                {/* ── Privacy ── */}
-                <FeedSection>
-                    <SectionHeader title="Privacy" />
-                    <SettingToggle
-                        label="Share location for transit"
-                        sub="Improves departure times accuracy"
-                        on={toggles.shareLocation}
-                        onToggle={() => toggle('shareLocation')}
-                    />
-                    <SettingToggle
-                        label="Personalised content"
-                        sub="Use activity to improve recommendations"
-                        on={toggles.personalised}
-                        onToggle={() => toggle('personalised')}
-                    />
-                    <SettingToggle
-                        label="Share anonymised data"
-                        sub="Help improve Expadu for all expats"
-                        on={toggles.shareAnonymised}
-                        onToggle={() => toggle('shareAnonymised')}
-                        isLast
-                    />
-                </FeedSection>
-
-                {/* ── Appearance + Bureaucracy links ── */}
-                <FeedSection>
-                    <SectionHeader title="More" />
-                    <a
-                        href="/settings/appearance"
-                        className="flex cursor-pointer items-center justify-between border-b border-[#E2DFD6] py-3.5 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                    >
-                        <div>
-                            <div style={{ fontSize: 14, fontWeight: 500 }}>
-                                🎨 Appearance
-                            </div>
+                        {/* DELETE ACCOUNT — danger drill-in with two-tap confirm */}
+                        <SettingsSection
+                            id="danger"
+                            icon="⚠️"
+                            title="Delete account"
+                            danger
+                            activePage={settingsPage}
+                            onNavigate={setSettingsPage}
+                            onBack={() => setSettingsPage(null)}
+                        >
                             <div
-                                className="text-[#AAA89F]"
-                                style={{ fontSize: 12, marginTop: 2 }}
-                            >
-                                Theme &amp; dark mode
-                            </div>
-                        </div>
-                        <span
-                            className="text-[#AAA89F]"
-                            style={{ fontSize: 16 }}
-                        >
-                            ›
-                        </span>
-                    </a>
-                    <a
-                        href="/bureaucracy"
-                        className="flex cursor-pointer items-center justify-between py-3.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
-                    >
-                        <div>
-                            <div style={{ fontSize: 14, fontWeight: 500 }}>
-                                🏛️ Bureaucracy checklist
-                            </div>
-                            <div
-                                className="text-[#AAA89F]"
-                                style={{ fontSize: 12, marginTop: 2 }}
-                            >
-                                Your settling-in tasks &amp; appointments
-                            </div>
-                        </div>
-                        <span
-                            className="text-[#AAA89F]"
-                            style={{ fontSize: 16 }}
-                        >
-                            ›
-                        </span>
-                    </a>
-                </FeedSection>
-
-                {/* ── Support ── */}
-                <FeedSection>
-                    <SectionHeader title="Support" />
-                    <SupportLink
-                        href="mailto:feedback@expadu.com"
-                        label="Send feedback"
-                        sub="Report a bug or suggest a feature"
-                    />
-                    {/* Help Centre / Privacy / Terms links return when those pages exist. */}
-                    <div className="flex items-center justify-between py-3.5">
-                        <div
-                            className="text-[#AAA89F]"
-                            style={{ fontSize: 14, fontWeight: 500 }}
-                        >
-                            Version
-                        </div>
-                        <span
-                            className="text-[#AAA89F]"
-                            style={{ fontSize: 13 }}
-                        >
-                            1.0.0
-                        </span>
-                    </div>
-                </FeedSection>
-
-                {/* ── Danger zone ── */}
-                <FeedSection>
-                    <SectionHeader title="Danger zone" />
-                    <div
-                        className="flex cursor-pointer items-center justify-between py-3.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
-                        onClick={() => {
-                            if (deleteConfirming) {
-                                router.delete('/settings/profile');
-                            } else {
-                                setDeleteConfirming(true);
-                                setTimeout(
-                                    () => setDeleteConfirming(false),
-                                    3000,
-                                );
-                            }
-                        }}
-                    >
-                        <div>
-                            <div
-                                style={{
-                                    fontSize: 14,
-                                    fontWeight: 500,
-                                    color: '#C4271A',
+                                className="flex cursor-pointer items-center justify-between py-3.5 transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
+                                onClick={() => {
+                                    if (deleteConfirming) {
+                                        router.delete('/settings/profile');
+                                    } else {
+                                        setDeleteConfirming(true);
+                                        setTimeout(
+                                            () => setDeleteConfirming(false),
+                                            3000,
+                                        );
+                                    }
                                 }}
                             >
-                                {deleteConfirming
-                                    ? 'Tap again to confirm'
-                                    : 'Delete account'}
+                                <div>
+                                    <div
+                                        style={{
+                                            fontSize: 14,
+                                            fontWeight: 500,
+                                            color: '#C4271A',
+                                        }}
+                                    >
+                                        {deleteConfirming
+                                            ? 'Tap again to confirm'
+                                            : 'Delete account'}
+                                    </div>
+                                    <div
+                                        className="text-[#AAA89F]"
+                                        style={{ fontSize: 12, marginTop: 2 }}
+                                    >
+                                        Permanently remove your account and data
+                                    </div>
+                                </div>
+                                <span
+                                    style={{ fontSize: 16, color: '#C4271A' }}
+                                >
+                                    ›
+                                </span>
                             </div>
-                            <div
-                                className="text-[#AAA89F]"
-                                style={{ fontSize: 12, marginTop: 2 }}
-                            >
-                                Permanently remove your account and data
+                        </SettingsSection>
+
+                        {/* Version — only on the menu itself */}
+                        {settingsPage === null && (
+                            <div className="flex items-center justify-between px-5 py-3.5">
+                                <div
+                                    className="text-[#AAA89F]"
+                                    style={{ fontSize: 14, fontWeight: 500 }}
+                                >
+                                    Version
+                                </div>
+                                <span
+                                    className="text-[#AAA89F]"
+                                    style={{ fontSize: 13 }}
+                                >
+                                    1.0.0
+                                </span>
                             </div>
-                        </div>
-                        <span style={{ fontSize: 16, color: '#C4271A' }}>
-                            ›
-                        </span>
+                        )}
                     </div>
-                </FeedSection>
+                )}
             </div>
 
             {/* Toast */}
@@ -1716,20 +1991,110 @@ export default function Profile() {
 // Sub-components
 // ============================================================
 
-function FeedSection({
+function SettingsSection({
     id,
+    icon,
+    title,
+    activePage,
+    onNavigate,
+    onBack,
     children,
+    danger,
+    backLabel = '← Back to Account',
 }: {
-    id?: string;
+    id: string;
+    icon: string;
+    title: string;
+    activePage: string | null;
+    onNavigate: (id: string) => void;
+    onBack: () => void;
     children: React.ReactNode;
+    danger?: boolean;
+    backLabel?: string;
+}) {
+    // When no page is active, show the menu item
+    if (!activePage) {
+        return (
+            <button
+                onClick={() => onNavigate(id)}
+                className={`flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920] ${danger ? 'text-[#C4271A]' : ''}`}
+            >
+                <span className="shrink-0 text-base">{icon}</span>
+                <span className="flex-1 text-[14px] font-medium">{title}</span>
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-[#AAA89F]"
+                >
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+        );
+    }
+
+    // When this page is active, show back button + content
+    if (activePage === id) {
+        return (
+            <div>
+                <button
+                    onClick={onBack}
+                    className="flex w-full items-center gap-2 border-b border-[#E2DFD6] px-5 py-3 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:border-[#3A3930] dark:text-[#AAA89F]"
+                >
+                    {backLabel}
+                </button>
+                <div className="border-b border-[#E2DFD6] px-5 py-4 dark:border-[#3A3930]">
+                    <div className="mb-3 flex items-center gap-2">
+                        <span className="text-base">{icon}</span>
+                        <span className="text-base font-semibold">{title}</span>
+                    </div>
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
+    // Another page is active — hide this item
+    return null;
+}
+
+function SettingNavRow({
+    icon,
+    label,
+    sub,
+    onClick,
+}: {
+    icon: string;
+    label: string;
+    sub?: string;
+    onClick: () => void;
 }) {
     return (
-        <div
-            id={id}
-            className="scroll-mt-4 border-b border-[#E2DFD6] px-6 py-5 last:border-b-0 dark:border-[#3A3930]"
+        <button
+            onClick={onClick}
+            className="flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
         >
-            {children}
-        </div>
+            <span className="shrink-0 text-base">{icon}</span>
+            <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-medium">{label}</div>
+                {sub && (
+                    <div
+                        className="text-[#AAA89F]"
+                        style={{ fontSize: 12, marginTop: 2 }}
+                    >
+                        {sub}
+                    </div>
+                )}
+            </div>
+            <span className="text-[#AAA89F]" style={{ fontSize: 16 }}>
+                ›
+            </span>
+        </button>
     );
 }
 
@@ -1890,38 +2255,6 @@ function SettingToggle({
                 />
             </div>
         </div>
-    );
-}
-
-function SupportLink({
-    href,
-    label,
-    sub,
-}: {
-    href: string;
-    label: string;
-    sub?: string;
-}) {
-    return (
-        <a
-            href={href}
-            className="flex cursor-pointer items-center justify-between border-b border-[#E2DFD6] py-3.5 transition-colors last:border-b-0 hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-        >
-            <div>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{label}</div>
-                {sub && (
-                    <div
-                        className="text-[#AAA89F]"
-                        style={{ fontSize: 12, marginTop: 2 }}
-                    >
-                        {sub}
-                    </div>
-                )}
-            </div>
-            <span className="text-[#AAA89F]" style={{ fontSize: 16 }}>
-                ›
-            </span>
-        </a>
     );
 }
 
