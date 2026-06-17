@@ -1,6 +1,7 @@
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { IconCalendarEvent, IconSparkles } from '@tabler/icons-react';
 import { useState } from 'react';
+import { PushPromptCard } from '@/components/cards/push-prompt-card';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { categoryEmoji } from '@/components/places/category-illustration';
@@ -323,6 +324,13 @@ export default function Dashboard() {
                         you tap.
                     </span>
                 </p>
+
+                {/* Push / iOS-Safari nudge — self-hides when subscribed,
+                    dismissed, unsupported, or still detecting. empty:hidden
+                    drops the wrapper's margin in those null-render cases. */}
+                <div className="mb-6 empty:hidden">
+                    <PushPromptCard />
+                </div>
 
                 {/* Right now (urgency tiles) */}
                 <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
