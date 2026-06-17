@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Places — map view · Expadu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
+<script type="importmap">
+{ "imports": {
+  "maplibre-gl": "https://esm.sh/maplibre-gl@5.6.0",
+  "pmtiles": "https://esm.sh/pmtiles@4.4.1",
+  "protomaps-themes-base": "https://esm.sh/protomaps-themes-base@4.5.0"
+}}
+</script>
+<style>
+:root {
+  --bg: #F6F5F1; --surface: #FFFFFF; --surface-2: #EFEDE7; --border: #E2DFD6;
+  --text-1: #18170F; --text-2: #6B6860; --text-3: #AAA89F;
+  --accent: #1A4CD4; --accent-h: #1540B8; --accent-soft: #EBF0FD;
+  --success: #0A7C52; --success-s: #D4F0E6; --warn: #C47D0E; --danger: #C4271A;
+  --r: 14px; --r-sm: 9px; --r-lg: 20px;
+  --shadow: 0 1px 3px rgba(24,23,15,.05), 0 8px 30px rgba(24,23,15,.10);
+}
+.dark {
+  --bg: #14130D; --surface: #1E1D15; --surface-2: #2A2920; --border: #3A3930;
+  --text-1: #F6F5F1; --text-2: #AAA89F; --text-3: #6B6860;
+  --accent: #5B8AF5; --accent-h: #6B97F6; --accent-soft: rgba(91,138,245,.16);
+  --success: #34D399; --success-s: rgba(10,124,82,.20); --warn: #FBBF24; --danger: #F87171;
+  --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 30px rgba(0,0,0,.4);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text-1); transition: background .25s; padding: 28px 16px 60px; }
+.mode-toggle { position: fixed; top: 14px; right: 14px; z-index: 90; width: 38px; height: 38px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; box-shadow: var(--shadow); color: var(--text-2); font-size: 16px; }
+
+.wrap { max-width: 980px; margin: 0 auto; }
+
+/* page header — mirrors places.tsx */
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.head h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 26px; letter-spacing: -.02em; }
+.head p { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+.view-toggle { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); border-radius: 100px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+/* filter chips — context only */
+.chips { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 100px; padding: 6px 13px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.chip.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+.chip.cat.on { background: var(--accent-soft); color: var(--accent); }
+
+/* map shell */
+.map-shell { position: relative; height: 68vh; min-height: 460px; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
+#map { position: absolute; inset: 0; background: var(--surface-2); }
+.maplibregl-ctrl-attrib { font-size: 10px !important; background: rgba(255,255,255,.6) !important; }
+.dark .maplibregl-ctrl-attrib { background: rgba(0,0,0,.4) !important; }
+.dark .maplibregl-ctrl-attrib a { color: var(--text-2) !important; }
+
+/* count pill */
+.count { position: absolute; top: 12px; left: 12px; z-index: 5; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 6px 13px; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); box-shadow: var(--shadow); }
+
+/* recenter btn */
+.recenter { position: absolute; bottom: 18px; right: 12px; z-index: 5; width: 42px; height: 42px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); color: var(--accent); box-shadow: var(--shadow); cursor: pointer; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+
+/* place pin */
+.pin { width: 34px; height: 34px; border-radius: 100px 100px 100px 2px; transform: rotate(45deg); background: var(--surface); border: 1.5px solid var(--accent); box-shadow: 0 2px 6px rgba(24,23,15,.18); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .12s, background .12s; }
+.pin > span { transform: rotate(-45deg); font-size: 15px; line-height: 1; }
+.pin:hover { transform: rotate(45deg) scale(1.08); }
+.pin.sel { background: var(--accent); border-color: var(--accent); width: 40px; height: 40px; z-index: 3; }
+.pin.sel > span { filter: grayscale(1) brightness(3); font-size: 17px; }
+.pin.home { border-style: dashed; border-color: var(--text-3); }
+
+/* selected-place card */
+.card { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 6; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px; display: none; gap: 12px; align-items: center; }
+.card.show { display: flex; animation: rise .18s ease; }
+@keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.card .ico { width: 46px; height: 46px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.card .body { flex: 1; min-width: 0; cursor: pointer; }
+.card .name { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 500; letter-spacing: -.01em; }
+.card .meta { font-size: 12.5px; color: var(--text-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .go { flex-shrink: 0; border: none; background: var(--accent-soft); color: var(--accent); border-radius: var(--r-sm); padding: 9px 13px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.card .x { flex-shrink: 0; width: 30px; height: 30px; border-radius: 100px; border: 1px solid var(--border); background: transparent; color: var(--text-3); cursor: pointer; align-self: flex-start; }
+@media (min-width: 640px) { .card { left: auto; right: 12px; bottom: 12px; width: 380px; } }
+
+.note { max-width: 980px; margin: 16px auto 0; font-size: 12px; color: var(--text-3); text-align: center; }
+</style>
+</head>
+<body>
+<button class="mode-toggle" onclick="document.body.classList.toggle('dark'); window.__sync&&window.__sync()">◐</button>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Places</h1>
+      <p>Parks, museums &amp; places worth knowing</p>
+    </div>
+    <button class="view-toggle">▦ List view</button>
+  </div>
+
+  <div class="chips">
+    <span class="chip on">Ehrenfeld</span>
+    <span class="chip">Innenstadt</span>
+    <span class="chip">Lindenthal</span>
+    <span class="chip cat on">🌳 Parks</span>
+    <span class="chip cat">🏛️ Culture</span>
+    <span class="chip cat">🏊 Swimming</span>
+  </div>
+
+  <div class="map-shell">
+    <div id="map"></div>
+    <div class="count" id="count">10 places · Cologne</div>
+    <button class="recenter" id="recenter" title="Recenter">⌖</button>
+
+    <div class="card" id="card">
+      <div class="ico" id="cardIco">🌳</div>
+      <div class="body" id="cardBody">
+        <div class="name" id="cardName">—</div>
+        <div class="meta" id="cardMeta">—</div>
+      </div>
+      <button class="go">→ Take me there</button>
+      <button class="x" id="cardX">✕</button>
+    </div>
+  </div>
+
+  <p class="note">Self-hosted vector basemap — Protomaps <code>cologne.pmtiles</code> (~48&nbsp;MB, z0–15) served as a static file · © OpenStreetMap. No tile server, no Google.</p>
+</div>
+
+<script type="module">
+import maplibregl from 'maplibre-gl';
+import { Protocol } from 'pmtiles';
+import { layers, namedTheme } from 'protomaps-themes-base';
+
+// ---- register the pmtiles protocol (reads byte-ranges from one static file) ----
+const protocol = new Protocol();
+maplibregl.addProtocol('pmtiles', protocol.tile);
+
+const PMTILES = '/public/maps/cologne.pmtiles'; // served from repo root by `php -S`
+
+// ---- Expadu-tinted basemap theme (paper land, soft-green parks, muted water) ----
+const MAP = {
+  light: { bg:'#EAE7DF', park:'#DCE7CF', wood:'#D3E0C2', water:'#BBD3E8', road:'#FBFAF7', border:'#E2DFD6', building:'#E4E0D6', boundary:'#C9C5BA', text:'#6B6860', city:'#18170F', halo:'#F6F5F1' },
+  dark:  { bg:'#232219', park:'#28301F', wood:'#2C3522', water:'#233649', road:'#2E2D23', border:'#3A3930', building:'#2A2920', boundary:'#3A3930', text:'#AAA89F', city:'#F6F5F1', halo:'#14130D' },
+};
+function expaduTheme(dark) {
+  const m = dark ? MAP.dark : MAP.light;
+  return { ...namedTheme(dark ? 'dark' : 'light'),
+    background: m.bg, earth: m.bg, glacier: m.bg, sand: m.bg, beach: m.bg,
+    water: m.water, waterway_label: m.water,
+    park_a: m.park, park_b: m.park, scrub_a: m.park, scrub_b: m.park, zoo: m.park,
+    wood_a: m.wood, wood_b: m.wood, grassland: m.park,
+    buildings: m.building, pedestrian: m.road, pier: m.bg,
+    other: m.road, minor_service: m.road, minor_a: m.road, minor_b: m.road, link: m.road, major: m.road, highway: m.road,
+    minor_service_casing: m.border, minor_casing: m.border, link_casing: m.border,
+    major_casing_late: m.border, highway_casing_late: m.border, major_casing_early: m.border, highway_casing_early: m.border,
+    railway: m.boundary, boundaries: m.boundary,
+    roads_label_minor: m.text, roads_label_major: m.text, roads_label_minor_halo: m.halo, roads_label_major_halo: m.halo,
+    city_label: m.city, city_label_halo: m.halo, state_label: m.text, state_label_halo: m.halo, country_label: m.text,
+    subplace_label: m.text, subplace_label_halo: m.halo, address_label: m.text, address_label_halo: m.halo,
+    ocean_label: m.text, peak_label: m.text,
+  };
+}
+function buildStyle(dark) {
+  return {
+    version: 8,
+    glyphs: 'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf',
+    sprite: `https://protomaps.github.io/basemaps-assets/sprites/v4/${dark ? 'dark' : 'light'}`,
+    sources: { protomaps: { type: 'vector', url: 'pmtiles://' + PMTILES, attribution: '© OpenStreetMap' } },
+    layers: layers('protomaps', expaduTheme(dark), { lang: 'en' }),
+  };
+}
+
+// ---- sample Cologne places ----
+const HOME = [6.9170, 50.9510]; // Ehrenfeld
+const PLACES = [
+  { name: 'Kölner Dom',          emoji: '🏛️', meta: 'Culture · Altstadt · 18 min away',     lng: 6.9583, lat: 50.9413 },
+  { name: 'Rheinpark',           emoji: '🌳', meta: 'Park · Deutz · 22 min away',           lng: 6.9747, lat: 50.9494 },
+  { name: 'Stadtgarten',         emoji: '🌳', meta: 'Park · Neustadt-Nord · 9 min away',    lng: 6.9330, lat: 50.9450 },
+  { name: 'Aachener Weiher',     emoji: '🦆', meta: 'Park · lake · Lindenthal · 12 min',    lng: 6.9255, lat: 50.9305 },
+  { name: 'Stadtwald',           emoji: '🌲', meta: 'Park · Lindenthal · 16 min away',      lng: 6.8990, lat: 50.9270 },
+  { name: 'Schokoladenmuseum',   emoji: '🍫', meta: 'Culture · Altstadt · 24 min away',     lng: 6.9647, lat: 50.9320 },
+  { name: 'Volksgarten',         emoji: '🌳', meta: 'Park · Südstadt · 19 min away',        lng: 6.9460, lat: 50.9165 },
+  { name: 'Flora Köln',          emoji: '🌷', meta: 'Botanical garden · Riehl · 21 min',    lng: 6.9730, lat: 50.9620 },
+  { name: 'Lentpark',            emoji: '🏊', meta: 'Swimming · Neustadt-Nord · 11 min',    lng: 6.9430, lat: 50.9540 },
+  { name: 'Grüngürtel (Ehrenfeld)', emoji: '🌳', meta: 'Park · Ehrenfeld · 4 min away',     lng: 6.9090, lat: 50.9470 },
+];
+
+let dark = false, selectedEl = null;
+const map = new maplibregl.Map({
+  container: 'map', style: buildStyle(dark),
+  center: [6.945, 50.945], zoom: 12.2, attributionControl: { compact: true },
+});
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+const cardEl = document.getElementById('card');
+function select(p, el) {
+  if (selectedEl) selectedEl.classList.remove('sel');
+  el.classList.add('sel'); selectedEl = el;
+  document.getElementById('cardIco').textContent = p.emoji;
+  document.getElementById('cardName').textContent = p.name;
+  document.getElementById('cardMeta').textContent = p.meta;
+  cardEl.classList.add('show');
+  map.easeTo({ center: [p.lng, p.lat], offset: [0, -60], duration: 420 });
+}
+document.getElementById('cardX').onclick = () => { cardEl.classList.remove('show'); if (selectedEl) selectedEl.classList.remove('sel'); selectedEl = null; };
+
+map.on('load', () => {
+  // home marker
+  const h = document.createElement('div'); h.className = 'pin home';
+  h.innerHTML = '<span>🏠</span>';
+  new maplibregl.Marker({ element: h }).setLngLat(HOME).addTo(map);
+  // place pins
+  for (const p of PLACES) {
+    const el = document.createElement('div'); el.className = 'pin';
+    el.innerHTML = `<span>${p.emoji}</span>`;
+    el.onclick = (e) => { e.stopPropagation(); select(p, el); };
+    new maplibregl.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(map);
+  }
+});
+
+document.getElementById('recenter').onclick = () =>
+  map.easeTo({ center: [6.945, 50.945], zoom: 12.2, duration: 500 });
+
+// dark toggle re-applies the style (markers persist; they're DOM, not style)
+window.__sync = () => {
+  const nowDark = document.body.classList.contains('dark');
+  if (nowDark === dark) return;
+  dark = nowDark; map.setStyle(buildStyle(dark));
+};
+</script>
+</body>
+</html>

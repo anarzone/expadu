@@ -39,3 +39,6 @@ tests/Browser/.auth/
 storage/certs/
 
 /.claude/worktrees
+
+# Vector basemap tiles — large static artifact, transferred to the server, not committed
+public/maps/*.pmtiles

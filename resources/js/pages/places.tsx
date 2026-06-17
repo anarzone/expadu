@@ -9,6 +9,7 @@ import type { CardChip } from '@/components/places/content-card';
 import { PlaceDetail } from '@/components/places/place-detail';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
+import { PlacesMap } from '@/components/places/places-map';
 import type { Place, VeedelOption } from '@/components/places/types';
 import { ICON_STROKE } from '@/constants/icons';
 import { useFeedback } from '@/hooks/use-feedback';
@@ -437,18 +438,15 @@ export default function Places() {
                     </div>
                 )}
 
-                {/* Map view placeholder (out of scope) */}
+                {/* Map view — the current results as pins on our basemap */}
                 {view === 'map' ? (
-                    <div className="flex h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-card text-center">
-                        <IconMap
-                            size={28}
-                            stroke={1.6}
-                            className="text-muted-foreground"
-                        />
-                        <p className="mt-3 text-sm text-muted-foreground">
-                            Map view is coming soon.
-                        </p>
-                    </div>
+                    <PlacesMap
+                        places={places}
+                        emojiFor={placeEmoji}
+                        metaFor={placeMeta}
+                        onOpen={openPlace}
+                        onTakeMeThere={takeMeThere}
+                    />
                 ) : status === 'loading' ? (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {[1, 2, 3].map((i) => (
