@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Redis;
 
 beforeEach(function () {
     Cache::flush();
+    config(['services.motis.url' => 'http://motis.test']);
     $prefix = (string) config('database.redis.options.prefix', '');
     Redis::eval(
         "for _,k in ipairs(redis.call('KEYS', ARGV[1])) do redis.call('DEL', k) end return 1",
@@ -18,6 +19,11 @@ beforeEach(function () {
         $prefix.'transit:cb:*'
     );
 });
+
+function motisPlanFixture(): array
+{
+    return json_decode(file_get_contents(base_path('tests/Fixtures/transitous/plan.json')), true);
+}
 
 function fakeTriasTrips(): void
 {
@@ -49,32 +55,63 @@ function fakeTriasTrips(): void
     });
 }
 
-test('falls back to TRIAS after two transitous failures', function () {
-    Http::fake(['api.transitous.org/*' => Http::response('down', 503)]);
+test('MOTIS serves as the primary provider and the result is cached', function () {
+    Http::fake(['motis.test/api/v1/plan*' => Http::response(motisPlanFixture())]);
+
+    $service = app(RouteService::class);
+    $from = new GeoPoint(50.9513, 6.9185);
+    $to = new GeoPoint(50.9413, 6.9583);
+
+    $first = $service->plan($from, $to);
+    $second = $service->plan($from, $to); // must hit the cache
+
+    expect($first->source)->toBe('motis');
+    expect($second->source)->toBe('motis');
+    Http::assertSentCount(1);
+});
+
+test('falls back to Transitous when MOTIS fails', function () {
+    Http::fake([
+        'motis.test/*' => Http::response('motis down', 503),
+        'api.transitous.org/api/v3/plan*' => Http::response(motisPlanFixture()),
+    ]);
+
+    $result = app(RouteService::class)->plan(
+        new GeoPoint(50.9513, 6.9185),
+        new GeoPoint(50.9413, 6.9583),
+    );
+
+    expect($result->source)->toBe('transitous');
+});
+
+test('falls back to TRIAS after MOTIS and Transitous both fail twice', function () {
+    Http::fake([
+        'motis.test/*' => Http::response('down', 503),
+        'api.transitous.org/*' => Http::response('down', 503),
+    ]);
     fakeTriasTrips();
 
     $service = app(RouteService::class);
     $from = new GeoPoint(50.95, 6.92);
-    $to = new GeoPoint(50.94, 6.96);
 
-    // Failure 1: transitous fails, TRIAS serves (cache bypassed via distinct coords)
-    $first = $service->plan($from, new GeoPoint(50.9401, 6.9601));
-    expect($first->source)->toBe('trias');
+    // Distinct destinations bypass the journey cache each round.
+    expect($service->plan($from, new GeoPoint(50.9401, 6.9601))->source)->toBe('trias');
+    expect($service->plan($from, new GeoPoint(50.9402, 6.9602))->source)->toBe('trias');
 
-    // Failure 2 opens the circuit
-    $second = $service->plan($from, new GeoPoint(50.9402, 6.9602));
-    expect($second->source)->toBe('trias');
-
+    // Two failures each opened both circuits.
+    expect(app(CircuitBreaker::class)->isOpen('motis'))->toBeTrue();
     expect(app(CircuitBreaker::class)->isOpen('transitous'))->toBeTrue();
 
-    // Circuit open: transitous is skipped entirely (no further HTTP calls)
-    $third = $service->plan($from, $to);
+    $third = $service->plan($from, new GeoPoint(50.94, 6.96));
     expect($third->source)->toBe('trias');
     expect($third->journeys[0]->lines())->toContain('5');
 });
 
-test('degrades to nearest-stop departures when both providers die', function () {
-    Http::fake(['api.transitous.org/*' => Http::response('down', 503)]);
+test('degrades to nearest-stop departures when every provider dies', function () {
+    Http::fake([
+        'motis.test/*' => Http::response('down', 503),
+        'api.transitous.org/*' => Http::response('down', 503),
+    ]);
     test()->mock(VrsTriasService::class, function ($mock) {
         $mock->shouldReceive('planJourney')->andReturn(null);
     });
@@ -97,21 +134,15 @@ test('degrades to nearest-stop departures when both providers die', function () 
     expect($result->degraded['deep_links']['google'])->toContain('travelmode=transit');
 });
 
-test('successful transitous response closes the loop and caches', function () {
-    Http::fake([
-        'api.transitous.org/api/v3/plan*' => Http::response(
-            json_decode(file_get_contents(base_path('tests/Fixtures/transitous/plan.json')), true),
-        ),
-    ]);
+test('a coordinate outside NRW short-circuits to degraded without calling any provider', function () {
+    Http::fake(); // any provider call would be recorded
+    test()->mock(NearbyStopService::class, function ($mock) {
+        $mock->shouldReceive('getDeparturesByType')->andReturn(['kvb' => [], 'db' => [], 'stops_used' => []]);
+    });
 
-    $service = app(RouteService::class);
-    $from = new GeoPoint(50.9513, 6.9185);
-    $to = new GeoPoint(50.9413, 6.9583);
+    // Munich (48.14, 11.58) is well outside the NRW service area.
+    $result = app(RouteService::class)->plan(new GeoPoint(50.95, 6.92), new GeoPoint(48.137, 11.575));
 
-    $first = $service->plan($from, $to);
-    $second = $service->plan($from, $to); // second call must hit the cache
-
-    expect($first->source)->toBe('transitous');
-    expect($second->source)->toBe('transitous');
-    Http::assertSentCount(1);
+    expect($result->source)->toBe('degraded');
+    Http::assertNothingSent();
 });

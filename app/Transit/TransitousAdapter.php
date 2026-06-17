@@ -54,7 +54,7 @@ class TransitousAdapter implements RouteService
             ->timeout(8)
             ->connectTimeout(3)
             ->withHeaders(['User-Agent' => 'expadu.com'])
-            ->get('/api/v3/plan', $query)
+            ->get($this->planPath(), $query)
             ->throw();
 
         $journeys = [];
@@ -65,7 +65,7 @@ class TransitousAdapter implements RouteService
             }
         }
 
-        return new JourneyResult($journeys, 'transitous');
+        return new JourneyResult($journeys, $this->source());
     }
 
     public function geocode(string $query, ?GeoPoint $bias = null): array
@@ -172,8 +172,24 @@ class TransitousAdapter implements RouteService
         );
     }
 
-    private function baseUrl(): string
+    protected function baseUrl(): string
     {
         return rtrim((string) config('services.transitous.url', 'https://api.transitous.org'), '/');
+    }
+
+    /**
+     * The plan endpoint path. Transitous runs a build that serves v3; our
+     * self-hosted MOTIS (see {@see MotisAdapter}) serves v1. Geocode and
+     * reverse-geocode are v1 on both.
+     */
+    protected function planPath(): string
+    {
+        return '/api/v3/plan';
+    }
+
+    /** The `source` stamped on the JourneyResult (drives the frontend path). */
+    protected function source(): string
+    {
+        return 'transitous';
     }
 }

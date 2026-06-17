@@ -65,6 +65,13 @@ return [
         'key' => env('LLM_KEY'),
     ],
 
+    'motis' => [
+        // Our self-hosted MOTIS (VRS GTFS+RT + NRW OSM). Primary routing
+        // provider; the public Transitous below is the dev/failover backstop.
+        // Defaults to the local benchmark instance for development.
+        'url' => env('MOTIS_URL', 'http://localhost:8080'),
+    ],
+
     'transitous' => [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
     ],

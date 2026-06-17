@@ -21,14 +21,30 @@ use Illuminate\Support\Facades\Log;
 class FailoverRouteService implements RouteService
 {
     public function __construct(
+        private readonly MotisAdapter $motis,
         private readonly TransitousAdapter $transitous,
         private readonly TriasAdapter $trias,
         private readonly CircuitBreaker $breaker,
         private readonly NearbyStopService $nearbyStops,
     ) {}
 
+    /**
+     * NRW service-area bounds. A coordinate outside the area MOTIS was built
+     * for can never produce a faithful route, so we short-circuit to degraded
+     * rather than let any provider render a nonsense journey to it.
+     */
+    private const NRW_BOUNDS = ['minLat' => 50.0, 'maxLat' => 52.6, 'minLng' => 5.8, 'maxLng' => 9.5];
+
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 3): JourneyResult
     {
+        if (! $this->withinServiceArea($from) || ! $this->withinServiceArea($to)) {
+            Log::warning('journey requested outside NRW service area', [
+                'from' => "{$from->lat},{$from->lng}", 'to' => "{$to->lat},{$to->lng}",
+            ]);
+
+            return $this->degraded($from, $to);
+        }
+
         $cacheKey = sprintf(
             'journey:%.4f,%.4f:%.4f,%.4f:%s:%d',
             $from->lat, $from->lng, $to->lat, $to->lng,
@@ -39,7 +55,7 @@ class FailoverRouteService implements RouteService
         // Cache the ARRAY form, never the DTO — Redis deserialises cached
         // objects to __PHP_Incomplete_Class on a hit. Reconstruct on read.
         $cached = Cache::remember($cacheKey, 60, function () use ($from, $to, $departAt, $max) {
-            foreach (['transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
+            foreach (['motis' => $this->motis, 'transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
                 if ($this->breaker->isOpen($name)) {
                     continue;
                 }
@@ -66,21 +82,23 @@ class FailoverRouteService implements RouteService
         $cacheKey = 'geocode:'.md5($query.($bias ? "{$bias->lat},{$bias->lng}" : ''));
 
         $cached = Cache::remember($cacheKey, 7 * 24 * 3600, function () use ($query, $bias) {
-            if ($this->breaker->isOpen('transitous')) {
-                return [];
+            foreach (['motis' => $this->motis, 'transitous' => $this->transitous] as $name => $adapter) {
+                if ($this->breaker->isOpen($name)) {
+                    continue;
+                }
+
+                try {
+                    $places = $adapter->geocode($query, $bias);
+                    $this->breaker->recordSuccess($name);
+
+                    return array_map(fn (Place $p) => $p->toArray(), $places);
+                } catch (\Throwable $e) {
+                    $this->breaker->recordFailure($name);
+                    Log::warning("{$name} geocode failed", ['error' => $e->getMessage()]);
+                }
             }
 
-            try {
-                $places = $this->transitous->geocode($query, $bias);
-                $this->breaker->recordSuccess('transitous');
-
-                return array_map(fn (Place $p) => $p->toArray(), $places);
-            } catch (\Throwable $e) {
-                $this->breaker->recordFailure('transitous');
-                Log::warning('transitous geocode failed', ['error' => $e->getMessage()]);
-
-                return [];
-            }
+            return [];
         });
 
         return array_map(fn (array $p) => Place::fromArray($p), $cached);
@@ -91,23 +109,31 @@ class FailoverRouteService implements RouteService
         $cacheKey = sprintf('revgeo:%.4f,%.4f', $point->lat, $point->lng);
 
         $cached = Cache::remember($cacheKey, 24 * 3600, function () use ($point) {
-            if ($this->breaker->isOpen('transitous')) {
-                return null;
+            foreach (['motis' => $this->motis, 'transitous' => $this->transitous] as $name => $adapter) {
+                if ($this->breaker->isOpen($name)) {
+                    continue;
+                }
+
+                try {
+                    $place = $adapter->reverseGeocode($point);
+                    $this->breaker->recordSuccess($name);
+
+                    return $place?->toArray();
+                } catch (\Throwable $e) {
+                    $this->breaker->recordFailure($name);
+                }
             }
 
-            try {
-                $place = $this->transitous->reverseGeocode($point);
-                $this->breaker->recordSuccess('transitous');
-
-                return $place?->toArray();
-            } catch (\Throwable $e) {
-                $this->breaker->recordFailure('transitous');
-
-                return null;
-            }
+            return null;
         });
 
         return is_array($cached) ? Place::fromArray($cached) : null;
+    }
+
+    private function withinServiceArea(GeoPoint $p): bool
+    {
+        return $p->lat >= self::NRW_BOUNDS['minLat'] && $p->lat <= self::NRW_BOUNDS['maxLat']
+            && $p->lng >= self::NRW_BOUNDS['minLng'] && $p->lng <= self::NRW_BOUNDS['maxLng'];
     }
 
     /**
