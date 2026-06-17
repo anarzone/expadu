@@ -1,7 +1,28 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { IconCalendar, IconClock } from '@tabler/icons-react';
+import {
+    IconBell,
+    IconBuildingBank,
+    IconBusStop,
+    IconCalendar,
+    IconCalendarEvent,
+    IconChecklist,
+    IconClock,
+    IconKey,
+    IconMail,
+    IconMapPin,
+    IconNews,
+    IconPalette,
+    IconRefresh,
+    IconShieldLock,
+    IconStar,
+    IconTrash,
+    IconUser,
+} from '@tabler/icons-react';
+import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
+import type { ComponentType } from 'react';
 import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
+import { ICON_STROKE } from '@/constants/icons';
 import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
 import type { Auth } from '@/types';
@@ -942,7 +963,7 @@ export default function Profile() {
                             {/* PERSONAL DETAILS — drill-in */}
                             <SettingsSection
                                 id="details"
-                                icon="👤"
+                                icon={IconUser}
                                 title="Personal details"
                                 activePage={profilePage}
                                 onNavigate={setProfilePage}
@@ -1049,9 +1070,13 @@ export default function Profile() {
                                                 );
                                             }
                                         }}
-                                        className="shrink-0 cursor-pointer rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-xs font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                                        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-xs font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
                                     >
-                                        🔄 Redo onboarding
+                                        <IconRefresh
+                                            size={16}
+                                            stroke={ICON_STROKE}
+                                        />
+                                        Redo onboarding
                                     </button>
                                 </div>
                             </SettingsSection>
@@ -1059,7 +1084,7 @@ export default function Profile() {
                             {/* INTERESTS — drill-in */}
                             <SettingsSection
                                 id="interests"
-                                icon="⭐"
+                                icon={IconStar}
                                 title="Interests"
                                 activePage={profilePage}
                                 onNavigate={setProfilePage}
@@ -1129,7 +1154,7 @@ export default function Profile() {
                             {/* YOUR PLACES — drill-in */}
                             <SettingsSection
                                 id="places"
-                                icon="📍"
+                                icon={IconMapPin}
                                 title="Your places"
                                 activePage={profilePage}
                                 onNavigate={setProfilePage}
@@ -1694,7 +1719,7 @@ export default function Profile() {
                             {/* MY EVENTS — drill-in */}
                             <SettingsSection
                                 id="events"
-                                icon="📅"
+                                icon={IconCalendarEvent}
                                 title="My events"
                                 activePage={profilePage}
                                 onNavigate={setProfilePage}
@@ -1776,38 +1801,43 @@ export default function Profile() {
                         {/* NOTIFICATIONS — drill-in */}
                         <SettingsSection
                             id="notifications"
-                            icon="🔔"
+                            icon={IconBell}
                             title="Notifications"
                             activePage={settingsPage}
                             onNavigate={setSettingsPage}
                             onBack={() => setSettingsPage(null)}
                         >
                             <SettingToggle
-                                label="🚇 Transit disruptions"
+                                icon={IconBusStop}
+                                label="Transit disruptions"
                                 sub="Delays, closures on your routes"
                                 on={toggles.transitDisruptions}
                                 onToggle={() => toggle('transitDisruptions')}
                             />
                             <SettingToggle
-                                label="🏛️ Bürgeramt slot alerts"
+                                icon={IconBuildingBank}
+                                label="Bürgeramt slot alerts"
                                 sub="Notified when new slots open"
                                 on={toggles.buergermtSlots}
                                 onToggle={() => toggle('buergermtSlots')}
                             />
                             <SettingToggle
-                                label="📅 Event reminders"
+                                icon={IconCalendarEvent}
+                                label="Event reminders"
                                 sub="1 hour before events you've joined"
                                 on={toggles.eventReminders}
                                 onToggle={() => toggle('eventReminders')}
                             />
                             <SettingToggle
-                                label="📋 Checklist reminders"
+                                icon={IconChecklist}
+                                label="Checklist reminders"
                                 sub="Weekly nudge on pending tasks"
                                 on={toggles.checklistReminders}
                                 onToggle={() => toggle('checklistReminders')}
                             />
                             <SettingToggle
-                                label="📰 Weekly city digest"
+                                icon={IconNews}
+                                label="Weekly city digest"
                                 sub="Events, spots, and expat tips"
                                 on={toggles.weeklyDigest}
                                 onToggle={() => toggle('weeklyDigest')}
@@ -1818,7 +1848,7 @@ export default function Profile() {
                         {/* PRIVACY & DATA — drill-in */}
                         <SettingsSection
                             id="privacy"
-                            icon="🔐"
+                            icon={IconShieldLock}
                             title="Privacy & data"
                             activePage={settingsPage}
                             onNavigate={setSettingsPage}
@@ -1850,7 +1880,7 @@ export default function Profile() {
                         {settingsPage === null && (
                             <>
                                 <SettingNavRow
-                                    icon="🔒"
+                                    icon={IconKey}
                                     label="Security"
                                     sub="Password & 2FA"
                                     onClick={() =>
@@ -1858,7 +1888,7 @@ export default function Profile() {
                                     }
                                 />
                                 <SettingNavRow
-                                    icon="🎨"
+                                    icon={IconPalette}
                                     label="Appearance"
                                     sub="Theme & dark mode"
                                     onClick={() =>
@@ -1869,8 +1899,11 @@ export default function Profile() {
                                     href="mailto:feedback@expadu.com"
                                     className="flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
                                 >
-                                    <span className="shrink-0 text-base">
-                                        ✉️
+                                    <span className="flex shrink-0 items-center">
+                                        <IconMail
+                                            size={18}
+                                            stroke={ICON_STROKE}
+                                        />
                                     </span>
                                     <div className="min-w-0 flex-1">
                                         <div className="text-[14px] font-medium">
@@ -1894,7 +1927,7 @@ export default function Profile() {
                                     </span>
                                 </a>
                                 <SettingNavRow
-                                    icon="🏛️"
+                                    icon={IconBuildingBank}
                                     label="Bureaucracy checklist"
                                     sub="Your settling-in tasks & appointments"
                                     onClick={() => router.visit('/bureaucracy')}
@@ -1905,7 +1938,7 @@ export default function Profile() {
                         {/* DELETE ACCOUNT — danger drill-in with two-tap confirm */}
                         <SettingsSection
                             id="danger"
-                            icon="⚠️"
+                            icon={IconTrash}
                             title="Delete account"
                             danger
                             activePage={settingsPage}
@@ -1993,7 +2026,7 @@ export default function Profile() {
 
 function SettingsSection({
     id,
-    icon,
+    icon: Icon,
     title,
     activePage,
     onNavigate,
@@ -2003,7 +2036,7 @@ function SettingsSection({
     backLabel = '← Back to Account',
 }: {
     id: string;
-    icon: string;
+    icon: ComponentType<IconProps>;
     title: string;
     activePage: string | null;
     onNavigate: (id: string) => void;
@@ -2019,7 +2052,9 @@ function SettingsSection({
                 onClick={() => onNavigate(id)}
                 className={`flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920] ${danger ? 'text-[#C4271A]' : ''}`}
             >
-                <span className="shrink-0 text-base">{icon}</span>
+                <span className="flex shrink-0 items-center">
+                    <Icon size={18} stroke={ICON_STROKE} />
+                </span>
                 <span className="flex-1 text-[14px] font-medium">{title}</span>
                 <svg
                     width="16"
@@ -2050,7 +2085,7 @@ function SettingsSection({
                 </button>
                 <div className="border-b border-[#E2DFD6] px-5 py-4 dark:border-[#3A3930]">
                     <div className="mb-3 flex items-center gap-2">
-                        <span className="text-base">{icon}</span>
+                        <Icon size={18} stroke={ICON_STROKE} />
                         <span className="text-base font-semibold">{title}</span>
                     </div>
                     {children}
@@ -2064,12 +2099,12 @@ function SettingsSection({
 }
 
 function SettingNavRow({
-    icon,
+    icon: Icon,
     label,
     sub,
     onClick,
 }: {
-    icon: string;
+    icon: ComponentType<IconProps>;
     label: string;
     sub?: string;
     onClick: () => void;
@@ -2079,7 +2114,9 @@ function SettingNavRow({
             onClick={onClick}
             className="flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
         >
-            <span className="shrink-0 text-base">{icon}</span>
+            <span className="flex shrink-0 items-center">
+                <Icon size={18} stroke={ICON_STROKE} />
+            </span>
             <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-medium">{label}</div>
                 {sub && (
@@ -2206,12 +2243,14 @@ function CompactCard({
 }
 
 function SettingToggle({
+    icon: Icon,
     label,
     sub,
     on,
     onToggle,
     isLast,
 }: {
+    icon?: ComponentType<IconProps>;
     label: string;
     sub?: string;
     on: boolean;
@@ -2223,7 +2262,17 @@ function SettingToggle({
             className={`flex items-center justify-between py-3.5 transition-colors ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
         >
             <div>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{label}</div>
+                <div
+                    className="flex items-center gap-2"
+                    style={{ fontSize: 14, fontWeight: 500 }}
+                >
+                    {Icon && (
+                        <span className="flex shrink-0 items-center">
+                            <Icon size={16} stroke={ICON_STROKE} />
+                        </span>
+                    )}
+                    {label}
+                </div>
                 {sub && (
                     <div
                         className="text-[#AAA89F]"

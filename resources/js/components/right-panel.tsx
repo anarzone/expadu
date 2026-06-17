@@ -1,12 +1,32 @@
 import { router, usePage } from '@inertiajs/react';
 import {
+    IconAlertTriangle,
     IconArrowRight,
+    IconBan,
+    IconBike,
     IconBulb,
+    IconCircleCheck,
     IconClock,
+    IconCloud,
+    IconCloudOff,
+    IconCloudRain,
+    IconCloudStorm,
     IconConfetti,
+    IconDroplet,
+    IconMist,
+    IconMoon,
+    IconMoonStars,
     IconRepeat,
+    IconRipple,
+    IconSnowflake,
+    IconSun,
+    IconTemperature,
+    IconTool,
+    IconWind,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import type { IconProps } from '@tabler/icons-react';
+import { createElement, useState } from 'react';
+import type { ComponentType } from 'react';
 import { RemindMeButton } from '@/components/events/remind-me-button';
 import { eventIllustrationKey } from '@/components/events/types';
 import type { EventOccurrence } from '@/components/events/types';
@@ -20,12 +40,57 @@ type WeatherData = {
     temperature: number;
     feels_like?: number;
     emoji: string;
+    icon: string;
     condition: string;
     wind_speed: number;
     wind_gust?: number;
     humidity: number;
     precipitation: number;
 };
+
+/** Map a backend weather icon string to a Tabler weather icon component. */
+function weatherIcon(icon: string): ComponentType<IconProps> {
+    switch (icon) {
+        case 'clear-day':
+            return IconSun;
+        case 'clear-night':
+            return IconMoon;
+        case 'partly-cloudy-day':
+            return IconCloud;
+        case 'partly-cloudy-night':
+            return IconMoonStars;
+        case 'cloudy':
+            return IconCloud;
+        case 'fog':
+            return IconMist;
+        case 'wind':
+            return IconWind;
+        case 'rain':
+            return IconCloudRain;
+        case 'sleet':
+            return IconCloudRain;
+        case 'snow':
+            return IconSnowflake;
+        case 'hail':
+            return IconCloudRain;
+        case 'thunderstorm':
+            return IconCloudStorm;
+        default:
+            return IconCloud;
+    }
+}
+
+/**
+ * Renders the large condition glyph for a backend weather `icon` string.
+ * Declared at module scope so the resolved Tabler component is never created
+ * during another component's render (react-hooks/static-components).
+ */
+function WeatherGlyph({ icon }: { icon: string }) {
+    return createElement(weatherIcon(icon), {
+        size: 40,
+        stroke: ICON_STROKE,
+    });
+}
 
 type HourlyEntry = {
     hour: string;
@@ -94,8 +159,13 @@ function WeatherWidget({
                         Weather · Cologne
                     </span>
                 </div>
-                <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">
-                    🌥️ Weather unavailable right now — check back shortly.
+                <div className="flex items-center justify-center gap-2 px-4 py-6 text-center text-[13px] text-muted-foreground">
+                    <IconCloudOff
+                        size={18}
+                        stroke={ICON_STROKE}
+                        className="shrink-0"
+                    />
+                    Weather unavailable right now — check back shortly.
                 </div>
             </div>
         );
@@ -103,7 +173,6 @@ function WeatherWidget({
 
     const temp = weather?.temperature ?? 0;
     const feelsLike = weather?.feels_like ?? temp;
-    const emoji = weather?.emoji ?? '⛅';
     const condition = weather?.condition ?? 'Partly cloudy';
     const wind = weather?.wind_speed ?? 0;
     const gust = weather?.wind_gust ?? 0;
@@ -136,30 +205,32 @@ function WeatherWidget({
                                 : 'No rain expected')}
                     </div>
                 </div>
-                <div className="text-[44px] opacity-85">{emoji}</div>
+                <div className="text-muted-foreground opacity-85">
+                    <WeatherGlyph icon={weather?.icon ?? ''} />
+                </div>
             </div>
             <div className="border-t border-border">
                 {feelsLike !== temp && (
                     <WeatherRow
-                        emoji="🌡️"
+                        icon={IconTemperature}
                         label="Feels like"
                         value={`${feelsLike}°`}
                         variant={feelsLike < 0 ? 'caution' : 'good'}
                     />
                 )}
                 <WeatherRow
-                    emoji="🌬️"
+                    icon={IconWind}
                     label="Wind"
                     value={`${wind} km/h${gust && gust > wind ? ` (gusts ${gust})` : ''}`}
                     variant={wind > 25 ? 'caution' : 'good'}
                 />
                 <WeatherRow
-                    emoji="💧"
+                    icon={IconDroplet}
                     label="Humidity"
                     value={`${humidity}%`}
                 />
                 <WeatherRow
-                    emoji="🚲"
+                    icon={IconBike}
                     label="Bike score"
                     value={bikeScore}
                     variant="good"
@@ -180,12 +251,12 @@ function WeatherWidget({
 }
 
 function WeatherRow({
-    emoji,
+    icon: Icon,
     label,
     value,
     variant,
 }: {
-    emoji: string;
+    icon: ComponentType<IconProps>;
     label: string;
     value: string;
     variant?: 'good' | 'caution';
@@ -200,7 +271,7 @@ function WeatherRow({
     return (
         <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-xs last:border-b-0">
             <span className="flex items-center gap-[7px] text-muted-foreground">
-                <span className="text-sm">{emoji}</span>
+                <Icon size={16} stroke={ICON_STROKE} />
                 {label}
             </span>
             <span className={`font-mono font-medium ${valueColor}`}>
@@ -226,7 +297,7 @@ function RainTimeline({
         <div className="border-b border-border px-4 py-2.5 last:border-b-0">
             <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="flex items-center gap-[7px] text-muted-foreground">
-                    <span className="text-sm">🌧️</span>
+                    <IconCloudRain size={16} stroke={ICON_STROKE} />
                     Rain
                 </span>
                 <span
@@ -299,7 +370,7 @@ function RhineWidget({ data }: { data?: RhineData | null }) {
             </div>
             <div className="flex items-center justify-between px-4 py-3.5">
                 <div className="flex items-center gap-2.5">
-                    <span className="text-xl">🌊</span>
+                    <IconRipple size={24} stroke={ICON_STROKE} />
                     <div>
                         <div className="text-[13px] font-semibold">
                             Cologne Gauge
@@ -334,8 +405,12 @@ function DisruptionsWidget({
     disruptions?: DisruptionItem[];
 }) {
     const items = disruptions ?? [];
-    const severityEmoji = (s: string) =>
-        s === 'critical' ? '🚫' : s === 'major' ? '⚠️' : '🔧';
+    const severityIcon = (s: string): ComponentType<IconProps> =>
+        s === 'critical'
+            ? IconBan
+            : s === 'major'
+              ? IconAlertTriangle
+              : IconTool;
     const severityColor = (s: string) =>
         s === 'critical'
             ? 'text-danger'
@@ -359,7 +434,11 @@ function DisruptionsWidget({
             </div>
             {items.length === 0 ? (
                 <div className="flex items-center gap-2.5 px-4 py-3.5">
-                    <span className="text-lg">✅</span>
+                    <IconCircleCheck
+                        size={18}
+                        stroke={ICON_STROKE}
+                        className="shrink-0 text-success"
+                    />
                     <span className="text-xs text-muted-foreground">
                         No disruptions on KVB network
                     </span>
@@ -375,11 +454,14 @@ function DisruptionsWidget({
                         .replace(/^(Linie|Bus)\s+\d+:\s*/i, '');
                     const lineLabel =
                         d.lines.length > 0 ? d.lines.join(', ') : null;
+                    const SeverityIcon = severityIcon(d.severity);
 
                     return (
                         <ExpandableRow key={i}>
-                            <span className="shrink-0 text-sm">
-                                {severityEmoji(d.severity)}
+                            <span
+                                className={`shrink-0 ${severityColor(d.severity)}`}
+                            >
+                                <SeverityIcon size={16} stroke={ICON_STROKE} />
                             </span>
                             <div className="event-text min-w-0 flex-1 text-xs font-medium">
                                 {lineLabel && (
