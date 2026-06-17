@@ -15,17 +15,14 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Profile',
         href: edit(),
-        icon: null,
     },
     {
         title: 'Security',
         href: editSecurity(),
-        icon: null,
     },
     {
         title: 'Appearance',
         href: editAppearance(),
-        icon: null,
     },
 ];
 

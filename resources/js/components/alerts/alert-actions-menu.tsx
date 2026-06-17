@@ -40,7 +40,10 @@ export function AlertActionsMenu({ alertId, subtype, onAction }: Props) {
         };
     }, [open]);
 
-    const callBackend = (path: string, body: Record<string, unknown>) => {
+    const callBackend = (
+        path: string,
+        body: Record<string, string | number>,
+    ) => {
         router.post(path, body, {
             preserveScroll: true,
             preserveState: true,

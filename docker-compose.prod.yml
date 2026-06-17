@@ -28,7 +28,7 @@ services:
     ports:
       - '8080:8080'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8080']
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8080/up']
       interval: 10s
       timeout: 5s
       retries: 3

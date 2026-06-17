@@ -32,6 +32,8 @@ const SAMPLE: Place = {
         { label: 'surface', value: 'Tarmac' },
         { label: 'water nearby', value: 'Yes' },
     ],
+    feedback_state: null,
+    feedback_rating: null,
 };
 
 const MINIMAL: Place = {
