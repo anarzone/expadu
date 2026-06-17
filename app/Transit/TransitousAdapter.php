@@ -109,7 +109,25 @@ class TransitousAdapter implements RouteService
         return $hit === null ? null : new Place(
             name: (string) $hit['name'],
             point: new GeoPoint((float) $hit['lat'], (float) $hit['lon']),
+            municipality: $this->municipalityOf($hit['areas'] ?? []),
         );
+    }
+
+    /**
+     * The OSM admin-level-6 area is the municipality (Gemeinde/Stadt, e.g.
+     * "Köln") — the unit the Rheinlandtarif Preisstufe keys on.
+     *
+     * @param  array<int, array<string, mixed>>  $areas
+     */
+    private function municipalityOf(array $areas): ?string
+    {
+        foreach ($areas as $area) {
+            if ((int) ($area['adminLevel'] ?? 0) === 6 && isset($area['name'])) {
+                return (string) $area['name'];
+            }
+        }
+
+        return null;
     }
 
     /**

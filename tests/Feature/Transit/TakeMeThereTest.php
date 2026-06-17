@@ -4,56 +4,78 @@ use App\Models\User;
 use App\Models\UserPlace;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 
 beforeEach(function () {
     Cache::flush();
+    config(['services.motis.url' => 'http://motis.test']);
+    $prefix = (string) config('database.redis.options.prefix', '');
+    Redis::eval(
+        "for _,k in ipairs(redis.call('KEYS', ARGV[1])) do redis.call('DEL', k) end return 1",
+        0,
+        $prefix.'transit:cb:*'
+    );
 });
 
-test('returns journeys with profile-driven ticket advice', function () {
+/**
+ * MOTIS is the primary provider but isn't reachable in tests, so fake it
+ * down and let routing + reverse-geocode fall to Transitous. Reverse-geocode
+ * resolves both endpoints to Köln so the fare lands at the city level (1b).
+ */
+function fakeRoutingToKoeln(): void
+{
     Http::fake([
+        'motis.test/*' => Http::response('down', 503),
         'api.transitous.org/api/v3/plan*' => Http::response(
             json_decode(file_get_contents(base_path('tests/Fixtures/transitous/plan.json')), true),
         ),
+        'api.transitous.org/api/v1/reverse-geocode*' => Http::response([
+            ['name' => 'Cologne', 'lat' => 50.9413, 'lon' => 6.9583, 'areas' => [
+                ['name' => 'Köln', 'adminLevel' => 6, 'matched' => true],
+            ]],
+        ]),
     ]);
+}
+
+test('returns a journey with journey-aware Rheinlandtarif fare advice', function () {
+    fakeRoutingToKoeln();
 
     $student = User::factory()->onboarded()->create(['situation' => 'student']);
     UserPlace::factory()->create([
-        'user_id' => $student->id,
-        'category' => 'home',
-        'lat' => 50.9513,
-        'lng' => 6.9185,
+        'user_id' => $student->id, 'category' => 'home', 'lat' => 50.9513, 'lng' => 6.9185,
     ]);
 
     $this->actingAs($student);
     $response = $this->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583&to_name=B%C3%BCrgeramt');
 
     $response->assertOk();
-    $response->assertJsonPath('source', 'transitous');
-    $response->assertJsonPath('ticket.advice', 'semester_ticket');
     $response->assertJsonPath('to.name', 'Bürgeramt');
     expect($response->json('journeys'))->not->toBeEmpty();
+
+    // No Deutschlandticket → a concrete single fare for this trip, not the
+    // old situation-based subscription chip. Both endpoints resolved to Köln,
+    // so the level is exact (Kurzstrecke or 1b), never a cross-zone estimate.
+    $response->assertJsonPath('ticket.covered_by_deutschlandticket', false);
+    $response->assertJsonPath('ticket.estimated', false);
+    expect(['K', '1b'])->toContain($response->json('ticket.preisstufe'));
+    expect((float) $response->json('ticket.price_eur'))->toBeGreaterThan(0);
+    expect($response->json('ticket.how_to_buy'))->not->toBeEmpty();
 });
 
-test('ticket chip changes with situation', function () {
-    Http::fake([
-        'api.transitous.org/api/v3/plan*' => Http::response(
-            json_decode(file_get_contents(base_path('tests/Fixtures/transitous/plan.json')), true),
-        ),
-    ]);
+test('a Deutschlandticket holder sees the trip as covered', function () {
+    fakeRoutingToKoeln();
 
-    $employee = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
+    $holder = User::factory()->onboarded()->create(['has_deutschlandticket' => true]);
     UserPlace::factory()->create([
-        'user_id' => $employee->id,
-        'category' => 'home',
-        'lat' => 50.9513,
-        'lng' => 6.9185,
+        'user_id' => $holder->id, 'category' => 'home', 'lat' => 50.9513, 'lng' => 6.9185,
     ]);
 
-    $this->actingAs($employee);
-    $response = $this->getJson('/api/journey?to_lat=50.9414&to_lng=6.9584');
+    $this->actingAs($holder);
+    $response = $this->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583');
 
     $response->assertOk();
-    $response->assertJsonPath('ticket.advice', 'job_ticket_ask');
+    $response->assertJsonPath('ticket.covered_by_deutschlandticket', true);
+    expect($response->json('ticket.price_eur'))->toBeNull();
 });
 
 test('validates destination coordinates', function () {

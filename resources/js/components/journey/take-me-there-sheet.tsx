@@ -1,6 +1,22 @@
+import {
+    IconAlertTriangle,
+    IconBike,
+    IconBolt,
+    IconBus,
+    IconCircleCheck,
+    IconClock,
+    IconMapPin,
+    IconSailboat,
+    IconTicket,
+    IconTrain,
+    IconWalk,
+} from '@tabler/icons-react';
+import type { IconProps } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import type { ComponentType } from 'react';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { ICON_STROKE } from '@/constants/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 type JourneyLeg = {
@@ -37,8 +53,21 @@ type JourneyResponse = {
     } | null;
     from: { name: string; lat: number; lng: number };
     to: { name: string };
-    ticket: { advice: string; label: string; reason: string };
+    ticket: FareAdvice | null;
     disruptions: Array<{ title: string; severity: string; lines: string[] }>;
+};
+
+/** Journey-aware Rheinlandtarif advice — mirrors App\Transit\Dto\FareAdvice. */
+type FareAdvice = {
+    covered_by_deutschlandticket: boolean;
+    preisstufe: string | null;
+    price_eur: number | null;
+    estimated: boolean;
+    eezy_cap_eur: number | null;
+    deutschlandticket_eur: number;
+    label: string;
+    reason: string;
+    how_to_buy: Array<{ label: string; url: string }>;
 };
 
 export type Destination = {
@@ -56,18 +85,23 @@ const CSRF = () =>
         .querySelector('meta[name="csrf-token"]')
         ?.getAttribute('content') || '';
 
-const MODE_EMOJI: Record<string, string> = {
-    walk: '🚶',
-    bike: '🚲',
-    bus: '🚌',
-    tram: '🚊',
-    subway: '🚇',
-    rail: '🚆',
-    ferry: '⛴️',
+const MODE_ICON: Record<string, ComponentType<IconProps>> = {
+    walk: IconWalk,
+    bike: IconBike,
+    bus: IconBus,
+    tram: IconTrain,
+    subway: IconTrain,
+    rail: IconTrain,
+    ferry: IconSailboat,
 };
+
+function eur(value: number): string {
+    return '€' + value.toFixed(2);
+}
 
 function LegRow({ leg }: { leg: JourneyLeg }) {
     const isTransit = leg.mode !== 'walk';
+    const ModeIcon = MODE_ICON[leg.mode] ?? IconWalk;
 
     return (
         <div className="relative flex items-center gap-3 py-2 pl-5">
@@ -78,8 +112,8 @@ function LegRow({ leg }: { leg: JourneyLeg }) {
                     {leg.line}
                 </span>
             ) : (
-                <span className="w-6 shrink-0 text-center text-base">
-                    {MODE_EMOJI[leg.mode] ?? '🚶'}
+                <span className="flex w-6 shrink-0 justify-center text-muted-foreground">
+                    <ModeIcon size={18} stroke={ICON_STROKE} />
                 </span>
             )}
             <span className="min-w-0 flex-1">
@@ -99,6 +133,90 @@ function LegRow({ leg }: { leg: JourneyLeg }) {
             <span className="shrink-0 font-mono text-xs text-muted-foreground">
                 {leg.duration_min} min
             </span>
+        </div>
+    );
+}
+
+/**
+ * Journey-aware Rheinlandtarif advice (App\Transit\FareAdvisor): covered by
+ * a held Deutschlandticket, or the per-trip single fare — with cross-zone
+ * prices honestly flagged "estimated" and eezy as the "never more than" net.
+ */
+function FareCard({ fare }: { fare: FareAdvice }) {
+    if (fare.covered_by_deutschlandticket) {
+        return (
+            <div className="mb-3 rounded-[14px] bg-success-soft px-4 py-3">
+                <div className="flex items-center gap-2">
+                    <IconCircleCheck
+                        size={18}
+                        stroke={ICON_STROKE}
+                        className="shrink-0 text-success"
+                    />
+                    <span className="text-[15px] font-semibold text-success">
+                        {fare.label}
+                    </span>
+                </div>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                    {fare.reason}
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mb-3 rounded-[14px] border border-border px-4 py-3">
+            <div className="mb-2 flex items-center justify-between font-mono text-[10px] tracking-[0.1em] text-muted-foreground/70 uppercase">
+                <span className="flex items-center gap-1.5">
+                    <IconTicket size={12} stroke={ICON_STROKE} />
+                    Your ticket
+                </span>
+                {fare.preisstufe && (
+                    <span>
+                        Preisstufe {fare.preisstufe}
+                        {fare.estimated ? ' · est.' : ''}
+                    </span>
+                )}
+            </div>
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="text-[15px] font-semibold">
+                        {fare.label}
+                    </div>
+                    {!fare.estimated && (
+                        <div className="mt-0.5 text-[12.5px] text-muted-foreground">
+                            Valid 90 min from validation
+                        </div>
+                    )}
+                </div>
+                {fare.price_eur != null && (
+                    <div className="shrink-0 font-display text-2xl font-medium">
+                        {fare.estimated && (
+                            <span className="text-base text-muted-foreground">
+                                ≈{' '}
+                            </span>
+                        )}
+                        {eur(fare.price_eur)}
+                    </div>
+                )}
+            </div>
+            <p className="mt-2.5 border-t border-border pt-2.5 text-[12px] leading-relaxed text-muted-foreground">
+                {fare.reason}
+            </p>
+            {fare.how_to_buy.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {fare.how_to_buy.map((c) => (
+                        <a
+                            key={c.label}
+                            href={c.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-full border border-border px-2.5 py-1 text-[12px] font-semibold text-primary transition-colors hover:bg-secondary"
+                        >
+                            {c.label}
+                        </a>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -206,8 +324,13 @@ export function TakeMeThereSheet({
 
             {/* Timed destination — what the journey must beat */}
             {destination.arriveBy && (
-                <div className="mb-3 rounded-[9px] bg-warn-soft px-3 py-2 text-[13px] font-medium text-warn">
-                    🕐 Starts at{' '}
+                <div className="mb-3 flex items-center gap-1.5 rounded-[9px] bg-warn-soft px-3 py-2 text-[13px] font-medium text-warn">
+                    <IconClock
+                        size={15}
+                        stroke={ICON_STROKE}
+                        className="shrink-0"
+                    />
+                    Starts at{' '}
                     {new Date(destination.arriveBy).toLocaleTimeString(
                         'en-GB',
                         { hour: '2-digit', minute: '2-digit' },
@@ -218,8 +341,13 @@ export function TakeMeThereSheet({
             {/* Origin chip — confirm "I'm here" to replan from your real position */}
             {data?.from && (
                 <div className="mb-4 flex items-center justify-between gap-2 rounded-full border border-border bg-card py-1.5 pr-1.5 pl-3.5">
-                    <span className="truncate text-[13px] text-muted-foreground">
-                        📍 Starting from{' '}
+                    <span className="flex items-center gap-1.5 truncate text-[13px] text-muted-foreground">
+                        <IconMapPin
+                            size={14}
+                            stroke={ICON_STROKE}
+                            className="shrink-0"
+                        />
+                        Starting from{' '}
                         <b className="font-semibold text-foreground">
                             {fromOverride ? 'Your location' : data.from.name}
                         </b>
@@ -257,8 +385,13 @@ export function TakeMeThereSheet({
 
             {/* Loaded, but no transit route (usually because it's close enough to walk) */}
             {data && !error && !journey && data.source !== 'degraded' && (
-                <div className="rounded-[9px] bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
-                    🚶 It's close — easy to walk or cycle. No transit needed.
+                <div className="flex items-center justify-center gap-2 rounded-[9px] bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
+                    <IconWalk
+                        size={16}
+                        stroke={ICON_STROKE}
+                        className="shrink-0"
+                    />
+                    It's close — easy to walk or cycle. No transit needed.
                 </div>
             )}
 
@@ -277,18 +410,16 @@ export function TakeMeThereSheet({
                         </div>
                     </div>
 
-                    {data?.ticket && (
-                        <div
-                            className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-[13px] font-medium text-primary"
-                            title={data.ticket.reason}
-                        >
-                            🎫 {data.ticket.label}
-                        </div>
-                    )}
+                    {data?.ticket && <FareCard fare={data.ticket} />}
 
                     {(data?.disruptions ?? []).length > 0 && (
-                        <div className="mb-3 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
-                            ⚠️ {data!.disruptions[0].title}
+                        <div className="mb-3 flex items-start gap-2 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
+                            <IconAlertTriangle
+                                size={15}
+                                stroke={ICON_STROKE}
+                                className="mt-px shrink-0"
+                            />
+                            <span>{data!.disruptions[0].title}</span>
                         </div>
                     )}
 
@@ -303,16 +434,23 @@ export function TakeMeThereSheet({
             {/* Degraded: nearest-stop departures + deep links */}
             {data?.source === 'degraded' && (
                 <div>
-                    <div className="mb-2 rounded-[9px] bg-secondary px-3 py-2.5 text-[13px] text-muted-foreground">
-                        ⚡ Live routing unavailable — next departures from{' '}
-                        {data.degraded?.nearest_stop
-                            ? `your nearest stop, ${data.degraded.nearest_stop.name}${
-                                  data.degraded.nearest_stop.walk_min
-                                      ? ` (${data.degraded.nearest_stop.walk_min} min walk)`
-                                      : ''
-                              }`
-                            : 'stops near you'}
-                        .
+                    <div className="mb-2 flex items-start gap-2 rounded-[9px] bg-secondary px-3 py-2.5 text-[13px] text-muted-foreground">
+                        <IconBolt
+                            size={15}
+                            stroke={ICON_STROKE}
+                            className="mt-px shrink-0"
+                        />
+                        <span>
+                            Live routing unavailable — next departures from{' '}
+                            {data.degraded?.nearest_stop
+                                ? `your nearest stop, ${data.degraded.nearest_stop.name}${
+                                      data.degraded.nearest_stop.walk_min
+                                          ? ` (${data.degraded.nearest_stop.walk_min} min walk)`
+                                          : ''
+                                  }`
+                                : 'stops near you'}
+                            .
+                        </span>
                     </div>
                     <div className="mb-3 overflow-hidden rounded-[14px] border border-border">
                         {(data.degraded?.departures ?? []).map((dep, i) => (

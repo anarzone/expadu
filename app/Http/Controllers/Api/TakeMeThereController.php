@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Profile\ProfileEngine;
 use App\Services\DisruptionService;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\FareAdvisor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,15 +15,15 @@ use Illuminate\Http\Request;
  * "Take me there" — the only journey-planning surface in v2. Every entity
  * (office, place, event) opens this with a destination; origin defaults
  * to the user's resolved location anchor chain (GPS → confirmed → home).
- * The response carries profile-driven ticket advice and disruptions
- * filtered to the journey's lines.
+ * The response carries journey-aware Rheinlandtarif fare advice (FareAdvisor)
+ * and disruptions filtered to the journey's lines.
  */
 class TakeMeThereController extends Controller
 {
     public function __invoke(
         Request $request,
         RouteService $routes,
-        ProfileEngine $profileEngine,
+        FareAdvisor $fareAdvisor,
         DisruptionService $disruptions,
     ): JsonResponse {
         $validated = $request->validate([
@@ -49,7 +49,19 @@ class TakeMeThereController extends Controller
 
         $result = $routes->plan($from, $to);
 
-        $profile = $profileEngine->build($user);
+        // Journey-aware Rheinlandtarif advice (only meaningful when there's a
+        // transit journey; the degraded/walk surfaces carry their own UI).
+        $journey = $result->journeys[0] ?? null;
+        $ticket = null;
+        if ($journey !== null) {
+            $ticket = $fareAdvisor->advise(
+                $journey,
+                $routes->reverseGeocode($from)?->municipality,
+                $routes->reverseGeocode($to)?->municipality,
+                (bool) ($user->has_deutschlandticket ?? false),
+            )->toArray();
+        }
+
         $journeyLines = collect($result->journeys)
             ->flatMap(fn ($journey) => $journey->lines())
             ->unique()
@@ -72,11 +84,7 @@ class TakeMeThereController extends Controller
             ...$result->toArray(),
             'from' => ['name' => $fromName, 'lat' => $from->lat, 'lng' => $from->lng],
             'to' => ['name' => $validated['to_name'] ?? '', 'lat' => $to->lat, 'lng' => $to->lng],
-            'ticket' => [
-                'advice' => $profile->ticketAdvice->value,
-                'label' => $profile->ticketAdvice->label(),
-                'reason' => $profile->ticketAdvice->reason(),
-            ],
+            'ticket' => $ticket,
             'disruptions' => $relevantDisruptions,
         ]);
     }
