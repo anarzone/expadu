@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -23,4 +24,18 @@ test('new users can register and are redirected', function () {
     $this->assertAuthenticated();
     // Fortify redirects to dashboard, then onboarding middleware redirects to onboarding
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('registering with an already-taken email surfaces an error', function () {
+    User::factory()->create(['email' => 'taken@example.com']);
+
+    $response = $this->from(route('register'))->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'taken@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('email');
 });

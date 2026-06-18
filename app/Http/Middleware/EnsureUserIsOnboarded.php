@@ -22,6 +22,14 @@ class EnsureUserIsOnboarded
         'two-factor-challenge',
         'confirm-password',
         'verified-email',
+        // Guest auth screens — let the `guest` middleware own the redirect for
+        // an already-authenticated user (it flashes "you're already signed in"
+        // instead of bouncing silently).
+        'login',
+        'register',
+        'forgot-password',
+        'reset-password',
+        'reset-password/*',
     ];
 
     public function handle(Request $request, Closure $next): Response

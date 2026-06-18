@@ -1,5 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { FlashToast } from '@/components/flash-toast';
 import { ConfirmationStep } from '@/components/onboarding/confirmation-step';
 import { InterestsStep } from '@/components/onboarding/interests-step';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
@@ -151,6 +152,7 @@ export default function Onboarding() {
     return (
         <>
             <Head title="Welcome to Expadu" />
+            <FlashToast />
             <div className="flex min-h-svh flex-col bg-background">
                 <OnboardingProgress
                     step={step}

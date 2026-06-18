@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureUserIsOnboarded;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PerfTrackMiddleware;
+use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SetCacheHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -27,6 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
                      Request::HEADER_X_FORWARDED_AWS_ELB,
         );
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        // Flash a visible message when bouncing already-authenticated users
+        // off the guest-only auth screens instead of redirecting silently.
+        $middleware->alias([
+            'guest' => RedirectIfAuthenticated::class,
+        ]);
 
         $middleware->web(append: [
             PerfTrackMiddleware::class,

@@ -51,6 +51,12 @@ class HandleInertiaRequests extends Middleware
             ],
             'isOnboarded' => $request->user()?->isOnboarded() ?? false,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // One-shot flash messages — surfaced globally as a toast so no
+            // redirect (e.g. "you're already signed in") is ever silent.
+            'flash' => [
+                'status' => $request->session()->get('status'),
+                'error' => $request->session()->get('error'),
+            ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->whereNull('read_at')->count() ?? 0,
             'serviceErrors' => fn () => session('serviceErrors', []),

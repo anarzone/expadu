@@ -51,12 +51,32 @@ test('users with two factor enabled are redirected to two factor challenge', fun
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 
-    $this->post(route('login.store'), [
+    $response = $this->from(route('login'))->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'wrong-password',
     ]);
 
     $this->assertGuest();
+    // The failure must surface a visible error, not fail silently.
+    $response->assertSessionHasErrors('email');
+});
+
+test('an authenticated user is bounced off the login screen with a flash', function () {
+    $user = User::factory()->onboarded()->create();
+
+    $this->actingAs($user)
+        ->get(route('login'))
+        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertSessionHas('status');
+});
+
+test('an authenticated, not-yet-onboarded user is bounced off register to onboarding with a flash', function () {
+    $user = User::factory()->notOnboarded()->create();
+
+    $this->actingAs($user)
+        ->get(route('register'))
+        ->assertRedirect(route('onboarding', absolute: false))
+        ->assertSessionHas('status');
 });
 
 test('users can logout', function () {
