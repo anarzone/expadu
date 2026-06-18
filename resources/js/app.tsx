@@ -119,10 +119,10 @@ router.on('error', (event) => {
     const first = Object.values(event.detail.errors)[0];
 
     if (typeof first === 'string') {
-        const message = first;
-        // Defer past Inertia's error re-render (which remounts the toast) so
-        // the dispatch isn't dropped.
-        setTimeout(() => showToast(message), 0);
+        // The toast is held in a module store, so calling this even during
+        // Inertia's error re-render (which remounts <FlashToast>) is safe —
+        // the freshly-mounted toast reads the latest message.
+        showToast(first);
     }
 });
 

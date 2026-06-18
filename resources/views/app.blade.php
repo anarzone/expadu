@@ -62,8 +62,33 @@
 
         <script>
             if ('serviceWorker' in navigator) {
+                // Reload once when a new service worker takes control after a
+                // deploy, so an open tab never keeps running stale JS. Only when
+                // the page is already controlled — the first-ever install also
+                // fires controllerchange, and that isn't an update worth a reload.
+                if (navigator.serviceWorker.controller) {
+                    let reloading = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (reloading) return;
+                        reloading = true;
+                        window.location.reload();
+                    });
+                }
+
                 window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                    navigator.serviceWorker
+                        .register('/sw.js', { scope: '/' })
+                        .then((registration) => {
+                            // Re-check for a new deploy whenever the tab regains
+                            // focus, so a long-lived tab picks up updates without
+                            // a manual refresh.
+                            document.addEventListener('visibilitychange', () => {
+                                if (document.visibilityState === 'visible') {
+                                    registration.update().catch(() => {});
+                                }
+                            });
+                        })
+                        .catch(() => {});
                 });
             }
         </script>

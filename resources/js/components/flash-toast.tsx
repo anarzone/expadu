@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { IconAlertTriangle, IconCheck } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 
 type FlashProps = {
@@ -9,24 +9,37 @@ type FlashProps = {
 
 type ToastDetail = { message: string; isError: boolean };
 
-/** Window event other code dispatches to show a toast (see {@link showToast}). */
-export const FLASH_TOAST_EVENT = 'app:flash-toast';
+// ── Module-level toast store ──
+// Decoupled from the React tree so showToast() works from anywhere (the global
+// Inertia error handler, a blocked-response catch). Crucially, the latest toast
+// is held here rather than delivered through a one-shot window event: a toast
+// pushed while <FlashToast> is mid-remount (Inertia swaps the page component on
+// a validation error) is still readable when it mounts again — nothing is
+// dropped, so no setTimeout hack is needed and no extension can defuse it.
+let currentToast: { detail: ToastDetail; id: number } | null = null;
+let toastCounter = 0;
+const toastListeners = new Set<() => void>();
 
 /**
  * Show a toast from anywhere (e.g. a globally-caught blocked/garbled response).
- * Decoupled via a window event so it works outside the React tree.
  */
 export function showToast(message: string, isError = true): void {
-    window.dispatchEvent(
-        new CustomEvent<ToastDetail>(FLASH_TOAST_EVENT, {
-            detail: { message, isError },
-        }),
-    );
+    toastCounter += 1;
+    currentToast = { detail: { message, isError }, id: toastCounter };
+    toastListeners.forEach((notify) => notify());
+}
+
+function subscribeToast(notify: () => void): () => void {
+    toastListeners.add(notify);
+
+    return () => {
+        toastListeners.delete(notify);
+    };
 }
 
 /**
  * One-shot toast surface. Shows two independent sources so a single point of
- * interference (ad blocker hiding an inline element, a garbled response, …)
+ * interference (an ad blocker hiding an inline element, a garbled response, …)
  * can't swallow user feedback:
  *  - server session flash (e.g. "You're already signed in.")
  *  - client-dispatched messages via {@link showToast} (validation/transport errors)
@@ -36,30 +49,29 @@ export function FlashToast() {
     const flashMessage = flash?.error ?? flash?.status ?? null;
     const flashIsError = Boolean(flash?.error);
 
+    // Read the latest client toast from the module store. getServerSnapshot
+    // returns null so SSR renders nothing here and hydration matches.
+    const clientToast = useSyncExternalStore(
+        subscribeToast,
+        () => currentToast,
+        () => null,
+    );
+
     const [dismissedFlash, setDismissedFlash] = useState<string | null>(null);
-    const [clientToast, setClientToast] = useState<ToastDetail | null>(null);
+    const [dismissedToastId, setDismissedToastId] = useState(0);
 
-    // Client-dispatched toasts. setState runs in the event handler / async
-    // timer — never synchronously in an effect body.
+    // Auto-dismiss the client toast 6s after it appears. setState runs in the
+    // async timer — never synchronously in the effect body.
     useEffect(() => {
-        const handler = (event: Event) => {
-            setClientToast((event as CustomEvent<ToastDetail>).detail);
-        };
-
-        window.addEventListener(FLASH_TOAST_EVENT, handler);
-
-        return () => window.removeEventListener(FLASH_TOAST_EVENT, handler);
-    }, []);
-
-    useEffect(() => {
-        if (!clientToast) {
+        if (!clientToast || clientToast.id <= dismissedToastId) {
             return;
         }
 
-        const timer = setTimeout(() => setClientToast(null), 6000);
+        const id = clientToast.id;
+        const timer = setTimeout(() => setDismissedToastId(id), 6000);
 
         return () => clearTimeout(timer);
-    }, [clientToast]);
+    }, [clientToast, dismissedToastId]);
 
     // Server flash — derived visibility, auto-dismissed via an async timer.
     useEffect(() => {
@@ -72,13 +84,16 @@ export function FlashToast() {
         return () => clearTimeout(timer);
     }, [flashMessage, dismissedFlash]);
 
+    const clientVisible =
+        clientToast != null && clientToast.id > dismissedToastId;
     const flashVisible =
         flashMessage != null && flashMessage !== dismissedFlash;
-    const toast =
-        clientToast ??
-        (flashVisible
-            ? { message: flashMessage as string, isError: flashIsError }
-            : null);
+
+    const toast = clientVisible
+        ? clientToast.detail
+        : flashVisible
+          ? { message: flashMessage as string, isError: flashIsError }
+          : null;
 
     if (!toast) {
         return null;
