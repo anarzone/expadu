@@ -25,7 +25,7 @@ export function FlashToast() {
             return;
         }
 
-        const timer = setTimeout(() => setDismissed(message), 5000);
+        const timer = setTimeout(() => setDismissed(message), 6000);
 
         return () => clearTimeout(timer);
     }, [message, dismissed]);
