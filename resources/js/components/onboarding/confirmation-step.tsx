@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { PrivacyNote } from '@/components/onboarding/welcome-step';
 import type {
     OnboardingData,
@@ -60,11 +61,20 @@ export function ConfirmationStep({
     const euKey = resolveEuKey(situation, data.is_eu);
     const tasks: TaskPreview[] = previews[branch]?.[euKey] ?? [];
 
+    // Captured once on mount (a render-time Date.now() is impure); good enough
+    // for a one-shot confirmation screen.
+    const [nowMs] = useState(() => Date.now());
     const arrival = data.arrival_date ? new Date(data.arrival_date) : null;
     const arrivalLabel = arrival?.toLocaleDateString('en-GB', {
         month: 'long',
         year: 'numeric',
     });
+    // Someone who arrived long ago has already cleared the first-days deadlines,
+    // so the list is a settle-in checklist, not an urgent countdown.
+    const daysSinceArrival = arrival
+        ? Math.floor((nowMs - arrival.getTime()) / 86_400_000)
+        : null;
+    const settled = daysSinceArrival !== null && daysSinceArrival > 180;
     const situationLabel = situationLabels[situation] ?? 'your situation';
     const euSuffix =
         situation !== 'eu_employee' &&
@@ -109,7 +119,9 @@ export function ConfirmationStep({
             {tasks.length > 0 && (
                 <>
                     <div className="mt-4 mb-2 font-mono text-[10.5px] font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                        First on your list
+                        {settled
+                            ? 'Your Cologne checklist'
+                            : 'First on your list'}
                     </div>
                     <div className="flex flex-col gap-2">
                         {tasks.map((task, i) => (
@@ -118,9 +130,16 @@ export function ConfirmationStep({
                                 index={i + 1}
                                 task={task}
                                 arrival={arrival}
+                                nowMs={nowMs}
                             />
                         ))}
                     </div>
+                    {settled && (
+                        <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
+                            Been in Cologne a while? These stay on your list
+                            until you tick them off — no deadlines are overdue.
+                        </p>
+                    )}
                 </>
             )}
 
@@ -137,20 +156,32 @@ function PreviewTask({
     index,
     task,
     arrival,
+    nowMs,
 }: {
     index: number;
     task: TaskPreview;
     arrival: Date | null;
+    nowMs: number;
 }) {
     let due: string | null = null;
 
     if (arrival && task.deadline_days !== null) {
         const deadline = new Date(arrival);
         deadline.setDate(deadline.getDate() + task.deadline_days);
-        due = deadline.toLocaleDateString('en-GB', {
-            day: 'numeric',
-            month: 'short',
-        });
+
+        // Only surface a deadline that's actually still ahead. For someone who
+        // arrived years ago, arrival + 30 days is long past — showing it as
+        // "due 30 Jun" wrongly reads as imminent.
+        if (deadline.getTime() >= nowMs) {
+            const currentYear = new Date(nowMs).getFullYear();
+            due = deadline.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                ...(deadline.getFullYear() !== currentYear
+                    ? { year: 'numeric' }
+                    : {}),
+            });
+        }
     }
 
     return (

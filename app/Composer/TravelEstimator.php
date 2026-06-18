@@ -24,8 +24,17 @@ class TravelEstimator
 
     public function minutesBetween(float $fromLat, float $fromLng, float $toLat, float $toLng): int
     {
-        $km = $this->haversineKm($fromLat, $fromLng, $toLat, $toLng);
+        return self::minutesFromKm($this->haversineKm($fromLat, $fromLng, $toLat, $toLng));
+    }
 
+    /**
+     * Mode-aware travel minutes for a straight-line distance: walk under
+     * 1.2 km, transit above (18 km/h effective + stop/wait overhead). Shared
+     * with the Places "X min away" label so a 10 km place reads as a ~40 min
+     * transit ride, not a 145 min walk. Real journeys come from MOTIS on tap.
+     */
+    public static function minutesFromKm(float $km): int
+    {
         $minutes = $km <= self::WALK_MAX_KM
             ? max(1, (int) ceil($km / self::WALK_KMH * 60))
             : self::TRANSIT_OVERHEAD_MIN + (int) ceil($km / self::TRANSIT_KMH * 60);

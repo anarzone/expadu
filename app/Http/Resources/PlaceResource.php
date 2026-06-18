@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Composer\TravelEstimator;
 use App\Enums\SpotCategory;
 use App\Models\Spot;
 use Illuminate\Http\Request;
@@ -83,8 +84,10 @@ class PlaceResource extends JsonResource
             return null;
         }
 
-        // Walking-equivalent minutes at ~4.5 km/h; good enough for "X min away".
-        return max(1, (int) round(((float) $km / 4.5) * 60));
+        // Mode-aware estimate: a place 10 km away is a ~40 min transit ride,
+        // not a 145 min walk. Shares the composer's heuristic; the exact
+        // door-to-door time comes from MOTIS when the user taps "take me there".
+        return TravelEstimator::minutesFromKm((float) $km);
     }
 
     private function resolveOpenNow(string $coarse): ?bool
