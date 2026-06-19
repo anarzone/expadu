@@ -5,6 +5,8 @@ import {
     IconBus,
     IconCircleCheck,
     IconClock,
+    IconList,
+    IconMap,
     IconMapPin,
     IconSailboat,
     IconTicket,
@@ -14,6 +16,7 @@ import {
 import type { IconProps } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
+import { JourneyMap } from '@/components/journey/journey-map';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
@@ -29,6 +32,7 @@ type JourneyLeg = {
     arrive_time: string;
     duration_min: number;
     stops: number | null;
+    polyline: string | null;
 };
 
 type Journey = {
@@ -221,6 +225,40 @@ function FareCard({ fare }: { fare: FareAdvice }) {
     );
 }
 
+function ViewToggle({
+    view,
+    onChange,
+}: {
+    view: 'list' | 'map';
+    onChange: (next: 'list' | 'map') => void;
+}) {
+    return (
+        <div className="mb-3 inline-flex gap-0.5 rounded-full bg-secondary p-0.5">
+            {(['list', 'map'] as const).map((value) => {
+                const Icon = value === 'list' ? IconList : IconMap;
+                const active = view === value;
+
+                return (
+                    <button
+                        key={value}
+                        type="button"
+                        onClick={() => onChange(value)}
+                        aria-pressed={active}
+                        className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12.5px] font-semibold capitalize transition-colors ${
+                            active
+                                ? 'bg-card text-foreground shadow-sm'
+                                : 'text-muted-foreground'
+                        }`}
+                    >
+                        <Icon size={14} stroke={ICON_STROKE} />
+                        {value}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 export function TakeMeThereSheet({
     destination,
     onClose,
@@ -235,6 +273,7 @@ export function TakeMeThereSheet({
         lng: number;
     } | null>(null);
     const [confirming, setConfirming] = useState(false);
+    const [view, setView] = useState<'list' | 'map'>('list');
     const isMobile = useIsMobile();
 
     useEffect(() => {
@@ -302,6 +341,9 @@ export function TakeMeThereSheet({
     }
 
     const journey = data?.journeys?.[0] ?? null;
+    const hasGeometry = (journey?.legs ?? []).some(
+        (leg) => leg.polyline != null,
+    );
 
     const body = (
         <div className="pb-4">
@@ -410,10 +452,34 @@ export function TakeMeThereSheet({
                         </div>
                     </div>
 
+                    {hasGeometry && (
+                        <ViewToggle view={view} onChange={setView} />
+                    )}
+
+                    {view === 'map' && hasGeometry ? (
+                        <div className="mb-3">
+                            <JourneyMap
+                                legs={journey.legs}
+                                origin={data?.from ?? null}
+                                destination={{
+                                    lat: destination.lat,
+                                    lng: destination.lng,
+                                    name: destination.name,
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="mb-3">
+                            {journey.legs.map((leg, i) => (
+                                <LegRow key={i} leg={leg} />
+                            ))}
+                        </div>
+                    )}
+
                     {data?.ticket && <FareCard fare={data.ticket} />}
 
                     {(data?.disruptions ?? []).length > 0 && (
-                        <div className="mb-3 flex items-start gap-2 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
+                        <div className="mt-3 flex items-start gap-2 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
                             <IconAlertTriangle
                                 size={15}
                                 stroke={ICON_STROKE}
@@ -422,12 +488,6 @@ export function TakeMeThereSheet({
                             <span>{data!.disruptions[0].title}</span>
                         </div>
                     )}
-
-                    <div className="mb-1">
-                        {journey.legs.map((leg, i) => (
-                            <LegRow key={i} leg={leg} />
-                        ))}
-                    </div>
                 </>
             )}
 
