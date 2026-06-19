@@ -168,6 +168,53 @@ class FailoverRouteService implements RouteService
         return is_array($cached) ? Place::fromArray($cached) : null;
     }
 
+    public function travelMatrix(GeoPoint $origin, array $destinations, string $mode = 'BIKE'): array
+    {
+        if ($destinations === []) {
+            return [];
+        }
+
+        $nulls = array_fill(0, count($destinations), null);
+
+        // Street one-to-many is a MOTIS-only capability and strictly
+        // best-effort: outside the service area, or when MOTIS is already
+        // known-down (breaker open), skip straight to the caller's fallback
+        // rather than wait on a doomed call.
+        if (! $this->withinServiceArea($origin) || $this->breaker->isOpen('motis')) {
+            return $nulls;
+        }
+
+        $cacheKey = sprintf(
+            'matrix:%s:%.4f,%.4f:%s',
+            $mode,
+            $origin->lat,
+            $origin->lng,
+            md5(implode('|', array_map(fn (GeoPoint $p) => sprintf('%.5f,%.5f', $p->lat, $p->lng), $destinations))),
+        );
+
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        try {
+            // Deliberately doesn't touch the circuit breaker — a matrix hiccup
+            // must never trip the journey-planning path.
+            $minutes = $this->motis->travelMatrix($origin, $destinations, $mode);
+        } catch (\Throwable $e) {
+            Log::warning('travel matrix failed', ['error' => $e->getMessage()]);
+
+            return $nulls;
+        }
+
+        // Cache a useful answer only — never pin an all-null result.
+        if (array_filter($minutes, fn ($m) => $m !== null) !== []) {
+            Cache::put($cacheKey, $minutes, 300);
+        }
+
+        return $minutes;
+    }
+
     private function withinServiceArea(GeoPoint $p): bool
     {
         return $p->lat >= self::NRW_BOUNDS['minLat'] && $p->lat <= self::NRW_BOUNDS['maxLat']

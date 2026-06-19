@@ -10,6 +10,8 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Profile\ProfileEngine;
 use App\Services\UserLocationService;
+use App\Transit\Contracts\RouteService;
+use App\Transit\Dto\GeoPoint;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -25,7 +27,10 @@ use Illuminate\Support\Facades\DB;
  */
 class PlacesController extends Controller
 {
-    public function __construct(private readonly UserLocationService $locations) {}
+    public function __construct(
+        private readonly UserLocationService $locations,
+        private readonly RouteService $routes,
+    ) {}
 
     private const PER_PAGE = 20;
 
@@ -62,6 +67,10 @@ class PlacesController extends Controller
             ->first();
         $spot->feedback_state = $row?->state?->value;
         $spot->feedback_rating = $row?->rating;
+        $spot->travel_min = $this->routes->travelMatrix(
+            new GeoPoint($anchorLat, $anchorLng),
+            [new GeoPoint((float) $spot->lat, (float) $spot->lng)],
+        )[0] ?? null;
 
         return new PlaceResource($spot);
     }
@@ -196,6 +205,8 @@ class PlacesController extends Controller
             return $spot;
         });
 
+        $this->attachTravelMinutes($paginator->getCollection(), $anchorLat, $anchorLng);
+
         return PlaceResource::collection($paginator)
             ->additional(['nearby_included' => $nearbyIncluded]);
     }
@@ -275,6 +286,32 @@ class PlacesController extends Controller
         }
 
         return [50.9375, 6.9603]; // Cologne centre
+    }
+
+    /**
+     * Replace the haversine estimate with real one-to-many street travel
+     * minutes (bike) from the anchor. Best-effort and order-preserving: any
+     * destination the engine can't reach stays null, and PlaceResource falls
+     * back to the heuristic for it.
+     *
+     * @param  Collection<int, Spot>  $spots
+     */
+    private function attachTravelMinutes($spots, float $anchorLat, float $anchorLng): void
+    {
+        if ($spots->isEmpty()) {
+            return;
+        }
+
+        $list = $spots->values();
+        $minutes = $this->routes->travelMatrix(
+            new GeoPoint($anchorLat, $anchorLng),
+            $list->map(fn (Spot $spot) => new GeoPoint((float) $spot->lat, (float) $spot->lng))->all(),
+            'BIKE',
+        );
+
+        foreach ($list as $i => $spot) {
+            $spot->travel_min = $minutes[$i] ?? null;
+        }
     }
 
     /**

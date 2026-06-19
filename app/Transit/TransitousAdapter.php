@@ -130,6 +130,51 @@ class TransitousAdapter implements RouteService
         return $journeys;
     }
 
+    public function travelMatrix(GeoPoint $origin, array $destinations, string $mode = 'BIKE'): array
+    {
+        if ($destinations === []) {
+            return [];
+        }
+
+        // MOTIS one-to-many: `one`/`many` use lat;lng pairs, `many` is one
+        // comma-joined list (Guzzle percent-encodes the separators). Street
+        // modes only — transit isn't supported on this endpoint.
+        $many = implode(',', array_map(
+            fn (GeoPoint $point) => "{$point->lat};{$point->lng}",
+            $destinations,
+        ));
+
+        $response = Http::baseUrl($this->baseUrl())
+            ->timeout(6)
+            ->connectTimeout(3)
+            ->withHeaders(['User-Agent' => 'expadu.com'])
+            ->get('/api/v1/one-to-many', [
+                'one' => "{$origin->lat};{$origin->lng}",
+                'many' => $many,
+                'mode' => $mode,
+                'max' => 7200,
+                'maxMatchingDistance' => 1500,
+                'arriveBy' => 'false',
+            ])
+            ->throw();
+
+        $rows = $response->json();
+
+        // The engine returns one entry per destination, in order: {duration}
+        // (seconds) when reachable, an empty object when not. A length mismatch
+        // means we can't trust the alignment — signal "unavailable" wholesale.
+        if (! is_array($rows) || count($rows) !== count($destinations)) {
+            return array_fill(0, count($destinations), null);
+        }
+
+        return array_map(
+            fn ($row) => is_array($row) && isset($row['duration'])
+                ? max(1, (int) ceil(((float) $row['duration']) / 60))
+                : null,
+            array_values($rows),
+        );
+    }
+
     public function geocode(string $query, ?GeoPoint $bias = null): array
     {
         $params = ['text' => $query, 'language' => 'de'];

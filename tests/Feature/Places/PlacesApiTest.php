@@ -5,11 +5,15 @@ use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Services\UserLocationService;
+use App\Transit\Contracts\RouteService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 
 beforeEach(function () {
+    // No stray HTTP: by default the one-to-many matrix returns nothing, so
+    // distance falls back to the haversine heuristic (as it did before).
+    Http::fake();
     $this->user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld']);
     UserPlace::factory()->create([
         'user_id' => $this->user->id,
@@ -299,6 +303,20 @@ test('orders by distance from the home anchor', function () {
 
     $ids = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
     expect(array_search($near->id, $ids))->toBeLessThan(array_search($far->id, $ids));
+});
+
+test('distance_min uses the real travel matrix, not the heuristic', function () {
+    // Isolate the controller: the matrix's HTTP/failover path is covered in
+    // FailoverTest. Here we prove the controller applies its result.
+    $this->mock(RouteService::class, function ($mock) {
+        $mock->shouldReceive('travelMatrix')->andReturn([9]); // 9 min by bike
+    });
+
+    Spot::factory()->create(['name' => 'Bike park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
+
+    $data = $this->getJson('/api/places?veedel=Ehrenfeld')->json('data');
+
+    expect($data[0]['distance_min'])->toBe(9);
 });
 
 test('a confirmed live location overrides the home anchor for distance', function () {

@@ -78,15 +78,21 @@ class PlaceResource extends JsonResource
 
     private function resolveDistanceMin(): ?int
     {
+        // Real one-to-many street time from MOTIS (set by the controller) wins
+        // when available — the honest "X min away" by bike from the anchor.
+        $real = $this->travel_min ?? null;
+        if ($real !== null) {
+            return (int) $real;
+        }
+
         // distance_km is added as a select alias by the controller query.
         $km = $this->distance_km ?? null;
         if ($km === null) {
             return null;
         }
 
-        // Mode-aware estimate: a place 10 km away is a ~40 min transit ride,
-        // not a 145 min walk. Shares the composer's heuristic; the exact
-        // door-to-door time comes from MOTIS when the user taps "take me there".
+        // Fallback heuristic when MOTIS is unreachable or the venue is off the
+        // network: a place 10 km away reads as a ~40 min ride, not a 145 min walk.
         return TravelEstimator::minutesFromKm((float) $km);
     }
 

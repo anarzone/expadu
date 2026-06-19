@@ -180,6 +180,44 @@ test('degrades to nearest-stop departures when every provider dies', function ()
     expect($result->degraded['deep_links']['google'])->toContain('travelmode=transit');
 });
 
+test('travelMatrix routes via MOTIS and caches a useful result', function () {
+    Http::fake([
+        'motis.test/api/v1/one-to-many*' => Http::response([['duration' => 300], ['duration' => 600]]),
+    ]);
+
+    $service = app(RouteService::class);
+    $origin = new GeoPoint(50.94, 6.95);
+    $dests = [new GeoPoint(50.95, 6.92), new GeoPoint(50.96, 6.93)];
+
+    expect($service->travelMatrix($origin, $dests, 'BIKE'))->toBe([5, 10]);
+    expect($service->travelMatrix($origin, $dests, 'BIKE'))->toBe([5, 10]); // cache hit
+    Http::assertSentCount(1);
+});
+
+test('travelMatrix falls back to all-null when MOTIS errors', function () {
+    Http::fake(['motis.test/*' => Http::response('down', 503)]);
+
+    $minutes = app(RouteService::class)->travelMatrix(
+        new GeoPoint(50.94, 6.95),
+        [new GeoPoint(50.95, 6.92)],
+    );
+
+    expect($minutes)->toBe([null]);
+});
+
+test('travelMatrix skips an out-of-area origin without any call', function () {
+    Http::fake();
+
+    // Munich — outside the NRW service area.
+    $minutes = app(RouteService::class)->travelMatrix(
+        new GeoPoint(48.14, 11.58),
+        [new GeoPoint(48.15, 11.59)],
+    );
+
+    expect($minutes)->toBe([null]);
+    Http::assertNothingSent();
+});
+
 test('a coordinate outside NRW short-circuits to degraded without calling any provider', function () {
     Http::fake(); // any provider call would be recorded
     test()->mock(NearbyStopService::class, function ($mock) {

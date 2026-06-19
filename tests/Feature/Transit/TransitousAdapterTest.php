@@ -120,6 +120,45 @@ test('geocode maps stops with ids', function () {
     expect($places[1]->stopId)->toBeNull();
 });
 
+test('travelMatrix maps one-to-many durations in order, null for unreachable', function () {
+    Http::fake([
+        'api.transitous.org/api/v1/one-to-many*' => Http::response([
+            ['duration' => 147],   // ~3 min
+            ['duration' => 962],   // ~17 min
+            [],                    // unreachable → null
+        ]),
+    ]);
+
+    $minutes = (new TransitousAdapter)->travelMatrix(
+        new GeoPoint(50.9413, 6.9583),
+        [new GeoPoint(50.943, 6.956), new GeoPoint(50.9513, 6.9185), new GeoPoint(51.30, 7.50)],
+        'BIKE',
+    );
+
+    expect($minutes)->toBe([3, 17, null]);
+
+    Http::assertSent(function ($req) {
+        $url = urldecode($req->url());
+
+        return str_contains($url, 'one=50.9413;6.9583')
+            && str_contains($url, 'many=50.943;6.956,50.9513;6.9185,51.3;7.5')
+            && str_contains($req->url(), 'mode=BIKE');
+    });
+});
+
+test('travelMatrix returns all-null when the response length mismatches', function () {
+    Http::fake([
+        'api.transitous.org/api/v1/one-to-many*' => Http::response([['duration' => 147]]),
+    ]);
+
+    $minutes = (new TransitousAdapter)->travelMatrix(
+        new GeoPoint(50.94, 6.95),
+        [new GeoPoint(50.95, 6.92), new GeoPoint(50.96, 6.93)],
+    );
+
+    expect($minutes)->toBe([null, null]);
+});
+
 test('plan throws on http error so the failover can catch it', function () {
     Http::fake([
         'api.transitous.org/*' => Http::response('upstream broke', 503),

@@ -55,6 +55,12 @@ class TriasAdapter implements RouteService
         return null;
     }
 
+    /** TRIAS has no street-routing matrix; callers fall back to their estimate. */
+    public function travelMatrix(GeoPoint $origin, array $destinations, string $mode = 'BIKE'): array
+    {
+        return array_fill(0, count($destinations), null);
+    }
+
     /**
      * TRIAS parse output uses H:i display times; anchor them to today.
      * A journey crossing midnight gets its arrival bumped a day forward.
