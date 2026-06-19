@@ -40,10 +40,47 @@ class TransitousAdapter implements RouteService
 
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 3): JourneyResult
     {
+        // Transit itineraries first. Deliberately NO directModes on this call:
+        // when MOTIS is handed a fast direct (bike) route in the same request it
+        // prunes comparable transit and the transit option vanishes entirely.
+        // Two separate calls keep both. (Verified against the live engine.)
+        $journeys = $this->fetchBucket($from, $to, $departAt, $max, [], 'itineraries');
+
+        // Direct walk + bike as a best-effort second call — a hiccup here must
+        // never drop transit. maxDirectTime is generous so a cross-town bike
+        // ride still surfaces; an over-long walk is dropped by the cap.
+        try {
+            $journeys = array_merge($journeys, $this->fetchBucket(
+                $from,
+                $to,
+                $departAt,
+                1,
+                ['directModes' => 'WALK,BIKE', 'maxDirectTime' => 4800],
+                'direct',
+            ));
+        } catch (\Throwable) {
+            // Transit-only is an acceptable result if the direct call fails.
+        }
+
+        return new JourneyResult($journeys, $this->source());
+    }
+
+    /**
+     * One MOTIS plan call, mapping the chosen response bucket to journeys.
+     * MOTIS splits its answer into `itineraries` (transit) and `direct`
+     * (walk/bike); each call reads exactly one so the two buckets never
+     * collide. Throws on HTTP error so the caller (and failover) can react.
+     *
+     * @param  array<string, mixed>  $extra  extra query params (e.g. directModes)
+     * @return list<Journey>
+     */
+    private function fetchBucket(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, array $extra, string $bucket): array
+    {
         $query = [
             'fromPlace' => "{$from->lat},{$from->lng}",
             'toPlace' => "{$to->lat},{$to->lng}",
             'numItineraries' => $max,
+            ...$extra,
         ];
 
         if ($departAt !== null) {
@@ -58,14 +95,14 @@ class TransitousAdapter implements RouteService
             ->throw();
 
         $journeys = [];
-        foreach ($response->json('itineraries', []) as $itinerary) {
+        foreach ($response->json($bucket, []) as $itinerary) {
             $journey = $this->mapItinerary($itinerary);
             if ($journey !== null) {
                 $journeys[] = $journey;
             }
         }
 
-        return new JourneyResult($journeys, $this->source());
+        return $journeys;
     }
 
     public function geocode(string $query, ?GeoPoint $bias = null): array

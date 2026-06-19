@@ -38,6 +38,62 @@ test('maps a real MOTIS plan response to journeys', function () {
     expect($journey->departAt->tzName)->toBe('Europe/Berlin');
 });
 
+test('includes direct walk and bike routes alongside transit', function () {
+    $leg = fn (string $mode, string $start, string $end, int $dur, array $extra = []) => array_merge([
+        'mode' => $mode,
+        'from' => ['name' => 'START', 'lat' => 50.95, 'lon' => 6.92],
+        'to' => ['name' => 'END', 'lat' => 50.9413, 'lon' => 6.9583],
+        'startTime' => $start,
+        'endTime' => $end,
+        'duration' => $dur,
+    ], $extra);
+
+    Http::fake([
+        'api.transitous.org/api/v3/plan*' => Http::response([
+            'itineraries' => [[
+                'startTime' => '2026-06-19T06:00:00Z',
+                'endTime' => '2026-06-19T06:31:00Z',
+                'duration' => 1860,
+                'transfers' => 1,
+                'legs' => [
+                    $leg('WALK', '2026-06-19T06:00:00Z', '2026-06-19T06:05:00Z', 300),
+                    $leg('TRAM', '2026-06-19T06:05:00Z', '2026-06-19T06:28:00Z', 1380, [
+                        'routeShortName' => '12',
+                        'intermediateStops' => [['name' => 'a'], ['name' => 'b']],
+                        'legGeometry' => ['points' => 'abc'],
+                    ]),
+                    $leg('WALK', '2026-06-19T06:28:00Z', '2026-06-19T06:31:00Z', 180),
+                ],
+            ]],
+            'direct' => [
+                [
+                    'startTime' => '2026-06-19T06:00:00Z',
+                    'endTime' => '2026-06-19T06:22:00Z',
+                    'duration' => 1320,
+                    'transfers' => 0,
+                    'legs' => [$leg('BIKE', '2026-06-19T06:00:00Z', '2026-06-19T06:22:00Z', 1320, ['legGeometry' => ['points' => 'xyz']])],
+                ],
+                [
+                    'startTime' => '2026-06-19T06:00:00Z',
+                    'endTime' => '2026-06-19T07:05:00Z',
+                    'duration' => 3900,
+                    'transfers' => 0,
+                    'legs' => [$leg('WALK', '2026-06-19T06:00:00Z', '2026-06-19T07:05:00Z', 3900)],
+                ],
+            ],
+        ]),
+    ]);
+
+    $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.92), new GeoPoint(50.9413, 6.9583));
+
+    // Transit itinerary first, then the direct bike + walk options.
+    expect($result->journeys)->toHaveCount(3);
+    expect(array_map(fn ($j) => $j->mode(), $result->journeys))->toBe(['transit', 'bike', 'walk']);
+
+    // MOTIS was actually asked for direct walk + bike (not transit-only).
+    Http::assertSent(fn ($req) => str_contains(urldecode($req->url()), 'directModes=WALK,BIKE'));
+});
+
 test('geocode maps stops with ids', function () {
     Http::fake([
         'api.transitous.org/api/v1/geocode*' => Http::response([

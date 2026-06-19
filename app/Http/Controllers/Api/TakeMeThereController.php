@@ -49,13 +49,15 @@ class TakeMeThereController extends Controller
 
         $result = $routes->plan($from, $to);
 
-        // Journey-aware Rheinlandtarif advice (only meaningful when there's a
-        // transit journey; the degraded/walk surfaces carry their own UI).
-        $journey = $result->journeys[0] ?? null;
+        // Journey-aware Rheinlandtarif advice for the transit option (walk/bike
+        // options are free and carry no ticket). Computed for the first transit
+        // journey wherever it sits in the list.
+        $transitJourney = collect($result->journeys)
+            ->first(fn ($journey) => $journey->mode() === 'transit');
         $ticket = null;
-        if ($journey !== null) {
+        if ($transitJourney !== null) {
             $ticket = $fareAdvisor->advise(
-                $journey,
+                $transitJourney,
                 $routes->reverseGeocode($from)?->municipality,
                 $routes->reverseGeocode($to)?->municipality,
                 (bool) ($user->has_deutschlandticket ?? false),

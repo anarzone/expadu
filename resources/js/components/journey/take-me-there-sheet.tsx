@@ -36,6 +36,7 @@ type JourneyLeg = {
 };
 
 type Journey = {
+    mode: 'transit' | 'bike' | 'walk';
     depart_time: string;
     arrive_time: string;
     duration_min: number;
@@ -99,8 +100,61 @@ const MODE_ICON: Record<string, ComponentType<IconProps>> = {
     ferry: IconSailboat,
 };
 
+/** Top-level journey modes, in the order the selector shows them. */
+const MODE_ORDER = ['transit', 'bike', 'walk'] as const;
+type JourneyMode = (typeof MODE_ORDER)[number];
+
+const MODE_META: Record<
+    JourneyMode,
+    { label: string; icon: ComponentType<IconProps> }
+> = {
+    transit: { label: 'Transit', icon: IconBus },
+    bike: { label: 'Bike', icon: IconBike },
+    walk: { label: 'Walk', icon: IconWalk },
+};
+
 function eur(value: number): string {
     return '€' + value.toFixed(2);
+}
+
+/** "44 min" under an hour, "1 h 5 min" above it. */
+function formatDuration(min: number): string {
+    if (min < 60) {
+        return `${min} min`;
+    }
+
+    const hours = Math.floor(min / 60);
+    const rest = min % 60;
+
+    return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
+/**
+ * Which mode to lead with. Transit is the default for a city app, but when a
+ * direct option is dramatically faster — the cross-Rhine case, 107-min transit
+ * vs a 41-min bike — we surface that instead so the sheet never opens on an
+ * absurd route.
+ */
+function pickDefaultMode(
+    byMode: Map<JourneyMode, Journey>,
+): JourneyMode | null {
+    const transit = byMode.get('transit');
+    const fastestDirect = [byMode.get('bike'), byMode.get('walk')]
+        .filter((journey): journey is Journey => journey != null)
+        .sort((a, b) => a.duration_min - b.duration_min)[0];
+
+    if (transit) {
+        if (
+            fastestDirect &&
+            transit.duration_min > fastestDirect.duration_min * 1.5
+        ) {
+            return fastestDirect.mode;
+        }
+
+        return 'transit';
+    }
+
+    return fastestDirect?.mode ?? null;
 }
 
 /** Straight-line km — only used to phrase the "no transit route" fallback. */
@@ -121,8 +175,9 @@ function haversineKm(
 }
 
 function LegRow({ leg }: { leg: JourneyLeg }) {
-    const isTransit = leg.mode !== 'walk';
+    const isTransit = leg.mode !== 'walk' && leg.mode !== 'bike';
     const ModeIcon = MODE_ICON[leg.mode] ?? IconWalk;
+    const verb = leg.mode === 'bike' ? 'Cycle' : 'Walk';
 
     return (
         <div className="relative flex items-center gap-3 py-2 pl-5">
@@ -141,7 +196,7 @@ function LegRow({ leg }: { leg: JourneyLeg }) {
                 <span className="block text-sm font-medium">
                     {isTransit
                         ? `${leg.line ?? ''}${leg.headsign ? ` toward ${leg.headsign}` : ''}`
-                        : `Walk${leg.to.name ? ` to ${leg.to.name}` : ''}`}
+                        : `${verb}${leg.to.name ? ` to ${leg.to.name}` : ''}`}
                 </span>
                 <span className="block text-xs text-muted-foreground">
                     {isTransit
@@ -276,6 +331,52 @@ function ViewToggle({
     );
 }
 
+/**
+ * Transit / Bike / Walk segments, each showing that mode's travel time so the
+ * trade-off is visible at a glance. Only rendered when more than one mode came
+ * back; the active segment is the one whose journey is on screen.
+ */
+function ModeSelector({
+    modes,
+    active,
+    onChange,
+}: {
+    modes: Array<{ mode: JourneyMode; journey: Journey }>;
+    active: JourneyMode;
+    onChange: (next: JourneyMode) => void;
+}) {
+    return (
+        <div className="mb-4 flex gap-1.5">
+            {modes.map(({ mode, journey }) => {
+                const { label, icon: Icon } = MODE_META[mode];
+                const isActive = mode === active;
+
+                return (
+                    <button
+                        key={mode}
+                        type="button"
+                        onClick={() => onChange(mode)}
+                        aria-pressed={isActive}
+                        className={`flex flex-1 flex-col items-center gap-0.5 rounded-[12px] border py-2 transition-colors ${
+                            isActive
+                                ? 'border-primary bg-accent-soft text-primary'
+                                : 'border-border text-muted-foreground hover:bg-secondary'
+                        }`}
+                    >
+                        <Icon size={18} stroke={ICON_STROKE} />
+                        <span className="text-[11px] font-semibold">
+                            {label}
+                        </span>
+                        <span className="font-mono text-[12px] font-medium text-foreground">
+                            {formatDuration(journey.duration_min)}
+                        </span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 export function TakeMeThereSheet({
     destination,
     onClose,
@@ -291,6 +392,7 @@ export function TakeMeThereSheet({
     } | null>(null);
     const [confirming, setConfirming] = useState(false);
     const [view, setView] = useState<'list' | 'map'>('list');
+    const [mode, setMode] = useState<JourneyMode | null>(null);
     const isMobile = useIsMobile();
 
     useEffect(() => {
@@ -350,6 +452,7 @@ export function TakeMeThereSheet({
                 setConfirming(false);
                 setData(null); // back to the loading skeleton while replanning
                 setError(false);
+                setMode(null); // let the new plan re-pick its best default mode
                 setFromOverride({ lat, lng });
             },
             () => setConfirming(false),
@@ -357,7 +460,25 @@ export function TakeMeThereSheet({
         );
     }
 
-    const journey = data?.journeys?.[0] ?? null;
+    // One journey per mode (the first/best of each the engine returned), then
+    // the mode to show: an explicit user pick when still available, else the
+    // smart default.
+    const byMode = new Map<JourneyMode, Journey>();
+
+    for (const candidate of data?.journeys ?? []) {
+        if (!byMode.has(candidate.mode)) {
+            byMode.set(candidate.mode, candidate);
+        }
+    }
+
+    const availableModes = MODE_ORDER.flatMap((m) => {
+        const journey = byMode.get(m);
+
+        return journey ? [{ mode: m, journey }] : [];
+    });
+    const effectiveMode =
+        mode && byMode.has(mode) ? mode : pickDefaultMode(byMode);
+    const journey = effectiveMode ? (byMode.get(effectiveMode) ?? null) : null;
     const hasGeometry = (journey?.legs ?? []).some(
         (leg) => leg.polyline != null,
     );
@@ -460,9 +581,9 @@ export function TakeMeThereSheet({
                                 className="mt-px shrink-0"
                             />
                             <span>
-                                No direct transit found — it's about{' '}
-                                {Math.round(straightKm)} km away (the far-north
-                                network is sparse).
+                                No transit or cycling route found — it's about{' '}
+                                {Math.round(straightKm)} km away, past easy
+                                reach.
                             </span>
                         </div>
                         <a
@@ -486,18 +607,42 @@ export function TakeMeThereSheet({
                 ))}
 
             {/* Live journey */}
-            {journey && (
+            {journey && effectiveMode && (
                 <>
+                    {availableModes.length > 1 && (
+                        <ModeSelector
+                            modes={availableModes}
+                            active={effectiveMode}
+                            onChange={setMode}
+                        />
+                    )}
+
                     <div className="mb-3">
-                        <div className="font-display text-xl font-medium">
-                            Leave by {journey.depart_time}
-                        </div>
-                        <div className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-                            arrive {journey.arrive_time} ·{' '}
-                            {journey.duration_min} min
-                            {journey.transfers > 0 &&
-                                ` · ${journey.transfers} transfer${journey.transfers > 1 ? 's' : ''}`}
-                        </div>
+                        {effectiveMode === 'transit' ? (
+                            <>
+                                <div className="font-display text-xl font-medium">
+                                    Leave by {journey.depart_time}
+                                </div>
+                                <div className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+                                    arrive {journey.arrive_time} ·{' '}
+                                    {journey.duration_min} min
+                                    {journey.transfers > 0 &&
+                                        ` · ${journey.transfers} transfer${journey.transfers > 1 ? 's' : ''}`}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="font-display text-xl font-medium">
+                                    {formatDuration(journey.duration_min)}{' '}
+                                    {effectiveMode === 'bike'
+                                        ? 'by bike'
+                                        : 'on foot'}
+                                </div>
+                                <div className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+                                    direct route · leave when you like
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {hasGeometry && (
@@ -507,7 +652,7 @@ export function TakeMeThereSheet({
                     {view === 'map' && hasGeometry ? (
                         <div className="mb-3">
                             <JourneyMap
-                                key={`${destination.lat},${destination.lng},${journey.depart_time}`}
+                                key={`${effectiveMode},${destination.lat},${destination.lng},${journey.depart_time}`}
                                 legs={journey.legs}
                                 origin={data?.from ?? null}
                                 destination={{
@@ -525,18 +670,21 @@ export function TakeMeThereSheet({
                         </div>
                     )}
 
-                    {data?.ticket && <FareCard fare={data.ticket} />}
-
-                    {(data?.disruptions ?? []).length > 0 && (
-                        <div className="mt-3 flex items-start gap-2 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
-                            <IconAlertTriangle
-                                size={15}
-                                stroke={ICON_STROKE}
-                                className="mt-px shrink-0"
-                            />
-                            <span>{data!.disruptions[0].title}</span>
-                        </div>
+                    {effectiveMode === 'transit' && data?.ticket && (
+                        <FareCard fare={data.ticket} />
                     )}
+
+                    {effectiveMode === 'transit' &&
+                        (data?.disruptions ?? []).length > 0 && (
+                            <div className="mt-3 flex items-start gap-2 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
+                                <IconAlertTriangle
+                                    size={15}
+                                    stroke={ICON_STROKE}
+                                    className="mt-px shrink-0"
+                                />
+                                <span>{data!.disruptions[0].title}</span>
+                            </div>
+                        )}
                 </>
             )}
 

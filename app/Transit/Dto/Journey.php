@@ -29,6 +29,27 @@ final readonly class Journey
     }
 
     /**
+     * Primary mode for the UI's mode switcher: transit when any leg rides
+     * transit; otherwise a single-leg direct route — bike or walk.
+     */
+    public function mode(): string
+    {
+        foreach ($this->legs as $leg) {
+            if ($leg->isTransit()) {
+                return 'transit';
+            }
+        }
+
+        foreach ($this->legs as $leg) {
+            if ($leg->mode === 'bike') {
+                return 'bike';
+            }
+        }
+
+        return 'walk';
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -40,6 +61,7 @@ final readonly class Journey
             'arrive_time' => $this->arriveAt->format('H:i'),
             'duration_min' => $this->durationMin,
             'transfers' => $this->transfers,
+            'mode' => $this->mode(),
             'lines' => $this->lines(),
             'legs' => array_map(fn (Leg $leg) => $leg->toArray(), $this->legs),
         ];

@@ -21,7 +21,7 @@ final readonly class Leg
 
     public function isTransit(): bool
     {
-        return $this->mode !== 'walk';
+        return $this->mode !== 'walk' && $this->mode !== 'bike';
     }
 
     /**
