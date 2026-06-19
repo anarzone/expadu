@@ -5,6 +5,10 @@ use App\Services\VrsTriasService;
 use App\Transit\CircuitBreaker;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\FailoverRouteService;
+use App\Transit\MotisAdapter;
+use App\Transit\TransitousAdapter;
+use App\Transit\TriasAdapter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
@@ -107,6 +111,46 @@ test('falls back to TRIAS after MOTIS and Transitous both fail twice', function 
     $third = $service->plan($from, new GeoPoint(50.94, 6.96));
     expect($third->source)->toBe('trias');
     expect($third->journeys[0]->lines())->toContain('5');
+});
+
+test('caps the cascade at the time budget and degrades before the last provider', function () {
+    Http::fake([
+        'motis.test/*' => Http::response('down', 503),
+        'api.transitous.org/*' => Http::response('down', 503),
+    ]);
+
+    // TRIAS is last in the chain; once the budget is spent it must never be
+    // reached. A degraded board still needs a (mocked) nearest-stop lookup.
+    test()->mock(VrsTriasService::class, function ($mock) {
+        $mock->shouldNotReceive('planJourney');
+    });
+    test()->mock(NearbyStopService::class, function ($mock) {
+        $mock->shouldReceive('getDeparturesByType')->andReturn(['kvb' => [], 'db' => [], 'stops_used' => []]);
+    });
+
+    // Scripted clock (seconds): the deadline base, then one read per adapter to
+    // compute remaining. MOTIS + Transitous each get a turn; by TRIAS only ~1s
+    // of the 12s budget is left — under the 2s floor — so the cascade stops.
+    $service = new class(app(MotisAdapter::class), app(TransitousAdapter::class), app(TriasAdapter::class), app(CircuitBreaker::class), app(NearbyStopService::class)) extends FailoverRouteService
+    {
+        /** @var list<float> */
+        public array $clock = [0.0, 0.0, 1.0, 11.0];
+
+        private int $tick = 0;
+
+        protected function now(): float
+        {
+            return $this->clock[$this->tick++] ?? 99.0;
+        }
+    };
+
+    $result = $service->plan(new GeoPoint(50.95, 6.92), new GeoPoint(50.94, 6.96));
+
+    expect($result->source)->toBe('degraded');
+    // Proof the gate fired between Transitous and TRIAS, not earlier: both HTTP
+    // providers were genuinely attempted before the budget ran out.
+    Http::assertSent(fn ($req) => str_contains($req->url(), 'motis.test'));
+    Http::assertSent(fn ($req) => str_contains($req->url(), 'api.transitous.org'));
 });
 
 test('degrades to nearest-stop departures when every provider dies', function () {

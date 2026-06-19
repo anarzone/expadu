@@ -38,17 +38,27 @@ class TransitousAdapter implements RouteService
         'FERRY' => 'ferry',
     ];
 
+    /**
+     * Per-call HTTP timeout, in seconds, for the plan endpoint. The failover
+     * tightens this to fit its remaining wall-clock budget (see
+     * {@see FailoverRouteService}); on its own the adapter uses a generous
+     * default suited to the slower public providers.
+     */
+    protected float $planTimeout = 8.0;
+
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 3): JourneyResult
     {
         // Transit itineraries first. Deliberately NO directModes on this call:
         // when MOTIS is handed a fast direct (bike) route in the same request it
         // prunes comparable transit and the transit option vanishes entirely.
         // Two separate calls keep both. (Verified against the live engine.)
-        $journeys = $this->fetchBucket($from, $to, $departAt, $max, [], 'itineraries');
+        $journeys = $this->fetchBucket($from, $to, $departAt, $max, [], 'itineraries', $this->planTimeout);
 
         // Direct walk + bike as a best-effort second call — a hiccup here must
         // never drop transit. maxDirectTime is generous so a cross-town bike
-        // ride still surfaces; an over-long walk is dropped by the cap.
+        // ride still surfaces; an over-long walk is dropped by the cap. It only
+        // runs after a successful (hence quick) transit call, so a tight timeout
+        // keeps this supplementary lookup from ever dominating the response.
         try {
             $journeys = array_merge($journeys, $this->fetchBucket(
                 $from,
@@ -57,12 +67,27 @@ class TransitousAdapter implements RouteService
                 1,
                 ['directModes' => 'WALK,BIKE', 'maxDirectTime' => 4800],
                 'direct',
+                min($this->planTimeout, 5.0),
             ));
         } catch (\Throwable) {
             // Transit-only is an acceptable result if the direct call fails.
         }
 
         return new JourneyResult($journeys, $this->source());
+    }
+
+    /**
+     * A clone whose plan calls are bounded to roughly $seconds. Returning a
+     * copy (rather than mutating) keeps the shared adapter instance — and any
+     * concurrent use of it within the request — untouched. Floored so a call
+     * always has a fighting chance of completing.
+     */
+    public function withPlanTimeout(float $seconds): static
+    {
+        $clone = clone $this;
+        $clone->planTimeout = max(1.5, $seconds);
+
+        return $clone;
     }
 
     /**
@@ -74,7 +99,7 @@ class TransitousAdapter implements RouteService
      * @param  array<string, mixed>  $extra  extra query params (e.g. directModes)
      * @return list<Journey>
      */
-    private function fetchBucket(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, array $extra, string $bucket): array
+    private function fetchBucket(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, array $extra, string $bucket, float $timeout): array
     {
         $query = [
             'fromPlace' => "{$from->lat},{$from->lng}",
@@ -88,8 +113,8 @@ class TransitousAdapter implements RouteService
         }
 
         $response = Http::baseUrl($this->baseUrl())
-            ->timeout(8)
-            ->connectTimeout(3)
+            ->timeout((int) ceil($timeout))
+            ->connectTimeout((int) ceil(min(3.0, $timeout)))
             ->withHeaders(['User-Agent' => 'expadu.com'])
             ->get($this->planPath(), $query)
             ->throw();

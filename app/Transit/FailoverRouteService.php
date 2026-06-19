@@ -35,6 +35,17 @@ class FailoverRouteService implements RouteService
      */
     private const NRW_BOUNDS = ['minLat' => 50.0, 'maxLat' => 52.6, 'minLng' => 5.8, 'maxLng' => 9.5];
 
+    /**
+     * Total wall-clock budget for the whole provider cascade. A user tap must
+     * resolve — to a real route or to the degraded board — inside this; a slow
+     * chain falls through to degraded rather than spinning across every
+     * provider's full timeout.
+     */
+    private const JOURNEY_BUDGET_SECONDS = 12.0;
+
+    /** Don't start a provider call with less than this much budget left. */
+    private const MIN_ATTEMPT_SECONDS = 2.0;
+
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 3): JourneyResult
     {
         if (! $this->withinServiceArea($from) || ! $this->withinServiceArea($to)) {
@@ -55,13 +66,31 @@ class FailoverRouteService implements RouteService
         // Cache the ARRAY form, never the DTO — Redis deserialises cached
         // objects to __PHP_Incomplete_Class on a hit. Reconstruct on read.
         $cached = Cache::remember($cacheKey, 60, function () use ($from, $to, $departAt, $max) {
+            $deadline = $this->now() + self::JOURNEY_BUDGET_SECONDS;
+
             foreach (['motis' => $this->motis, 'transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
                 if ($this->breaker->isOpen($name)) {
                     continue;
                 }
 
+                // Stop the cascade once the budget is spent: a remaining sliver
+                // isn't enough for an honest attempt, so fall through to degraded.
+                $remaining = $deadline - $this->now();
+                if ($remaining < self::MIN_ATTEMPT_SECONDS) {
+                    Log::warning('journey budget exhausted, falling through to degraded', [
+                        'tried_through' => $name, 'remaining' => round($remaining, 2),
+                    ]);
+                    break;
+                }
+
+                // Bound this provider's HTTP calls to what's left of the budget
+                // so no single slow provider can blow past it.
+                $bounded = $adapter instanceof TransitousAdapter
+                    ? $adapter->withPlanTimeout(min($remaining, 8.0))
+                    : $adapter;
+
                 try {
-                    $result = $adapter->plan($from, $to, $departAt, $max);
+                    $result = $bounded->plan($from, $to, $departAt, $max);
                     $this->breaker->recordSuccess($name);
 
                     return $result->toArray();
@@ -75,6 +104,15 @@ class FailoverRouteService implements RouteService
         });
 
         return JourneyResult::fromArray($cached);
+    }
+
+    /**
+     * Wall clock, in fractional seconds. A seam so the budget cascade is
+     * testable without real sleeps.
+     */
+    protected function now(): float
+    {
+        return microtime(true);
     }
 
     public function geocode(string $query, ?GeoPoint $bias = null): array
