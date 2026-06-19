@@ -4,8 +4,10 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserPlace;
+use App\Services\UserLocationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 
 beforeEach(function () {
     $this->user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld']);
@@ -297,6 +299,28 @@ test('orders by distance from the home anchor', function () {
 
     $ids = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
     expect(array_search($near->id, $ids))->toBeLessThan(array_search($far->id, $ids));
+});
+
+test('a confirmed live location overrides the home anchor for distance', function () {
+    // A stale anchor from another test must not skew the baseline.
+    Redis::del("confirmed_location:{$this->user->id}");
+    Redis::del("location_history:{$this->user->id}");
+
+    // Home is at 50.948, 6.921 (seeded in beforeEach).
+    $byHome = Spot::factory()->create(['name' => 'By home', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.922]);
+    $acrossTown = Spot::factory()->create(['name' => 'Across town', 'category' => 'park', 'lat' => 50.99, 'lng' => 7.05]);
+
+    // Without a live fix, the park by home ranks first.
+    $home = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
+    expect(array_search($byHome->id, $home))->toBeLessThan(array_search($acrossTown->id, $home));
+
+    // Stand the user next to the across-town park (name set, so confirm skips
+    // the reverse-geocode network call).
+    app(UserLocationService::class)->confirm($this->user, 50.99, 7.05, 'Across town');
+
+    // Now distances are measured from the fix, flipping the order.
+    $live = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
+    expect(array_search($acrossTown->id, $live))->toBeLessThan(array_search($byHome->id, $live));
 });
 
 test('the show endpoint exposes the viewer’s feedback state and rating', function () {

@@ -16,6 +16,11 @@ import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
 
+const CSRF = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') || '';
+
 const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
     { id: 'park', label: 'Parks', emoji: '🌳' },
     { id: 'culture', label: 'Culture', emoji: '🏛️' },
@@ -117,6 +122,15 @@ export default function Places() {
     const reqRef = useRef(0);
     const busyRef = useRef(false);
 
+    // A live GPS fix for the map: drives the "you are here" dot and, via the
+    // confirmed-location anchor, the "min away" distances on every card.
+    const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(
+        null,
+    );
+    const [locating, setLocating] = useState(false);
+    const [flyTo, setFlyTo] = useState(0);
+    const autoPingedRef = useRef(false);
+
     const fetchPage = useCallback(
         (
             b: string,
@@ -176,6 +190,77 @@ export default function Places() {
         },
         [],
     );
+
+    // Ping the device for a fresh fix. `fly` recenters the map (explicit tap);
+    // the silent auto-locate leaves the viewport alone. The fix persists as the
+    // 2h "I'm here" anchor (POST body, never the URL — GPS stays out of query
+    // strings), then we refetch so distances recompute from it.
+    const locate = useCallback(
+        (fly: boolean) => {
+            if (!('geolocation' in navigator)) {
+                return;
+            }
+
+            setLocating(true);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude: lat, longitude: lng } = pos.coords;
+                    setUserLoc({ lat, lng });
+
+                    if (fly) {
+                        setFlyTo((n) => n + 1);
+                    }
+
+                    fetch('/api/location/confirm', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': CSRF(),
+                        },
+                        body: JSON.stringify({ lat, lng }),
+                    })
+                        .then(() =>
+                            fetchPage(bezirk, veedel, category, 1, false),
+                        )
+                        .catch(() => {})
+                        .finally(() => setLocating(false));
+                },
+                () => setLocating(false),
+                {
+                    enableHighAccuracy: false,
+                    maximumAge: 120_000,
+                    timeout: 8000,
+                },
+            );
+        },
+        [bezirk, veedel, category, fetchPage],
+    );
+
+    // On opening the map, ping silently only if permission was already granted —
+    // never a cold prompt on a browse screen. The "Locate me" button is the
+    // explicit path. Runs once per page visit.
+    useEffect(() => {
+        if (view !== 'map' || userLoc || autoPingedRef.current) {
+            return;
+        }
+
+        // No Permissions API (older browsers) → no silent ping; the button
+        // still works.
+        if (!navigator.permissions?.query) {
+            return;
+        }
+
+        navigator.permissions
+            .query({ name: 'geolocation' as PermissionName })
+            .then((res) => {
+                if (res.state === 'granted') {
+                    autoPingedRef.current = true;
+                    locate(false);
+                }
+            })
+            .catch(() => {});
+    }, [view, userLoc, locate]);
 
     // Fetch on filter change + sync URL (shareable, back-safe)
     useEffect(() => {
@@ -451,6 +536,10 @@ export default function Places() {
                         metaFor={placeMeta}
                         onOpen={openPlace}
                         onTakeMeThere={takeMeThere}
+                        userLocation={userLoc}
+                        onLocate={() => locate(true)}
+                        locating={locating}
+                        flyToToken={flyTo}
                     />
                 ) : status === 'loading' ? (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">

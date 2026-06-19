@@ -9,6 +9,7 @@ use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Profile\ProfileEngine;
+use App\Services\UserLocationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -24,6 +25,8 @@ use Illuminate\Support\Facades\DB;
  */
 class PlacesController extends Controller
 {
+    public function __construct(private readonly UserLocationService $locations) {}
+
     private const PER_PAGE = 20;
 
     private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park', 'culture'];
@@ -246,6 +249,14 @@ class PlacesController extends Controller
     private function anchor(Request $request, ProfileEngine $profiles): array
     {
         $user = $request->user();
+
+        // A live fix — fresh GPS, the "I'm here" confirmation, or a recent
+        // ping — beats any inferred anchor, so distances track where the user
+        // actually is. Falls through to the home/Veedel/Cologne chain below.
+        $live = $this->locations->liveCoords($user, $request);
+        if ($live !== null) {
+            return [$live['lat'], $live['lng']];
+        }
 
         $home = $user->places()->where('category', 'home')->first();
         if ($home?->lat && $home?->lng) {

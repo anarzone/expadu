@@ -1,5 +1,5 @@
-import { IconMapPin, IconX } from '@tabler/icons-react';
-import type { LngLatBoundsLike, Map as MaplibreMap } from 'maplibre-gl';
+import { IconCurrentLocation, IconMapPin, IconX } from '@tabler/icons-react';
+import type { LngLatBoundsLike, Map as MaplibreMap, Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 import { COLOGNE_CENTER, loadBasemap } from '@/lib/basemap';
@@ -18,17 +18,26 @@ export function PlacesMap({
     metaFor,
     onOpen,
     onTakeMeThere,
+    userLocation = null,
+    onLocate,
+    locating = false,
+    flyToToken = 0,
 }: {
     places: Place[];
     emojiFor: (place: Place) => string;
     metaFor: (place: Place) => string;
     onOpen: (place: Place) => void;
     onTakeMeThere: (place: Place) => void;
+    userLocation?: { lat: number; lng: number } | null;
+    onLocate?: () => void;
+    locating?: boolean;
+    flyToToken?: number;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MaplibreMap | null>(null);
     const basemapRef = useRef<Basemap | null>(null);
     const pinElsRef = useRef<Map<number, HTMLElement>>(new Map());
+    const userMarkerRef = useRef<Marker | null>(null);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading',
     );
@@ -176,6 +185,54 @@ export function PlacesMap({
         }
     }, [selectedId, places, status]);
 
+    // The "you are here" dot — its own persistent marker, untouched by the
+    // pin rebuild above. Follows the latest fix; removed when there's none.
+    useEffect(() => {
+        const map = mapRef.current;
+        const bm = basemapRef.current;
+
+        if (!map || !bm || status !== 'ready') {
+            return;
+        }
+
+        if (!userLocation) {
+            userMarkerRef.current?.remove();
+            userMarkerRef.current = null;
+
+            return;
+        }
+
+        if (userMarkerRef.current) {
+            userMarkerRef.current.setLngLat([
+                userLocation.lng,
+                userLocation.lat,
+            ]);
+        } else {
+            userMarkerRef.current = new bm.maplibregl.Marker({
+                element: makeUserDot(),
+            })
+                .setLngLat([userLocation.lng, userLocation.lat])
+                .addTo(map);
+        }
+    }, [userLocation, status]);
+
+    // Fly to the user only on an explicit "locate me" (the token bumps); a
+    // silent auto-locate updates the dot without yanking the viewport.
+    useEffect(() => {
+        if (!flyToToken || !userLocation) {
+            return;
+        }
+
+        mapRef.current?.easeTo({
+            center: [userLocation.lng, userLocation.lat],
+            zoom: 13.8,
+            duration: 600,
+        });
+        // Triggered by the token alone — userLocation is read fresh but must
+        // not itself re-fire the fly (that's the silent-locate path).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flyToToken]);
+
     return (
         <div className="relative h-[68vh] min-h-[440px] overflow-hidden rounded-2xl border border-border bg-secondary">
             <div ref={containerRef} className="h-full w-full" />
@@ -231,8 +288,41 @@ export function PlacesMap({
                     </button>
                 </div>
             )}
+
+            {/* Locate me — hidden while a place card is up (it sits there). */}
+            {onLocate && status === 'ready' && !selected && (
+                <button
+                    type="button"
+                    onClick={onLocate}
+                    disabled={locating}
+                    aria-label="Show my location"
+                    className="absolute bottom-3 left-3 z-10 grid size-11 place-items-center rounded-full border border-border bg-card text-primary shadow-lg transition-colors hover:bg-accent-soft disabled:opacity-60"
+                >
+                    <IconCurrentLocation
+                        size={20}
+                        stroke={ICON_STROKE}
+                        className={locating ? 'animate-pulse' : ''}
+                    />
+                </button>
+            )}
         </div>
     );
+}
+
+/** The "you are here" dot — accent core, white ring, soft halo. */
+function makeUserDot(): HTMLElement {
+    const el = document.createElement('div');
+    el.setAttribute('aria-label', 'Your location');
+    el.style.cssText = [
+        'width:16px',
+        'height:16px',
+        'border-radius:50%',
+        'background:var(--accent, #1A4CD4)',
+        'border:3px solid #fff',
+        'box-shadow:0 0 0 4px rgba(26,76,212,.25), 0 1px 4px rgba(24,23,15,.35)',
+    ].join(';');
+
+    return el;
 }
 
 /** Build a teardrop pin element (rotated square + counter-rotated emoji). */
