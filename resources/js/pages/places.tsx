@@ -129,7 +129,19 @@ export default function Places() {
     );
     const [locating, setLocating] = useState(false);
     const [flyTo, setFlyTo] = useState(0);
+    const [locateError, setLocateError] = useState<string | null>(null);
     const autoPingedRef = useRef(false);
+
+    // Auto-dismiss the locate error after a few seconds.
+    useEffect(() => {
+        if (!locateError) {
+            return;
+        }
+
+        const t = setTimeout(() => setLocateError(null), 4500);
+
+        return () => clearTimeout(t);
+    }, [locateError]);
 
     const fetchPage = useCallback(
         (
@@ -198,10 +210,15 @@ export default function Places() {
     const locate = useCallback(
         (fly: boolean) => {
             if (!('geolocation' in navigator)) {
+                if (fly) {
+                    setLocateError("This browser can't share your location.");
+                }
+
                 return;
             }
 
             setLocating(true);
+            setLocateError(null);
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude: lat, longitude: lng } = pos.coords;
@@ -226,7 +243,20 @@ export default function Places() {
                         .catch(() => {})
                         .finally(() => setLocating(false));
                 },
-                () => setLocating(false),
+                (err) => {
+                    setLocating(false);
+
+                    // A denied/blocked prompt is the common case — say so on an
+                    // explicit tap instead of failing silently (which reads as
+                    // "broken"). The silent auto-ping stays quiet.
+                    if (fly) {
+                        setLocateError(
+                            err.code === err.PERMISSION_DENIED
+                                ? 'Location is blocked — allow it in your browser to see distances from where you are.'
+                                : "Couldn't get your location — try again in a moment.",
+                        );
+                    }
+                },
                 {
                     enableHighAccuracy: false,
                     maximumAge: 120_000,
@@ -730,6 +760,7 @@ export default function Places() {
             )}
 
             <FeedbackToast message={toast} />
+            <FeedbackToast message={locateError} />
         </AppLayout>
     );
 }

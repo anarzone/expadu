@@ -38,6 +38,10 @@ export function PlacesMap({
     const basemapRef = useRef<Basemap | null>(null);
     const pinElsRef = useRef<Map<number, HTMLElement>>(new Map());
     const userMarkerRef = useRef<Marker | null>(null);
+    // Set when an explicit "locate me" flies to the user, so the very next
+    // pin rebuild (the distance refetch) doesn't yank the viewport back to a
+    // fit-all of the places and undo the fly.
+    const focusingRef = useRef(false);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading',
     );
@@ -148,7 +152,10 @@ export function PlacesMap({
                 .addTo(map);
         });
 
-        if (places.length > 0) {
+        if (places.length > 0 && focusingRef.current) {
+            // Consume the flag once: keep the just-flown view, skip this fit.
+            focusingRef.current = false;
+        } else if (places.length > 0) {
             const bounds = new bm.maplibregl.LngLatBounds();
             places.forEach((p) => bounds.extend([p.lng, p.lat]));
             map.fitBounds(bounds as LngLatBoundsLike, {
@@ -223,6 +230,9 @@ export function PlacesMap({
             return;
         }
 
+        // The distance refetch that follows would otherwise re-fit to all
+        // places; flag it so the pin rebuild keeps this view instead.
+        focusingRef.current = true;
         mapRef.current?.easeTo({
             center: [userLocation.lng, userLocation.lat],
             zoom: 13.8,

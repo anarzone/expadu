@@ -42,3 +42,6 @@ storage/certs/
 
 # Vector basemap tiles — large static artifact, transferred to the server, not committed
 public/maps/*.pmtiles
+
+# Playwright local screenshot artifacts
+tests/Browser/.artifacts/
