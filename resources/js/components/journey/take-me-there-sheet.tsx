@@ -103,6 +103,23 @@ function eur(value: number): string {
     return '€' + value.toFixed(2);
 }
 
+/** Straight-line km — only used to phrase the "no transit route" fallback. */
+function haversineKm(
+    a: { lat: number; lng: number },
+    b: { lat: number; lng: number },
+): number {
+    const r = 6371;
+    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    const s =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((a.lat * Math.PI) / 180) *
+            Math.cos((b.lat * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2;
+
+    return r * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
 function LegRow({ leg }: { leg: JourneyLeg }) {
     const isTransit = leg.mode !== 'walk';
     const ModeIcon = MODE_ICON[leg.mode] ?? IconWalk;
@@ -344,6 +361,9 @@ export function TakeMeThereSheet({
     const hasGeometry = (journey?.legs ?? []).some(
         (leg) => leg.polyline != null,
     );
+    // Straight-line distance, only to phrase the "no transit route" fallback
+    // honestly — a 5 km cross-Rhine place isn't "an easy walk".
+    const straightKm = data?.from ? haversineKm(data.from, destination) : null;
 
     const body = (
         <div className="pb-4">
@@ -425,17 +445,45 @@ export function TakeMeThereSheet({
                 </div>
             )}
 
-            {/* Loaded, but no transit route (usually because it's close enough to walk) */}
-            {data && !error && !journey && data.source !== 'degraded' && (
-                <div className="flex items-center justify-center gap-2 rounded-[9px] bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
-                    <IconWalk
-                        size={16}
-                        stroke={ICON_STROKE}
-                        className="shrink-0"
-                    />
-                    It's close — easy to walk or cycle. No transit needed.
-                </div>
-            )}
+            {/* Loaded, no transit route: walkable when genuinely close, else an
+                honest "no direct transit" with the real distance + maps handoff. */}
+            {data &&
+                !error &&
+                !journey &&
+                data.source !== 'degraded' &&
+                (straightKm != null && straightKm > 2 ? (
+                    <div className="rounded-[9px] bg-secondary px-4 py-3.5 text-sm text-muted-foreground">
+                        <div className="flex items-start gap-2">
+                            <IconBolt
+                                size={16}
+                                stroke={ICON_STROKE}
+                                className="mt-px shrink-0"
+                            />
+                            <span>
+                                No direct transit found — it's about{' '}
+                                {Math.round(straightKm)} km away (the far-north
+                                network is sparse).
+                            </span>
+                        </div>
+                        <a
+                            href={`https://www.google.com/maps/dir/?api=1&origin=${data.from!.lat},${data.from!.lng}&destination=${destination.lat},${destination.lng}&travelmode=transit`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2.5 inline-block rounded-[9px] border border-border bg-card px-3 py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
+                        >
+                            Open in Google Maps
+                        </a>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-center gap-2 rounded-[9px] bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
+                        <IconWalk
+                            size={16}
+                            stroke={ICON_STROKE}
+                            className="shrink-0"
+                        />
+                        It's close — easy to walk or cycle. No transit needed.
+                    </div>
+                ))}
 
             {/* Live journey */}
             {journey && (
@@ -459,6 +507,7 @@ export function TakeMeThereSheet({
                     {view === 'map' && hasGeometry ? (
                         <div className="mb-3">
                             <JourneyMap
+                                key={`${destination.lat},${destination.lng},${journey.depart_time}`}
                                 legs={journey.legs}
                                 origin={data?.from ?? null}
                                 destination={{

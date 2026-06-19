@@ -1,5 +1,5 @@
 import { Head, Deferred, usePage } from '@inertiajs/react';
-import { IconMap, IconChevronDown } from '@tabler/icons-react';
+import { IconChevronDown, IconList, IconMap } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
@@ -332,7 +332,12 @@ export default function Places() {
                                 : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
                         }`}
                     >
-                        <IconMap size={15} stroke={ICON_STROKE} /> Map view
+                        {view === 'map' ? (
+                            <IconList size={15} stroke={ICON_STROKE} />
+                        ) : (
+                            <IconMap size={15} stroke={ICON_STROKE} />
+                        )}{' '}
+                        {view === 'map' ? 'List view' : 'Map view'}
                     </button>
                 </div>
 

@@ -21,7 +21,12 @@ export function BottomSheet({
     const sheetRef = useRef<HTMLDivElement>(null);
     const handleRef = useRef<HTMLDivElement>(null);
     const onCloseRef = useRef(onClose);
-    onCloseRef.current = onClose;
+
+    // Keep the latest onClose without re-running the drag effect (which binds
+    // listeners once). Updating a ref in render is disallowed, so do it here.
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
 
     // Imperative drag — ported from prototype
     useEffect(() => {
@@ -57,10 +62,13 @@ export function BottomSheet({
 
             lastY = 'touches' in e ? e.touches[0].clientY : e.clientY;
             const delta = startY - lastY; // up = positive = taller
-            const newH = Math.max(
-                100,
-                Math.min(window.innerHeight, startH + delta),
-            );
+            // Cap at 92% of the *visual* viewport (accounts for iOS' dynamic
+            // toolbar) so the drag handle never slips above the visible area —
+            // otherwise the sheet gets stuck near-fullscreen with no way to pull
+            // it back down.
+            const maxH =
+                (window.visualViewport?.height ?? window.innerHeight) * 0.92;
+            const newH = Math.max(100, Math.min(maxH, startH + delta));
             sheet!.style.height = newH + 'px';
             e.preventDefault();
         }
@@ -84,9 +92,10 @@ export function BottomSheet({
                 return;
             }
 
-            // Snap: if dragged up past 85vh, snap to full. Otherwise snap to 72vh.
-            const fullH = window.innerHeight;
-            const snapFull = fullH * 0.95;
+            // Snap: dragged up past 80% → (capped) full, else 72vh. The cap
+            // keeps the handle on-screen so the sheet always stays draggable.
+            const fullH = window.visualViewport?.height ?? window.innerHeight;
+            const snapFull = fullH * 0.92;
             const snapDefault = fullH * 0.72;
 
             let target = snapDefault;
