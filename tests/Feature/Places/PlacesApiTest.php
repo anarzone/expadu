@@ -341,6 +341,20 @@ test('the list measures distance in the user transport mode', function () {
     expect($modes)->toContain('WALK');
 });
 
+test('the response carries the resolved origin for the From control', function () {
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
+
+    // A live fix → origin source 'live'.
+    $this->getJson('/api/places?lat=50.948&lng=6.921')
+        ->assertOk()
+        ->assertJsonPath('origin.source', 'live');
+
+    // No location, browsing all Cologne → none (never a guessed centre).
+    Redis::del("confirmed_location:{$this->user->id}");
+    Redis::del("location_history:{$this->user->id}");
+    $this->getJson('/api/places')->assertJsonPath('origin.source', 'none');
+});
+
 test('a confirmed location drives distance ordering', function () {
     // A stale fix from another test must not skew the baseline.
     Redis::del("confirmed_location:{$this->user->id}");

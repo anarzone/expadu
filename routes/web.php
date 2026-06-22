@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TakeMeThereController;
 use App\Http\Controllers\Api\TrackEventController;
+use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\ComposerController;
 use App\Http\Controllers\EventController;
@@ -93,6 +94,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
+        Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
 
         Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboarding');
         Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');

@@ -237,7 +237,15 @@ class PlacesController extends Controller
         }
 
         return PlaceResource::collection($paginator)
-            ->additional(['nearby_included' => $nearbyIncluded]);
+            ->additional([
+                'nearby_included' => $nearbyIncluded,
+                // The resolved origin so the From control reflects the truth:
+                // live / confirmed / area (browsed) / none (→ "set location").
+                'origin' => [
+                    'source' => $origin->source->value,
+                    'label' => $origin->label,
+                ],
+            ]);
     }
 
     /**

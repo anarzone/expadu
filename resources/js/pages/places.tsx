@@ -6,6 +6,11 @@ import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { categoryEmoji } from '@/components/places/category-illustration';
 import { ContentCard } from '@/components/places/content-card';
 import type { CardChip } from '@/components/places/content-card';
+import { FromControl } from '@/components/places/from-control';
+import type {
+    PlacesOrigin,
+    TransportMode,
+} from '@/components/places/from-control';
 import { PlaceDetail } from '@/components/places/place-detail';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
@@ -85,8 +90,9 @@ function placeEmoji(place: Place): string {
 }
 
 export default function Places() {
-    const { homeVeedel, homeBezirk, filters, bezirke, veedelsByBezirk } =
+    const { auth, homeVeedel, homeBezirk, filters, bezirke, veedelsByBezirk } =
         usePage<{
+            auth: { user: { transport_mode: TransportMode | null } };
             homeVeedel: string | null;
             homeBezirk: string | null;
             filters: {
@@ -131,6 +137,13 @@ export default function Places() {
     const [flyTo, setFlyTo] = useState(0);
     const [locateError, setLocateError] = useState<string | null>(null);
     const autoPingedRef = useRef(false);
+
+    // The resolved distance origin (from the API) + the chosen travel mode,
+    // surfaced together in the From control.
+    const [origin, setOrigin] = useState<PlacesOrigin | null>(null);
+    const [mode, setMode] = useState<TransportMode | null>(
+        auth.user.transport_mode ?? null,
+    );
 
     // Auto-dismiss the locate error after a few seconds.
     useEffect(() => {
@@ -185,6 +198,7 @@ export default function Places() {
                             (json.meta?.last_page ?? p),
                     );
                     setNearbyIncluded(json.nearby_included === true);
+                    setOrigin(json.origin ?? null);
                     setPage(p);
 
                     if (!append) {
@@ -263,6 +277,26 @@ export default function Places() {
                     timeout: 8000,
                 },
             );
+        },
+        [bezirk, veedel, category, fetchPage],
+    );
+
+    // Persist the chosen transport mode, then refetch so distances recompute in
+    // that mode (the server reads users.transport_mode).
+    const persistMode = useCallback(
+        (next: TransportMode) => {
+            setMode(next);
+            fetch('/api/preferences/transport-mode', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF(),
+                },
+                body: JSON.stringify({ mode: next }),
+            })
+                .then(() => fetchPage(bezirk, veedel, category, 1, false))
+                .catch(() => {});
         },
         [bezirk, veedel, category, fetchPage],
     );
@@ -549,6 +583,15 @@ export default function Places() {
                         );
                     })}
                 </div>
+
+                {/* From control — where distances are measured from + how */}
+                <FromControl
+                    origin={origin}
+                    mode={mode}
+                    locating={locating}
+                    onLocate={() => locate(true)}
+                    onMode={persistMode}
+                />
 
                 {/* Result count */}
                 {status === 'ok' && view === 'list' && (
