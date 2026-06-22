@@ -40,38 +40,6 @@ class UserLocationService
     }
 
     /**
-     * The user's *live* position only — a fresh GPS fix in the request, the
-     * explicit "I'm here" confirmation, or a recent ping — with no reverse
-     * geocoding and no inferred fallback (home/Veedel/default).
-     *
-     * Callers that just need coordinates to measure distance from (e.g. the
-     * Places list) use this so the answer tracks where the user actually is,
-     * and supply their own fallback anchor when it returns null.
-     *
-     * @return array{lat: float, lng: float}|null
-     */
-    public function liveCoords(User $user, ?Request $request = null): ?array
-    {
-        if ($request && is_numeric($request->query('lat')) && is_numeric($request->query('lng'))) {
-            $lat = (float) $request->query('lat');
-            $lng = (float) $request->query('lng');
-
-            if ($lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180) {
-                return ['lat' => $lat, 'lng' => $lng];
-            }
-        }
-
-        $confirmed = $this->getConfirmedLocation($user->id);
-        if ($confirmed) {
-            return ['lat' => $confirmed['lat'], 'lng' => $confirmed['lng']];
-        }
-
-        $ping = $this->getLastRedisPing($user->id);
-
-        return $ping ? ['lat' => $ping['lat'], 'lng' => $ping['lng']] : null;
-    }
-
-    /**
      * The single origin resolver for distance + routing, shared by the Places
      * list and take-me-there. Order:
      *

@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import {
     IconAlertTriangle,
     IconBike,
@@ -137,7 +138,13 @@ function formatDuration(min: number): string {
  */
 function pickDefaultMode(
     byMode: Map<JourneyMode, Journey>,
+    preferred?: JourneyMode | null,
 ): JourneyMode | null {
+    // The user's chosen default mode leads when it's actually available.
+    if (preferred && byMode.has(preferred)) {
+        return preferred;
+    }
+
     const transit = byMode.get('transit');
     const fastestDirect = [byMode.get('bike'), byMode.get('walk')]
         .filter((journey): journey is Journey => journey != null)
@@ -394,6 +401,10 @@ export function TakeMeThereSheet({
     const [view, setView] = useState<'list' | 'map'>('list');
     const [mode, setMode] = useState<JourneyMode | null>(null);
     const isMobile = useIsMobile();
+    // The user's default transport mode pre-selects the sheet so it opens in the
+    // mode the Places list / composer measured distances in.
+    const preferred = (usePage().props.auth.user.transport_mode ??
+        null) as JourneyMode | null;
 
     useEffect(() => {
         let cancelled = false;
@@ -477,7 +488,7 @@ export function TakeMeThereSheet({
         return journey ? [{ mode: m, journey }] : [];
     });
     const effectiveMode =
-        mode && byMode.has(mode) ? mode : pickDefaultMode(byMode);
+        mode && byMode.has(mode) ? mode : pickDefaultMode(byMode, preferred);
     const journey = effectiveMode ? (byMode.get(effectiveMode) ?? null) : null;
     const hasGeometry = (journey?.legs ?? []).some(
         (leg) => leg.polyline != null,
