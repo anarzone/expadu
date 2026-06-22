@@ -34,6 +34,9 @@ class PlacesController extends Controller
 
     private const PER_PAGE = 20;
 
+    /** "Near me" browse radius around the user's location. */
+    private const NEAR_RADIUS_KM = 3.0;
+
     private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park', 'culture'];
 
     /**
@@ -87,14 +90,18 @@ class PlacesController extends Controller
             'bezirk' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'in:'.implode(',', self::COARSE)],
             'page' => ['nullable', 'integer', 'min:1'],
+            'near' => ['nullable', 'boolean'],
         ]);
 
-        // The browsed Veedel is the fallback origin when we have no live fix —
-        // distances reflect the area you're looking at, never a guessed centre.
-        $browsedVeedel = (! empty($validated['veedel']) && $validated['veedel'] !== 'all')
+        // "Near me": browse a radius around the user's real location instead of
+        // an administrative Veedel. The origin must be a live fix (not an area),
+        // so we don't pass a browsed-Veedel fallback in that mode.
+        $near = $request->boolean('near');
+        $browsedVeedel = (! $near && ! empty($validated['veedel']) && $validated['veedel'] !== 'all')
             ? $validated['veedel']
             : null;
         $origin = $this->locations->context($request->user(), $request, $browsedVeedel);
+        $nearActive = $near && $origin->hasOrigin();
 
         // The user's place feedback: "not interested" drops out of the list
         // entirely; the rest carry their state through to a card badge.
@@ -141,7 +148,18 @@ class PlacesController extends Controller
 
         $nearbyIncluded = false;
         $selectedVeedel = null;
-        if (! empty($validated['veedel']) && $validated['veedel'] !== 'all') {
+        if ($nearActive) {
+            // Everything within ~3 km of where you are, closest-first — Veedel
+            // and Bezirk boundaries don't apply.
+            $query->whereRaw(
+                '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
+                [$origin->lat, $origin->lng, $origin->lat, self::NEAR_RADIUS_KM],
+            );
+        } elseif ($near) {
+            // Near requested but we don't know where the user is → empty; the
+            // response flags needs_location so the UI can prompt for a fix.
+            $query->whereRaw('1 = 0');
+        } elseif (! empty($validated['veedel']) && $validated['veedel'] !== 'all') {
             $veedel = $selectedVeedel = $validated['veedel'];
             $centroid = DB::table('veedels')
                 ->where('name', $veedel)
@@ -245,6 +263,8 @@ class PlacesController extends Controller
                     'source' => $origin->source->value,
                     'label' => $origin->label,
                 ],
+                // "Near me" was requested but we don't know where the user is.
+                'needs_location' => $near && ! $nearActive,
             ]);
     }
 

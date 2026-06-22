@@ -144,6 +144,8 @@ export default function Places() {
     const [mode, setMode] = useState<TransportMode | null>(
         auth.user.transport_mode ?? null,
     );
+    // "Near me" was requested but we have no location fix yet.
+    const [needsLocation, setNeedsLocation] = useState(false);
 
     // Auto-dismiss the locate error after a few seconds.
     useEffect(() => {
@@ -168,8 +170,11 @@ export default function Places() {
             busyRef.current = true;
             const params = new URLSearchParams({ page: String(p) });
 
-            // Stadtteil beats Bezirk; neither means all of Cologne.
-            if (v) {
+            // "Near me" → a radius around your location; else Stadtteil beats
+            // Bezirk; neither means all of Cologne.
+            if (b === 'near') {
+                params.set('near', '1');
+            } else if (v) {
                 params.set('veedel', v);
             } else if (b && b !== 'all') {
                 params.set('bezirk', b);
@@ -199,6 +204,7 @@ export default function Places() {
                     );
                     setNearbyIncluded(json.nearby_included === true);
                     setOrigin(json.origin ?? null);
+                    setNeedsLocation(json.needs_location === true);
                     setPage(p);
 
                     if (!append) {
@@ -332,7 +338,8 @@ export default function Places() {
 
         const params = new URLSearchParams();
 
-        if (bezirk && bezirk !== 'all') {
+        // 'near' is a transient mode, not a shareable area — keep it out of the URL.
+        if (bezirk && bezirk !== 'all' && bezirk !== 'near') {
             params.set('bezirk', bezirk);
         }
 
@@ -390,6 +397,62 @@ export default function Places() {
         setVeedel(null);
     }
 
+    // "Near me" — browse a radius around your location. If we have no fix yet,
+    // get one and confirm it first, then switch so the radius has an origin.
+    function goNearMe() {
+        setVeedel(null);
+
+        const known =
+            userLoc !== null ||
+            (origin !== null &&
+                (origin.source === 'live' ||
+                    origin.source === 'confirmed' ||
+                    origin.source === 'ping'));
+
+        if (known) {
+            setBezirk('near');
+
+            return;
+        }
+
+        if (!('geolocation' in navigator)) {
+            setLocateError("This browser can't share your location.");
+
+            return;
+        }
+
+        setLocating(true);
+        setLocateError(null);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude: lat, longitude: lng } = pos.coords;
+                setUserLoc({ lat, lng });
+
+                fetch('/api/location/confirm', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': CSRF(),
+                    },
+                    body: JSON.stringify({ lat, lng }),
+                })
+                    .then(() => setBezirk('near'))
+                    .catch(() => setBezirk('near'))
+                    .finally(() => setLocating(false));
+            },
+            (err) => {
+                setLocating(false);
+                setLocateError(
+                    err.code === err.PERMISSION_DENIED
+                        ? 'Location is blocked — allow it to see what’s near you.'
+                        : "Couldn't get your location — try again in a moment.",
+                );
+            },
+            { enableHighAccuracy: false, maximumAge: 120_000, timeout: 8000 },
+        );
+    }
+
     function openPlace(place: Place) {
         if (isMobile) {
             setExpandedId((id) => (id === place.id ? null : place.id));
@@ -431,7 +494,10 @@ export default function Places() {
     }
 
     const areaLabel =
-        veedel ?? (bezirk === 'all' ? 'All Cologne' : `Bezirk ${bezirk}`);
+        bezirk === 'near'
+            ? 'Near you'
+            : (veedel ??
+              (bezirk === 'all' ? 'All Cologne' : `Bezirk ${bezirk}`));
     const railOptions = bezirke ?? [];
     const chipOptions =
         bezirk !== 'all' ? (veedelsByBezirk?.[bezirk] ?? []) : [];
@@ -508,6 +574,14 @@ export default function Places() {
                         className="mb-4 flex gap-3 overflow-x-auto pb-1"
                         style={{ scrollbarWidth: 'none' }}
                     >
+                        <ContentCard
+                            variant="veedel"
+                            coarse="veedel"
+                            seed={null}
+                            title="📍 Near me"
+                            active={bezirk === 'near'}
+                            onActivate={goNearMe}
+                        />
                         <ContentCard
                             variant="veedel"
                             coarse="veedel"
@@ -635,6 +709,18 @@ export default function Places() {
                             className="mt-3 rounded-[9px] bg-primary px-4 py-2 text-[13px] font-semibold text-white"
                         >
                             Retry
+                        </button>
+                    </div>
+                ) : needsLocation ? (
+                    <div className="rounded-2xl border border-border bg-card p-8 text-center">
+                        <p className="text-sm text-muted-foreground">
+                            Turn on location to see what’s near you.
+                        </p>
+                        <button
+                            onClick={goNearMe}
+                            className="mt-3 rounded-[9px] bg-primary px-4 py-2 text-[13px] font-semibold text-white"
+                        >
+                            Use my location
                         </button>
                     </div>
                 ) : places.length === 0 ? (

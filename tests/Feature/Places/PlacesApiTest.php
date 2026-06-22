@@ -355,6 +355,27 @@ test('the response carries the resolved origin for the From control', function (
     $this->getJson('/api/places')->assertJsonPath('origin.source', 'none');
 });
 
+test('near mode lists places within a radius of the user, closest-first', function () {
+    app(UserLocationService::class)->confirm($this->user, 50.95, 6.92, 'Here');
+    Spot::factory()->create(['name' => 'Close park', 'category' => 'park', 'lat' => 50.951, 'lng' => 6.921]);
+    Spot::factory()->create(['name' => 'Far park', 'category' => 'park', 'veedel' => 'Porz', 'lat' => 50.88, 'lng' => 7.06]);
+
+    $names = collect($this->getJson('/api/places?near=1')->json('data'))->pluck('name')->all();
+
+    expect($names)->toContain('Close park');
+    expect($names)->not->toContain('Far park'); // >3 km away → outside the radius
+});
+
+test('near mode with no location flags needs_location and returns nothing', function () {
+    Redis::del("confirmed_location:{$this->user->id}");
+    Redis::del("location_history:{$this->user->id}");
+
+    $response = $this->getJson('/api/places?near=1');
+
+    $response->assertOk()->assertJsonPath('needs_location', true);
+    expect($response->json('data'))->toBe([]);
+});
+
 test('a confirmed location drives distance ordering', function () {
     // A stale fix from another test must not skew the baseline.
     Redis::del("confirmed_location:{$this->user->id}");
