@@ -79,7 +79,7 @@ class PlaceResource extends JsonResource
     private function resolveDistanceMin(): ?int
     {
         // Real one-to-many street time from MOTIS (set by the controller) wins
-        // when available — the honest "X min away" by bike from the anchor.
+        // when available — the honest "X min away" in the user's mode.
         $real = $this->travel_min ?? null;
         if ($real !== null) {
             return (int) $real;

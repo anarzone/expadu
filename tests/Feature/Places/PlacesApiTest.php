@@ -322,6 +322,25 @@ test('distance_min uses the real travel matrix, not the heuristic', function () 
     expect($data[0]['distance_min'])->toBe(9);
 });
 
+test('the list measures distance in the user transport mode', function () {
+    $this->user->update(['transport_mode' => 'walk']);
+
+    $modes = [];
+    $this->mock(RouteService::class, function ($mock) use (&$modes) {
+        $mock->shouldReceive('travelMatrix')->andReturnUsing(function ($origin, $destinations, $mode = 'BIKE') use (&$modes) {
+            $modes[] = $mode;
+
+            return array_fill(0, count($destinations), 7); // short walks → no bike fallback
+        });
+    });
+
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
+
+    $this->getJson('/api/places?veedel=Ehrenfeld&lat=50.948&lng=6.921')->assertOk();
+
+    expect($modes)->toContain('WALK');
+});
+
 test('a confirmed location drives distance ordering', function () {
     // A stale fix from another test must not skew the baseline.
     Redis::del("confirmed_location:{$this->user->id}");

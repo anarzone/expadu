@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
+use App\Enums\TransportMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Services\UserLocationService;
-use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\TravelTimes;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -28,7 +29,7 @@ class PlacesController extends Controller
 {
     public function __construct(
         private readonly UserLocationService $locations,
-        private readonly RouteService $routes,
+        private readonly TravelTimes $travel,
     ) {}
 
     private const PER_PAGE = 20;
@@ -69,7 +70,8 @@ class PlacesController extends Controller
         $spot->feedback_state = $row?->state?->value;
         $spot->feedback_rating = $row?->rating;
         $spot->travel_min = $origin->hasOrigin()
-            ? ($this->routes->travelMatrix(
+            ? ($this->travel->minutes(
+                $request->user()->transport_mode,
                 $origin->toGeoPoint(),
                 [new GeoPoint((float) $spot->lat, (float) $spot->lng)],
             )[0] ?? null)
@@ -227,7 +229,11 @@ class PlacesController extends Controller
         });
 
         if ($origin->hasOrigin()) {
-            $this->attachTravelMinutes($paginator->getCollection(), $origin->lat, $origin->lng);
+            $this->attachTravelMinutes(
+                $paginator->getCollection(),
+                $origin->toGeoPoint(),
+                $request->user()->transport_mode,
+            );
         }
 
         return PlaceResource::collection($paginator)
@@ -279,23 +285,23 @@ class PlacesController extends Controller
 
     /**
      * Replace the haversine estimate with real one-to-many street travel
-     * minutes (bike) from the anchor. Best-effort and order-preserving: any
-     * destination the engine can't reach stays null, and PlaceResource falls
-     * back to the heuristic for it.
+     * minutes from the origin, in the user's preferred mode (fastest realistic
+     * when unset). Best-effort and order-preserving: any destination the engine
+     * can't reach stays null, and PlaceResource falls back to the heuristic.
      *
      * @param  Collection<int, Spot>  $spots
      */
-    private function attachTravelMinutes($spots, float $anchorLat, float $anchorLng): void
+    private function attachTravelMinutes($spots, GeoPoint $origin, ?TransportMode $mode): void
     {
         if ($spots->isEmpty()) {
             return;
         }
 
         $list = $spots->values();
-        $minutes = $this->routes->travelMatrix(
-            new GeoPoint($anchorLat, $anchorLng),
+        $minutes = $this->travel->minutes(
+            $mode,
+            $origin,
             $list->map(fn (Spot $spot) => new GeoPoint((float) $spot->lat, (float) $spot->lng))->all(),
-            'BIKE',
         );
 
         foreach ($list as $i => $spot) {

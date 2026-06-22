@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
+use App\Enums\TransportMode;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -18,7 +19,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'bureaucracy_path', 'profile_attributes', 'interests', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
+#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'transport_mode', 'bureaucracy_path', 'profile_attributes', 'interests', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -46,6 +47,7 @@ class User extends Authenticatable implements FilamentUser
             'german_level' => GermanLevel::class,
             'is_eu' => 'boolean',
             'has_deutschlandticket' => 'boolean',
+            'transport_mode' => TransportMode::class,
             'profile_attributes' => 'array',
             'interests' => 'array',
         ];
