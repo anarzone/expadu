@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Composer\Contracts\EstimatesTravel;
 use Carbon\CarbonImmutable;
 
 /**
@@ -16,7 +17,7 @@ class SlotFiller
 
     public function __construct(
         private readonly PlanScorer $scorer,
-        private readonly TravelEstimator $travel,
+        private readonly EstimatesTravel $travel,
     ) {}
 
     /**

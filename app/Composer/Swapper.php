@@ -2,6 +2,8 @@
 
 namespace App\Composer;
 
+use App\Composer\Contracts\EstimatesTravel;
+
 /**
  * "Show me another" — re-scores ONE slot against its frozen neighbors
  * and returns the plan with the next-best alternative in place. The
@@ -12,7 +14,7 @@ class Swapper
 {
     public function __construct(
         private readonly PlanScorer $scorer,
-        private readonly TravelEstimator $travel,
+        private readonly EstimatesTravel $travel,
     ) {}
 
     /**

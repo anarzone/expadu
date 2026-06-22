@@ -2,13 +2,15 @@
 
 namespace App\Composer;
 
+use App\Composer\Contracts\EstimatesTravel;
+
 /**
  * Pure travel-time heuristic for plan composition. Walk under 1.2 km,
  * transit above (18 km/h effective + 7 min stop/wait overhead). Real
  * journeys come from RouteService only when the user taps "take me
  * there" on a slot — never during composition.
  */
-class TravelEstimator
+class TravelEstimator implements EstimatesTravel
 {
     private const WALK_KMH = 4.5;
 

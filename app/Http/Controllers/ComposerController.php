@@ -6,15 +6,19 @@ use App\Composer\AppointmentRepository;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
+use App\Composer\Contracts\EstimatesTravel;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
+use App\Composer\MatrixTravelEstimator;
 use App\Composer\Plan;
 use App\Composer\PlanNarrator;
+use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
+use App\Composer\TravelEstimator;
 use App\Enums\SpotCategory;
 use App\Models\User;
 use App\Models\UserEvent;
@@ -24,6 +28,8 @@ use App\Profile\ProfileEngine;
 use App\Services\GermanHolidayService;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
+use App\Transit\Dto\GeoPoint;
+use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,7 +72,6 @@ class ComposerController extends Controller
         CandidateRepository $candidates,
         AppointmentRepository $appointments,
         FeasibilityFilter $filter,
-        SlotFiller $filler,
         ProfileEngine $profiles,
         IntentWeights $intents,
     ): JsonResponse {
@@ -147,6 +152,9 @@ class ComposerController extends Controller
             ->unique(fn (Candidate $c) => $c->id)
             ->values()
             ->all();
+
+        $estimator = $this->travelEstimator($user, $originLat, $originLng, $pool);
+        $filler = new SlotFiller(new PlanScorer($estimator), $estimator);
         $plan = $filler->fill($constraints, $pool, $context, $originLat, $originLng);
 
         Cache::put($this->planKey($user), $plan->toArray() + [
@@ -212,7 +220,6 @@ class ComposerController extends Controller
         CandidateRepository $candidates,
         AppointmentRepository $appointments,
         FeasibilityFilter $filter,
-        Swapper $swapper,
         ProfileEngine $profiles,
         IntentWeights $intents,
     ): JsonResponse {
@@ -274,6 +281,8 @@ class ComposerController extends Controller
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
             ->values()
             ->all();
+        $estimator = $this->travelEstimator($user, $originLat, $originLng, $feasible);
+        $swapper = new Swapper(new PlanScorer($estimator), $estimator);
         $swapped = $swapper->swap($plan, $slotIndex, $feasible, $context, $originLat, $originLng, $rejected);
 
         if ($swapped === null) {
@@ -386,6 +395,50 @@ class ComposerController extends Controller
         return $context->hasOrigin()
             ? [$context->lat, $context->lng]
             : [50.9375, 6.9603]; // Cologne centre — a plan must start somewhere
+    }
+
+    /**
+     * Real one-to-many street minutes from the origin to the candidate pool, in
+     * the user's mode, wrapped so the pipeline uses them for the origin leg and
+     * the haversine heuristic for everything else. Falls back to pure haversine
+     * when MOTIS is unavailable, so a plan always composes.
+     *
+     * @param  list<Candidate>  $pool
+     */
+    private function travelEstimator(User $user, float $originLat, float $originLng, array $pool): EstimatesTravel
+    {
+        $fallback = new TravelEstimator;
+        if ($pool === []) {
+            return $fallback;
+        }
+
+        $candidates = array_values($pool);
+        $destinations = array_map(
+            fn (Candidate $c) => new GeoPoint((float) $c->lat, (float) $c->lng),
+            $candidates,
+        );
+
+        try {
+            $minutes = app(TravelTimes::class)->minutes(
+                $user->transport_mode,
+                new GeoPoint($originLat, $originLng),
+                $destinations,
+            );
+        } catch (\Throwable) {
+            return $fallback;
+        }
+
+        $map = [];
+        foreach ($candidates as $i => $candidate) {
+            $real = $minutes[$i] ?? null;
+            if ($real !== null) {
+                $map[MatrixTravelEstimator::coordKey((float) $candidate->lat, (float) $candidate->lng)] = $real;
+            }
+        }
+
+        return $map === []
+            ? $fallback
+            : new MatrixTravelEstimator($fallback, $originLat, $originLng, $map);
     }
 
     /**

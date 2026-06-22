@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Composer\Contracts\EstimatesTravel;
 use App\Profile\CategoryAffinity;
 use Carbon\CarbonImmutable;
 
@@ -26,7 +27,7 @@ class PlanScorer
     ];
 
     public function __construct(
-        private readonly TravelEstimator $travel,
+        private readonly EstimatesTravel $travel,
     ) {}
 
     /**

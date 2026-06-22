@@ -8,11 +8,15 @@ use App\Models\UserEvent;
 use App\Models\UserPlace;
 use App\Models\UserTask;
 use App\Services\UserLocationService;
+use App\Transit\Contracts\RouteService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     Cache::flush();
+    // No stray HTTP: the composer's one-to-many origin matrix is faked away, so
+    // compose falls back to the haversine estimate (as before the MOTIS wiring).
+    Http::fake();
 });
 
 function composerUser(): User
@@ -243,6 +247,7 @@ test('compose weaves a booked appointment as an immovable anchor', function () {
                 ['geometry' => ['coordinates' => [7.0009, 50.9416]], 'properties' => ['name' => 'Ausländerbehörde']],
             ],
         ]),
+        '*' => Http::response(), // MOTIS origin matrix → empty → haversine
     ]);
 
     $user = composerUser();
@@ -281,7 +286,7 @@ test('compose weaves a booked appointment as an immovable anchor', function () {
 });
 
 test('an appointment anchor refuses to swap', function () {
-    Http::fake(['photon.komoot.io/*' => Http::response(['features' => []])]);
+    Http::fake(['photon.komoot.io/*' => Http::response(['features' => []]), '*' => Http::response()]);
 
     $user = composerUser();
     Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
@@ -452,4 +457,27 @@ test('compose starts the plan from the resolved origin, not home', function () {
     ]);
 
     $response->assertOk()->assertJsonPath('origin.source', 'confirmed');
+});
+
+test('the origin leg uses the real travel matrix in the composer', function () {
+    // One candidate + a mocked one-to-many → the placed slot's travel-from-
+    // origin is the real 42 min, not the haversine estimate (~a few min).
+    $this->mock(RouteService::class, function ($mock) {
+        $mock->shouldReceive('travelMatrix')->andReturn([42]);
+    });
+
+    $user = composerUser(); // confirmed fix is the origin
+    Spot::factory()->create(['name' => 'Solo Park', 'category' => 'park', 'lat' => 50.951, 'lng' => 6.93]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+        ],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('plan.slots.0.travel_min_from_previous'))->toBe(42);
 });
