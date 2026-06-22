@@ -2,22 +2,24 @@
 
 namespace App\Services;
 
+use App\Enums\LocationSource;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 
 /**
- * Single source of truth for a user's current location.
+ * Single source of truth for a user's location.
  *
- * Priority:
- * 1. GPS coordinates from request params (lat/lng)
- * 2. Explicitly confirmed location ("I'm here" chip, 2h validity)
- * 3. Last known GPS ping from Redis (stored by EventTrackingService, 7-day TTL)
- * 4. Home place coordinates (user's first place by sort_order)
- * 5. Default: central Cologne (50.9375, 6.9603)
+ * {@see self::context()} is the canonical resolver shared by the Places list
+ * and take-me-there so they never disagree: explicit From (live coords /
+ * picked area) → confirmed "I'm here" → recent ping → browsed-area centroid →
+ * none. It never falls back to home/work or a guessed city centre.
  *
- * Use this service instead of ad-hoc location resolution in controllers.
+ * {@see self::resolve()} is the older, fuller-detail variant (carries a
+ * reverse-geocoded name) still used by the Inertia share + timetable; it keeps
+ * the legacy home/centre fallback and is being retired.
  */
 class UserLocationService
 {
@@ -67,6 +69,75 @@ class UserLocationService
         $ping = $this->getLastRedisPing($user->id);
 
         return $ping ? ['lat' => $ping['lat'], 'lng' => $ping['lng']] : null;
+    }
+
+    /**
+     * The single origin resolver for distance + routing, shared by the Places
+     * list and take-me-there. Order:
+     *
+     * 1. An explicit live GPS fix in the request (lat/lng).
+     * 2. An explicitly picked area ("From · {Veedel}", from_area).
+     * 3. The "I'm here" confirmation.
+     * 4. A recent GPS ping.
+     * 5. The area currently being browsed ($fallbackArea) — distances relative
+     *    to what you're looking at.
+     * 6. None — no origin; the caller shows a "set your location" affordance
+     *    and never measures from a guessed home/centre.
+     */
+    public function context(User $user, ?Request $request = null, ?string $fallbackArea = null): LocationContext
+    {
+        if ($request && is_numeric($request->query('lat')) && is_numeric($request->query('lng'))) {
+            $lat = (float) $request->query('lat');
+            $lng = (float) $request->query('lng');
+
+            if ($lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180) {
+                return new LocationContext($lat, $lng, LocationSource::Live, 'Your location');
+            }
+        }
+
+        $pickedArea = $request?->query('from_area');
+        if (is_string($pickedArea) && $pickedArea !== '') {
+            $centroid = $this->areaCentroid($pickedArea);
+            if ($centroid) {
+                return new LocationContext($centroid['lat'], $centroid['lng'], LocationSource::Area, $pickedArea);
+            }
+        }
+
+        $confirmed = $this->getConfirmedLocation($user->id);
+        if ($confirmed) {
+            return new LocationContext($confirmed['lat'], $confirmed['lng'], LocationSource::Confirmed, $confirmed['name'] ?: 'Your location');
+        }
+
+        $ping = $this->getLastRedisPing($user->id);
+        if ($ping) {
+            return new LocationContext($ping['lat'], $ping['lng'], LocationSource::Ping, 'Your location');
+        }
+
+        if ($fallbackArea !== null && $fallbackArea !== '') {
+            $centroid = $this->areaCentroid($fallbackArea);
+            if ($centroid) {
+                return new LocationContext($centroid['lat'], $centroid['lng'], LocationSource::Area, $fallbackArea);
+            }
+        }
+
+        return new LocationContext(null, null, LocationSource::None);
+    }
+
+    /**
+     * The stored centroid of a Veedel, if we have one.
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    private function areaCentroid(string $veedel): ?array
+    {
+        $row = DB::table('veedels')
+            ->where('name', $veedel)
+            ->whereNotNull('centroid_lat')
+            ->first(['centroid_lat', 'centroid_lng']);
+
+        return $row
+            ? ['lat' => (float) $row->centroid_lat, 'lng' => (float) $row->centroid_lng]
+            : null;
     }
 
     /**

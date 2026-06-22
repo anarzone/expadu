@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
-use App\Profile\ProfileEngine;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
@@ -21,9 +20,9 @@ use Illuminate\Support\Facades\DB;
  * GET /api/places?veedel=&category=&page=
  *
  * Lists physical-leisure places from our own seeded DB — no live
- * third-party calls. Distance is computed from the user's anchor
- * (home place → Veedel centroid → Cologne centre); transit_hint is the
- * nearest GTFS stop (our static data, not a routing API).
+ * third-party calls. Distance is measured from the shared origin
+ * (UserLocationService::context — live fix / picked or browsed area, else
+ * none); transit_hint is the nearest GTFS stop (our static data).
  */
 class PlacesController extends Controller
 {
@@ -46,11 +45,13 @@ class PlacesController extends Controller
      * One place with the full card contract — used when the detail swaps
      * to a nearby place without going through the list.
      */
-    public function show(Request $request, Spot $spot, ProfileEngine $profiles): PlaceResource
+    public function show(Request $request, Spot $spot): PlaceResource
     {
-        [$anchorLat, $anchorLng] = $this->anchor($request, $profiles);
+        $origin = $this->locations->context($request->user(), $request);
 
-        $spot->distance_km = $this->haversineKm($anchorLat, $anchorLng, (float) $spot->lat, (float) $spot->lng);
+        $spot->distance_km = $origin->hasOrigin()
+            ? $this->haversineKm($origin->lat, $origin->lng, (float) $spot->lat, (float) $spot->lng)
+            : null;
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
         $spot->activities = $this->activitiesForParks(collect([$spot]))[$spot->name] ?? [];
         $spot->cluster_size = Spot::query()
@@ -67,15 +68,17 @@ class PlacesController extends Controller
             ->first();
         $spot->feedback_state = $row?->state?->value;
         $spot->feedback_rating = $row?->rating;
-        $spot->travel_min = $this->routes->travelMatrix(
-            new GeoPoint($anchorLat, $anchorLng),
-            [new GeoPoint((float) $spot->lat, (float) $spot->lng)],
-        )[0] ?? null;
+        $spot->travel_min = $origin->hasOrigin()
+            ? ($this->routes->travelMatrix(
+                $origin->toGeoPoint(),
+                [new GeoPoint((float) $spot->lat, (float) $spot->lng)],
+            )[0] ?? null)
+            : null;
 
         return new PlaceResource($spot);
     }
 
-    public function index(Request $request, ProfileEngine $profiles): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         $validated = $request->validate([
             'veedel' => ['nullable', 'string', 'max:100'],
@@ -84,7 +87,12 @@ class PlacesController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        [$anchorLat, $anchorLng] = $this->anchor($request, $profiles);
+        // The browsed Veedel is the fallback origin when we have no live fix —
+        // distances reflect the area you're looking at, never a guessed centre.
+        $browsedVeedel = (! empty($validated['veedel']) && $validated['veedel'] !== 'all')
+            ? $validated['veedel']
+            : null;
+        $origin = $this->locations->context($request->user(), $request, $browsedVeedel);
 
         // The user's place feedback: "not interested" drops out of the list
         // entirely; the rest carry their state through to a card badge.
@@ -165,12 +173,18 @@ class PlacesController extends Controller
         // in one park corner). Collapse same-name clusters within a ~100m grid
         // cell into one card carrying cluster_size; distinct locations further
         // apart stay separate.
-        $query
-            ->select('*')
-            ->selectRaw(
+        $query->select('*');
+
+        if ($origin->hasOrigin()) {
+            $query->selectRaw(
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as distance_km',
-                [$anchorLat, $anchorLng, $anchorLat],
-            )
+                [$origin->lat, $origin->lng, $origin->lat],
+            );
+        } else {
+            $query->selectRaw('NULL::float8 as distance_km');
+        }
+
+        $query
             ->selectRaw('count(*) over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3)) as cluster_size')
             ->selectRaw('row_number() over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3) order by id) as cluster_rank');
 
@@ -187,9 +201,16 @@ class PlacesController extends Controller
             $outer->orderByRaw('(veedel IS NOT DISTINCT FROM ?) desc', [$selectedVeedel]);
         }
 
+        $outer->orderByRaw("(name !~ '".self::GENERIC_NAME_REGEX."') desc");
+
+        // Closest-first only when we actually have an origin; otherwise a
+        // stable id order — no fake distance to sort by.
+        if ($origin->hasOrigin()) {
+            $outer->orderBy('distance_km');
+        }
+
         $paginator = $outer
-            ->orderByRaw("(name !~ '".self::GENERIC_NAME_REGEX."') desc")
-            ->orderBy('distance_km')
+            ->orderBy('id')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 
         $activities = $this->activitiesForParks($paginator->getCollection());
@@ -205,7 +226,9 @@ class PlacesController extends Controller
             return $spot;
         });
 
-        $this->attachTravelMinutes($paginator->getCollection(), $anchorLat, $anchorLng);
+        if ($origin->hasOrigin()) {
+            $this->attachTravelMinutes($paginator->getCollection(), $origin->lat, $origin->lng);
+        }
 
         return PlaceResource::collection($paginator)
             ->additional(['nearby_included' => $nearbyIncluded]);
@@ -252,40 +275,6 @@ class PlacesController extends Controller
     private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
         return 6371 * acos(min(1, cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($lng2) - deg2rad($lng1)) + sin(deg2rad($lat1)) * sin(deg2rad($lat2))));
-    }
-
-    /**
-     * @return array{0: float, 1: float}
-     */
-    private function anchor(Request $request, ProfileEngine $profiles): array
-    {
-        $user = $request->user();
-
-        // A live fix — fresh GPS, the "I'm here" confirmation, or a recent
-        // ping — beats any inferred anchor, so distances track where the user
-        // actually is. Falls through to the home/Veedel/Cologne chain below.
-        $live = $this->locations->liveCoords($user, $request);
-        if ($live !== null) {
-            return [$live['lat'], $live['lng']];
-        }
-
-        $home = $user->places()->where('category', 'home')->first();
-        if ($home?->lat && $home?->lng) {
-            return [(float) $home->lat, (float) $home->lng];
-        }
-
-        $veedel = $profiles->build($user)->veedel;
-        if ($veedel) {
-            $row = DB::table('veedels')
-                ->where('name', $veedel)
-                ->whereNotNull('centroid_lat')
-                ->first(['centroid_lat', 'centroid_lng']);
-            if ($row) {
-                return [(float) $row->centroid_lat, (float) $row->centroid_lng];
-            }
-        }
-
-        return [50.9375, 6.9603]; // Cologne centre
     }
 
     /**

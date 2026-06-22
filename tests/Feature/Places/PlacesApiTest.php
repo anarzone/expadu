@@ -243,7 +243,8 @@ test('shows a single place with the full card contract', function () {
     // Cluster sibling at the same corner
     Spot::factory()->create(['name' => 'Grüngürtel court', 'category' => 'basketball', 'veedel' => 'Ehrenfeld', 'lat' => 50.9491, 'lng' => 6.9221]);
 
-    $response = $this->getJson("/api/places/{$spot->id}");
+    // A live fix in the request is the origin (home no longer anchors distance).
+    $response = $this->getJson("/api/places/{$spot->id}?lat=50.948&lng=6.921");
 
     $response->assertOk();
     $response->assertJsonPath('data.id', $spot->id);
@@ -297,11 +298,12 @@ test('rejects an unknown coarse category', function () {
     $this->getJson('/api/places?category=nightclub')->assertUnprocessable();
 });
 
-test('orders by distance from the home anchor', function () {
+test('orders by distance from the resolved origin', function () {
     $near = Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
     $far = Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.99, 'lng' => 7.00]);
 
-    $ids = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
+    // A live fix next to $near orders it ahead of $far.
+    $ids = collect($this->getJson('/api/places?lat=50.949&lng=6.922')->json('data'))->pluck('id')->all();
     expect(array_search($near->id, $ids))->toBeLessThan(array_search($far->id, $ids));
 });
 
@@ -314,31 +316,27 @@ test('distance_min uses the real travel matrix, not the heuristic', function () 
 
     Spot::factory()->create(['name' => 'Bike park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
 
-    $data = $this->getJson('/api/places?veedel=Ehrenfeld')->json('data');
+    // A live fix gives the list an origin to measure from.
+    $data = $this->getJson('/api/places?veedel=Ehrenfeld&lat=50.948&lng=6.921')->json('data');
 
     expect($data[0]['distance_min'])->toBe(9);
 });
 
-test('a confirmed live location overrides the home anchor for distance', function () {
-    // A stale anchor from another test must not skew the baseline.
+test('a confirmed location drives distance ordering', function () {
+    // A stale fix from another test must not skew the baseline.
     Redis::del("confirmed_location:{$this->user->id}");
     Redis::del("location_history:{$this->user->id}");
 
-    // Home is at 50.948, 6.921 (seeded in beforeEach).
-    $byHome = Spot::factory()->create(['name' => 'By home', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.922]);
+    $byEhrenfeld = Spot::factory()->create(['name' => 'By Ehrenfeld', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.922]);
     $acrossTown = Spot::factory()->create(['name' => 'Across town', 'category' => 'park', 'lat' => 50.99, 'lng' => 7.05]);
-
-    // Without a live fix, the park by home ranks first.
-    $home = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
-    expect(array_search($byHome->id, $home))->toBeLessThan(array_search($acrossTown->id, $home));
 
     // Stand the user next to the across-town park (name set, so confirm skips
     // the reverse-geocode network call).
     app(UserLocationService::class)->confirm($this->user, 50.99, 7.05, 'Across town');
 
-    // Now distances are measured from the fix, flipping the order.
-    $live = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
-    expect(array_search($acrossTown->id, $live))->toBeLessThan(array_search($byHome->id, $live));
+    // Distances are measured from the confirmed fix → across-town ranks first.
+    $ids = collect($this->getJson('/api/places')->json('data'))->pluck('id')->all();
+    expect(array_search($acrossTown->id, $ids))->toBeLessThan(array_search($byEhrenfeld->id, $ids));
 });
 
 test('the show endpoint exposes the viewer’s feedback state and rating', function () {

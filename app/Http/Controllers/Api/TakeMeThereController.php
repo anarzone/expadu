@@ -13,10 +13,11 @@ use Illuminate\Http\Request;
 
 /**
  * "Take me there" — the only journey-planning surface in v2. Every entity
- * (office, place, event) opens this with a destination; origin defaults
- * to the user's resolved location anchor chain (GPS → confirmed → home).
- * The response carries journey-aware Rheinlandtarif fare advice (FareAdvisor)
- * and disruptions filtered to the journey's lines.
+ * (office, place, event) opens this with a destination; origin comes from the
+ * shared resolver (UserLocationService::context — live / confirmed / ping),
+ * with a last-resort fallback when nothing is known. The response carries
+ * journey-aware Rheinlandtarif fare advice (FareAdvisor) and disruptions
+ * filtered to the journey's lines.
  */
 class TakeMeThereController extends Controller
 {
@@ -40,9 +41,22 @@ class TakeMeThereController extends Controller
             $from = new GeoPoint((float) $validated['from_lat'], (float) $validated['from_lng']);
             $fromName = 'Your location';
         } else {
-            $resolved = app(UserLocationService::class)->resolve($user, $request);
-            $from = new GeoPoint((float) $resolved['lat'], (float) $resolved['lng']);
-            $fromName = (string) ($resolved['name'] ?? 'Your location');
+            $locations = app(UserLocationService::class);
+            $origin = $locations->context($user, $request);
+
+            if ($origin->hasOrigin()) {
+                // Same origin the Places list measured from → the sheet headline
+                // and the card "min away" agree by construction.
+                $from = new GeoPoint((float) $origin->lat, (float) $origin->lng);
+                $fromName = $origin->label ?? 'Your location';
+            } else {
+                // Nothing known and no explicit origin passed — last resort so
+                // the journey still renders. The From control (later slice)
+                // makes this path rare by always passing an origin.
+                $resolved = $locations->resolve($user, $request);
+                $from = new GeoPoint((float) $resolved['lat'], (float) $resolved['lng']);
+                $fromName = (string) ($resolved['name'] ?? 'Your location');
+            }
         }
 
         $to = new GeoPoint((float) $validated['to_lat'], (float) $validated['to_lng']);
