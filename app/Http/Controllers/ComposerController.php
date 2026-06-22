@@ -22,6 +22,7 @@ use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\GermanHolidayService;
+use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -111,7 +112,13 @@ class ComposerController extends Controller
             affinity: CategoryAffinity::map($profile),
         );
 
-        [$originLat, $originLng] = $this->origin($user);
+        // The plan's start: the shared origin (live / confirmed / recent ping),
+        // else the area being planned, else Cologne centre. The user's home is
+        // no longer a hidden anchor.
+        $originContext = app(UserLocationService::class)->context($user, $request, $constraints->areas[0] ?? null);
+        [$originLat, $originLng] = $originContext->hasOrigin()
+            ? [$originContext->lat, $originContext->lng]
+            : [50.9375, 6.9603];
 
         // Leisure runs the feasibility gauntlet; appointments and pinned/locked
         // picks bypass it (the user chose them). "Excluded" picks (removed, or
@@ -152,6 +159,10 @@ class ComposerController extends Controller
             'plan' => $plan->toArray(),
             'notices' => $this->notices($constraints, $plan, $poolRelaxed),
             'facets' => $this->facets($rawPool, $profile),
+            'origin' => [
+                'source' => $originContext->source->value,
+                'label' => $originContext->label,
+            ],
         ]);
     }
 
@@ -370,12 +381,11 @@ class ComposerController extends Controller
      */
     private function origin(User $user): array
     {
-        $home = $user->places()->where('category', 'home')->first();
-        if ($home?->lat && $home?->lng) {
-            return [(float) $home->lat, (float) $home->lng];
-        }
+        $context = app(UserLocationService::class)->context($user);
 
-        return [50.9375, 6.9603]; // Cologne centre
+        return $context->hasOrigin()
+            ? [$context->lat, $context->lng]
+            : [50.9375, 6.9603]; // Cologne centre — a plan must start somewhere
     }
 
     /**

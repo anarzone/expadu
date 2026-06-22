@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
 use App\Models\UserTask;
+use App\Services\UserLocationService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -23,6 +24,8 @@ function composerUser(): User
         'lat' => 50.9485,
         'lng' => 6.9230,
     ]);
+    // An explicit "I'm here" fix is the plan's origin now (home no longer anchors).
+    app(UserLocationService::class)->confirm($user, 50.9485, 6.9230, 'Home');
 
     return $user;
 }
@@ -175,6 +178,7 @@ test('a nightlife interest steers the composed plan toward a bar', function () {
         'interests' => ['nightlife'],
     ]);
     UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home', 'lat' => 50.9485, 'lng' => 6.9230]);
+    app(UserLocationService::class)->confirm($user, 50.9485, 6.9230, 'Home');
     Spot::factory()->create(['name' => 'Late Bar', 'category' => 'bar', 'lat' => 50.9480, 'lng' => 6.9240]);
     Spot::factory()->create(['name' => 'Quiet Cafe', 'category' => 'cafe', 'lat' => 50.9481, 'lng' => 6.9241]);
 
@@ -432,4 +436,20 @@ test('a thin filter combination still returns a plan instead of nothing', functi
     $response->assertOk();
     expect($response->json('plan.slots'))->not->toBeEmpty();
     expect(collect($response->json('notices'))->pluck('text')->implode(' '))->toContain('widened');
+});
+
+test('compose starts the plan from the resolved origin, not home', function () {
+    $user = composerUser(); // confirmed fix at 50.9485, 6.9230
+    Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+        ],
+    ]);
+
+    $response->assertOk()->assertJsonPath('origin.source', 'confirmed');
 });

@@ -86,16 +86,18 @@ class UserLocationService
      */
     public function context(User $user, ?Request $request = null, ?string $fallbackArea = null): LocationContext
     {
-        if ($request && is_numeric($request->query('lat')) && is_numeric($request->query('lng'))) {
-            $lat = (float) $request->query('lat');
-            $lng = (float) $request->query('lng');
+        // input() (not query()) so an explicit From works from both the Places
+        // GET query string and the composer's POST body.
+        if ($request && is_numeric($request->input('lat')) && is_numeric($request->input('lng'))) {
+            $lat = (float) $request->input('lat');
+            $lng = (float) $request->input('lng');
 
             if ($lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180) {
                 return new LocationContext($lat, $lng, LocationSource::Live, 'Your location');
             }
         }
 
-        $pickedArea = $request?->query('from_area');
+        $pickedArea = $request?->input('from_area');
         if (is_string($pickedArea) && $pickedArea !== '') {
             $centroid = $this->areaCentroid($pickedArea);
             if ($centroid) {

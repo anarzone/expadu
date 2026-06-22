@@ -30,6 +30,7 @@ import {
     categoryEmoji,
     categoryIcon,
 } from '@/components/places/category-illustration';
+import type { PlacesOrigin } from '@/components/places/from-control';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import type { Place } from '@/components/places/types';
@@ -376,12 +377,18 @@ function EditableFilters({
     constraints,
     facets,
     homeVeedel,
+    origin,
+    locating,
+    onLocate,
     onChange,
     onStartOver,
 }: {
     constraints: Constraints;
     facets: Facets;
     homeVeedel: string | null;
+    origin: PlacesOrigin | null;
+    locating: boolean;
+    onLocate: () => void;
     onChange: (patch: Partial<Constraints>) => void;
     onStartOver: () => void;
 }) {
@@ -396,12 +403,35 @@ function EditableFilters({
         budget !== '' ||
         vibe !== '';
 
+    // Where the plan starts from — the same shared origin the Places list uses.
+    const fromKnown = origin !== null && origin.source !== 'none';
+    const fromLabel = locating
+        ? 'Locating…'
+        : origin === null || origin.source === 'none'
+          ? 'Set start'
+          : origin.source === 'area'
+            ? `From ${origin.label ?? 'area'}`
+            : (origin.label ?? 'Your location');
+
     return (
         <div className="mb-5">
             <div className="mb-2 font-mono text-[10px] tracking-[0.1em] text-muted-foreground/70 uppercase">
                 I understood — tap any to change
             </div>
             <div className="flex flex-wrap items-center gap-2">
+                <button
+                    type="button"
+                    onClick={onLocate}
+                    aria-label="Set where the plan starts from"
+                    className={`${CHIP} ${fromKnown ? 'border-primary bg-accent-soft text-primary' : 'border-border bg-card text-foreground hover:border-primary'}`}
+                >
+                    <IconMapPin
+                        size={14}
+                        stroke={ICON_STROKE}
+                        className="opacity-70"
+                    />
+                    {fromLabel}
+                </button>
                 <SingleFilter
                     label={
                         TIME_OPTS.find(
@@ -606,6 +636,8 @@ export default function Composer() {
     const [archetype, setArchetype] = useState<string | null>(null);
     const [locked, setLocked] = useState<string[]>([]);
     const [excluded, setExcluded] = useState<string[]>([]);
+    const [origin, setOrigin] = useState<PlacesOrigin | null>(null);
+    const [locating, setLocating] = useState(false);
     const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
     const isMobile = useIsMobile();
     // Guards against parsing the same prompt twice (React strict-mode
@@ -629,6 +661,7 @@ export default function Composer() {
                     plan: Plan;
                     notices: Notice[];
                     facets?: Facets;
+                    origin?: PlacesOrigin;
                 }>('/composer/compose', {
                     constraints: {
                         ...next,
@@ -640,6 +673,7 @@ export default function Composer() {
                 });
                 setPlan(json.plan);
                 setNotices(json.notices ?? []);
+                setOrigin(json.origin ?? null);
 
                 if (json.facets) {
                     setFacets(json.facets);
@@ -816,6 +850,33 @@ export default function Composer() {
         void runCompose(constraints, { archetype, locked, excluded });
     }
 
+    // The From chip: get a fresh GPS fix, persist it as the shared "I'm here"
+    // anchor, then recompose so the plan starts from where you actually are.
+    function locateFrom() {
+        if (!('geolocation' in navigator) || !constraints) {
+            return;
+        }
+
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude: lat, longitude: lng } = pos.coords;
+                post('/api/location/confirm', { lat, lng })
+                    .then(() =>
+                        runCompose(constraints, {
+                            archetype,
+                            locked,
+                            excluded,
+                        }),
+                    )
+                    .catch(() => {})
+                    .finally(() => setLocating(false));
+            },
+            () => setLocating(false),
+            { enableHighAccuracy: false, maximumAge: 120_000, timeout: 8000 },
+        );
+    }
+
     const planMode = intent === 'plan_day';
     const weekday = constraints
         ? new Date(constraints.window_start).toLocaleDateString('en-GB', {
@@ -874,6 +935,9 @@ export default function Composer() {
                         constraints={constraints}
                         facets={facets}
                         homeVeedel={homeVeedel ?? null}
+                        origin={origin}
+                        locating={locating}
+                        onLocate={locateFrom}
                         onChange={updateConstraint}
                         onStartOver={startOver}
                     />
