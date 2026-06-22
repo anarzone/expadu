@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 /**
  * Bottom sheet ported from prototype's drag logic:
  * - Fixed at bottom, 600px wide (100% on mobile), 20px rounded top
- * - Drag up to full screen, drag down to close
+ * - Drag up to near-full (capped at 92dvh so a backdrop peek always shows),
+ *   drag down to close
  * - Close: >60px down or velocity >0.3
  * - Spring: cubic-bezier(.32,1,.4,1)
  * - Overlay backdrop, body scroll lock
@@ -92,20 +93,15 @@ export function BottomSheet({
                 return;
             }
 
-            // Snap: dragged up past 80% → (capped) full, else 72vh. The cap
-            // keeps the handle on-screen so the sheet always stays draggable.
+            // Snap to dynamic-viewport heights (dvh) so the rest state tracks
+            // iOS' show/hide toolbar instead of a stale pixel value: past 80% →
+            // near-full, else the default. Both leave a backdrop peek in the
+            // *visible* viewport, and the 92dvh cap on the sheet keeps the
+            // handle on-screen so it always stays draggable.
             const fullH = window.visualViewport?.height ?? window.innerHeight;
-            const snapFull = fullH * 0.92;
-            const snapDefault = fullH * 0.72;
-
-            let target = snapDefault;
-
-            if (currentH > fullH * 0.8) {
-                target = snapFull;
-            }
 
             sheet!.style.transition = 'height .3s cubic-bezier(.32,1,.4,1)';
-            sheet!.style.height = target + 'px';
+            sheet!.style.height = currentH > fullH * 0.8 ? '92dvh' : '72dvh';
         }
 
         handle.addEventListener('mousedown', onStart);
@@ -148,7 +144,7 @@ export function BottomSheet({
             // Reset to default height and slide up
             sheet.style.transition =
                 'transform .35s cubic-bezier(.32,1,.4,1), height .35s cubic-bezier(.32,1,.4,1)';
-            sheet.style.height = '72vh';
+            sheet.style.height = '72dvh';
             sheet.style.transform = 'translateX(-50%) translateY(0)';
         } else {
             sheet.style.transition = 'transform .35s cubic-bezier(.32,1,.4,1)';
@@ -167,9 +163,10 @@ export function BottomSheet({
             {/* Sheet — 600px desktop, 100% mobile */}
             <div
                 ref={sheetRef}
-                className="fixed bottom-0 left-1/2 z-[300] flex w-full flex-col overflow-hidden rounded-t-[20px] bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.16)] will-change-transform md:w-[600px] dark:bg-[#1E1D15]"
+                data-bottom-sheet
+                className="fixed bottom-0 left-1/2 z-[300] flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[20px] bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.16)] will-change-transform md:w-[600px] dark:bg-[#1E1D15]"
                 style={{
-                    height: '72vh',
+                    height: '72dvh',
                     transform: 'translateX(-50%) translateY(100%)',
                 }}
             >
