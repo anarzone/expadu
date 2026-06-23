@@ -101,3 +101,26 @@ test('veedelAt resolves a coordinate to its nearest Veedel', function () {
 test('veedelAt is null when no Veedels are known', function () {
     expect($this->service->veedelAt(50.9485, 6.9230))->toBeNull();
 });
+
+test('confirming a live fix remembers its Veedel as the default area', function () {
+    DB::table('veedels')->insert([
+        ['name' => 'Ehrenfeld', 'bezirk' => 'Ehrenfeld', 'centroid_lat' => 50.9503, 'centroid_lng' => 6.9113, 'created_at' => now(), 'updated_at' => now()],
+        ['name' => 'Deutz', 'bezirk' => 'Innenstadt', 'centroid_lat' => 50.9389, 'centroid_lng' => 6.9750, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $this->user->update(['veedel' => 'Ehrenfeld']);
+
+    // A live fix in Deutz becomes the remembered default — every surface now
+    // falls back to Deutz, not the onboarding neighbourhood.
+    $this->service->confirm($this->user, 50.9389, 6.9750, 'Deutz');
+
+    expect($this->user->fresh()->veedel)->toBe('Deutz');
+});
+
+test('confirming does not clobber the remembered area when no Veedel resolves', function () {
+    // No Veedels seeded → nothing to resolve → keep the existing default.
+    $this->user->update(['veedel' => 'Ehrenfeld']);
+
+    $this->service->confirm($this->user, 50.9389, 6.9750);
+
+    expect($this->user->fresh()->veedel)->toBe('Ehrenfeld');
+});

@@ -19,6 +19,7 @@ use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
 use App\Composer\TravelEstimator;
+use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Models\User;
 use App\Models\UserEvent;
@@ -114,13 +115,24 @@ class ComposerController extends Controller
         $excluded = array_values($validated['excluded'] ?? []);
 
         // The plan's start: the shared origin (explicit pick / live / confirmed
-        // / recent ping), else the area being planned, else Cologne centre. The
-        // user's home is no longer a hidden anchor.
+        // / recent ping), else the area being planned, else the user's
+        // remembered default area, else Cologne centre. "Remembered" is the
+        // place they last set themselves — not a guessed home.
         $locations = app(UserLocationService::class);
-        $originContext = $locations->context($user, $request, $constraints->areas[0] ?? null);
+        $originContext = $locations->context($user, $request, $constraints->areas[0] ?? ($user->veedel ?: null));
         [$originLat, $originLng] = $originContext->hasOrigin()
             ? [$originContext->lat, $originContext->lng]
             : [50.9375, 6.9603];
+
+        // An explicit "start from {Veedel}" pick is remembered as the default
+        // area, so Places and the next session start where the user chose.
+        $pickedArea = $request->input('from_area');
+        if (is_string($pickedArea) && $pickedArea !== ''
+            && $originContext->source === LocationSource::Area
+            && $originContext->label === $pickedArea
+            && $user->veedel !== $pickedArea) {
+            $user->update(['veedel' => $pickedArea]);
+        }
 
         // The default search area follows the origin: when the user hasn't named
         // an area, the plan favours the Veedel they're actually starting from —

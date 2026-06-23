@@ -37,6 +37,15 @@ class UserLocationService
                 'name' => $name ?? ($this->reverseGeocode($lat, $lng) ?? 'Confirmed location'),
             ], JSON_THROW_ON_ERROR),
         );
+
+        // Remember the Veedel as the user's default area, so every surface
+        // (Places browse, composer) falls back to where they last set
+        // themselves instead of the frozen onboarding neighbourhood. The live
+        // fix above still wins while it's fresh; this is the lasting fallback.
+        $veedel = $this->veedelAt($lat, $lng);
+        if ($veedel !== null && $veedel !== $user->veedel) {
+            $user->update(['veedel' => $veedel]);
+        }
     }
 
     /**

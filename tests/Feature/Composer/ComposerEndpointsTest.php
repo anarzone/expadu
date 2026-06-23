@@ -514,6 +514,33 @@ test('an explicitly picked start area drives the origin and the search area', fu
     $response->assertOk()
         ->assertJsonPath('origin.source', 'area')
         ->assertJsonPath('origin.area', 'Nippes');
+
+    // …and it's remembered as the default area for next time / other surfaces.
+    expect($user->fresh()->veedel)->toBe('Nippes');
+});
+
+test('with no live location the plan falls back to the remembered area', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Nippes', 'bezirk' => 'Nippes', 'centroid_lat' => 50.9600, 'centroid_lng' => 6.9500,
+        'created_at' => now(), 'updated_at' => now(),
+    ]);
+    // Remembered area is Nippes; no confirm() → no live fix this session.
+    $user = User::factory()->onboarded()->create(['veedel' => 'Nippes', 'situation' => 'student', 'is_eu' => true]);
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Nippes', 'lat' => 50.96, 'lng' => 6.95]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => [],
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('origin.source', 'area')
+        ->assertJsonPath('origin.area', 'Nippes');
 });
 
 test('the origin leg uses the real travel matrix in the composer', function () {
