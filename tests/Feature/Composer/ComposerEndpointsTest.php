@@ -10,6 +10,7 @@ use App\Models\UserTask;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -457,6 +458,62 @@ test('compose starts the plan from the resolved origin, not home', function () {
     ]);
 
     $response->assertOk()->assertJsonPath('origin.source', 'confirmed');
+});
+
+test('the default search area follows the origin Veedel, not home', function () {
+    DB::table('veedels')->insert([
+        ['name' => 'Ehrenfeld', 'bezirk' => 'Ehrenfeld', 'centroid_lat' => 50.9503, 'centroid_lng' => 6.9113, 'created_at' => now(), 'updated_at' => now()],
+        ['name' => 'Sülz', 'bezirk' => 'Lindenthal', 'centroid_lat' => 50.9180, 'centroid_lng' => 6.9270, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    // Home is Ehrenfeld, but the confirmed fix is in Sülz — the plan must favour
+    // the Veedel the user is actually starting from, not their home.
+    $user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld', 'situation' => 'student', 'is_eu' => true]);
+    app(UserLocationService::class)->confirm($user, 50.9180, 6.9270, 'Sülz');
+
+    // Two identical parks at the same spot: only the origin-area match separates
+    // them, so the one in the origin's Veedel must lead.
+    $sulz = Spot::factory()->create(['name' => 'Sülz Park', 'category' => 'park', 'veedel' => 'Sülz', 'lat' => 50.9180, 'lng' => 6.9270]);
+    Spot::factory()->create(['name' => 'Ehrenfeld Park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9180, 'lng' => 6.9270]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => [],
+            'categories' => [],
+        ],
+    ]);
+
+    $response->assertOk()->assertJsonPath('origin.area', 'Sülz');
+    expect($response->json('plan.slots.0.id'))->toBe("spot:{$sulz->id}");
+});
+
+test('an explicitly picked start area drives the origin and the search area', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Nippes', 'bezirk' => 'Nippes', 'centroid_lat' => 50.9600, 'centroid_lng' => 6.9500,
+        'created_at' => now(), 'updated_at' => now(),
+    ]);
+    $user = composerUser(); // home + confirmed fix both in Ehrenfeld
+
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Nippes', 'lat' => 50.96, 'lng' => 6.95]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+        ],
+        'from_area' => 'Nippes',
+    ]);
+
+    // The explicit pick overrides the confirmed fix → origin and area are Nippes.
+    $response->assertOk()
+        ->assertJsonPath('origin.source', 'area')
+        ->assertJsonPath('origin.area', 'Nippes');
 });
 
 test('the origin leg uses the real travel matrix in the composer', function () {

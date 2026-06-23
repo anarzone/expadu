@@ -8,6 +8,7 @@ import {
     IconClock,
     IconCoinEuro,
     IconCompass,
+    IconCurrentLocation,
     IconLeaf,
     IconMapPin,
     IconPin,
@@ -38,8 +39,11 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ICON_STROKE } from '@/constants/icons';
@@ -376,19 +380,19 @@ function multiLabel(
 function EditableFilters({
     constraints,
     facets,
-    homeVeedel,
     origin,
     locating,
     onLocate,
+    onPickFrom,
     onChange,
     onStartOver,
 }: {
     constraints: Constraints;
     facets: Facets;
-    homeVeedel: string | null;
     origin: PlacesOrigin | null;
     locating: boolean;
     onLocate: () => void;
+    onPickFrom: (area: string) => void;
     onChange: (patch: Partial<Constraints>) => void;
     onStartOver: () => void;
 }) {
@@ -419,19 +423,52 @@ function EditableFilters({
                 I understood — tap any to change
             </div>
             <div className="flex flex-wrap items-center gap-2">
-                <button
-                    type="button"
-                    onClick={onLocate}
-                    aria-label="Set where the plan starts from"
-                    className={`${CHIP} ${fromKnown ? 'border-primary bg-accent-soft text-primary' : 'border-border bg-card text-foreground hover:border-primary'}`}
-                >
-                    <IconMapPin
-                        size={14}
-                        stroke={ICON_STROKE}
-                        className="opacity-70"
-                    />
-                    {fromLabel}
-                </button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        aria-label="Set where the plan starts from"
+                        className={`${CHIP} ${fromKnown ? 'border-primary bg-accent-soft text-primary' : 'border-border bg-card text-foreground hover:border-primary'}`}
+                    >
+                        <IconMapPin
+                            size={14}
+                            stroke={ICON_STROKE}
+                            className="opacity-70"
+                        />
+                        {fromLabel}
+                        <IconChevronDown
+                            size={13}
+                            stroke={ICON_STROKE}
+                            className="opacity-60"
+                        />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="start"
+                        className="max-h-72 w-56 overflow-y-auto"
+                    >
+                        <DropdownMenuItem onClick={onLocate}>
+                            <IconCurrentLocation
+                                size={15}
+                                stroke={ICON_STROKE}
+                            />
+                            Use my current location
+                        </DropdownMenuItem>
+                        {facets.areas.length > 0 && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+                                    Start somewhere else
+                                </DropdownMenuLabel>
+                                {facets.areas.map((a) => (
+                                    <DropdownMenuItem
+                                        key={a}
+                                        onClick={() => onPickFrom(a)}
+                                    >
+                                        {a}
+                                    </DropdownMenuItem>
+                                ))}
+                            </>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <SingleFilter
                     label={
                         TIME_OPTS.find(
@@ -446,8 +483,10 @@ function EditableFilters({
                 />
                 <MultiFilter
                     label={
-                        constraints.areas.length === 0 && homeVeedel
-                            ? `Around ${homeVeedel}`
+                        constraints.areas.length === 0
+                            ? origin?.area
+                                ? `Around ${origin.area}`
+                                : 'Any area'
                             : multiLabel(
                                   constraints.areas,
                                   areaOptions,
@@ -612,9 +651,8 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
 }
 
 export default function Composer() {
-    const { prompt, homeVeedel, pins } = usePage<{
+    const { prompt, pins } = usePage<{
         prompt?: string;
-        homeVeedel?: string | null;
         pins?: string[];
     }>().props;
     const { track } = useTracker();
@@ -643,6 +681,10 @@ export default function Composer() {
     // Guards against parsing the same prompt twice (React strict-mode
     // double-invoke would otherwise fire two parse + compose round-trips).
     const parsedPrompt = useRef<string | null>(null);
+    // An explicitly picked starting Veedel ("start from Nippes"). A ref, not
+    // state, so it rides along on every recompose (archetype switch, shuffle…)
+    // without re-creating runCompose. Cleared when the user uses live location.
+    const fromAreaRef = useRef<string | null>(null);
 
     const runCompose = useCallback(
         async (
@@ -670,6 +712,7 @@ export default function Composer() {
                     pins: pins ?? [],
                     locked: opts.locked ?? [],
                     excluded: opts.excluded ?? [],
+                    from_area: fromAreaRef.current,
                 });
                 setPlan(json.plan);
                 setNotices(json.notices ?? []);
@@ -857,6 +900,8 @@ export default function Composer() {
             return;
         }
 
+        // Live location overrides any previously picked start area.
+        fromAreaRef.current = null;
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -875,6 +920,18 @@ export default function Composer() {
             () => setLocating(false),
             { enableHighAccuracy: false, maximumAge: 120_000, timeout: 8000 },
         );
+    }
+
+    // Pick a starting Veedel without being there ("plan as if I'm in Nippes").
+    // It overrides the live/confirmed origin and, since the area follows the
+    // origin, becomes the plan's default search area too.
+    function pickFromArea(area: string) {
+        if (!constraints) {
+            return;
+        }
+
+        fromAreaRef.current = area;
+        void runCompose(constraints, { archetype, locked, excluded });
     }
 
     const planMode = intent === 'plan_day';
@@ -934,10 +991,10 @@ export default function Composer() {
                     <EditableFilters
                         constraints={constraints}
                         facets={facets}
-                        homeVeedel={homeVeedel ?? null}
                         origin={origin}
                         locating={locating}
                         onLocate={locateFrom}
+                        onPickFrom={pickFromArea}
                         onChange={updateConstraint}
                         onStartOver={startOver}
                     />

@@ -111,6 +111,38 @@ class UserLocationService
     }
 
     /**
+     * The Veedel a coordinate falls in: polygon containment when boundaries are
+     * loaded, else the nearest centroid (neighbourhood granularity is enough).
+     * Lets the composer derive the plan's default search area from wherever the
+     * user is actually starting, so the area follows the origin instead of a
+     * fixed home. Null when no Veedels are known.
+     */
+    public function veedelAt(float $lat, float $lng): ?string
+    {
+        $byPolygon = DB::selectOne(
+            'SELECT name FROM veedels
+             WHERE boundary IS NOT NULL
+               AND ST_Contains(boundary, ST_SetSRID(ST_MakePoint(?, ?), 4326))
+             LIMIT 1',
+            [$lng, $lat],
+        );
+
+        if ($byPolygon !== null) {
+            return (string) $byPolygon->name;
+        }
+
+        // No boundaries loaded (or the point sits outside every polygon): fall
+        // back to the nearest centroid, longitude scaled by latitude so the
+        // comparison is roughly metric this far north.
+        $nearest = DB::table('veedels')
+            ->whereNotNull('centroid_lat')
+            ->orderByRaw('(centroid_lat - ?)^2 + ((centroid_lng - ?) * cos(radians(?)))^2', [$lat, $lng, $lat])
+            ->value('name');
+
+        return $nearest !== null ? (string) $nearest : null;
+    }
+
+    /**
      * @return array{lat: float, lng: float, name: string}|null
      */
     private function getConfirmedLocation(int $userId): ?array

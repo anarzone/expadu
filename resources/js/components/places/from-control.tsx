@@ -7,6 +7,8 @@ export type TransportMode = 'transit' | 'bike' | 'walk';
 export type PlacesOrigin = {
     source: 'live' | 'confirmed' | 'ping' | 'area' | 'none';
     label: string | null;
+    /** The Veedel the origin falls in — the plan's default search area. */
+    area?: string | null;
 };
 
 const MODES: ReadonlyArray<{

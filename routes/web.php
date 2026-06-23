@@ -108,7 +108,6 @@ $appRoutes = function () use ($appDomain) {
         // Day Composer
         Route::get('composer', fn () => Inertia::render('composer', [
             'prompt' => request()->query('prompt'),
-            'homeVeedel' => request()->user()?->veedel,
             // Spots the user pinned on the home feed → anchored in the plan.
             'pins' => array_values(array_filter(explode(',', (string) request()->query('pins')))),
         ]))->name('composer');

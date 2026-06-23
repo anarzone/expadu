@@ -91,6 +91,11 @@ class ComposerController extends Controller
             'locked.*' => ['string'],
             'excluded' => ['array'],
             'excluded.*' => ['string'],
+            // The plan's start, read by UserLocationService::context(): an
+            // explicit GPS fix or a picked Veedel ("start from Nippes").
+            'lat' => ['nullable', 'numeric'],
+            'lng' => ['nullable', 'numeric'],
+            'from_area' => ['nullable', 'string'],
         ]);
 
         $user = $request->user();
@@ -108,22 +113,33 @@ class ComposerController extends Controller
         $pins = array_values(array_unique([...($validated['pins'] ?? []), ...($validated['locked'] ?? [])]));
         $excluded = array_values($validated['excluded'] ?? []);
 
+        // The plan's start: the shared origin (explicit pick / live / confirmed
+        // / recent ping), else the area being planned, else Cologne centre. The
+        // user's home is no longer a hidden anchor.
+        $locations = app(UserLocationService::class);
+        $originContext = $locations->context($user, $request, $constraints->areas[0] ?? null);
+        [$originLat, $originLng] = $originContext->hasOrigin()
+            ? [$originContext->lat, $originContext->lng]
+            : [50.9375, 6.9603];
+
+        // The default search area follows the origin: when the user hasn't named
+        // an area, the plan favours the Veedel they're actually starting from —
+        // not a fixed home. Falls back to the profile's areas only when we have
+        // no location at all (e.g. a new arrival who declined GPS).
+        $originArea = $originContext->hasOrigin()
+            ? $locations->veedelAt($originLat, $originLng)
+            : null;
+
         $context = new ScoringContext(
             rainExpected: $this->rainExpected(),
-            preferredAreas: $constraints->areas !== [] ? $constraints->areas : $profile->defaultAreas,
+            preferredAreas: $constraints->areas !== []
+                ? $constraints->areas
+                : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
             intentWeights: $intents->for($user),
             companions: $constraints->companions,
             pinnedIds: $pins,
             affinity: CategoryAffinity::map($profile),
         );
-
-        // The plan's start: the shared origin (live / confirmed / recent ping),
-        // else the area being planned, else Cologne centre. The user's home is
-        // no longer a hidden anchor.
-        $originContext = app(UserLocationService::class)->context($user, $request, $constraints->areas[0] ?? null);
-        [$originLat, $originLng] = $originContext->hasOrigin()
-            ? [$originContext->lat, $originContext->lng]
-            : [50.9375, 6.9603];
 
         // Leisure runs the feasibility gauntlet; appointments and pinned/locked
         // picks bypass it (the user chose them). "Excluded" picks (removed, or
@@ -159,6 +175,7 @@ class ComposerController extends Controller
 
         Cache::put($this->planKey($user), $plan->toArray() + [
             'origin' => [$originLat, $originLng],
+            'origin_area' => $originArea,
             'pins' => $pins,
             'excluded' => $excluded,
         ], now()->addHours(self::PLAN_TTL_HOURS));
@@ -170,6 +187,7 @@ class ComposerController extends Controller
             'origin' => [
                 'source' => $originContext->source->value,
                 'label' => $originContext->label,
+                'area' => $originArea,
             ],
         ]);
     }
@@ -265,9 +283,14 @@ class ComposerController extends Controller
         }
 
         $profile = $profiles->build($user);
+        // Re-score against the same origin-derived area the compose used (stored
+        // with the plan), so a swap stays anchored to where the day starts.
+        $originArea = $stored['origin_area'] ?? null;
         $context = new ScoringContext(
             rainExpected: $this->rainExpected(),
-            preferredAreas: $plan->constraints->areas !== [] ? $plan->constraints->areas : $profile->defaultAreas,
+            preferredAreas: $plan->constraints->areas !== []
+                ? $plan->constraints->areas
+                : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
             intentWeights: $intents->for($user),
             companions: $plan->constraints->companions,
             pinnedIds: $pins,

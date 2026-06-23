@@ -86,3 +86,18 @@ test('the confirmed location is the shared origin', function () {
     expect($origin->lat)->toBe(50.97);
     expect($origin->label)->toBe('Mülheim');
 });
+
+test('veedelAt resolves a coordinate to its nearest Veedel', function () {
+    // No boundaries loaded → nearest-centroid fallback (the local/staging case).
+    DB::table('veedels')->insert([
+        ['name' => 'Ehrenfeld', 'bezirk' => 'Ehrenfeld', 'centroid_lat' => 50.9503, 'centroid_lng' => 6.9113, 'created_at' => now(), 'updated_at' => now()],
+        ['name' => 'Mülheim', 'bezirk' => 'Mülheim', 'centroid_lat' => 50.9667, 'centroid_lng' => 6.9931, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    expect($this->service->veedelAt(50.9485, 6.9230))->toBe('Ehrenfeld');
+    expect($this->service->veedelAt(50.9670, 6.9900))->toBe('Mülheim');
+});
+
+test('veedelAt is null when no Veedels are known', function () {
+    expect($this->service->veedelAt(50.9485, 6.9230))->toBeNull();
+});
