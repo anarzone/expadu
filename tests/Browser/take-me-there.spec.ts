@@ -96,37 +96,47 @@ test.describe('Take me there — multi-modal selector', () => {
         await page.waitForLoadState('networkidle');
 
         // Open a place's detail (the first card), then its "Take me there"
-        // opens the journey sheet. (The card's own accessible name includes
-        // the action label, so we reach the sheet via the detail dialog.)
+        // opens the journey sheet. The detail renders after the card list
+        // (Dialog on desktop, BottomSheet on mobile), so its button is the last
+        // "Take me there" in the DOM — scope to it viewport-agnostically.
         await page
             .getByRole('button', { name: /Take me there/i })
             .first()
             .click();
         await page
-            .getByRole('dialog')
             .getByRole('button', { name: /Take me there/i })
+            .last()
             .click();
 
+        // Scope to the journey sheet — the Places page behind it has its own
+        // Transit/Bike/Walk mode toggle, which the mobile BottomSheet (unlike the
+        // desktop Dialog) doesn't aria-hide, so an unscoped query matches both.
+        const sheet = page.locator('[data-journey-sheet]');
+
         // All three modes appear, each with its travel time.
-        const transit = page.getByRole('button', { name: /Transit/ });
-        const bike = page.getByRole('button', { name: /Bike/ });
-        const walk = page.getByRole('button', { name: /Walk/ });
+        const transit = sheet.getByRole('button', { name: /Transit/ });
+        const bike = sheet.getByRole('button', { name: /Bike/ });
+        const walk = sheet.getByRole('button', { name: /Walk/ });
         await expect(transit).toBeVisible();
         await expect(bike).toContainText('41 min');
         await expect(walk).toContainText('1 h 35 min');
 
         // Defaults to transit: leave-by header + the Rheinlandtarif ticket.
-        await expect(page.getByText('Leave by 14:30')).toBeVisible();
-        await expect(page.getByText('VRS EinzelTicket')).toBeVisible();
+        await expect(sheet.getByText('Leave by 14:30')).toBeVisible();
+        await expect(sheet.getByText('VRS EinzelTicket')).toBeVisible();
 
         // Switch to bike → mode-aware header, and no ticket (direct = free).
         await bike.click();
-        await expect(page.getByText('41 min by bike')).toBeVisible();
-        await expect(page.getByText('VRS EinzelTicket')).toHaveCount(0);
+        await expect(sheet.getByText('41 min by bike')).toBeVisible();
+        await expect(sheet.getByText('VRS EinzelTicket')).toHaveCount(0);
+        // The direct leg reads as a real step — "Cycle to <destination>" — not a
+        // bare "Cycle" (its MOTIS START/END endpoints come back nameless).
+        await expect(sheet.getByText(/Cycle to \S/)).toBeVisible();
 
-        // Switch to walk → on-foot header.
+        // Switch to walk → on-foot header + a named walk step.
         await walk.click();
-        await expect(page.getByText('1 h 35 min on foot')).toBeVisible();
+        await expect(sheet.getByText('1 h 35 min on foot')).toBeVisible();
+        await expect(sheet.getByText(/Walk to \S/)).toBeVisible();
 
         expect(errors).toHaveLength(0);
     });

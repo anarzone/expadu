@@ -181,10 +181,24 @@ function haversineKm(
     return r * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
-function LegRow({ leg }: { leg: JourneyLeg }) {
+function LegRow({
+    leg,
+    originName,
+    destinationName,
+}: {
+    leg: JourneyLeg;
+    originName?: string;
+    destinationName?: string;
+}) {
     const isTransit = leg.mode !== 'walk' && leg.mode !== 'bike';
     const ModeIcon = MODE_ICON[leg.mode] ?? IconWalk;
     const verb = leg.mode === 'bike' ? 'Cycle' : 'Walk';
+    // MOTIS names a journey's own endpoints "START"/"END" (blanked upstream),
+    // so a direct walk/bike leg reaches here with no endpoint names. Fall back
+    // to the journey's origin/destination so the step still reads "Walk to X
+    // · from Y" instead of a bare "Walk · <time> departure".
+    const toName = leg.to.name || destinationName || '';
+    const fromName = leg.from.name || originName || '';
 
     return (
         <div className="relative flex items-center gap-3 py-2 pl-5">
@@ -203,13 +217,13 @@ function LegRow({ leg }: { leg: JourneyLeg }) {
                 <span className="block text-sm font-medium">
                     {isTransit
                         ? `${leg.line ?? ''}${leg.headsign ? ` toward ${leg.headsign}` : ''}`
-                        : `${verb}${leg.to.name ? ` to ${leg.to.name}` : ''}`}
+                        : `${verb}${toName ? ` to ${toName}` : ''}`}
                 </span>
                 <span className="block text-xs text-muted-foreground">
                     {isTransit
                         ? `${leg.stops ? `${leg.stops} ${leg.stops === 1 ? 'stop' : 'stops'} · ` : ''}get off at ${leg.to.name}`
-                        : leg.from.name
-                          ? `from ${leg.from.name}`
+                        : fromName
+                          ? `from ${fromName}`
                           : `${leg.depart_time} departure`}
                 </span>
             </span>
@@ -498,7 +512,7 @@ export function TakeMeThereSheet({
     const straightKm = data?.from ? haversineKm(data.from, destination) : null;
 
     const body = (
-        <div className="pb-4">
+        <div className="pb-4" data-journey-sheet>
             {/* Destination header */}
             <div className="mb-4 flex items-center gap-3">
                 <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-2xl">
@@ -676,7 +690,23 @@ export function TakeMeThereSheet({
                     ) : (
                         <div className="mb-3">
                             {journey.legs.map((leg, i) => (
-                                <LegRow key={i} leg={leg} />
+                                <LegRow
+                                    key={i}
+                                    leg={leg}
+                                    originName={
+                                        i === 0
+                                            ? ((fromOverride
+                                                  ? 'your location'
+                                                  : data?.from?.name) ??
+                                              undefined)
+                                            : undefined
+                                    }
+                                    destinationName={
+                                        i === journey.legs.length - 1
+                                            ? destination.name
+                                            : undefined
+                                    }
+                                />
                             ))}
                         </div>
                     )}
