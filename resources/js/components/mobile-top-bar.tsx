@@ -59,7 +59,7 @@ export function MobileTopBar({
                     )}
                     <button
                         onClick={() => setMenuOpen(!menuOpen)}
-                        className="flex size-8 items-center justify-center rounded-full bg-[#1A4CD4] text-[11px] font-bold text-white"
+                        className="flex size-8 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
                     >
                         {initials}
                     </button>
@@ -73,13 +73,13 @@ export function MobileTopBar({
                         className="fixed inset-0 z-[9998] md:hidden"
                         onClick={() => setMenuOpen(false)}
                     />
-                    <div className="absolute right-4 z-[9999] mt-1 w-56 overflow-hidden rounded-[12px] border border-[#E2DFD6] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] md:hidden dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                    <div className="absolute right-4 z-[9999] mt-1 w-56 overflow-hidden rounded-[12px] border border-border bg-card shadow-[0_8px_32px_rgba(0,0,0,0.12)] md:hidden">
                         {/* User info */}
-                        <div className="border-b border-[#E2DFD6] px-4 py-3 dark:border-[#3A3930]">
-                            <div style={{ fontSize: 13, fontWeight: 600 }}>
+                        <div className="border-b border-border px-4 py-3">
+                            <div className="text-[13px] font-semibold">
                                 {auth?.user?.name}
                             </div>
-                            <div style={{ fontSize: 11, color: '#AAA89F' }}>
+                            <div className="text-[11px] text-text-3">
                                 {auth?.user?.email}
                             </div>
                         </div>
@@ -88,42 +88,42 @@ export function MobileTopBar({
                         <a
                             href="/profile"
                             onClick={() => setMenuOpen(false)}
-                            className="flex w-full items-center gap-2.5 border-b border-[#E2DFD6] px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                            className="flex w-full items-center gap-2.5 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary"
                         >
                             <IconUser
                                 size={16}
                                 stroke={ICON_STROKE}
-                                className="text-[#6B6860]"
+                                className="text-text-2"
                             />
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>
+                            <span className="text-[13px] font-medium">
                                 Profile
                             </span>
                         </a>
                         <a
                             href="/profile#settings"
                             onClick={() => setMenuOpen(false)}
-                            className="flex w-full items-center gap-2.5 border-b border-[#E2DFD6] px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                            className="flex w-full items-center gap-2.5 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary"
                         >
                             <IconPalette
                                 size={16}
                                 stroke={ICON_STROKE}
-                                className="text-[#6B6860]"
+                                className="text-text-2"
                             />
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>
+                            <span className="text-[13px] font-medium">
                                 Settings
                             </span>
                         </a>
                         <a
                             href="/settings/appearance"
                             onClick={() => setMenuOpen(false)}
-                            className="flex w-full items-center gap-2.5 border-b border-[#E2DFD6] px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
+                            className="flex w-full items-center gap-2.5 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary"
                         >
                             <IconPalette
                                 size={16}
                                 stroke={ICON_STROKE}
-                                className="text-[#6B6860]"
+                                className="text-text-2"
                             />
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>
+                            <span className="text-[13px] font-medium">
                                 Appearance
                             </span>
                         </a>
@@ -132,20 +132,14 @@ export function MobileTopBar({
                                 setMenuOpen(false);
                                 router.post('/logout');
                             }}
-                            className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
+                            className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-danger-soft"
                         >
                             <IconLogout
                                 size={16}
                                 stroke={ICON_STROKE}
-                                className="text-[#C4271A]"
+                                className="text-danger"
                             />
-                            <span
-                                style={{
-                                    fontSize: 13,
-                                    fontWeight: 500,
-                                    color: '#C4271A',
-                                }}
-                            >
+                            <span className="text-[13px] font-medium text-danger">
                                 Log out
                             </span>
                         </button>
