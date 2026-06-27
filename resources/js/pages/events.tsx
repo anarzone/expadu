@@ -1,5 +1,14 @@
 import { Head, Deferred, usePage } from '@inertiajs/react';
-import { IconCheck } from '@tabler/icons-react';
+import {
+    IconBike,
+    IconBus,
+    IconCheck,
+    IconChevronDown,
+    IconMapPin,
+    IconSortDescending,
+    IconWalk,
+} from '@tabler/icons-react';
+import type { Icon as TablerIcon } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EventRichDetail } from '@/components/events/event-rich-detail';
 import { RemindMeButton } from '@/components/events/remind-me-button';
@@ -36,6 +45,40 @@ const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
     { id: 'culture', label: 'Culture', emoji: '🎭' },
     { id: 'party', label: 'Party', emoji: '🎉' },
 ];
+
+type EventMode = 'walk' | 'transit' | 'bike';
+
+const EVENT_MODES: ReadonlyArray<{
+    id: EventMode;
+    label: string;
+    Icon: TablerIcon;
+}> = [
+    { id: 'walk', label: 'Walk', Icon: IconWalk },
+    { id: 'transit', label: 'Transit', Icon: IconBus },
+    { id: 'bike', label: 'Bike', Icon: IconBike },
+];
+
+type EventSort = 'Soonest' | 'Nearest' | 'Popular';
+
+/**
+ * Client reorder for the Sort control. "Soonest" is a real time sort (the
+ * default the API already returns); "Nearest"/"Popular" wait on event distance
+ * + popularity data, so they hold the server order for now.
+ */
+function sortEvents(
+    list: EventOccurrence[],
+    sortBy: EventSort,
+): EventOccurrence[] {
+    if (sortBy !== 'Soonest') {
+        return list;
+    }
+
+    return [...list].sort(
+        (a, b) =>
+            new Date(a.occurrence_start).getTime() -
+            new Date(b.occurrence_start).getTime(),
+    );
+}
 
 function occurrenceKey(o: {
     event_id?: number;
@@ -108,6 +151,13 @@ export default function Events() {
     const [free, setFree] = useState<boolean>(filters.free);
     // Venue deep-link from a place's events strip — dismissible chip
     const [venueId, setVenueId] = useState<string | null>(filters.venue);
+
+    // v4 controls row — From popover + Sort menu (the distance recompute behind
+    // From, and Nearest/Popular sort, light up once event distances land).
+    const [evMode, setEvMode] = useState<EventMode>('walk');
+    const [evSort, setEvSort] = useState<EventSort>('Soonest');
+    const [fromOpen, setFromOpen] = useState(false);
+    const [sortOpen, setSortOpen] = useState(false);
 
     const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
     const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
@@ -286,6 +336,9 @@ export default function Events() {
 
     const windowLabel = WINDOWS.find((w) => w.id === window_)?.label ?? 'Today';
     const railOptions = veedelOptions ?? [];
+    const EvModeIcon = (
+        EVENT_MODES.find((m) => m.id === evMode) ?? EVENT_MODES[0]
+    ).Icon;
 
     const detailBody = (occurrence: EventOccurrence) => (
         <EventRichDetail
@@ -330,9 +383,9 @@ export default function Events() {
                     ))}
                 </div>
 
-                {/* Category chips + free toggle */}
+                {/* Category chips */}
                 <div
-                    className="mb-2 flex gap-2 overflow-x-auto pb-1"
+                    className="mb-4 flex gap-2 overflow-x-auto pb-1"
                     style={{ scrollbarWidth: 'none' }}
                 >
                     {CATEGORIES.map((c) => {
@@ -353,18 +406,6 @@ export default function Events() {
                             </button>
                         );
                     })}
-                    <button
-                        onClick={() => setFree((f) => !f)}
-                        aria-pressed={free}
-                        className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-[15px] py-2 text-[13px] transition-all ${
-                            free
-                                ? 'border-success bg-success-soft font-semibold text-success'
-                                : 'border-border bg-card font-medium text-text-2 hover:border-success hover:text-success'
-                        }`}
-                    >
-                        <IconCheck size={14} stroke={ICON_STROKE} />
-                        Free only
-                    </button>
                     {venueId && (
                         <button
                             onClick={() => setVenueId(null)}
@@ -374,6 +415,162 @@ export default function Events() {
                             📍 this venue ✕
                         </button>
                     )}
+                </div>
+
+                {/* v4 controls row — Free only (left) · From + Sort (right) */}
+                <div className="relative z-20 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <button
+                        onClick={() => setFree((f) => !f)}
+                        aria-pressed={free}
+                        className={`flex shrink-0 cursor-pointer items-center gap-1.5 self-start rounded-full border px-[15px] py-2 text-[13px] transition-all ${
+                            free
+                                ? 'border-success bg-success-soft font-semibold text-success'
+                                : 'border-border bg-card font-medium text-text-2 hover:border-success hover:text-success'
+                        }`}
+                    >
+                        <IconCheck size={14} stroke={ICON_STROKE} />
+                        Free only
+                    </button>
+
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {/* From — cyan ("cyan locates") */}
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setFromOpen((o) => !o);
+                                    setSortOpen(false);
+                                }}
+                                className="inline-flex items-center gap-[7px] rounded-full border border-cyan-bd bg-card px-[14px] py-[9px] text-[13px] font-semibold text-cyan-h transition-colors hover:border-cyan"
+                            >
+                                <IconMapPin size={14} stroke={ICON_STROKE} />
+                                <span className="font-medium text-[#7fb6c4]">
+                                    from
+                                </span>
+                                You
+                                <span className="text-[#9ccada]">·</span>
+                                <EvModeIcon size={13} stroke={ICON_STROKE} />
+                                <IconChevronDown size={12} stroke={2} />
+                            </button>
+
+                            {fromOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-30"
+                                        onClick={() => setFromOpen(false)}
+                                    />
+                                    <div className="absolute top-12 right-0 z-40 w-[260px] rounded-[16px] border border-cyan-bd bg-card p-[15px] shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
+                                        <div className="mb-2.5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
+                                            Measure distances from
+                                        </div>
+                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan bg-cyan-soft px-[11px] py-[7px] text-[12px] font-semibold text-cyan-h">
+                                            <IconMapPin
+                                                size={13}
+                                                stroke={ICON_STROKE}
+                                            />
+                                            My location
+                                        </span>
+
+                                        <div className="my-[13px] h-px bg-border" />
+
+                                        <div className="mb-2.5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
+                                            Travelling by
+                                        </div>
+                                        <div className="flex gap-1 rounded-full border border-border bg-surface-2 p-[3px]">
+                                            {EVENT_MODES.map(
+                                                ({ id, label, Icon }) => {
+                                                    const on = evMode === id;
+
+                                                    return (
+                                                        <button
+                                                            key={id}
+                                                            onClick={() =>
+                                                                setEvMode(id)
+                                                            }
+                                                            aria-pressed={on}
+                                                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-[10px] py-2 text-[12px] transition-colors ${
+                                                                on
+                                                                    ? 'border border-cyan-bd bg-card font-semibold text-cyan-h shadow-card'
+                                                                    : 'border border-transparent font-medium text-text-2'
+                                                            }`}
+                                                        >
+                                                            <Icon
+                                                                size={13}
+                                                                stroke={
+                                                                    ICON_STROKE
+                                                                }
+                                                            />
+                                                            {label}
+                                                        </button>
+                                                    );
+                                                },
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Sort */}
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setSortOpen((o) => !o);
+                                    setFromOpen(false);
+                                }}
+                                className="inline-flex items-center gap-[7px] rounded-full border border-border bg-card px-[14px] py-[9px] text-[13px] font-semibold text-foreground shadow-card transition-colors hover:border-primary"
+                            >
+                                <IconSortDescending
+                                    size={13}
+                                    stroke={ICON_STROKE}
+                                />
+                                {evSort}
+                                <IconChevronDown size={12} stroke={2} />
+                            </button>
+
+                            {sortOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-30"
+                                        onClick={() => setSortOpen(false)}
+                                    />
+                                    <div className="absolute top-12 right-0 z-40 min-w-[176px] rounded-[13px] border border-border bg-card p-1.5 shadow-[0_14px_40px_rgba(33,29,21,0.18)]">
+                                        {(
+                                            [
+                                                'Soonest',
+                                                'Nearest',
+                                                'Popular',
+                                            ] as const
+                                        ).map((opt) => {
+                                            const on = evSort === opt;
+
+                                            return (
+                                                <button
+                                                    key={opt}
+                                                    onClick={() => {
+                                                        setEvSort(opt);
+                                                        setSortOpen(false);
+                                                    }}
+                                                    className={`flex w-full items-center justify-between gap-2.5 rounded-[9px] px-[11px] py-[9px] text-left text-[13px] transition-colors ${
+                                                        on
+                                                            ? 'bg-cyan-soft font-semibold text-cyan-h'
+                                                            : 'font-medium text-foreground hover:bg-surface-2'
+                                                    }`}
+                                                >
+                                                    {opt}
+                                                    {on && (
+                                                        <IconCheck
+                                                            size={14}
+                                                            stroke={2.2}
+                                                        />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Veedel chips — secondary filter */}
@@ -478,7 +675,7 @@ export default function Events() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {occurrences.map((occurrence) => {
+                        {sortEvents(occurrences, evSort).map((occurrence) => {
                             const key = occurrenceKey(occurrence);
 
                             return (
