@@ -10,6 +10,8 @@ import {
     IconUser,
     IconPalette,
     IconLogout,
+    IconSun,
+    IconMoonStars,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
@@ -22,6 +24,7 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { ICON_STROKE } from '@/constants/icons';
+import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import type { NavGroup } from '@/types';
@@ -57,7 +60,6 @@ function buildNavGroups(): NavGroup[] {
                     href: '/bureaucracy',
                     icon: IconFileText,
                     badge: 3,
-                    badgeVariant: 'warn',
                 },
             ],
         },
@@ -77,6 +79,7 @@ export function AppSidebar() {
     }>().props;
     const user = auth?.user;
     const getInitials = useInitials();
+    const { resolvedAppearance, updateAppearance } = useAppearance();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     const navGroups = buildNavGroups();
@@ -121,7 +124,7 @@ export function AppSidebar() {
                             <AppLogoIcon />
                             <span
                                 data-sidebar-text
-                                className="font-display text-[22px] font-medium tracking-tight whitespace-nowrap text-[#18170F] group-data-[collapsible=icon]:hidden dark:text-[#F6F5F1]"
+                                className="font-display text-[22px] font-medium tracking-tight whitespace-nowrap text-foreground group-data-[collapsible=icon]:hidden"
                             >
                                 Expadu
                             </span>
@@ -132,7 +135,7 @@ export function AppSidebar() {
                             <button
                                 onClick={toggleSidebar}
                                 aria-label="Close menu"
-                                className="mb-5 hidden size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[#6B6860] transition-colors hover:bg-[#EFEDE7] max-xl:flex dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                                className="mb-5 hidden size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-2 transition-colors hover:bg-secondary max-xl:flex"
                             >
                                 ✕
                             </button>
@@ -144,67 +147,92 @@ export function AppSidebar() {
                     <NavMain groups={navWithBadges} />
                 </SidebarContent>
 
-                {/* User chip with dropdown */}
-                <SidebarFooter className="relative px-4 pb-4 group-data-[collapsible=icon]:px-2">
-                    <button
-                        onClick={() => setDropdownOpen(!dropdownOpen)}
-                        className="mt-2 flex w-full items-center gap-2.5 rounded-[9px] border-t border-[#E2DFD6] px-3 py-2.5 pt-4 text-left transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-2.5 hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:hover:bg-[#2A2920]"
-                    >
-                        <div className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1A4CD4] to-[#6366F1] text-sm font-semibold text-white">
-                            {getInitials(user?.name ?? '')}
-                        </div>
-                        <div
-                            data-sidebar-text
-                            className="overflow-hidden group-data-[collapsible=icon]:hidden"
+                {/* User chip + theme toggle */}
+                <SidebarFooter className="px-4 pb-4 group-data-[collapsible=icon]:px-2">
+                    <div className="relative mt-2 flex items-center gap-2.5 border-t border-border pt-4 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:pt-2.5">
+                        <button
+                            onClick={() => setDropdownOpen(!dropdownOpen)}
+                            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[9px] text-left transition-opacity group-data-[collapsible=icon]:flex-none hover:opacity-80"
                         >
-                            <div className="truncate text-sm font-semibold whitespace-nowrap">
-                                {user?.name ?? 'User'}
+                            <div className="flex size-[38px] shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                                {getInitials(user?.name ?? '')}
                             </div>
-                            <div className="truncate text-[11px] whitespace-nowrap text-[#AAA89F]">
-                                Cologne · Expat
-                            </div>
-                        </div>
-                    </button>
-
-                    {/* Dropdown menu */}
-                    {dropdownOpen && (
-                        <>
                             <div
-                                className="fixed inset-0 z-40"
-                                onClick={() => setDropdownOpen(false)}
-                            />
-                            <div className="absolute right-4 bottom-full left-4 z-50 mb-2 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-lg dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                {dropdownItems.map((item) => (
-                                    <Link
-                                        key={item.label}
-                                        href={item.href}
-                                        prefetch
-                                        onClick={() => setDropdownOpen(false)}
-                                        className="flex items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#18170F] transition-colors hover:bg-[#EFEDE7] dark:text-[#F6F5F1] dark:hover:bg-[#2A2920]"
+                                data-sidebar-text
+                                className="min-w-0 group-data-[collapsible=icon]:hidden"
+                            >
+                                <div className="truncate text-[14px] font-semibold whitespace-nowrap">
+                                    {user?.name ?? 'User'}
+                                </div>
+                                <div className="truncate text-[12px] whitespace-nowrap text-text-2">
+                                    Cologne · Expat
+                                </div>
+                            </div>
+                        </button>
+
+                        {/* Theme toggle — v4 round button */}
+                        <button
+                            data-sidebar-text
+                            onClick={() =>
+                                updateAppearance(
+                                    resolvedAppearance === 'dark'
+                                        ? 'light'
+                                        : 'dark',
+                                )
+                            }
+                            title="Toggle theme"
+                            aria-label="Toggle theme"
+                            className="flex size-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-text-2 transition-colors group-data-[collapsible=icon]:hidden hover:border-primary hover:text-primary"
+                        >
+                            {resolvedAppearance === 'dark' ? (
+                                <IconSun size={17} stroke={ICON_STROKE} />
+                            ) : (
+                                <IconMoonStars size={17} stroke={ICON_STROKE} />
+                            )}
+                        </button>
+
+                        {/* Dropdown menu */}
+                        {dropdownOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setDropdownOpen(false)}
+                                />
+                                <div className="absolute right-0 bottom-full left-0 z-50 mb-2 overflow-hidden rounded-[11px] border border-border bg-card shadow-lg">
+                                    {dropdownItems.map((item) => (
+                                        <Link
+                                            key={item.label}
+                                            href={item.href}
+                                            prefetch
+                                            onClick={() =>
+                                                setDropdownOpen(false)
+                                            }
+                                            className="flex items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-secondary"
+                                        >
+                                            <item.icon
+                                                size={16}
+                                                stroke={ICON_STROKE}
+                                                className="shrink-0 opacity-60"
+                                            />
+                                            {item.label}
+                                        </Link>
+                                    ))}
+                                    <div className="border-t border-border" />
+                                    <button
+                                        onClick={handleLogout}
+                                        className="flex w-full items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-danger transition-colors hover:bg-danger-soft"
                                     >
-                                        <item.icon
+                                        <IconLogout
                                             size={16}
                                             stroke={ICON_STROKE}
-                                            className="shrink-0 opacity-60"
+                                            className="shrink-0"
                                         />
-                                        {item.label}
-                                    </Link>
-                                ))}
-                                <div className="border-t border-[#E2DFD6] dark:border-[#3A3930]" />
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex w-full items-center gap-[10px] px-3 py-2.5 text-[13px] font-medium text-[#C4271A] transition-colors hover:bg-[#FDECEA] dark:hover:bg-[#2E1A1A]"
-                                >
-                                    <IconLogout
-                                        size={16}
-                                        stroke={ICON_STROKE}
-                                        className="shrink-0"
-                                    />
-                                    Log out
-                                </button>
-                            </div>
-                        </>
-                    )}
+                                        Log out
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </SidebarFooter>
             </Sidebar>
         </>
