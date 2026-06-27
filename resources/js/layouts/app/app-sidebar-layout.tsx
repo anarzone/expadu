@@ -38,18 +38,23 @@ export default function AppSidebarLayout({
                 {fullWidth ? (
                     <div className="flex-1 overflow-hidden">{children}</div>
                 ) : (
-                    <div className="flex min-h-0 flex-1 justify-center">
-                        {/* 600px is a CAP, not a fixed width: at tablet
-                            widths the column must shrink with the expanded
-                            sidebar instead of sliding underneath it (which
-                            buried the header and the sidebar toggle). */}
-                        <div className="w-full min-w-0 flex-1 border-[#E2DFD6] pb-28 md:max-w-[600px] md:border-r md:pb-0 dark:border-[#3A3930]">
+                    <div className="flex min-h-0 flex-1">
+                        {/* The content area FILLS the space between the sidebar
+                            and the widgets panel — each page sets its own
+                            readable max-width inside (so content owns the bigger
+                            share of the layout). min-w-0 lets it shrink with the
+                            expanded sidebar at tablet widths instead of sliding
+                            underneath it (which buried the header + toggle). */}
+                        <div className="w-full min-w-0 flex-1 pb-28 md:pb-0">
                             <MobileTopBar showBack={showBack} />
                             {children}
                         </div>
+                        {/* Widgets panel: pinned flush to the right edge with a
+                            left divider (v4), so the content gets everything to
+                            its left rather than floating in a centred block. */}
                         {rightPanel !== undefined ? (
                             <aside
-                                className="hidden w-[390px] shrink-0 overflow-y-auto p-5 lg:block"
+                                className="hidden w-[340px] shrink-0 overflow-y-auto border-l border-[#E2DFD6] p-5 lg:block dark:border-[#3A3930]"
                                 style={{ scrollbarWidth: 'none' }}
                             >
                                 {rightPanel}

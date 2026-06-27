@@ -764,7 +764,7 @@ export default function Composer() {
     return (
         <AppLayout>
             <Head title="Day Composer" />
-            <div className="mx-auto w-full max-w-[720px] px-4 pt-6 pb-24 md:px-6">
+            <div className="mx-auto w-full max-w-[680px] px-4 pt-6 pb-24 md:px-6">
                 <h1 className="font-display text-[27px] font-medium tracking-[-0.02em]">
                     {title}
                 </h1>

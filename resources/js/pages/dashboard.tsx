@@ -466,7 +466,7 @@ export default function Dashboard() {
         <AppLayout>
             <Head title="Today" />
             <ServiceErrorBanner />
-            <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-28 md:px-6">
+            <div className="mx-auto w-full max-w-[680px] px-4 pt-6 pb-28 md:px-6">
                 {/* Date line */}
                 <div className="mb-1 font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
                     {new Date().toLocaleDateString('en-GB', {

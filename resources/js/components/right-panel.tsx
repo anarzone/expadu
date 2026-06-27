@@ -129,7 +129,7 @@ export function RightPanel() {
 
     return (
         <aside
-            className="hidden w-[390px] shrink-0 overflow-y-auto p-5 lg:block"
+            className="hidden w-[340px] shrink-0 overflow-y-auto border-l border-[#E2DFD6] p-5 lg:block dark:border-[#3A3930]"
             style={{ scrollbarWidth: 'none' }}
         >
             <WeatherWidget weather={weather} forecast={forecast} />
