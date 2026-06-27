@@ -1,12 +1,15 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    IconAdjustmentsHorizontal,
     IconArrowsShuffle,
     IconBus,
     IconChecklist,
+    IconCurrencyEuro,
     IconPin,
     IconPlus,
     IconSearch,
     IconSparkles,
+    IconUsers,
     IconX,
 } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
@@ -669,17 +672,22 @@ export default function Composer() {
     const EXTRA_DEFS = [
         {
             field: 'companions' as const,
-            emoji: '👥',
+            Icon: IconUsers,
             label: 'Who with',
             opts: COMPANION_OPTS,
         },
         {
             field: 'budget' as const,
-            emoji: '💶',
+            Icon: IconCurrencyEuro,
             label: 'Budget',
             opts: BUDGET_OPTS,
         },
-        { field: 'vibe' as const, emoji: '🎚', label: 'Vibe', opts: VIBE_OPTS },
+        {
+            field: 'vibe' as const,
+            Icon: IconAdjustmentsHorizontal,
+            label: 'Vibe',
+            opts: VIBE_OPTS,
+        },
     ];
     const activeExtras = constraints
         ? EXTRA_DEFS.filter((d) => constraints[d.field])
@@ -781,6 +789,7 @@ export default function Composer() {
                                 const optLabel =
                                     d.opts.find((o) => o.value === value)
                                         ?.label ?? value;
+                                const ExtraIcon = d.Icon;
 
                                 return (
                                     <span
@@ -792,9 +801,14 @@ export default function Composer() {
                                                 setOpenToken(d.field);
                                                 setAddOpen(false);
                                             }}
-                                            className="cursor-pointer"
+                                            className="flex cursor-pointer items-center gap-1.5"
                                         >
-                                            {d.emoji} {optLabel}
+                                            <ExtraIcon
+                                                size={14}
+                                                stroke={ICON_STROKE}
+                                                className="text-text-3"
+                                            />
+                                            {optLabel}
                                         </button>
                                         <button
                                             onClick={() =>
@@ -875,23 +889,32 @@ export default function Composer() {
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {addableExtras.map((d) => (
-                                        <button
-                                            key={d.field}
-                                            onClick={() => {
-                                                updateConstraint({
-                                                    [d.field]:
-                                                        d.opts.find(
-                                                            (o) => o.value,
-                                                        )?.value ?? null,
-                                                } as Partial<Constraints>);
-                                                setAddOpen(false);
-                                            }}
-                                            className="flex items-center gap-2.5 rounded-[11px] border border-border bg-card px-3 py-[11px] text-left text-[13.5px] font-medium text-text-2 transition-colors hover:border-primary"
-                                        >
-                                            {d.emoji} {d.label}
-                                        </button>
-                                    ))}
+                                    {addableExtras.map((d) => {
+                                        const ExtraIcon = d.Icon;
+
+                                        return (
+                                            <button
+                                                key={d.field}
+                                                onClick={() => {
+                                                    updateConstraint({
+                                                        [d.field]:
+                                                            d.opts.find(
+                                                                (o) => o.value,
+                                                            )?.value ?? null,
+                                                    } as Partial<Constraints>);
+                                                    setAddOpen(false);
+                                                }}
+                                                className="flex items-center gap-2.5 rounded-[11px] border border-border bg-card px-3 py-[11px] text-left text-[13.5px] font-medium text-text-2 transition-colors hover:border-primary"
+                                            >
+                                                <ExtraIcon
+                                                    size={16}
+                                                    stroke={ICON_STROKE}
+                                                    className="text-text-3"
+                                                />
+                                                {d.label}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
