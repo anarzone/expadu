@@ -155,133 +155,235 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-danger-soft: var(--danger-soft);
     --color-accent-soft: var(--accent-soft);
     --color-accent-hover: var(--accent-hover);
+
+    /* v4 system — "orange acts, cyan locates" + supporting cast */
+    --color-primary-soft: var(--primary-soft);
+    --color-primary-hover: var(--primary-h);
+    --color-cyan: var(--cyan);
+    --color-cyan-h: var(--cyan-h);
+    --color-cyan-soft: var(--cyan-soft);
+    --color-cyan-bd: var(--cyan-bd);
+    --color-orange: var(--orange);
+    --color-orange-soft: var(--orange-soft);
+    --color-amber: var(--amber);
+    --color-amber-soft: var(--amber-soft);
+    --color-navy: var(--navy);
+    --color-navy-soft: var(--navy-soft);
+    --color-text-2: var(--text-2);
+    --color-text-3: var(--text-3);
 }
 
-/* ─── Light Theme (Expadu) ─── */
+/* ─── Light Theme (Expadu v4 — warm paper) ─── */
 :root {
-    /* Core surfaces */
-    --background: #f6f5f1;
-    --foreground: #18170f;
-    --card: #ffffff;
-    --card-foreground: #18170f;
-    --popover: #ffffff;
-    --popover-foreground: #18170f;
+    /* Core surfaces — warm paper canvas */
+    --background: #faf6ee;
+    --foreground: #211d15;
+    --card: #fffdf8;
+    --card-foreground: #211d15;
+    --popover: #fffdf8;
+    --popover-foreground: #211d15;
 
-    /* Primary = Expadu accent blue */
-    --primary: #1a4cd4;
+    /* Primary = Expadu hot orange — "orange acts" */
+    --primary: #ff3902;
     --primary-foreground: #ffffff;
+    --primary-soft: #ffe3d8;
+    --primary-h: #e02f00;
 
-    /* Secondary = surface-2 */
-    --secondary: #efede7;
-    --secondary-foreground: #18170f;
+    /* Cyan = origin & distance — "cyan locates" */
+    --cyan: #05badd;
+    --cyan-h: #0a7f99;
+    --cyan-soft: #d8f3fb;
+    --cyan-bd: #aedfeb;
 
-    /* Muted */
-    --muted: #efede7;
-    --muted-foreground: #6b6860;
-
-    /* Accent (shadcn) = surface-2 for hover states */
-    --accent: #efede7;
-    --accent-foreground: #18170f;
+    /* Secondary / muted / accent = surface-2 inset */
+    --secondary: #f1ebdf;
+    --secondary-foreground: #211d15;
+    --muted: #f1ebdf;
+    --muted-foreground: #6e6657;
+    --accent: #f1ebdf;
+    --accent-foreground: #211d15;
 
     /* Destructive */
     --destructive: #c4271a;
     --destructive-foreground: #ffffff;
 
     /* Borders & inputs */
-    --border: #e2dfd6;
-    --input: #e2dfd6;
-    --ring: #1a4cd4;
+    --border: #e6ddcb;
+    --input: #e6ddcb;
+    --ring: #ff3902;
 
     /* Chart colors */
-    --chart-1: #1a4cd4;
-    --chart-2: #0a7c52;
-    --chart-3: #c47d0e;
-    --chart-4: #7c3aed;
-    --chart-5: #c4271a;
+    --chart-1: #ff3902;
+    --chart-2: #0f7a4f;
+    --chart-3: #e8a200;
+    --chart-4: #2b4871;
+    --chart-5: #05badd;
 
     /* Sidebar */
-    --sidebar: #f6f5f1;
-    --sidebar-foreground: #18170f;
-    --sidebar-primary: #1a4cd4;
+    --sidebar: #faf6ee;
+    --sidebar-foreground: #211d15;
+    --sidebar-primary: #ff3902;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #ebf0fd;
-    --sidebar-accent-foreground: #1a4cd4;
-    --sidebar-border: #e2dfd6;
-    --sidebar-ring: #1a4cd4;
+    --sidebar-accent: #ffe3d8;
+    --sidebar-accent-foreground: #ff3902;
+    --sidebar-border: #e6ddcb;
+    --sidebar-ring: #ff3902;
 
-    /* Expadu-specific */
-    --surface-2: #efede7;
-    --success: #0a7c52;
-    --success-soft: #edfaf4;
+    /* Expadu-specific — supporting cast */
+    --surface-2: #f1ebdf;
+    --orange: #ff8007;
+    --orange-soft: #ffe7cf;
+    --amber: #e8a200;
+    --amber-soft: #fff0cd;
+    --navy: #2b4871;
+    --navy-soft: #e1e7f1;
+    --success: #0f7a4f;
+    --success-soft: #e2f3ea;
     --warn: #c47d0e;
-    --warn-soft: #fef9ec;
+    --warn-soft: #faecd0;
     --danger: #c4271a;
-    --danger-soft: #fdecea;
-    --accent-soft: #ebf0fd;
-    --accent-hover: #1541b8;
+    --danger-soft: #fbe2de;
+    --accent-soft: #ffe3d8; /* back-compat alias → primary-soft */
+    --accent-hover: #e02f00; /* back-compat alias → primary-h */
 
     /* Text hierarchy */
-    --text-1: #18170f;
-    --text-2: #6b6860;
-    --text-3: #aaa89f;
+    --text-1: #211d15;
+    --text-2: #6e6657;
+    --text-3: #a89f8c;
 }
 
-/* ─── Dark Theme (Expadu) ─── */
+/* ─── Dark Theme (Expadu v4) ─── */
 .dark {
-    --background: #18170f;
-    --foreground: #f6f5f1;
-    --card: #1e1d15;
-    --card-foreground: #f6f5f1;
-    --popover: #1e1d15;
-    --popover-foreground: #f6f5f1;
+    --background: #161208;
+    --foreground: #f7f3e9;
+    --card: #211c12;
+    --card-foreground: #f7f3e9;
+    --popover: #211c12;
+    --popover-foreground: #f7f3e9;
 
-    --primary: #5b8af5;
-    --primary-foreground: #18170f;
+    --primary: #ff5c33;
+    --primary-foreground: #ffffff;
+    --primary-soft: #3a1c11;
+    --primary-h: #ff7656;
 
-    --secondary: #2a2920;
-    --secondary-foreground: #f6f5f1;
+    --cyan: #3ccfee;
+    --cyan-h: #62d9f1;
+    --cyan-soft: #10303a;
+    --cyan-bd: #1d4350;
 
-    --muted: #2a2920;
-    --muted-foreground: #aaa89f;
+    --secondary: #2c2618;
+    --secondary-foreground: #f7f3e9;
+    --muted: #2c2618;
+    --muted-foreground: #a89f8c;
+    --accent: #2c2618;
+    --accent-foreground: #f7f3e9;
 
-    --accent: #2a2920;
-    --accent-foreground: #f6f5f1;
-
-    --destructive: #e5534b;
+    --destructive: #ef6a4d;
     --destructive-foreground: #ffffff;
 
-    --border: #3a3930;
-    --input: #3a3930;
-    --ring: #5b8af5;
+    --border: #3b3424;
+    --input: #3b3424;
+    --ring: #ff5c33;
 
-    --chart-1: #5b8af5;
-    --chart-2: #34d399;
-    --chart-3: #fbbf24;
-    --chart-4: #a78bfa;
-    --chart-5: #f87171;
+    --chart-1: #ff5c33;
+    --chart-2: #3bbd82;
+    --chart-3: #ffc94d;
+    --chart-4: #7ea4dc;
+    --chart-5: #3ccfee;
 
-    --sidebar: #1e1d15;
-    --sidebar-foreground: #f6f5f1;
-    --sidebar-primary: #5b8af5;
-    --sidebar-primary-foreground: #18170f;
-    --sidebar-accent: #2a2920;
-    --sidebar-accent-foreground: #5b8af5;
-    --sidebar-border: #3a3930;
-    --sidebar-ring: #5b8af5;
+    --sidebar: #211c12;
+    --sidebar-foreground: #f7f3e9;
+    --sidebar-primary: #ff5c33;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #3a1c11;
+    --sidebar-accent-foreground: #ff5c33;
+    --sidebar-border: #3b3424;
+    --sidebar-ring: #ff5c33;
 
-    --surface-2: #2a2920;
-    --success: #34d399;
-    --success-soft: #1a2e26;
-    --warn: #fbbf24;
-    --warn-soft: #2e2810;
-    --danger: #f87171;
-    --danger-soft: #2e1a1a;
-    --accent-soft: #1a2440;
-    --accent-hover: #7ba3f7;
+    --surface-2: #2c2618;
+    --orange: #ff9b3d;
+    --orange-soft: #33240f;
+    --amber: #ffc94d;
+    --amber-soft: #2e2510;
+    --navy: #7ea4dc;
+    --navy-soft: #1d2738;
+    --success: #3bbd82;
+    --success-soft: #13241c;
+    --warn: #e0a93c;
+    --warn-soft: #2a2110;
+    --danger: #ef6a4d;
+    --danger-soft: #2c1712;
+    --accent-soft: #3a1c11; /* back-compat alias → primary-soft */
+    --accent-hover: #ff7656; /* back-compat alias → primary-h */
 
-    --text-1: #f6f5f1;
-    --text-2: #aaa89f;
-    --text-3: #6b6860;
+    --text-1: #f7f3e9;
+    --text-2: #a89f8c;
+    --text-3: #6e6657;
+}
+
+/* ─── Category tints (Places / Events / Today cards) ─── */
+/* Each sets --cat-tint (image wash) + --cat-mark (icon ink); referenced inline. */
+.cat-park {
+    --cat-tint: #cfe6c9;
+    --cat-mark: #2f7d3a;
+}
+.cat-culture,
+.cat-language {
+    --cat-tint: #ccd9f5;
+    --cat-mark: #3358ad;
+}
+.cat-pitch,
+.cat-court,
+.cat-sport,
+.cat-sports {
+    --cat-tint: #ffe1c2;
+    --cat-mark: #d2710f;
+}
+.cat-swimming,
+.cat-music,
+.cat-meetup {
+    --cat-tint: #cdeef5;
+    --cat-mark: #0a8aa6;
+}
+.cat-playground,
+.cat-stammtisch,
+.cat-cafe {
+    --cat-tint: #ffeec0;
+    --cat-mark: #c9920a;
+}
+.cat-dog_park,
+.cat-event,
+.cat-party {
+    --cat-tint: #ffded2;
+    --cat-mark: #d2461f;
+}
+.dark .cat-park {
+    --cat-tint: #26432a;
+}
+.dark .cat-swimming,
+.dark .cat-music,
+.dark .cat-meetup {
+    --cat-tint: #11313a;
+}
+.dark .cat-pitch,
+.dark .cat-court,
+.dark .cat-sport,
+.dark .cat-sports {
+    --cat-tint: #3a2a14;
+}
+.dark .cat-culture,
+.dark .cat-language {
+    --cat-tint: #212f59;
+}
+.dark .cat-playground,
+.dark .cat-stammtisch,
+.dark .cat-cafe {
+    --cat-tint: #352b15;
+}
+.dark .cat-dog_park,
+.dark .cat-event,
+.dark .cat-party {
+    --cat-tint: #3a2015;
 }
 
 @layer utilities {
