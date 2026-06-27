@@ -251,27 +251,21 @@ function WeatherRow({
     icon: Icon,
     label,
     value,
-    variant,
 }: {
     icon: ComponentType<IconProps>;
     label: string;
     value: string;
+    // Accepted but unused for now — v4 renders stat values in ink. The
+    // good/caution coloring returns in the data pass.
     variant?: 'good' | 'caution';
 }) {
-    const valueColor =
-        variant === 'good'
-            ? 'text-success'
-            : variant === 'caution'
-              ? 'text-warn'
-              : 'text-foreground';
-
     return (
-        <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-xs last:border-b-0">
-            <span className="flex items-center gap-[7px] text-muted-foreground">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2.5 last:border-b-0">
+            <span className="flex items-center gap-[7px] text-[13px] text-text-2">
                 <Icon size={16} stroke={ICON_STROKE} />
                 {label}
             </span>
-            <span className={`font-mono font-medium ${valueColor}`}>
+            <span className="font-mono text-[12.5px] font-medium text-foreground">
                 {value}
             </span>
         </div>
@@ -409,7 +403,7 @@ function DisruptionsWidget({
                     Live Disruptions
                 </span>
                 {items.length > 0 ? (
-                    <span className="rounded-full bg-danger-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-danger">
+                    <span className="rounded-full bg-danger-soft px-2 py-0.5 font-mono text-[11px] text-danger">
                         {items.length} active
                     </span>
                 ) : (

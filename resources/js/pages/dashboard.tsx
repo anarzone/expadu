@@ -75,13 +75,6 @@ const tileClasses: Record<Tile['severity'], string> = {
     neutral: 'border-border border-l-border bg-card',
 };
 
-const tileTitleClasses: Record<Tile['severity'], string> = {
-    danger: 'text-danger',
-    warn: 'text-foreground',
-    info: 'text-primary',
-    neutral: 'text-foreground',
-};
-
 function getGreeting(name?: string): string {
     const hour = new Date().getHours();
     const part =
@@ -118,13 +111,11 @@ function TileCard({ tile }: { tile: Tile }) {
                 {tile.emoji}
             </span>
             <span className="min-w-0 flex-1">
-                <span
-                    className={`block text-sm leading-snug font-semibold ${tileTitleClasses[tile.severity]}`}
-                >
+                <span className="block text-sm leading-[1.35] font-semibold text-foreground">
                     {tile.title}
                 </span>
                 {tile.subtitle && (
-                    <span className="mt-0.5 block text-[13px] leading-relaxed text-muted-foreground">
+                    <span className="mt-0.5 block text-[13px] leading-[1.4] text-text-2">
                         {tile.subtitle}
                     </span>
                 )}
@@ -247,7 +238,7 @@ export default function Dashboard() {
             <ServiceErrorBanner />
             <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-28 md:px-6">
                 {/* Date line */}
-                <div className="mb-1 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
+                <div className="mb-1 font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
                     {new Date().toLocaleDateString('en-GB', {
                         weekday: 'short',
                         day: 'numeric',
@@ -274,7 +265,7 @@ export default function Dashboard() {
 
                 {/* Prompt box */}
                 <div className="mb-3 rounded-[20px] border border-border bg-card p-[18px] shadow-card transition-colors focus-within:border-primary">
-                    <div className="mb-2.5 flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
+                    <div className="mb-2.5 flex items-center gap-1.5 font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
                         <IconSparkles
                             size={12}
                             stroke={ICON_STROKE}
@@ -342,7 +333,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Right now (urgency tiles) */}
-                <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
+                <div className="mb-3 font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
                     Right now
                 </div>
                 <Deferred
@@ -398,15 +389,15 @@ export default function Dashboard() {
                     {(rails ?? []).map((rail) => (
                         <section key={rail.key} className="mt-8">
                             <div className="mb-3 flex items-baseline gap-2">
-                                <h2 className="font-display text-[18px] font-medium tracking-tight">
+                                <h2 className="font-display text-[21px] font-medium tracking-[-0.01em]">
                                     {rail.title}
                                 </h2>
-                                <span className="text-[11.5px] text-text-3">
+                                <span className="text-[12px] text-text-3">
                                     {rail.reason}
                                 </span>
                                 <Link
                                     href={rail.see_all}
-                                    className="ml-auto shrink-0 text-[12px] font-medium text-primary hover:underline"
+                                    className="ml-auto shrink-0 text-[12px] font-semibold text-primary hover:underline"
                                 >
                                     See all
                                 </Link>
