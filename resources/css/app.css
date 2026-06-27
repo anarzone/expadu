@@ -427,49 +427,5 @@ input[type='time']::-webkit-calendar-picker-indicator {
     animation: fadeUp 0.3s ease both;
 }
 
-/*
- * Sidebar icon-rail: prototype behavior.
- * Single sticky nav — no spacer/fixed desync.
- *
- * Desktop (>1280px): trigger toggles expanded ↔ icon rail;
- *                    hovering the collapsed rail temporarily expands it.
- * Tablet  (≤1280px): trigger toggles like desktop, but the expanded menu
- *                    floats over the content (the 600px column doesn't
- *                    fit next to a full sidebar) and hover does nothing.
- *                    Defaults to closed (see AppShell).
- */
-
-/* Text hidden whenever collapsed */
-.group.peer[data-state='collapsed'] [data-sidebar-text] {
-    opacity: 0;
-    transition: opacity 0.1s;
-}
-
-/* Desktop only: hovering the collapsed rail expands it temporarily */
-@media (min-width: 1281px) {
-    .group.peer[data-state='collapsed']:hover > nav[data-sidebar='sidebar'] {
-        width: var(--sidebar-width) !important;
-        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.08);
-        z-index: 200;
-    }
-    .group.peer[data-state='collapsed']:hover [data-sidebar-text] {
-        opacity: 1;
-        transition: opacity 0.15s 0.08s;
-    }
-}
-
-/* Tablet: icon-rail footprint always; expanded state overlays the content */
-@media (max-width: 1280px) {
-    .group.peer {
-        width: var(--sidebar-width-icon);
-    }
-    .group.peer[data-state='expanded'] > nav[data-sidebar='sidebar'] {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: var(--sidebar-width) !important;
-        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.12);
-        z-index: 200;
-    }
-}
+/* The sidebar is a fixed 248px column (Sidebar collapsible="none") on md+ and
+   hidden on mobile (MobileDock takes over) — no rail/overlay CSS needed. */
