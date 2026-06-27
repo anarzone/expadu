@@ -231,6 +231,12 @@ class HeuristicPromptParser implements ParsesPrompt
             array_push($categories, 'pitch', 'basketball', 'tennis', 'table_tennis', 'skatepark', 'boules');
         }
 
+        // "outdoors / outside / fresh air" — the open-air umbrella, the same way.
+        if ($this->containsWord($t, ['outdoors', 'outdoor', 'outside', 'nature'])
+            || str_contains($t, 'fresh air')) {
+            array_push($categories, 'park', 'lake', 'playground', 'pitch', 'basketball', 'dog_park', 'skatepark');
+        }
+
         return array_values(array_unique($categories));
     }
 

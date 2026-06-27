@@ -111,6 +111,12 @@ test('plural and umbrella category words are extracted', function () {
     $sports = parsePrompt('a day of sports tomorrow');
     expect($sports->plan->categories)->toContain('pitch')
         ->and($sports->plan->categories)->toContain('basketball');
+
+    // "outdoors" is an umbrella too — the open-air categories.
+    $outdoors = parsePrompt('something outdoors tomorrow afternoon');
+    expect($outdoors->plan->categories)->toContain('park')
+        ->and($outdoors->plan->categories)->toContain('lake')
+        ->and($outdoors->plan->categories)->toContain('playground');
 });
 
 test('a prompt with no named area leaves areas empty (compose fills home areas)', function () {
