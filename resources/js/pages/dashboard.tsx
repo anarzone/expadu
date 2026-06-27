@@ -1,8 +1,10 @@
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     IconArrowRight,
+    IconArrowsLeftRight,
     IconCalendarEvent,
     IconSparkles,
+    IconX,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { PushPromptCard } from '@/components/cards/push-prompt-card';
@@ -38,6 +40,41 @@ type Weather = {
 } | null;
 
 type Chip = { label: string; prompt?: string; href?: string };
+
+/** A pick in the inline "composed for you" preview — a slice of a PlanSlot. */
+type PreviewSlot = {
+    id: string;
+    name: string;
+    why: string | null;
+    start_time: string;
+    band: string;
+    swappable: boolean;
+};
+
+const csrf = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') ?? '';
+
+/** Thin POST to the composer endpoints, reused for the inline Today preview. */
+async function composerPost<T>(url: string, body: unknown): Promise<T> {
+    const res = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrf(),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+        throw new Error(String(res.status));
+    }
+
+    return res.json() as Promise<T>;
+}
 
 type RailCard = {
     id: string;
@@ -175,6 +212,12 @@ export default function Dashboard() {
     const [pins, setPins] = useState<Record<string, string>>({});
     const [destination, setDestination] = useState<Destination | null>(null);
     const [detail, setDetail] = useState<Place | null>(null);
+    // Inline "compose for you" preview (the v4 Today flow): a prompt/chip
+    // composes a day right here, then "Open in Day Composer" goes full.
+    const [composing, setComposing] = useState(false);
+    const [preview, setPreview] = useState<PreviewSlot[] | null>(null);
+    const [previewPrompt, setPreviewPrompt] = useState('');
+    const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
     const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
     const isMobile = useIsMobile();
 
@@ -203,6 +246,78 @@ export default function Dashboard() {
             trimmed
                 ? `/composer?prompt=${encodeURIComponent(trimmed)}`
                 : '/composer',
+        );
+    }
+
+    /**
+     * The v4 Today flow: parse + compose the prompt inline and show a preview
+     * card. Non-plan intents (paperwork, search) and an empty prompt fall back
+     * to the full composer page, which already routes them.
+     */
+    async function composeInline(text: string) {
+        const trimmed = text.trim();
+
+        if (!trimmed) {
+            openComposer('');
+
+            return;
+        }
+
+        setPreview(null);
+        setComposing(true);
+
+        try {
+            const parsed = await composerPost<{
+                intent: string;
+                constraints: Record<string, unknown> | null;
+            }>('/composer/parse', { text: trimmed });
+
+            if (parsed.intent !== 'plan_day' || !parsed.constraints) {
+                setComposing(false);
+                openComposer(trimmed);
+
+                return;
+            }
+
+            const res = await composerPost<{ plan: { slots: PreviewSlot[] } }>(
+                '/composer/compose',
+                {
+                    constraints: parsed.constraints,
+                    pins: [],
+                    locked: [],
+                    excluded: [],
+                    from_area: null,
+                },
+            );
+            setPreviewPrompt(trimmed);
+            setPreview(res.plan.slots);
+        } catch {
+            // A failed compose shouldn't strand the user — open the full page.
+            openComposer(trimmed);
+        } finally {
+            setComposing(false);
+        }
+    }
+
+    async function swapPreview(index: number) {
+        setSwappingSlot(index);
+
+        try {
+            const res = await composerPost<{ plan: { slots: PreviewSlot[] } }>(
+                '/composer/swap',
+                { slot: index },
+            );
+            setPreview(res.plan.slots);
+        } catch {
+            // keep the current pick if nothing else fits
+        } finally {
+            setSwappingSlot(null);
+        }
+    }
+
+    function removePreview(index: number) {
+        setPreview((slots) =>
+            slots ? slots.filter((_, i) => i !== index) : slots,
         );
     }
 
@@ -280,14 +395,14 @@ export default function Dashboard() {
                             onChange={(e) => setPrompt(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                    openComposer(prompt);
+                                    void composeInline(prompt);
                                 }
                             }}
                             placeholder="Plan something, ask about paperwork, find a place…"
                             className="min-w-0 flex-1 border-none bg-transparent text-base outline-none placeholder:text-muted-foreground/60"
                         />
                         <button
-                            onClick={() => openComposer(prompt)}
+                            onClick={() => void composeInline(prompt)}
                             title="Go"
                             aria-label="Compose"
                             className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover"
@@ -305,7 +420,9 @@ export default function Dashboard() {
                             onClick={() =>
                                 chip.href
                                     ? router.visit(chip.href)
-                                    : openComposer(chip.prompt ?? chip.label)
+                                    : void composeInline(
+                                          chip.prompt ?? chip.label,
+                                      )
                             }
                             className="cursor-pointer rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition-all hover:border-primary hover:bg-accent-soft hover:text-primary"
                         >
@@ -324,6 +441,117 @@ export default function Dashboard() {
                         you tap.
                     </span>
                 </p>
+
+                {/* Composing skeleton (inline v4 Today compose) */}
+                {composing && (
+                    <div className="mb-7 rounded-[18px] border border-border bg-card p-5 shadow-card">
+                        <div className="mb-4 flex items-center gap-2 font-mono text-[12px] text-primary">
+                            <span className="size-2.5 animate-pulse rounded-full bg-primary" />
+                            Composing your day…
+                        </div>
+                        <div className="space-y-2.5">
+                            <div className="h-4 w-[70%] animate-pulse rounded bg-secondary" />
+                            <div className="h-4 w-[90%] animate-pulse rounded bg-secondary" />
+                            <div className="h-4 w-[55%] animate-pulse rounded bg-secondary" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Inline composed-plan preview */}
+                {preview && !composing && (
+                    <div className="mb-7 rounded-[18px] border border-border bg-card p-5 shadow-card">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <IconSparkles
+                                    size={17}
+                                    stroke={ICON_STROKE}
+                                    className="text-primary"
+                                />
+                                <span className="font-display text-[19px] font-medium">
+                                    Here’s a day, composed for you
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setPreview(null)}
+                                aria-label="Clear plan"
+                                className="flex size-[30px] cursor-pointer items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-foreground"
+                            >
+                                <IconX size={16} stroke={ICON_STROKE} />
+                            </button>
+                        </div>
+
+                        {preview.length === 0 ? (
+                            <p className="text-[13px] text-text-2">
+                                Nothing fit that one — try another prompt.
+                            </p>
+                        ) : (
+                            <div className="flex flex-col gap-2.5">
+                                {preview.map((pick, i) => (
+                                    <div
+                                        key={pick.id}
+                                        className="flex gap-3.5 rounded-[13px] border border-border bg-background p-3 transition-colors hover:border-primary"
+                                    >
+                                        <div className="w-[54px] flex-none text-right">
+                                            <div className="font-mono text-[13px] font-medium">
+                                                {pick.start_time}
+                                            </div>
+                                            <div className="mt-0.5 font-mono text-[9.5px] tracking-[0.08em] text-text-3 uppercase">
+                                                {pick.band}
+                                            </div>
+                                        </div>
+                                        <div className="w-px flex-none bg-border" />
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-[14.5px] leading-[1.3] font-semibold">
+                                                {pick.name}
+                                            </div>
+                                            {pick.why && (
+                                                <div className="mt-[3px] text-[12.5px] leading-[1.4] text-text-2">
+                                                    {pick.why}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-none items-start gap-1">
+                                            {pick.swappable && (
+                                                <button
+                                                    onClick={() =>
+                                                        void swapPreview(i)
+                                                    }
+                                                    disabled={
+                                                        swappingSlot === i
+                                                    }
+                                                    title="Swap"
+                                                    className="flex size-[30px] cursor-pointer items-center justify-center rounded-lg border border-border bg-card text-text-2 transition-colors hover:border-cyan-bd hover:text-cyan-h disabled:opacity-50"
+                                                >
+                                                    <IconArrowsLeftRight
+                                                        size={15}
+                                                        stroke={ICON_STROKE}
+                                                    />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => removePreview(i)}
+                                                title="Remove"
+                                                className="flex size-[30px] cursor-pointer items-center justify-center rounded-lg border border-border bg-card text-text-2 transition-colors hover:border-danger hover:text-danger"
+                                            >
+                                                <IconX
+                                                    size={15}
+                                                    stroke={ICON_STROKE}
+                                                />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => openComposer(previewPrompt)}
+                            className="mt-4 w-full cursor-pointer rounded-[11px] bg-primary py-[11px] text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                        >
+                            Open in Day Composer →
+                        </button>
+                    </div>
+                )}
 
                 {/* Push / iOS-Safari nudge — self-hides when subscribed,
                     dismissed, unsupported, or still detecting. empty:hidden
