@@ -68,19 +68,23 @@ function placeChips(place: Place): CardChip[] {
     return chips;
 }
 
-function placeMeta(place: Place): string {
+function placeMetaMain(place: Place): string {
     const cat =
         place.fine_label ??
         CATEGORIES.find((c) => c.id === place.category)?.label ??
         'Place';
 
-    return [
-        cat,
-        // The park is the venue — a more meaningful address than the
-        // Stadtteil when the facility sits inside one.
-        place.park ?? place.veedel,
-        place.distance_min != null ? `${place.distance_min} min away` : null,
-    ]
+    // The park is the venue — a more meaningful address than the Stadtteil
+    // when the facility sits inside one.
+    return [cat, place.park ?? place.veedel].filter(Boolean).join(' · ');
+}
+
+function placeDistance(place: Place): string | null {
+    return place.distance_min != null ? `${place.distance_min} min away` : null;
+}
+
+function placeMeta(place: Place): string {
+    return [placeMetaMain(place), placeDistance(place)]
         .filter(Boolean)
         .join(' · ');
 }
@@ -529,10 +533,10 @@ export default function Places() {
                 {/* Header */}
                 <div className="mb-5 flex items-start justify-between gap-3">
                     <div>
-                        <h1 className="font-display text-[26px] font-medium tracking-tight">
+                        <h1 className="font-display text-[30px] font-medium tracking-[-0.02em]">
                             Places
                         </h1>
-                        <p className="mt-0.5 text-[13px] text-muted-foreground">
+                        <p className="mt-[3px] text-[13.5px] text-text-2">
                             Parks, museums & places worth knowing
                         </p>
                     </div>
@@ -760,8 +764,8 @@ export default function Places() {
                                         variant="place"
                                         coarse={place.category}
                                         title={place.name}
-                                        emoji={placeEmoji(place)}
-                                        meta={placeMeta(place)}
+                                        meta={placeMetaMain(place)}
+                                        distance={placeDistance(place)}
                                         chips={placeChips(place)}
                                         tip={
                                             place.tip_is_generic

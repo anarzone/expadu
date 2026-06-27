@@ -44,10 +44,10 @@ export function ContentCard({
     seed,
     photoUrl,
     photoAttribution,
-    emoji,
     badge,
     title,
     meta,
+    distance,
     chips = [],
     excerpt,
     tip,
@@ -74,6 +74,8 @@ export function ContentCard({
     badge?: { top: string; bottom: string };
     title: string;
     meta?: string;
+    /** Distance ("8 min away") — rendered in cyan after the meta. */
+    distance?: string | null;
     chips?: CardChip[];
     /** Short muted teaser (2-line clamp) — e.g. an event summary. */
     excerpt?: string | null;
@@ -232,13 +234,13 @@ export function ContentCard({
         );
     }
 
-    // ── Place variant: full card ──
+    // ── Place variant: v4 grid tile ──
     return (
         <div
-            className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all ${
+            className={`group flex h-full flex-col overflow-hidden rounded-[16px] border bg-card shadow-card transition-all hover:-translate-y-0.5 ${
                 expanded
-                    ? 'border-primary shadow-sm'
-                    : 'border-border hover:border-primary/30'
+                    ? 'border-primary'
+                    : 'border-border hover:border-primary'
             }`}
         >
             <div
@@ -254,12 +256,13 @@ export function ContentCard({
                 }}
                 className={`flex flex-1 flex-col ${interactive ? 'cursor-pointer' : ''}`}
             >
-                {/* Image area — desktop grid only; mobile uses the tile */}
-                <div className="relative hidden h-24 w-full md:block">
+                {/* Image header — photo when available, else illustration */}
+                <div className="relative h-32 w-full">
                     {photoUrl ? (
                         <img
                             src={photoUrl}
                             alt={title}
+                            loading="lazy"
                             className="h-full w-full object-cover"
                         />
                     ) : (
@@ -268,12 +271,17 @@ export function ContentCard({
                             className="h-full w-full"
                         />
                     )}
+                    {photoUrl && photoAttribution && (
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/55 to-transparent px-2 pt-3 pb-0.5 text-[8px] text-white/85">
+                            {photoAttribution}
+                        </span>
+                    )}
                     {badge && (
-                        <span className="absolute top-2 left-2 flex min-w-11 flex-col items-center rounded-[9px] border border-border bg-card px-2 py-1 shadow-sm">
-                            <span className="font-mono text-[9px] leading-tight font-medium tracking-[0.08em] text-danger uppercase">
+                        <span className="absolute top-2.5 left-2.5 flex w-[42px] flex-col items-center rounded-[10px] border border-border bg-card py-1 shadow-card">
+                            <span className="font-mono text-[9.5px] leading-tight font-semibold tracking-[0.06em] text-primary uppercase">
                                 {badge.top}
                             </span>
-                            <span className="text-[15px] leading-tight font-bold">
+                            <span className="font-display text-[18px] leading-none font-semibold">
                                 {badge.bottom}
                             </span>
                         </span>
@@ -281,44 +289,31 @@ export function ContentCard({
                 </div>
 
                 <div className="flex flex-1 flex-col p-4">
-                    {/* Title row — mobile tile is the date badge when given */}
-                    <div className="flex items-start gap-3">
-                        {badge ? (
-                            <span className="flex size-11 shrink-0 flex-col items-center justify-center rounded-[9px] border border-border bg-secondary/60 md:hidden">
-                                <span className="font-mono text-[9px] leading-tight font-medium tracking-[0.08em] text-danger uppercase">
-                                    {badge.top}
-                                </span>
-                                <span className="text-[15px] leading-tight font-bold">
-                                    {badge.bottom}
-                                </span>
-                            </span>
-                        ) : (
-                            emoji && (
-                                <span className="flex size-11 shrink-0 items-center justify-center rounded-[9px] bg-secondary text-xl md:hidden">
-                                    {emoji}
-                                </span>
-                            )
-                        )}
+                    {/* Title row */}
+                    <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                            <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold">
-                                {emoji && (
-                                    <span className="mr-1.5 hidden md:inline">
-                                        {emoji}
-                                    </span>
-                                )}
+                            <h3 className="line-clamp-2 text-[15.5px] leading-[1.2] font-semibold">
                                 {title}
                             </h3>
 
-                            {/* Meta line */}
-                            {meta && (
-                                <div className="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-muted-foreground">
+                            {/* Meta + cyan distance ("cyan locates") */}
+                            {(meta || distance) && (
+                                <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-2">
                                     {live && (
                                         <span
                                             className="size-1.5 shrink-0 animate-pulse rounded-full bg-success"
                                             aria-label="starting soon"
                                         />
                                     )}
-                                    <span className="truncate">{meta}</span>
+                                    <span className="truncate">
+                                        {meta}
+                                        {meta && distance && ' · '}
+                                        {distance && (
+                                            <span className="font-semibold text-cyan-h">
+                                                {distance}
+                                            </span>
+                                        )}
+                                    </span>
                                 </div>
                             )}
 
@@ -331,7 +326,7 @@ export function ContentCard({
 
                         {feedback && (
                             <div
-                                className="-mt-1 -mr-1 shrink-0"
+                                className="-mt-0.5 -mr-1 shrink-0"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <PlaceFeedbackMenu
