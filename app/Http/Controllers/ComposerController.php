@@ -99,6 +99,8 @@ class ComposerController extends Controller
             // explicit GPS fix or a picked Veedel ("start from Nippes").
             'lat' => ['nullable', 'numeric'],
             'lng' => ['nullable', 'numeric'],
+            // A saved place's name (Home/Work/…) so its origin reads as that, not "Your location".
+            'from_label' => ['nullable', 'string', 'max:80'],
             'from_area' => ['nullable', 'string'],
         ]);
 

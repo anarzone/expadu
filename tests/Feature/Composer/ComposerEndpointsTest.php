@@ -210,6 +210,47 @@ test('save without a composed plan is a 404, not a crash', function () {
     $this->postJson('/composer/save', ['prompt' => 'anything'])->assertNotFound();
 });
 
+test('the composer page offers the user saved places as plan origins', function () {
+    $user = User::factory()->onboarded()->create();
+    // Created Work-first to prove the home-then-work ordering is by category.
+    UserPlace::factory()->create([
+        'user_id' => $user->id, 'category' => 'work', 'name' => 'Office', 'lat' => 50.9413, 'lng' => 6.9583,
+    ]);
+    UserPlace::factory()->create([
+        'user_id' => $user->id, 'category' => 'home', 'name' => 'My Flat', 'lat' => 51.0397, 'lng' => 6.9302,
+    ]);
+    $this->actingAs($user);
+
+    $this->get('/composer')->assertInertia(fn ($page) => $page
+        ->component('composer')
+        ->has('places', 2)
+        // Home is ordered before Work, regardless of insertion order.
+        ->where('places.0.name', 'My Flat')
+        ->where('places.1.name', 'Office'),
+    );
+});
+
+test('composing from a saved place labels the origin by its name, not "Your location"', function () {
+    $user = composerUser();
+    Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 51.0397, 'lng' => 6.9302]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+        ],
+        'lat' => 51.0397,
+        'lng' => 6.9302,
+        'from_label' => 'Home',
+    ]);
+
+    $response->assertOk();
+    $response->assertJsonPath('origin.source', 'live');
+    $response->assertJsonPath('origin.label', 'Home');
+});
+
 test('compose returns adaptive facets for the editable filters', function () {
     $user = composerUser();
 

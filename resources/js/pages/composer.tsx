@@ -303,10 +303,20 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
     );
 }
 
+/** A saved place (Home / Work / custom) the user can start the plan from. */
+type SavedOrigin = {
+    id: number;
+    name: string;
+    category: string;
+    lat: number;
+    lng: number;
+};
+
 export default function Composer() {
-    const { prompt, pins } = usePage<{
+    const { prompt, pins, places } = usePage<{
         prompt?: string;
         pins?: string[];
+        places?: SavedOrigin[];
     }>().props;
     const { track } = useTracker();
 
@@ -346,6 +356,10 @@ export default function Composer() {
     // state, so it rides along on every recompose (archetype switch, shuffle…)
     // without re-creating runCompose. Cleared when the user uses live location.
     const fromAreaRef = useRef<string | null>(null);
+    // A picked saved place (Home/Work/…) the plan starts from — rides recomposes
+    // the same way, but as explicit coordinates + a label. Mutually exclusive
+    // with fromAreaRef and live location.
+    const fromPlaceRef = useRef<SavedOrigin | null>(null);
 
     const runCompose = useCallback(
         async (
@@ -375,6 +389,14 @@ export default function Composer() {
                     locked: opts.locked ?? [],
                     excluded: opts.excluded ?? [],
                     from_area: fromAreaRef.current,
+                    // A picked saved place wins as the explicit origin + label.
+                    ...(fromPlaceRef.current
+                        ? {
+                              lat: fromPlaceRef.current.lat,
+                              lng: fromPlaceRef.current.lng,
+                              from_label: fromPlaceRef.current.name,
+                          }
+                        : {}),
                 });
                 setPlan(json.plan);
                 setNotices(json.notices ?? []);
@@ -514,8 +536,9 @@ export default function Composer() {
             return;
         }
 
-        // Live location overrides any previously picked start area.
+        // Live location overrides any previously picked start area or place.
         fromAreaRef.current = null;
+        fromPlaceRef.current = null;
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -559,6 +582,19 @@ export default function Composer() {
         }
 
         fromAreaRef.current = area;
+        fromPlaceRef.current = null;
+        void runCompose(constraints, { archetype, locked, excluded });
+    }
+
+    // Start the plan from a saved place (Home / Work / a pin). Sends its exact
+    // coordinates + name, overriding any picked area or live location.
+    function pickFromPlace(place: SavedOrigin) {
+        if (!constraints) {
+            return;
+        }
+
+        fromAreaRef.current = null;
+        fromPlaceRef.current = place;
         void runCompose(constraints, { archetype, locked, excluded });
     }
 
@@ -602,13 +638,17 @@ export default function Composer() {
         ? (facets.categories.find((c) => c.value === doingValue)?.label ??
           doingValue)
         : 'anything';
+    const savedOrigins = places ?? [];
     const originLabel = locating
         ? 'Locating…'
         : (origin?.label ?? 'your location');
-    // The selected origin option: a picked Veedel matches by name; anything
-    // else (live/confirmed location) is "your location".
-    const originValue =
-        origin?.source === 'area' ? (origin.label ?? '') : '__me__';
+    // The selected origin option: a picked saved place matches by id, a picked
+    // Veedel by name; anything else (live/confirmed location) is "your location".
+    const originValue = fromPlaceRef.current
+        ? `place:${fromPlaceRef.current.id}`
+        : origin?.source === 'area'
+          ? (origin.label ?? '')
+          : '__me__';
 
     const areaTokenOpts = [
         { value: '', label: 'All Cologne' },
@@ -620,6 +660,7 @@ export default function Composer() {
     ];
     const originTokenOpts = [
         { value: '__me__', label: 'your location' },
+        ...savedOrigins.map((p) => ({ value: `place:${p.id}`, label: p.name })),
         ...facets.areas.map((a) => ({ value: a, label: a })),
     ];
 
@@ -796,10 +837,27 @@ export default function Composer() {
                                 'Starting from?',
                                 originTokenOpts,
                                 originValue,
-                                (v) =>
-                                    v === '__me__'
-                                        ? locateFrom()
-                                        : pickFromArea(v),
+                                (v) => {
+                                    if (v === '__me__') {
+                                        locateFrom();
+
+                                        return;
+                                    }
+
+                                    if (v.startsWith('place:')) {
+                                        const place = savedOrigins.find(
+                                            (p) => `place:${p.id}` === v,
+                                        );
+
+                                        if (place) {
+                                            pickFromPlace(place);
+                                        }
+
+                                        return;
+                                    }
+
+                                    pickFromArea(v);
+                                },
                                 'right',
                             )}
                             .

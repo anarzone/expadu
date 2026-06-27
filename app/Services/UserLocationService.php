@@ -70,7 +70,12 @@ class UserLocationService
             $lng = (float) $request->input('lng');
 
             if ($lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180) {
-                return new LocationContext($lat, $lng, LocationSource::Live, 'Your location');
+                // A picked saved place (Home/Work/…) sends its name so the From
+                // control can label the origin; a raw GPS fix stays "Your location".
+                $label = $request->input('from_label');
+                $label = is_string($label) && $label !== '' ? $label : 'Your location';
+
+                return new LocationContext($lat, $lng, LocationSource::Live, $label);
             }
         }
 
