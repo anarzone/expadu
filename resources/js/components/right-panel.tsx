@@ -87,7 +87,7 @@ function weatherIcon(icon: string): ComponentType<IconProps> {
  */
 function WeatherGlyph({ icon }: { icon: string }) {
     return createElement(weatherIcon(icon), {
-        size: 40,
+        size: 48,
         stroke: ICON_STROKE,
     });
 }
@@ -153,9 +153,9 @@ function WeatherWidget({
     // Weather loads async and can be unavailable — never show a misleading 0°.
     if (!weather || weather.available === false) {
         return (
-            <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
-                <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                    <span className="text-[13px] font-bold">
+            <div className="mb-4 overflow-hidden rounded-[16px] border border-border bg-card shadow-card">
+                <div className="flex items-center justify-between px-4 pt-4 pb-1">
+                    <span className="text-[14px] font-semibold">
                         Weather · Cologne
                     </span>
                 </div>
@@ -181,31 +181,28 @@ function WeatherWidget({
     const bikeScore = forecast?.bike_score ?? 'Good';
 
     return (
-        <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <span className="text-[13px] font-bold">Weather · Cologne</span>
-                <div className="flex items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
-                    <span className="inline-block size-[5px] animate-pulse rounded-full bg-success" />
-                    Live
-                </div>
+        <div className="mb-4 overflow-hidden rounded-[16px] border border-border bg-card shadow-card">
+            <div className="flex items-center justify-between px-4 pt-4 pb-1">
+                <span className="text-[14px] font-semibold">
+                    Weather · Cologne
+                </span>
             </div>
-            <div className="flex items-start justify-between px-4 py-4">
+            <div className="flex items-start justify-between px-4 pb-2">
                 <div>
-                    <div className="font-display text-[44px] leading-none font-light tracking-tight">
-                        {temp}
-                        <sup className="align-super text-lg">°</sup>
+                    <div className="font-display text-[54px] leading-[0.9] font-medium text-amber">
+                        {temp}°
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
+                    <div className="mt-2 text-[14px] font-medium">
                         {condition}
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-[12.5px] text-text-2">
                         {forecast?.rain_summary ??
                             (rainStarts
                                 ? `Rain from ${rainStarts}`
                                 : 'No rain expected')}
                     </div>
                 </div>
-                <div className="text-muted-foreground opacity-85">
+                <div className="text-amber">
                     <WeatherGlyph icon={weather?.icon ?? ''} />
                 </div>
             </div>
@@ -348,48 +345,35 @@ function RhineWidget({ data }: { data?: RhineData | null }) {
             : data?.status === 'low'
               ? 'Low water level'
               : 'Rheinufer paths open';
-    const valueColor =
-        data?.status === 'warning' || data?.status === 'high'
-            ? 'text-warn'
-            : 'text-success';
 
     return (
-        <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <span className="text-[13px] font-bold">Rhine Level</span>
-                {data ? (
-                    <div className="flex items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
-                        <span className="inline-block size-[5px] animate-pulse rounded-full bg-success" />
-                        Live
-                    </div>
-                ) : (
+        <div className="mb-4 rounded-[16px] border border-border bg-card p-[18px] shadow-card">
+            <div className="mb-3.5 flex items-center justify-between">
+                <span className="text-[14px] font-semibold">Rhine Level</span>
+                {!data && (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                         Unavailable
                     </span>
                 )}
             </div>
-            <div className="flex items-center justify-between px-4 py-3.5">
-                <div className="flex items-center gap-2.5">
-                    <IconRipple size={24} stroke={ICON_STROKE} />
-                    <div>
-                        <div className="text-[13px] font-semibold">
-                            Cologne Gauge
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">
-                            {data
-                                ? statusLabel
-                                : 'Data temporarily unavailable'}
-                        </div>
+            <div className="flex items-center gap-3.5">
+                <span className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px] bg-cyan-soft text-cyan">
+                    <IconRipple size={22} stroke={ICON_STROKE} />
+                </span>
+                <div className="min-w-0 flex-1">
+                    <div className="text-[14px] font-semibold">
+                        Cologne Gauge
+                    </div>
+                    <div className="text-[12.5px] text-text-2">
+                        {data ? statusLabel : 'Data temporarily unavailable'}
                     </div>
                 </div>
                 {meters && (
                     <div className="shrink-0 text-right">
-                        <div
-                            className={`font-mono text-[22px] leading-none font-medium ${valueColor}`}
-                        >
+                        <div className="font-display text-[26px] leading-none font-medium text-cyan">
                             {meters}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="mt-0.5 font-mono text-[10px] text-text-3">
                             metres
                         </div>
                     </div>
@@ -419,11 +403,13 @@ function DisruptionsWidget({
               : 'text-muted-foreground';
 
     return (
-        <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <span className="text-[13px] font-bold">Live Disruptions</span>
+        <div className="mb-4 overflow-hidden rounded-[16px] border border-border bg-card shadow-card">
+            <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                <span className="text-[14px] font-semibold">
+                    Live Disruptions
+                </span>
                 {items.length > 0 ? (
-                    <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[10px] font-semibold text-warn">
+                    <span className="rounded-full bg-danger-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-danger">
                         {items.length} active
                     </span>
                 ) : (
@@ -509,9 +495,9 @@ function ExpandableRow({ children }: { children: React.ReactNode }) {
 /** Shared card shell — the header is identical across all three states. */
 function FeaturedEventShell({ children }: { children: React.ReactNode }) {
     return (
-        <div className="mb-3.5 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="mb-4 overflow-hidden rounded-[16px] border border-border bg-card shadow-card">
             <div className="border-b border-border px-4 py-3">
-                <span className="text-[13px] font-bold">Today's pick</span>
+                <span className="text-[14px] font-semibold">Today's pick</span>
             </div>
             {children}
         </div>
