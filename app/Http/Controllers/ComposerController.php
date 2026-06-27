@@ -47,6 +47,8 @@ class ComposerController extends Controller
 
     private ?array $forecastCache = null;
 
+    private ?array $currentWeatherCache = null;
+
     /**
      * The single parse call: classify intent + extract payload. The result
      * carries the intent so the frontend renders the right surface (plan,
@@ -195,6 +197,7 @@ class ComposerController extends Controller
         return response()->json([
             'plan' => $plan->toArray(),
             'notices' => $this->notices($constraints, $plan, $poolRelaxed),
+            'weather' => $this->weatherNote($constraints),
             'facets' => $this->facets($rawPool, $profile),
             'origin' => [
                 'source' => $originContext->source->value,
@@ -375,6 +378,75 @@ class ComposerController extends Controller
     }
 
     /**
+     * Current conditions (temperature + label), fetched at most once per request.
+     *
+     * @return array<string, mixed>
+     */
+    private function currentWeather(): array
+    {
+        if ($this->currentWeatherCache !== null) {
+            return $this->currentWeatherCache;
+        }
+
+        try {
+            return $this->currentWeatherCache = app(WeatherService::class)->getCurrentWeather();
+        } catch (\Throwable) {
+            return $this->currentWeatherCache = [];
+        }
+    }
+
+    /**
+     * The single cyan "locating" weather line above the plan (matching the v4
+     * mock): the rain summary the scorer already acted on, or — on a dry day —
+     * the current temperature framed to the plan's daypart. Only shown for a
+     * plan starting today, since the reading is "right now"; null otherwise so
+     * the frontend renders nothing.
+     *
+     * @return array{text: string, rain: bool}|null
+     */
+    private function weatherNote(Constraints $constraints): ?array
+    {
+        if (($this->forecast()['available'] ?? false) !== true) {
+            return null;
+        }
+
+        $start = $constraints->windowStart;
+        if (! $start->isSameDay(CarbonImmutable::now('Europe/Berlin'))) {
+            return null;
+        }
+
+        if ($this->rainExpected()) {
+            $summary = $this->forecast()['rain_summary'] ?? null;
+
+            return [
+                'text' => is_string($summary) && $summary !== ''
+                    ? $summary
+                    : 'Rain expected — indoor picks favoured',
+                'rain' => true,
+            ];
+        }
+
+        $current = $this->currentWeather();
+        if (($current['available'] ?? false) !== true) {
+            return null;
+        }
+
+        $part = match (true) {
+            $start->hour < 12 => 'this morning',
+            $start->hour < 17 => 'this afternoon',
+            default => 'this evening',
+        };
+        $condition = is_string($current['condition'] ?? null) && $current['condition'] !== 'Unavailable'
+            ? $current['condition']
+            : 'Dry';
+
+        return [
+            'text' => "{$condition} · {$current['temperature']}° {$part}",
+            'rain' => false,
+        ];
+    }
+
+    /**
      * Deterministic, honest plan annotations: the woven appointment, the
      * weather call the scorer already acted on, and the German rhythm of
      * the planned day (Sunday/holiday closures, a holiday-eve grocery
@@ -399,10 +471,8 @@ class ComposerController extends Controller
             }
         }
 
-        if ($this->rainExpected()) {
-            $summary = $this->forecast()['rain_summary'] ?? null;
-            $notices[] = ['type' => 'warn', 'text' => '🌧 '.(is_string($summary) && $summary !== '' ? $summary : 'Rain expected — indoor picks favoured')];
-        }
+        // Weather no longer rides the notice pills — it's the dedicated cyan
+        // line above the plan (see weatherNote()), so it isn't duplicated here.
 
         // German shops shut on Sundays and public holidays — NOT Saturdays.
         $holidays = app(GermanHolidayService::class);

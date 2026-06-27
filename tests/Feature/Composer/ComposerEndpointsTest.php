@@ -108,6 +108,62 @@ test('compose builds a plan from real candidates and stores it', function () {
     expect(Cache::get("composer:plan:{$user->id}"))->not->toBeNull();
 });
 
+test('compose carries a dry weather line for a plan today, not in the notices', function () {
+    $user = composerUser();
+    $this->mock(\App\Services\WeatherService::class, function ($m) {
+        $m->shouldReceive('getForecast')->andReturn([
+            'available' => true,
+            'rain_soon' => false,
+            'rain_summary' => 'Dry next 8 hours',
+        ]);
+        $m->shouldReceive('getCurrentWeather')->andReturn([
+            'available' => true,
+            'temperature' => 22,
+            'condition' => 'Clear',
+        ]);
+    });
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->copy()->setTime(19, 0)->toIso8601String(),
+        ],
+    ]);
+
+    $response->assertOk();
+    $response->assertJsonPath('weather.rain', false);
+    expect($response->json('weather.text'))->toContain('22°')->toContain('afternoon');
+    // Weather is the dedicated cyan line, never duplicated in the notice pills.
+    expect(collect($response->json('notices'))->pluck('text')->implode(' '))->not->toContain('22°');
+});
+
+test('compose frames a rainy plan with the rain summary on the weather line', function () {
+    $user = composerUser();
+    $this->mock(\App\Services\WeatherService::class, function ($m) {
+        $m->shouldReceive('getForecast')->andReturn([
+            'available' => true,
+            'rain_soon' => true,
+            'rain_summary' => 'Rain from 15:00',
+        ]);
+        $m->shouldReceive('getCurrentWeather')->andReturn(['available' => true, 'temperature' => 14, 'condition' => 'Rain']);
+    });
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->setTime(13, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->copy()->setTime(18, 0)->toIso8601String(),
+        ],
+    ]);
+
+    $response->assertOk();
+    $response->assertJsonPath('weather.rain', true);
+    expect($response->json('weather.text'))->toBe('Rain from 15:00');
+});
+
 test('compose returns adaptive facets for the editable filters', function () {
     $user = composerUser();
 

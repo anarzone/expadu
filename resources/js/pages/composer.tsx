@@ -4,9 +4,11 @@ import {
     IconArrowsShuffle,
     IconBus,
     IconChecklist,
+    IconCloudRain,
     IconCurrencyEuro,
     IconPin,
     IconPlus,
+    IconRipple,
     IconSearch,
     IconSparkles,
     IconUsers,
@@ -70,6 +72,9 @@ type Plan = {
 };
 
 type Notice = { type: string; text: string };
+
+/** The single cyan "locating" weather line above the plan (v4 mock). */
+type WeatherNote = { text: string; rain: boolean };
 
 type Intent =
     | 'plan_day'
@@ -312,6 +317,7 @@ export default function Composer() {
     });
     const [plan, setPlan] = useState<Plan | null>(null);
     const [notices, setNotices] = useState<Notice[]>([]);
+    const [weather, setWeather] = useState<WeatherNote | null>(null);
     const [intent, setIntent] = useState<Intent>('plan_day');
     const [parsing, setParsing] = useState(false);
     const [composing, setComposing] = useState(false);
@@ -356,6 +362,7 @@ export default function Composer() {
                 const json = await post<{
                     plan: Plan;
                     notices: Notice[];
+                    weather?: WeatherNote | null;
                     facets?: Facets;
                     origin?: PlacesOrigin;
                 }>('/composer/compose', {
@@ -370,6 +377,7 @@ export default function Composer() {
                 });
                 setPlan(json.plan);
                 setNotices(json.notices ?? []);
+                setWeather(json.weather ?? null);
                 setOrigin(json.origin ?? null);
 
                 if (json.facets) {
@@ -941,6 +949,28 @@ export default function Composer() {
                             ))}
                         </div>
                     </>
+                )}
+
+                {/* Cyan weather/river note — the plan's single "locating" line */}
+                {plan && weather && (
+                    <div className="mt-4 flex items-center gap-2.5 rounded-[11px] bg-cyan-soft px-[13px] py-2.5">
+                        {weather.rain ? (
+                            <IconCloudRain
+                                size={16}
+                                stroke={1.9}
+                                className="shrink-0 text-cyan-h"
+                            />
+                        ) : (
+                            <IconRipple
+                                size={16}
+                                stroke={1.9}
+                                className="shrink-0 text-cyan-h"
+                            />
+                        )}
+                        <span className="text-[13px] font-semibold text-cyan-h">
+                            {weather.text}
+                        </span>
+                    </div>
                 )}
 
                 {plan && <NoticeChips notices={notices} />}
