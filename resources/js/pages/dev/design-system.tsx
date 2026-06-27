@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
     Button,
@@ -223,15 +223,30 @@ const CATEGORY_TINTS = [
 export default function DesignSystem() {
     const [mode, setMode] = useState('walk');
     const [cat, setCat] = useState('parks');
-    const [dark, setDark] = useState(false);
+    // Adopt the app's current theme on first render (read, don't set-in-effect).
+    const [dark, setDark] = useState(
+        () =>
+            typeof document !== 'undefined' &&
+            document.documentElement.classList.contains('dark'),
+    );
+
+    // Restore the app's theme when leaving this page (we drive <html> below).
+    useEffect(() => {
+        const original = document.documentElement.classList.contains('dark');
+
+        return () => {
+            document.documentElement.classList.toggle('dark', original);
+        };
+    }, []);
+
+    // The --color-* token indirection resolves at :root, so dark mode must
+    // toggle on <html> — a nested wrapper class won't flip the tokens.
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', dark);
+    }, [dark]);
 
     return (
-        <div
-            className={cn(
-                'min-h-screen bg-background pb-20 text-foreground',
-                dark && 'dark',
-            )}
-        >
+        <div className="min-h-screen bg-background pb-20 text-foreground">
             <Head title="Design system" />
 
             {/* topbar */}
