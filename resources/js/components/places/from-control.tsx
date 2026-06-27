@@ -61,8 +61,8 @@ export function FromControl({
                 aria-label="Use my location for distances"
                 className={`flex min-w-0 items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
                     known
-                        ? 'bg-accent-soft text-primary'
-                        : 'border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary'
+                        ? 'bg-cyan-soft text-cyan-h'
+                        : 'border border-dashed border-border text-muted-foreground hover:border-cyan-bd hover:text-cyan-h'
                 }`}
             >
                 <IconMapPin
@@ -90,8 +90,8 @@ export function FromControl({
                             aria-pressed={on}
                             className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[13px] font-medium transition-colors ${
                                 on
-                                    ? 'bg-card text-primary shadow-sm'
-                                    : 'text-muted-foreground hover:text-primary'
+                                    ? 'bg-card text-cyan-h shadow-sm'
+                                    : 'text-muted-foreground hover:text-cyan-h'
                             }`}
                         >
                             <Icon size={16} stroke={ICON_STROKE} />

@@ -624,10 +624,10 @@ export default function Places() {
                                     data-veedel-chip={name ?? ''}
                                     onClick={() => setVeedel(name)}
                                     aria-pressed={on}
-                                    className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                    className={`shrink-0 cursor-pointer rounded-full border px-[15px] py-2 text-[13px] transition-all ${
                                         on
-                                            ? 'border-primary bg-primary text-white'
-                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                            ? 'border-primary bg-primary font-semibold text-white'
+                                            : 'border-border bg-card font-medium text-text-2 hover:border-primary hover:text-primary'
                                     }`}
                                 >
                                     {name ?? `All of ${bezirk}`}
@@ -650,10 +650,10 @@ export default function Places() {
                                 key={c.id}
                                 onClick={() => setCategory(on ? null : c.id)}
                                 aria-pressed={on}
-                                className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] transition-all ${
                                     on
-                                        ? 'border-primary bg-accent-soft text-primary'
-                                        : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                        ? 'border-primary bg-primary-soft font-semibold text-primary'
+                                        : 'border-border bg-card font-medium text-text-2 hover:border-primary hover:text-primary'
                                 }`}
                             >
                                 {c.emoji} {c.label}
@@ -673,7 +673,7 @@ export default function Places() {
 
                 {/* Result count */}
                 {status === 'ok' && view === 'list' && (
-                    <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase">
+                    <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-text-2 uppercase">
                         {total} {total === 1 ? 'place' : 'places'} · {areaLabel}
                         {veedel !== null && nearbyIncluded && ' & nearby'}
                     </div>
