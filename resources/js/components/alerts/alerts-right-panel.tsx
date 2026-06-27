@@ -127,7 +127,7 @@ function NotificationSettings() {
             </div>
 
             {/* Master push toggle */}
-            <div className="flex items-center justify-between border-b border-border bg-[#F6F5F1] px-4 py-[11px] dark:bg-[#2A2920]">
+            <div className="flex items-center justify-between border-b border-border bg-surface-2 px-4 py-[11px]">
                 <div>
                     <div className="text-[13px] font-semibold">
                         Push notifications
@@ -145,7 +145,7 @@ function NotificationSettings() {
                         onClick={handlePushToggle}
                         disabled={pushLoading}
                         className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors duration-250 ${
-                            isSubscribed ? 'bg-[#1A4CD4]' : 'bg-border'
+                            isSubscribed ? 'bg-success' : 'bg-border'
                         } ${pushLoading ? 'opacity-50' : ''}`}
                     >
                         <span

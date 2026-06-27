@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { IconSettings } from '@tabler/icons-react';
+import { IconCheck, IconChecks, IconSettings } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { AlertRow } from '@/components/alerts/alert-row';
 import type { AlertData } from '@/components/alerts/alert-row';
@@ -7,6 +7,7 @@ import { AlertStackRow } from '@/components/alerts/alert-stack';
 import type { AlertStack } from '@/components/alerts/alert-stack';
 import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
 
 // Subtypes that should never be stacked — each appears individually
@@ -393,8 +394,9 @@ export default function Alerts() {
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllRead}
-                                className="text-xs font-semibold text-[#1A4CD4]"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px] font-semibold text-text-2 transition-colors hover:border-primary hover:text-primary"
                             >
+                                <IconChecks size={14} stroke={ICON_STROKE} />
                                 Mark all read
                             </button>
                         )}
@@ -415,7 +417,7 @@ export default function Alerts() {
                             onClick={() => setActiveTab(t.id)}
                             className={`flex-1 border-b-2 px-3 py-[11px] text-center text-xs font-semibold transition-all ${
                                 activeTab === t.id
-                                    ? 'border-[#1A4CD4] text-[#1A4CD4]'
+                                    ? 'border-primary text-primary'
                                     : 'border-transparent text-muted-foreground hover:bg-secondary'
                             }`}
                         >
@@ -427,12 +429,14 @@ export default function Alerts() {
                 {/* Alert feed grouped by time */}
                 {filteredAlerts.length === 0 ? (
                     <div className="py-16 text-center">
-                        <div className="mb-3 text-[40px]">🔔</div>
-                        <div className="text-base font-semibold text-muted-foreground">
-                            No alerts here
+                        <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
+                            <IconCheck size={26} stroke={2.2} />
                         </div>
-                        <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                            You're all caught up in this category.
+                        <div className="font-display text-[21px] font-medium">
+                            You're all caught up
+                        </div>
+                        <div className="mx-auto mt-1.5 max-w-xs text-[13.5px] leading-relaxed text-text-2">
+                            Nothing needs you in this category right now.
                         </div>
                     </div>
                 ) : (
