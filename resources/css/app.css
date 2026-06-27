@@ -171,6 +171,9 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-navy-soft: var(--navy-soft);
     --color-text-2: var(--text-2);
     --color-text-3: var(--text-3);
+
+    /* v4 soft elevation — one shadow, theme-aware via --shadow */
+    --shadow-card: var(--shadow);
 }
 
 /* ─── Light Theme (Expadu v4 — warm paper) ─── */
@@ -250,6 +253,10 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --text-1: #211d15;
     --text-2: #6e6657;
     --text-3: #a89f8c;
+
+    /* One soft shadow for raised surfaces */
+    --shadow:
+        0 1px 2px rgba(33, 29, 21, 0.05), 0 8px 28px rgba(33, 29, 21, 0.06);
 }
 
 /* ─── Dark Theme (Expadu v4) ─── */
@@ -319,6 +326,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --text-1: #f7f3e9;
     --text-2: #a89f8c;
     --text-3: #6e6657;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.32);
 }
 
 /* ─── Category tints (Places / Events / Today cards) ─── */
