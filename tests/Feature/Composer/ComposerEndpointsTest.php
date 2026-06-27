@@ -1,5 +1,6 @@
 <?php
 
+use App\Composer\TodayPlanStore;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\Task;
@@ -8,6 +9,7 @@ use App\Models\UserEvent;
 use App\Models\UserPlace;
 use App\Models\UserTask;
 use App\Services\UserLocationService;
+use App\Services\WeatherService;
 use App\Transit\Contracts\RouteService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -110,7 +112,7 @@ test('compose builds a plan from real candidates and stores it', function () {
 
 test('compose carries a dry weather line for a plan today, not in the notices', function () {
     $user = composerUser();
-    $this->mock(\App\Services\WeatherService::class, function ($m) {
+    $this->mock(WeatherService::class, function ($m) {
         $m->shouldReceive('getForecast')->andReturn([
             'available' => true,
             'rain_soon' => false,
@@ -141,7 +143,7 @@ test('compose carries a dry weather line for a plan today, not in the notices', 
 
 test('compose frames a rainy plan with the rain summary on the weather line', function () {
     $user = composerUser();
-    $this->mock(\App\Services\WeatherService::class, function ($m) {
+    $this->mock(WeatherService::class, function ($m) {
         $m->shouldReceive('getForecast')->andReturn([
             'available' => true,
             'rain_soon' => true,
@@ -162,6 +164,50 @@ test('compose frames a rainy plan with the rain summary on the weather line', fu
     $response->assertOk();
     $response->assertJsonPath('weather.rain', true);
     expect($response->json('weather.text'))->toBe('Rain from 15:00');
+});
+
+test('save pins the composed plan to Today, surfaces it on the home feed, and clear removes it', function () {
+    $user = composerUser();
+    Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.9480, 'lng' => 6.9240]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->setTime(14, 0);
+    $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->copy()->setTime(19, 0)->toIso8601String(),
+            'areas' => [],
+            'categories' => [],
+        ],
+    ])->assertOk();
+
+    // Composing alone doesn't pin anything to Today.
+    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
+
+    $this->postJson('/composer/save', ['prompt' => 'something this afternoon'])
+        ->assertOk()
+        ->assertJsonPath('saved', true);
+
+    $saved = app(TodayPlanStore::class)->get($user);
+    expect($saved)->not->toBeNull();
+    expect($saved['prompt'])->toBe('something this afternoon');
+    expect($saved['slots'])->not->toBeEmpty();
+
+    // The home feed now carries it as a prop.
+    $this->get('/dashboard')->assertInertia(fn ($page) => $page
+        ->component('dashboard')
+        ->where('savedPlan.prompt', 'something this afternoon')
+        ->has('savedPlan.slots'),
+    );
+
+    $this->deleteJson('/composer/today')->assertOk();
+    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
+});
+
+test('save without a composed plan is a 404, not a crash', function () {
+    $this->actingAs(composerUser());
+
+    $this->postJson('/composer/save', ['prompt' => 'anything'])->assertNotFound();
 });
 
 test('compose returns adaptive facets for the editable filters', function () {

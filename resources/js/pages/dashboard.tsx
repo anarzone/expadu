@@ -101,6 +101,19 @@ type PreviewSlot = {
     swappable: boolean;
 };
 
+/** The plan pinned to Today via the composer's "Save to Today". */
+type SavedPlan = {
+    weekday: string;
+    prompt: string | null;
+    slots: {
+        id: string;
+        name: string;
+        why: string | null;
+        start_time: string;
+        band: string;
+    }[];
+} | null;
+
 const csrf = () =>
     document
         .querySelector('meta[name="csrf-token"]')
@@ -124,6 +137,18 @@ async function composerPost<T>(url: string, body: unknown): Promise<T> {
     }
 
     return res.json() as Promise<T>;
+}
+
+/** Un-pin the saved Today plan. */
+async function composerDelete(url: string): Promise<void> {
+    await fetch(url, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: {
+            'X-CSRF-TOKEN': csrf(),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    });
 }
 
 type RailCard = {
@@ -259,11 +284,12 @@ function TaskCard({ card }: { card: RailCard }) {
 }
 
 export default function Dashboard() {
-    const { tiles, rails, chips, weather, auth } = usePage<{
+    const { tiles, rails, chips, weather, savedPlan, auth } = usePage<{
         tiles?: Tile[];
         rails?: Rail[];
         chips?: Chip[];
         weather?: Weather;
+        savedPlan?: SavedPlan;
         auth: { user?: { name?: string } };
     }>().props;
 
@@ -277,6 +303,7 @@ export default function Dashboard() {
     const [preview, setPreview] = useState<PreviewSlot[] | null>(null);
     const [previewPrompt, setPreviewPrompt] = useState('');
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
+    const [savingPreview, setSavingPreview] = useState(false);
     const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
     const isMobile = useIsMobile();
 
@@ -378,6 +405,27 @@ export default function Dashboard() {
         setPreview((slots) =>
             slots ? slots.filter((_, i) => i !== index) : slots,
         );
+    }
+
+    // Persist the inline draft to Today: it's the same plan already cached by
+    // compose, so save it, drop the draft, and reload the pinned-plan prop.
+    async function savePreviewToToday() {
+        setSavingPreview(true);
+
+        try {
+            await composerPost('/composer/save', { prompt: previewPrompt });
+            setPreview(null);
+            router.reload({ only: ['savedPlan'] });
+        } catch {
+            // leave the draft in place if the save didn't take
+        } finally {
+            setSavingPreview(false);
+        }
+    }
+
+    function dismissSavedPlan() {
+        void composerDelete('/composer/today');
+        router.reload({ only: ['savedPlan'] });
     }
 
     function planAroundPins() {
@@ -522,6 +570,70 @@ export default function Dashboard() {
                     </span>
                 </p>
 
+                {/* Saved plan — pinned from the composer's "Save to Today" */}
+                {savedPlan && (
+                    <div className="mb-7 rounded-[18px] border border-l-[3px] border-border border-l-primary bg-card p-5 shadow-card">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <IconCalendarEvent
+                                    size={18}
+                                    stroke={ICON_STROKE}
+                                    className="text-primary"
+                                />
+                                <span className="font-display text-[19px] font-medium">
+                                    Your {savedPlan.weekday}
+                                </span>
+                                <span className="font-mono text-[10px] tracking-[0.08em] text-text-3 uppercase">
+                                    saved plan
+                                </span>
+                            </div>
+                            <button
+                                onClick={dismissSavedPlan}
+                                aria-label="Remove saved plan"
+                                className="flex size-[30px] cursor-pointer items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-foreground"
+                            >
+                                <IconX size={16} stroke={ICON_STROKE} />
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col gap-2.5">
+                            {savedPlan.slots.map((pick) => (
+                                <div
+                                    key={pick.id}
+                                    className="flex gap-3.5 rounded-[13px] border border-border bg-background p-3"
+                                >
+                                    <div className="w-[54px] flex-none text-right">
+                                        <div className="font-mono text-[13px] font-medium">
+                                            {pick.start_time}
+                                        </div>
+                                        <div className="mt-0.5 font-mono text-[9.5px] tracking-[0.08em] text-text-3 uppercase">
+                                            {pick.band}
+                                        </div>
+                                    </div>
+                                    <div className="w-px flex-none bg-border" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-[14.5px] leading-[1.3] font-semibold">
+                                            {pick.name}
+                                        </div>
+                                        {pick.why && (
+                                            <div className="mt-[3px] text-[12.5px] leading-[1.4] text-text-2">
+                                                {pick.why}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => openComposer(savedPlan.prompt ?? '')}
+                            className="mt-4 w-full cursor-pointer rounded-[11px] border border-border bg-card py-[11px] text-[14px] font-semibold text-foreground transition-colors hover:border-primary"
+                        >
+                            Open in Day Composer →
+                        </button>
+                    </div>
+                )}
+
                 {/* Composing skeleton (inline v4 Today compose) */}
                 {composing && (
                     <div className="mb-7 rounded-[18px] border border-border bg-card p-5 shadow-card">
@@ -624,12 +736,25 @@ export default function Dashboard() {
                             </div>
                         )}
 
-                        <button
-                            onClick={() => openComposer(previewPrompt)}
-                            className="mt-4 w-full cursor-pointer rounded-[11px] bg-primary py-[11px] text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-                        >
-                            Open in Day Composer →
-                        </button>
+                        <div className="mt-4 flex gap-2.5">
+                            {preview.length > 0 && (
+                                <button
+                                    onClick={() => void savePreviewToToday()}
+                                    disabled={savingPreview}
+                                    className="flex-1 cursor-pointer rounded-[11px] bg-foreground py-[11px] text-[14px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+                                >
+                                    {savingPreview
+                                        ? 'Saving…'
+                                        : 'Save to Today'}
+                                </button>
+                            )}
+                            <button
+                                onClick={() => openComposer(previewPrompt)}
+                                className="flex-1 cursor-pointer rounded-[11px] bg-primary py-[11px] text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                            >
+                                Open in Day Composer →
+                            </button>
+                        </div>
                     </div>
                 )}
 

@@ -114,6 +114,9 @@ $appRoutes = function () use ($appDomain) {
         Route::post('composer/parse', [ComposerController::class, 'parse'])->name('composer.parse');
         Route::post('composer/compose', [ComposerController::class, 'compose'])->name('composer.compose');
         Route::post('composer/swap', [ComposerController::class, 'swap'])->name('composer.swap');
+        // Pin / un-pin the composed plan to the Today screen.
+        Route::post('composer/save', [ComposerController::class, 'save'])->name('composer.save');
+        Route::delete('composer/today', [ComposerController::class, 'clearToday'])->name('composer.today.clear');
 
         // Explore / Spots
         Route::get('explore', [SpotController::class, 'index'])->name('explore');

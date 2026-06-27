@@ -18,6 +18,7 @@ use App\Composer\PlanSlot;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
+use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
@@ -344,6 +345,34 @@ class ComposerController extends Controller
             'plan' => $swapped->toArray(),
             'notices' => $this->notices($swapped->constraints, $swapped),
         ]);
+    }
+
+    /**
+     * "Save to Today": pin the live plan (already cached) to the Today screen,
+     * carrying the original prompt so "Open in Day Composer" can reopen it.
+     */
+    public function save(Request $request, TodayPlanStore $today): JsonResponse
+    {
+        $validated = $request->validate([
+            'prompt' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $stored = Cache::get($this->planKey($request->user()));
+        if (! is_array($stored) || empty($stored['slots'])) {
+            return response()->json(['message' => 'No plan to save — compose one first.'], 404);
+        }
+
+        $today->save($request->user(), $stored, $validated['prompt'] ?? null);
+
+        return response()->json(['saved' => true]);
+    }
+
+    /** Un-pin the Today plan (the dismiss control on the home card). */
+    public function clearToday(Request $request, TodayPlanStore $today): JsonResponse
+    {
+        $today->forget($request->user());
+
+        return response()->json(['cleared' => true]);
     }
 
     private function planKey(User $user): string

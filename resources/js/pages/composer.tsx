@@ -322,6 +322,7 @@ export default function Composer() {
     const [parsing, setParsing] = useState(false);
     const [composing, setComposing] = useState(false);
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
+    const [saving, setSaving] = useState(false);
     const [destination, setDestination] = useState<Destination | null>(null);
     const [detail, setDetail] = useState<Place | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -533,6 +534,20 @@ export default function Composer() {
             () => setLocating(false),
             { enableHighAccuracy: false, maximumAge: 120_000, timeout: 8000 },
         );
+    }
+
+    // "Save to Today": persist the live plan to the home screen (carrying the
+    // prompt so it can be reopened), then land on Today where it now shows.
+    async function saveToToday() {
+        setSaving(true);
+
+        try {
+            await post('/composer/save', { prompt: prompt ?? null });
+            router.visit('/dashboard');
+        } catch {
+            setError('Could not save to Today — try again.');
+            setSaving(false);
+        }
     }
 
     // Pick a starting Veedel without being there ("plan as if I'm in Nippes").
@@ -1303,12 +1318,11 @@ export default function Composer() {
                                         Shuffle
                                     </button>
                                     <button
-                                        onClick={() =>
-                                            router.visit('/dashboard')
-                                        }
-                                        className="flex-1 rounded-[12px] bg-foreground py-[13px] text-[15px] font-semibold text-background transition-opacity hover:opacity-90"
+                                        onClick={saveToToday}
+                                        disabled={saving}
+                                        className="flex-1 rounded-[12px] bg-foreground py-[13px] text-[15px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
                                     >
-                                        Save to Today
+                                        {saving ? 'Saving…' : 'Save to Today'}
                                     </button>
                                 </div>
                                 <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12px] text-text-3">
