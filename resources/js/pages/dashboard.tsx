@@ -1,5 +1,9 @@
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
-import { IconCalendarEvent, IconSparkles } from '@tabler/icons-react';
+import {
+    IconArrowRight,
+    IconCalendarEvent,
+    IconSparkles,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import { PushPromptCard } from '@/components/cards/push-prompt-card';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
@@ -72,9 +76,9 @@ const tileClasses: Record<Tile['severity'], string> = {
 };
 
 const tileTitleClasses: Record<Tile['severity'], string> = {
-    danger: 'text-danger dark:text-[#F08A80]',
+    danger: 'text-danger',
     warn: 'text-foreground',
-    info: 'text-primary dark:text-[#8FAAF0]',
+    info: 'text-primary',
     neutral: 'text-foreground',
 };
 
@@ -110,7 +114,7 @@ function TileCard({ tile }: { tile: Tile }) {
         <div
             className={`flex w-full items-center gap-3.5 rounded-[14px] border border-l-[3px] p-4 text-left transition-all hover:-translate-y-px hover:shadow-sm ${tileClasses[tile.severity]}`}
         >
-            <span className="w-7 shrink-0 text-center text-[22px] leading-none">
+            <span className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-[18px] leading-none">
                 {tile.emoji}
             </span>
             <span className="min-w-0 flex-1">
@@ -243,7 +247,7 @@ export default function Dashboard() {
             <ServiceErrorBanner />
             <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-28 md:px-6">
                 {/* Date line */}
-                <div className="mb-1 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
+                <div className="mb-1 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
                     {new Date().toLocaleDateString('en-GB', {
                         weekday: 'short',
                         day: 'numeric',
@@ -255,12 +259,12 @@ export default function Dashboard() {
 
                 {/* Greeting + weather chip */}
                 <div className="mb-6 flex items-start justify-between gap-3">
-                    <h1 className="font-display text-[26px] leading-tight font-medium tracking-tight">
+                    <h1 className="font-display text-[34px] leading-[1.12] font-medium tracking-[-0.02em]">
                         {getGreeting(auth?.user?.name)}
                     </h1>
                     <Deferred data="weather" fallback={null}>
                         {weather && weather.available !== false ? (
-                            <span className="mt-1 shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium">
+                            <span className="mt-1 flex shrink-0 items-center gap-[7px] rounded-full border border-border bg-card px-[13px] py-2 text-[14px] font-semibold shadow-card">
                                 {weather.emoji}{' '}
                                 {Math.round(weather.temperature)}°C
                             </span>
@@ -269,9 +273,13 @@ export default function Dashboard() {
                 </div>
 
                 {/* Prompt box */}
-                <div className="mb-3 rounded-[20px] border border-border bg-card p-[18px] shadow-sm transition-colors focus-within:border-primary">
-                    <div className="mb-2.5 flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
-                        <IconSparkles size={12} stroke={ICON_STROKE} />
+                <div className="mb-3 rounded-[20px] border border-border bg-card p-[18px] shadow-card transition-colors focus-within:border-primary">
+                    <div className="mb-2.5 flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
+                        <IconSparkles
+                            size={12}
+                            stroke={ICON_STROKE}
+                            className="text-primary"
+                        />
                         Ask or plan
                     </div>
                     <div className="flex items-center gap-2.5">
@@ -290,9 +298,10 @@ export default function Dashboard() {
                         <button
                             onClick={() => openComposer(prompt)}
                             title="Go"
-                            className="flex size-[38px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-base text-white transition-colors hover:bg-accent-hover"
+                            aria-label="Compose"
+                            className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover"
                         >
-                            →
+                            <IconArrowRight size={19} stroke={ICON_STROKE} />
                         </button>
                     </div>
                 </div>
@@ -313,7 +322,7 @@ export default function Dashboard() {
                         </button>
                     ))}
                 </div>
-                <p className="mb-7 flex items-start gap-1 text-[11px] text-muted-foreground/70">
+                <p className="mb-7 flex items-start gap-1 text-[11px] text-text-3">
                     <IconSparkles
                         size={12}
                         stroke={ICON_STROKE}
@@ -333,7 +342,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Right now (urgency tiles) */}
-                <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground/70 uppercase">
+                <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
                     Right now
                 </div>
                 <Deferred
@@ -392,7 +401,7 @@ export default function Dashboard() {
                                 <h2 className="font-display text-[18px] font-medium tracking-tight">
                                     {rail.title}
                                 </h2>
-                                <span className="text-[11.5px] text-muted-foreground/70">
+                                <span className="text-[11.5px] text-text-3">
                                     {rail.reason}
                                 </span>
                                 <Link
