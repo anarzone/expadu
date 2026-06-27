@@ -1,25 +1,12 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
-    IconAdjustmentsHorizontal,
     IconArrowsShuffle,
     IconBus,
     IconChecklist,
-    IconChevronDown,
-    IconClock,
-    IconCoinEuro,
-    IconCompass,
-    IconCurrentLocation,
-    IconLeaf,
-    IconMapPin,
     IconPin,
-    IconRefresh,
+    IconPlus,
     IconSearch,
     IconSparkles,
-    IconStar,
-    IconSun,
-    IconTag,
-    IconTarget,
-    IconUsers,
     IconX,
 } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
@@ -27,25 +14,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import {
-    categoryEmoji,
-    categoryIcon,
-} from '@/components/places/category-illustration';
+import { categoryEmoji } from '@/components/places/category-illustration';
 import type { PlacesOrigin } from '@/components/places/from-control';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import type { Place } from '@/components/places/types';
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { ICON_STROKE } from '@/constants/icons';
 import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -127,19 +100,6 @@ function detailMeta(place: Place): string {
         .join(' · ');
 }
 
-const ARCHETYPES: {
-    key: string;
-    label: string;
-    Icon: ComponentType<IconProps>;
-}[] = [
-    { key: 'one_main', label: 'One main + supports', Icon: IconTarget },
-    { key: 'explore_veedel', label: 'Explore a Veedel', Icon: IconCompass },
-    { key: 'chill', label: 'Chill nearby', Icon: IconLeaf },
-    { key: 'make_a_day', label: 'Make a day of it', Icon: IconSun },
-];
-
-const BANDS = ['Morning', 'Midday', 'Afternoon', 'Evening'];
-
 function csrfToken(): string {
     return (
         document
@@ -209,12 +169,6 @@ const TIME_RANGES: Record<string, [number, number]> = {
     allday: [10, 20],
 };
 
-function toggleIn(list: string[], value: string): string[] {
-    return list.includes(value)
-        ? list.filter((v) => v !== value)
-        : [...list, value];
-}
-
 /** A time preset → a window on the plan's existing day. */
 function timeWindowPatch(preset: string, c: Constraints): Partial<Constraints> {
     const day = new Date(c.window_start);
@@ -251,316 +205,6 @@ function timePresetKey(c: Constraints): string {
     }
 
     return 'evening';
-}
-
-const CHIP =
-    'flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium outline-none transition-colors';
-
-function FilterTrigger({
-    label,
-    active,
-    Icon,
-}: {
-    label: string;
-    active: boolean;
-    Icon: ComponentType<IconProps>;
-}) {
-    return (
-        <DropdownMenuTrigger
-            className={`${CHIP} ${active ? 'border-primary bg-accent-soft text-primary' : 'border-border bg-card text-foreground hover:border-primary'}`}
-        >
-            <Icon size={14} stroke={ICON_STROKE} className="opacity-70" />
-            {label}
-            <IconChevronDown
-                size={13}
-                stroke={ICON_STROKE}
-                className="opacity-60"
-            />
-        </DropdownMenuTrigger>
-    );
-}
-
-function SingleFilter({
-    label,
-    active,
-    value,
-    options,
-    onChange,
-    Icon,
-}: {
-    label: string;
-    active: boolean;
-    value: string;
-    options: { value: string; label: string }[];
-    onChange: (value: string) => void;
-    Icon: ComponentType<IconProps>;
-}) {
-    return (
-        <DropdownMenu>
-            <FilterTrigger label={label} active={active} Icon={Icon} />
-            <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-                    {options.map((o) => (
-                        <DropdownMenuRadioItem key={o.value} value={o.value}>
-                            {o.label}
-                        </DropdownMenuRadioItem>
-                    ))}
-                </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-}
-
-function MultiFilter({
-    label,
-    active,
-    selected,
-    options,
-    onToggle,
-    Icon,
-}: {
-    label: string;
-    active: boolean;
-    selected: string[];
-    options: { value: string; label: string }[];
-    onToggle: (value: string) => void;
-    Icon: ComponentType<IconProps>;
-}) {
-    return (
-        <DropdownMenu>
-            <FilterTrigger label={label} active={active} Icon={Icon} />
-            <DropdownMenuContent
-                align="start"
-                className="max-h-72 w-52 overflow-y-auto"
-            >
-                {options.length === 0 ? (
-                    <div className="px-2 py-1.5 text-[13px] text-muted-foreground">
-                        Nothing to choose yet
-                    </div>
-                ) : (
-                    options.map((o) => (
-                        <DropdownMenuCheckboxItem
-                            key={o.value}
-                            checked={selected.includes(o.value)}
-                            onCheckedChange={() => onToggle(o.value)}
-                            onSelect={(e) => e.preventDefault()}
-                        >
-                            {o.label}
-                        </DropdownMenuCheckboxItem>
-                    ))
-                )}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-}
-
-/** Short summary for a multi-select chip: "Culture +2", or a default. */
-function multiLabel(
-    selected: string[],
-    options: { value: string; label: string }[],
-    empty: string,
-): string {
-    if (selected.length === 0) {
-        return empty;
-    }
-
-    const first =
-        options.find((o) => o.value === selected[0])?.label ?? selected[0];
-    const extra = selected.length - 1;
-
-    return `${first}${extra > 0 ? ` +${extra}` : ''}`;
-}
-
-/**
- * Editable, content-adaptive filter chips — the prototype's "I understood,
- * tap to correct" bar. Each chip is a dropdown; changing any recomposes.
- * Area + category options are facets (only what has candidates), so the
- * dropdowns offer real choices, not all 25 Veedels.
- */
-function EditableFilters({
-    constraints,
-    facets,
-    origin,
-    locating,
-    onLocate,
-    onPickFrom,
-    onChange,
-    onStartOver,
-}: {
-    constraints: Constraints;
-    facets: Facets;
-    origin: PlacesOrigin | null;
-    locating: boolean;
-    onLocate: () => void;
-    onPickFrom: (area: string) => void;
-    onChange: (patch: Partial<Constraints>) => void;
-    onStartOver: () => void;
-}) {
-    const areaOptions = facets.areas.map((a) => ({ value: a, label: a }));
-    const companion = constraints.companions ?? '';
-    const budget = constraints.budget ?? '';
-    const vibe = constraints.vibe ?? '';
-    const edited =
-        constraints.areas.length > 0 ||
-        constraints.categories.length > 0 ||
-        companion !== '' ||
-        budget !== '' ||
-        vibe !== '';
-
-    // Where the plan starts from — the same shared origin the Places list uses.
-    const fromKnown = origin !== null && origin.source !== 'none';
-    const fromLabel = locating
-        ? 'Locating…'
-        : origin === null || origin.source === 'none'
-          ? 'Set start'
-          : origin.source === 'area'
-            ? `From ${origin.label ?? 'area'}`
-            : (origin.label ?? 'Your location');
-
-    return (
-        <div className="mb-5">
-            <div className="mb-2 font-mono text-[10px] tracking-[0.1em] text-muted-foreground/70 uppercase">
-                I understood — tap any to change
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        aria-label="Set where the plan starts from"
-                        className={`${CHIP} ${fromKnown ? 'border-primary bg-accent-soft text-primary' : 'border-border bg-card text-foreground hover:border-primary'}`}
-                    >
-                        <IconMapPin
-                            size={14}
-                            stroke={ICON_STROKE}
-                            className="opacity-70"
-                        />
-                        {fromLabel}
-                        <IconChevronDown
-                            size={13}
-                            stroke={ICON_STROKE}
-                            className="opacity-60"
-                        />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        align="start"
-                        className="max-h-72 w-56 overflow-y-auto"
-                    >
-                        <DropdownMenuItem onClick={onLocate}>
-                            <IconCurrentLocation
-                                size={15}
-                                stroke={ICON_STROKE}
-                            />
-                            Use my current location
-                        </DropdownMenuItem>
-                        {facets.areas.length > 0 && (
-                            <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
-                                    Start somewhere else
-                                </DropdownMenuLabel>
-                                {facets.areas.map((a) => (
-                                    <DropdownMenuItem
-                                        key={a}
-                                        onClick={() => onPickFrom(a)}
-                                    >
-                                        {a}
-                                    </DropdownMenuItem>
-                                ))}
-                            </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                <SingleFilter
-                    label={
-                        TIME_OPTS.find(
-                            (o) => o.value === timePresetKey(constraints),
-                        )?.label ?? 'When'
-                    }
-                    Icon={IconClock}
-                    active
-                    value={timePresetKey(constraints)}
-                    options={TIME_OPTS}
-                    onChange={(v) => onChange(timeWindowPatch(v, constraints))}
-                />
-                <MultiFilter
-                    label={
-                        constraints.areas.length === 0
-                            ? origin?.area
-                                ? `Around ${origin.area}`
-                                : 'Any area'
-                            : multiLabel(
-                                  constraints.areas,
-                                  areaOptions,
-                                  'Any area',
-                              )
-                    }
-                    Icon={IconMapPin}
-                    active={constraints.areas.length > 0}
-                    selected={constraints.areas}
-                    options={areaOptions}
-                    onToggle={(v) =>
-                        onChange({ areas: toggleIn(constraints.areas, v) })
-                    }
-                />
-                <MultiFilter
-                    label={multiLabel(
-                        constraints.categories,
-                        facets.categories,
-                        'Anything',
-                    )}
-                    Icon={IconTag}
-                    active={constraints.categories.length > 0}
-                    selected={constraints.categories}
-                    options={facets.categories}
-                    onToggle={(v) =>
-                        onChange({
-                            categories: toggleIn(constraints.categories, v),
-                        })
-                    }
-                />
-                <SingleFilter
-                    label={
-                        COMPANION_OPTS.find((o) => o.value === companion)
-                            ?.label ?? 'Anyone'
-                    }
-                    Icon={IconUsers}
-                    active={companion !== ''}
-                    value={companion}
-                    options={COMPANION_OPTS}
-                    onChange={(v) => onChange({ companions: v || null })}
-                />
-                <SingleFilter
-                    label={
-                        BUDGET_OPTS.find((o) => o.value === budget)?.label ??
-                        'Any budget'
-                    }
-                    Icon={IconCoinEuro}
-                    active={budget !== ''}
-                    value={budget}
-                    options={BUDGET_OPTS}
-                    onChange={(v) => onChange({ budget: v || null })}
-                />
-                <SingleFilter
-                    label={
-                        VIBE_OPTS.find((o) => o.value === vibe)?.label ??
-                        'Any vibe'
-                    }
-                    Icon={IconAdjustmentsHorizontal}
-                    active={vibe !== ''}
-                    value={vibe}
-                    options={VIBE_OPTS}
-                    onChange={(v) => onChange({ vibe: v || null })}
-                />
-                {edited && (
-                    <button
-                        onClick={onStartOver}
-                        className="shrink-0 cursor-pointer px-2 text-[12px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                    >
-                        start over
-                    </button>
-                )}
-            </div>
-        </div>
-    );
 }
 
 function NoticeChips({ notices }: { notices: Notice[] }) {
@@ -671,11 +315,17 @@ export default function Composer() {
     const [destination, setDestination] = useState<Destination | null>(null);
     const [detail, setDetail] = useState<Place | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [archetype, setArchetype] = useState<string | null>(null);
+    // Archetype dropped in the v4 sentence model — compose with null.
+    const [archetype] = useState<string | null>(null);
     const [locked, setLocked] = useState<string[]>([]);
-    const [excluded, setExcluded] = useState<string[]>([]);
+    const [excluded] = useState<string[]>([]);
     const [origin, setOrigin] = useState<PlacesOrigin | null>(null);
     const [locating, setLocating] = useState(false);
+    // v4 editable-sentence model — which token/extra popover is open, the
+    // add-filter panel, and how much day to show (a client view over the plan).
+    const [openToken, setOpenToken] = useState<string | null>(null);
+    const [addOpen, setAddOpen] = useState(false);
+    const [amount, setAmount] = useState<'just' | 'few' | 'full'>('full');
     const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
     const isMobile = useIsMobile();
     // Guards against parsing the same prompt twice (React strict-mode
@@ -771,24 +421,6 @@ export default function Composer() {
         void runCompose(next, { archetype, locked, excluded });
     }
 
-    function startOver() {
-        if (!constraints) {
-            return;
-        }
-
-        const next: Constraints = {
-            ...constraints,
-            areas: [],
-            categories: [],
-            companions: null,
-            budget: null,
-            vibe: null,
-        };
-        setConstraints(next);
-        setArchetype(null);
-        void runCompose(next, { archetype: null, locked, excluded });
-    }
-
     async function swap(index: number) {
         setSwappingSlot(index);
 
@@ -840,33 +472,10 @@ export default function Composer() {
             .catch(() => takeMeThere(slot));
     }
 
-    function pickArchetype(next: string) {
-        if (!constraints) {
-            return;
-        }
-
-        setArchetype(next);
-        void runCompose(constraints, { archetype: next, locked, excluded });
-    }
-
     function toggleLock(id: string) {
         setLocked((cur) =>
             cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
         );
-    }
-
-    function removePick(id: string) {
-        if (!constraints) {
-            return;
-        }
-
-        const nextExcluded = [...excluded, id];
-        setExcluded(nextExcluded);
-        void runCompose(constraints, {
-            archetype,
-            locked,
-            excluded: nextExcluded,
-        });
     }
 
     function shuffle() {
@@ -883,14 +492,6 @@ export default function Composer() {
             locked,
             excluded: [...excluded, ...unlocked],
         });
-    }
-
-    function recompose() {
-        if (!constraints) {
-            return;
-        }
-
-        void runCompose(constraints, { archetype, locked, excluded });
     }
 
     // The From chip: get a fresh GPS fix, persist it as the shared "I'm here"
@@ -963,6 +564,126 @@ export default function Composer() {
 
     const showInterim = !parsing && intent !== 'plan_day' && !plan;
 
+    // ── Editable-sentence wiring (v4) ──
+    const whenKey = constraints ? timePresetKey(constraints) : 'afternoon';
+    const whenLabel =
+        TIME_OPTS.find((o) => o.value === whenKey)?.label ?? 'Afternoon';
+    const areaValue = constraints?.areas[0] ?? '';
+    const areaLabel = areaValue || 'all Cologne';
+    const doingValue = constraints?.categories[0] ?? '';
+    const doingLabel = doingValue
+        ? (facets.categories.find((c) => c.value === doingValue)?.label ??
+          doingValue)
+        : 'anything';
+    const originLabel = locating
+        ? 'Locating…'
+        : (origin?.label ?? 'your location');
+
+    const areaTokenOpts = [
+        { value: '', label: 'All Cologne' },
+        ...facets.areas.map((a) => ({ value: a, label: a })),
+    ];
+    const doingTokenOpts = [
+        { value: '', label: 'Anything' },
+        ...facets.categories,
+    ];
+    const originTokenOpts = [
+        { value: '__me__', label: 'your location' },
+        ...facets.areas.map((a) => ({ value: a, label: a })),
+    ];
+
+    const chipOptStyle = (sel: boolean, cyan: boolean) =>
+        sel
+            ? cyan
+                ? 'border-cyan bg-cyan-soft font-semibold text-cyan-h'
+                : 'border-primary bg-primary-soft font-semibold text-primary'
+            : 'border-border bg-card font-medium text-text-2 hover:border-primary';
+
+    /** One tappable word in the sentence + its inline option popover. */
+    function renderToken(
+        key: string,
+        label: string,
+        cyan: boolean,
+        title: string,
+        options: { value: string; label: string }[],
+        current: string,
+        onPick: (value: string) => void,
+        align: 'left' | 'right' = 'left',
+    ) {
+        const open = openToken === key;
+        const underline = cyan
+            ? 'border-cyan'
+            : open
+              ? 'border-primary'
+              : 'border-text-3';
+
+        return (
+            <span className="relative inline-block">
+                <button
+                    onClick={() => setOpenToken(open ? null : key)}
+                    className={`inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`}
+                >
+                    {label}
+                </button>
+                {open && (
+                    <>
+                        <div
+                            className="fixed inset-0 z-30"
+                            onClick={() => setOpenToken(null)}
+                        />
+                        <div
+                            className={`absolute top-[calc(100%+10px)] z-40 w-[300px] rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'} ${align === 'right' ? 'right-0' : 'left-0'}`}
+                        >
+                            <div
+                                className={`mb-[11px] font-mono text-[10px] tracking-[0.1em] uppercase ${cyan ? 'text-cyan-h' : 'text-text-3'}`}
+                            >
+                                {title}
+                            </div>
+                            <div className="flex flex-wrap gap-[7px]">
+                                {options.map((o) => (
+                                    <button
+                                        key={o.value}
+                                        onClick={() => {
+                                            onPick(o.value);
+                                            setOpenToken(null);
+                                        }}
+                                        className={`rounded-full border px-3.5 py-2 text-[13.5px] transition-colors ${chipOptStyle(o.value === current, cyan)}`}
+                                    >
+                                        {o.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </span>
+        );
+    }
+
+    // Extra-filter chips that are currently set (Who with / Budget / Vibe).
+    const EXTRA_DEFS = [
+        {
+            field: 'companions' as const,
+            emoji: '👥',
+            label: 'Who with',
+            opts: COMPANION_OPTS,
+        },
+        {
+            field: 'budget' as const,
+            emoji: '💶',
+            label: 'Budget',
+            opts: BUDGET_OPTS,
+        },
+        { field: 'vibe' as const, emoji: '🎚', label: 'Vibe', opts: VIBE_OPTS },
+    ];
+    const activeExtras = constraints
+        ? EXTRA_DEFS.filter((d) => constraints[d.field])
+        : [];
+    const addableExtras = constraints
+        ? EXTRA_DEFS.filter((d) => !constraints[d.field])
+        : [];
+    const openExtra = EXTRA_DEFS.find((d) => d.field === openToken) ?? null;
+
     return (
         <AppLayout>
             <Head title="Day Composer" />
@@ -988,16 +709,208 @@ export default function Composer() {
                 )}
 
                 {constraints && (
-                    <EditableFilters
-                        constraints={constraints}
-                        facets={facets}
-                        origin={origin}
-                        locating={locating}
-                        onLocate={locateFrom}
-                        onPickFrom={pickFromArea}
-                        onChange={updateConstraint}
-                        onStartOver={startOver}
-                    />
+                    <>
+                        <div className="mt-5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
+                            I understood — tap any word
+                        </div>
+                        <div className="mt-[11px] text-[19px] leading-[1.7] tracking-[-0.01em] text-text-2">
+                            {renderToken(
+                                'when',
+                                whenLabel,
+                                false,
+                                'When?',
+                                TIME_OPTS,
+                                whenKey,
+                                (v) =>
+                                    updateConstraint(
+                                        timeWindowPatch(v, constraints),
+                                    ),
+                            )}{' '}
+                            around{' '}
+                            {renderToken(
+                                'area',
+                                areaLabel,
+                                false,
+                                'Where?',
+                                areaTokenOpts,
+                                areaValue,
+                                (v) =>
+                                    updateConstraint({ areas: v ? [v] : [] }),
+                            )}
+                            , for{' '}
+                            {renderToken(
+                                'doing',
+                                doingLabel,
+                                false,
+                                'Doing what?',
+                                doingTokenOpts,
+                                doingValue,
+                                (v) =>
+                                    updateConstraint({
+                                        categories: v ? [v] : [],
+                                    }),
+                            )}{' '}
+                            — from{' '}
+                            {renderToken(
+                                'origin',
+                                originLabel,
+                                true,
+                                'Starting from?',
+                                originTokenOpts,
+                                originLabel,
+                                (v) =>
+                                    v === '__me__'
+                                        ? locateFrom()
+                                        : pickFromArea(v),
+                                'right',
+                            )}
+                            .
+                        </div>
+
+                        {/* Extra-filter chips + add */}
+                        <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                            {activeExtras.map((d) => {
+                                const value = constraints[d.field];
+                                const optLabel =
+                                    d.opts.find((o) => o.value === value)
+                                        ?.label ?? value;
+
+                                return (
+                                    <span
+                                        key={d.field}
+                                        className="inline-flex items-center gap-[7px] rounded-full border border-border bg-card py-[5px] pr-[7px] pl-3 text-[13px] font-semibold text-foreground shadow-card"
+                                    >
+                                        <button
+                                            onClick={() => {
+                                                setOpenToken(d.field);
+                                                setAddOpen(false);
+                                            }}
+                                            className="cursor-pointer"
+                                        >
+                                            {d.emoji} {optLabel}
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                updateConstraint({
+                                                    [d.field]: null,
+                                                } as Partial<Constraints>)
+                                            }
+                                            aria-label={`Remove ${d.label}`}
+                                            className="flex size-[19px] items-center justify-center rounded-full bg-surface-2 text-text-3 transition-colors hover:text-foreground"
+                                        >
+                                            <IconX size={11} stroke={2.6} />
+                                        </button>
+                                    </span>
+                                );
+                            })}
+                            {addableExtras.length > 0 && (
+                                <button
+                                    onClick={() => {
+                                        setAddOpen((o) => !o);
+                                        setOpenToken(null);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3.5 py-1.5 text-[13px] font-semibold text-text-3 transition-colors hover:border-primary hover:text-primary"
+                                >
+                                    <IconPlus size={13} stroke={2.4} />
+                                    filter
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Extra-chip edit panel */}
+                        {openExtra && (
+                            <div className="mt-3.5 rounded-[14px] border border-border bg-card p-4 shadow-[0_12px_34px_rgba(20,16,8,0.14)]">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span className="font-mono text-[11px] tracking-[0.08em] text-text-2 uppercase">
+                                        {openExtra.label}
+                                    </span>
+                                    <button
+                                        onClick={() => setOpenToken(null)}
+                                        className="flex size-6 items-center justify-center rounded-full bg-surface-2 text-text-3"
+                                    >
+                                        <IconX size={13} stroke={2.4} />
+                                    </button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {openExtra.opts
+                                        .filter((o) => o.value)
+                                        .map((o) => (
+                                            <button
+                                                key={o.value}
+                                                onClick={() => {
+                                                    updateConstraint({
+                                                        [openExtra.field]:
+                                                            o.value,
+                                                    } as Partial<Constraints>);
+                                                    setOpenToken(null);
+                                                }}
+                                                className={`rounded-full border px-3.5 py-2 text-[13.5px] transition-colors ${chipOptStyle(constraints[openExtra.field] === o.value, false)}`}
+                                            >
+                                                {o.label}
+                                            </button>
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Add-filter panel */}
+                        {addOpen && addableExtras.length > 0 && (
+                            <div className="mt-3.5 rounded-[14px] border border-border bg-card p-4 shadow-[0_12px_34px_rgba(20,16,8,0.14)]">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span className="font-mono text-[11px] tracking-[0.08em] text-text-2 uppercase">
+                                        Add a filter
+                                    </span>
+                                    <button
+                                        onClick={() => setAddOpen(false)}
+                                        className="flex size-6 items-center justify-center rounded-full bg-surface-2 text-text-3"
+                                    >
+                                        <IconX size={13} stroke={2.4} />
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {addableExtras.map((d) => (
+                                        <button
+                                            key={d.field}
+                                            onClick={() => {
+                                                updateConstraint({
+                                                    [d.field]:
+                                                        d.opts.find(
+                                                            (o) => o.value,
+                                                        )?.value ?? null,
+                                                } as Partial<Constraints>);
+                                                setAddOpen(false);
+                                            }}
+                                            className="flex items-center gap-2.5 rounded-[11px] border border-border bg-card px-3 py-[11px] text-left text-[13.5px] font-medium text-text-2 transition-colors hover:border-primary"
+                                        >
+                                            {d.emoji} {d.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Amount toggle */}
+                        <div className="mt-6 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
+                            How much day?
+                        </div>
+                        <div className="mt-2.5 flex max-w-[380px] gap-[3px] rounded-[12px] border border-border bg-surface-2 p-1">
+                            {(
+                                [
+                                    ['just', 'Just this'],
+                                    ['few', 'A few options'],
+                                    ['full', 'Full day'],
+                                ] as const
+                            ).map(([val, lbl]) => (
+                                <button
+                                    key={val}
+                                    onClick={() => setAmount(val)}
+                                    className={`flex-1 rounded-[8px] px-1.5 py-[9px] text-[12.5px] transition-colors ${amount === val ? 'bg-card font-semibold text-primary shadow-sm' : 'font-medium text-text-2'}`}
+                                >
+                                    {lbl}
+                                </button>
+                            ))}
+                        </div>
+                    </>
                 )}
 
                 {plan && <NoticeChips notices={notices} />}
@@ -1019,75 +932,171 @@ export default function Composer() {
                     </div>
                 )}
 
-                {/* Plan — archetype switcher + soft-band lanes */}
+                {/* Result — Just this / A few options / Full day */}
                 {plan && !composing && (
-                    <div>
-                        <div className="mb-1.5 font-mono text-[10px] tracking-[0.1em] text-muted-foreground/70 uppercase">
-                            Shape of the day
-                        </div>
-                        <div className="mb-5 flex flex-wrap gap-2">
-                            {ARCHETYPES.map((a) => {
-                                const ArchIcon = a.Icon;
+                    <div className="mt-[18px]">
+                        {plan.slots.length === 0 ? (
+                            <div className="rounded-[14px] border border-border bg-card p-6 text-center text-sm text-text-2">
+                                Nothing’s open across that window — widen the
+                                time or try another day.
+                            </div>
+                        ) : amount === 'just' ? (
+                            (() => {
+                                const slot = plan.slots[0];
 
                                 return (
-                                    <button
-                                        key={a.key}
-                                        onClick={() => pickArchetype(a.key)}
-                                        className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                                            archetype === a.key
-                                                ? 'border-foreground bg-foreground text-background'
-                                                : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
-                                        }`}
-                                    >
-                                        <ArchIcon
-                                            size={14}
-                                            stroke={ICON_STROKE}
-                                        />
-                                        {a.label}
-                                    </button>
+                                    <div className="overflow-hidden rounded-[16px] border border-border bg-card shadow-card">
+                                        <div className="relative flex h-[120px] items-center justify-center bg-surface-2">
+                                            <span className="text-[62px] leading-none">
+                                                {slotEmoji(slot)}
+                                            </span>
+                                            <span className="absolute top-[13px] left-[14px] rounded-full bg-card px-[11px] py-[5px] font-mono text-[10px] font-semibold tracking-[0.06em] text-text-2 uppercase shadow-card">
+                                                {slot.category}
+                                            </span>
+                                            <span className="absolute top-[13px] right-[14px] rounded-full bg-card px-[11px] py-[5px] font-mono text-[12px] font-semibold text-text-2 shadow-card">
+                                                {slot.duration_label}
+                                            </span>
+                                        </div>
+                                        <div className="p-[18px]">
+                                            <h3 className="font-display text-[23px] leading-[1.05] font-semibold tracking-[-0.015em]">
+                                                {slot.name}
+                                            </h3>
+                                            {slot.why && (
+                                                <p className="mt-[7px] text-[14px] leading-[1.5] text-text-2">
+                                                    {slot.why}
+                                                </p>
+                                            )}
+                                            <div className="mt-3 flex items-center gap-3 font-mono text-[12px] text-cyan-h">
+                                                {slot.travel_min_from_previous >
+                                                    0 && (
+                                                    <span>
+                                                        {
+                                                            slot.travel_min_from_previous
+                                                        }{' '}
+                                                        min away
+                                                    </span>
+                                                )}
+                                                <span className="text-text-3">
+                                                    {slot.cost_tier}
+                                                </span>
+                                            </div>
+                                            <div className="mt-[17px] flex gap-2.5">
+                                                <button
+                                                    onClick={shuffle}
+                                                    className="inline-flex items-center justify-center gap-[7px] rounded-[11px] border border-border bg-card px-[15px] py-[11px] text-[13.5px] font-semibold text-text-2 transition-colors hover:border-primary"
+                                                >
+                                                    <IconArrowsShuffle
+                                                        size={15}
+                                                        stroke={ICON_STROKE}
+                                                    />
+                                                    Another
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        takeMeThere(slot)
+                                                    }
+                                                    className="flex flex-1 items-center justify-center gap-2 rounded-[11px] bg-primary py-[11px] text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
+                                                >
+                                                    → Take me there
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 );
-                            })}
-                        </div>
+                            })()
+                        ) : amount === 'few' ? (
+                            <>
+                                <div className="mb-[11px] font-mono text-[10px] tracking-[0.08em] text-text-3 uppercase">
+                                    {plan.slots.length} picks near {areaLabel} ·
+                                    tap to explore
+                                </div>
+                                {plan.slots.map((slot) => {
+                                    const tappable =
+                                        !slot.is_appointment &&
+                                        slot.id.startsWith('spot:');
 
-                        {plan.slots.length === 0 && (
-                            <div className="rounded-[14px] border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-                                Nothing’s open across that window — try a wider
-                                time range or another day.
-                            </div>
-                        )}
+                                    return (
+                                        <button
+                                            key={slot.id}
+                                            onClick={() =>
+                                                tappable
+                                                    ? openSlotDetail(slot)
+                                                    : takeMeThere(slot)
+                                            }
+                                            className="mb-2.5 flex w-full items-center gap-3.5 rounded-[14px] border border-border bg-card p-[15px] text-left shadow-card transition-colors hover:border-primary"
+                                        >
+                                            <span className="flex size-[46px] flex-none items-center justify-center rounded-[12px] bg-surface-2 text-[23px]">
+                                                {slotEmoji(slot)}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-display text-[17px] leading-[1.1] font-semibold">
+                                                    {slot.name}
+                                                </div>
+                                                {slot.why && (
+                                                    <div className="mt-[3px] text-[13px] leading-[1.4] text-text-2">
+                                                        {slot.why}
+                                                    </div>
+                                                )}
+                                                <div className="mt-1.5 font-mono text-[11.5px] text-cyan-h">
+                                                    {slot.duration_label}
+                                                    {slot.cost_tier
+                                                        ? ` · ${slot.cost_tier}`
+                                                        : ''}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </>
+                        ) : (
+                            <div>
+                                {plan.slots.map((slot, i) => {
+                                    const isLocked = locked.includes(slot.id);
+                                    const tappable =
+                                        !slot.is_appointment &&
+                                        slot.id.startsWith('spot:');
 
-                        {BANDS.map((band) => {
-                            const bandSlots = plan.slots.filter(
-                                (s) => s.band === band,
-                            );
-
-                            if (bandSlots.length === 0) {
-                                return null;
-                            }
-
-                            return (
-                                <section key={band} className="mb-1">
-                                    <h2 className="mt-4 mb-2 font-display text-[16px] font-medium tracking-tight">
-                                        {band}
-                                    </h2>
-                                    <div className="flex flex-col gap-3">
-                                        {bandSlots.map((slot) => {
-                                            const i = plan.slots.indexOf(slot);
-                                            const isLocked = locked.includes(
-                                                slot.id,
-                                            );
-                                            const SlotCatIcon = categoryIcon(
-                                                slot.category,
-                                            );
-                                            // Only real places open the detail
-                                            // modal; appointments/events don't.
-                                            const tappable =
-                                                !slot.is_appointment &&
-                                                slot.id.startsWith('spot:');
-
-                                            return (
+                                    return (
+                                        <div
+                                            key={slot.id}
+                                            className="flex gap-3.5"
+                                        >
+                                            <div className="flex w-[54px] flex-none flex-col items-center pt-0.5">
+                                                <span className="font-mono text-[11px] font-semibold text-cyan-h">
+                                                    {slot.start_time}
+                                                </span>
+                                                <span className="mt-2 size-[11px] rounded-full border-[2.5px] border-cyan bg-card" />
+                                                {i < plan.slots.length - 1 && (
+                                                    <span
+                                                        className="mt-1 w-0.5 flex-1 bg-cyan-soft"
+                                                        style={{
+                                                            minHeight: 30,
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
+                                            <div
+                                                className={`mb-3.5 min-w-0 flex-1 rounded-[14px] border bg-card p-[15px] shadow-card ${isLocked ? 'border-primary' : 'border-border'}`}
+                                            >
+                                                <div className="mb-2 flex items-center gap-2">
+                                                    <span className="rounded-full bg-surface-2 px-[9px] py-[3px] font-mono text-[10px] font-semibold tracking-[0.06em] text-text-2 uppercase">
+                                                        {slot.band} ·{' '}
+                                                        {slot.category}
+                                                    </span>
+                                                    {isLocked && (
+                                                        <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-primary">
+                                                            <IconPin
+                                                                size={11}
+                                                                stroke={2.1}
+                                                            />
+                                                            locked
+                                                        </span>
+                                                    )}
+                                                    <span className="ml-auto font-mono text-[11px] text-text-3">
+                                                        {slot.duration_label}
+                                                    </span>
+                                                </div>
                                                 <div
-                                                    key={slot.id}
                                                     role={
                                                         tappable
                                                             ? 'button'
@@ -1121,243 +1130,100 @@ export default function Composer() {
                                                               }
                                                             : undefined
                                                     }
-                                                    className={`rounded-[14px] border p-4 ${
-                                                        tappable
-                                                            ? 'cursor-pointer transition-colors hover:border-primary'
-                                                            : ''
-                                                    } ${
-                                                        slot.is_appointment
-                                                            ? 'border-primary bg-accent-soft'
-                                                            : slot.is_landmark
-                                                              ? 'border-warn-soft bg-warn-soft'
-                                                              : 'border-border bg-card'
-                                                    }`}
+                                                    className={`flex items-start gap-3 ${tappable ? 'cursor-pointer' : ''}`}
                                                 >
-                                                    {slot.is_appointment && (
-                                                        <div className="mb-1 font-mono text-[10px] font-semibold tracking-wide text-primary uppercase">
-                                                            Your appointment ·
-                                                            not movable
+                                                    <span className="flex size-[42px] flex-none items-center justify-center rounded-[11px] bg-surface-2 text-[21px]">
+                                                        {slotEmoji(slot)}
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="font-display text-[17px] leading-[1.1] font-semibold">
+                                                            {slot.name}
                                                         </div>
-                                                    )}
-                                                    <div className="mb-1 flex items-center justify-between gap-2">
-                                                        <span
-                                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wide uppercase ${
-                                                                slot.is_appointment
-                                                                    ? 'bg-primary text-white'
-                                                                    : slot.is_landmark
-                                                                      ? 'bg-warn-soft text-warn'
-                                                                      : 'bg-secondary text-muted-foreground'
-                                                            }`}
-                                                        >
-                                                            {slot.is_appointment ? (
-                                                                `${slot.start_time} · fixed`
-                                                            ) : slot.is_landmark ? (
-                                                                <>
-                                                                    <IconStar
-                                                                        size={
-                                                                            11
-                                                                        }
-                                                                        stroke={
-                                                                            ICON_STROKE
-                                                                        }
-                                                                    />
-                                                                    main
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <SlotCatIcon
-                                                                        size={
-                                                                            11
-                                                                        }
-                                                                        stroke={
-                                                                            ICON_STROKE
-                                                                        }
-                                                                    />
-                                                                    {slot.category.replace(
-                                                                        '_',
-                                                                        ' ',
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </span>
-                                                        {!slot.is_appointment && (
-                                                            <span className="font-mono text-[12px] text-muted-foreground">
-                                                                {
-                                                                    slot.duration_label
-                                                                }
-                                                            </span>
+                                                        {slot.why && (
+                                                            <div className="mt-[3px] text-[12.5px] leading-[1.4] text-text-2">
+                                                                {slot.why}
+                                                            </div>
                                                         )}
-                                                    </div>
-                                                    <div
-                                                        className={`font-semibold ${slot.is_landmark ? 'text-[17px]' : 'text-[15px]'}`}
-                                                    >
-                                                        {slot.name}
-                                                    </div>
-                                                    {(slot.is_appointment
-                                                        ? slot.subtitle
-                                                        : slot.why) && (
-                                                        <div className="mt-0.5 text-[13px] text-muted-foreground">
-                                                            {slot.is_appointment
-                                                                ? slot.subtitle
-                                                                : slot.why}
-                                                        </div>
-                                                    )}
-                                                    {slot.is_appointment &&
-                                                        slot.leave_by && (
-                                                            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[11px] font-semibold text-primary">
-                                                                <IconClock
-                                                                    size={12}
-                                                                    stroke={
-                                                                        ICON_STROKE
-                                                                    }
-                                                                />
-                                                                Leave by{' '}
-                                                                {slot.leave_by}
-                                                            </span>
-                                                        )}
-                                                    <div className="mt-3 flex flex-wrap gap-2">
-                                                        {!slot.is_appointment && (
-                                                            <>
-                                                                <button
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
-                                                                        e.stopPropagation();
-                                                                        toggleLock(
-                                                                            slot.id,
-                                                                        );
-                                                                    }}
-                                                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${
-                                                                        isLocked
-                                                                            ? 'border-primary bg-accent-soft text-primary'
-                                                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
-                                                                    }`}
-                                                                >
-                                                                    <IconPin
-                                                                        size={
-                                                                            14
-                                                                        }
-                                                                        stroke={
-                                                                            ICON_STROKE
-                                                                        }
-                                                                    />
-                                                                    {isLocked
-                                                                        ? 'Locked'
-                                                                        : 'Lock'}
-                                                                </button>
-                                                                {slot.swappable && (
-                                                                    <button
-                                                                        onClick={(
-                                                                            e,
-                                                                        ) => {
-                                                                            e.stopPropagation();
-                                                                            swap(
-                                                                                i,
-                                                                            );
-                                                                        }}
-                                                                        disabled={
-                                                                            swappingSlot !==
-                                                                            null
-                                                                        }
-                                                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                                                                    >
-                                                                        {swappingSlot ===
-                                                                        i ? (
-                                                                            'Swapping…'
-                                                                        ) : (
-                                                                            <>
-                                                                                <IconRefresh
-                                                                                    size={
-                                                                                        14
-                                                                                    }
-                                                                                    stroke={
-                                                                                        ICON_STROKE
-                                                                                    }
-                                                                                />
-                                                                                Swap
-                                                                            </>
-                                                                        )}
-                                                                    </button>
-                                                                )}
-                                                                <button
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
-                                                                        e.stopPropagation();
-                                                                        removePick(
-                                                                            slot.id,
-                                                                        );
-                                                                    }}
-                                                                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger"
-                                                                >
-                                                                    <IconX
-                                                                        size={
-                                                                            14
-                                                                        }
-                                                                        stroke={
-                                                                            ICON_STROKE
-                                                                        }
-                                                                    />
-                                                                    Remove
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                takeMeThere(
-                                                                    slot,
-                                                                );
-                                                            }}
-                                                            className="cursor-pointer rounded-[9px] bg-accent-soft px-3 py-2 text-[12.5px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
-                                                        >
-                                                            → Take me there
-                                                        </button>
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </section>
-                            );
-                        })}
+                                                <div className="mt-3 flex gap-[7px]">
+                                                    <button
+                                                        onClick={() =>
+                                                            toggleLock(slot.id)
+                                                        }
+                                                        className={`inline-flex items-center gap-1.5 rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${isLocked ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card text-text-2 hover:border-primary'}`}
+                                                    >
+                                                        <IconPin
+                                                            size={13}
+                                                            stroke={ICON_STROKE}
+                                                        />
+                                                        {isLocked
+                                                            ? 'Locked'
+                                                            : 'Lock'}
+                                                    </button>
+                                                    {slot.swappable && (
+                                                        <button
+                                                            onClick={() =>
+                                                                swap(i)
+                                                            }
+                                                            disabled={
+                                                                swappingSlot ===
+                                                                i
+                                                            }
+                                                            className="inline-flex items-center gap-1.5 rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-text-2 transition-colors hover:border-primary disabled:opacity-50"
+                                                        >
+                                                            <IconArrowsShuffle
+                                                                size={13}
+                                                                stroke={
+                                                                    ICON_STROKE
+                                                                }
+                                                            />
+                                                            Swap
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() =>
+                                                            takeMeThere(slot)
+                                                        }
+                                                        className="ml-auto inline-flex items-center gap-1.5 rounded-[9px] bg-cyan-soft px-3 py-2 text-[12.5px] font-semibold text-cyan-h"
+                                                    >
+                                                        → Go
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
 
+                        {/* Whole-plan actions */}
                         {plan.slots.length > 0 && (
                             <>
-                                <div className="mt-5 flex flex-wrap gap-2">
+                                <div className="mt-[18px] flex items-center gap-2.5">
                                     <button
                                         onClick={shuffle}
                                         disabled={composing}
-                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-[12px] border border-border bg-card px-4 py-3 text-[13.5px] font-semibold text-text-2 transition-colors hover:border-primary disabled:opacity-50"
                                     >
                                         <IconArrowsShuffle
-                                            size={14}
+                                            size={15}
                                             stroke={ICON_STROKE}
                                         />
                                         Shuffle
                                     </button>
                                     <button
-                                        onClick={recompose}
-                                        disabled={composing}
-                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border px-4 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                                        onClick={() =>
+                                            router.visit('/dashboard')
+                                        }
+                                        className="flex-1 rounded-[12px] bg-foreground py-[13px] text-[15px] font-semibold text-background transition-opacity hover:opacity-90"
                                     >
-                                        <IconRefresh
-                                            size={14}
-                                            stroke={ICON_STROKE}
-                                        />
-                                        Recompose
+                                        Save to Today
                                     </button>
                                 </div>
-                                <button
-                                    onClick={() => router.visit('/dashboard')}
-                                    className="mt-3 w-full cursor-pointer rounded-[9px] bg-primary py-3 text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
-                                >
-                                    Save to Today
-                                </button>
-                                <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-muted-foreground/70">
+                                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12px] text-text-3">
                                     <IconPin size={12} stroke={ICON_STROKE} />
-                                    Locked picks stay when you shuffle or switch
-                                    the shape.
+                                    Locked picks stay when you shuffle.
                                 </p>
                             </>
                         )}
