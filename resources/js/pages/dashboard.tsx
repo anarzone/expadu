@@ -1,11 +1,30 @@
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    IconAlertTriangle,
     IconArrowRight,
     IconArrowsLeftRight,
+    IconCalendarCheck,
     IconCalendarEvent,
+    IconCalendarWeek,
+    IconCheck,
+    IconChecklist,
+    IconClock,
+    IconCloudRain,
+    IconMoodKid,
+    IconMoon,
+    IconPlus,
+    IconRipple,
+    IconShoppingCart,
     IconSparkles,
+    IconStar,
+    IconSun,
+    IconTicket,
+    IconUmbrella,
+    IconUsers,
     IconX,
 } from '@tabler/icons-react';
+import type { IconProps } from '@tabler/icons-react';
+import type { ComponentType } from 'react';
 import { useState } from 'react';
 import { PushPromptCard } from '@/components/cards/push-prompt-card';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
@@ -39,7 +58,38 @@ type Weather = {
     condition: string;
 } | null;
 
-type Chip = { label: string; prompt?: string; href?: string };
+type Chip = { label: string; icon?: string; prompt?: string; href?: string };
+
+/** Chip icon key (from PromptSuggestions) → Tabler icon. */
+const CHIP_ICONS: Record<string, ComponentType<IconProps>> = {
+    checklist: IconChecklist,
+    kids: IconMoodKid,
+    umbrella: IconUmbrella,
+    calendar: IconCalendarWeek,
+    moon: IconMoon,
+    star: IconStar,
+    sun: IconSun,
+    users: IconUsers,
+};
+
+/** Urgency-tile type → Tabler icon, tinted to the tile's severity. */
+const TILE_ICONS: Record<string, ComponentType<IconProps>> = {
+    transit_disruption: IconAlertTriangle,
+    transit_delay: IconClock,
+    weather_alert: IconCloudRain,
+    buergeramt_slot: IconCalendarCheck,
+    rhine_level: IconRipple,
+    rhythm_warning: IconShoppingCart,
+    bureaucracy_deadline: IconChecklist,
+    tonight_events: IconTicket,
+};
+
+const tileIconColor: Record<Tile['severity'], string> = {
+    danger: 'text-danger',
+    warn: 'text-warn',
+    info: 'text-primary',
+    neutral: 'text-text-2',
+};
 
 /** A pick in the inline "composed for you" preview — a slice of a PlanSlot. */
 type PreviewSlot = {
@@ -140,12 +190,21 @@ function detailMeta(place: Place): string {
 }
 
 function TileCard({ tile }: { tile: Tile }) {
+    const TileIcon = TILE_ICONS[tile.type];
     const body = (
         <div
             className={`flex w-full items-center gap-3.5 rounded-[14px] border border-l-[3px] p-4 text-left transition-all hover:-translate-y-px hover:shadow-sm ${tileClasses[tile.severity]}`}
         >
-            <span className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-[18px] leading-none">
-                {tile.emoji}
+            <span className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] bg-surface-2 leading-none">
+                {TileIcon ? (
+                    <TileIcon
+                        size={18}
+                        stroke={ICON_STROKE}
+                        className={tileIconColor[tile.severity]}
+                    />
+                ) : (
+                    <span className="text-[18px]">{tile.emoji}</span>
+                )}
             </span>
             <span className="min-w-0 flex-1">
                 <span className="block text-sm leading-[1.35] font-semibold text-foreground">
@@ -342,8 +401,16 @@ export default function Dashboard() {
     }
 
     const fallbackChips: Chip[] = [
-        { label: '🌳 Free afternoon nearby', prompt: 'free afternoon nearby' },
-        { label: '🍻 Meet people this week', prompt: 'meet people this week' },
+        {
+            label: 'Free afternoon nearby',
+            icon: 'sun',
+            prompt: 'free afternoon nearby',
+        },
+        {
+            label: 'Meet people this week',
+            icon: 'users',
+            prompt: 'meet people this week',
+        },
     ];
     const promptChips = chips && chips.length > 0 ? chips : fallbackChips;
 
@@ -414,21 +481,34 @@ export default function Dashboard() {
 
                 {/* Dynamic personal chips */}
                 <div className="mb-1.5 flex flex-wrap gap-2">
-                    {promptChips.map((chip) => (
-                        <button
-                            key={chip.label}
-                            onClick={() =>
-                                chip.href
-                                    ? router.visit(chip.href)
-                                    : void composeInline(
-                                          chip.prompt ?? chip.label,
-                                      )
-                            }
-                            className="cursor-pointer rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition-all hover:border-primary hover:bg-accent-soft hover:text-primary"
-                        >
-                            {chip.label}
-                        </button>
-                    ))}
+                    {promptChips.map((chip) => {
+                        const ChipIcon = chip.icon
+                            ? CHIP_ICONS[chip.icon]
+                            : undefined;
+
+                        return (
+                            <button
+                                key={chip.label}
+                                onClick={() =>
+                                    chip.href
+                                        ? router.visit(chip.href)
+                                        : void composeInline(
+                                              chip.prompt ?? chip.label,
+                                          )
+                                }
+                                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition-all hover:border-primary hover:bg-accent-soft hover:text-primary"
+                            >
+                                {ChipIcon && (
+                                    <ChipIcon
+                                        size={14}
+                                        stroke={ICON_STROKE}
+                                        className="shrink-0"
+                                    />
+                                )}
+                                {chip.label}
+                            </button>
+                        );
+                    })}
                 </div>
                 <p className="mb-7 flex items-start gap-1 text-[11px] text-text-3">
                     <IconSparkles
@@ -699,13 +779,23 @@ export default function Dashboard() {
                                                             ? `Remove ${card.name} from plan`
                                                             : `Add ${card.name} to plan`
                                                     }
-                                                    className={`flex size-[26px] items-center justify-center rounded-full text-[15px] font-bold shadow-sm transition-colors ${
+                                                    className={`flex size-[26px] items-center justify-center rounded-full shadow-sm transition-colors ${
                                                         planned
                                                             ? 'bg-primary text-white'
                                                             : 'bg-white/90 text-primary'
                                                     }`}
                                                 >
-                                                    {planned ? '✓' : '＋'}
+                                                    {planned ? (
+                                                        <IconCheck
+                                                            size={15}
+                                                            stroke={2.5}
+                                                        />
+                                                    ) : (
+                                                        <IconPlus
+                                                            size={15}
+                                                            stroke={2.5}
+                                                        />
+                                                    )}
                                                 </button>
                                             }
                                             onActivate={() =>

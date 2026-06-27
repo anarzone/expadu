@@ -16,52 +16,53 @@ namespace App\Home;
 class PromptSuggestions
 {
     /**
-     * @return list<array{label: string, prompt?: string, href?: string}>
+     * @return list<array{label: string, icon: string, prompt?: string, href?: string}>
      */
     public function for(HomeContext $context): array
     {
         $profile = $context->profile;
         $now = $context->now;
 
-        /** @var list<array{p: int, label: string, prompt?: string, href?: string}> $candidates */
+        /** @var list<array{p: int, label: string, icon: string, prompt?: string, href?: string}> $candidates */
         $candidates = [];
 
         $daysSinceArrival = $profile->daysSinceArrival();
         if ($daysSinceArrival !== null && $daysSinceArrival <= 60) {
-            $candidates[] = ['p' => 100, 'label' => '📋 Sort your Anmeldung', 'href' => '/bureaucracy'];
+            $candidates[] = ['p' => 100, 'label' => 'Sort your Anmeldung', 'icon' => 'checklist', 'href' => '/bureaucracy'];
         }
 
         if (! empty($profile->attributes['child_born_at'])) {
-            $candidates[] = ['p' => 70, 'label' => '🧸 Something with the kids', 'prompt' => 'something with the kids today'];
+            $candidates[] = ['p' => 70, 'label' => 'Something with the kids', 'icon' => 'kids', 'prompt' => 'something with the kids today'];
         }
 
         if ($context->rainExpected) {
-            $candidates[] = ['p' => 60, 'label' => '☔ Rainy-day picks', 'prompt' => 'indoor things to do today'];
+            $candidates[] = ['p' => 60, 'label' => 'Rainy-day picks', 'icon' => 'umbrella', 'prompt' => 'indoor things to do today'];
         }
 
         if ($context->isWeekendWindow) {
             $day = $now->isSunday() ? 'Sunday' : 'Saturday';
-            $candidates[] = ['p' => 55, 'label' => '🗓️ Plan my weekend', 'prompt' => "plan my {$day} afternoon"];
+            $candidates[] = ['p' => 55, 'label' => 'Plan my weekend', 'icon' => 'calendar', 'prompt' => "plan my {$day} afternoon"];
         }
 
         if ($context->isEvening) {
-            $candidates[] = ['p' => 50, 'label' => '🌆 Plans for tonight', 'prompt' => 'something to do tonight'];
+            $candidates[] = ['p' => 50, 'label' => 'Plans for tonight', 'icon' => 'moon', 'prompt' => 'something to do tonight'];
         }
 
         $topCategory = $this->topCategory($context->intentWeights);
         if ($topCategory !== null) {
-            $candidates[] = ['p' => 45, 'label' => '⭐ More '.$topCategory, 'prompt' => "{$topCategory} today"];
+            $candidates[] = ['p' => 45, 'label' => 'More '.$topCategory, 'icon' => 'star', 'prompt' => "{$topCategory} today"];
         }
 
         // Always-available fallbacks so there are never fewer than a few chips.
-        $candidates[] = ['p' => 10, 'label' => '🌳 Free afternoon', 'prompt' => 'free afternoon'];
-        $candidates[] = ['p' => 8, 'label' => '👋 Meet people this week', 'prompt' => 'meet people this week'];
+        $candidates[] = ['p' => 10, 'label' => 'Free afternoon', 'icon' => 'sun', 'prompt' => 'free afternoon'];
+        $candidates[] = ['p' => 8, 'label' => 'Meet people this week', 'icon' => 'users', 'prompt' => 'meet people this week'];
 
         usort($candidates, fn ($a, $b) => $b['p'] <=> $a['p']);
 
         return array_map(
             fn (array $c) => array_filter([
                 'label' => $c['label'],
+                'icon' => $c['icon'],
                 'prompt' => $c['prompt'] ?? null,
                 'href' => $c['href'] ?? null,
             ], fn ($v) => $v !== null),

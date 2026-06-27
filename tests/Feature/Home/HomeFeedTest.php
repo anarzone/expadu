@@ -166,9 +166,11 @@ test('the kids chip fires for a user with a child_born_at attribute', function (
         'profile_attributes' => ['child_born_at' => now()->subMonth()->toDateString()],
     ]);
 
-    $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
+    $chips = collect(app(HomeFeed::class)->chips($user));
 
-    expect($chips)->toContain('🧸 Something with the kids');
+    expect($chips->pluck('label'))->toContain('Something with the kids');
+    // Plain label, icon carried separately (the frontend renders the Tabler icon).
+    expect($chips->firstWhere('label', 'Something with the kids')['icon'] ?? null)->toBe('kids');
 });
 
 test('broken weather never frames the feed as rainy', function () {
@@ -190,7 +192,7 @@ test('broken weather never frames the feed as rainy', function () {
 
     $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
 
-    expect($chips)->not->toContain('☔ Rainy-day picks');
+    expect($chips)->not->toContain('Rainy-day picks');
 });
 
 test('a later-today rainy hour does not frame a dry morning as rainy', function () {
@@ -214,7 +216,7 @@ test('a later-today rainy hour does not frame a dry morning as rainy', function 
 
     $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
 
-    expect($chips)->not->toContain('☔ Rainy-day picks');
+    expect($chips)->not->toContain('Rainy-day picks');
 });
 
 test('rain in the near-term window frames the feed as rainy', function () {
@@ -235,5 +237,5 @@ test('rain in the near-term window frames the feed as rainy', function () {
 
     $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
 
-    expect($chips)->toContain('☔ Rainy-day picks');
+    expect($chips)->toContain('Rainy-day picks');
 });

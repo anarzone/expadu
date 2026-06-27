@@ -89,6 +89,10 @@ test('prompt suggestions surface Anmeldung for a recent arrival, capped at four'
     expect($anmeldung)->not->toBeNull();
     // It deep-links to the verified checklist rather than the composer.
     expect($anmeldung['href'] ?? null)->toBe('/bureaucracy');
+    // Every chip carries an icon key (the frontend maps it to a Tabler icon) —
+    // labels are plain text, no leading emoji glyphs.
+    expect($anmeldung['icon'] ?? null)->toBe('checklist');
+    expect(collect($chips)->every(fn ($c) => ! empty($c['icon'])))->toBeTrue();
 });
 
 test('the global spot catalogue scan is cached as plain rows', function () {
