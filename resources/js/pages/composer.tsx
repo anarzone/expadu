@@ -12,6 +12,7 @@ import {
 import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
+import { categoryClass } from '@/components/ds/category';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { categoryEmoji } from '@/components/places/category-illustration';
@@ -578,6 +579,10 @@ export default function Composer() {
     const originLabel = locating
         ? 'Locating…'
         : (origin?.label ?? 'your location');
+    // The selected origin option: a picked Veedel matches by name; anything
+    // else (live/confirmed location) is "your location".
+    const originValue =
+        origin?.source === 'area' ? (origin.label ?? '') : '__me__';
 
     const areaTokenOpts = [
         { value: '', label: 'All Cologne' },
@@ -687,11 +692,13 @@ export default function Composer() {
     return (
         <AppLayout>
             <Head title="Day Composer" />
-            <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-24 md:px-6">
-                <h1 className="mb-1 font-display text-[26px] font-medium tracking-tight">
+            <div className="mx-auto w-full max-w-[720px] px-4 pt-6 pb-24 md:px-6">
+                <h1 className="font-display text-[27px] font-medium tracking-[-0.02em]">
                     {title}
                 </h1>
-                <p className="mb-5 text-sm text-muted-foreground">{subtitle}</p>
+                <p className="mt-[3px] mb-5 text-[14px] text-text-2">
+                    {subtitle}
+                </p>
 
                 {parsing && (
                     <div className="mb-4 flex gap-2">
@@ -757,7 +764,7 @@ export default function Composer() {
                                 true,
                                 'Starting from?',
                                 originTokenOpts,
-                                originLabel,
+                                originValue,
                                 (v) =>
                                     v === '__me__'
                                         ? locateFrom()
@@ -946,11 +953,22 @@ export default function Composer() {
 
                                 return (
                                     <div className="overflow-hidden rounded-[16px] border border-border bg-card shadow-card">
-                                        <div className="relative flex h-[120px] items-center justify-center bg-surface-2">
+                                        <div
+                                            className={`relative flex h-[120px] items-center justify-center ${categoryClass(slot.category)}`}
+                                            style={{
+                                                background:
+                                                    'var(--cat-tint, var(--surface-2))',
+                                            }}
+                                        >
                                             <span className="text-[62px] leading-none">
                                                 {slotEmoji(slot)}
                                             </span>
-                                            <span className="absolute top-[13px] left-[14px] rounded-full bg-card px-[11px] py-[5px] font-mono text-[10px] font-semibold tracking-[0.06em] text-text-2 uppercase shadow-card">
+                                            <span
+                                                className="absolute top-[13px] left-[14px] rounded-full bg-card px-[11px] py-[5px] font-mono text-[10px] font-semibold tracking-[0.06em] uppercase shadow-card"
+                                                style={{
+                                                    color: 'var(--cat-mark, var(--text-2))',
+                                                }}
+                                            >
                                                 {slot.category}
                                             </span>
                                             <span className="absolute top-[13px] right-[14px] rounded-full bg-card px-[11px] py-[5px] font-mono text-[12px] font-semibold text-text-2 shadow-card">
@@ -1023,9 +1041,15 @@ export default function Composer() {
                                                     ? openSlotDetail(slot)
                                                     : takeMeThere(slot)
                                             }
-                                            className="mb-2.5 flex w-full items-center gap-3.5 rounded-[14px] border border-border bg-card p-[15px] text-left shadow-card transition-colors hover:border-primary"
+                                            className={`mb-2.5 flex w-full items-center gap-3.5 rounded-[14px] border border-border bg-card p-[15px] text-left shadow-card transition-colors hover:border-primary ${categoryClass(slot.category)}`}
                                         >
-                                            <span className="flex size-[46px] flex-none items-center justify-center rounded-[12px] bg-surface-2 text-[23px]">
+                                            <span
+                                                className="flex size-[46px] flex-none items-center justify-center rounded-[12px] text-[23px]"
+                                                style={{
+                                                    background:
+                                                        'var(--cat-tint, var(--surface-2))',
+                                                }}
+                                            >
                                                 {slotEmoji(slot)}
                                             </span>
                                             <div className="min-w-0 flex-1">
@@ -1076,10 +1100,17 @@ export default function Composer() {
                                                 )}
                                             </div>
                                             <div
-                                                className={`mb-3.5 min-w-0 flex-1 rounded-[14px] border bg-card p-[15px] shadow-card ${isLocked ? 'border-primary' : 'border-border'}`}
+                                                className={`mb-3.5 min-w-0 flex-1 rounded-[14px] border bg-card p-[15px] shadow-card ${isLocked ? 'border-primary' : 'border-border'} ${categoryClass(slot.category)}`}
                                             >
                                                 <div className="mb-2 flex items-center gap-2">
-                                                    <span className="rounded-full bg-surface-2 px-[9px] py-[3px] font-mono text-[10px] font-semibold tracking-[0.06em] text-text-2 uppercase">
+                                                    <span
+                                                        className="rounded-full px-[9px] py-[3px] font-mono text-[10px] font-semibold tracking-[0.06em] uppercase"
+                                                        style={{
+                                                            background:
+                                                                'var(--cat-tint, var(--surface-2))',
+                                                            color: 'var(--cat-mark, var(--text-2))',
+                                                        }}
+                                                    >
                                                         {slot.band} ·{' '}
                                                         {slot.category}
                                                     </span>
@@ -1132,7 +1163,13 @@ export default function Composer() {
                                                     }
                                                     className={`flex items-start gap-3 ${tappable ? 'cursor-pointer' : ''}`}
                                                 >
-                                                    <span className="flex size-[42px] flex-none items-center justify-center rounded-[11px] bg-surface-2 text-[21px]">
+                                                    <span
+                                                        className="flex size-[42px] flex-none items-center justify-center rounded-[11px] text-[21px]"
+                                                        style={{
+                                                            background:
+                                                                'var(--cat-tint, var(--surface-2))',
+                                                        }}
+                                                    >
                                                         {slotEmoji(slot)}
                                                     </span>
                                                     <div className="min-w-0 flex-1">
