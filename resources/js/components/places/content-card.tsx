@@ -286,6 +286,13 @@ export function ContentCard({
                             </span>
                         </span>
                     )}
+                    {/* "SOON" — amber, starting within the hour (events) */}
+                    {live && (
+                        <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-amber px-2 py-[3px] font-mono text-[10px] font-semibold text-[#211d15]">
+                            <span className="size-[5px] animate-pulse rounded-full bg-[#211d15]" />
+                            SOON
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex flex-1 flex-col p-4">
@@ -298,22 +305,14 @@ export function ContentCard({
 
                             {/* Meta + cyan distance ("cyan locates") */}
                             {(meta || distance) && (
-                                <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-2">
-                                    {live && (
-                                        <span
-                                            className="size-1.5 shrink-0 animate-pulse rounded-full bg-success"
-                                            aria-label="starting soon"
-                                        />
+                                <div className="mt-1 truncate text-[12.5px] text-text-2">
+                                    {meta}
+                                    {meta && distance && ' · '}
+                                    {distance && (
+                                        <span className="font-semibold text-cyan-h">
+                                            {distance}
+                                        </span>
                                     )}
-                                    <span className="truncate">
-                                        {meta}
-                                        {meta && distance && ' · '}
-                                        {distance && (
-                                            <span className="font-semibold text-cyan-h">
-                                                {distance}
-                                            </span>
-                                        )}
-                                    </span>
                                 </div>
                             )}
 

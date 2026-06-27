@@ -1,4 +1,5 @@
 import { Head, Deferred, usePage } from '@inertiajs/react';
+import { IconCheck } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EventRichDetail } from '@/components/events/event-rich-detail';
 import { RemindMeButton } from '@/components/events/remind-me-button';
@@ -16,6 +17,7 @@ import { PlaceRichDetail } from '@/components/places/place-rich-detail';
 import type { Place } from '@/components/places/types';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { ICON_STROKE } from '@/constants/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
 
@@ -298,18 +300,18 @@ export default function Events() {
             <Head title="Events" />
             <div className="mx-auto h-full w-full max-w-[1120px] overflow-y-auto px-4 pt-6 pb-24 md:px-8">
                 {/* Header */}
-                <div className="mb-5">
-                    <h1 className="font-display text-[26px] font-medium tracking-tight">
+                <div className="mb-[22px]">
+                    <h1 className="font-display text-[30px] font-medium tracking-[-0.02em]">
                         Events
                     </h1>
-                    <p className="mt-0.5 text-[13px] text-muted-foreground">
+                    <p className="mt-[3px] text-[13.5px] text-text-2">
                         Show up alone, leave with a contact
                     </p>
                 </div>
 
                 {/* Time rail — the opener is when, not where */}
                 <div
-                    className="mb-3 flex gap-2 overflow-x-auto pb-1"
+                    className="mb-4 flex gap-2.5 overflow-x-auto pb-1"
                     style={{ scrollbarWidth: 'none' }}
                 >
                     {WINDOWS.map((w) => (
@@ -317,10 +319,10 @@ export default function Events() {
                             key={w.id}
                             onClick={() => setWindow(w.id)}
                             aria-pressed={window_ === w.id}
-                            className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl border px-4 py-2.5 text-[14px] font-semibold transition-all ${
+                            className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[12px] border px-[17px] py-2.5 text-[14px] transition-all ${
                                 window_ === w.id
-                                    ? 'border-primary bg-primary text-white'
-                                    : 'border-border bg-card text-foreground hover:border-primary'
+                                    ? 'border-primary bg-primary font-semibold text-white shadow-[0_2px_9px_rgba(255,57,2,0.26)]'
+                                    : 'border-border bg-card font-medium text-text-2 hover:border-primary'
                             }`}
                         >
                             {w.emoji} {w.label}
@@ -341,10 +343,10 @@ export default function Events() {
                                 key={c.id}
                                 onClick={() => setCategory(on ? null : c.id)}
                                 aria-pressed={on}
-                                className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-[15px] py-2 text-[13px] transition-all ${
                                     on
-                                        ? 'border-primary bg-accent-soft text-primary'
-                                        : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                        ? 'border-primary bg-primary-soft font-semibold text-primary'
+                                        : 'border-border bg-card font-medium text-text-2 hover:border-primary hover:text-primary'
                                 }`}
                             >
                                 {c.emoji} {c.label}
@@ -354,13 +356,14 @@ export default function Events() {
                     <button
                         onClick={() => setFree((f) => !f)}
                         aria-pressed={free}
-                        className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                        className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-[15px] py-2 text-[13px] transition-all ${
                             free
-                                ? 'border-success bg-success-soft text-success'
-                                : 'border-border bg-card text-muted-foreground hover:border-success hover:text-success'
+                                ? 'border-success bg-success-soft font-semibold text-success'
+                                : 'border-border bg-card font-medium text-text-2 hover:border-success hover:text-success'
                         }`}
                     >
-                        free
+                        <IconCheck size={14} stroke={ICON_STROKE} />
+                        Free only
                     </button>
                     {venueId && (
                         <button
@@ -387,10 +390,10 @@ export default function Events() {
                                         setVeedel(veedel === name ? null : name)
                                     }
                                     aria-pressed={veedel === name}
-                                    className={`shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all ${
+                                    className={`shrink-0 cursor-pointer rounded-full border px-[15px] py-2 text-[13px] transition-all ${
                                         veedel === name
-                                            ? 'border-primary bg-primary text-white'
-                                            : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary'
+                                            ? 'border-primary bg-primary font-semibold text-white'
+                                            : 'border-border bg-card font-medium text-text-2 hover:border-primary hover:text-primary'
                                     }`}
                                 >
                                     {name}
@@ -404,7 +407,7 @@ export default function Events() {
 
                 {/* Result count */}
                 {status === 'ok' && (
-                    <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase">
+                    <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-text-2 uppercase">
                         {occurrences.length}{' '}
                         {occurrences.length === 1 ? 'event' : 'events'} ·{' '}
                         {windowLabel}
