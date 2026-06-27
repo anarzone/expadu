@@ -84,13 +84,6 @@ const TILE_ICONS: Record<string, ComponentType<IconProps>> = {
     tonight_events: IconTicket,
 };
 
-const tileIconColor: Record<Tile['severity'], string> = {
-    danger: 'text-danger',
-    warn: 'text-warn',
-    info: 'text-primary',
-    neutral: 'text-text-2',
-};
-
 /** A pick in the inline "composed for you" preview — a slice of a PlanSlot. */
 type PreviewSlot = {
     id: string;
@@ -214,19 +207,26 @@ function detailMeta(place: Place): string {
         .join(' · ');
 }
 
-function TileCard({ tile }: { tile: Tile }) {
+type TileAction = 'done' | 'snooze' | 'dismiss';
+
+/**
+ * A "Right now" urgency tile (v4): neutral icon + title/subtitle, then three
+ * triage actions — Mark done · Snooze · Dismiss. The title area still deep-links
+ * (e.g. a deadline → /bureaucracy); the actions clear it from the feed.
+ */
+function TileCard({
+    tile,
+    onAction,
+}: {
+    tile: Tile;
+    onAction: (action: TileAction) => void;
+}) {
     const TileIcon = TILE_ICONS[tile.type];
-    const body = (
-        <div
-            className={`flex w-full items-center gap-3.5 rounded-[14px] border border-l-[3px] p-4 text-left transition-all hover:-translate-y-px hover:shadow-sm ${tileClasses[tile.severity]}`}
-        >
-            <span className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] bg-surface-2 leading-none">
+    const inner = (
+        <span className="flex min-w-0 flex-1 items-center gap-3.5 text-left">
+            <span className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] bg-surface-2 leading-none text-text-2">
                 {TileIcon ? (
-                    <TileIcon
-                        size={18}
-                        stroke={ICON_STROKE}
-                        className={tileIconColor[tile.severity]}
-                    />
+                    <TileIcon size={18} stroke={ICON_STROKE} />
                 ) : (
                     <span className="text-[18px]">{tile.emoji}</span>
                 )}
@@ -241,18 +241,54 @@ function TileCard({ tile }: { tile: Tile }) {
                     </span>
                 )}
             </span>
-            <span className="shrink-0 text-base text-muted-foreground/60 transition-transform group-hover:translate-x-0.5">
-                ›
-            </span>
-        </div>
+        </span>
     );
 
-    return tile.href ? (
-        <Link href={tile.href} prefetch className="group block">
-            {body}
-        </Link>
-    ) : (
-        <div className="group">{body}</div>
+    const actionBtn =
+        'flex size-[30px] shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border bg-card text-text-2 transition-colors';
+
+    return (
+        <div
+            className={`flex items-center gap-3 rounded-[14px] border border-l-[3px] p-[15px] transition-all hover:-translate-y-px hover:shadow-sm ${tileClasses[tile.severity]}`}
+        >
+            {tile.href ? (
+                <Link
+                    href={tile.href}
+                    prefetch
+                    className="flex min-w-0 flex-1 items-center"
+                >
+                    {inner}
+                </Link>
+            ) : (
+                inner
+            )}
+            <div className="flex shrink-0 items-center gap-[5px]">
+                <button
+                    onClick={() => onAction('done')}
+                    title="Mark done"
+                    aria-label="Mark done"
+                    className={`${actionBtn} hover:border-success hover:text-success`}
+                >
+                    <IconCheck size={15} stroke={2.2} />
+                </button>
+                <button
+                    onClick={() => onAction('snooze')}
+                    title="Snooze"
+                    aria-label="Snooze"
+                    className={`${actionBtn} hover:border-warn hover:text-warn`}
+                >
+                    <IconClock size={15} stroke={ICON_STROKE} />
+                </button>
+                <button
+                    onClick={() => onAction('dismiss')}
+                    title="Dismiss"
+                    aria-label="Dismiss"
+                    className={`${actionBtn} hover:border-danger hover:text-danger`}
+                >
+                    <IconX size={15} stroke={2} />
+                </button>
+            </div>
+        </div>
     );
 }
 
@@ -304,6 +340,9 @@ export default function Dashboard() {
     const [previewPrompt, setPreviewPrompt] = useState('');
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
     const [savingPreview, setSavingPreview] = useState(false);
+    // Triaged "Right now" tiles (done/snooze/dismiss) — cleared from the feed
+    // for the session, with a "Restore all" escape hatch (matches v4).
+    const [hiddenTiles, setHiddenTiles] = useState<Set<string>>(new Set());
     const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
     const isMobile = useIsMobile();
 
@@ -766,8 +805,18 @@ export default function Dashboard() {
                 </div>
 
                 {/* Right now (urgency tiles) */}
-                <div className="mb-3 font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
-                    Right now
+                <div className="mb-3 flex items-center gap-2.5">
+                    <span className="font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
+                        Right now
+                    </span>
+                    {hiddenTiles.size > 0 && (
+                        <button
+                            onClick={() => setHiddenTiles(new Set())}
+                            className="ml-auto cursor-pointer text-[12px] font-medium text-primary hover:underline"
+                        >
+                            Restore all
+                        </button>
+                    )}
                 </div>
                 <Deferred
                     data="tiles"
@@ -783,9 +832,25 @@ export default function Dashboard() {
                     }
                 >
                     <div className="flex flex-col gap-2.5">
-                        {(tiles ?? []).map((tile, i) => (
-                            <TileCard key={`${tile.type}-${i}`} tile={tile} />
-                        ))}
+                        {(tiles ?? []).map((tile, i) => {
+                            const key = `${tile.type}-${i}`;
+
+                            if (hiddenTiles.has(key)) {
+                                return null;
+                            }
+
+                            return (
+                                <TileCard
+                                    key={key}
+                                    tile={tile}
+                                    onAction={() =>
+                                        setHiddenTiles((set) =>
+                                            new Set(set).add(key),
+                                        )
+                                    }
+                                />
+                            );
+                        })}
                         {(tiles ?? []).length === 0 && (
                             <div className="rounded-[14px] border border-border bg-card p-6 text-center text-sm text-muted-foreground">
                                 Nothing urgent right now. Enjoy your day.
