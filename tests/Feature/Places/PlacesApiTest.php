@@ -50,6 +50,22 @@ test('lists leisure places with the full contract shape', function () {
     $response->assertJsonPath('data.0.tip_is_generic', true);
 });
 
+test('the fallback card distance tracks the transport mode (walk reads slower than bike)', function () {
+    // ~3 km north of the origin — far enough that the walk/bike estimates differ.
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.968, 'lng' => 6.921]);
+    $origin = 'lat=50.941&lng=6.921';
+
+    $this->user->update(['transport_mode' => 'walk']);
+    $walk = $this->getJson("/api/places?veedel=Ehrenfeld&{$origin}")->json('data.0.distance_min');
+
+    $this->user->update(['transport_mode' => 'bike']);
+    $bike = $this->getJson("/api/places?veedel=Ehrenfeld&{$origin}")->json('data.0.distance_min');
+
+    // Same straight-line distance, but the label honours the mode toggle.
+    expect($walk)->toBeGreaterThan($bike);
+    expect($bike)->toBeGreaterThan(0);
+});
+
 test('excludes indoor/legacy categories from Places', function () {
     Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);

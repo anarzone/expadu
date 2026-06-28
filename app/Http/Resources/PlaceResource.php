@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Composer\TravelEstimator;
 use App\Enums\SpotCategory;
+use App\Enums\TransportMode;
 use App\Models\Spot;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -51,7 +52,7 @@ class PlaceResource extends JsonResource
             'lng' => (float) $this->lng,
             'photo_url' => $this->photo_url,
             'photo_attribution' => $this->photo_attribution,
-            'distance_min' => $this->resolveDistanceMin(),
+            'distance_min' => $this->resolveDistanceMin($request->user()?->transport_mode),
             'open_now' => $this->resolveOpenNow($coarse),
             'opening_hours_text' => $this->resolveHoursText($coarse),
             'price_text' => $this->resolvePriceText($coarse),
@@ -76,10 +77,10 @@ class PlaceResource extends JsonResource
         return SpotCategory::tryFrom((string) $this->category);
     }
 
-    private function resolveDistanceMin(): ?int
+    private function resolveDistanceMin(?TransportMode $mode): ?int
     {
         // Real one-to-many street time from MOTIS (set by the controller) wins
-        // when available — the honest "X min away" in the user's mode.
+        // when available — the honest "X min away" already in the user's mode.
         $real = $this->travel_min ?? null;
         if ($real !== null) {
             return (int) $real;
@@ -91,9 +92,11 @@ class PlaceResource extends JsonResource
             return null;
         }
 
-        // Fallback heuristic when MOTIS is unreachable or the venue is off the
-        // network: a place 10 km away reads as a ~40 min ride, not a 145 min walk.
-        return TravelEstimator::minutesFromKm((float) $km);
+        // Fallback when MOTIS is unreachable or the venue is off the network:
+        // a straight-line estimate IN THE USER'S MODE, so the label still tracks
+        // the walk/bike toggle (it can't match a real detour route — that's what
+        // "take me there" is for).
+        return TravelEstimator::minutesFromKm((float) $km, $mode);
     }
 
     private function resolveOpenNow(string $coarse): ?bool

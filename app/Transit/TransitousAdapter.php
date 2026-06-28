@@ -58,9 +58,10 @@ class TransitousAdapter implements RouteService
         // combined `WALK,BIKE` call with numItineraries=1 only ever returns the
         // fastest direct option (always bike), so the walk option silently
         // vanished — each mode needs its own call. A hiccup on one must never
-        // drop transit or the other mode. The caps drop an over-long option:
-        // walk past 45 min (matching the card's walk guard), bike past 80.
-        $directCaps = ['BIKE' => 4800, 'WALK' => 2700];
+        // drop transit or the other mode. Caps are generous so the sheet offers
+        // all three modes for any reasonable city trip; only a truly absurd
+        // option is dropped (walk past 90 min, bike past 80).
+        $directCaps = ['BIKE' => 4800, 'WALK' => 5400];
         foreach ($directCaps as $directMode => $maxDirectTime) {
             try {
                 $direct = $this->fetchBucket(
