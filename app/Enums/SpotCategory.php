@@ -17,6 +17,7 @@ enum SpotCategory: string
     case TableTennis = 'table_tennis';
     case Boules = 'boules';
     case Bbq = 'bbq';
+    case Picnic = 'picnic';
     case Viewpoint = 'viewpoint';
 
     // Culture & sights — named destinations, not facilities
@@ -40,8 +41,8 @@ enum SpotCategory: string
         return match ($this) {
             self::Park, self::Playground, self::Pitch, self::Basketball,
             self::Tennis, self::Skatepark, self::Lake, self::DogPark,
-            self::TableTennis, self::Boules, self::Bbq, self::Viewpoint,
-            self::Zoo => true,
+            self::TableTennis, self::Boules, self::Bbq, self::Picnic,
+            self::Viewpoint, self::Zoo => true,
             default => false,
         };
     }
@@ -60,7 +61,8 @@ enum SpotCategory: string
             self::DogPark => '🐕',
             self::TableTennis => '🏓',
             self::Boules => '🎯',
-            self::Bbq => '🧺',
+            self::Bbq => '🍖',
+            self::Picnic => '🧺',
             self::Viewpoint => '🌅',
             self::Museum => '🏛️',
             self::Gallery => '🖼️',
@@ -91,6 +93,7 @@ enum SpotCategory: string
             self::TableTennis => 'Table tennis',
             self::Boules => 'Boules',
             self::Bbq => 'BBQ spot',
+            self::Picnic => 'Picnic spot',
             self::Viewpoint => 'Viewpoint',
             self::Museum => 'Museum',
             self::Gallery => 'Gallery',
@@ -113,7 +116,7 @@ enum SpotCategory: string
     public function coarse(): string
     {
         return match ($this) {
-            self::Park, self::Viewpoint, self::Bbq => 'park',
+            self::Park, self::Viewpoint, self::Bbq, self::Picnic => 'park',
             self::Pitch => 'pitch',
             self::Basketball, self::Tennis, self::TableTennis, self::Boules, self::Skatepark => 'court',
             self::Swimming, self::Lake => 'swimming',

@@ -12,7 +12,7 @@ class ImportOsmSpots extends Command
     /**
      * @var string
      */
-    protected $signature = 'osm:import {--city=cologne}';
+    protected $signature = 'osm:import {--city=cologne} {--only= : Comma-separated category keys to import (default: all)}';
 
     /**
      * @var string
@@ -38,10 +38,17 @@ class ImportOsmSpots extends Command
         $innerBbox = '50.92,6.92,50.96,6.97'; // inner city (cafés etc.)
         $queries = [
             'park' => "[out:json][timeout:40];nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});out center;",
-            'playground' => "[out:json][timeout:40];nwr[\"leisure\"=\"playground\"]({$bbox});out center 400;",
-            'pitch' => "[out:json][timeout:50];nwr[\"leisure\"=\"pitch\"][\"sport\"~\"soccer|basketball|tennis|table_tennis|boules|skateboard\"]({$bbox});out center 600;",
+            // No `out` limit on playground/pitch: Cologne has ~2,300 playgrounds
+            // and ~2,000 sport pitches, so a cap (was 400/600) silently dropped
+            // most of them — whole neighbourhoods went missing. Overpass returns
+            // the full set fine within the bumped timeout.
+            'playground' => "[out:json][timeout:60];nwr[\"leisure\"=\"playground\"]({$bbox});out center;",
+            'pitch' => "[out:json][timeout:60];nwr[\"leisure\"=\"pitch\"][\"sport\"~\"soccer|basketball|tennis|table_tennis|boules|skateboard|multi\"]({$bbox});out center;",
             'dog_park' => "[out:json][timeout:40];nwr[\"leisure\"=\"dog_park\"]({$bbox});out center;",
             'bbq' => "[out:json][timeout:40];nwr[\"amenity\"=\"bbq\"]({$bbox});out center;",
+            // Picnic spots: tables (often inside parks → activity chips) and
+            // named picnic sites. Previously not imported at all.
+            'picnic' => "[out:json][timeout:40];(nwr[\"leisure\"=\"picnic_table\"]({$bbox});nwr[\"tourism\"=\"picnic_site\"]({$bbox}););out center;",
             'viewpoint' => "[out:json][timeout:40];nwr[\"tourism\"=\"viewpoint\"][\"name\"]({$bbox});out center;",
             'swimming' => "[out:json][timeout:40];(nwr[\"leisure\"=\"swimming_area\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"=\"swimming\"]({$bbox}););out center;",
             'museum' => "[out:json][timeout:40];nwr[\"tourism\"=\"museum\"][\"name\"]({$bbox});out center;",
@@ -52,6 +59,18 @@ class ImportOsmSpots extends Command
             'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$innerBbox});node[\"office\"=\"coworking\"]({$innerBbox}););out body;",
             'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
         ];
+
+        // Optionally re-import a subset (e.g. after a query fix) without
+        // re-fetching everything: --only=pitch,playground,picnic
+        $only = array_filter(array_map('trim', explode(',', (string) $this->option('only'))));
+        if ($only !== []) {
+            $queries = array_intersect_key($queries, array_flip($only));
+            if ($queries === []) {
+                $this->error('No matching categories for --only='.implode(',', $only));
+
+                return self::FAILURE;
+            }
+        }
 
         // Mirrors in preference order — the big city-wide leisure queries
         // get rate-limited on a single endpoint, so fall through on failure.
@@ -306,6 +325,7 @@ class ImportOsmSpots extends Command
             'skatepark' => 'Skatepark',
             'dog_park' => 'Hundewiese',
             'bbq' => 'Grillplatz',
+            'picnic' => 'Picknickplatz',
             default => null,
         };
 
