@@ -91,6 +91,12 @@ class PlacesController extends Controller
             'category' => ['nullable', 'string', 'in:'.implode(',', self::COARSE)],
             'page' => ['nullable', 'integer', 'min:1'],
             'near' => ['nullable', 'boolean'],
+            // An explicit "From": a picked saved place (by id, coords resolved
+            // server-side) or a geocoded point. Consumed by UserLocationService.
+            'from_place' => ['nullable', 'integer', 'min:1'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'from_label' => ['nullable', 'string', 'max:120'],
         ]);
 
         // "Near me": browse a radius around the user's real location instead of

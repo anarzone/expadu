@@ -66,6 +66,53 @@ test('the fallback card distance tracks the transport mode (walk reads slower th
     expect($bike)->toBeGreaterThan(0);
 });
 
+test('an explicit From by saved-place id measures from that place', function () {
+    $work = UserPlace::factory()->create([
+        'user_id' => $this->user->id,
+        'category' => 'work',
+        'name' => 'Work',
+        'lat' => 50.968,
+        'lng' => 6.921,
+    ]);
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.921]);
+
+    $res = $this->getJson("/api/places?veedel=Ehrenfeld&from_place={$work->id}");
+
+    $res->assertOk()
+        ->assertJsonPath('origin.source', 'live')
+        ->assertJsonPath('origin.label', 'Work');
+    // The origin echoes the saved place's coordinates so take-me-there agrees.
+    expect((float) $res->json('origin.lat'))->toBe(50.968);
+    expect((float) $res->json('origin.lng'))->toBe(6.921);
+});
+
+test('a From id belonging to another user is ignored', function () {
+    $other = User::factory()->onboarded()->create();
+    $theirPlace = UserPlace::factory()->create([
+        'user_id' => $other->id,
+        'category' => 'home',
+        'lat' => 50.80,
+        'lng' => 7.00,
+    ]);
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.921]);
+
+    $res = $this->getJson("/api/places?veedel=Ehrenfeld&from_place={$theirPlace->id}");
+
+    // Scoped to the user's own places → the foreign id can't anchor distances.
+    $res->assertOk();
+    expect($res->json('origin.source'))->not->toBe('live');
+});
+
+test('an explicit From by geocoded point carries its label', function () {
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.921]);
+
+    $res = $this->getJson('/api/places?veedel=Ehrenfeld&lat=50.95&lng=6.92&from_label=Neumarkt');
+
+    $res->assertOk()
+        ->assertJsonPath('origin.source', 'live')
+        ->assertJsonPath('origin.label', 'Neumarkt');
+});
+
 test('excludes indoor/legacy categories from Places', function () {
     Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);

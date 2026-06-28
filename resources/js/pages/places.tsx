@@ -1,13 +1,17 @@
 import { Head, Deferred, usePage } from '@inertiajs/react';
 import {
     IconBike,
+    IconBriefcase,
     IconBus,
     IconCheck,
     IconChevronDown,
+    IconCurrentLocation,
     IconFilter,
+    IconHome,
     IconList,
     IconMap,
     IconMapPin,
+    IconSearch,
     IconSortDescending,
     IconWalk,
     IconWorld,
@@ -57,6 +61,23 @@ const PLACE_MODES: ReadonlyArray<{
     { id: 'transit', label: 'Transit', Icon: IconBus },
     { id: 'bike', label: 'Bike', Icon: IconBike },
 ];
+
+/** A saved origin (Home / Work / pin) offered in the "From" picker. */
+type SavedPlace = {
+    id: number;
+    name: string;
+    category: string;
+    address: string | null;
+};
+
+/**
+ * The user's explicit "measure distances from" choice. A saved place travels
+ * by id (coordinates resolved server-side); a geocoded result carries its point.
+ */
+type FromOverride =
+    | { kind: 'place'; id: number; label: string }
+    | { kind: 'point'; lat: number; lng: number; label: string }
+    | null;
 
 function placeChips(place: Place): CardChip[] {
     // Venue cards lead with what you can do there — that IS the card.
@@ -142,19 +163,27 @@ function placeEmoji(place: Place): string {
 }
 
 export default function Places() {
-    const { auth, homeVeedel, homeBezirk, filters, bezirke, veedelsByBezirk } =
-        usePage<{
-            auth: { user: { transport_mode: TransportMode | null } };
-            homeVeedel: string | null;
-            homeBezirk: string | null;
-            filters: {
-                bezirk: string;
-                veedel: string | null;
-                category: string | null;
-            };
-            bezirke?: VeedelOption[];
-            veedelsByBezirk?: Record<string, string[]>;
-        }>().props;
+    const {
+        auth,
+        homeVeedel,
+        homeBezirk,
+        filters,
+        bezirke,
+        veedelsByBezirk,
+        savedPlaces,
+    } = usePage<{
+        auth: { user: { transport_mode: TransportMode | null } };
+        homeVeedel: string | null;
+        homeBezirk: string | null;
+        filters: {
+            bezirk: string;
+            veedel: string | null;
+            category: string | null;
+        };
+        bezirke?: VeedelOption[];
+        veedelsByBezirk?: Record<string, string[]>;
+        savedPlaces: SavedPlace[];
+    }>().props;
 
     const [bezirk, setBezirk] = useState(filters.bezirk ?? 'all');
     const [veedel, setVeedel] = useState<string | null>(filters.veedel);
@@ -208,6 +237,18 @@ export default function Places() {
     // "Near me" was requested but we have no location fix yet.
     const [needsLocation, setNeedsLocation] = useState(false);
 
+    // The user's explicit "From" pick (saved place or searched point). Mirrored
+    // in a ref so the fetch closure always reads the current value.
+    const [fromOverride, setFromOverride] = useState<FromOverride>(null);
+    const fromOverrideRef = useRef<FromOverride>(null);
+
+    // Address search inside the From picker (reuses /api/geocode).
+    const [fromQuery, setFromQuery] = useState('');
+    const [fromResults, setFromResults] = useState<
+        { name: string; address: string; lat: number; lng: number }[]
+    >([]);
+    const fromSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     // Auto-dismiss the locate error after a few seconds.
     useEffect(() => {
         if (!locateError) {
@@ -243,6 +284,18 @@ export default function Places() {
 
             if (c) {
                 params.set('category', c);
+            }
+
+            // An explicit From overrides the resolved origin: a saved place by
+            // id (coords resolved server-side) or a geocoded point.
+            const from = fromOverrideRef.current;
+
+            if (from?.kind === 'place') {
+                params.set('from_place', String(from.id));
+            } else if (from?.kind === 'point') {
+                params.set('lat', String(from.lat));
+                params.set('lng', String(from.lng));
+                params.set('from_label', from.label);
             }
 
             // All state writes happen async (in .then/.catch) so the
@@ -296,6 +349,12 @@ export default function Places() {
                 }
 
                 return;
+            }
+
+            // An explicit "use my location" supersedes any picked From.
+            if (fly) {
+                fromOverrideRef.current = null;
+                setFromOverride(null);
             }
 
             setLocating(true);
@@ -367,6 +426,72 @@ export default function Places() {
         },
         [bezirk, veedel, category, fetchPage],
     );
+
+    // Apply an explicit From (saved place or searched point), then refetch so
+    // every card distance is measured from it.
+    const applyFrom = useCallback(
+        (next: FromOverride) => {
+            fromOverrideRef.current = next;
+            setFromOverride(next);
+            setFromPickOpen(false);
+            setFromQuery('');
+            setFromResults([]);
+            fetchPage(bezirk, veedel, category, 1, false);
+        },
+        [bezirk, veedel, category, fetchPage],
+    );
+
+    // Back to "my location": clear the pick and take a fresh fix.
+    const pickMyLocation = useCallback(() => {
+        setFromQuery('');
+        setFromResults([]);
+        setFromPickOpen(false);
+        locate(true);
+    }, [locate]);
+
+    // Debounced address search inside the From picker.
+    const searchFrom = useCallback((q: string) => {
+        setFromQuery(q);
+
+        if (fromSearchTimer.current) {
+            clearTimeout(fromSearchTimer.current);
+        }
+
+        if (q.trim().length < 3) {
+            setFromResults([]);
+
+            return;
+        }
+
+        fromSearchTimer.current = setTimeout(() => {
+            fetch(`/api/geocode?q=${encodeURIComponent(q.trim())}`, {
+                credentials: 'same-origin',
+            })
+                .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+                .then(
+                    (
+                        data: {
+                            name: string;
+                            street?: string;
+                            city?: string;
+                            lat: number;
+                            lng: number;
+                        }[],
+                    ) =>
+                        setFromResults(
+                            data.map((r) => ({
+                                name: r.name,
+                                address: [r.street, r.city]
+                                    .filter(Boolean)
+                                    .join(', '),
+                                lat: r.lat,
+                                lng: r.lng,
+                            })),
+                        ),
+                )
+                .catch(() => setFromResults([]));
+        }, 300);
+    }, []);
 
     // On opening the map, ping silently only if permission was already granted —
     // never a cold prompt on a browse screen. The "Locate me" button is the
@@ -461,11 +586,16 @@ export default function Places() {
     // "Near me" — browse a radius around your location. If we have no fix yet,
     // get one and confirm it first, then switch so the radius has an origin.
     function goNearMe() {
+        // "Near me" measures from your live location — drop any picked From.
+        const hadOverride = fromOverrideRef.current !== null;
+        fromOverrideRef.current = null;
+        setFromOverride(null);
         setVeedel(null);
 
         const known =
             userLoc !== null ||
-            (origin !== null &&
+            (!hadOverride &&
+                origin !== null &&
                 (origin.source === 'live' ||
                     origin.source === 'confirmed' ||
                     origin.source === 'ping'));
@@ -571,7 +701,6 @@ export default function Places() {
 
     // From pill — the resolved origin (live/confirmed/area) shown compactly,
     // plus the current travel-mode glyph.
-    const originKnown = origin !== null && origin.source !== 'none';
     const fromLabel = locating
         ? 'Locating…'
         : !origin || origin.source === 'none'
@@ -582,6 +711,21 @@ export default function Places() {
     const FromModeIcon = (
         PLACE_MODES.find((m) => m.id === mode) ?? PLACE_MODES[0]
     ).Icon;
+
+    // Which picker row reads as active: an explicit pick wins; otherwise a
+    // real GPS-derived origin highlights "My location" (a browsed-area
+    // centroid highlights nothing — the user hasn't chosen an origin).
+    const fromSelectedKey =
+        fromOverride?.kind === 'place'
+            ? `place:${fromOverride.id}`
+            : fromOverride?.kind === 'point'
+              ? 'point'
+              : origin &&
+                  (origin.source === 'live' ||
+                      origin.source === 'confirmed' ||
+                      origin.source === 'ping')
+                ? 'live'
+                : null;
 
     // Keep the active chip visible when it's picked elsewhere (URL,
     // back button).
@@ -850,29 +994,220 @@ export default function Places() {
                                         className="fixed inset-0 z-30"
                                         onClick={() => setFromPickOpen(false)}
                                     />
-                                    <div className="absolute top-12 left-0 z-40 w-[min(260px,calc(100vw-2rem))] rounded-[16px] border border-cyan-bd bg-card p-[15px] shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
+                                    <div className="absolute top-12 left-0 z-40 w-[min(300px,calc(100vw-2rem))] rounded-[16px] border border-cyan-bd bg-card p-[15px] shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
                                         <div className="mb-2.5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
                                             Measure distances from
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                locate(true);
-                                                setFromPickOpen(false);
-                                            }}
-                                            className={`inline-flex items-center gap-1.5 rounded-full border px-[11px] py-[7px] text-[12px] font-semibold transition-colors ${
-                                                originKnown
-                                                    ? 'border-cyan bg-cyan-soft text-cyan-h'
-                                                    : 'border-border bg-card text-text-2 hover:border-cyan-bd hover:text-cyan-h'
-                                            }`}
-                                        >
-                                            <IconMapPin
-                                                size={13}
+
+                                        <div className="relative mb-2.5">
+                                            <IconSearch
+                                                size={15}
                                                 stroke={ICON_STROKE}
+                                                className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-text-3"
                                             />
-                                            {locating
-                                                ? 'Locating…'
-                                                : 'My location'}
-                                        </button>
+                                            <input
+                                                type="text"
+                                                value={fromQuery}
+                                                onChange={(e) =>
+                                                    searchFrom(e.target.value)
+                                                }
+                                                placeholder="Search an address or place…"
+                                                className="w-full rounded-[10px] border border-border bg-surface-2 py-2 pr-3 pl-8 text-[12.5px] text-foreground placeholder:text-text-3 focus:border-cyan-bd focus:outline-none"
+                                            />
+                                        </div>
+
+                                        <div className="flex flex-col gap-1.5">
+                                            {fromQuery.trim().length >= 3 ? (
+                                                fromResults.length > 0 ? (
+                                                    fromResults.map((r, i) => (
+                                                        <button
+                                                            key={`${r.lat},${r.lng},${i}`}
+                                                            onClick={() =>
+                                                                applyFrom({
+                                                                    kind: 'point',
+                                                                    lat: r.lat,
+                                                                    lng: r.lng,
+                                                                    label: r.name,
+                                                                })
+                                                            }
+                                                            className="flex items-center gap-2.5 rounded-[12px] border border-border bg-card px-[11px] py-2 text-left transition-colors hover:border-cyan-bd"
+                                                        >
+                                                            <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-surface-2 text-text-2">
+                                                                <IconMapPin
+                                                                    size={16}
+                                                                    stroke={
+                                                                        ICON_STROKE
+                                                                    }
+                                                                />
+                                                            </span>
+                                                            <span className="min-w-0">
+                                                                <span className="block truncate text-[13px] font-medium text-foreground">
+                                                                    {r.name}
+                                                                </span>
+                                                                {r.address && (
+                                                                    <span className="block truncate text-[11.5px] text-text-3">
+                                                                        {
+                                                                            r.address
+                                                                        }
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-1 py-1.5 text-[12px] text-text-3">
+                                                        No matches — try a
+                                                        street or place name.
+                                                    </div>
+                                                )
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={pickMyLocation}
+                                                        className={`flex items-center gap-2.5 rounded-[12px] border px-[11px] py-2 text-left transition-colors ${
+                                                            fromSelectedKey ===
+                                                            'live'
+                                                                ? 'border-cyan bg-cyan-soft'
+                                                                : 'border-border bg-card hover:border-cyan-bd'
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`flex size-7 shrink-0 items-center justify-center rounded-[8px] ${
+                                                                fromSelectedKey ===
+                                                                'live'
+                                                                    ? 'bg-card text-cyan-h'
+                                                                    : 'bg-surface-2 text-text-2'
+                                                            }`}
+                                                        >
+                                                            <IconCurrentLocation
+                                                                size={16}
+                                                                stroke={
+                                                                    ICON_STROKE
+                                                                }
+                                                            />
+                                                        </span>
+                                                        <span className="min-w-0">
+                                                            <span
+                                                                className={`block text-[13px] font-medium ${
+                                                                    fromSelectedKey ===
+                                                                    'live'
+                                                                        ? 'text-cyan-h'
+                                                                        : 'text-foreground'
+                                                                }`}
+                                                            >
+                                                                {locating
+                                                                    ? 'Locating…'
+                                                                    : 'My location'}
+                                                            </span>
+                                                            <span
+                                                                className={`block text-[11.5px] ${
+                                                                    fromSelectedKey ===
+                                                                    'live'
+                                                                        ? 'text-[#5e9aa8]'
+                                                                        : 'text-text-3'
+                                                                }`}
+                                                            >
+                                                                GPS · live
+                                                            </span>
+                                                        </span>
+                                                        {fromSelectedKey ===
+                                                            'live' && (
+                                                            <IconCheck
+                                                                size={16}
+                                                                stroke={
+                                                                    ICON_STROKE
+                                                                }
+                                                                className="ml-auto shrink-0 text-cyan-h"
+                                                            />
+                                                        )}
+                                                    </button>
+
+                                                    {savedPlaces.map((p) => {
+                                                        const selected =
+                                                            fromSelectedKey ===
+                                                            `place:${p.id}`;
+                                                        const RowIcon =
+                                                            p.category ===
+                                                            'home'
+                                                                ? IconHome
+                                                                : p.category ===
+                                                                    'work'
+                                                                  ? IconBriefcase
+                                                                  : IconMapPin;
+
+                                                        return (
+                                                            <button
+                                                                key={p.id}
+                                                                onClick={() =>
+                                                                    applyFrom({
+                                                                        kind: 'place',
+                                                                        id: p.id,
+                                                                        label: p.name,
+                                                                    })
+                                                                }
+                                                                className={`flex items-center gap-2.5 rounded-[12px] border px-[11px] py-2 text-left transition-colors ${
+                                                                    selected
+                                                                        ? 'border-cyan bg-cyan-soft'
+                                                                        : 'border-border bg-card hover:border-cyan-bd'
+                                                                }`}
+                                                            >
+                                                                <span
+                                                                    className={`flex size-7 shrink-0 items-center justify-center rounded-[8px] ${
+                                                                        selected
+                                                                            ? 'bg-card text-cyan-h'
+                                                                            : 'bg-surface-2 text-text-2'
+                                                                    }`}
+                                                                >
+                                                                    <RowIcon
+                                                                        size={
+                                                                            16
+                                                                        }
+                                                                        stroke={
+                                                                            ICON_STROKE
+                                                                        }
+                                                                    />
+                                                                </span>
+                                                                <span className="min-w-0">
+                                                                    <span
+                                                                        className={`block truncate text-[13px] font-medium ${
+                                                                            selected
+                                                                                ? 'text-cyan-h'
+                                                                                : 'text-foreground'
+                                                                        }`}
+                                                                    >
+                                                                        {p.name}
+                                                                    </span>
+                                                                    {p.address && (
+                                                                        <span
+                                                                            className={`block truncate text-[11.5px] ${
+                                                                                selected
+                                                                                    ? 'text-[#5e9aa8]'
+                                                                                    : 'text-text-3'
+                                                                            }`}
+                                                                        >
+                                                                            {
+                                                                                p.address
+                                                                            }
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                                {selected && (
+                                                                    <IconCheck
+                                                                        size={
+                                                                            16
+                                                                        }
+                                                                        stroke={
+                                                                            ICON_STROKE
+                                                                        }
+                                                                        className="ml-auto shrink-0 text-cyan-h"
+                                                                    />
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </>
+                                            )}
+                                        </div>
 
                                         <div className="my-[13px] h-px bg-border" />
 

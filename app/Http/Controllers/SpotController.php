@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\SpotCategory;
+use App\Models\UserPlace;
 use App\Profile\ProfileEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,20 @@ class SpotController extends Controller
         return Inertia::render('places', [
             'homeVeedel' => $homeVeedel,
             'homeBezirk' => $homeBezirk,
+            // Saved origins for the "From" picker (Home / Work / pins). Only the
+            // id, label and a sublabel reach the client — the coordinates stay
+            // server-side and are resolved by id when one is picked.
+            'savedPlaces' => $request->user()->places()
+                ->whereNotNull('lat')
+                ->whereNotNull('lng')
+                ->get(['id', 'name', 'category', 'address'])
+                ->map(fn (UserPlace $place) => [
+                    'id' => $place->id,
+                    'name' => $place->name,
+                    'category' => (string) $place->category,
+                    'address' => $place->address,
+                ])
+                ->all(),
             'filters' => [
                 'bezirk' => $bezirk,
                 'veedel' => $veedel,

@@ -79,6 +79,22 @@ class UserLocationService
             }
         }
 
+        // A picked saved place (Home/Work/pin) is referenced by id so its
+        // coordinates never travel in the query string. Scoped to the user's
+        // own places, so an arbitrary id can't measure from someone else's home.
+        $placeId = $request?->input('from_place');
+        if (is_numeric($placeId)) {
+            $place = $user->places()->whereKey((int) $placeId)->first(['name', 'lat', 'lng']);
+            if ($place && $place->lat !== null && $place->lng !== null) {
+                return new LocationContext(
+                    (float) $place->lat,
+                    (float) $place->lng,
+                    LocationSource::Live,
+                    $place->name !== null && $place->name !== '' ? $place->name : 'Saved place',
+                );
+            }
+        }
+
         $pickedArea = $request?->input('from_area');
         if (is_string($pickedArea) && $pickedArea !== '') {
             $centroid = $this->areaCentroid($pickedArea);
