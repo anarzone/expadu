@@ -551,6 +551,12 @@ export default function Places() {
             emoji: placeEmoji(place),
             lat: place.lat,
             lng: place.lng,
+            // Route from the same origin the card distances were measured from,
+            // so the sheet's times match the card (and walk isn't dropped from a
+            // far-away fallback). Only when the origin is actually known.
+            fromLat: origin?.lat ?? null,
+            fromLng: origin?.lng ?? null,
+            fromName: origin?.label ?? null,
         });
     }
 

@@ -90,8 +90,10 @@ test('includes direct walk and bike routes alongside transit', function () {
     expect($result->journeys)->toHaveCount(3);
     expect(array_map(fn ($j) => $j->mode(), $result->journeys))->toBe(['transit', 'bike', 'walk']);
 
-    // MOTIS was actually asked for direct walk + bike (not transit-only).
-    Http::assertSent(fn ($req) => str_contains(urldecode($req->url()), 'directModes=WALK,BIKE'));
+    // Walk + bike are fetched as SEPARATE direct calls so both surface — a
+    // single combined call only ever returns the fastest (bike).
+    Http::assertSent(fn ($req) => str_contains(urldecode($req->url()), 'directModes=BIKE'));
+    Http::assertSent(fn ($req) => str_contains(urldecode($req->url()), 'directModes=WALK'));
 });
 
 test('geocode maps stops with ids', function () {

@@ -84,6 +84,11 @@ export type Destination = {
     address?: string;
     /** ISO start time when navigating to a timed event. */
     arriveBy?: string;
+    /** The origin the caller already measured from (e.g. the Places "From"),
+     * so the journey starts there — not a re-resolved fallback. */
+    fromLat?: number | null;
+    fromLng?: number | null;
+    fromName?: string | null;
 };
 
 const CSRF = () =>
@@ -431,6 +436,15 @@ export function TakeMeThereSheet({
         if (fromOverride) {
             params.set('from_lat', String(fromOverride.lat));
             params.set('from_lng', String(fromOverride.lng));
+        } else if (destination.fromLat != null && destination.fromLng != null) {
+            // Start from the origin the caller already measured from, so the
+            // sheet's times match the card's "X min away".
+            params.set('from_lat', String(destination.fromLat));
+            params.set('from_lng', String(destination.fromLng));
+
+            if (destination.fromName) {
+                params.set('from_name', destination.fromName);
+            }
         }
 
         fetch(`/api/journey?${params}`, { credentials: 'same-origin' })
@@ -449,7 +463,15 @@ export function TakeMeThereSheet({
         return () => {
             cancelled = true;
         };
-    }, [destination.lat, destination.lng, destination.name, fromOverride]);
+    }, [
+        destination.lat,
+        destination.lng,
+        destination.name,
+        destination.fromLat,
+        destination.fromLng,
+        destination.fromName,
+        fromOverride,
+    ]);
 
     // "I'm here →" — confirm the user's real position as the journey
     // origin (and as the app-wide location anchor), then replan from it.

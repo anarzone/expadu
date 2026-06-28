@@ -259,9 +259,13 @@ class PlacesController extends Controller
                 'nearby_included' => $nearbyIncluded,
                 // The resolved origin so the From control reflects the truth:
                 // live / confirmed / area (browsed) / none (→ "set location").
+                // lat/lng let "take me there" start the journey from the exact
+                // point the card distances were measured from (they must agree).
                 'origin' => [
                     'source' => $origin->source->value,
                     'label' => $origin->label,
+                    'lat' => $origin->hasOrigin() ? $origin->lat : null,
+                    'lng' => $origin->hasOrigin() ? $origin->lng : null,
                 ],
                 // "Near me" was requested but we don't know where the user is.
                 'needs_location' => $near && ! $nearActive,

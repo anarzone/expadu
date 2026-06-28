@@ -33,13 +33,16 @@ class TakeMeThereController extends Controller
             'to_name' => ['nullable', 'string', 'max:200'],
             'from_lat' => ['nullable', 'numeric', 'between:-90,90'],
             'from_lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'from_name' => ['nullable', 'string', 'max:120'],
         ]);
 
         $user = $request->user();
 
         if (isset($validated['from_lat'], $validated['from_lng'])) {
+            // An explicit origin (the Places list's resolved From, or an "I'm
+            // here" fix) — keep its label so the sheet headline matches the card.
             $from = new GeoPoint((float) $validated['from_lat'], (float) $validated['from_lng']);
-            $fromName = 'Your location';
+            $fromName = $validated['from_name'] ?? 'Your location';
         } else {
             $locations = app(UserLocationService::class);
             $origin = $locations->context($user, $request);

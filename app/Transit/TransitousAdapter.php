@@ -54,23 +54,35 @@ class TransitousAdapter implements RouteService
         // Two separate calls keep both. (Verified against the live engine.)
         $journeys = $this->fetchBucket($from, $to, $departAt, $max, [], 'itineraries', $this->planTimeout);
 
-        // Direct walk + bike as a best-effort second call — a hiccup here must
-        // never drop transit. maxDirectTime is generous so a cross-town bike
-        // ride still surfaces; an over-long walk is dropped by the cap. It only
-        // runs after a successful (hence quick) transit call, so a tight timeout
-        // keeps this supplementary lookup from ever dominating the response.
-        try {
-            $journeys = array_merge($journeys, $this->fetchBucket(
-                $from,
-                $to,
-                $departAt,
-                1,
-                ['directModes' => 'WALK,BIKE', 'maxDirectTime' => 4800],
-                'direct',
-                min($this->planTimeout, 5.0),
-            ));
-        } catch (\Throwable) {
-            // Transit-only is an acceptable result if the direct call fails.
+        // Direct walk + bike, fetched PER MODE as best-effort calls. A single
+        // combined `WALK,BIKE` call with numItineraries=1 only ever returns the
+        // fastest direct option (always bike), so the walk option silently
+        // vanished — each mode needs its own call. A hiccup on one must never
+        // drop transit or the other mode. The caps drop an over-long option:
+        // walk past 45 min (matching the card's walk guard), bike past 80.
+        $directCaps = ['BIKE' => 4800, 'WALK' => 2700];
+        foreach ($directCaps as $directMode => $maxDirectTime) {
+            try {
+                $direct = $this->fetchBucket(
+                    $from,
+                    $to,
+                    $departAt,
+                    1,
+                    ['directModes' => $directMode, 'maxDirectTime' => $maxDirectTime],
+                    'direct',
+                    min($this->planTimeout, 5.0),
+                );
+                // Keep only the journey that actually used this mode — a guard
+                // against a provider answering a mode slot with a different one.
+                $expected = strtolower($directMode);
+                foreach ($direct as $journey) {
+                    if ($journey->mode() === $expected) {
+                        $journeys[] = $journey;
+                    }
+                }
+            } catch (\Throwable) {
+                // Transit-only (or one mode missing) is an acceptable result.
+            }
         }
 
         return new JourneyResult($journeys, $this->source());

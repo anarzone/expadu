@@ -62,6 +62,28 @@ test('returns a journey with journey-aware Rheinlandtarif fare advice', function
     expect($response->json('ticket.how_to_buy'))->not->toBeEmpty();
 });
 
+test('starts from an explicit origin + label, not the home fallback', function () {
+    fakeRoutingToKoeln();
+
+    $user = User::factory()->onboarded()->create();
+    // A home far from the destination — the old code routed from here, which is
+    // why the sheet disagreed with the card and dropped the walk option.
+    UserPlace::factory()->create([
+        'user_id' => $user->id, 'category' => 'home', 'lat' => 51.05, 'lng' => 6.80,
+    ]);
+
+    $this->actingAs($user);
+    // The Places list forwards its resolved From (e.g. the Merkenich area) so
+    // the journey starts there and the sheet headline matches the card.
+    $response = $this->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583&to_name=Bolzplatz'
+        .'&from_lat=50.9430&from_lng=6.9550&from_name=Merkenich');
+
+    $response->assertOk();
+    $response->assertJsonPath('from.name', 'Merkenich');
+    expect((float) $response->json('from.lat'))->toBe(50.943);
+    expect((float) $response->json('from.lng'))->toBe(6.955);
+});
+
 test('a Deutschlandticket holder sees the trip as covered', function () {
     fakeRoutingToKoeln();
 

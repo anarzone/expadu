@@ -9,6 +9,9 @@ export type PlacesOrigin = {
     label: string | null;
     /** The Veedel the origin falls in — the plan's default search area. */
     area?: string | null;
+    /** Resolved coordinates, so "take me there" starts from the same point. */
+    lat?: number | null;
+    lng?: number | null;
 };
 
 const MODES: ReadonlyArray<{
