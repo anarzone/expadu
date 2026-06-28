@@ -668,7 +668,7 @@ export default function Dashboard() {
                             onClick={() => openComposer(savedPlan.prompt ?? '')}
                             className="mt-4 w-full cursor-pointer rounded-[11px] border border-border bg-card py-[11px] text-[14px] font-semibold text-foreground transition-colors hover:border-primary"
                         >
-                            Open in Day Composer →
+                            Open in Composer →
                         </button>
                     </div>
                 )}
@@ -775,12 +775,12 @@ export default function Dashboard() {
                             </div>
                         )}
 
-                        <div className="mt-4 flex gap-2.5">
+                        <div className="mt-4 flex gap-2">
                             {preview.length > 0 && (
                                 <button
                                     onClick={() => void savePreviewToToday()}
                                     disabled={savingPreview}
-                                    className="flex-1 cursor-pointer rounded-[11px] bg-foreground py-[11px] text-[14px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+                                    className="flex-1 cursor-pointer rounded-[10px] bg-foreground py-2.5 text-[13px] font-semibold whitespace-nowrap text-background transition-opacity hover:opacity-90 disabled:opacity-60"
                                 >
                                     {savingPreview
                                         ? 'Saving…'
@@ -789,9 +789,9 @@ export default function Dashboard() {
                             )}
                             <button
                                 onClick={() => openComposer(previewPrompt)}
-                                className="flex-1 cursor-pointer rounded-[11px] bg-primary py-[11px] text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                                className="flex-1 cursor-pointer rounded-[10px] bg-primary py-2.5 text-[13px] font-semibold whitespace-nowrap text-primary-foreground transition-colors hover:bg-primary-hover"
                             >
-                                Open in Day Composer →
+                                Open in Composer →
                             </button>
                         </div>
                     </div>
