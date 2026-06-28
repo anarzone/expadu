@@ -22,6 +22,9 @@ export function PlacesMap({
     onLocate,
     locating = false,
     flyToToken = 0,
+    pickMode = false,
+    onMapPick,
+    onCancelPick,
 }: {
     places: Place[];
     emojiFor: (place: Place) => string;
@@ -32,6 +35,9 @@ export function PlacesMap({
     onLocate?: () => void;
     locating?: boolean;
     flyToToken?: number;
+    pickMode?: boolean;
+    onMapPick?: (lat: number, lng: number) => void;
+    onCancelPick?: () => void;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MaplibreMap | null>(null);
@@ -42,6 +48,13 @@ export function PlacesMap({
     // pin rebuild (the distance refetch) doesn't yank the viewport back to a
     // fit-all of the places and undo the fly.
     const focusingRef = useRef(false);
+    // Latest pick-mode state + handler, read by the map's click listener (which
+    // is registered once on boot) so it never needs to re-subscribe.
+    const pickRef = useRef<{
+        mode: boolean;
+        onPick?: (lat: number, lng: number) => void;
+    }>({ mode: false });
+    pickRef.current = { mode: pickMode, onPick: onMapPick };
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading',
     );
@@ -85,6 +98,17 @@ export function PlacesMap({
                 map.on('load', () => {
                     if (!cancelled) {
                         setStatus('ready');
+                    }
+                });
+
+                // Pick-a-start-point: a tap on the map (not a pin) reports its
+                // coordinates while pick mode is active. Pin taps stop their own
+                // propagation, so they keep selecting the place.
+                map.on('click', (e) => {
+                    const { mode, onPick } = pickRef.current;
+
+                    if (mode && onPick) {
+                        onPick(e.lngLat.lat, e.lngLat.lng);
                     }
                 });
 
@@ -243,6 +267,17 @@ export function PlacesMap({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [flyToToken]);
 
+    // A crosshair cursor signals "tap to set your start point" while picking.
+    useEffect(() => {
+        const map = mapRef.current;
+
+        if (!map || status !== 'ready') {
+            return;
+        }
+
+        map.getCanvas().style.cursor = pickMode ? 'crosshair' : '';
+    }, [pickMode, status]);
+
     return (
         <div className="relative h-[68vh] min-h-[440px] overflow-hidden rounded-2xl border border-border bg-secondary">
             <div ref={containerRef} className="h-full w-full" />
@@ -261,6 +296,24 @@ export function PlacesMap({
                     <p className="text-sm text-muted-foreground">
                         Couldn't load the map.
                     </p>
+                </div>
+            )}
+
+            {pickMode && status === 'ready' && (
+                <div className="absolute top-3 right-3 left-3 z-10 flex items-center justify-between gap-2 rounded-[12px] border border-cyan-bd bg-card px-3.5 py-2.5 shadow-lg">
+                    <span className="flex items-center gap-2 text-[13px] font-medium text-cyan-h">
+                        <IconMapPin size={16} stroke={ICON_STROKE} />
+                        Tap the map to set your start point
+                    </span>
+                    {onCancelPick && (
+                        <button
+                            type="button"
+                            onClick={onCancelPick}
+                            className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            Cancel
+                        </button>
+                    )}
                 </div>
             )}
 

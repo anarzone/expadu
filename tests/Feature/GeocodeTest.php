@@ -78,3 +78,19 @@ test('geocode endpoint rejects queries that are too short', function () {
     $response->assertUnprocessable();
     $response->assertJsonValidationErrors('q');
 });
+
+test('geocoding service collapses results that render identically', function () {
+    $features = [
+        ['properties' => ['name' => 'Neumarkt', 'city' => 'Köln'], 'geometry' => ['coordinates' => [6.95, 50.93]]],
+        ['properties' => ['name' => 'Neumarkt', 'city' => 'Köln'], 'geometry' => ['coordinates' => [6.951, 50.931]]],
+        ['properties' => ['name' => 'Neumarkt', 'city' => 'Köln'], 'geometry' => ['coordinates' => [6.952, 50.932]]],
+        ['properties' => ['name' => 'Rudolfplatz', 'city' => 'Köln'], 'geometry' => ['coordinates' => [6.93, 50.93]]],
+    ];
+
+    $results = (new GeocodingService)->mapFeatures($features);
+
+    // The three indistinguishable "Neumarkt · Köln" rows collapse to one; the
+    // distinct result survives, best-ranked order preserved.
+    expect($results)->toHaveCount(2);
+    expect(collect($results)->pluck('name')->all())->toBe(['Neumarkt', 'Rudolfplatz']);
+});

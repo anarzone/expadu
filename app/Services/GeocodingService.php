@@ -28,34 +28,7 @@ class GeocodingService
                     ]);
 
                 if ($response->successful()) {
-                    return collect($response->json('features', []))
-                        ->map(function (array $feature) use ($query) {
-                            $props = $feature['properties'] ?? [];
-                            $street = $props['street'] ?? null;
-                            $houseNumber = $props['housenumber'] ?? null;
-                            $name = $props['name'] ?? $street ?? $query;
-
-                            // Build full address with house number
-                            $fullStreet = $street;
-                            if ($street && $houseNumber) {
-                                $fullStreet = "{$street} {$houseNumber}";
-                            }
-
-                            // Use full street as name if the result is a house/address
-                            $type = $props['type'] ?? $props['osm_value'] ?? '';
-                            if (in_array($type, ['house', 'address', 'residential']) && $fullStreet) {
-                                $name = $fullStreet;
-                            }
-
-                            return [
-                                'name' => $name,
-                                'street' => $fullStreet,
-                                'city' => $props['city'] ?? $props['county'] ?? null,
-                                'lat' => $feature['geometry']['coordinates'][1] ?? 0.0,
-                                'lng' => $feature['geometry']['coordinates'][0] ?? 0.0,
-                            ];
-                        })
-                        ->all();
+                    return $this->mapFeatures($response->json('features', []), $query);
                 }
             } catch (\Exception $e) {
                 report($e);
@@ -63,5 +36,48 @@ class GeocodingService
 
             return [];
         });
+    }
+
+    /**
+     * Map Photon features to our result shape, collapsing rows that render
+     * identically. Photon often returns several near-duplicate features for one
+     * query (e.g. "Neumarkt · Köln" ×4); we keep the best-ranked of each so the
+     * suggestion list shows distinct, choosable options.
+     *
+     * @param  array<int, array<string, mixed>>  $features
+     * @return array<int, array{name: string, street: string|null, city: string|null, lat: float, lng: float}>
+     */
+    public function mapFeatures(array $features, string $query = ''): array
+    {
+        return collect($features)
+            ->map(function (array $feature) use ($query) {
+                $props = $feature['properties'] ?? [];
+                $street = $props['street'] ?? null;
+                $houseNumber = $props['housenumber'] ?? null;
+                $name = $props['name'] ?? $street ?? $query;
+
+                // Build full address with house number
+                $fullStreet = $street;
+                if ($street && $houseNumber) {
+                    $fullStreet = "{$street} {$houseNumber}";
+                }
+
+                // Use full street as name if the result is a house/address
+                $type = $props['type'] ?? $props['osm_value'] ?? '';
+                if (in_array($type, ['house', 'address', 'residential']) && $fullStreet) {
+                    $name = $fullStreet;
+                }
+
+                return [
+                    'name' => $name,
+                    'street' => $fullStreet,
+                    'city' => $props['city'] ?? $props['county'] ?? null,
+                    'lat' => $feature['geometry']['coordinates'][1] ?? 0.0,
+                    'lng' => $feature['geometry']['coordinates'][0] ?? 0.0,
+                ];
+            })
+            ->unique(fn (array $result) => "{$result['name']}|{$result['street']}|{$result['city']}")
+            ->values()
+            ->all();
     }
 }

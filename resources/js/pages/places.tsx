@@ -10,6 +10,7 @@ import {
     IconHome,
     IconList,
     IconMap,
+    IconMap2,
     IconMapPin,
     IconSearch,
     IconSortDescending,
@@ -189,6 +190,8 @@ export default function Places() {
     const [veedel, setVeedel] = useState<string | null>(filters.veedel);
     const [category, setCategory] = useState<string | null>(filters.category);
     const [view, setView] = useState<'list' | 'map'>('list');
+    // "Pick on map" is active: a tap on the map sets the distance origin.
+    const [pickMode, setPickMode] = useState(false);
 
     // v4 filter toolbar — the area picker, From popover and Sort menu are
     // pop-overs opened from the one toolbar line (replaces the photo-rail).
@@ -493,6 +496,37 @@ export default function Places() {
         }, 300);
     }, []);
 
+    // "Pick on map" → a tap on the map sets a point origin. A best-effort
+    // reverse geocode gives it a readable label; we return to the list so the
+    // recomputed "min away" on each card is visible.
+    const pickOnMap = useCallback(
+        (lat: number, lng: number) => {
+            setPickMode(false);
+            setView('list');
+            fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`, {
+                credentials: 'same-origin',
+            })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((d) =>
+                    applyFrom({
+                        kind: 'point',
+                        lat,
+                        lng,
+                        label: d?.address || 'Pinned location',
+                    }),
+                )
+                .catch(() =>
+                    applyFrom({
+                        kind: 'point',
+                        lat,
+                        lng,
+                        label: 'Pinned location',
+                    }),
+                );
+        },
+        [applyFrom],
+    );
+
     // On opening the map, ping silently only if permission was already granted —
     // never a cold prompt on a browse screen. The "Locate me" button is the
     // explicit path. Runs once per page visit.
@@ -762,9 +796,10 @@ export default function Places() {
                         </p>
                     </div>
                     <button
-                        onClick={() =>
-                            setView((v) => (v === 'map' ? 'list' : 'map'))
-                        }
+                        onClick={() => {
+                            setView((v) => (v === 'map' ? 'list' : 'map'));
+                            setPickMode(false);
+                        }}
                         aria-pressed={view === 'map'}
                         className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ${
                             view === 'map'
@@ -1205,6 +1240,36 @@ export default function Places() {
                                                             </button>
                                                         );
                                                     })}
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFromPickOpen(
+                                                                false,
+                                                            );
+                                                            setView('map');
+                                                            setPickMode(true);
+                                                        }}
+                                                        className="flex items-center gap-2.5 rounded-[12px] border border-dashed border-border bg-card px-[11px] py-2 text-left transition-colors hover:border-cyan-bd"
+                                                    >
+                                                        <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-surface-2 text-text-2">
+                                                            <IconMap2
+                                                                size={16}
+                                                                stroke={
+                                                                    ICON_STROKE
+                                                                }
+                                                            />
+                                                        </span>
+                                                        <span className="min-w-0">
+                                                            <span className="block text-[13px] font-medium text-foreground">
+                                                                Pick on map
+                                                            </span>
+                                                            <span className="block text-[11.5px] text-text-3">
+                                                                tap a spot on
+                                                                the map
+                                                            </span>
+                                                        </span>
+                                                    </button>
                                                 </>
                                             )}
                                         </div>
@@ -1333,6 +1398,9 @@ export default function Places() {
                         onLocate={() => locate(true)}
                         locating={locating}
                         flyToToken={flyTo}
+                        pickMode={pickMode}
+                        onMapPick={pickOnMap}
+                        onCancelPick={() => setPickMode(false)}
                     />
                 ) : status === 'loading' ? (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
