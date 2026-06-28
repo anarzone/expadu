@@ -16,7 +16,7 @@ import {
 } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ComponentType } from 'react';
+import type { ComponentType, CSSProperties } from 'react';
 import { categoryClass } from '@/components/ds/category';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
@@ -312,6 +312,38 @@ type SavedOrigin = {
     lng: number;
 };
 
+/**
+ * Position a token's option popover directly under the tapped word, but clamp
+ * it to the viewport so it never spills off a phone edge (the inline word can
+ * sit anywhere on a wrapped line). Opens upward when the word is low on screen.
+ */
+function tokenPopoverStyle(btn: HTMLElement): CSSProperties {
+    const r = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const width = Math.min(300, vw - 24);
+    const left = Math.max(12, Math.min(r.left, vw - width - 12));
+    // Word in the lower part of the screen → open the menu above it.
+    const openUp = r.bottom > vh * 0.62;
+
+    return openUp
+        ? {
+              position: 'fixed',
+              left,
+              bottom: vh - r.top + 8,
+              maxHeight: Math.max(180, r.top - 24),
+              width,
+          }
+        : {
+              position: 'fixed',
+              left,
+              top: r.bottom + 8,
+              // leave room for the floating mobile dock at the bottom.
+              maxHeight: Math.max(180, vh - r.bottom - 96),
+              width,
+          };
+}
+
 export default function Composer() {
     const { prompt, pins, places } = usePage<{
         prompt?: string;
@@ -345,6 +377,11 @@ export default function Composer() {
     // v4 editable-sentence model — which token/extra popover is open, the
     // add-filter panel, and how much day to show (a client view over the plan).
     const [openToken, setOpenToken] = useState<string | null>(null);
+    // Computed at open time so a token popover sits under the tapped word and
+    // stays on-screen (set only for the sentence tokens, not the extra chips).
+    const [tokenPopStyle, setTokenPopStyle] = useState<CSSProperties | null>(
+        null,
+    );
     const [addOpen, setAddOpen] = useState(false);
     const [amount, setAmount] = useState<'just' | 'few' | 'full'>('full');
     const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
@@ -680,7 +717,6 @@ export default function Composer() {
         options: { value: string; label: string }[],
         current: string,
         onPick: (value: string) => void,
-        align: 'left' | 'right' = 'left',
     ) {
         const open = openToken === key;
         const underline = cyan
@@ -692,7 +728,16 @@ export default function Composer() {
         return (
             <span className="relative inline-block">
                 <button
-                    onClick={() => setOpenToken(open ? null : key)}
+                    onClick={(e) => {
+                        if (open) {
+                            setOpenToken(null);
+                        } else {
+                            setTokenPopStyle(
+                                tokenPopoverStyle(e.currentTarget),
+                            );
+                            setOpenToken(key);
+                        }
+                    }}
                     className={`inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`}
                 >
                     {label}
@@ -700,11 +745,12 @@ export default function Composer() {
                 {open && (
                     <>
                         <div
-                            className="fixed inset-0 z-30 max-md:bg-black/20"
+                            className="fixed inset-0 z-[290]"
                             onClick={() => setOpenToken(null)}
                         />
                         <div
-                            className={`z-40 rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'} max-md:fixed max-md:inset-x-3 max-md:bottom-24 max-md:max-h-[55vh] max-md:overflow-y-auto md:absolute md:top-[calc(100%+10px)] md:w-[300px] ${align === 'right' ? 'md:right-0' : 'md:left-0'}`}
+                            style={tokenPopStyle ?? undefined}
+                            className={`z-[300] overflow-y-auto rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'}`}
                         >
                             <div
                                 className={`mb-[11px] font-mono text-[10px] tracking-[0.1em] uppercase ${cyan ? 'text-cyan-h' : 'text-text-3'}`}
@@ -858,7 +904,6 @@ export default function Composer() {
 
                                     pickFromArea(v);
                                 },
-                                'right',
                             )}
                             .
                         </div>
