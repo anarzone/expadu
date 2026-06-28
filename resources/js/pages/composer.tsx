@@ -700,11 +700,11 @@ export default function Composer() {
                 {open && (
                     <>
                         <div
-                            className="fixed inset-0 z-30"
+                            className="fixed inset-0 z-30 max-md:bg-black/20"
                             onClick={() => setOpenToken(null)}
                         />
                         <div
-                            className={`absolute top-[calc(100%+10px)] z-40 w-[300px] rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'} ${align === 'right' ? 'right-0' : 'left-0'}`}
+                            className={`z-40 rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'} max-md:fixed max-md:inset-x-3 max-md:bottom-24 max-md:max-h-[55vh] max-md:overflow-y-auto md:absolute md:top-[calc(100%+10px)] md:w-[300px] ${align === 'right' ? 'md:right-0' : 'md:left-0'}`}
                         >
                             <div
                                 className={`mb-[11px] font-mono text-[10px] tracking-[0.1em] uppercase ${cyan ? 'text-cyan-h' : 'text-text-3'}`}

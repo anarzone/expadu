@@ -844,7 +844,7 @@ export default function Places() {
                                         className="fixed inset-0 z-30"
                                         onClick={() => setFromPickOpen(false)}
                                     />
-                                    <div className="absolute top-12 right-0 z-40 w-[260px] rounded-[16px] border border-cyan-bd bg-card p-[15px] shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
+                                    <div className="absolute top-12 left-0 z-40 w-[min(260px,calc(100vw-2rem))] rounded-[16px] border border-cyan-bd bg-card p-[15px] shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
                                         <div className="mb-2.5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
                                             Measure distances from
                                         </div>
