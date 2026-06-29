@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\HtmlString;
 use Tests\TestCase;
 
@@ -29,6 +30,14 @@ pest()->extend(TestCase::class)
         // A clean cache per test — the discovery feed caches its global spot
         // scan, which would otherwise leak across tests after DB rollback.
         Cache::flush();
+
+        // Per-user location anchors live in raw Redis (not the array cache), so
+        // they survive DB rollback and leak a "confirmed"/ping origin into the
+        // next test that reuses an auto-increment id. Clear the low id range
+        // each test creates so every test starts with no live location.
+        for ($id = 1; $id <= 50; $id++) {
+            Redis::del("confirmed_location:{$id}", "location_history:{$id}");
+        }
 
         // Mock Vite so tests don't need npm run build
         app()->instance(Vite::class, new class extends Vite
