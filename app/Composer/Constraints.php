@@ -44,6 +44,17 @@ final readonly class Constraints
     }
 
     /**
+     * Same constraints with a different category set — used to widen a solo
+     * activity to its day complements so the itinerary isn't six of one thing.
+     *
+     * @param  list<string>  $categories
+     */
+    public function withCategories(array $categories): self
+    {
+        return new self($this->windowStart, $this->windowEnd, $this->areas, array_values($categories), $this->companions, $this->budget, $this->archetype, $this->vibe);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

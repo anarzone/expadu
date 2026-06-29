@@ -3,6 +3,7 @@
 namespace App\Composer;
 
 use App\Composer\Contracts\EstimatesTravel;
+use App\Enums\SpotCategory;
 use Carbon\CarbonImmutable;
 
 /**
@@ -13,7 +14,7 @@ use Carbon\CarbonImmutable;
  */
 class SlotFiller
 {
-    private const MAX_SLOTS_PER_DAY = 6;
+    public const MAX_SLOTS_PER_DAY = 6;
 
     /**
      * Two spots that share a visible name collapse to one only when they sit
@@ -30,6 +31,8 @@ class SlotFiller
 
     /**
      * @param  list<Candidate>  $feasible
+     * @param  list<Role>|null  $roles  explicit roles (a category-led "anchor + around it" day); null = derive from the archetype
+     * @param  int  $sameCoarseCap  max slots of one coarse category in the day (itinerary variety); PHP_INT_MAX = no cap (browse)
      */
     public function fill(
         Constraints $constraints,
@@ -37,6 +40,8 @@ class SlotFiller
         ScoringContext $context,
         float $originLat,
         float $originLng,
+        ?array $roles = null,
+        int $sameCoarseCap = PHP_INT_MAX,
     ): Plan {
         $slots = [];
         $used = [];
@@ -106,24 +111,27 @@ class SlotFiller
 
         usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
 
-        // 2. Fill the archetype's roles in order, left→right. Balanced (the
-        //    default) is one permissive role that fills the window — i.e. the
-        //    old greedy behaviour; specific archetypes shape the day instead.
+        // 2. Fill the roles in order, left→right. Explicit roles (a category-led
+        //    "anchor + around it" day) win; otherwise the archetype/vibe shapes
+        //    it, with Balanced — one permissive role that fills the window — the
+        //    default greedy behaviour.
         $archetype = $constraints->archetype ?? Archetype::forVibe($constraints->vibe) ?? Archetype::Balanced;
-        $targetVeedel = $archetype->singleVeedel() ? ($context->preferredAreas[0] ?? null) : null;
+        $roleList = $roles ?? $archetype->roles();
+        $targetVeedel = $roles === null && $archetype->singleVeedel() ? ($context->preferredAreas[0] ?? null) : null;
 
         $beforeRoles = count($slots);
-        $this->fillRoles($archetype->roles(), $feasible, $slots, $used, $usedNames, $constraints, $context, $originLat, $originLng, $targetVeedel);
+        $this->fillRoles($roleList, $feasible, $slots, $used, $usedNames, $constraints, $context, $originLat, $originLng, $targetVeedel, $sameCoarseCap);
 
-        // Graceful degradation: a shaped archetype whose roles match nothing in
-        // the filtered pool — "make a day of it" over a pitches-only result, or
-        // "explore a Veedel" with no spots in that Veedel — would dead-end at
-        // "nothing fits". Fall back to a permissive fill (any feasible category,
-        // anywhere) so the user always gets a real plan, flagged as relaxed so
-        // the response can say so honestly.
+        // Graceful degradation: a shaped day (explicit roles, or a non-Balanced
+        // archetype) whose roles match nothing in the filtered pool — "make a day
+        // of it" over a pitches-only result, or "explore a Veedel" with no spots
+        // there — would dead-end at "nothing fits". Fall back to a permissive
+        // fill (any feasible category, anywhere, still capped) so the user always
+        // gets a real plan, flagged as relaxed so the response can say so.
+        $shaped = $roles !== null || $archetype !== Archetype::Balanced;
         $relaxed = false;
-        if ($archetype !== Archetype::Balanced && count($slots) === $beforeRoles) {
-            $this->fillRoles([new Role([], self::MAX_SLOTS_PER_DAY)], $feasible, $slots, $used, $usedNames, $constraints, $context, $originLat, $originLng, null);
+        if ($shaped && count($slots) === $beforeRoles) {
+            $this->fillRoles([new Role([], self::MAX_SLOTS_PER_DAY)], $feasible, $slots, $used, $usedNames, $constraints, $context, $originLat, $originLng, null, $sameCoarseCap);
             $relaxed = count($slots) > $beforeRoles;
         }
 
@@ -143,7 +151,7 @@ class SlotFiller
      * @param  list<Candidate>  $feasible
      * @param  list<PlanSlot>  $slots
      * @param  array<string, bool>  $used
-     * @param  array<string, bool>  $usedNames
+     * @param  array<string, list<array{0: float, 1: float}>>  $usedNames
      */
     private function fillRoles(
         array $roles,
@@ -156,6 +164,7 @@ class SlotFiller
         float $originLat,
         float $originLng,
         ?string $targetVeedel,
+        int $sameCoarseCap = PHP_INT_MAX,
     ): void {
         $cursor = $constraints->windowStart;
         $cursorLat = $originLat;
@@ -168,7 +177,7 @@ class SlotFiller
                 [$cursor, $cursorLat, $cursorLng] = $this->advancePastAnchors($slots, $cursor, $cursorLat, $cursorLng);
 
                 $gapEnd = $this->nextAnchorStart($slots, $cursor) ?? $constraints->windowEnd;
-                $best = $this->bestFor($feasible, $used, $usedNames, $slots, $cursor, $cursorLat, $cursorLng, $gapEnd, $context, $role->categories, $targetVeedel);
+                $best = $this->bestFor($feasible, $used, $usedNames, $slots, $cursor, $cursorLat, $cursorLng, $gapEnd, $context, $role->categories, $targetVeedel, $sameCoarseCap);
 
                 if ($best === null) {
                     // Nothing for this role in this gap — jump past the next
@@ -257,6 +266,7 @@ class SlotFiller
         ScoringContext $context,
         array $allowedCategories = [],
         ?string $targetVeedel = null,
+        int $sameCoarseCap = PHP_INT_MAX,
     ): ?array {
         $best = null;
         $bestScore = -INF;
@@ -277,6 +287,12 @@ class SlotFiller
                 continue;
             }
             if ($targetVeedel !== null && $candidate->veedel !== $targetVeedel) {
+                continue;
+            }
+            // Repeat cap: don't stack more than N of one coarse category in a
+            // single itinerary — a day isn't six football pitches. Browse mode
+            // passes no cap, so "show me pitches" still lists many.
+            if ($sameCoarseCap !== PHP_INT_MAX && $this->coarsePlaced($slots, $candidate) >= $sameCoarseCap) {
                 continue;
             }
 
@@ -404,5 +420,25 @@ class SlotFiller
         $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
 
         return 6_371_000.0 * 2 * asin(min(1.0, sqrt($a)));
+    }
+
+    /**
+     * How many already-placed slots share this candidate's coarse bucket — the
+     * count the repeat cap reads (so "pitch" + "basketball" don't both count as
+     * one, but two football pitches do).
+     *
+     * @param  list<PlanSlot>  $slots
+     */
+    private function coarsePlaced(array $slots, Candidate $candidate): int
+    {
+        $coarse = $this->coarseOf($candidate);
+
+        return count(array_filter($slots, fn (PlanSlot $slot) => $this->coarseOf($slot->candidate) === $coarse));
+    }
+
+    /** A candidate's coarse Places bucket, falling back to its raw category (events/appointments). */
+    private function coarseOf(Candidate $candidate): string
+    {
+        return SpotCategory::tryFrom($candidate->category)?->coarse() ?? $candidate->category;
     }
 }

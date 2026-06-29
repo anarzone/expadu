@@ -7,6 +7,7 @@ use App\Composer\FeasibilityFilter;
 use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
+use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
@@ -283,6 +284,50 @@ test('two same-named spots far apart are both eligible (distinct places, not a s
 
     expect(array_map(fn ($s) => $s->candidate->id, $plan->slots))
         ->toEqualCanonicalizing(['spot:near', 'spot:south']);
+});
+
+// ── Repeat cap + anchor-around roles ───────────────────────────────────
+
+test('the repeat cap stops a day stacking one category', function () {
+    // Five distinct pitches, all reachable in the window. Uncapped, the filler
+    // stacks several; capped at 2, a day is never six football pitches.
+    $pitches = [];
+    foreach (range(1, 5) as $i) {
+        $pitches[] = makeCandidate([
+            'id' => "spot:p{$i}",
+            'name' => "Bolzplatz {$i}",
+            'category' => 'pitch',
+            'lat' => 50.94 + $i * 0.01, // >250m apart so the name-dedup keeps them
+            'lng' => 6.95,
+        ]);
+    }
+
+    $uncapped = filler()->fill(defaultConstraints(), $pitches, neutralContext(), 50.94, 6.95);
+    $capped = filler()->fill(defaultConstraints(), $pitches, neutralContext(), 50.94, 6.95, null, 2);
+
+    expect(count($uncapped->slots))->toBeGreaterThan(2);
+    expect(count($capped->slots))->toBeLessThanOrEqual(2);
+});
+
+test('explicit roles build an anchor-plus-complements day, not repeats', function () {
+    $candidates = [
+        makeCandidate(['id' => 'spot:pitch', 'name' => 'Bolzplatz', 'category' => 'pitch', 'lat' => 50.944, 'lng' => 6.933]),
+        makeCandidate(['id' => 'spot:pitch2', 'name' => 'Sportplatz', 'category' => 'pitch', 'lat' => 50.950, 'lng' => 6.940]),
+        makeCandidate(['id' => 'spot:cafe', 'name' => 'Café', 'category' => 'cafe', 'outdoor' => false, 'lat' => 50.945, 'lng' => 6.934]),
+        makeCandidate(['id' => 'spot:park', 'name' => 'Park', 'category' => 'park', 'lat' => 50.946, 'lng' => 6.935]),
+    ];
+    $roles = [
+        new Role(['pitch'], 1, hero: true),
+        new Role(['cafe', 'bakery', 'restaurant', 'fast_food'], 1),
+        new Role(['park', 'viewpoint', 'lake'], 1),
+    ];
+
+    $plan = filler()->fill(defaultConstraints(), $candidates, neutralContext(), 50.944, 6.933, $roles, 2);
+    $cats = array_map(fn ($s) => $s->candidate->category, $plan->slots);
+
+    expect(array_count_values($cats)['pitch'] ?? 0)->toBe(1) // the activity anchors once, not twice
+        ->and($cats)->toContain('cafe')                      // a refuel
+        ->and($cats)->toContain('park');                     // somewhere green
 });
 
 // ── PlanScorer ─────────────────────────────────────────────────────────

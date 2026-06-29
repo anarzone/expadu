@@ -587,6 +587,41 @@ test('a thin filter combination still returns a plan instead of nothing', functi
     expect(collect($response->json('notices'))->pluck('text')->implode(' '))->toContain('widened');
 });
 
+test('a solo activity composes an anchored day plus a browse list, not six of the same', function () {
+    $user = composerUser(); // confirmed fix at 50.9485, 6.9230
+
+    // Several nearby pitches (the activity) + a café and a park to round the day.
+    foreach (range(1, 4) as $i) {
+        Spot::factory()->create(['name' => "Bolzplatz {$i}", 'category' => 'pitch', 'veedel' => 'Ehrenfeld', 'lat' => 50.948 + $i * 0.004, 'lng' => 6.923]);
+    }
+    Spot::factory()->create(['name' => 'Eck Café', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.924]);
+    Spot::factory()->create(['name' => 'Stadtpark', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.950, 'lng' => 6.925]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(11, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(8)->toIso8601String(),
+            'areas' => [],
+            'categories' => ['pitch'],
+        ],
+    ]);
+
+    $response->assertOk();
+
+    // The itinerary anchors on the activity but is NOT six pitches: ≤2 of any one
+    // category, and it reaches past pitches into the complements.
+    $planCats = collect($response->json('plan.slots'))->pluck('category');
+    expect($planCats->filter(fn ($c) => $c === 'pitch')->count())->toBeLessThanOrEqual(2);
+    expect($planCats->unique()->count())->toBeGreaterThan(1);
+
+    // The browse list still offers several of the chosen activity, and only that.
+    $optionCats = collect($response->json('options'))->pluck('category');
+    expect($optionCats->count())->toBeGreaterThan(1);
+    expect($optionCats->every(fn ($c) => $c === 'pitch'))->toBeTrue();
+});
+
 test('compose starts the plan from the resolved origin, not home', function () {
     $user = composerUser(); // confirmed fix at 50.9485, 6.9230
     Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);

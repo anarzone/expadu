@@ -178,6 +178,17 @@ const TIME_RANGES: Record<string, [number, number]> = {
     allday: [10, 20],
 };
 
+// Activities you do once, not all day — picking one of these reads as "find me
+// a pitch", so the result defaults to the browse list. Day-composable buckets
+// (park, culture, playground) default to the composed day instead.
+const BROWSE_FIRST = new Set(['pitch', 'court', 'swimming', 'dog_park']);
+
+function defaultAmount(categories: string[]): 'just' | 'few' | 'full' {
+    return categories.length === 1 && BROWSE_FIRST.has(categories[0])
+        ? 'few'
+        : 'full';
+}
+
 /** A time preset → a window on the plan's existing day. */
 function timeWindowPatch(preset: string, c: Constraints): Partial<Constraints> {
     const day = new Date(c.window_start);
@@ -358,6 +369,9 @@ export default function Composer() {
         areas: [],
     });
     const [plan, setPlan] = useState<Plan | null>(null);
+    // The browse list for "A few options" — for a solo activity these are the
+    // nearby picks of that category; for a broad day they mirror the itinerary.
+    const [options, setOptions] = useState<PlanSlot[]>([]);
     const [notices, setNotices] = useState<Notice[]>([]);
     const [weather, setWeather] = useState<WeatherNote | null>(null);
     const [intent, setIntent] = useState<Intent>('plan_day');
@@ -413,6 +427,7 @@ export default function Composer() {
             try {
                 const json = await post<{
                     plan: Plan;
+                    options?: PlanSlot[];
                     notices: Notice[];
                     weather?: WeatherNote | null;
                     facets?: Facets;
@@ -436,6 +451,7 @@ export default function Composer() {
                         : {}),
                 });
                 setPlan(json.plan);
+                setOptions(json.options ?? json.plan.slots);
                 setNotices(json.notices ?? []);
                 setWeather(json.weather ?? null);
                 setOrigin(json.origin ?? null);
@@ -472,6 +488,7 @@ export default function Composer() {
 
                 if (result.intent === 'plan_day' && result.constraints) {
                     setConstraints(result.constraints);
+                    setAmount(defaultAmount(result.constraints.categories));
                     void runCompose(result.constraints);
                 }
             })
@@ -708,7 +725,11 @@ export default function Composer() {
                 : 'border-primary bg-primary-soft font-semibold text-primary'
             : 'border-border bg-card font-medium text-text-2 hover:border-primary';
 
-    /** One tappable word in the sentence + its inline option popover. */
+    /**
+     * One tappable word in the sentence + its inline option popover. An `active`
+     * token (one holding a non-default choice, e.g. a picked category) reads as a
+     * filled pill so set filters look set; defaults keep the plain dotted word.
+     */
     function renderToken(
         key: string,
         label: string,
@@ -717,6 +738,7 @@ export default function Composer() {
         options: { value: string; label: string }[],
         current: string,
         onPick: (value: string) => void,
+        active = false,
     ) {
         const open = openToken === key;
         const underline = cyan
@@ -724,6 +746,10 @@ export default function Composer() {
             : open
               ? 'border-primary'
               : 'border-text-3';
+        const activePill = active && !cyan;
+        const buttonClass = activePill
+            ? `inline rounded-[8px] px-1.5 py-0.5 font-semibold ${open ? 'bg-primary text-white' : 'bg-primary-soft text-primary'}`
+            : `inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`;
 
         return (
             <span className="relative inline-block">
@@ -738,7 +764,7 @@ export default function Composer() {
                             setOpenToken(key);
                         }
                     }}
-                    className={`inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`}
+                    className={buttonClass}
                 >
                     {label}
                 </button>
@@ -861,6 +887,7 @@ export default function Composer() {
                                 areaValue,
                                 (v) =>
                                     updateConstraint({ areas: v ? [v] : [] }),
+                                areaValue !== '',
                             )}
                             , for{' '}
                             {renderToken(
@@ -870,10 +897,12 @@ export default function Composer() {
                                 'Doing what?',
                                 doingTokenOpts,
                                 doingValue,
-                                (v) =>
-                                    updateConstraint({
-                                        categories: v ? [v] : [],
-                                    }),
+                                (v) => {
+                                    const cats = v ? [v] : [];
+                                    setAmount(defaultAmount(cats));
+                                    updateConstraint({ categories: cats });
+                                },
+                                doingValue !== '',
                             )}{' '}
                             — from{' '}
                             {renderToken(
@@ -1196,10 +1225,10 @@ export default function Composer() {
                         ) : amount === 'few' ? (
                             <>
                                 <div className="mb-[11px] font-mono text-[10px] tracking-[0.08em] text-text-3 uppercase">
-                                    {plan.slots.length} picks near {areaLabel} ·
+                                    {options.length} picks near {areaLabel} ·
                                     tap to explore
                                 </div>
-                                {plan.slots.map((slot) => {
+                                {options.map((slot) => {
                                     const tappable =
                                         !slot.is_appointment &&
                                         slot.id.startsWith('spot:');

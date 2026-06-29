@@ -15,6 +15,7 @@ use App\Composer\Plan;
 use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
+use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
@@ -158,27 +159,19 @@ class ComposerController extends Controller
             affinity: CategoryAffinity::map($profile),
         );
 
-        // Leisure runs the feasibility gauntlet; appointments and pinned/locked
-        // picks bypass it (the user chose them). "Excluded" picks (removed, or
-        // dropped by Shuffle) are filtered out of the whole pool.
+        // The candidate pool, nearest-per-category to where the day starts.
         $rawPool = $candidates->candidatesFor($constraints, $originLat, $originLng);
-        $feasible = $filter->filter($constraints, $rawPool);
 
-        // Never dead-end on an over-tight filter combination: if nothing is
-        // feasible, lift the category filter (keeping a "free" promise as long
-        // as possible), then the budget cap, until the pool has something. The
-        // plan then carries an honest "widened your picks" notice.
-        $poolRelaxed = false;
-        if ($feasible === []) {
-            foreach ([$constraints->withoutCategories(), $constraints->withoutBudget(), $constraints->withoutBudget()->withoutCategories()] as $relaxed) {
-                $feasible = $filter->filter($relaxed, $rawPool);
-                if ($feasible !== []) {
-                    $poolRelaxed = true;
-                    break;
-                }
-            }
-        }
+        // A single chosen activity ("Pitches") shapes the day differently from a
+        // broad prompt: the activity is the day's ANCHOR, not its whole content —
+        // a day is one pitch + a bite + somewhere green, never six pitches.
+        $soloCategory = $this->soloCategory($constraints);
 
+        // ── Itinerary (Just this / Full day / Today) ──
+        // For a solo activity the pool is widened to refuel/relax complements so
+        // the day has a real arc; leisure runs the feasibility gauntlet while
+        // appointments and pins bypass it, and excluded picks drop out entirely.
+        [$feasible, $poolRelaxed] = $this->feasiblePool($filter, $constraints, $rawPool, $soloCategory);
         $pinned = $candidates->byIds($pins, $constraints->windowStart);
         $pool = collect([...$appointments->within($user, $constraints), ...$pinned, ...$feasible])
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
@@ -188,7 +181,16 @@ class ComposerController extends Controller
 
         $estimator = $this->travelEstimator($user, $originLat, $originLng, $pool);
         $filler = new SlotFiller(new PlanScorer($estimator), $estimator);
-        $plan = $filler->fill($constraints, $pool, $context, $originLat, $originLng);
+        $roles = $soloCategory !== null ? $this->activityRoles($soloCategory) : null;
+        $plan = $filler->fill($constraints, $pool, $context, $originLat, $originLng, $roles, self::SAME_COARSE_CAP);
+
+        // ── Browse options (A few options) ──
+        // The chosen activity, listed: several nearby pitches to pick from, no
+        // complements and no repeat cap. For a broad day, the options ARE the
+        // itinerary's stops.
+        $options = $soloCategory !== null
+            ? $this->browseOptions($filter, $constraints, $rawPool, $pinned, $excluded, $context, $estimator, $originLat, $originLng)
+            : $plan->toArray()['slots'];
 
         Cache::put($this->planKey($user), $plan->toArray() + [
             'origin' => [$originLat, $originLng],
@@ -199,6 +201,7 @@ class ComposerController extends Controller
 
         return response()->json([
             'plan' => $plan->toArray(),
+            'options' => $options,
             'notices' => $this->notices($constraints, $plan, $poolRelaxed),
             'weather' => $this->weatherNote($constraints),
             'facets' => $this->facets($rawPool, $profile),
@@ -208,6 +211,114 @@ class ComposerController extends Controller
                 'area' => $originArea,
             ],
         ]);
+    }
+
+    /** Refuel + wind-down categories that round any single activity out into a day. */
+    private const COMPLEMENT_FINES = ['cafe', 'bakery', 'restaurant', 'fast_food', 'park', 'viewpoint', 'lake'];
+
+    private const REFUEL_FINES = ['cafe', 'bakery', 'restaurant', 'fast_food'];
+
+    private const UNWIND_FINES = ['park', 'viewpoint', 'lake'];
+
+    /** At most this many of one coarse category in a single itinerary (a day isn't six pitches). */
+    private const SAME_COARSE_CAP = 2;
+
+    /**
+     * The single coarse activity bucket the user is planning around, or null for
+     * a broad/empty selection. The UI sends coarse buckets; a lone one means
+     * "build my day around this". Only the default (archetype-less) v4 sentence
+     * path gets the anchor-around treatment — an explicitly chosen archetype
+     * keeps its own shape.
+     */
+    private function soloCategory(Constraints $constraints): ?string
+    {
+        if ($constraints->archetype !== null || count($constraints->categories) !== 1) {
+            return null;
+        }
+
+        return $constraints->categories[0];
+    }
+
+    /**
+     * Widen a solo activity to its day complements (refuel + somewhere green) so
+     * the itinerary isn't six of one thing; a broad selection is unchanged.
+     */
+    private function itineraryConstraints(Constraints $constraints, ?string $soloCategory): Constraints
+    {
+        if ($soloCategory === null) {
+            return $constraints;
+        }
+
+        return $constraints->withCategories(array_values(array_unique([
+            ...SpotCategory::finesForCoarse($soloCategory),
+            ...self::COMPLEMENT_FINES,
+        ])));
+    }
+
+    /**
+     * Feasible itinerary candidates, with the solo-activity widening applied.
+     * Never dead-ends: drops the category filter, then budget, until something
+     * survives, flagging the plan relaxed so the response can say so honestly.
+     *
+     * @param  list<Candidate>  $rawPool
+     * @return array{0: list<Candidate>, 1: bool} [feasible, relaxed]
+     */
+    private function feasiblePool(FeasibilityFilter $filter, Constraints $constraints, array $rawPool, ?string $soloCategory): array
+    {
+        $base = $this->itineraryConstraints($constraints, $soloCategory);
+
+        $feasible = $filter->filter($base, $rawPool);
+        if ($feasible !== []) {
+            return [$feasible, false];
+        }
+
+        foreach ([$base->withoutCategories(), $base->withoutBudget(), $base->withoutBudget()->withoutCategories()] as $relaxed) {
+            $feasible = $filter->filter($relaxed, $rawPool);
+            if ($feasible !== []) {
+                return [$feasible, true];
+            }
+        }
+
+        return [[], false];
+    }
+
+    /**
+     * "Anchor + around it" roles for a solo activity: the activity leads as the
+     * day's hero, then a refuel, then somewhere to wind down.
+     *
+     * @return list<Role>
+     */
+    private function activityRoles(string $coarse): array
+    {
+        return [
+            new Role(SpotCategory::finesForCoarse($coarse), 1, hero: true),
+            new Role(self::REFUEL_FINES, 1),
+            new Role(self::UNWIND_FINES, 1),
+        ];
+    }
+
+    /**
+     * The browse list for "A few options": the chosen activity only, several
+     * nearby picks — no complements, no repeat cap (multiple pitches is the
+     * whole point). Reuses the compose estimator so it costs no extra matrix call.
+     *
+     * @param  list<Candidate>  $rawPool
+     * @param  list<Candidate>  $pinned
+     * @param  list<string>  $excluded
+     * @return list<array<string, mixed>>
+     */
+    private function browseOptions(FeasibilityFilter $filter, Constraints $constraints, array $rawPool, array $pinned, array $excluded, ScoringContext $context, EstimatesTravel $estimator, float $originLat, float $originLng): array
+    {
+        $feasible = collect([...$pinned, ...$filter->filter($constraints, $rawPool)])
+            ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
+            ->unique(fn (Candidate $c) => $c->id)
+            ->values()
+            ->all();
+
+        $browse = (new SlotFiller(new PlanScorer($estimator), $estimator))
+            ->fill($constraints, $feasible, $context, $originLat, $originLng, [new Role([], SlotFiller::MAX_SLOTS_PER_DAY)]);
+
+        return $browse->toArray()['slots'];
     }
 
     /**
@@ -318,9 +429,10 @@ class ComposerController extends Controller
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);
 
         // Honour removed picks here too — a removed spot must not return via Swap.
-        // Same origin the compose used, so the alternatives are drawn from the
-        // same local pool the plan was built from.
-        $feasible = collect($filter->filter($plan->constraints, $candidates->candidatesFor($plan->constraints, $originLat, $originLng)))
+        // Same origin + the same solo-activity widening the compose used, so a
+        // complement slot finds another complement, not only the activity.
+        $swapConstraints = $this->itineraryConstraints($plan->constraints, $this->soloCategory($plan->constraints));
+        $feasible = collect($filter->filter($swapConstraints, $candidates->candidatesFor($plan->constraints, $originLat, $originLng)))
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
             ->values()
             ->all();
