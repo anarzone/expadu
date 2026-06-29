@@ -1233,10 +1233,13 @@ export default function Composer() {
                                                     </div>
                                                 )}
                                                 <div className="mt-1.5 font-mono text-[11.5px] text-cyan-h">
-                                                    {slot.duration_label}
-                                                    {slot.cost_tier
-                                                        ? ` · ${slot.cost_tier}`
-                                                        : ''}
+                                                    {[
+                                                        slot.veedel,
+                                                        slot.duration_label,
+                                                        slot.cost_tier,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' · ')}
                                                 </div>
                                             </div>
                                         </button>

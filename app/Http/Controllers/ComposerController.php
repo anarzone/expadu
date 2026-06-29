@@ -161,7 +161,7 @@ class ComposerController extends Controller
         // Leisure runs the feasibility gauntlet; appointments and pinned/locked
         // picks bypass it (the user chose them). "Excluded" picks (removed, or
         // dropped by Shuffle) are filtered out of the whole pool.
-        $rawPool = $candidates->candidatesFor($constraints);
+        $rawPool = $candidates->candidatesFor($constraints, $originLat, $originLng);
         $feasible = $filter->filter($constraints, $rawPool);
 
         // Never dead-end on an over-tight filter combination: if nothing is
@@ -318,7 +318,9 @@ class ComposerController extends Controller
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);
 
         // Honour removed picks here too — a removed spot must not return via Swap.
-        $feasible = collect($filter->filter($plan->constraints, $candidates->candidatesFor($plan->constraints)))
+        // Same origin the compose used, so the alternatives are drawn from the
+        // same local pool the plan was built from.
+        $feasible = collect($filter->filter($plan->constraints, $candidates->candidatesFor($plan->constraints, $originLat, $originLng)))
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
             ->values()
             ->all();
@@ -590,7 +592,9 @@ class ComposerController extends Controller
     private function hydratePlan(array $stored, CandidateRepository $candidates, array $appointmentPool = [], array $pinnedPool = []): Plan
     {
         $constraints = Constraints::fromArray($stored['constraints']);
-        $pool = collect([...$candidates->candidatesFor($constraints), ...$appointmentPool, ...$pinnedPool])->keyBy('id');
+        // Refresh from the same local pool the plan was composed against.
+        [$originLat, $originLng] = $stored['origin'] ?? [50.9375, 6.9603];
+        $pool = collect([...$candidates->candidatesFor($constraints, $originLat, $originLng), ...$appointmentPool, ...$pinnedPool])->keyBy('id');
 
         $slots = [];
         foreach ($stored['slots'] as $slotData) {

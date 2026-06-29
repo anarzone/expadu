@@ -76,6 +76,24 @@ test('a raw-string opening_hours does not break the candidate pool', function ()
     expect($cand->closedToday)->toBeFalse();
 });
 
+test('the pool is the nearest spots to the origin, not arbitrary citywide rows', function () {
+    // 12 pitches clustered far north, plus one right by the origin. With a
+    // 12-per-category cap, an origin-blind query (lowest id) would fetch the
+    // far cluster and silently drop the local pitch — the bug that made the
+    // composer ignore the spots actually near the user.
+    foreach (range(1, 12) as $i) {
+        spotWithHours(['name' => "Far Pitch {$i}", 'category' => 'pitch', 'lat' => 51.05, 'lng' => 6.95]);
+    }
+    spotWithHours(['name' => 'Near Pitch', 'category' => 'pitch', 'lat' => 50.94, 'lng' => 6.95]);
+
+    // Origin sits on the local pitch.
+    $candidates = app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.94, 6.95);
+    $pitchNames = collect($candidates)->where('category', 'pitch')->pluck('name');
+
+    expect($pitchNames)->toContain('Near Pitch')
+        ->and($pitchNames)->not->toContain('Far Pitch 12'); // the farthest fell outside the cap
+});
+
 test('wikidata or wikipedia tags mark a spot as a landmark', function () {
     spotWithHours(['name' => 'Famous Park', 'category' => 'park', 'tags' => ['wikidata' => 'Q123']]);
     spotWithHours(['name' => 'Plain Park', 'category' => 'park', 'tags' => ['wheelchair' => 'yes']]);

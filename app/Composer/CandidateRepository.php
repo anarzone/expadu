@@ -17,6 +17,14 @@ class CandidateRepository
 {
     private const MAX_CANDIDATES = 200;
 
+    /** Nearest spots kept per category — diverse enough for a 6-slot day, local enough to be relevant. */
+    private const PER_CATEGORY = 12;
+
+    /** Cologne centre — the origin a plan falls back to when the user has no location. */
+    private const COLOGNE_LAT = 50.9375;
+
+    private const COLOGNE_LNG = 6.9603;
+
     private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'lake', 'dog_park', 'bbq', 'viewpoint', 'skatepark'];
 
     private const DEFAULT_DURATION_MIN = [
@@ -32,31 +40,51 @@ class CandidateRepository
     /**
      * @return list<Candidate>
      */
-    public function candidatesFor(Constraints $constraints): array
+    public function candidatesFor(Constraints $constraints, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG): array
     {
         return array_slice(
-            [...$this->spotCandidates($constraints->windowStart), ...$this->eventCandidates($constraints)],
+            [...$this->spotCandidates($constraints->windowStart, $originLat, $originLng), ...$this->eventCandidates($constraints)],
             0,
             self::MAX_CANDIDATES,
         );
     }
 
     /**
+     * A diverse, bounded, LOCAL pool: the nearest ~12 per category to the plan's
+     * origin. Per-category keeps it varied (2,000 playgrounds can't drown out
+     * the museums and cafés); nearest-first makes it reflect where the day
+     * actually starts — so the spots near the user surface, instead of 12
+     * arbitrary lowest-id rows from across the city. Rating no longer drives
+     * selection (only commercial venues are rated, so it buried every free
+     * outdoor spot); the scorer still ranks quality within the pool.
+     *
      * @return list<Candidate>
      */
-    private function spotCandidates(CarbonImmutable $day): array
+    private function spotCandidates(CarbonImmutable $day, float $originLat, float $originLng): array
     {
-        // A diverse, bounded pool: top ~12 per category. Ordering by rating
-        // alone would fill the pool with cafés (only commercial venues are
-        // rated); a flat cap would fill it with playgrounds. Per-category
-        // ensures indoor culture competes with outdoor activities.
-        $ids = DB::table(DB::raw('(SELECT id, ROW_NUMBER() OVER (PARTITION BY category ORDER BY rating DESC NULLS LAST, id) AS rn FROM spots WHERE lat IS NOT NULL AND lng IS NOT NULL) AS ranked'))
-            ->where('rn', '<=', 12)
+        $distance = '6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))';
+
+        $ranked = DB::table('spots')
+            ->select('id')
+            ->selectRaw("ROW_NUMBER() OVER (PARTITION BY category ORDER BY ({$distance}), id) AS rn", [$originLat, $originLng, $originLat])
+            ->whereNotNull('lat')
+            ->whereNotNull('lng');
+
+        $ids = DB::query()
+            ->fromSub($ranked, 'ranked')
+            ->where('rn', '<=', self::PER_CATEGORY)
             ->pluck('id')
             ->all();
 
+        if ($ids === []) {
+            return [];
+        }
+
+        // Return globally nearest-first so the MAX_CANDIDATES cap keeps the
+        // closest spots when many categories each contribute their dozen.
         return Spot::query()
             ->whereIn('id', $ids)
+            ->orderByRaw("({$distance}), id", [$originLat, $originLng, $originLat])
             ->get()
             ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day))
             ->all();

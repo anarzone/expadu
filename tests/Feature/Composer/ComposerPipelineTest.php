@@ -269,6 +269,22 @@ test('a plan never places two venues that read by the same name', function () {
         ->and($names)->toContain('Grüngürtel');                // one of the two, not both
 });
 
+test('two same-named spots far apart are both eligible (distinct places, not a split polygon)', function () {
+    // Generic OSM names ("Bolzplatz", "Spielplatz") repeat across the city. One
+    // in Neustadt-Nord and one ~2.7 km south are different venues — both must be
+    // placeable, unlike the adjacent Grüngürtel polygons above which collapse.
+    $constraints = new Constraints(windowStart: saturday('10:00'), windowEnd: saturday('20:00'));
+    $candidates = [
+        makeCandidate(['id' => 'spot:near', 'name' => 'Bolzplatz', 'category' => 'pitch', 'lat' => 50.9442, 'lng' => 6.9329]),
+        makeCandidate(['id' => 'spot:south', 'name' => 'Bolzplatz', 'category' => 'pitch', 'lat' => 50.9200, 'lng' => 6.9400]),
+    ];
+
+    $plan = filler()->fill($constraints, $candidates, neutralContext(), 50.9442, 6.9329);
+
+    expect(array_map(fn ($s) => $s->candidate->id, $plan->slots))
+        ->toEqualCanonicalizing(['spot:near', 'spot:south']);
+});
+
 // ── PlanScorer ─────────────────────────────────────────────────────────
 
 test('variety penalty is monotonic in repeated categories', function () {

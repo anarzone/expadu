@@ -15,6 +15,14 @@ class SlotFiller
 {
     private const MAX_SLOTS_PER_DAY = 6;
 
+    /**
+     * Two spots that share a visible name collapse to one only when they sit
+     * this close — a single facility OSM split across polygons (a park, a
+     * sports ground). Generic names like "Bolzplatz"/"Spielplatz" repeat all
+     * over the city; those are genuinely different places and must both show.
+     */
+    private const SAME_PLACE_METERS = 250.0;
+
     public function __construct(
         private readonly PlanScorer $scorer,
         private readonly EstimatesTravel $travel,
@@ -32,10 +40,11 @@ class SlotFiller
     ): Plan {
         $slots = [];
         $used = [];
-        // Visible-name de-dup: many OSM rows share a name (a big park split into
-        // polygons, generic "Bolzplatz"/"Spielplatz"), so id-only de-dup would
-        // place the same name twice and read as a bug. A day plan shows each
-        // name once.
+        // Visible-name de-dup, location-aware: a name placed once blocks another
+        // row of the same name only when it sits within SAME_PLACE_METERS (one
+        // facility OSM-split across polygons). Two "Bolzplatz" in different
+        // Veedels are distinct places and both stay eligible. Keyed by name →
+        // the coordinates already placed under it.
         $usedNames = [];
 
         // 0. Pinned "plan around this" picks are placed first, chained from
@@ -64,7 +73,7 @@ class SlotFiller
 
             $slots[] = new PlanSlot($pin, $start, $end, $travelMin);
             $used[$pin->id] = true;
-            $usedNames[$this->nameKey($pin)] = true;
+            $usedNames[$this->nameKey($pin)][] = [$pin->lat, $pin->lng];
             $pinCursor = $end;
             $pinLat = $pin->lat;
             $pinLng = $pin->lng;
@@ -89,7 +98,7 @@ class SlotFiller
             }
             $slots[] = new PlanSlot($anchor, $start, $end, 0);
             $used[$anchor->id] = true;
-            $usedNames[$this->nameKey($anchor)] = true;
+            $usedNames[$this->nameKey($anchor)][] = [$anchor->lat, $anchor->lng];
             if (count($slots) >= self::MAX_SLOTS_PER_DAY) {
                 break;
             }
@@ -182,7 +191,7 @@ class SlotFiller
 
                 $slots[] = new PlanSlot($candidate, $start, $end, $travelMin);
                 $used[$candidate->id] = true;
-                $usedNames[$this->nameKey($candidate)] = true;
+                $usedNames[$this->nameKey($candidate)][] = [$candidate->lat, $candidate->lng];
                 usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
 
                 $cursor = $end;
@@ -231,7 +240,7 @@ class SlotFiller
      *
      * @param  list<Candidate>  $feasible
      * @param  array<string, bool>  $used
-     * @param  array<string, bool>  $usedNames  visible names already placed
+     * @param  array<string, list<array{0: float, 1: float}>>  $usedNames  placed coordinates keyed by visible name
      * @param  list<PlanSlot>  $slots
      * @param  list<string>  $allowedCategories  empty = any category
      * @return array{0: Candidate, 1: int}|null
@@ -256,9 +265,10 @@ class SlotFiller
             if ($candidate->isFixedTime() || isset($used[$candidate->id])) {
                 continue;
             }
-            // Skip a venue whose visible name is already in the plan, even if
-            // it's a distinct OSM row (same-named park polygon, generic pitch).
-            if (isset($usedNames[$this->nameKey($candidate)])) {
+            // Skip a venue whose visible name is already placed nearby (one
+            // facility split across OSM polygons) — but allow a same-named spot
+            // elsewhere in the city (a different Bolzplatz in another Veedel).
+            if ($this->isVisualDuplicate($candidate, $usedNames)) {
                 continue;
             }
             // Role restrictions: a category set (empty = any) and, for
@@ -366,5 +376,33 @@ class SlotFiller
         $name = mb_strtolower(trim($candidate->name));
 
         return $name !== '' ? $name : 'id:'.$candidate->id;
+    }
+
+    /**
+     * True when a spot of this visible name has already been placed close enough
+     * to be the same physical place (an OSM polygon split). A same-named spot
+     * farther than SAME_PLACE_METERS is a genuinely different venue and passes.
+     *
+     * @param  array<string, list<array{0: float, 1: float}>>  $usedNames
+     */
+    private function isVisualDuplicate(Candidate $candidate, array $usedNames): bool
+    {
+        foreach ($usedNames[$this->nameKey($candidate)] ?? [] as [$lat, $lng]) {
+            if ($this->metersBetween($candidate->lat, $candidate->lng, $lat, $lng) <= self::SAME_PLACE_METERS) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Great-circle distance in metres between two coordinates. */
+    private function metersBetween(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return 6_371_000.0 * 2 * asin(min(1.0, sqrt($a)));
     }
 }
