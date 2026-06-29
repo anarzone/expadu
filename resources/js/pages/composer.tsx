@@ -725,11 +725,7 @@ export default function Composer() {
                 : 'border-primary bg-primary-soft font-semibold text-primary'
             : 'border-border bg-card font-medium text-text-2 hover:border-primary';
 
-    /**
-     * One tappable word in the sentence + its inline option popover. An `active`
-     * token (one holding a non-default choice, e.g. a picked category) reads as a
-     * filled pill so set filters look set; defaults keep the plain dotted word.
-     */
+    /** One tappable word in the sentence + its inline option popover. */
     function renderToken(
         key: string,
         label: string,
@@ -738,7 +734,6 @@ export default function Composer() {
         options: { value: string; label: string }[],
         current: string,
         onPick: (value: string) => void,
-        active = false,
     ) {
         const open = openToken === key;
         const underline = cyan
@@ -746,10 +741,6 @@ export default function Composer() {
             : open
               ? 'border-primary'
               : 'border-text-3';
-        const activePill = active && !cyan;
-        const buttonClass = activePill
-            ? `inline rounded-[8px] px-1.5 py-0.5 font-semibold ${open ? 'bg-primary text-white' : 'bg-primary-soft text-primary'}`
-            : `inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`;
 
         return (
             <span className="relative inline-block">
@@ -764,7 +755,7 @@ export default function Composer() {
                             setOpenToken(key);
                         }
                     }}
-                    className={buttonClass}
+                    className={`inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`}
                 >
                     {label}
                 </button>
@@ -887,7 +878,6 @@ export default function Composer() {
                                 areaValue,
                                 (v) =>
                                     updateConstraint({ areas: v ? [v] : [] }),
-                                areaValue !== '',
                             )}
                             , for{' '}
                             {renderToken(
@@ -902,7 +892,6 @@ export default function Composer() {
                                     setAmount(defaultAmount(cats));
                                     updateConstraint({ categories: cats });
                                 },
-                                doingValue !== '',
                             )}{' '}
                             — from{' '}
                             {renderToken(
