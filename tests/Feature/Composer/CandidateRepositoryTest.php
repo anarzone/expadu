@@ -94,6 +94,21 @@ test('the pool is the nearest spots to the origin, not arbitrary citywide rows',
         ->and($pitchNames)->not->toContain('Far Pitch 12'); // the farthest fell outside the cap
 });
 
+test('public outdoor facilities count as free; paid venues do not', function () {
+    spotWithHours(['name' => 'Boule', 'category' => 'boules']);
+    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis']);
+    spotWithHours(['name' => 'Tennis', 'category' => 'tennis']);
+    spotWithHours(['name' => 'Picknick', 'category' => 'picnic']);
+    spotWithHours(['name' => 'Späti Bar', 'category' => 'bar']);
+
+    $c = app(CandidateRepository::class)->candidatesFor(mondayWindow());
+
+    foreach (['Boule', 'Tisch', 'Tennis', 'Picknick'] as $free) {
+        expect(collect($c)->firstWhere('name', $free)->costTier)->toBe('free');
+    }
+    expect(collect($c)->firstWhere('name', 'Späti Bar')->costTier)->toBe('normal');
+});
+
 test('wikidata or wikipedia tags mark a spot as a landmark', function () {
     spotWithHours(['name' => 'Famous Park', 'category' => 'park', 'tags' => ['wikidata' => 'Q123']]);
     spotWithHours(['name' => 'Plain Park', 'category' => 'park', 'tags' => ['wheelchair' => 'yes']]);

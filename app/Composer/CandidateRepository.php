@@ -25,7 +25,7 @@ class CandidateRepository
 
     private const COLOGNE_LNG = 6.9603;
 
-    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'lake', 'dog_park', 'bbq', 'viewpoint', 'skatepark'];
+    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark'];
 
     private const DEFAULT_DURATION_MIN = [
         'park' => 75,

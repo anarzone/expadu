@@ -224,6 +224,15 @@ function defaultAmount(categories: string[]): 'just' | 'few' | 'full' {
         : 'full';
 }
 
+/**
+ * Only meaningful cost tiers reach the card. "free" and "budget" tell you
+ * something; "normal" is just the default "no known price" bucket — noise, so
+ * it's hidden rather than shown as a confusing word.
+ */
+function costLabel(tier: string): string | null {
+    return tier === 'free' ? 'free' : tier === 'low' ? 'budget' : null;
+}
+
 /** A time preset → a window on the plan's existing day. */
 function timeWindowPatch(preset: string, c: Constraints): Partial<Constraints> {
     const day = new Date(c.window_start);
@@ -1403,9 +1412,13 @@ export default function Composer() {
                                                         min away
                                                     </span>
                                                 )}
-                                                <span className="text-text-3">
-                                                    {slot.cost_tier}
-                                                </span>
+                                                {costLabel(slot.cost_tier) && (
+                                                    <span className="text-text-3">
+                                                        {costLabel(
+                                                            slot.cost_tier,
+                                                        )}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="mt-[17px] flex gap-2.5">
                                                 <button
@@ -1474,7 +1487,9 @@ export default function Composer() {
                                                     {[
                                                         slot.veedel,
                                                         slot.duration_label,
-                                                        slot.cost_tier,
+                                                        costLabel(
+                                                            slot.cost_tier,
+                                                        ),
                                                     ]
                                                         .filter(Boolean)
                                                         .join(' · ')}
