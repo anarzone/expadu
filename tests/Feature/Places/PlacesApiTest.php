@@ -154,21 +154,44 @@ test('includes places within 2km of the veedel centroid as nearby', function () 
         'updated_at' => now(),
     ]);
 
-    // In the selected Veedel, but farther from the user's home anchor…
+    // Three places within ~2km of the centroid → the ring is dense enough that
+    // it needn't widen: the Veedel's own plus two in a neighbouring Veedel.
     $inVeedel = Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.941, 'lng' => 6.905]);
-    // …than this neighbouring-Veedel place ~1km from the Ehrenfeld centroid
-    $nearby = Spot::factory()->create(['category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
-    // Other side of the city, well outside 2km → excluded
-    Spot::factory()->create(['category' => 'park', 'veedel' => 'Porz', 'lat' => 50.886, 'lng' => 7.058]);
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.949, 'lng' => 6.922]);
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.955, 'lng' => 6.917]);
+    // Other side of the city, well outside the ring → excluded (the ring
+    // already holds 3, so it doesn't widen to reach it).
+    $far = Spot::factory()->create(['category' => 'park', 'veedel' => 'Porz', 'lat' => 50.886, 'lng' => 7.058]);
 
     $response = $this->getJson('/api/places?veedel=Ehrenfeld');
 
-    expect($response->json('meta.total'))->toBe(2);
+    expect($response->json('meta.total'))->toBe(3);
     expect($response->json('nearby_included'))->toBeTrue();
-    // The selected Veedel's own places rank above nearby ones, even when
-    // the nearby place is closer to the user's home.
+    expect(collect($response->json('data'))->pluck('id'))->not->toContain($far->id);
+    // The selected Veedel's own place still ranks above the nearby ones.
     expect($response->json('data.0.id'))->toBe($inVeedel->id);
-    expect($response->json('data.1.id'))->toBe($nearby->id);
+});
+
+test('a sparse veedel widens the ring to reach at least 3 results', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Sparseveedel',
+        'bezirk' => 'Test',
+        'centroid_lat' => 50.95,
+        'centroid_lng' => 6.95,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    // Nothing in the Veedel or its default 2km ring; the three nearest parks sit
+    // ~2.5km out. The list must still surface all three (the ring widens).
+    foreach ([[50.9725, 6.95], [50.9728, 6.951], [50.973, 6.949]] as [$lat, $lng]) {
+        Spot::factory()->create(['category' => 'park', 'veedel' => 'Elsewhere', 'lat' => $lat, 'lng' => $lng]);
+    }
+
+    $response = $this->getJson('/api/places?veedel=Sparseveedel');
+
+    // The old fixed 2km ring would have returned 0; the widening reaches 3.
+    expect($response->json('meta.total'))->toBe(3);
 });
 
 test('filters by bezirk across its stadtteile', function () {
@@ -421,12 +444,15 @@ test('the response carries the resolved origin for the From control', function (
 test('near mode lists places within a radius of the user, closest-first', function () {
     app(UserLocationService::class)->confirm($this->user, 50.95, 6.92, 'Here');
     Spot::factory()->create(['name' => 'Close park', 'category' => 'park', 'lat' => 50.951, 'lng' => 6.921]);
+    // Two more within 3km so the radius needn't widen past the far one.
+    Spot::factory()->create(['name' => 'Close park 2', 'category' => 'park', 'lat' => 50.952, 'lng' => 6.922]);
+    Spot::factory()->create(['name' => 'Close park 3', 'category' => 'park', 'lat' => 50.953, 'lng' => 6.918]);
     Spot::factory()->create(['name' => 'Far park', 'category' => 'park', 'veedel' => 'Porz', 'lat' => 50.88, 'lng' => 7.06]);
 
     $names = collect($this->getJson('/api/places?near=1')->json('data'))->pluck('name')->all();
 
     expect($names)->toContain('Close park');
-    expect($names)->not->toContain('Far park'); // >3 km away → outside the radius
+    expect($names)->not->toContain('Far park'); // 3 nearby exist → ring stays tight, far stays out
 });
 
 test('near mode with no location flags needs_location and returns nothing', function () {

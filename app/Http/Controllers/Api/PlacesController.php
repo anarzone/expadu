@@ -12,6 +12,7 @@ use App\Models\SpotFeedback;
 use App\Services\UserLocationService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -156,10 +157,13 @@ class PlacesController extends Controller
         $selectedVeedel = null;
         if ($nearActive) {
             // Everything within ~3 km of where you are, closest-first — Veedel
-            // and Bezirk boundaries don't apply.
+            // and Bezirk boundaries don't apply. The radius grows past 3 km only
+            // as far as it must to surface at least 3 places (sparse edge of the
+            // city), so the list is never near-empty.
+            $radiusKm = $this->radiusForAtLeast($query, $origin->lat, $origin->lng, self::NEAR_RADIUS_KM);
             $query->whereRaw(
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
-                [$origin->lat, $origin->lng, $origin->lat, self::NEAR_RADIUS_KM],
+                [$origin->lat, $origin->lng, $origin->lat, $radiusKm],
             );
         } elseif ($near) {
             // Near requested but we don't know where the user is → empty; the
@@ -173,14 +177,19 @@ class PlacesController extends Controller
                 ->first(['centroid_lat', 'centroid_lng']);
 
             if ($centroid) {
-                // "{Veedel} & nearby" — the Veedel itself plus anything
-                // within ~2 km of its centroid, so the line in the UI is true.
+                // "{Veedel} & nearby" — the Veedel's own places plus a ring
+                // around its centroid. The ring starts at ~2 km and widens only
+                // as far as it must to reach at least 3 results in a sparse
+                // Veedel, so the page is never thin.
                 $nearbyIncluded = true;
-                $query->where(function ($q) use ($veedel, $centroid) {
+                $cLat = (float) $centroid->centroid_lat;
+                $cLng = (float) $centroid->centroid_lng;
+                $radiusKm = $this->radiusForAtLeast($query, $cLat, $cLng, 2.0);
+                $query->where(function ($q) use ($veedel, $cLat, $cLng, $radiusKm) {
                     $q->where('veedel', $veedel)
                         ->orWhereRaw(
-                            '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= 2',
-                            [$centroid->centroid_lat, $centroid->centroid_lng, $centroid->centroid_lat],
+                            '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
+                            [$cLat, $cLng, $cLat, $radiusKm],
                         );
                 });
             } else {
@@ -276,6 +285,37 @@ class PlacesController extends Controller
                 // "Near me" was requested but we don't know where the user is.
                 'needs_location' => $near && ! $nearActive,
             ]);
+    }
+
+    /**
+     * The radius (km) from ($lat,$lng) needed to surface at least $min results,
+     * given the already-filtered candidate query. Returns the preferred radius
+     * when the area is dense enough (the $min-th nearest is within it), else the
+     * exact distance to the $min-th nearest match so the page never falls below
+     * $min — nearest-first, widening only as much as it must. A large radius
+     * ("show all") when fewer than $min matches exist anywhere.
+     *
+     * @param  Builder<Spot>  $candidates
+     */
+    private function radiusForAtLeast(Builder $candidates, float $lat, float $lng, float $preferredKm, int $min = 3): float
+    {
+        $nth = (clone $candidates)
+            ->selectRaw(
+                '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as d',
+                [$lat, $lng, $lat],
+            )
+            ->reorder('d')
+            ->offset($min - 1)
+            ->limit(1)
+            ->first();
+
+        if ($nth === null || $nth->d === null) {
+            return 100.0;
+        }
+
+        // +50m buffer so the Nth match itself — sitting exactly on the computed
+        // distance — survives float rounding when the WHERE re-evaluates it.
+        return max($preferredKm, (float) $nth->d + 0.05);
     }
 
     /**
