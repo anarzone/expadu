@@ -20,10 +20,22 @@ import type { ComponentType, CSSProperties } from 'react';
 import { categoryClass } from '@/components/ds/category';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { AreaPicker } from '@/components/places/area-picker';
+import type { BezirkOption } from '@/components/places/area-picker';
 import { categoryEmoji } from '@/components/places/category-illustration';
-import type { PlacesOrigin } from '@/components/places/from-control';
+import { FromBar } from '@/components/places/from-bar';
+import type {
+    FromTarget,
+    GeoResult,
+    SavedPlace,
+} from '@/components/places/from-bar';
+import type {
+    PlacesOrigin,
+    TransportMode,
+} from '@/components/places/from-control';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
+import { PlacesMap } from '@/components/places/places-map';
 import type { Place } from '@/components/places/types';
 import { ICON_STROKE } from '@/constants/icons';
 import { useFeedback } from '@/hooks/use-feedback';
@@ -134,6 +146,29 @@ async function post<T>(url: string, body: unknown): Promise<T> {
     }
 
     return res.json() as Promise<T>;
+}
+
+/**
+ * The compose payload for an explicit "start from" pick: a saved place travels
+ * by id (coordinates resolve server-side), a searched / pinned point carries
+ * its own coordinates + label. No pick → the resolved origin (live/area) stands.
+ */
+function fromParams(
+    target: FromTarget | null,
+): Record<string, string | number> {
+    if (target?.kind === 'place') {
+        return { from_place: target.id, from_label: target.label };
+    }
+
+    if (target?.kind === 'point') {
+        return {
+            lat: target.lat,
+            lng: target.lng,
+            from_label: target.label,
+        };
+    }
+
+    return {};
 }
 
 type Facets = {
@@ -314,15 +349,6 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
     );
 }
 
-/** A saved place (Home / Work / custom) the user can start the plan from. */
-type SavedOrigin = {
-    id: number;
-    name: string;
-    category: string;
-    lat: number;
-    lng: number;
-};
-
 /**
  * Position a token's option popover directly under the tapped word, but clamp
  * it to the viewport so it never spills off a phone edge (the inline word can
@@ -356,10 +382,23 @@ function tokenPopoverStyle(btn: HTMLElement): CSSProperties {
 }
 
 export default function Composer() {
-    const { prompt, pins, places } = usePage<{
+    const {
+        prompt,
+        pins,
+        savedPlaces,
+        homeBezirk,
+        bezirke,
+        veedelsByBezirk,
+        auth,
+    } = usePage<{
         prompt?: string;
         pins?: string[];
-        places?: SavedOrigin[];
+        savedPlaces?: SavedPlace[];
+        homeVeedel: string | null;
+        homeBezirk: string | null;
+        bezirke?: BezirkOption[];
+        veedelsByBezirk?: Record<string, string[]>;
+        auth: { user: { transport_mode: TransportMode | null } };
     }>().props;
     const { track } = useTracker();
 
@@ -388,6 +427,21 @@ export default function Composer() {
     const [excluded] = useState<string[]>([]);
     const [origin, setOrigin] = useState<PlacesOrigin | null>(null);
     const [locating, setLocating] = useState(false);
+    // Places-style area picker: the selected Bezirk ('all' | 'near' | a name).
+    // The Veedel drill rides inside constraints.areas (a single area === a Veedel).
+    const [bezirk, setBezirk] = useState(homeBezirk ?? 'all');
+    // The chosen travel mode, persisted globally (shared with Places). Drives
+    // the From pill glyph and the "min away" distances on every pick.
+    const [mode, setMode] = useState<TransportMode | null>(
+        auth.user.transport_mode,
+    );
+    // From picker: address search query + results (reuses /api/geocode).
+    const [fromQuery, setFromQuery] = useState('');
+    const [fromResults, setFromResults] = useState<GeoResult[]>([]);
+    // Which filter popover / map-pick overlay is open.
+    const [areaPickOpen, setAreaPickOpen] = useState(false);
+    const [fromPickOpen, setFromPickOpen] = useState(false);
+    const [mapPickOpen, setMapPickOpen] = useState(false);
     // v4 editable-sentence model — which token/extra popover is open, the
     // add-filter panel, and how much day to show (a client view over the plan).
     const [openToken, setOpenToken] = useState<string | null>(null);
@@ -403,14 +457,18 @@ export default function Composer() {
     // Guards against parsing the same prompt twice (React strict-mode
     // double-invoke would otherwise fire two parse + compose round-trips).
     const parsedPrompt = useRef<string | null>(null);
-    // An explicitly picked starting Veedel ("start from Nippes"). A ref, not
-    // state, so it rides along on every recompose (archetype switch, shuffle…)
-    // without re-creating runCompose. Cleared when the user uses live location.
-    const fromAreaRef = useRef<string | null>(null);
-    // A picked saved place (Home/Work/…) the plan starts from — rides recomposes
-    // the same way, but as explicit coordinates + a label. Mutually exclusive
-    // with fromAreaRef and live location.
-    const fromPlaceRef = useRef<SavedOrigin | null>(null);
+    // The user's explicit "start from" pick (a saved place by id, or a searched
+    // / map-tapped point). Mirrored in a ref so every recompose closure reads
+    // the current value without re-creating runCompose. Cleared by live GPS.
+    const [fromOverride, setFromOverride] = useState<FromTarget | null>(null);
+    const fromOverrideRef = useRef<FromTarget | null>(null);
+    // Set the From pick + its ref together, so the next recompose sees it.
+    const setFrom = useCallback((next: FromTarget | null) => {
+        fromOverrideRef.current = next;
+        setFromOverride(next);
+    }, []);
+    // Debounce handle for the From address search.
+    const fromSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const runCompose = useCallback(
         async (
@@ -440,15 +498,9 @@ export default function Composer() {
                     pins: pins ?? [],
                     locked: opts.locked ?? [],
                     excluded: opts.excluded ?? [],
-                    from_area: fromAreaRef.current,
-                    // A picked saved place wins as the explicit origin + label.
-                    ...(fromPlaceRef.current
-                        ? {
-                              lat: fromPlaceRef.current.lat,
-                              lng: fromPlaceRef.current.lng,
-                              from_label: fromPlaceRef.current.name,
-                          }
-                        : {}),
+                    // An explicit From wins as the origin: a saved place by id
+                    // (coords resolved server-side) or a searched / pinned point.
+                    ...fromParams(fromOverrideRef.current),
                 });
                 setPlan(json.plan);
                 setOptions(json.options ?? json.plan.slots);
@@ -583,16 +635,19 @@ export default function Composer() {
         });
     }
 
-    // The From chip: get a fresh GPS fix, persist it as the shared "I'm here"
-    // anchor, then recompose so the plan starts from where you actually are.
-    function locateFrom() {
+    // "My location": drop any explicit pick, take a fresh GPS fix, persist it as
+    // the shared "I'm here" anchor, then recompose so the plan starts from where
+    // you actually are.
+    function pickMyLocation() {
         if (!('geolocation' in navigator) || !constraints) {
             return;
         }
 
-        // Live location overrides any previously picked start area or place.
-        fromAreaRef.current = null;
-        fromPlaceRef.current = null;
+        // Live location overrides any previously picked place / point.
+        setFrom(null);
+        setFromPickOpen(false);
+        setFromQuery('');
+        setFromResults([]);
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -627,29 +682,111 @@ export default function Composer() {
         }
     }
 
-    // Pick a starting Veedel without being there ("plan as if I'm in Nippes").
-    // It overrides the live/confirmed origin and, since the area follows the
-    // origin, becomes the plan's default search area too.
-    function pickFromArea(area: string) {
+    // Apply an explicit From (saved place or searched / pinned point), then
+    // recompose so the plan starts from it and every "min away" measures from it.
+    function applyFrom(target: FromTarget) {
         if (!constraints) {
             return;
         }
 
-        fromAreaRef.current = area;
-        fromPlaceRef.current = null;
+        setFrom(target);
+        setFromPickOpen(false);
+        setFromQuery('');
+        setFromResults([]);
         void runCompose(constraints, { archetype, locked, excluded });
     }
 
-    // Start the plan from a saved place (Home / Work / a pin). Sends its exact
-    // coordinates + name, overriding any picked area or live location.
-    function pickFromPlace(place: SavedOrigin) {
-        if (!constraints) {
+    // Persist the chosen transport mode globally (the server reads
+    // users.transport_mode), then recompose so distances recompute in that mode.
+    function persistMode(next: TransportMode) {
+        setMode(next);
+        post('/api/preferences/transport-mode', { mode: next })
+            .then(() => {
+                if (constraints) {
+                    return runCompose(constraints, {
+                        archetype,
+                        locked,
+                        excluded,
+                    });
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Debounced address search inside the From picker (reuses /api/geocode).
+    function searchFrom(q: string) {
+        setFromQuery(q);
+
+        if (fromSearchTimer.current) {
+            clearTimeout(fromSearchTimer.current);
+        }
+
+        if (q.trim().length < 3) {
+            setFromResults([]);
+
             return;
         }
 
-        fromAreaRef.current = null;
-        fromPlaceRef.current = place;
-        void runCompose(constraints, { archetype, locked, excluded });
+        fromSearchTimer.current = setTimeout(() => {
+            fetch(`/api/geocode?q=${encodeURIComponent(q.trim())}`, {
+                credentials: 'same-origin',
+            })
+                .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+                .then(
+                    (
+                        data: {
+                            name: string;
+                            street?: string;
+                            city?: string;
+                            lat: number;
+                            lng: number;
+                        }[],
+                    ) =>
+                        setFromResults(
+                            data.map((r) => ({
+                                name: r.name,
+                                address: [r.street, r.city]
+                                    .filter(Boolean)
+                                    .join(', '),
+                                lat: r.lat,
+                                lng: r.lng,
+                            })),
+                        ),
+                )
+                .catch(() => setFromResults([]));
+        }, 300);
+    }
+
+    // "Pick on map" → open the map overlay; a tap on it sets a point origin.
+    function pickOnMap() {
+        setFromPickOpen(false);
+        setMapPickOpen(true);
+    }
+
+    // A map tap: reverse-geocode for a readable label, then apply it as the From
+    // point and close the overlay.
+    function handleMapPick(lat: number, lng: number) {
+        fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`, {
+            credentials: 'same-origin',
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) =>
+                applyFrom({
+                    kind: 'point',
+                    lat,
+                    lng,
+                    label: d?.address || 'Pinned location',
+                }),
+            )
+            .catch(() =>
+                applyFrom({
+                    kind: 'point',
+                    lat,
+                    lng,
+                    label: 'Pinned location',
+                }),
+            );
+        setMapPickOpen(false);
     }
 
     const planMode = intent === 'plan_day';
@@ -681,42 +818,44 @@ export default function Composer() {
 
     const showInterim = !parsing && intent !== 'plan_day' && !plan;
 
-    // ── Editable-sentence wiring (v4) ──
+    // ── Editable-sentence wiring (v4) — the kept "when" + "doing" tokens ──
     const whenKey = constraints ? timePresetKey(constraints) : 'afternoon';
     const whenLabel =
         TIME_OPTS.find((o) => o.value === whenKey)?.label ?? 'Afternoon';
-    const areaValue = constraints?.areas[0] ?? '';
-    const areaLabel = areaValue || 'all Cologne';
     const doingValue = constraints?.categories[0] ?? '';
     const doingLabel = doingValue
         ? (facets.categories.find((c) => c.value === doingValue)?.label ??
           doingValue)
         : 'anything';
-    const savedOrigins = places ?? [];
-    const originLabel = locating
-        ? 'Locating…'
-        : (origin?.label ?? 'your location');
-    // The selected origin option: a picked saved place matches by id, a picked
-    // Veedel by name; anything else (live/confirmed location) is "your location".
-    const originValue = fromPlaceRef.current
-        ? `place:${fromPlaceRef.current.id}`
-        : origin?.source === 'area'
-          ? (origin.label ?? '')
-          : '__me__';
-
-    const areaTokenOpts = [
-        { value: '', label: 'All Cologne' },
-        ...facets.areas.map((a) => ({ value: a, label: a })),
-    ];
     const doingTokenOpts = [
         { value: '', label: 'Anything' },
         ...facets.categories,
     ];
-    const originTokenOpts = [
-        { value: '__me__', label: 'your location' },
-        ...savedOrigins.map((p) => ({ value: `place:${p.id}`, label: p.name })),
-        ...facets.areas.map((a) => ({ value: a, label: a })),
-    ];
+
+    // ── Places-style area picker + From control wiring ──
+    const places = savedPlaces ?? [];
+    // A single named area reads as a picked Veedel; the picker drills into it.
+    const veedel =
+        constraints?.areas?.length === 1 ? constraints.areas[0]! : null;
+    const areaLabel =
+        bezirk === 'near'
+            ? 'Near you'
+            : (veedel ?? (bezirk === 'all' ? 'All Cologne' : bezirk));
+    const railOptions = bezirke ?? [];
+    const chipOptions =
+        bezirk !== 'all' && bezirk !== 'near'
+            ? (veedelsByBezirk?.[bezirk] ?? [])
+            : [];
+    // Which From row reads as active: an explicit pick wins; otherwise a real
+    // GPS-derived origin highlights "My location".
+    const selectedKey =
+        fromOverride?.kind === 'place'
+            ? `place:${fromOverride.id}`
+            : fromOverride?.kind === 'point'
+              ? 'point'
+              : origin && ['live', 'confirmed', 'ping'].includes(origin.source)
+                ? 'live'
+                : null;
 
     const chipOptStyle = (sel: boolean, cyan: boolean) =>
         sel
@@ -867,17 +1006,6 @@ export default function Composer() {
                                     updateConstraint(
                                         timeWindowPatch(v, constraints),
                                     ),
-                            )}{' '}
-                            around{' '}
-                            {renderToken(
-                                'area',
-                                areaLabel,
-                                false,
-                                'Where?',
-                                areaTokenOpts,
-                                areaValue,
-                                (v) =>
-                                    updateConstraint({ areas: v ? [v] : [] }),
                             )}
                             , for{' '}
                             {renderToken(
@@ -892,38 +1020,75 @@ export default function Composer() {
                                     setAmount(defaultAmount(cats));
                                     updateConstraint({ categories: cats });
                                 },
-                            )}{' '}
-                            — from{' '}
-                            {renderToken(
-                                'origin',
-                                originLabel,
-                                true,
-                                'Starting from?',
-                                originTokenOpts,
-                                originValue,
-                                (v) => {
-                                    if (v === '__me__') {
-                                        locateFrom();
-
-                                        return;
-                                    }
-
-                                    if (v.startsWith('place:')) {
-                                        const place = savedOrigins.find(
-                                            (p) => `place:${p.id}` === v,
-                                        );
-
-                                        if (place) {
-                                            pickFromPlace(place);
-                                        }
-
-                                        return;
-                                    }
-
-                                    pickFromArea(v);
-                                },
                             )}
                             .
+                        </div>
+
+                        {/* Where (area picker) · From (origin + travel mode) —
+                            the shared Places filter row */}
+                        <div className="relative z-20 mt-3.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <AreaPicker
+                                areaLabel={areaLabel}
+                                bezirk={bezirk}
+                                veedel={veedel}
+                                railOptions={railOptions}
+                                chipOptions={chipOptions}
+                                open={areaPickOpen}
+                                onOpenChange={(o) => {
+                                    setAreaPickOpen(o);
+                                    setFromPickOpen(false);
+                                }}
+                                onAllCologne={() => {
+                                    setBezirk('all');
+                                    updateConstraint({ areas: [] });
+                                    setAreaPickOpen(false);
+                                }}
+                                onNearMe={() => {
+                                    setBezirk('near');
+                                    updateConstraint({ areas: [] });
+                                    pickMyLocation();
+                                    setAreaPickOpen(false);
+                                }}
+                                onPickBezirk={(name) => {
+                                    setBezirk(name);
+                                    updateConstraint({
+                                        areas: veedelsByBezirk?.[name] ?? [],
+                                    });
+                                }}
+                                onPickVeedel={(v) => {
+                                    updateConstraint({
+                                        areas: v
+                                            ? [v]
+                                            : bezirk !== 'all' &&
+                                                bezirk !== 'near'
+                                              ? (veedelsByBezirk?.[bezirk] ??
+                                                [])
+                                              : [],
+                                    });
+                                    setAreaPickOpen(false);
+                                }}
+                            />
+                            <div className="flex flex-wrap items-center gap-2.5">
+                                <FromBar
+                                    origin={origin}
+                                    mode={mode}
+                                    locating={locating}
+                                    savedPlaces={places}
+                                    query={fromQuery}
+                                    results={fromResults}
+                                    selectedKey={selectedKey}
+                                    open={fromPickOpen}
+                                    onOpenChange={(o) => {
+                                        setFromPickOpen(o);
+                                        setAreaPickOpen(false);
+                                    }}
+                                    onSearch={searchFrom}
+                                    onApply={applyFrom}
+                                    onMyLocation={pickMyLocation}
+                                    onPickOnMap={pickOnMap}
+                                    onMode={persistMode}
+                                />
+                            </div>
                         </div>
 
                         {/* Extra-filter chips + add */}
@@ -1497,6 +1662,32 @@ export default function Composer() {
                     destination={destination}
                     onClose={() => setDestination(null)}
                 />
+            )}
+
+            {/* Pick-on-map overlay — a tap sets the From point. */}
+            {mapPickOpen && (
+                <div
+                    className="fixed inset-0 z-[400] flex items-center justify-center bg-black/45 p-4"
+                    onClick={() => setMapPickOpen(false)}
+                >
+                    <div
+                        className="relative h-[80vh] w-full max-w-[680px] overflow-hidden rounded-[16px] border border-border bg-card"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <PlacesMap
+                            places={[]}
+                            emojiFor={() => ''}
+                            metaFor={() => ''}
+                            onOpen={() => {}}
+                            onTakeMeThere={() => {}}
+                            pickMode
+                            onMapPick={(lat, lng) =>
+                                void handleMapPick(lat, lng)
+                            }
+                            onCancelPick={() => setMapPickOpen(false)}
+                        />
+                    </div>
+                </div>
             )}
 
             <FeedbackToast message={toast} />

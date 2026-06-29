@@ -223,10 +223,12 @@ test('the composer page offers the user saved places as plan origins', function 
 
     $this->get('/composer')->assertInertia(fn ($page) => $page
         ->component('composer')
-        ->has('places', 2)
+        ->has('savedPlaces', 2)
         // Home is ordered before Work, regardless of insertion order.
-        ->where('places.0.name', 'My Flat')
-        ->where('places.1.name', 'Office'),
+        ->where('savedPlaces.0.name', 'My Flat')
+        ->where('savedPlaces.1.name', 'Office')
+        // The area picker's home corner is handed over too.
+        ->has('homeBezirk'),
     );
 });
 

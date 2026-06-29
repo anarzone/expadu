@@ -69,12 +69,6 @@ class ComposerController extends Controller
             ? DB::table('veedels')->where('name', $homeVeedel)->value('bezirk')
             : null;
 
-        $places = $request->user()->places()
-            ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END, sort_order")
-            ->get(['id', 'name', 'category', 'address', 'lat', 'lng']);
-
         return Inertia::render('composer', [
             'prompt' => $request->query('prompt'),
             'pins' => array_values(array_filter(explode(',', (string) $request->query('pins')))),
@@ -82,21 +76,18 @@ class ComposerController extends Controller
             'homeBezirk' => $homeBezirk,
             // Saved origins for the From picker — id + label + sublabel; coordinates
             // resolve server-side by id when one is picked.
-            'savedPlaces' => $places->map(fn (UserPlace $place) => [
-                'id' => $place->id,
-                'name' => $place->name,
-                'category' => (string) $place->category,
-                'address' => $place->address,
-            ])->all(),
-            // Legacy origin list (with coordinates) still read by the current
-            // composer sentence — superseded by savedPlaces once the From bar lands.
-            'places' => $places->map(fn (UserPlace $place) => [
-                'id' => $place->id,
-                'name' => $place->name,
-                'category' => (string) $place->category,
-                'lat' => $place->lat,
-                'lng' => $place->lng,
-            ])->all(),
+            'savedPlaces' => $request->user()->places()
+                ->whereNotNull('lat')
+                ->whereNotNull('lng')
+                ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END, sort_order")
+                ->get(['id', 'name', 'category', 'address'])
+                ->map(fn (UserPlace $place) => [
+                    'id' => $place->id,
+                    'name' => $place->name,
+                    'category' => (string) $place->category,
+                    'address' => $place->address,
+                ])
+                ->all(),
             // Deferred so the page shell paints before the directory loads.
             'bezirke' => Inertia::defer(fn () => $veedels->bezirkRail($homeBezirk)),
             'veedelsByBezirk' => Inertia::defer(fn () => $veedels->veedelsByBezirk()),
