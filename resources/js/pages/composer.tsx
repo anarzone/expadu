@@ -16,14 +16,14 @@ import {
 } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ComponentType, CSSProperties } from 'react';
+import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import { categoryClass } from '@/components/ds/category';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import { AreaPicker } from '@/components/places/area-picker';
+import { AreaPickerPanel } from '@/components/places/area-picker';
 import type { BezirkOption } from '@/components/places/area-picker';
 import { categoryEmoji } from '@/components/places/category-illustration';
-import { FromBar } from '@/components/places/from-bar';
+import { FromPanel } from '@/components/places/from-bar';
 import type {
     FromTarget,
     GeoResult,
@@ -354,11 +354,14 @@ function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
  * it to the viewport so it never spills off a phone edge (the inline word can
  * sit anywhere on a wrapped line). Opens upward when the word is low on screen.
  */
-function tokenPopoverStyle(btn: HTMLElement): CSSProperties {
+function tokenPopoverStyle(
+    btn: HTMLElement,
+    desiredWidth = 300,
+): CSSProperties {
     const r = btn.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const width = Math.min(300, vw - 24);
+    const width = Math.min(desiredWidth, vw - 24);
     const left = Math.max(12, Math.min(r.left, vw - width - 12));
     // Word in the lower part of the screen → open the menu above it.
     const openUp = r.bottom > vh * 0.62;
@@ -438,9 +441,8 @@ export default function Composer() {
     // From picker: address search query + results (reuses /api/geocode).
     const [fromQuery, setFromQuery] = useState('');
     const [fromResults, setFromResults] = useState<GeoResult[]>([]);
-    // Which filter popover / map-pick overlay is open.
-    const [areaPickOpen, setAreaPickOpen] = useState(false);
-    const [fromPickOpen, setFromPickOpen] = useState(false);
+    // The pick-on-map overlay (the area + From panels open from sentence words
+    // via openToken, like the other tappable words).
     const [mapPickOpen, setMapPickOpen] = useState(false);
     // v4 editable-sentence model — which token/extra popover is open, the
     // add-filter panel, and how much day to show (a client view over the plan).
@@ -645,7 +647,7 @@ export default function Composer() {
 
         // Live location overrides any previously picked place / point.
         setFrom(null);
-        setFromPickOpen(false);
+        setOpenToken(null);
         setFromQuery('');
         setFromResults([]);
         setLocating(true);
@@ -690,7 +692,7 @@ export default function Composer() {
         }
 
         setFrom(target);
-        setFromPickOpen(false);
+        setOpenToken(null);
         setFromQuery('');
         setFromResults([]);
         void runCompose(constraints, { archetype, locked, excluded });
@@ -759,7 +761,7 @@ export default function Composer() {
 
     // "Pick on map" → open the map overlay; a tap on it sets a point origin.
     function pickOnMap() {
-        setFromPickOpen(false);
+        setOpenToken(null);
         setMapPickOpen(true);
     }
 
@@ -840,7 +842,10 @@ export default function Composer() {
     const areaLabel =
         bezirk === 'near'
             ? 'Near you'
-            : (veedel ?? (bezirk === 'all' ? 'All Cologne' : bezirk));
+            : (veedel ?? (bezirk === 'all' ? 'all Cologne' : bezirk));
+    const originLabel = locating
+        ? 'Locating…'
+        : (origin?.label ?? 'Your location');
     const railOptions = bezirke ?? [];
     const chipOptions =
         bezirk !== 'all' && bezirk !== 'near'
@@ -863,6 +868,60 @@ export default function Composer() {
                 ? 'border-cyan bg-cyan-soft font-semibold text-cyan-h'
                 : 'border-primary bg-primary-soft font-semibold text-primary'
             : 'border-border bg-card font-medium text-text-2 hover:border-primary';
+
+    /**
+     * A tappable word in the sentence whose popover is a rich panel (the
+     * Places-style area picker / From control) rather than a chip list. Same
+     * inline-word trigger + under-the-word positioning as renderToken.
+     */
+    function renderPanelToken(
+        key: string,
+        label: ReactNode,
+        cyan: boolean,
+        width: number,
+        panel: ReactNode,
+    ) {
+        const open = openToken === key;
+        const underline = cyan
+            ? 'border-cyan'
+            : open
+              ? 'border-primary'
+              : 'border-text-3';
+
+        return (
+            <span className="relative inline-block">
+                <button
+                    onClick={(e) => {
+                        if (open) {
+                            setOpenToken(null);
+                        } else {
+                            setTokenPopStyle(
+                                tokenPopoverStyle(e.currentTarget, width),
+                            );
+                            setOpenToken(key);
+                        }
+                    }}
+                    className={`inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`}
+                >
+                    {label}
+                </button>
+                {open && (
+                    <>
+                        <div
+                            className="fixed inset-0 z-[290]"
+                            onClick={() => setOpenToken(null)}
+                        />
+                        <div
+                            style={tokenPopStyle ?? undefined}
+                            className={`z-[300] overflow-y-auto rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'}`}
+                        >
+                            {panel}
+                        </div>
+                    </>
+                )}
+            </span>
+        );
+    }
 
     /** One tappable word in the sentence + its inline option popover. */
     function renderToken(
@@ -1006,6 +1065,49 @@ export default function Composer() {
                                     updateConstraint(
                                         timeWindowPatch(v, constraints),
                                     ),
+                            )}{' '}
+                            around{' '}
+                            {renderPanelToken(
+                                'area',
+                                areaLabel,
+                                false,
+                                360,
+                                <AreaPickerPanel
+                                    bezirk={bezirk}
+                                    veedel={veedel}
+                                    railOptions={railOptions}
+                                    chipOptions={chipOptions}
+                                    onAllCologne={() => {
+                                        setBezirk('all');
+                                        updateConstraint({ areas: [] });
+                                        setOpenToken(null);
+                                    }}
+                                    onNearMe={() => {
+                                        setBezirk('near');
+                                        updateConstraint({ areas: [] });
+                                        pickMyLocation();
+                                    }}
+                                    onPickBezirk={(name) => {
+                                        setBezirk(name);
+                                        updateConstraint({
+                                            areas:
+                                                veedelsByBezirk?.[name] ?? [],
+                                        });
+                                    }}
+                                    onPickVeedel={(v) => {
+                                        updateConstraint({
+                                            areas: v
+                                                ? [v]
+                                                : bezirk !== 'all' &&
+                                                    bezirk !== 'near'
+                                                  ? (veedelsByBezirk?.[
+                                                        bezirk
+                                                    ] ?? [])
+                                                  : [],
+                                        });
+                                        setOpenToken(null);
+                                    }}
+                                />,
                             )}
                             , for{' '}
                             {renderToken(
@@ -1020,75 +1122,28 @@ export default function Composer() {
                                     setAmount(defaultAmount(cats));
                                     updateConstraint({ categories: cats });
                                 },
-                            )}
-                            .
-                        </div>
-
-                        {/* Where (area picker) · From (origin + travel mode) —
-                            the shared Places filter row */}
-                        <div className="relative z-20 mt-3.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <AreaPicker
-                                areaLabel={areaLabel}
-                                bezirk={bezirk}
-                                veedel={veedel}
-                                railOptions={railOptions}
-                                chipOptions={chipOptions}
-                                open={areaPickOpen}
-                                onOpenChange={(o) => {
-                                    setAreaPickOpen(o);
-                                    setFromPickOpen(false);
-                                }}
-                                onAllCologne={() => {
-                                    setBezirk('all');
-                                    updateConstraint({ areas: [] });
-                                    setAreaPickOpen(false);
-                                }}
-                                onNearMe={() => {
-                                    setBezirk('near');
-                                    updateConstraint({ areas: [] });
-                                    pickMyLocation();
-                                    setAreaPickOpen(false);
-                                }}
-                                onPickBezirk={(name) => {
-                                    setBezirk(name);
-                                    updateConstraint({
-                                        areas: veedelsByBezirk?.[name] ?? [],
-                                    });
-                                }}
-                                onPickVeedel={(v) => {
-                                    updateConstraint({
-                                        areas: v
-                                            ? [v]
-                                            : bezirk !== 'all' &&
-                                                bezirk !== 'near'
-                                              ? (veedelsByBezirk?.[bezirk] ??
-                                                [])
-                                              : [],
-                                    });
-                                    setAreaPickOpen(false);
-                                }}
-                            />
-                            <div className="flex flex-wrap items-center gap-2.5">
-                                <FromBar
-                                    origin={origin}
+                            )}{' '}
+                            — from{' '}
+                            {renderPanelToken(
+                                'origin',
+                                originLabel,
+                                true,
+                                300,
+                                <FromPanel
                                     mode={mode}
                                     locating={locating}
                                     savedPlaces={places}
                                     query={fromQuery}
                                     results={fromResults}
                                     selectedKey={selectedKey}
-                                    open={fromPickOpen}
-                                    onOpenChange={(o) => {
-                                        setFromPickOpen(o);
-                                        setAreaPickOpen(false);
-                                    }}
                                     onSearch={searchFrom}
                                     onApply={applyFrom}
                                     onMyLocation={pickMyLocation}
                                     onPickOnMap={pickOnMap}
                                     onMode={persistMode}
-                                />
-                            </div>
+                                />,
+                            )}
+                            .
                         </div>
 
                         {/* Extra-filter chips + add */}
