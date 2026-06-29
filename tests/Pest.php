@@ -33,10 +33,17 @@ pest()->extend(TestCase::class)
 
         // Per-user location anchors live in raw Redis (not the array cache), so
         // they survive DB rollback and leak a "confirmed"/ping origin into the
-        // next test that reuses an auto-increment id. Clear the low id range
-        // each test creates so every test starts with no live location.
-        for ($id = 1; $id <= 50; $id++) {
-            Redis::del("confirmed_location:{$id}", "location_history:{$id}");
+        // next test that reuses an auto-increment id (Postgres sequences don't
+        // roll back, so ids climb across the suite — a fixed range can't catch
+        // them). keys() returns prefixed names but del() re-applies the prefix,
+        // so strip it first, then clear every match.
+        $prefix = (string) config('database.redis.options.prefix');
+        $strip = fn (string $key): string => str_starts_with($key, $prefix) ? substr($key, strlen($prefix)) : $key;
+        foreach (['confirmed_location:*', 'location_history:*'] as $pattern) {
+            $stale = array_map($strip, Redis::keys($pattern));
+            if ($stale !== []) {
+                Redis::del(...$stale);
+            }
         }
 
         // Mock Vite so tests don't need npm run build
