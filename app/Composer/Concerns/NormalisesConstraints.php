@@ -25,42 +25,48 @@ trait NormalisesConstraints
     private function clampConstraints(Constraints $constraints, Profile $profile, CarbonImmutable $now): Constraints
     {
         $horizon = $now->addHours(72);
-        $start = $this->roundToQuarter($constraints->windowStart->max($now), up: true);
-        $end = $this->roundToQuarter($constraints->windowEnd->min($horizon), up: false);
 
-        if ($end->lessThanOrEqualTo($start)) {
-            return $this->defaultConstraints($now);
+        // A fully-past named window — "today" / "this afternoon" asked once the
+        // day is spent — rolls forward whole days, so the daypart is preserved
+        // (an afternoon becomes tomorrow afternoon) instead of collapsing to an
+        // empty late-night sliver. Bounded by the horizon.
+        $start = $constraints->windowStart;
+        $end = $constraints->windowEnd;
+        while ($end->lessThanOrEqualTo($now) && $start->lessThan($horizon)) {
+            $start = $start->addDay();
+            $end = $end->addDay();
         }
 
-        // Rescue a too-short clamped window by extending the end (capped at the
-        // start day's end and the 72h horizon) so the plan isn't starved of time.
-        if ($start->diffInMinutes($end) < self::MIN_WINDOW_MINUTES) {
-            $end = $start->addMinutes(self::MIN_WINDOW_MINUTES)
-                ->min($start->endOfDay())
-                ->min($horizon);
+        $start = $this->roundToQuarter($start->max($now), up: true);
+        $end = $this->roundToQuarter($end->min($horizon), up: false);
+
+        if ($end->lessThanOrEqualTo($start)) {
+            // The named day sits beyond the 72h horizon (e.g. "Sunday" six days
+            // out): plan from now instead of giving up — keeping the categories.
+            $start = $this->roundToQuarter($now, up: true);
+            $end = $start->addMinutes(self::MIN_WINDOW_MINUTES)->min($horizon);
+        } elseif ($start->diffInMinutes($end) < self::MIN_WINDOW_MINUTES) {
+            // A daypart clamped to "now" late in its span (afternoon at 17:00 →
+            // 17:00–18:00) is too short to fit any activity plus travel: extend
+            // the end so the plan isn't starved of time.
+            $end = $start->addMinutes(self::MIN_WINDOW_MINUTES)->min($horizon);
         }
 
         return new Constraints(
             windowStart: $start,
             windowEnd: $end,
-            // Areas stay exactly as the user named them. When none were named
-            // we leave this empty rather than spelling out the whole home
-            // Bezirk as chips — compose falls back to the profile's areas for
-            // scoring internally, so the plan is unchanged but the UI is clean.
+            // Everything the user asked for survives the window rescue. Dropping
+            // the categories here is what made "pitch today" at 22:00 compose
+            // "anything" and then return nothing. Areas stay exactly as named;
+            // when none were given we leave them empty rather than spelling out
+            // the home Bezirk — compose falls back to the profile's areas for
+            // scoring, so the plan is unchanged but the UI stays clean.
             areas: $constraints->areas,
             categories: $constraints->categories,
             companions: $constraints->companions,
             budget: $constraints->budget,
             archetype: $constraints->archetype,
             vibe: $constraints->vibe,
-        );
-    }
-
-    private function defaultConstraints(CarbonImmutable $now): Constraints
-    {
-        return new Constraints(
-            windowStart: $this->roundToQuarter($now, up: true),
-            windowEnd: $this->roundToQuarter($now->endOfDay()->min($now->addHours(8)), up: false),
         );
     }
 

@@ -153,3 +153,28 @@ test('a full daypart window is left untouched', function () {
     expect($result->plan->windowStart->format('H:i'))->toBe('12:00')
         ->and($result->plan->windowEnd->format('H:i'))->toBe('18:00');
 });
+
+test('a "today" plan asked once the day is spent rolls forward and KEEPS the activity', function () {
+    // "pitch today" at 22:00: the default day window (10:00–22:00) is already
+    // past, so the window rolls to tomorrow — but the chosen activity must
+    // survive. Resetting it here is the bug that made the sentence read "for
+    // anything" and the plan come back empty.
+    $now = CarbonImmutable::parse('2026-06-29 22:05', 'Europe/Berlin');
+    $result = (new HeuristicPromptParser)->parse('pitch today', heuristicProfile(), $now);
+
+    expect($result->intent)->toBe(PromptIntent::PlanDay)
+        ->and($result->plan->categories)->toBe(['pitch'])
+        ->and($result->plan->windowStart->isAfter($now))->toBeTrue()
+        ->and($result->plan->windowMinutes())->toBeGreaterThanOrEqual(180);
+});
+
+test('an explicit evening still composes tonight when asked late, keeping the activity', function () {
+    // "pitch tonight" at 22:00 keeps the evening (stretched past midnight for
+    // room) rather than jumping to tomorrow — and still carries the category.
+    $now = CarbonImmutable::parse('2026-06-29 22:00', 'Europe/Berlin');
+    $result = (new HeuristicPromptParser)->parse('pitch tonight', heuristicProfile(), $now);
+
+    expect($result->plan->categories)->toBe(['pitch'])
+        ->and($result->plan->windowStart->isSameDay($now))->toBeTrue()
+        ->and($result->plan->windowMinutes())->toBeGreaterThanOrEqual(180);
+});
