@@ -338,6 +338,9 @@ export default function Dashboard() {
     const [composing, setComposing] = useState(false);
     const [preview, setPreview] = useState<PreviewSlot[] | null>(null);
     const [previewPrompt, setPreviewPrompt] = useState('');
+    // The suggestion chip currently driving the preview — kept highlighted as
+    // the active choice (set the instant it's tapped, cleared when dismissed).
+    const [activePrompt, setActivePrompt] = useState<string | null>(null);
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
     const [savingPreview, setSavingPreview] = useState(false);
     // Triaged "Right now" tiles (done/snooze/dismiss) — cleared from the feed
@@ -388,6 +391,7 @@ export default function Dashboard() {
             return;
         }
 
+        setActivePrompt(trimmed);
         setPreview(null);
         setComposing(true);
 
@@ -454,6 +458,7 @@ export default function Dashboard() {
         try {
             await composerPost('/composer/save', { prompt: previewPrompt });
             setPreview(null);
+            setActivePrompt(null);
             router.reload({ only: ['savedPlan'] });
         } catch {
             // leave the draft in place if the save didn't take
@@ -572,10 +577,17 @@ export default function Dashboard() {
                         const ChipIcon = chip.icon
                             ? CHIP_ICONS[chip.icon]
                             : undefined;
+                        // The tapped chip that produced the live preview stays
+                        // highlighted, so it's clear which suggestion is showing.
+                        const isActive =
+                            activePrompt !== null &&
+                            !chip.href &&
+                            (chip.prompt ?? chip.label).trim() === activePrompt;
 
                         return (
                             <button
                                 key={chip.label}
+                                aria-pressed={isActive}
                                 onClick={() =>
                                     chip.href
                                         ? router.visit(chip.href)
@@ -583,7 +595,11 @@ export default function Dashboard() {
                                               chip.prompt ?? chip.label,
                                           )
                                 }
-                                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition-all hover:border-primary hover:bg-accent-soft hover:text-primary"
+                                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] transition-all ${
+                                    isActive
+                                        ? 'border-primary bg-accent-soft font-semibold text-primary'
+                                        : 'border-border bg-card font-medium text-muted-foreground hover:border-primary hover:bg-accent-soft hover:text-primary'
+                                }`}
                             >
                                 {ChipIcon && (
                                     <ChipIcon
@@ -703,7 +719,10 @@ export default function Dashboard() {
                                 </span>
                             </div>
                             <button
-                                onClick={() => setPreview(null)}
+                                onClick={() => {
+                                    setPreview(null);
+                                    setActivePrompt(null);
+                                }}
                                 aria-label="Clear plan"
                                 className="flex size-[30px] cursor-pointer items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-foreground"
                             >
