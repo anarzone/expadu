@@ -25,11 +25,13 @@ use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Models\User;
 use App\Models\UserEvent;
+use App\Models\UserPlace;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\GermanHolidayService;
 use App\Services\UserLocationService;
+use App\Services\VeedelDirectory;
 use App\Services\WeatherService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
@@ -37,6 +39,9 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 /**
  * Day Composer endpoints: parse (the only LLM call), compose
@@ -50,6 +55,53 @@ class ComposerController extends Controller
     private ?array $forecastCache = null;
 
     private ?array $currentWeatherCache = null;
+
+    /**
+     * Render the composer page. Carries the same area/From data Places uses, so
+     * the composer can offer the identical district picker and From control: the
+     * Bezirk/Veedel directory, the user's home corner, their saved places (by
+     * id + label only — coordinates resolve server-side), and pins/prompt.
+     */
+    public function page(Request $request, ProfileEngine $profiles, VeedelDirectory $veedels): Response
+    {
+        $homeVeedel = $profiles->build($request->user())->veedel;
+        $homeBezirk = $homeVeedel
+            ? DB::table('veedels')->where('name', $homeVeedel)->value('bezirk')
+            : null;
+
+        $places = $request->user()->places()
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END, sort_order")
+            ->get(['id', 'name', 'category', 'address', 'lat', 'lng']);
+
+        return Inertia::render('composer', [
+            'prompt' => $request->query('prompt'),
+            'pins' => array_values(array_filter(explode(',', (string) $request->query('pins')))),
+            'homeVeedel' => $homeVeedel,
+            'homeBezirk' => $homeBezirk,
+            // Saved origins for the From picker — id + label + sublabel; coordinates
+            // resolve server-side by id when one is picked.
+            'savedPlaces' => $places->map(fn (UserPlace $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'category' => (string) $place->category,
+                'address' => $place->address,
+            ])->all(),
+            // Legacy origin list (with coordinates) still read by the current
+            // composer sentence — superseded by savedPlaces once the From bar lands.
+            'places' => $places->map(fn (UserPlace $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'category' => (string) $place->category,
+                'lat' => $place->lat,
+                'lng' => $place->lng,
+            ])->all(),
+            // Deferred so the page shell paints before the directory loads.
+            'bezirke' => Inertia::defer(fn () => $veedels->bezirkRail($homeBezirk)),
+            'veedelsByBezirk' => Inertia::defer(fn () => $veedels->veedelsByBezirk()),
+        ]);
+    }
 
     /**
      * The single parse call: classify intent + extract payload. The result
@@ -103,6 +155,8 @@ class ComposerController extends Controller
             // A saved place's name (Home/Work/…) so its origin reads as that, not "Your location".
             'from_label' => ['nullable', 'string', 'max:80'],
             'from_area' => ['nullable', 'string'],
+            // A saved place picked as the origin — coordinates resolve server-side by id.
+            'from_place' => ['nullable', 'integer'],
         ]);
 
         $user = $request->user();

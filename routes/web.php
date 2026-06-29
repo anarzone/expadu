@@ -34,7 +34,6 @@ use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\UserPlaceController;
 use App\Http\Controllers\UserSettingController;
 use App\Http\Controllers\UserTaskController;
-use App\Models\UserPlace;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -107,18 +106,7 @@ $appRoutes = function () use ($appDomain) {
         Route::get('timetable', TimetableController::class)->name('timetable');
 
         // Day Composer
-        Route::get('composer', fn () => Inertia::render('composer', [
-            'prompt' => request()->query('prompt'),
-            // Spots the user pinned on the home feed → anchored in the plan.
-            'pins' => array_values(array_filter(explode(',', (string) request()->query('pins')))),
-            // Saved places (Home / Work / custom) → pickable plan origins.
-            'places' => UserPlace::query()
-                ->where('user_id', request()->user()->id)
-                ->whereNotNull('lat')
-                ->whereNotNull('lng')
-                ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END, sort_order")
-                ->get(['id', 'name', 'category', 'lat', 'lng']),
-        ]))->name('composer');
+        Route::get('composer', [ComposerController::class, 'page'])->name('composer');
         Route::post('composer/parse', [ComposerController::class, 'parse'])->name('composer.parse');
         Route::post('composer/compose', [ComposerController::class, 'compose'])->name('composer.compose');
         Route::post('composer/swap', [ComposerController::class, 'swap'])->name('composer.swap');
