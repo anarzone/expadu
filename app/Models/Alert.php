@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'type', 'subtype', 'title', 'body', 'deep_link', 'read_at', 'dismissed_at'])]
+#[Fillable(['user_id', 'type', 'subtype', 'severity', 'category', 'lane', 'title', 'body', 'deep_link', 'read_at', 'dismissed_at'])]
 class Alert extends Model
 {
     /** @use HasFactory<AlertFactory> */

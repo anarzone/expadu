@@ -2,7 +2,7 @@
 
 namespace App\Listeners;
 
-use App\Enums\AlertType;
+use App\Alerts\AlertClassifier;
 use App\Models\Alert;
 use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\EventReminderNotification;
@@ -16,8 +16,13 @@ use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * When a notification is sent via the 'database' channel,
- * also create an Alert record so it appears on the alerts page.
+ * Creates an Alert row from a sent 'database'-channel notification — the path
+ * for direct notifications like event reminders.
+ *
+ * ContextEngine alerts (transit / weather / rhine / market / bureaucracy) are
+ * NOT created here: RecordContextAlert owns them off the alert_page channel so
+ * they land in the center even when push is muted/throttled. They're skipped
+ * below to avoid a double write.
  */
 class CreateAlertFromNotification
 {
@@ -41,37 +46,31 @@ class CreateAlertFromNotification
             return;
         }
 
+        $notification = $event->notification;
+
+        // ContextEngine notifications are recorded off the alert_page channel by
+        // RecordContextAlert (push-independent + lane/category/severity-tagged).
+        // Skip them here so the center isn't written twice.
+        if ($notification instanceof TransitDisruptionNotification
+            || $notification instanceof TransitDelayNotification
+            || $notification instanceof WeatherAlertNotification
+            || $notification instanceof RhineFloodNotification
+            || $notification instanceof MarketClosureNotification
+            || $notification instanceof BureaucracyDeadlineNotification) {
+            return;
+        }
+
         // Dedup: hash notification class + user + title to prevent double-firing
-        $data = $event->notification->toArray($event->notifiable);
+        $data = $notification->toArray($event->notifiable);
         $dedupKey = 'alert_created:'.md5(
-            get_class($event->notification).':'.$event->notifiable->id.':'.($data['title'] ?? '')
+            get_class($notification).':'.$event->notifiable->id.':'.($data['title'] ?? '')
         );
         if (Cache::has($dedupKey)) {
             return;
         }
         Cache::put($dedupKey, true, 60);
 
-        $notification = $event->notification;
-
-        // Map notification class → alert type + subtype
-        $alertType = match (true) {
-            $notification instanceof EventReminderNotification,
-            $notification instanceof BureaucracyDeadlineNotification,
-            $notification instanceof MarketClosureNotification => AlertType::Reminder,
-            default => AlertType::System,
-        };
-
-        $subtype = match (true) {
-            $notification instanceof TransitDisruptionNotification => 'transit_disruption',
-            $notification instanceof TransitDelayNotification => 'transit_delay',
-            $notification instanceof WeatherAlertNotification => 'weather',
-            $notification instanceof RhineFloodNotification => 'rhine',
-            $notification instanceof BureaucracyDeadlineNotification => 'bureaucracy_deadline',
-            $notification instanceof EventReminderNotification => 'event_reminder',
-            $notification instanceof MarketClosureNotification => 'market_closure',
-            default => 'generic',
-        };
-
+        $subtype = $notification instanceof EventReminderNotification ? 'event_reminder' : 'generic';
         $title = $data['title'] ?? $data['type'] ?? 'Notification';
         $userId = $event->notifiable->id;
 
@@ -85,10 +84,16 @@ class CreateAlertFromNotification
             return;
         }
 
+        // Direct notifications are informational (event reminders).
+        $severity = AlertClassifier::severity('info');
+
         Alert::create([
             'user_id' => $userId,
-            'type' => $alertType,
+            'type' => AlertClassifier::alertType($subtype),
             'subtype' => $subtype,
+            'severity' => $severity,
+            'category' => AlertClassifier::category($subtype),
+            'lane' => AlertClassifier::lane($subtype, $severity),
             'title' => $title,
             'body' => $data['body'] ?? $data['summary'] ?? '',
             'deep_link' => $data['url'] ?? null,
