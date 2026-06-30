@@ -39,101 +39,122 @@ class ScrapeEvents extends Command
         return self::SUCCESS;
     }
 
+    /** Stop after this many pages (50 events each) — a runaway guard, not a real cap. */
+    private const KOELN_MAX_PAGES = 20;
+
     /**
-     * Fetch events from koeln.de via their Tribe Events REST API.
+     * Fetch events from koeln.de via their Tribe Events REST API, paging
+     * through the full window (the first page of 50 only spans a few days).
      */
     protected function scrapeKoelnDe(int $organiserId): int
     {
         $created = 0;
+        $page = 1;
+        $totalPages = 1;
 
+        // koeln.de returns events chronologically, so the first page of 50 only
+        // covers the next couple of days — the weekend never arrived. Page
+        // through the whole 30-day window (Tribe reports total_pages).
         try {
-            $response = Http::timeout(15)
-                ->withHeaders(['User-Agent' => 'Expadu/1.0 (Event Aggregator for Expats)'])
-                ->get('https://www.koeln.de/wp-json/tribe/events/v1/events', [
-                    'per_page' => 50,
-                    'start_date' => now()->toDateString(),
-                    'end_date' => now()->addDays(30)->toDateString(),
-                ]);
+            do {
+                $response = Http::timeout(15)
+                    ->withHeaders(['User-Agent' => 'Expadu/1.0 (Event Aggregator for Expats)'])
+                    ->get('https://www.koeln.de/wp-json/tribe/events/v1/events', [
+                        'per_page' => 50,
+                        'page' => $page,
+                        'start_date' => now()->toDateString(),
+                        'end_date' => now()->addDays(30)->toDateString(),
+                    ]);
 
-            if (! $response->successful()) {
-                Log::info('events:scrape — koeln.de API returned '.$response->status());
+                if (! $response->successful()) {
+                    // A 400 past the last page is how Tribe signals "no more" —
+                    // expected on the final iteration, so only note page 1.
+                    if ($page === 1) {
+                        Log::info('events:scrape — koeln.de API returned '.$response->status());
+                    }
 
-                return 0;
-            }
-
-            foreach ($response->json('events', []) as $ev) {
-                $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-                if (! $title) {
-                    continue;
+                    break;
                 }
 
-                $startsAt = Carbon::parse($ev['start_date'] ?? now());
-                if ($startsAt->isPast()) {
-                    continue;
+                $events = $response->json('events', []);
+                $totalPages = (int) $response->json('total_pages', 1);
+
+                foreach ($events as $ev) {
+                    $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+                    if (! $title) {
+                        continue;
+                    }
+
+                    $startsAt = Carbon::parse($ev['start_date'] ?? now());
+                    if ($startsAt->isPast()) {
+                        continue;
+                    }
+
+                    // Dedupe on the source's own id when it has one; fall
+                    // back to title+date for sources without stable ids.
+                    $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
+                    if ($sourceUid && Event::where('source', 'koeln.de')->where('source_uid', $sourceUid)->exists()) {
+                        continue;
+                    }
+
+                    if (Event::where('title', $title)->whereDate('starts_at', $startsAt->toDateString())->exists()) {
+                        continue;
+                    }
+
+                    $desc = mb_substr(strip_tags($ev['description'] ?? ''), 0, 1000);
+                    $venue = $ev['venue']['venue'] ?? null;
+                    $address = $ev['venue']['address'] ?? null;
+                    $sourceUrl = $ev['url'] ?? null;
+
+                    // Prefer source categories over keyword guessing
+                    $sourceCategories = array_map(
+                        fn ($c) => $c['name'] ?? '',
+                        $ev['categories'] ?? [],
+                    );
+                    $category = $this->mapSourceCategory($sourceCategories)
+                        ?? $this->categoriseEvent($title, $desc);
+
+                    // Store source category names as tags for future LLM enrichment context
+                    $sourceTags = array_values(array_filter($sourceCategories));
+
+                    [$isFree, $price, $priceText] = $this->parseCost($ev['cost'] ?? null);
+
+                    $qualityScore = $this->computeInitialQuality([
+                        'venue' => $venue,
+                        'address' => $address,
+                        'description' => $desc,
+                        'starts_at' => $startsAt,
+                        'source_url' => $sourceUrl,
+                        'price_known' => $isFree !== null,
+                    ]);
+
+                    $event = Event::create([
+                        'title' => mb_substr($title, 0, 255),
+                        'emoji' => $this->categoryEmoji($category),
+                        'category' => $category,
+                        'description' => $desc ?: null,
+                        'starts_at' => $startsAt,
+                        'ends_at' => isset($ev['end_date']) ? Carbon::parse($ev['end_date']) : $startsAt->copy()->addHours(2),
+                        'location_name' => $venue ? html_entity_decode($venue, ENT_QUOTES, 'UTF-8') : null,
+                        'address' => $address ? html_entity_decode($address, ENT_QUOTES, 'UTF-8') : null,
+                        'is_free' => $isFree ?? false,
+                        'price' => $price,
+                        'price_text' => $priceText,
+                        'source' => 'koeln.de',
+                        'source_url' => $sourceUrl,
+                        'source_uid' => $sourceUid,
+                        'tags' => $sourceTags ?: null,
+                        'organiser_id' => $organiserId,
+                        'quality_score' => $qualityScore,
+                    ]);
+
+                    ProcessEventJob::dispatch($event);
+
+                    $created++;
                 }
 
-                // Dedupe on the source's own id when it has one; fall
-                // back to title+date for sources without stable ids.
-                $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
-                if ($sourceUid && Event::where('source', 'koeln.de')->where('source_uid', $sourceUid)->exists()) {
-                    continue;
-                }
-
-                if (Event::where('title', $title)->whereDate('starts_at', $startsAt->toDateString())->exists()) {
-                    continue;
-                }
-
-                $desc = mb_substr(strip_tags($ev['description'] ?? ''), 0, 1000);
-                $venue = $ev['venue']['venue'] ?? null;
-                $address = $ev['venue']['address'] ?? null;
-                $sourceUrl = $ev['url'] ?? null;
-
-                // Prefer source categories over keyword guessing
-                $sourceCategories = array_map(
-                    fn ($c) => $c['name'] ?? '',
-                    $ev['categories'] ?? [],
-                );
-                $category = $this->mapSourceCategory($sourceCategories)
-                    ?? $this->categoriseEvent($title, $desc);
-
-                // Store source category names as tags for future LLM enrichment context
-                $sourceTags = array_values(array_filter($sourceCategories));
-
-                [$isFree, $price, $priceText] = $this->parseCost($ev['cost'] ?? null);
-
-                $qualityScore = $this->computeInitialQuality([
-                    'venue' => $venue,
-                    'address' => $address,
-                    'description' => $desc,
-                    'starts_at' => $startsAt,
-                    'source_url' => $sourceUrl,
-                    'price_known' => $isFree !== null,
-                ]);
-
-                $event = Event::create([
-                    'title' => mb_substr($title, 0, 255),
-                    'emoji' => $this->categoryEmoji($category),
-                    'category' => $category,
-                    'description' => $desc ?: null,
-                    'starts_at' => $startsAt,
-                    'ends_at' => isset($ev['end_date']) ? Carbon::parse($ev['end_date']) : $startsAt->copy()->addHours(2),
-                    'location_name' => $venue ? html_entity_decode($venue, ENT_QUOTES, 'UTF-8') : null,
-                    'address' => $address ? html_entity_decode($address, ENT_QUOTES, 'UTF-8') : null,
-                    'is_free' => $isFree ?? false,
-                    'price' => $price,
-                    'price_text' => $priceText,
-                    'source' => 'koeln.de',
-                    'source_url' => $sourceUrl,
-                    'source_uid' => $sourceUid,
-                    'tags' => $sourceTags ?: null,
-                    'organiser_id' => $organiserId,
-                    'quality_score' => $qualityScore,
-                ]);
-
-                ProcessEventJob::dispatch($event);
-
-                $created++;
-            }
+                $page++;
+            } while ($page <= min($totalPages, self::KOELN_MAX_PAGES));
         } catch (\Exception $e) {
             Log::warning('events:scrape — koeln.de API error: '.$e->getMessage());
         }
