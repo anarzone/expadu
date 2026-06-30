@@ -93,23 +93,29 @@ test('one-off events appear once and only inside their window', function () {
     expect(Event::occurringBetween($from, $to))->toHaveCount(0);
 });
 
-test('expired, hidden, low-relevance and uncurated-unscored events are invisible', function () {
+test('visibility honours relevance, then falls back to quality_score or curate', function () {
     $base = ['starts_at' => '2026-06-10 11:00:00', 'recurrence' => null];
 
     Event::factory()->create([...$base, 'status' => 'expired']);
     Event::factory()->create([...$base, 'status' => 'hidden']);
-    Event::factory()->create([...$base, 'relevance' => 0.2]);
-    // Unscored AND uncurated (a scraped programme dump) — never shown
-    Event::factory()->create([...$base, 'relevance' => null, 'is_curated' => false]);
-    $visible = Event::factory()->create([...$base, 'relevance' => 0.9]);
-    $curatedLegacy = Event::factory()->create([...$base, 'relevance' => null, 'is_curated' => true]);
+    // A relevance score, once set, is authoritative — a low one hides even when
+    // the heuristic quality_score is high.
+    Event::factory()->create([...$base, 'relevance' => 0.2, 'quality_score' => 0.9]);
+    // Unscored, low quality, uncurated (a raw scrape not yet enriched) — hidden.
+    Event::factory()->create([...$base, 'relevance' => null, 'quality_score' => 0.1, 'is_curated' => false]);
+
+    $byRelevance = Event::factory()->create([...$base, 'relevance' => 0.9]);
+    // The real prod case: scraped (relevance null) but enriched above the bar.
+    $byQuality = Event::factory()->create([...$base, 'relevance' => null, 'quality_score' => 0.8, 'is_curated' => false]);
+    $byCurate = Event::factory()->create([...$base, 'relevance' => null, 'quality_score' => 0.0, 'is_curated' => true]);
 
     [$from, $to] = window('2026-06-10 00:00', '2026-06-10 23:59');
     $ids = Event::occurringBetween($from, $to)->pluck('event.id')->all();
 
-    expect($ids)->toContain($visible->id);
-    expect($ids)->toContain($curatedLegacy->id);
-    expect($ids)->toHaveCount(2);
+    expect($ids)->toContain($byRelevance->id)
+        ->and($ids)->toContain($byQuality->id)
+        ->and($ids)->toContain($byCurate->id)
+        ->and($ids)->toHaveCount(3);
 });
 
 test('events:expire retires past one-offs and finished series, keeps open-ended ones', function () {

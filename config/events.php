@@ -15,6 +15,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Quality threshold
+    |--------------------------------------------------------------------------
+    | Fallback bar for events the relevance classifier hasn't scored yet
+    | (relevance is null). The ingest enrichment pass sets quality_score on
+    | every event, so this keeps a real quality floor on the feed without
+    | waiting for the relevance pipeline.
+    */
+
+    'quality_threshold' => env('EVENTS_QUALITY_THRESHOLD', 0.5),
+
+    /*
+    |--------------------------------------------------------------------------
     | Classifier confidence floor
     |--------------------------------------------------------------------------
     | Below this confidence the event is flagged needs_review and the

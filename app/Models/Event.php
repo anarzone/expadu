@@ -54,10 +54,18 @@ class Event extends Model
     {
         $query->where('status', 'active')
             ->where(fn (Builder $q) => $q
+                // AI relevance, once scored, is authoritative.
                 ->where('relevance', '>=', config('events.relevance_threshold', 0.5))
-                ->orWhere(fn (Builder $legacy) => $legacy
+                // Until then (relevance is null on every scraped event), fall
+                // back to the enrichment quality_score — which IS populated on
+                // ingest — or a manual curate. Without this the gate read a
+                // column nothing fills and the feed collapsed to the handful of
+                // hand-curated events.
+                ->orWhere(fn (Builder $fallback) => $fallback
                     ->whereNull('relevance')
-                    ->where('is_curated', true)));
+                    ->where(fn (Builder $unscored) => $unscored
+                        ->where('quality_score', '>=', config('events.quality_threshold', 0.5))
+                        ->orWhere('is_curated', true))));
     }
 
     /**
