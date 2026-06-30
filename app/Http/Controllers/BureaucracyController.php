@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Bureaucracy\PathGenerator;
+use App\Bureaucracy\PermanentResidencyEligibility;
 use App\Enums\DeadlineType;
 use App\Enums\TaskStatus;
 use App\Models\Task;
@@ -12,7 +13,6 @@ use App\Profile\Applicability;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\BuergeramtService;
-use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -43,7 +43,7 @@ class BureaucracyController extends Controller
      * React side renders without further logic: active / upcoming /
      * completed / not_applicable / info / no_longer_relevant + teasers.
      */
-    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator): Response
+    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): Response
     {
         $user = $request->user();
         $profile = $generator->ensure($user);
@@ -125,7 +125,7 @@ class BureaucracyController extends Controller
             'tasks' => $buckets,
             'teasers' => $generator->teasers($profile),
             'phases' => $this->phases($profile, $buckets['active']->count()),
-            'eligibility' => $this->permanentResidencyHint($profile),
+            'eligibility' => $eligibility->for($profile),
             'settled' => $settled,
             'settledSuggestion' => $settledSuggestion,
             // Which life events the user has recorded — drives the info-card
@@ -257,48 +257,6 @@ class BureaucracyController extends Controller
         }
 
         return ['current' => $current, 'blurb' => $blurb, 'steps' => $steps];
-    }
-
-    /**
-     * The eligibility watcher's first incarnation: when the permit has been
-     * held past the track's Niederlassungserlaubnis threshold, say so —
-     * Cologne's counters only mention it if you ask. Date math only; the
-     * remaining conditions (pension months, B1, livelihood) are listed for
-     * the user to check, never asserted.
-     *
-     * @return array{months_held: int, threshold_months: int, track_note: string}|null
-     */
-    private function permanentResidencyHint(Profile $profile): ?array
-    {
-        // Already declared settled (and typically already holding PR) — don't
-        // nudge them toward qualifying for what they have.
-        if (($profile->attributes['settled_at'] ?? null) !== null) {
-            return null;
-        }
-
-        $heldSince = $profile->attributes['permit_held_since'] ?? null;
-        if ($heldSince === null || $profile->isEu) {
-            return null;
-        }
-
-        [$threshold, $trackNote] = match (true) {
-            ($profile->attributes['permit_track'] ?? null) === 'blue_card' => [21, 'Blue Card holders qualify after 21 months with B1 German (27 with A1).'],
-            ($profile->attributes['sponsor'] ?? null) === 'german' && ($profile->attributes['purpose'] ?? null) === 'family' => [36, 'Family members of German citizens qualify after 3 years (§28 Abs. 2).'],
-            ($profile->attributes['purpose'] ?? null) === 'employment' => [36, 'Skilled workers qualify after 3 years — just 2 with a German degree (§18c).'],
-            default => [60, 'The general route opens after 5 years (§9).'],
-        };
-
-        $monthsHeld = (int) now()->startOfDay()->diffInMonths(Carbon::parse($heldSince), true);
-
-        if ($monthsHeld < $threshold) {
-            return null;
-        }
-
-        return [
-            'months_held' => $monthsHeld,
-            'threshold_months' => $threshold,
-            'track_note' => $trackNote,
-        ];
     }
 
     private function hasProgress(UserTask $userTask): bool

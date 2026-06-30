@@ -14,6 +14,11 @@ class Scorer
     public const SEVERITY_BASE = [
         'critical' => 100.0,
         'major' => 70.0,
+        // Good news (e.g. permanent-residency eligibility) ranks mid-pack: high
+        // enough to clear info-level noise on the dashboard, below the problems
+        // a user must act on. The Alerts screen separates it into its own lane
+        // regardless, so this only orders the unified bus.
+        'success' => 60.0,
         'moderate' => 40.0,
         'minor' => 10.0,
         'info' => 5.0,

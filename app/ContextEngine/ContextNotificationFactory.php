@@ -4,6 +4,7 @@ namespace App\ContextEngine;
 
 use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\MarketClosureNotification;
+use App\Notifications\PermanentResidencyEligibleNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
@@ -30,8 +31,18 @@ class ContextNotificationFactory
             'rhine_level' => $this->buildRhine($action),
             'market_closure' => $this->buildMarketClosure($action),
             'bureaucracy_task' => $this->buildBureaucracyTask($action),
+            'permanent_residency_eligible' => $this->buildPermanentResidency($action),
             default => null,
         };
+    }
+
+    private function buildPermanentResidency(ScoredAction $action): PermanentResidencyEligibleNotification
+    {
+        return new PermanentResidencyEligibleNotification(
+            monthsHeld: (int) ($action->payload['months_held'] ?? 0),
+            thresholdMonths: (int) ($action->payload['threshold_months'] ?? 0),
+            trackNote: (string) ($action->payload['track_note'] ?? ''),
+        );
     }
 
     private function buildBureaucracyTask(ScoredAction $action): ?BureaucracyDeadlineNotification

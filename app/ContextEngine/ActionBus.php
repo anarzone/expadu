@@ -38,6 +38,7 @@ class ActionBus
         'rhine_level' => 'rhine',
         'buergeramt_slot' => 'burgeramt',
         'bureaucracy_task' => 'checklist',
+        'permanent_residency_eligible' => 'checklist',
         'market_closure' => 'events',
     ];
 

@@ -22,7 +22,7 @@ class AlertClassifier
     {
         return match ($subtype) {
             'transit_disruption', 'transit_delay' => 'transit',
-            'bureaucracy_deadline', 'buergeramt_slot' => 'bureau',
+            'bureaucracy_deadline', 'buergeramt_slot', 'permanent_residency' => 'bureau',
             'event_reminder' => 'events',
             'weather', 'rhine', 'market_closure' => 'city',
             default => 'city',
@@ -63,6 +63,7 @@ class AlertClassifier
             'transit_disruption', 'transit_delay' => 'KVB live',
             'bureaucracy_deadline' => 'City of Cologne',
             'buergeramt_slot' => 'Termin tracker',
+            'permanent_residency' => 'Permit tracker',
             'weather' => 'City notices',
             'rhine' => 'Pegel Köln',
             'market_closure' => 'City notices',
@@ -78,6 +79,7 @@ class AlertClassifier
             'transit_disruption', 'transit_delay' => 'See alternatives',
             'bureaucracy_deadline' => 'Open checklist',
             'buergeramt_slot' => 'Book a slot',
+            'permanent_residency' => 'See requirements',
             default => null,
         };
     }
@@ -100,6 +102,7 @@ class AlertClassifier
             'weather_alert' => 'weather',
             'rhine_level' => 'rhine',
             'bureaucracy_task' => 'bureaucracy_deadline',
+            'permanent_residency_eligible' => 'permanent_residency',
             'market_closure' => 'market_closure',
             default => 'generic',
         };

@@ -58,6 +58,26 @@ test('it records the alert even when push was never granted (the old blind spot)
         ->and($alert->deep_link)->toBe('/bureaucracy?focus=5');
 });
 
+test('a permanent-residency success action lands in the Good news lane', function () {
+    $user = User::factory()->create();
+    // What PermanentResidencyEvaluator emits when a permit clears the NE bar.
+    $action = contextAction('permanent_residency_eligible', 'success', ['dashboard', 'alert_page'], [
+        'months_held' => 48,
+        'threshold_months' => 36,
+        'track_note' => 'Skilled workers qualify after 3 years — just 2 with a German degree (§18c).',
+    ]);
+
+    app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $action));
+
+    $alert = Alert::where('user_id', $user->id)->firstOrFail();
+    expect($alert->subtype)->toBe('permanent_residency')
+        ->and($alert->category)->toBe('bureau')
+        ->and($alert->lane)->toBe('good')
+        ->and($alert->severity)->toBe('success')
+        ->and($alert->deep_link)->toBe('/bureaucracy')
+        ->and($alert->title)->toContain('permanent residency');
+});
+
 test('a dashboard-only action never reaches the center', function () {
     $user = User::factory()->create();
     $action = contextAction('market_closure', 'minor', ['dashboard'], ['market_id' => 'all', 'day' => '2026-07-04', 'reason' => 'Einheitstag']);
@@ -112,5 +132,12 @@ test('the classifier maps subtypes to the v4 taxonomy', function () {
         ->and(AlertClassifier::category('weather'))->toBe('city')
         ->and(AlertClassifier::severity('critical'))->toBe('danger')
         ->and(AlertClassifier::actionLabel('transit_disruption'))->toBe('See alternatives')
-        ->and(AlertClassifier::actionLabel('weather'))->toBeNull();
+        ->and(AlertClassifier::actionLabel('weather'))->toBeNull()
+        // The good-news producer's subtype routes to the bureau/good lane.
+        ->and(AlertClassifier::category('permanent_residency'))->toBe('bureau')
+        ->and(AlertClassifier::lane('permanent_residency', 'success'))->toBe('good')
+        ->and(AlertClassifier::severity('success'))->toBe('success')
+        ->and(AlertClassifier::source('permanent_residency'))->toBe('Permit tracker')
+        ->and(AlertClassifier::actionLabel('permanent_residency'))->toBe('See requirements')
+        ->and(AlertClassifier::subtypeForActionType('permanent_residency_eligible'))->toBe('permanent_residency');
 });

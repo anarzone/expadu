@@ -4,6 +4,7 @@ namespace App\Console\Commands\Bureaucracy;
 
 use App\Bureaucracy\PathGenerator;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
+use App\ContextEngine\Evaluators\PermanentResidencyEvaluator;
 use App\Models\User;
 use App\Profile\Applicability;
 use Illuminate\Console\Command;
@@ -13,8 +14,12 @@ use Illuminate\Console\Command;
  * any missing user_task rows for their situation, and feeds each task through
  * BureaucracyEvaluator. The evaluator decides whether to emit a ScoredAction.
  *
- * Push dedup is handled inside the evaluator (first-crossing per tier, 30-day
- * Redis TTL) so this command can safely re-run without spamming users.
+ * Each user also gets one PermanentResidencyEvaluator pass — the good-news
+ * counterpart that surfaces NE eligibility into the Alerts "Good news" lane.
+ *
+ * Dedup is handled inside the evaluators (deadline push first-crossing per tier;
+ * residency announce-once per threshold) so this command can safely re-run
+ * without spamming users.
  */
 class RemindCommand extends Command
 {
@@ -22,7 +27,7 @@ class RemindCommand extends Command
 
     protected $description = 'Score bureaucracy tasks for onboarded users and surface urgent ones via the action bus';
 
-    public function handle(BureaucracyEvaluator $evaluator, PathGenerator $generator): int
+    public function handle(BureaucracyEvaluator $evaluator, PermanentResidencyEvaluator $residencyEvaluator, PathGenerator $generator): int
     {
         $usersProcessed = 0;
         $tasksEvaluated = 0;
@@ -32,10 +37,16 @@ class RemindCommand extends Command
             $query->where('id', (int) $specific);
         }
 
-        $query->chunkById(100, function ($users) use ($evaluator, $generator, &$usersProcessed, &$tasksEvaluated): void {
+        $query->chunkById(100, function ($users) use ($evaluator, $residencyEvaluator, $generator, &$usersProcessed, &$tasksEvaluated): void {
             foreach ($users as $user) {
                 $profile = $generator->ensure($user);
                 $usersProcessed++;
+
+                // Good-news pass: surface permanent-residency eligibility once
+                // the permit clears the track threshold (announce-once inside).
+                if (! $this->option('dry-run')) {
+                    $residencyEvaluator->evaluate($user, $profile);
+                }
 
                 $userTasks = $user->userTasks()->with('task')->open()->get();
                 foreach ($userTasks as $userTask) {
