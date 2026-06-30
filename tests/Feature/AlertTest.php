@@ -13,20 +13,22 @@ test('alerts page renders with alerts', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('alerts')
-        ->has('alerts.data', 3)
+        ->has('alerts', 3)
         ->has('unreadCount')
     );
 });
 
-test('alerts can be filtered by type', function () {
+test('each alert is enriched with the v4 lane / category / severity', function () {
     $user = User::factory()->onboarded()->create();
-    Alert::factory()->create(['user_id' => $user->id, 'type' => 'system']);
-    Alert::factory()->create(['user_id' => $user->id, 'type' => 'social']);
+    Alert::factory()->create(['user_id' => $user->id, 'subtype' => 'transit_disruption']);
     $this->actingAs($user);
 
-    $response = $this->get(route('alerts', ['tab' => 'system']));
-
-    $response->assertInertia(fn ($page) => $page->has('alerts.data', 1));
+    $this->get(route('alerts'))
+        ->assertInertia(fn ($page) => $page
+            ->where('alerts.0.category', 'transit')
+            ->where('alerts.0.lane', 'action')
+            ->has('alerts.0.severity')
+            ->has('alerts.0.source'));
 });
 
 test('user can mark an alert as read', function () {
@@ -79,7 +81,7 @@ test('dismissed alerts are excluded from the alerts page', function () {
     $this->actingAs($user);
 
     $this->get(route('alerts'))
-        ->assertInertia(fn ($page) => $page->has('alerts.data', 1));
+        ->assertInertia(fn ($page) => $page->has('alerts', 1));
 });
 
 test('user cannot dismiss another users alert', function () {
