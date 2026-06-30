@@ -33,6 +33,9 @@ class HomeFeed
     /** @var list<array<string, mixed>> */
     private array $rails = [];
 
+    /** Tiles hidden by triage in the current build — drives "Restore all". */
+    private int $suppressedTiles = 0;
+
     public function __construct(
         private readonly ProfileEngine $profiles,
         private readonly WeatherService $weather,
@@ -71,6 +74,14 @@ class HomeFeed
         return $this->rails;
     }
 
+    /** How many tiles are currently hidden by triage (for the "Restore all" link). */
+    public function suppressedTileCount(User $user): int
+    {
+        $this->build($user);
+
+        return $this->suppressedTiles;
+    }
+
     private function build(User $user): void
     {
         if ($this->built) {
@@ -82,6 +93,7 @@ class HomeFeed
         // Tiles first: they claim the urgent things, so rails (and the
         // chip rule) can skip what's already surfaced.
         $this->tiles = $this->tileComposer->tiles($context);
+        $this->suppressedTiles = $this->tileComposer->suppressedCount();
         $this->rails = $this->discovery->for($context);
         $this->built = true;
     }

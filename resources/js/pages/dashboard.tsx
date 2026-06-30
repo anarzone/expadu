@@ -48,6 +48,7 @@ type Tile = {
     severity: 'danger' | 'warn' | 'info' | 'neutral';
     score: number;
     href: string | null;
+    key: string;
     meta: Record<string, unknown>;
 };
 
@@ -209,6 +210,13 @@ function detailMeta(place: Place): string {
 
 type TileAction = 'done' | 'snooze' | 'dismiss';
 
+/** Confirmation copy per triage action, so the three buttons read distinctly. */
+const TRIAGE_NOTES: Record<TileAction, string> = {
+    done: '✓ Done — cleared for today',
+    snooze: '🕐 Snoozed — back in a few hours',
+    dismiss: '✕ Dismissed — you’ll see fewer like this',
+};
+
 /**
  * A "Right now" urgency tile (v4): neutral icon + title/subtitle, then three
  * triage actions — Mark done · Snooze · Dismiss. The title area still deep-links
@@ -320,14 +328,16 @@ function TaskCard({ card }: { card: RailCard }) {
 }
 
 export default function Dashboard() {
-    const { tiles, rails, chips, weather, savedPlan, auth } = usePage<{
-        tiles?: Tile[];
-        rails?: Rail[];
-        chips?: Chip[];
-        weather?: Weather;
-        savedPlan?: SavedPlan;
-        auth: { user?: { name?: string } };
-    }>().props;
+    const { tiles, rails, chips, weather, savedPlan, restorableTiles, auth } =
+        usePage<{
+            tiles?: Tile[];
+            rails?: Rail[];
+            chips?: Chip[];
+            weather?: Weather;
+            savedPlan?: SavedPlan;
+            restorableTiles?: number;
+            auth: { user?: { name?: string } };
+        }>().props;
 
     const [prompt, setPrompt] = useState('');
     const [pins, setPins] = useState<Record<string, string>>({});
@@ -343,9 +353,12 @@ export default function Dashboard() {
     const [activePrompt, setActivePrompt] = useState<string | null>(null);
     const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
     const [savingPreview, setSavingPreview] = useState(false);
-    // Triaged "Right now" tiles (done/snooze/dismiss) — cleared from the feed
-    // for the session, with a "Restore all" escape hatch (matches v4).
+    // Triaged "Right now" tiles (done/snooze/dismiss). Hidden instantly here,
+    // and persisted server-side (TileTriage) so they stay gone across reloads —
+    // with a "Restore all" escape hatch (matches v4).
     const [hiddenTiles, setHiddenTiles] = useState<Set<string>>(new Set());
+    // Brief confirmation so the three actions read as distinct, not identical.
+    const [triageNote, setTriageNote] = useState<string | null>(null);
     const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
     const isMobile = useIsMobile();
 
@@ -470,6 +483,42 @@ export default function Dashboard() {
     function dismissSavedPlan() {
         void composerDelete('/composer/today');
         router.reload({ only: ['savedPlan'] });
+    }
+
+    // Triage a "Right now" tile: hide it instantly, persist the choice (so it
+    // stays gone across reloads), and confirm with copy that distinguishes the
+    // three actions. A failed write un-hides the tile so the user can retry.
+    function triageTile(tile: Tile, localKey: string, action: TileAction) {
+        setHiddenTiles((set) => new Set(set).add(localKey));
+        setTriageNote(TRIAGE_NOTES[action]);
+        window.setTimeout(() => setTriageNote(null), 2600);
+
+        if (!tile.key) {
+            return; // no stable identity — session-only hide is the best we can do
+        }
+
+        void composerPost('/api/tiles/triage', {
+            type: tile.type,
+            key: tile.key,
+            action,
+        }).catch(() => {
+            setHiddenTiles((set) => {
+                const next = new Set(set);
+                next.delete(localKey);
+
+                return next;
+            });
+            setTriageNote('Could not save — try again');
+        });
+    }
+
+    // "Restore all": clear the persisted suppressions, then re-fetch the tiles
+    // (and the restorable count, so the link hides itself once everything's back).
+    function restoreTiles() {
+        setHiddenTiles(new Set());
+        void composerPost('/api/tiles/triage/clear', {}).finally(() =>
+            router.reload({ only: ['tiles', 'restorableTiles'] }),
+        );
     }
 
     function planAroundPins() {
@@ -828,9 +877,9 @@ export default function Dashboard() {
                     <span className="font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
                         Right now
                     </span>
-                    {hiddenTiles.size > 0 && (
+                    {(hiddenTiles.size > 0 || (restorableTiles ?? 0) > 0) && (
                         <button
-                            onClick={() => setHiddenTiles(new Set())}
+                            onClick={restoreTiles}
                             className="ml-auto cursor-pointer text-[12px] font-medium text-primary hover:underline"
                         >
                             Restore all
@@ -862,10 +911,8 @@ export default function Dashboard() {
                                 <TileCard
                                     key={key}
                                     tile={tile}
-                                    onAction={() =>
-                                        setHiddenTiles((set) =>
-                                            new Set(set).add(key),
-                                        )
+                                    onAction={(action) =>
+                                        triageTile(tile, key, action)
                                     }
                                 />
                             );
@@ -1057,7 +1104,7 @@ export default function Dashboard() {
                 />
             )}
 
-            <FeedbackToast message={toast} />
+            <FeedbackToast message={triageNote ?? toast} />
         </AppLayout>
     );
 }

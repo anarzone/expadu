@@ -36,10 +36,20 @@ class TileComposer
 
     private const MAX_TILES = 8;
 
+    /** How many otherwise-present tiles the last tiles() call hid via triage. */
+    private int $suppressed = 0;
+
     public function __construct(
         private ActionBus $bus,
         private GermanHolidayService $holidays,
+        private TileTriage $triage,
     ) {}
+
+    /** Triaged tiles dropped from the most recent build — drives "Restore all". */
+    public function suppressedCount(): int
+    {
+        return $this->suppressed;
+    }
 
     /**
      * @return list<array<string, mixed>>
@@ -52,6 +62,21 @@ class TileComposer
             ...$this->rhythmTiles(),
             ...$this->tonightEventsTile($context),
         ];
+
+        // Drop tiles the user has triaged (done/snooze/dismiss) until their TTL
+        // lapses — so a dismissed alert stays gone across reloads, not just for
+        // the current render. Count the drops so "Restore all" can resurface
+        // even after a reload (when the client's session-hidden set is empty).
+        $this->suppressed = 0;
+        $tiles = array_values(array_filter($tiles, function (Tile $tile) use ($context) {
+            if ($tile->key !== '' && $this->triage->isActive($context->userId, $tile->type, $tile->key)) {
+                $this->suppressed++;
+
+                return false;
+            }
+
+            return true;
+        }));
 
         usort($tiles, fn (Tile $a, Tile $b) => $b->score <=> $a->score);
 
@@ -94,6 +119,7 @@ class TileComposer
                 emoji: '⚠️',
                 severity: $action->severity === 'critical' ? 'danger' : 'warn',
                 score: $action->score,
+                key: $action->actionKey,
                 href: '/alerts',
                 meta: [
                     'lines' => $action->payload['lines'] ?? [],
@@ -107,6 +133,7 @@ class TileComposer
                 emoji: '🕒',
                 severity: 'warn',
                 score: $action->score,
+                key: $action->actionKey,
                 href: '/alerts',
                 meta: [
                     'line' => $action->payload['line'] ?? '',
@@ -120,6 +147,7 @@ class TileComposer
                 emoji: '🌧️',
                 severity: $action->severity === 'critical' ? 'danger' : 'warn',
                 score: $action->score,
+                key: $action->actionKey,
                 meta: ['action_key' => $action->actionKey],
             ),
             'buergeramt_slot' => new Tile(
@@ -129,6 +157,7 @@ class TileComposer
                 emoji: '📅',
                 severity: 'info',
                 score: $action->score,
+                key: $action->actionKey,
                 href: '/bureaucracy',
                 meta: ['action_key' => $action->actionKey],
             ),
@@ -139,6 +168,7 @@ class TileComposer
                 emoji: '🌊',
                 severity: 'warn',
                 score: $action->score,
+                key: $action->actionKey,
                 meta: ['action_key' => $action->actionKey],
             ),
             'market_closure' => new Tile(
@@ -148,6 +178,7 @@ class TileComposer
                 emoji: '🛒',
                 severity: 'neutral',
                 score: $action->score,
+                key: $action->actionKey,
                 meta: ['action_key' => $action->actionKey],
             ),
             // bureaucracy_task bus actions are skipped — the deadline tiles
@@ -199,6 +230,7 @@ class TileComposer
                 severity: $urgency === 'overdue' ? 'danger' : ($urgency === 'critical' ? 'warn' : 'info'),
                 score: $score + ($status['days_remaining'] !== null ? -0.01 * max($status['days_remaining'], 0) : 0),
                 href: '/bureaucracy',
+                key: "task:{$userTask->id}",
                 meta: [
                     'user_task_id' => $userTask->id,
                     'urgency' => $urgency,
@@ -232,6 +264,7 @@ class TileComposer
                 emoji: '🛒',
                 severity: 'warn',
                 score: self::SCORE_RHYTHM_WARNING,
+                key: 'shops_closed_tomorrow',
             );
         }
 
@@ -245,6 +278,7 @@ class TileComposer
                 emoji: '🇩🇪',
                 severity: 'info',
                 score: self::SCORE_RHYTHM_WARNING - 10,
+                key: 'holiday_today',
             );
         }
 
@@ -277,6 +311,7 @@ class TileComposer
             severity: 'info',
             score: self::SCORE_TONIGHT_EVENTS,
             href: '/events',
+            key: "event:{$soon->id}",
             meta: ['event_id' => $soon->id],
         )];
     }
