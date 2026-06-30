@@ -299,7 +299,10 @@ export function ContentCard({
                     {/* Title row */}
                     <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                            <h3 className="line-clamp-2 text-[15.5px] leading-[1.2] font-semibold">
+                            {/* Reserve two lines so the meta, chips and the rest
+                                start at the same height whether the title wraps
+                                to one line or two — cards stay aligned in the grid. */}
+                            <h3 className="line-clamp-2 min-h-[2.4em] text-[15.5px] leading-[1.2] font-semibold">
                                 {title}
                             </h3>
 
