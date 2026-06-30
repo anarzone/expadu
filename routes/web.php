@@ -92,9 +92,9 @@ $appRoutes = function () use ($appDomain) {
         Route::post('api/reminders', [EventReminderController::class, 'store'])->name('api.reminders.store');
         Route::delete('api/reminders/{event}', [EventReminderController::class, 'destroy'])->name('api.reminders.destroy');
         Route::post('api/track', TrackEventController::class)->name('api.track');
-        // Today "Right now" tile triage — done / snooze / dismiss + restore all.
+        // Today "Right now" tile triage — done / snooze / dismiss + per-tile undo.
         Route::post('api/tiles/triage', [TileTriageController::class, 'store'])->name('api.tiles.triage');
-        Route::post('api/tiles/triage/clear', [TileTriageController::class, 'clear'])->name('api.tiles.triage.clear');
+        Route::post('api/tiles/triage/undo', [TileTriageController::class, 'undo'])->name('api.tiles.triage.undo');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');

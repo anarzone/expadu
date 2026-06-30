@@ -4,6 +4,7 @@ namespace App\Home;
 
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
+use App\Models\UserEvent;
 use App\Services\GermanHolidayService;
 
 /**
@@ -36,20 +37,19 @@ class TileComposer
 
     private const MAX_TILES = 8;
 
-    /** How many otherwise-present tiles the last tiles() call hid via triage. */
-    private int $suppressed = 0;
+    /** A dismissal demotes its tile TYPE in ranking for this many days. */
+    private const DEMOTE_WINDOW_DAYS = 7;
+
+    /** Score penalty per dismissal of a type, and the most it can ever subtract. */
+    private const DEMOTE_STEP = 20.0;
+
+    private const DEMOTE_CAP = 60.0;
 
     public function __construct(
         private ActionBus $bus,
         private GermanHolidayService $holidays,
         private TileTriage $triage,
     ) {}
-
-    /** Triaged tiles dropped from the most recent build — drives "Restore all". */
-    public function suppressedCount(): int
-    {
-        return $this->suppressed;
-    }
 
     /**
      * @return list<array<string, mixed>>
@@ -64,26 +64,59 @@ class TileComposer
         ];
 
         // Drop tiles the user has triaged (done/snooze/dismiss) until their TTL
-        // lapses — so a dismissed alert stays gone across reloads, not just for
-        // the current render. Count the drops so "Restore all" can resurface
-        // even after a reload (when the client's session-hidden set is empty).
-        $this->suppressed = 0;
-        $tiles = array_values(array_filter($tiles, function (Tile $tile) use ($context) {
-            if ($tile->key !== '' && $this->triage->isActive($context->userId, $tile->type, $tile->key)) {
-                $this->suppressed++;
+        // lapses — so a cleared alert stays gone across reloads, not just for the
+        // current render.
+        $tiles = array_values(array_filter(
+            $tiles,
+            fn (Tile $tile) => $tile->key === ''
+                || ! $this->triage->isActive($context->userId, $tile->type, $tile->key),
+        ));
 
-                return false;
-            }
-
-            return true;
-        }));
-
-        usort($tiles, fn (Tile $a, Tile $b) => $b->score <=> $a->score);
+        // Rank by score, demoting types the user has recently dismissed so
+        // "you'll see fewer like this" is real — but never a danger-severity
+        // tile (a storm or overdue deadline must not be buried by a past dismiss).
+        $penalties = $this->dismissPenalties($context->userId);
+        usort($tiles, fn (Tile $a, Tile $b) => $this->rank($b, $penalties) <=> $this->rank($a, $penalties));
 
         return array_map(
             fn (Tile $tile) => $tile->toArray(),
             array_slice($tiles, 0, self::MAX_TILES),
         );
+    }
+
+    /** Effective sort score: the tile's score less any dismissal demotion. */
+    private function rank(Tile $tile, array $penalties): float
+    {
+        if ($tile->severity === 'danger') {
+            return $tile->score;
+        }
+
+        return $tile->score - ($penalties[$tile->type] ?? 0.0);
+    }
+
+    /**
+     * Recent dismissals → a per-type score penalty. Repeatedly dismissing a kind
+     * of alert sinks it down the feed (and off the cap) for a week, then it fades.
+     *
+     * @return array<string, float>
+     */
+    private function dismissPenalties(int $userId): array
+    {
+        $counts = [];
+        $payloads = UserEvent::query()
+            ->where('user_id', $userId)
+            ->where('event_type', 'card_dismissed')
+            ->where('created_at', '>=', now()->subDays(self::DEMOTE_WINDOW_DAYS))
+            ->pluck('payload');
+
+        foreach ($payloads as $payload) {
+            $type = (string) (($payload['card_type'] ?? '') ?: '');
+            if ($type !== '') {
+                $counts[$type] = ($counts[$type] ?? 0) + 1;
+            }
+        }
+
+        return array_map(fn (int $n) => min($n * self::DEMOTE_STEP, self::DEMOTE_CAP), $counts);
     }
 
     /**

@@ -16,10 +16,10 @@ use Illuminate\Validation\Rule;
  * reloads, with the duration carrying the meaning:
  *   - done    → handled, hide for the rest of today
  *   - snooze  → not now, back in a few hours
- *   - dismiss → not relevant, hide for the day AND record a thumbs-down so the
- *               feed learns (mirrors MuteController::thumbsDown)
+ *   - dismiss → not relevant, hide for the day AND record a thumbs-down that
+ *               demotes this kind of alert in the feed for a week (TileComposer)
  *
- * "Restore all" clears every active suppression.
+ * undo() lifts one triage and reverses its dismiss signal — the per-tile Undo.
  */
 class TileTriageController extends Controller
 {
@@ -64,9 +64,24 @@ class TileTriageController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function clear(Request $request): JsonResponse
+    public function undo(Request $request): JsonResponse
     {
-        $this->triage->clearAll($request->user()->id);
+        $data = $request->validate([
+            'type' => ['required', 'string', 'max:64'],
+            'key' => ['required', 'string', 'max:191'],
+        ]);
+
+        $user = $request->user();
+
+        $this->triage->clear($user->id, $data['type'], $data['key']);
+
+        // Reverse the dismiss learning signal too, so Undo fully un-does a
+        // dismiss (no lingering demotion). A no-op for done/snooze.
+        UserEvent::query()
+            ->where('user_id', $user->id)
+            ->where('event_type', 'card_dismissed')
+            ->where('payload->action_key', $data['type'].':'.$data['key'])
+            ->delete();
 
         return response()->json(['ok' => true]);
     }

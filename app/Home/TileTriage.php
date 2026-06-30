@@ -28,23 +28,10 @@ class TileTriage
         return (bool) Redis::exists($this->redisKey($userId, $type, $key));
     }
 
-    /**
-     * Drop every active triage for the user — the "Restore all" escape hatch.
-     * phpredis returns keys WITH the configured prefix but del() re-applies it,
-     * so strip the prefix before deleting (the same gotcha the test bootstrap
-     * handles for location keys).
-     */
-    public function clearAll(int $userId): void
+    /** Lift a single triage — the per-tile "Undo". */
+    public function clear(int $userId, string $type, string $key): void
     {
-        $prefix = (string) config('database.redis.options.prefix', '');
-        $strip = fn (string $key): string => $prefix !== '' && str_starts_with($key, $prefix)
-            ? substr($key, strlen($prefix))
-            : $key;
-
-        $keys = array_map($strip, Redis::keys("tile_triage:{$userId}:*"));
-        if ($keys !== []) {
-            Redis::del(...$keys);
-        }
+        Redis::del($this->redisKey($userId, $type, $key));
     }
 
     private function redisKey(int $userId, string $type, string $key): string

@@ -27,10 +27,6 @@ class HomeFeedController extends Controller
             // HandleInertiaRequests) so every page is fed, not just this one.
             'tiles' => Inertia::defer(fn () => $feed->tiles($user)),
             'rails' => Inertia::defer(fn () => $feed->rails($user)),
-            // Count of tiles hidden by triage, so "Restore all" survives a reload
-            // (the client's session-hidden set is empty then). Same deferred group
-            // as tiles → resolves in the one build, no extra round-trip.
-            'restorableTiles' => Inertia::defer(fn () => $feed->suppressedTileCount($user)),
         ]);
     }
 }
