@@ -156,10 +156,30 @@ class RevealSpotNames extends Command
         $label = trim(explode(',', (string) $raw)[0]);                          // drop ", 50765 Köln"
         $label = trim((string) preg_replace('/\s+\d+\s*[a-z]?$/i', '', $label)); // drop house number
 
-        return ($label !== '' && $this->looksLikeStreet($label)) ? $label : null;
+        if ($label === '' || $this->isPoi($label) || ! $this->looksLikeStreet($label)) {
+            return null;
+        }
+
+        return $label;
     }
 
-    /** German street heuristic: a "…straße/…weg/…gasse" suffix or an "Am/An der…" prefix. */
+    /**
+     * Reject institutional / POI labels even when they end in a street-ish word
+     * (e.g. "Kath. Grundschule Mengenicher Straße"). Better bare than mislabelled.
+     */
+    private function isPoi(string $s): bool
+    {
+        return (bool) preg_match(
+            '/(schule|gymnasium|kindergarten|kita|sporthalle|turnhalle|hallenbad|freibad|schwimmbad|kirche|kapelle|friedhof|eiscafe|caf[eé]|restaurant|imbiss|hotel|krankenhaus|klinik|apotheke|supermarkt|tankstelle|ladestation|kiosk|spielplatz|bolzplatz|sportplatz|parkplatz|wertstoff|rathaus|bibliothek|museum|stadion)/iu',
+            $s,
+        );
+    }
+
+    /**
+     * German street heuristic: a "…straße/…weg/…gasse" suffix or an "Am/An der…"
+     * prefix. Deliberately excludes "…platz" — near a Spiel-/Bolzplatz the
+     * geocoder often returns another square/playground, not a street.
+     */
     private function looksLikeStreet(string $s): bool
     {
         if (preg_match('/^(am|an|auf|bei|hinter|im|in|unter|vor|zum|zur)\s/iu', $s)) {
@@ -167,7 +187,7 @@ class RevealSpotNames extends Command
         }
 
         return (bool) preg_match(
-            '/(stra(ß|ss)e|str\.?|weg|gasse|platz|allee|ring|damm|pfad|kamp|hof|ufer|steig|chaussee|zeile|winkel|bogen|graben|wall|markt|gracht)$/iu',
+            '/(stra(ß|ss)e|str\.?|weg|gasse|allee|ring|damm|pfad|kamp|hof|ufer|steig|chaussee|zeile|winkel|bogen|graben|wall|gracht)$/iu',
             $s,
         );
     }

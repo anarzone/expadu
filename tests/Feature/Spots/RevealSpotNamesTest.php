@@ -108,6 +108,50 @@ test('a nearest POI (not a street) leaves the spot bare rather than mislabelled'
     expect($spot->fresh()->name)->toBe('Spielplatz');
 });
 
+test('a nearby "…platz" feature is not treated as a street', function () {
+    $spot = Spot::factory()->create([
+        'name' => 'Tischtennisplatte',
+        'category' => 'table_tennis',
+        'park_name' => null,
+        'lat' => 50.94,
+        'lng' => 6.95,
+    ]);
+
+    $this->mock(RouteService::class, function ($mock) {
+        $mock->shouldReceive('reverseGeocode')->andReturn(new Place(
+            name: 'Brunnen Wasserspielplatz',
+            point: new GeoPoint(50.94, 6.95),
+            municipality: 'Köln',
+        ));
+    });
+
+    $this->artisan('spots:reveal-names --geocode')->assertSuccessful();
+
+    expect($spot->fresh()->name)->toBe('Tischtennisplatte');
+});
+
+test('a school on a street is rejected even though it ends in "Straße"', function () {
+    $spot = Spot::factory()->create([
+        'name' => 'Spielplatz',
+        'category' => 'playground',
+        'park_name' => null,
+        'lat' => 50.94,
+        'lng' => 6.95,
+    ]);
+
+    $this->mock(RouteService::class, function ($mock) {
+        $mock->shouldReceive('reverseGeocode')->andReturn(new Place(
+            name: 'Kath. Grundschule Mengenicher Straße',
+            point: new GeoPoint(50.94, 6.95),
+            municipality: 'Köln',
+        ));
+    });
+
+    $this->artisan('spots:reveal-names --geocode')->assertSuccessful();
+
+    expect($spot->fresh()->name)->toBe('Spielplatz');
+});
+
 test('the pass is idempotent — an already-anchored spot is not touched again', function () {
     $spot = Spot::factory()->create([
         'name' => 'Bolzplatz · Fühlinger Park',
