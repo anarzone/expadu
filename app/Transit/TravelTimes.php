@@ -7,26 +7,22 @@ use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 
 /**
- * Turns a user's transport-mode preference into per-destination travel
- * minutes, applying the "fastest realistic" policy.
+ * Turns a user's transport-mode preference into per-destination travel minutes.
  *
- * Bike is the fastest street mode the one-to-many matrix can compute and the
- * at-a-glance proxy for transit (the matrix can't route transit per
- * destination — exact transit times come from a full plan in take-me-there).
- * Walking is only realistic up to {@see self::WALK_GUARD_MIN} minutes; past
- * that a destination falls back to its bike time so we never show a four-hour
- * walk.
+ * The card time ALWAYS reflects the selected mode, so it can never read as a
+ * different one: walk shows the real walking time (even a long one) rather than
+ * quietly borrowing the bike figure. Bike and transit both use the bike matrix —
+ * the one-to-many matrix can't route transit per destination, so bike is the
+ * at-a-glance proxy (exact transit times come from a full plan in take-me-there).
+ * An unset preference defaults to walk, which is what the From control shows.
  */
 class TravelTimes
 {
-    private const WALK_GUARD_MIN = 45;
-
     public function __construct(private readonly RouteService $routes) {}
 
     /**
-     * Per-destination minutes in the SAME ORDER as $destinations; null where
-     * unreachable. Unset preference, transit, and bike all resolve to the bike
-     * matrix (the fastest street time we can compute per destination).
+     * Per-destination minutes in the SAME ORDER as $destinations; null where the
+     * destination is unreachable in the chosen mode.
      *
      * @param  list<GeoPoint>  $destinations
      * @return list<int|null>
@@ -37,47 +33,13 @@ class TravelTimes
             return [];
         }
 
-        if ($mode === TransportMode::Walk) {
-            return $this->walkWithGuard($origin, $destinations);
-        }
+        // Bike and transit both read the bike matrix (transit isn't matrixable
+        // per destination). Walk — and the unset default — show the real walking
+        // time, so a card never shows another mode's figure under a walk label.
+        $profile = ($mode === TransportMode::Bike || $mode === TransportMode::Transit)
+            ? 'BIKE'
+            : 'WALK';
 
-        return $this->routes->travelMatrix($origin, $destinations, 'BIKE');
-    }
-
-    /**
-     * Walk times, but anything beyond a realistic walk (or unreachable on foot)
-     * falls back to the bike time for that destination.
-     *
-     * @param  list<GeoPoint>  $destinations
-     * @return list<int|null>
-     */
-    private function walkWithGuard(GeoPoint $origin, array $destinations): array
-    {
-        $walk = $this->routes->travelMatrix($origin, $destinations, 'WALK');
-
-        $needsBike = false;
-        foreach ($destinations as $i => $destination) {
-            $minutes = $walk[$i] ?? null;
-            if ($minutes === null || $minutes > self::WALK_GUARD_MIN) {
-                $needsBike = true;
-                break;
-            }
-        }
-
-        if (! $needsBike) {
-            return $walk;
-        }
-
-        $bike = $this->routes->travelMatrix($origin, $destinations, 'BIKE');
-
-        $out = [];
-        foreach ($destinations as $i => $destination) {
-            $minutes = $walk[$i] ?? null;
-            $out[] = ($minutes !== null && $minutes <= self::WALK_GUARD_MIN)
-                ? $minutes
-                : ($bike[$i] ?? $minutes);
-        }
-
-        return $out;
+        return $this->routes->travelMatrix($origin, $destinations, $profile);
     }
 }

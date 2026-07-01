@@ -37,13 +37,13 @@ test('bike preference uses the bike matrix', function () {
     expect($calls)->toBe(['BIKE']);
 });
 
-test('no preference defaults to the bike matrix (fastest street)', function () {
+test('no preference defaults to the walk matrix (what the From control shows)', function () {
     $calls = [];
-    $minutes = (new TravelTimes(recordingRoutes($calls, ['BIKE' => [5, 20]])))
+    $minutes = (new TravelTimes(recordingRoutes($calls, ['WALK' => [8, 30]])))
         ->minutes(null, $this->origin, $this->dests);
 
-    expect($minutes)->toBe([5, 20]);
-    expect($calls)->toBe(['BIKE']);
+    expect($minutes)->toBe([8, 30]);
+    expect($calls)->toBe(['WALK']); // bike never queried
 });
 
 test('transit preference uses bike as the at-a-glance street proxy', function () {
@@ -55,7 +55,7 @@ test('transit preference uses bike as the at-a-glance street proxy', function ()
     expect($calls)->toBe(['BIKE']);
 });
 
-test('walk preference within range uses only the walk matrix', function () {
+test('walk preference uses only the walk matrix', function () {
     $calls = [];
     $minutes = (new TravelTimes(recordingRoutes($calls, ['WALK' => [8, 30]])))
         ->minutes(TransportMode::Walk, $this->origin, $this->dests);
@@ -64,14 +64,15 @@ test('walk preference within range uses only the walk matrix', function () {
     expect($calls)->toBe(['WALK']); // bike never queried
 });
 
-test('a too-long walk falls back to the bike time for that destination', function () {
+test('a long walk shows the real walk time — never the bike figure under a walk label', function () {
     $calls = [];
-    // Near dest is an 8-min walk; far dest is a 200-min walk → use bike (25).
-    $minutes = (new TravelTimes(recordingRoutes($calls, ['WALK' => [8, 200], 'BIKE' => [3, 25]])))
+    // The far destination is a 50-min walk. It must stay 50 (the selected mode),
+    // not silently borrow the 15-min bike time — that read as the wrong mode.
+    $minutes = (new TravelTimes(recordingRoutes($calls, ['WALK' => [8, 50], 'BIKE' => [3, 15]])))
         ->minutes(TransportMode::Walk, $this->origin, $this->dests);
 
-    expect($minutes)->toBe([8, 25]);
-    expect($calls)->toBe(['WALK', 'BIKE']);
+    expect($minutes)->toBe([8, 50]);
+    expect($calls)->toBe(['WALK']); // bike never queried
 });
 
 test('no destinations means no routing call', function () {
