@@ -8,7 +8,7 @@ import {
     IconFileText,
     IconBus,
     IconUser,
-    IconPalette,
+    IconSettings,
     IconLogout,
     IconSun,
     IconMoonStars,
@@ -67,8 +67,7 @@ function buildNavGroups(): NavGroup[] {
 
 const dropdownItems = [
     { label: 'Profile', icon: IconUser, href: '/profile' },
-    { label: 'Settings', icon: IconPalette, href: '/profile#settings' },
-    { label: 'Appearance', icon: IconPalette, href: '/settings/appearance' },
+    { label: 'Settings', icon: IconSettings, href: '/settings/profile' },
 ];
 
 export function AppSidebar() {

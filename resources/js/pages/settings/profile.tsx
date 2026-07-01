@@ -30,8 +30,8 @@ export default function Profile({
                 <div className="space-y-6">
                     <Heading
                         variant="small"
-                        title="Profile information"
-                        description="Update your name and email address"
+                        title="Account"
+                        description="Your name, sign-in email, and account."
                     />
 
                     <Form

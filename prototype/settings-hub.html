@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings hub — prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6ee; --fg:#211d15; --card:#fffdf8; --primary:#ff3902; --primary-soft:#ffe3d8;
+    --cyan:#05badd; --secondary:#f1ebdf; --t2:#6e6657; --t3:#a89f8c; --border:#e6ddcb;
+    --surface-2:#f1ebdf; --navy:#2b4871; --success:#0f7a4f; --warn:#c47d0e; --danger:#c4271a;
+    --danger-soft:#fbe4e1; --shadow:0 1px 2px rgba(0,0,0,.06);
+  }
+  .dark{
+    --bg:#161208; --fg:#f7f3e9; --card:#211c12; --primary:#ff5c33; --primary-soft:#3a1c11;
+    --cyan:#3ccfee; --secondary:#2c2618; --t2:#a89f8c; --t3:#6e6657; --border:#3b3424;
+    --surface-2:#2c2618; --navy:#7ea4dc; --success:#3bbd82; --warn:#e0a93c; --danger:#ef6a4d;
+    --danger-soft:#3a1a16; --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:100vh}
+  /* ---- app sidebar ---- */
+  .side{width:248px;flex:none;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:22px 16px}
+  .brand{display:flex;align-items:center;gap:11px;padding:0 6px 20px}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;font-size:19px}
+  .brand .name{font-family:'Fraunces',serif;font-weight:600;font-size:22px;letter-spacing:-.01em}
+  .navlabel{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);padding:14px 8px 6px}
+  .navitem{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;color:var(--t2);font-size:14.5px;font-weight:500;cursor:pointer}
+  .navitem svg{width:20px;height:20px;flex:none}
+  .navitem .badge{margin-left:auto;background:var(--primary);color:#fff;font-size:11px;font-weight:600;border-radius:100px;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+  .side .foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:11px}
+  .side .foot .av{width:38px;height:38px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+  .side .foot .who{font-size:13.5px;font-weight:600;line-height:1.2}
+  .side .foot .who small{display:block;color:var(--t2);font-weight:400;font-size:12px}
+  .themebtn{margin-left:auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  /* ---- settings shell ---- */
+  .main{flex:1;min-width:0}
+  .shead{position:relative;padding:26px 34px 8px}
+  .shead h1{font-family:'Fraunces',serif;font-weight:500;font-size:30px;letter-spacing:-.02em}
+  .shead p{color:var(--t2);font-size:14px;margin-top:4px}
+  .shead .x{position:absolute;top:26px;right:30px;width:34px;height:34px;border-radius:50%;border:none;background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .shead .x:hover{background:var(--secondary);color:var(--fg)}
+  .sbody{display:flex;gap:48px;padding:22px 34px 60px;max-width:1000px}
+  .snav{width:192px;flex:none;display:flex;flex-direction:column;gap:2px}
+  .snav button{text-align:left;padding:8px 12px;border-radius:9px;border:none;background:transparent;color:var(--t2);font-family:'Geist',sans-serif;font-size:14px;font-weight:500;cursor:pointer}
+  .snav button:hover{color:var(--fg)}
+  .snav button.on{background:var(--surface-2);color:var(--fg);font-weight:600}
+  .scontent{flex:1;min-width:0;max-width:560px}
+  section.pane{display:none}
+  section.pane.on{display:block}
+  .panehead{margin-bottom:20px}
+  .panehead h2{font-family:'Fraunces',serif;font-weight:600;font-size:20px;letter-spacing:-.01em}
+  .panehead p{color:var(--t2);font-size:13.5px;margin-top:3px}
+  /* cards + rows */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .card + .card{margin-top:16px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 16px;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:none}
+  .row .lab{font-size:13.5px;font-weight:600}
+  .row .sub{font-size:11.5px;color:var(--t2);margin-top:1px}
+  .row.master{background:var(--surface-2)}
+  /* toggle */
+  .tg{position:relative;width:40px;height:22px;border-radius:100px;background:var(--border);border:none;cursor:pointer;flex:none;transition:background .2s}
+  .tg.on{background:var(--success)}
+  .tg span{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .2s cubic-bezier(.32,1,.4,1)}
+  .tg.on span{transform:translateX(18px)}
+  /* fields */
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field input{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-family:'Geist',sans-serif;font-size:14px}
+  .field input:focus{outline:none;border-color:var(--primary)}
+  .btn{padding:9px 18px;border:none;border-radius:100px;background:var(--primary);color:#fff;font-family:'Geist',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 9px rgba(255,57,2,.26)}
+  .btn.ghost{background:var(--card);color:var(--fg);border:1px solid var(--border);box-shadow:none}
+  .btn.danger{background:var(--danger);box-shadow:none}
+  /* segmented (appearance) */
+  .seg{display:inline-flex;gap:2px;background:var(--secondary);border-radius:100px;padding:4px}
+  .seg button{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border:none;border-radius:100px;background:transparent;color:var(--t2);font-family:'Geist',sans-serif;font-size:13.5px;font-weight:500;cursor:pointer}
+  .seg button.on{background:var(--card);color:var(--fg);font-weight:600;box-shadow:var(--shadow)}
+  /* danger zone */
+  .danger-zone{margin-top:26px}
+  .danger-zone h3{font-family:'Fraunces',serif;font-weight:600;font-size:16px}
+  .danger-zone p{font-size:13px;color:var(--t2);margin-top:2px}
+  .danger-box{margin-top:12px;background:var(--danger-soft);border-radius:12px;padding:16px}
+  .danger-box .w{color:var(--danger);font-weight:600;font-size:13.5px}
+  .danger-box .d{color:var(--danger);font-size:12.5px;margin:2px 0 12px;opacity:.9}
+  .section-h{font-family:'Fraunces',serif;font-weight:600;font-size:16px;margin:26px 0 10px}
+  .section-h:first-child{margin-top:0}
+  .note{font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:14px}
+  .pill-tag{display:inline-flex;align-items:center;gap:6px;font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);background:color-mix(in srgb,var(--cyan) 12%,transparent);padding:3px 9px;border-radius:100px;margin-left:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ APP SIDEBAR ============ -->
+  <aside class="side">
+    <div class="brand"><div class="logo">E</div><div class="name">Expadu</div></div>
+    <div class="navlabel">Main</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5"/></svg>Today</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="m15 9-4 1.5L9.5 15l4-1.5L15 9Z"/></svg>Places</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 10a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg>Alerts<span class="badge">3</span></div>
+    <div class="navlabel">City</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M4 12h16M8 20l-1 1M17 20l-1 1"/></svg>Departures</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Events</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M12 12v3M10.5 13.5h3"/></svg>Services</div>
+    <div class="navlabel">Personal</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h4"/></svg>Bureaucracy<span class="badge">3</span></div>
+    <div class="foot">
+      <div class="av">SU</div>
+      <div class="who">Staging User<small>Cologne · Expat</small></div>
+      <button class="themebtn" onclick="toggleTheme()" title="Toggle theme">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ SETTINGS ============ -->
+  <main class="main">
+    <div class="shead">
+      <h1>Settings</h1>
+      <p>Manage your profile and account settings</p>
+      <button class="x" title="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="sbody">
+      <!-- left settings nav -->
+      <nav class="snav" id="snav">
+        <button class="on" data-pane="account">Account</button>
+        <button data-pane="notifications">Notifications</button>
+        <button data-pane="privacy">Privacy &amp; data</button>
+        <button data-pane="transit">Transit &amp; tickets</button>
+        <button data-pane="security">Security</button>
+        <button data-pane="appearance">Appearance</button>
+      </nav>
+
+      <!-- content -->
+      <div class="scontent">
+
+        <!-- ACCOUNT -->
+        <section class="pane on" id="pane-account">
+          <div class="panehead"><h2>Account</h2><p>Your name, sign-in email, and account.</p></div>
+          <div class="field"><label>Name</label><input value="Staging User"></div>
+          <div class="field"><label>Email address</label><input value="staging@expadu.com"></div>
+          <button class="btn">Save</button>
+
+          <div class="danger-zone">
+            <h3>Delete account</h3>
+            <p>Delete your account and all of its resources</p>
+            <div class="danger-box">
+              <div class="w">Warning</div>
+              <div class="d">Please proceed with caution, this cannot be undone.</div>
+              <button class="btn danger">Delete account</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- NOTIFICATIONS -->
+        <section class="pane" id="pane-notifications">
+          <div class="panehead"><h2>Notifications</h2><p>Choose what Expadu pings you about, and where.</p></div>
+          <div class="card">
+            <div class="row master">
+              <div><div class="lab">Push notifications</div><div class="sub">Enable to receive alerts on this device</div></div>
+              <button class="tg" onclick="this.classList.toggle('on')"><span></span></button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row"><div><div class="lab">Transit disruptions</div><div class="sub">Delays on your saved routes</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Bürgeramt slots</div><div class="sub">New appointments available</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Bureaucracy deadlines</div><div class="sub">Reminders before your paperwork is due</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Event reminders</div><div class="sub">1 day before events you're attending</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Weather alerts</div><div class="sub">Rain, wind, and commute-affecting weather</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Rhine flood alerts</div><div class="sub">When water level exceeds threshold</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Weekly digest</div><div class="sub">Monday morning events roundup</div></div><button class="tg" onclick="this.classList.toggle('on')"><span></span></button></div>
+          </div>
+        </section>
+
+        <!-- PRIVACY -->
+        <section class="pane" id="pane-privacy">
+          <div class="panehead"><h2>Privacy &amp; data</h2><p>Control what Expadu collects and how it's used.</p></div>
+          <div class="card">
+            <div class="row"><div><div class="lab">Share location for transit</div><div class="sub">Improves departure times accuracy</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Personalised content</div><div class="sub">Use activity to improve recommendations</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+            <div class="row"><div><div class="lab">Share anonymised data</div><div class="sub">Help improve Expadu for all expats</div></div><button class="tg" onclick="this.classList.toggle('on')"><span></span></button></div>
+          </div>
+        </section>
+
+        <!-- TRANSIT -->
+        <section class="pane" id="pane-transit">
+          <div class="panehead"><h2>Transit &amp; tickets</h2><p>Tell us what you carry so fares show up right.</p></div>
+          <div class="card">
+            <div class="row"><div><div class="lab">I have a Deutschlandticket <span class="pill-tag">covers trips</span></div><div class="sub">Shows trips as covered instead of a single fare</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span></span></button></div>
+          </div>
+        </section>
+
+        <!-- SECURITY -->
+        <section class="pane" id="pane-security">
+          <div class="panehead"><h2>Security</h2><p>Password and two-factor authentication.</p></div>
+          <div class="section-h">Update password</div>
+          <p class="note">Ensure your account is using a long, random password to stay secure.</p>
+          <div class="field"><label>Current password</label><input type="password" value="········"></div>
+          <div class="field"><label>New password</label><input type="password" placeholder="New password"></div>
+          <div class="field"><label>Confirm password</label><input type="password" placeholder="Confirm password"></div>
+          <button class="btn">Save password</button>
+
+          <div class="section-h">Two-factor authentication</div>
+          <p class="note">Add an extra layer of security — you'll be prompted for a secure pin from an authenticator app during login.</p>
+          <button class="btn ghost">Enable 2FA</button>
+        </section>
+
+        <!-- APPEARANCE -->
+        <section class="pane" id="pane-appearance">
+          <div class="panehead"><h2>Appearance</h2><p>Update how Expadu looks on this device.</p></div>
+          <div class="seg" id="seg">
+            <button onclick="pickTheme(this,'light')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>Light</button>
+            <button onclick="pickTheme(this,'dark')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>Dark</button>
+            <button class="on" onclick="pickTheme(this,'system')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>System</button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const nav = document.getElementById('snav');
+  nav.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    nav.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    const id = b.dataset.pane;
+    document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
+    document.getElementById('pane-' + id).classList.add('on');
+  });
+  function toggleTheme(){ document.documentElement.classList.toggle('dark'); }
+  function pickTheme(btn, mode){
+    document.querySelectorAll('#seg button').forEach(x => x.classList.remove('on'));
+    btn.classList.add('on');
+    if (mode === 'dark') document.documentElement.classList.add('dark');
+    else if (mode === 'light') document.documentElement.classList.remove('dark');
+  }
+</script>
+</body>
+</html>

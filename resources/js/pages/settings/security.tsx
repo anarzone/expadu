@@ -51,8 +51,8 @@ export default function Security({
                 <div className="space-y-6">
                     <Heading
                         variant="small"
-                        title="Update password"
-                        description="Ensure your account is using a long, random password to stay secure"
+                        title="Security"
+                        description="Update your password and manage two-factor authentication."
                     />
 
                     <Form

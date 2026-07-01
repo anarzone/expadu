@@ -1,5 +1,11 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
+import Heading from '@/components/heading';
+import {
+    Toggle,
+    ToggleCard,
+    ToggleRow,
+} from '@/components/settings/toggle-row';
 import { usePushSubscription } from '@/hooks/use-push-subscription';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -46,35 +52,6 @@ const NOTIFICATION_TYPES: { id: string; label: string; sub: string }[] = [
         sub: 'Monday morning events roundup',
     },
 ];
-
-function Toggle({
-    on,
-    onClick,
-    disabled,
-}: {
-    on: boolean;
-    onClick: () => void;
-    disabled?: boolean;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            disabled={disabled}
-            className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors duration-250 ${
-                on ? 'bg-success' : 'bg-border'
-            } ${disabled ? 'opacity-50' : ''}`}
-        >
-            <span
-                className={`absolute top-[2px] left-[2px] size-[18px] rounded-full bg-white shadow-sm transition-transform duration-250 ${
-                    on ? 'translate-x-[18px]' : 'translate-x-0'
-                }`}
-                style={{
-                    transitionTimingFunction: 'cubic-bezier(0.32, 1, 0.4, 1)',
-                }}
-            />
-        </button>
-    );
-}
 
 export default function NotificationsSettings() {
     const { preferences } = usePage<{
@@ -138,8 +115,14 @@ export default function NotificationsSettings() {
 
             <SettingsLayout>
                 <div className="space-y-6">
+                    <Heading
+                        variant="small"
+                        title="Notifications"
+                        description="Choose what Expadu pings you about, and where."
+                    />
+
                     {/* Master push toggle */}
-                    <div className="overflow-hidden rounded-xl border border-border bg-card">
+                    <ToggleCard>
                         <div className="flex items-center justify-between bg-surface-2 px-4 py-[13px]">
                             <div>
                                 <div className="text-[13.5px] font-semibold">
@@ -161,30 +144,20 @@ export default function NotificationsSettings() {
                                 />
                             )}
                         </div>
-                    </div>
+                    </ToggleCard>
 
                     {/* Per-type toggles */}
-                    <div className="overflow-hidden rounded-xl border border-border bg-card">
+                    <ToggleCard>
                         {NOTIFICATION_TYPES.map((setting) => (
-                            <div
+                            <ToggleRow
                                 key={setting.id}
-                                className="flex items-center justify-between border-b border-border px-4 py-[13px] last:border-b-0"
-                            >
-                                <div>
-                                    <div className="text-[13.5px] font-medium">
-                                        {setting.label}
-                                    </div>
-                                    <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                                        {setting.sub}
-                                    </div>
-                                </div>
-                                <Toggle
-                                    on={!!toggles[setting.id]}
-                                    onClick={() => toggle(setting.id)}
-                                />
-                            </div>
+                                label={setting.label}
+                                sub={setting.sub}
+                                on={!!toggles[setting.id]}
+                                onToggle={() => toggle(setting.id)}
+                            />
                         ))}
-                    </div>
+                    </ToggleCard>
                 </div>
             </SettingsLayout>
         </AppLayout>

@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { IconLogout, IconSettings } from '@tabler/icons-react';
+import { IconLogout, IconSettings, IconUser } from '@tabler/icons-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -33,6 +33,17 @@ export function UserMenuContent({ user }: Props) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href="/profile"
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <IconUser className="mr-2" />
+                        Profile
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link
                         className="block w-full cursor-pointer"

@@ -12,6 +12,12 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::get('settings/notifications', [NotificationController::class, 'edit'])->name('notifications.edit');
+
+    // Privacy + Transit read the shared userSettings / auth.user props and write
+    // through the existing /user-settings and /settings/profile endpoints, so
+    // they need no dedicated controller.
+    Route::inertia('settings/privacy', 'settings/privacy')->name('privacy.edit');
+    Route::inertia('settings/transit', 'settings/transit')->name('transit.edit');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

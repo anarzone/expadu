@@ -17,6 +17,14 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        $rules = $this->profileRules($this->user()->id);
+
+        // This is a PATCH: allow partial updates (e.g. a single settings toggle
+        // like has_deutschlandticket) by only validating name/email when they
+        // are present. Registration still requires them via CreateNewUser.
+        $rules['name'] = ['sometimes', ...$rules['name']];
+        $rules['email'] = ['sometimes', ...$rules['email']];
+
+        return $rules;
     }
 }
