@@ -57,50 +57,67 @@ class RevealSpotNames extends Command
         // cities and only anchor to a *real* street (never the nearest café or
         // charging station). Throttled; skips gracefully when the geocoder is
         // unreachable (e.g. locally).
+        //
+        // chunkById walks forward by id: anchored/pruned rows drop out of the
+        // set and kept-bare rows sit below the cursor, so nothing is re-fetched
+        // and memory stays bounded over the (thousands of) points — a plain
+        // ->get() OOM-killed the process mid-run.
         $limit = (int) $this->option('limit');
-        $query = Spot::whereIn('name', $labels)->whereNotNull('lat')->whereNotNull('lng');
-        if ($limit > 0) {
-            $query->limit($limit);
-        }
-
         $geocoded = 0;
         $pruned = 0;
         $keptBare = 0;
         $skipped = 0;
-        foreach ($query->get() as $spot) {
-            try {
-                $place = $routes->reverseGeocode(new GeoPoint((float) $spot->lat, (float) $spot->lng));
-            } catch (\Throwable) {
-                $skipped++;
+        $processed = 0;
 
-                continue;
-            }
-            if ($place === null) {
-                $skipped++;
+        Spot::whereIn('name', $labels)
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->orderBy('id')
+            ->chunkById(100, function ($spots) use ($routes, $limit, &$geocoded, &$pruned, &$keptBare, &$skipped, &$processed) {
+                foreach ($spots as $spot) {
+                    if ($limit > 0 && $processed >= $limit) {
+                        return false;
+                    }
+                    $processed++;
 
-                continue;
-            }
+                    try {
+                        $place = $routes->reverseGeocode(new GeoPoint((float) $spot->lat, (float) $spot->lng));
+                    } catch (\Throwable) {
+                        $skipped++;
 
-            usleep(200_000); // ~5/s — be kind to the geocoder
+                        continue;
+                    }
+                    if ($place === null) {
+                        $skipped++;
 
-            // Scope: keep only Köln / Leverkusen / Bonn; drop confirmed other towns.
-            if ($this->outsideAllowedCity($place->municipality)) {
-                $spot->delete();
-                $pruned++;
+                        continue;
+                    }
 
-                continue;
-            }
+                    usleep(200_000); // ~5/s — be kind to the geocoder
 
-            $street = $this->streetFrom($place->name);
-            if ($street === null) {
-                $keptBare++;
+                    // Scope: keep only Köln / Leverkusen / Bonn; drop confirmed other towns.
+                    if ($this->outsideAllowedCity($place->municipality)) {
+                        $spot->delete();
+                        $pruned++;
 
-                continue;
-            }
+                        continue;
+                    }
 
-            $spot->update(['name' => "{$spot->name} · {$street}"]);
-            $geocoded++;
-        }
+                    $street = $this->streetFrom($place->name);
+                    if ($street === null) {
+                        $keptBare++;
+
+                        continue;
+                    }
+
+                    $spot->update(['name' => "{$spot->name} · {$street}"]);
+                    $geocoded++;
+                }
+
+                gc_collect_cycles();
+
+                return true;
+            });
 
         $this->info("Anchored to a street: {$geocoded}");
         $this->info("Pruned (outside Köln/Leverkusen/Bonn): {$pruned}");
