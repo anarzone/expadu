@@ -23,7 +23,10 @@ class RevealSpotNames extends Command
         {--geocode : reverse-geocode a nearest-street anchor for spots not inside a park (needs MOTIS — staging/prod)}
         {--limit=0 : cap the number of geocode lookups this run (0 = no cap)}';
 
-    protected $description = 'Give duplicate generic spots (Bolzplatz, Spielplatz, …) distinct names via their containing park, else the nearest street';
+    protected $description = 'Give duplicate generic spots (Bolzplatz, Spielplatz, …) distinct names via their containing park, else the nearest street; --geocode also prunes spots outside Köln / Leverkusen / Bonn';
+
+    /** We only carry these three cities for now (majorly Köln). */
+    private const ALLOWED_CITIES = ['köln', 'koeln', 'cologne', 'leverkusen', 'bonn'];
 
     public function handle(RouteService $routes): int
     {
@@ -49,8 +52,11 @@ class RevealSpotNames extends Command
             return self::SUCCESS;
         }
 
-        // Pass 2 — nearest street for everything not in a park. Throttled; skips
-        // gracefully when the geocoder is unreachable (e.g. locally).
+        // Pass 2 — reverse-geocode the rest. One call yields BOTH the nearest
+        // street and the municipality, so we prune anything outside our three
+        // cities and only anchor to a *real* street (never the nearest café or
+        // charging station). Throttled; skips gracefully when the geocoder is
+        // unreachable (e.g. locally).
         $limit = (int) $this->option('limit');
         $query = Spot::whereIn('name', $labels)->whereNotNull('lat')->whereNotNull('lng');
         if ($limit > 0) {
@@ -58,45 +64,94 @@ class RevealSpotNames extends Command
         }
 
         $geocoded = 0;
+        $pruned = 0;
+        $keptBare = 0;
         $skipped = 0;
         foreach ($query->get() as $spot) {
-            $street = $this->nearestStreet($routes, (float) $spot->lat, (float) $spot->lng);
-            if ($street === null) {
+            try {
+                $place = $routes->reverseGeocode(new GeoPoint((float) $spot->lat, (float) $spot->lng));
+            } catch (\Throwable) {
                 $skipped++;
+
+                continue;
+            }
+            if ($place === null) {
+                $skipped++;
+
+                continue;
+            }
+
+            usleep(200_000); // ~5/s — be kind to the geocoder
+
+            // Scope: keep only Köln / Leverkusen / Bonn; drop confirmed other towns.
+            if ($this->outsideAllowedCity($place->municipality)) {
+                $spot->delete();
+                $pruned++;
+
+                continue;
+            }
+
+            $street = $this->streetFrom($place->name);
+            if ($street === null) {
+                $keptBare++;
 
                 continue;
             }
 
             $spot->update(['name' => "{$spot->name} · {$street}"]);
             $geocoded++;
-            usleep(200_000); // ~5/s — be kind to the geocoder
         }
-        $this->info("Anchored to a street: {$geocoded}  (skipped/unreachable: {$skipped})");
+
+        $this->info("Anchored to a street: {$geocoded}");
+        $this->info("Pruned (outside Köln/Leverkusen/Bonn): {$pruned}");
+        $this->line("Kept bare (no street-like anchor): {$keptBare}  ·  skipped/unreachable: {$skipped}");
 
         return self::SUCCESS;
     }
 
     /**
-     * The nearest street name for a point, or null when the geocoder is
-     * unreachable or returns nothing usable.
+     * True when the municipality is a known town OTHER than our three cities.
+     * Unknown/empty → false: never prune on uncertainty.
      */
-    private function nearestStreet(RouteService $routes, float $lat, float $lng): ?string
+    private function outsideAllowedCity(?string $municipality): bool
     {
-        try {
-            $place = $routes->reverseGeocode(new GeoPoint($lat, $lng));
-        } catch (\Throwable) {
-            return null;
+        $m = mb_strtolower(trim((string) $municipality));
+        if ($m === '') {
+            return false;
         }
 
-        $raw = trim((string) ($place?->name ?? ''));
-        if ($raw === '') {
-            return null;
+        foreach (self::ALLOWED_CITIES as $city) {
+            if (str_contains($m, $city)) {
+                return false;
+            }
         }
 
-        // Keep just the street: drop a trailing ", 50765 Köln" and any house number.
-        $street = trim(explode(',', $raw)[0]);
-        $street = trim((string) preg_replace('/\s+\d+\s*[a-z]?$/i', '', $street));
+        return true;
+    }
 
-        return $street !== '' ? $street : null;
+    /**
+     * A usable street anchor from a reverse-geocode label, or null when the
+     * label is a POI (café, school, charging station…) rather than a street —
+     * better to stay bare than to invent "· Eiscafe Linizio".
+     */
+    private function streetFrom(?string $raw): ?string
+    {
+        $label = trim(explode(',', (string) $raw)[0]);                          // drop ", 50765 Köln"
+        $label = trim((string) preg_replace('/\s+\d+\s*[a-z]?$/i', '', $label)); // drop house number
+
+        return ($label !== '' && $this->looksLikeStreet($label)) ? $label : null;
+    }
+
+    /** German street heuristic: a "…straße/…weg/…gasse" suffix or an "Am/An der…" prefix. */
+    private function looksLikeStreet(string $s): bool
+    {
+        if (preg_match('/^(am|an|auf|bei|hinter|im|in|unter|vor|zum|zur)\s/iu', $s)) {
+            return true;
+        }
+
+        return (bool) preg_match(
+            '/(stra(ß|ss)e|str\.?|weg|gasse|platz|allee|ring|damm|pfad|kamp|hof|ufer|steig|chaussee|zeile|winkel|bogen|graben|wall|markt|gracht)$/iu',
+            $s,
+        );
     }
 }
