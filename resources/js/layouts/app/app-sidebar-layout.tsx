@@ -51,17 +51,19 @@ export default function AppSidebarLayout({
                         </div>
                         {/* Widgets panel: pinned flush to the right edge with a
                             left divider (v4), so the content gets everything to
-                            its left rather than floating in a centred block. */}
-                        {rightPanel !== undefined ? (
+                            its left rather than floating in a centred block.
+                            `undefined` → the shared widgets rail; a node → that
+                            custom rail; `null` → no rail at all (e.g. settings). */}
+                        {rightPanel === undefined ? (
+                            <RightPanel />
+                        ) : rightPanel ? (
                             <aside
                                 className="hidden w-[340px] shrink-0 overflow-y-auto border-l border-[#E2DFD6] p-5 lg:block dark:border-[#3A3930]"
                                 style={{ scrollbarWidth: 'none' }}
                             >
                                 {rightPanel}
                             </aside>
-                        ) : (
-                            <RightPanel />
-                        )}
+                        ) : null}
                     </div>
                 )}
             </AppContent>

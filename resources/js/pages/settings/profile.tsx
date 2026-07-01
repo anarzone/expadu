@@ -30,7 +30,7 @@ export default function Profile({
     const { auth } = usePage().props;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} rightPanel={null}>
             <Head title="Profile settings" />
 
             <h1 className="sr-only">Profile settings</h1>

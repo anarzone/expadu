@@ -15,7 +15,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Appearance() {
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} rightPanel={null}>
             <Head title="Appearance settings" />
 
             <h1 className="sr-only">Appearance settings</h1>

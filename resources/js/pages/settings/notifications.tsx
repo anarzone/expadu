@@ -141,7 +141,7 @@ export default function NotificationsSettings() {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} rightPanel={null}>
             <Head title="Notification settings" />
 
             <h1 className="sr-only">Notification settings</h1>

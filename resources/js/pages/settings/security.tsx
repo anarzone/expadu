@@ -51,7 +51,7 @@ export default function Security({
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} rightPanel={null}>
             <Head title="Security settings" />
 
             <h1 className="sr-only">Security settings</h1>
