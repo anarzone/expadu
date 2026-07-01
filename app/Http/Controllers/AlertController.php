@@ -4,12 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Alerts\AlertClassifier;
 use App\Models\Alert;
-use App\Models\NotificationPreference;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,39 +14,22 @@ class AlertController extends Controller
 {
     public function index(Request $request): Response
     {
-        $userId = $request->user()->id;
-
         // The v4 screen groups into lanes + filters by category client-side, so
-        // ship a flat enriched list (recent, capped) rather than a page.
+        // ship a flat enriched list (recent, capped) rather than a page. Settings
+        // now live on their own page (/settings/notifications); the right rail is
+        // the shared widgets panel, so this only feeds the list + header count.
         $alerts = $request->user()->alerts()
             ->whereNull('dismissed_at')
             ->orderByDesc('created_at')
             ->limit(80)
             ->get();
 
-        // Single grouped aggregate replaces five clone+count queries.
-        /** @var Collection<int, object{type: ?string, total: int, unread: int}> $aggregates */
-        $aggregates = DB::table('alerts')
-            ->selectRaw('type, COUNT(*) AS total, COUNT(*) FILTER (WHERE read_at IS NULL) AS unread')
-            ->where('user_id', $userId)
-            ->whereNull('dismissed_at')
-            ->groupBy('type')
-            ->get();
-
-        $unreadCount = (int) $aggregates->sum('unread');
-        $byType = $aggregates->keyBy('type');
-
         return Inertia::render('alerts', [
             'alerts' => $alerts->map(fn (Alert $alert) => $this->present($alert))->all(),
-            'unreadCount' => $unreadCount,
-            'counts' => [
-                'unread' => $unreadCount,
-                'system' => (int) ($byType->get('system')->total ?? 0),
-                'social' => (int) ($byType->get('social')->total ?? 0),
-                'reminder' => (int) ($byType->get('reminder')->total ?? 0),
-            ],
-            'notificationPreferences' => $request->user()->notificationPreference?->preferences
-                ?? NotificationPreference::defaults(),
+            'unreadCount' => $request->user()->alerts()
+                ->whereNull('dismissed_at')
+                ->whereNull('read_at')
+                ->count(),
         ]);
     }
 

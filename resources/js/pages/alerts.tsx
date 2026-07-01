@@ -14,10 +14,9 @@ import {
 } from '@tabler/icons-react';
 import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState } from 'react';
-import { AlertsRightPanel } from '@/components/alerts/alerts-right-panel';
-import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
+import { edit as editNotifications } from '@/routes/notifications';
 
 type Alert = {
     id: number;
@@ -224,26 +223,15 @@ function Lane({
 }
 
 export default function Alerts() {
-    const {
-        alerts: serverAlerts,
-        unreadCount: serverUnread,
-        counts,
-    } = usePage<{
+    const { alerts: serverAlerts, unreadCount: serverUnread } = usePage<{
         alerts: Alert[];
         unreadCount: number;
-        counts: {
-            unread: number;
-            system: number;
-            social: number;
-            reminder: number;
-        };
     }>().props;
 
     const [cat, setCat] = useState<'all' | Alert['category']>('all');
     const [readIds, setReadIds] = useState<Set<number>>(new Set());
     const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
     const [showRead, setShowRead] = useState(false);
-    const [settingsOpen, setSettingsOpen] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -338,10 +326,7 @@ export default function Alerts() {
         laneAction.length + laneGood.length + lanePosted.length === 0;
 
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}
-            rightPanel={<AlertsRightPanel counts={counts} />}
-        >
+        <AppLayout breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}>
             <Head title="Alerts" />
             <div className="mx-auto w-full max-w-[680px] px-1 pb-16">
                 {/* Header */}
@@ -365,9 +350,12 @@ export default function Alerts() {
                             </button>
                         )}
                         <button
-                            onClick={() => setSettingsOpen(true)}
+                            onClick={() =>
+                                router.visit(editNotifications.url())
+                            }
                             aria-label="Notification settings"
-                            className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-text-2 transition-colors hover:text-foreground lg:hidden"
+                            title="Notification settings"
+                            className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-text-2 transition-colors hover:border-primary hover:text-primary"
                         >
                             <IconSettings size={18} stroke={1.7} />
                         </button>
@@ -505,14 +493,6 @@ export default function Alerts() {
                     </div>
                 </div>
             )}
-
-            {/* Mobile notification settings */}
-            <BottomSheet
-                open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-            >
-                <AlertsRightPanel counts={counts} />
-            </BottomSheet>
         </AppLayout>
     );
 }
