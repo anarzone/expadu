@@ -308,26 +308,36 @@ class ImportOsmSpots extends Command
     }
 
     /**
-     * Unnamed playgrounds and pitches are the norm in OSM; synthesise a
-     * usable name from the category + street when possible.
+     * The German type word each unnamed category falls back to. Public so the
+     * `spots:reveal-names` backfill can recognise these bare labels and anchor
+     * them to a park / street (they duplicate heavily on their own).
+     *
+     * @var array<string, string>
+     */
+    public const FALLBACK_LABELS = [
+        'playground' => 'Spielplatz',
+        'pitch' => 'Bolzplatz',
+        'basketball' => 'Basketballplatz',
+        'tennis' => 'Tennisplatz',
+        'table_tennis' => 'Tischtennisplatte',
+        'boules' => 'Boulebahn',
+        'skatepark' => 'Skatepark',
+        'dog_park' => 'Hundewiese',
+        'bbq' => 'Grillplatz',
+        'picnic' => 'Picknickplatz',
+    ];
+
+    /**
+     * Unnamed playgrounds and pitches are the norm in OSM; synthesise a usable
+     * name from the category + street. Park containment isn't known yet at
+     * import (parks:import-areas runs later), so `spots:reveal-names` folds the
+     * park/street anchor in afterwards.
      *
      * @param  array<string, string>  $tags
      */
     protected function fallbackName(string $category, array $tags): ?string
     {
-        $label = match ($category) {
-            'playground' => 'Spielplatz',
-            'pitch' => 'Bolzplatz',
-            'basketball' => 'Basketballplatz',
-            'tennis' => 'Tennisplatz',
-            'table_tennis' => 'Tischtennisplatte',
-            'boules' => 'Boulebahn',
-            'skatepark' => 'Skatepark',
-            'dog_park' => 'Hundewiese',
-            'bbq' => 'Grillplatz',
-            'picnic' => 'Picknickplatz',
-            default => null,
-        };
+        $label = self::FALLBACK_LABELS[$category] ?? null;
 
         if ($label === null) {
             return null;
@@ -335,7 +345,7 @@ class ImportOsmSpots extends Command
 
         $street = $tags['addr:street'] ?? null;
 
-        return $street ? "{$label} {$street}" : $label;
+        return $street ? "{$label} · {$street}" : $label;
     }
 
     /**
