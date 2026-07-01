@@ -2,7 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import {
     IconArrowLeft,
     IconUser,
-    IconPalette,
+    IconSettings,
     IconLogout,
 } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -100,31 +100,17 @@ export function MobileTopBar({
                             </span>
                         </a>
                         <a
-                            href="/profile#settings"
+                            href="/settings/profile"
                             onClick={() => setMenuOpen(false)}
                             className="flex w-full items-center gap-2.5 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary"
                         >
-                            <IconPalette
+                            <IconSettings
                                 size={16}
                                 stroke={ICON_STROKE}
                                 className="text-text-2"
                             />
                             <span className="text-[13px] font-medium">
                                 Settings
-                            </span>
-                        </a>
-                        <a
-                            href="/settings/appearance"
-                            onClick={() => setMenuOpen(false)}
-                            className="flex w-full items-center gap-2.5 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary"
-                        >
-                            <IconPalette
-                                size={16}
-                                stroke={ICON_STROKE}
-                                className="text-text-2"
-                            />
-                            <span className="text-[13px] font-medium">
-                                Appearance
                             </span>
                         </a>
                         <button

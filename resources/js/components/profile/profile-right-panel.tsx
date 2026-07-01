@@ -59,7 +59,7 @@ export function ProfileRightPanel() {
                     </div>
                 </a>
                 <a
-                    href="#settings"
+                    href="/settings/profile"
                     className="flex cursor-pointer items-start gap-2.5 px-[15px] py-[11px] transition-colors hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]"
                 >
                     <span className="mt-px shrink-0" style={{ fontSize: 16 }}>
