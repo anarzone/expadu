@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type JourneyLeg = {
+export type JourneyLeg = {
     mode: string;
     line: string | null;
     headsign: string | null;
@@ -36,7 +36,7 @@ type JourneyLeg = {
     polyline: string | null;
 };
 
-type Journey = {
+export type Journey = {
     mode: 'transit' | 'bike' | 'walk';
     depart_time: string;
     arrive_time: string;
@@ -45,7 +45,7 @@ type Journey = {
     legs: JourneyLeg[];
 };
 
-type JourneyResponse = {
+export type JourneyResponse = {
     source: 'transitous' | 'trias' | 'degraded';
     journeys: Journey[];
     degraded: {
@@ -64,7 +64,7 @@ type JourneyResponse = {
 };
 
 /** Journey-aware Rheinlandtarif advice — mirrors App\Transit\Dto\FareAdvice. */
-type FareAdvice = {
+export type FareAdvice = {
     covered_by_deutschlandticket: boolean;
     preisstufe: string | null;
     price_eur: number | null;

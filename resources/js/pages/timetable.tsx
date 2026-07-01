@@ -1,7 +1,8 @@
 import { Deferred, Head, usePage } from '@inertiajs/react';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
+import { JourneyPlanner } from '@/components/departures/journey-planner';
+import type { SavedPlace } from '@/components/departures/journey-planner';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { ICON_STROKE } from '@/constants/icons';
@@ -28,16 +29,6 @@ type Board = {
 type Boards = { all: Board; tram: Board; bus: Board };
 
 type Mode = 'all' | 'tram' | 'bus';
-
-/** A saved place (Home / Work / pin) offered as a one-tap journey destination. */
-type SavedPlace = {
-    id: number;
-    name: string;
-    category: string;
-    emoji: string | null;
-    lat: number;
-    lng: number;
-};
 
 type GeoResult = {
     name: string;
@@ -455,79 +446,84 @@ export default function Timetable() {
         <AppLayout>
             <Head title="Departures" />
             <div className="mx-auto w-full max-w-[680px] px-4 pt-6 pb-24 md:px-6">
-                <div className="mb-[18px] flex items-end justify-between gap-3.5">
-                    <div className="min-w-0">
-                        <h1 className="font-display text-3xl font-medium tracking-tight">
-                            Departures
-                        </h1>
-                        <p className="mt-1 text-[13.5px] text-muted-foreground">
-                            {board ? (
-                                <>
-                                    Live from{' '}
-                                    <strong className="font-semibold text-foreground">
-                                        {stop}
-                                    </strong>
-                                    {walk != null && (
-                                        <>
-                                            {' · '}
-                                            <span className="font-semibold text-cyan-h">
-                                                {walk} min walk from you
-                                            </span>
-                                        </>
-                                    )}
-                                </>
-                            ) : (
-                                'Finding your nearest stop…'
-                            )}
-                        </p>
-                    </div>
-                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-xs font-semibold text-success">
-                        <span className="size-[7px] animate-pulse rounded-full bg-success" />
-                        <LiveClock />
-                    </span>
-                </div>
-
-                <JourneyEntryCard
-                    stop={stop}
-                    savedPlaces={savedPlaces}
-                    busy={planning}
-                    onPlan={planTo}
-                />
-
-                <div className="mb-[18px] flex gap-2">
-                    {TABS.map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setMode(tab.key)}
-                            className={`cursor-pointer rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
-                                mode === tab.key
-                                    ? 'border-foreground bg-foreground text-background'
-                                    : 'border-border bg-card text-muted-foreground hover:border-primary'
-                            }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                <Deferred data="boards" fallback={<BoardSkeleton />}>
+                {destination ? (
+                    <JourneyPlanner
+                        key={`${destination.lat},${destination.lng},${destination.name}`}
+                        destination={destination}
+                        savedPlaces={savedPlaces}
+                        onPlan={planTo}
+                        onClose={() => setDestination(null)}
+                    />
+                ) : (
                     <>
-                        {board && board.departures.length > 0 ? (
-                            <DepartureBoard board={board} />
-                        ) : (
-                            <EmptyBoard mode={mode} />
-                        )}
-                        {alt && <AltCard alt={alt} />}
-                    </>
-                </Deferred>
-            </div>
+                        <div className="mb-[18px] flex items-end justify-between gap-3.5">
+                            <div className="min-w-0">
+                                <h1 className="font-display text-3xl font-medium tracking-tight">
+                                    Departures
+                                </h1>
+                                <p className="mt-1 text-[13.5px] text-muted-foreground">
+                                    {board ? (
+                                        <>
+                                            Live from{' '}
+                                            <strong className="font-semibold text-foreground">
+                                                {stop}
+                                            </strong>
+                                            {walk != null && (
+                                                <>
+                                                    {' · '}
+                                                    <span className="font-semibold text-cyan-h">
+                                                        {walk} min walk from you
+                                                    </span>
+                                                </>
+                                            )}
+                                        </>
+                                    ) : (
+                                        'Finding your nearest stop…'
+                                    )}
+                                </p>
+                            </div>
+                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-xs font-semibold text-success">
+                                <span className="size-[7px] animate-pulse rounded-full bg-success" />
+                                <LiveClock />
+                            </span>
+                        </div>
 
-            {destination && (
-                <TakeMeThereSheet
-                    destination={destination}
-                    onClose={() => setDestination(null)}
-                />
-            )}
+                        <JourneyEntryCard
+                            stop={stop}
+                            savedPlaces={savedPlaces}
+                            busy={planning}
+                            onPlan={planTo}
+                        />
+
+                        <div className="mb-[18px] flex gap-2">
+                            {TABS.map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setMode(tab.key)}
+                                    className={`cursor-pointer rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
+                                        mode === tab.key
+                                            ? 'border-foreground bg-foreground text-background'
+                                            : 'border-border bg-card text-muted-foreground hover:border-primary'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <Deferred data="boards" fallback={<BoardSkeleton />}>
+                            <>
+                                {board && board.departures.length > 0 ? (
+                                    <DepartureBoard board={board} />
+                                ) : (
+                                    <EmptyBoard mode={mode} />
+                                )}
+                                {alt && <AltCard alt={alt} />}
+                            </>
+                        </Deferred>
+                    </>
+                )}
+            </div>
 
             <FeedbackToast message={toast} />
         </AppLayout>
