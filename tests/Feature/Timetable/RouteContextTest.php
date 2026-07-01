@@ -9,7 +9,8 @@ beforeEach(function () {
 
     DB::table('gtfs_stops')->insert([
         ['stop_id' => 'NM1', 'stop_name' => 'Neumarkt', 'stop_lat' => 50.9364, 'stop_lng' => 6.9470, 'location_type' => 0],
-        ['stop_id' => 'HM1', 'stop_name' => 'Heumarkt', 'stop_lat' => 50.9358, 'stop_lng' => 6.9601, 'location_type' => 0],
+        // City-prefixed as in the real VRS feed — routeContext strips it.
+        ['stop_id' => 'HM1', 'stop_name' => 'Köln Heumarkt', 'stop_lat' => 50.9358, 'stop_lng' => 6.9601, 'location_type' => 0],
         ['stop_id' => 'DM1', 'stop_name' => 'Deutz/Messe', 'stop_lat' => 50.9410, 'stop_lng' => 6.9750, 'location_type' => 0],
         ['stop_id' => 'RP1', 'stop_name' => 'Rudolfplatz', 'stop_lat' => 50.9360, 'stop_lng' => 6.9340, 'location_type' => 0],
     ]);

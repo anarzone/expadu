@@ -341,6 +341,9 @@ class GtfsDepartureService
                 ->orderBy('st.stop_sequence')
                 ->limit(2)
                 ->pluck('s.stop_name')
+                // VRS names carry the city prefix ("Köln Heumarkt") — noise on
+                // a board that is already inside Cologne.
+                ->map(fn ($name) => preg_replace('/^Köln[ -]/u', '', (string) $name))
                 ->all();
 
             return [
