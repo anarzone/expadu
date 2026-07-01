@@ -395,6 +395,58 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --cat-tint: #3a2015;
 }
 
+/* Departures dark board (KVB-style) — a dark surface in BOTH themes, lifted
+   slightly in dark mode. Mirrors prototype/departures-v4.html. The board owns
+   its own token scope (--bd-*) so its children read light-on-dark regardless of
+   the page theme. */
+.board {
+    --bd-bg: #0e1116;
+    --bd-panel: #161b22;
+    --bd-line: #262d38;
+    --bd-ink: #eef2f7;
+    --bd-sub: #8b95a3;
+    --st-now: #3ddc97;
+    --st-warn: #ffc24d;
+    --st-cancel: #ff6b54;
+}
+.dark .board {
+    --bd-bg: #141a22;
+    --bd-panel: #1c232d;
+    --bd-line: #303a47;
+    --bd-ink: #f3f7fb;
+    --bd-sub: #9aa6b4;
+}
+/* A next-departure minute chip. Base is muted; the soonest chip escalates
+   lead → soon (amber) → now (green). */
+.dchip {
+    min-width: 34px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 0 7px;
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 700;
+    border: 1px solid var(--bd-line);
+    color: var(--bd-sub);
+}
+.dchip.lead {
+    color: var(--bd-ink);
+    border-color: var(--bd-sub);
+}
+.dchip.soon {
+    background: rgba(255, 194, 77, 0.16);
+    color: var(--st-warn);
+    border-color: rgba(255, 194, 77, 0.42);
+}
+.dchip.now {
+    background: var(--st-now);
+    color: #0e1116;
+    border-color: var(--st-now);
+}
+
 @layer utilities {
     /* Standard section padding: 24px vertical, 10px horizontal on mobile, 24px on desktop */
     .section-pad {

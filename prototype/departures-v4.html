@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expadu · Departures v4 — prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6ee; --surface:#fffdf8; --surface-2:#f1ebdf; --border:#e6ddcb;
+    --ink:#211d15; --t2:#6e6657; --t3:#a89f8c;
+    --primary:#ff3902; --primary-h:#e02f00; --primary-soft:#ffe3d8;
+    --cyan:#05badd; --cyan-h:#0a7f99; --cyan-soft:#d8f3fb; --cyan-bd:#aedfeb;
+    --orange:#ff8007; --orange-soft:#ffe7cf;
+    --amber:#e8a200; --amber-soft:#fff0cd;
+    --navy:#2b4871; --navy-soft:#e1e7f1;
+    --success:#0f7a4f; --success-soft:#e2f3ea;
+    --warn:#c47d0e; --warn-soft:#faecd0;
+    --danger:#c4271a; --danger-soft:#fbe2de;
+    --shadow:0 1px 2px rgba(33,29,21,.05),0 8px 28px rgba(33,29,21,.06);
+    --nav-bg:transparent; --nav-c:var(--t2);
+  }
+  .dark{
+    --bg:#161208; --surface:#211c12; --surface-2:#2c2618; --border:#3b3424;
+    --ink:#f7f3e9; --t2:#a89f8c; --t3:#6e6657;
+    --primary:#ff5c33; --primary-h:#ff7656; --primary-soft:#3a1c11;
+    --cyan:#3ccfee; --cyan-h:#62d9f1; --cyan-soft:#10303a; --cyan-bd:#1d4350;
+    --orange:#ff9b3d; --orange-soft:#33240f;
+    --amber:#ffc94d; --amber-soft:#2e2510;
+    --navy:#7ea4dc; --navy-soft:#1d2738;
+    --success:#3bbd82; --success-soft:#13241c;
+    --warn:#e0a93c; --warn-soft:#2a2110;
+    --danger:#ef6a4d; --danger-soft:#2c1712;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.32);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#e7e3d8;font-family:'Geist',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;padding:26px 30px 60px}
+  .dark body,body.darkpage{background:#0f0c06}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .board{--bd-bg:#0e1116;--bd-panel:#161b22;--bd-line:#262d38;--bd-ink:#eef2f7;--bd-sub:#8b95a3;--st-now:#3ddc97;--st-warn:#ffc24d;--st-cancel:#ff6b54;box-shadow:0 12px 34px rgba(8,11,16,.34)}
+  .dark .board{--bd-bg:#141a22;--bd-panel:#1c232d;--bd-line:#303a47;--bd-ink:#f3f7fb;--bd-sub:#9aa6b4;box-shadow:0 0 0 1px rgba(120,150,180,.10),0 14px 38px rgba(0,0,0,.5)}
+  .dchiprow{display:flex;align-items:center;gap:6px;flex:none}
+  .dchipunit{font-family:'Geist Mono',monospace;font-size:11px;color:var(--bd-sub);margin-left:1px}
+  .dchip{min-width:34px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;padding:0 7px;font-family:'Geist Mono',monospace;font-size:14px;font-weight:700;border:1px solid var(--bd-line);color:var(--bd-sub)}
+  .dchip.lead{color:var(--bd-ink);border-color:var(--bd-sub)}
+  .dchip.soon{background:rgba(255,194,77,.16);color:var(--st-warn);border-color:rgba(255,194,77,.42)}
+  .dchip.now{background:var(--st-now);color:#0e1116;border-color:var(--st-now)}
+  .dchiprow.sm{gap:5px}
+  .dchiprow.sm .dchip{min-width:30px;height:27px;font-size:12.5px;padding:0 6px}
+  .jstep-done{color:var(--t3)}
+  .jstep-current{color:var(--ink);font-weight:600}
+  .jstep-next{color:var(--t2)}
+  .jdot-current{box-shadow:0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);animation:pulse 1.2s infinite}
+  .tab{padding:9px 16px;border-radius:100px;border:1px solid var(--border);background:var(--surface);color:var(--t2);font-family:'Geist',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+  .tab.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+  .tab.sm{padding:8px 15px;font-size:12.5px}
+  .nav{display:flex;align-items:center;gap:13px;padding:11px 12px;border:none;border-radius:11px;background:var(--nav-bg);color:var(--nav-c);font-family:'Geist',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:3px;text-align:left;width:100%;transition:background .15s}
+  .nav:hover{background:var(--surface-2)}
+  .nav.on{background:var(--primary-soft);color:var(--primary)}
+  button{font-family:inherit}
+  input::placeholder{color:var(--t3);opacity:1}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+  /* prototype chrome */
+  .ptoolbar{max-width:1600px;margin:0 auto 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .ptoolbar h1{font-family:'Fraunces',serif;font-weight:600;font-size:20px;color:#2c2519}
+  .dark .ptoolbar h1,body.darkpage .ptoolbar h1{color:#f7f3e9}
+  .pnote{font-size:12.5px;color:#8a8068}
+  .pctl{display:inline-flex;gap:4px;background:#fffdf8;border:1px solid #e6ddcb;border-radius:100px;padding:4px}
+  .dark .pctl,body.darkpage .pctl{background:#211c12;border-color:#3b3424}
+  .pctl button{border:none;background:transparent;padding:7px 14px;border-radius:100px;font-size:12.5px;font-weight:600;color:#6e6657;cursor:pointer}
+  .pctl button.on{background:#ff3902;color:#fff}
+  .stage{max-width:1600px;margin:0 auto;display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap}
+  .frame-label{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8068;margin-bottom:12px}
+  /* desktop app shell */
+  .app{width:1180px;height:868px;background:var(--bg);color:var(--ink);border-radius:24px;overflow:hidden;display:flex;box-shadow:0 1px 3px rgba(0,0,0,.12),0 30px 70px rgba(0,0,0,.2);border:1px solid var(--border)}
+  .sidebar{width:248px;flex:none;background:var(--surface);border-right:1px solid var(--border);padding:22px 16px;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:11px;padding:4px 8px 20px}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;font-size:18px}
+  .brand .name{font-family:'Fraunces',serif;font-weight:600;font-size:20px}
+  .navgroup{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin:16px 10px 8px}
+  .screen{flex:1;min-width:0;display:flex}
+  .depmain{flex:1;min-width:0;padding:34px 0;overflow-y:auto}
+  .depmain-inner{max-width:680px;margin:0 auto;padding:0 28px}
+  aside.right{width:340px;flex:none;border-left:1px solid var(--border);background:var(--bg);padding:24px 20px;overflow-y:auto}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+  /* mobile */
+  .phone{width:402px;height:868px;background:var(--bg);color:var(--ink);border-radius:38px;overflow:hidden;position:relative;border:9px solid #14110b;box-shadow:0 1px 3px rgba(0,0,0,.1),0 24px 60px rgba(0,0,0,.22)}
+  .phone-top{position:absolute;top:0;left:0;right:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);padding:14px 18px 12px;display:flex;align-items:center;gap:11px}
+  .phone-body{position:absolute;top:57px;bottom:68px;left:0;right:0;overflow-y:auto;padding:18px}
+  .phone-nav{position:absolute;bottom:0;left:0;right:0;height:68px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 10px}
+  .pnavbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:none;cursor:pointer;color:var(--nav-c);font-size:10px;font-weight:600}
+  .pnavbtn.on{color:var(--primary)}
+</style>
+</head>
+<body>
+  <div class="ptoolbar">
+    <h1>Expadu · Departures v4</h1>
+    <span class="pnote">prototype — mocked data; live tick + journey auto-advance simulate realtime</span>
+    <div style="flex:1"></div>
+    <div class="pctl" id="stageCtl">
+      <button data-stage="idle" class="on">Board</button>
+      <button data-stage="plan">Plan trip</button>
+      <button data-stage="active">Active trip</button>
+    </div>
+    <div class="pctl" id="themeCtl">
+      <button data-theme="light" class="on">☀ Light</button>
+      <button data-theme="dark">☾ Dark</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="frame-label">Desktop · 1180</div>
+      <div class="app" id="deskApp">
+        <div class="sidebar" id="deskSidebar"></div>
+        <div class="screen">
+          <main class="depmain"><div class="depmain-inner" id="deskDep"></div></main>
+          <aside class="right" id="deskAside"></aside>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="frame-label">Mobile · 402</div>
+      <div class="phone" id="mobPhone">
+        <div class="phone-top" id="phoneTop"></div>
+        <div class="phone-body" id="mobDep"></div>
+        <div class="phone-nav" id="phoneNav"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------- icons ---------- */
+function icon(name, s){
+  s = s || 20;
+  const P = {
+    spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+    today:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
+    place:'<path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11zM12 10.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>',
+    event:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14l3 2 5-4"/>',
+    bus:'<rect x="3" y="5" width="18" height="11" rx="2"/><path d="M3 11h18"/><circle cx="7.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
+    doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
+    alert:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.5 21a1.8 1.8 0 0 0 3 0"/>',
+    bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.5 21a1.8 1.8 0 0 0 3 0"/>',
+    walk:'<circle cx="13" cy="4" r="2"/><path d="M10 22l2-6-3-2 1-5 3 3 3 1M9 12l-2 4"/>',
+    change:'<path d="M4 9h13l-3-3M20 15H7l3 3"/>',
+    arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+    back:'<path d="M15 6l-6 6 6 6"/>',
+    warn:'<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+    ban:'<circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/>',
+    sun:'<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M3.5 12H6M18 12h2.5M5.2 5.2L7 7M17 17l1.8 1.8M18.8 5.2L17 7M7 17l-1.8 1.8"/>',
+    wave:'<path d="M3 8c2 0 2.5-1.5 4.5-1.5S9.5 8 11.5 8 14 6.5 16 6.5 18.5 8 21 8M3 13c2 0 2.5-1.5 4.5-1.5S9.5 13 11.5 13 14 11.5 16 11.5 18.5 13 21 13M3 18c2 0 2.5-1.5 4.5-1.5S9.5 18 11.5 18 14 16.5 16 16.5 18.5 18 21 18"/>',
+  };
+  return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(P[name]||'')+'</svg>';
+}
+
+/* ---------- data (mirrors Expadu v4.dc.html) ---------- */
+const boardsData = {
+  all: { stop:'Neumarkt', walk:4, departures:[
+    { line:'1', dest:'Bensberg', type:'tram', color:'#d2151a', base:3, delay:0, cancelled:false, dir:'east' },
+    { line:'7', dest:'Zündorf', type:'tram', color:'#f39200', base:1, delay:2, cancelled:false, dir:'east' },
+    { line:'9', dest:'Sülz', type:'tram', color:'#009640', base:6, delay:0, cancelled:false, dir:'east' },
+    { line:'132', dest:'Breslauer Platz', type:'bus', color:'#95288a', base:4, delay:0, cancelled:false, dir:'west' },
+    { line:'16', dest:'Niehl', type:'tram', color:'#0099d8', base:9, delay:0, cancelled:false, dir:'west' },
+    { line:'142', dest:'Bocklemünd', type:'bus', color:'#e3001b', base:0, delay:0, cancelled:true, dir:'west' },
+  ]},
+  tram: { stop:'Neumarkt', walk:4, departures:[
+    { line:'1', dest:'Bensberg', type:'tram', color:'#d2151a', base:3, delay:0, cancelled:false, dir:'east' },
+    { line:'7', dest:'Zündorf', type:'tram', color:'#f39200', base:1, delay:2, cancelled:false, dir:'east' },
+    { line:'9', dest:'Sülz', type:'tram', color:'#009640', base:6, delay:0, cancelled:false, dir:'east' },
+    { line:'16', dest:'Niehl', type:'tram', color:'#0099d8', base:9, delay:0, cancelled:false, dir:'west' },
+    { line:'12', dest:'Merkenich', type:'tram', color:'#e3001b', base:12, delay:0, cancelled:false, dir:'west' },
+  ]},
+  bus: { stop:'Mauritiuskirche', walk:6, departures:[
+    { line:'132', dest:'Breslauer Platz', type:'bus', color:'#95288a', base:4, delay:0, cancelled:false, dir:'west' },
+    { line:'142', dest:'Bocklemünd', type:'bus', color:'#e3001b', base:7, delay:3, cancelled:false, dir:'west' },
+    { line:'106', dest:'Geldernstraße', type:'bus', color:'#0067b3', base:11, delay:0, cancelled:false, dir:'west' },
+    { line:'978', dest:'Bonn', type:'bus', color:'#5a287d', base:18, delay:0, cancelled:false, dir:'east' },
+  ]},
+};
+const routes = {
+  '1':['Heumarkt','Deutz/Messe','Bensberg'], '7':['Poststr.','Chlodwigplatz','Zündorf'],
+  '9':['Zülpicher Pl.','Sülz','Klettenberg'], '16':['Ebertplatz','Wiener Pl.','Niehl'],
+  '12':['Hansaring','Mollwitzstr.','Merkenich'], '132':['Friesenpl.','Hbf','Breslauer Pl.'],
+  '142':['Aachener Str.','Braunsfeld','Bocklemünd'], '106':['Rudolfplatz','Lenauplatz','Geldernstr.'],
+  '978':['Severinstr.','Bonn Nord','Bonn Hbf'],
+};
+const BOARD_TINT = {'#d2151a':'#e23b2e','#f39200':'#ff9e1f','#009640':'#1eb35e','#95288a':'#b455c0','#0099d8':'#27a8de','#e3001b':'#e23b2e','#5a287d':'#9a5bc0','#0067b3':'#2f8fd6','#f8ac00':'#ffc24d'};
+const dirMeta = {
+  east: { label:'Toward Deutz / Bensberg', platform:'Platform 1', arrowColor:'#3ddc97', arrowRot:0 },
+  west: { label:'Toward Ehrenfeld / Niehl', platform:'Platform 2', arrowColor:'#ffc24d', arrowRot:180 },
+};
+const journeyDests = [
+  { id:'home', emoji:'🏠', label:'Home', to:'Venloer Str./Ehrenfeld' },
+  { id:'work', emoji:'💼', label:'Work', to:'Deutz/Messe' },
+  { id:'rhine', emoji:'🌳', label:'Rheingarten', to:'Rheingarten · Altstadt' },
+  { id:'museum', emoji:'🏛️', label:'Museum Ludwig', to:'Heinrich-Böll-Platz' },
+];
+const journeyRoutes = {
+  home: [
+    { id:'h1', kind:'Fastest', changes:1, legs:[
+      { type:'walk', mins:4, to:'Neumarkt stop' },
+      { type:'ride', line:'1', color:'#d2151a', dest:'Weiden', board:'Neumarkt', stops:['Rudolfplatz','Moltkestr.','Lindenburg'], mins:7 },
+      { type:'change', mins:2, at:'Lindenburg', to:'4' },
+      { type:'ride', line:'4', color:'#95288a', dest:'Bocklemünd', board:'Lindenburg', stops:['Körnerstr.','Venloer Str./Ehrenfeld'], mins:4 },
+      { type:'walk', mins:2, to:'Venloer Str. 287' },
+    ]},
+    { id:'h2', kind:'Fewest changes', changes:0, legs:[
+      { type:'walk', mins:7, to:'Friesenplatz stop' },
+      { type:'ride', line:'3', color:'#0099d8', dest:'Mengenich', board:'Friesenplatz', stops:['Hans-Böckler-Platz','Venloer Str./Gürtel','Venloer Str./Ehrenfeld'], mins:12 },
+      { type:'walk', mins:4, to:'Venloer Str. 287' },
+    ]},
+  ],
+  work: [
+    { id:'w1', kind:'Fastest', changes:0, legs:[
+      { type:'walk', mins:4, to:'Neumarkt stop' },
+      { type:'ride', line:'1', color:'#d2151a', dest:'Bensberg', board:'Neumarkt', stops:['Heumarkt','Deutz/Messe'], mins:6 },
+      { type:'walk', mins:3, to:'Office · Deutz' },
+    ]},
+    { id:'w2', kind:'Least walking', changes:1, legs:[
+      { type:'walk', mins:2, to:'Neumarkt stop' },
+      { type:'ride', line:'9', color:'#009640', dest:'Königsforst', board:'Neumarkt', stops:['Heumarkt'], mins:3 },
+      { type:'change', mins:1, at:'Heumarkt', to:'1' },
+      { type:'ride', line:'1', color:'#d2151a', dest:'Bensberg', board:'Heumarkt', stops:['Deutz/Messe'], mins:3 },
+      { type:'walk', mins:1, to:'Office · Deutz' },
+    ]},
+  ],
+  rhine: [
+    { id:'rh1', kind:'Fastest', changes:0, legs:[
+      { type:'walk', mins:4, to:'Neumarkt stop' },
+      { type:'ride', line:'9', color:'#009640', dest:'Königsforst', board:'Neumarkt', stops:['Heumarkt'], mins:3 },
+      { type:'walk', mins:6, to:'Rheingarten riverside' },
+    ]},
+  ],
+  museum: [
+    { id:'m1', kind:'Fastest', changes:0, legs:[
+      { type:'walk', mins:4, to:'Neumarkt stop' },
+      { type:'ride', line:'5', color:'#f8ac00', dest:'Heumarkt', board:'Neumarkt', stops:['Appellhofplatz','Dom/Hbf'], mins:5 },
+      { type:'walk', mins:3, to:'Museum Ludwig' },
+    ]},
+  ],
+};
+function genericRoute(toName){
+  return [{ id:'g1', kind:'Suggested', changes:0, legs:[
+    { type:'walk', mins:4, to:'Neumarkt stop' },
+    { type:'ride', line:'9', color:'#009640', dest:'Sülz', board:'Neumarkt', stops:['Zülpicher Platz', toName], mins:8 },
+    { type:'walk', mins:3, to:toName },
+  ]}];
+}
+const disruptions = [
+  { t:'Line 5 — no service Heumarkt ↔ Dom/Hbf until 18:00' },
+  { t:'Bus 142 diverted via Subbelrather Str. (roadworks)' },
+];
+
+/* ---------- state ---------- */
+const state = { dark:false, depMode:'all', jStage:'idle', jTo:'', jToLabel:'', whereTo:'', jRoute:null, jProgress:0, tick:0 };
+let boardTimer = null, journeyTimer = null;
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function clock(){ return new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+function hhmm(offsetMin){ return new Date(Date.now()+offsetMin*60000).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); }
+function routeMins(r){ return r.legs.reduce((a,l)=>a+(l.mins||0),0); }
+function routesForTo(){ const to=state.jTo; if(!to) return []; if(to.indexOf('__text:')===0) return genericRoute(to.slice(7)); return journeyRoutes[to]||genericRoute(state.jToLabel||'Destination'); }
+function flattenRoute(r){
+  const steps=[];
+  r.legs.forEach((leg)=>{
+    if(leg.type==='walk') steps.push({kind:'walk',title:'Walk to '+leg.to,sub:leg.mins+' min on foot',mins:leg.mins});
+    else if(leg.type==='change') steps.push({kind:'change',title:'Change at '+leg.at,sub:'to Line '+leg.to+' · '+leg.mins+' min',mins:leg.mins,line:leg.to});
+    else if(leg.type==='ride'){
+      steps.push({kind:'board',title:'Board Line '+leg.line,sub:'towards '+leg.dest,line:leg.line,color:leg.color});
+      leg.stops.forEach((s,i)=>{
+        const last=i===leg.stops.length-1;
+        steps.push({kind:last?'alight':'ride',title:last?'Get off · '+s:s,sub:last?'your stop':'',station:true,line:leg.line,color:leg.color});
+      });
+    }
+  });
+  steps.push({kind:'arrive',title:'You’ve arrived',sub:'Enjoy 🎉'});
+  return steps;
+}
+
+/* ---------- board model ---------- */
+function boardModel(){
+  const raw = boardsData[state.depMode];
+  const rows = raw.departures.map((d)=>{
+    const hw = d.type==='bus'?11:9;
+    const eta = d.cancelled ? 0 : ((((d.base - state.tick)%hw)+hw)%hw);
+    const times = [eta, eta+hw, eta+hw*2];
+    const chips = times.map((t,idx)=>{
+      let mod=''; if(idx===0) mod = t<=0?' now' : t<=3?' soon' : ' lead';
+      return { label: t<=0?'NOW':String(t), cls:'dchip'+mod };
+    });
+    const arr = routes[d.line]||[];
+    return { ...d, eta, boardColor: BOARD_TINT[d.color]||d.color, live:!d.cancelled, delayed:d.delay>0,
+      dim: d.cancelled?'.5':'1', chips, routeText: arr.length ? 'via '+arr.slice(0,2).join(' · ') : '' };
+  });
+  const groups = ['east','west'].map((id)=>({ id, ...dirMeta[id], rows: rows.filter(r=>r.dir===id) })).filter(g=>g.rows.length);
+  const platform = raw.departures[0] && raw.departures[0].type==='bus' ? 'KVB Bus' : 'KVB Stadtbahn';
+  const live = rows.filter(r=>!r.cancelled);
+  const problem = rows.find(r=>r.cancelled||r.delayed);
+  const altR = problem ? live.find(r=>!r.delayed && r.line!==problem.line) : null;
+  const alt = (problem&&altR) ? { has:true,
+    problemText: problem.cancelled ? 'Line '+problem.line+' → '+problem.dest+' is cancelled' : 'Line '+problem.line+' is running +'+problem.delay+' min late',
+    altText: 'Line '+altR.line+' → '+altR.dest+' is a calmer bet — leaves in '+altR.eta+' min',
+    altColor: altR.color, altLine: altR.line } : { has:false };
+  return { stop:raw.stop, walk:raw.walk, platform, groups, alt };
+}
+
+/* dark board markup — sizes differ desktop vs mobile */
+function boardHTML(m, mob){
+  const pad = mob?'11px 14px':'13px 18px';
+  const gpad = mob?'9px 14px':'11px 18px';
+  const rpad = mob?'12px 14px':'13px 18px';
+  const gap = mob?'12px':'15px';
+  const badgeW = mob?'38px':'42px', badgeH = mob?'30px':'32px', badgeF = mob?'13px':'14px';
+  const destF = mob?'14px':'15px';
+  const groups = m.groups.map(g=>{
+    const rows = g.rows.map(dep=>{
+      const delay = dep.delayed ? '<span style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'9px':'10px')+';font-weight:600;color:#0e1116;background:#ffc24d;padding:'+(mob?'1px 5px':'2px 6px')+';border-radius:'+(mob?'4px':'5px')+'">+'+dep.delay+'</span>' : '';
+      const canc = dep.cancelled ? '<span style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'9px':'10px')+';font-weight:600;color:#fff;background:#ff6b54;padding:'+(mob?'1px 5px':'2px 6px')+';border-radius:'+(mob?'4px':'5px')+'">cancelled</span>' : '';
+      const right = dep.live
+        ? '<div class="dchiprow'+(mob?' sm':'')+'">'+dep.chips.map(c=>'<span class="'+c.cls+'">'+c.label+'</span>').join('')+(mob?'':'<span class="dchipunit">min</span>')+'</div>'
+        : '<span style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'11px':'12px')+';color:#ff6b54;flex:none">'+(mob?'—':'no service')+'</span>';
+      const routeText = dep.routeText ? '<div style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'10px':'11px')+';color:var(--bd-sub);margin-top:'+(mob?'2px':'3px')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(dep.routeText)+'</div>' : '';
+      return '<div style="display:flex;align-items:center;gap:'+gap+';padding:'+rpad+';border-bottom:1px solid var(--bd-line)">'
+        + '<span style="min-width:'+badgeW+';height:'+badgeH+';flex:none;display:flex;align-items:center;justify-content:center;border-radius:'+(mob?'7px':'8px')+';padding:0 7px;font-family:\'Geist Mono\',monospace;font-size:'+badgeF+';font-weight:700;color:#fff;background:'+dep.boardColor+';opacity:'+dep.dim+'">'+dep.line+'</span>'
+        + '<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:'+(mob?'6px':'8px')+'"><span style="font-size:'+destF+';font-weight:600;color:var(--bd-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:'+dep.dim+'">'+esc(dep.dest)+'</span>'+delay+canc+'</div>'+routeText+'</div>'
+        + right + '</div>';
+    }).join('');
+    return '<div style="display:flex;align-items:center;gap:'+(mob?'8px':'9px')+';padding:'+gpad+';background:var(--bd-panel);border-bottom:1px solid var(--bd-line);border-top:1px solid var(--bd-line)">'
+      + '<svg width="'+(mob?13:14)+'" height="'+(mob?13:14)+'" viewBox="0 0 24 24" fill="none" stroke="'+g.arrowColor+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate('+g.arrowRot+'deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+      + '<span style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'10px':'11px')+';letter-spacing:.1em;text-transform:uppercase;color:var(--bd-ink)">'+g.label+'</span>'
+      + '<span style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'9px':'10px')+';color:var(--bd-sub);margin-left:auto">'+g.platform+'</span></div>'
+      + rows;
+  }).join('');
+  const header = '<div style="display:flex;align-items:center;justify-content:space-between;padding:'+pad+';background:var(--bd-panel);border-bottom:1px solid var(--bd-line)">'
+    + '<span style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'10px':'11px')+';letter-spacing:.1em;text-transform:uppercase;color:var(--bd-sub)">'+m.platform+(mob?'':' · '+m.stop)+'</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:'+(mob?'5px':'6px')+';font-family:\'Geist Mono\',monospace;font-size:'+(mob?'10px':'11px')+';color:#3ddc97"><span style="width:'+(mob?5:6)+'px;height:'+(mob?5:6)+'px;border-radius:50%;background:#3ddc97;animation:pulse 1.2s infinite"></span>LIVE'+(mob?'':' '+clock())+'</span></div>';
+  const showMore = mob?'':'<div style="padding:11px;text-align:center;font-family:\'Geist Mono\',monospace;font-size:11px;letter-spacing:.06em;color:var(--bd-sub);cursor:pointer">SHOW MORE ▾</div>';
+  const radius = mob?'15px':'16px';
+  const mb = mob?'margin-bottom:14px;':'';
+  return '<div class="board" style="background:var(--bd-bg);border:1px solid var(--bd-line);border-radius:'+radius+';overflow:hidden;'+mb+'">'+header+groups+showMore+'</div>';
+}
+
+function altHTML(alt, mob){
+  if(!alt.has) return '';
+  const badge = mob?'':'<span style="min-width:38px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:8px;padding:0 8px;font-family:\'Geist Mono\',monospace;font-size:13px;font-weight:700;color:#fff;background:'+alt.altColor+'">'+alt.altLine+'</span>';
+  return '<div style="display:flex;align-items:center;gap:'+(mob?'11px':'13px')+';'+(mob?'':'margin-top:16px;')+'background:var(--warn-soft);border:1px solid var(--warn-soft);border-left:3px solid var(--warn);border-radius:'+(mob?'13px':'14px')+';padding:'+(mob?'12px 14px':'14px 16px')+'">'
+    + '<span style="flex:none;color:var(--warn)">'+icon('warn',mob?18:20)+'</span>'
+    + '<div style="flex:1;min-width:0"><div style="font-size:'+(mob?'12.5px':'13.5px')+';font-weight:600">'+esc(alt.problemText)+'</div><div style="font-size:'+(mob?'12px':'13px')+';color:var(--t2);margin-top:2px">'+esc(alt.altText)+'</div></div>'
+    + badge + '</div>';
+}
+
+function launchChipsHTML(mob){
+  return journeyDests.slice(0,3).map((d,i)=>'<button data-launch="'+i+'" style="'+(mob?'flex:none;':'')+'display:inline-flex;align-items:center;gap:'+(mob?'5px':'6px')+';font-family:\'Geist\',sans-serif;font-size:'+(mob?'12px':'12.5px')+';font-weight:600;color:var(--t2);background:var(--surface-2);border:1px solid var(--border);padding:'+(mob?'5px 10px':'6px 11px')+';border-radius:100px;cursor:pointer">'+d.emoji+' '+d.label+'</button>').join('');
+}
+function tabsHTML(mob){
+  return ['all','tram','bus'].map(id=>{
+    const label = id==='all'?'All':id==='tram'?'🚊 Tram':'🚌 Bus';
+    return '<button data-tab="'+id+'" class="tab'+(mob?' sm':'')+(state.depMode===id?' on':'')+'">'+label+'</button>';
+  }).join('');
+}
+function journeyCardHTML(m, mob){
+  const dot = mob?'9px':'10px';
+  return '<div class="card" style="padding:'+(mob?'12px 14px':'14px 16px')+';margin-bottom:'+(mob?'14px':'18px')+'">'
+    + '<div style="display:flex;align-items:center;gap:'+(mob?'11px':'12px')+'"><span style="width:'+dot+';height:'+dot+';flex:none;border-radius:50%;border:3px solid var(--cyan)"></span><span style="flex:1;font-size:'+(mob?'13.5px':'14px')+';font-weight:600">You · '+m.stop+'</span></div>'
+    + '<div style="height:1px;background:var(--border);margin:'+(mob?'7px 0 7px 3px':'8px 0 8px 4px')+'"></div>'
+    + '<div style="display:flex;align-items:center;gap:'+(mob?'11px':'12px')+'"><span style="width:'+dot+';height:'+dot+';flex:none;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(45deg)"></span><input data-whereto id="whereTo'+(mob?'M':'D')+'" type="text" value="'+esc(state.whereTo)+'" placeholder="Where to?" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font-family:\'Geist\',sans-serif;font-size:'+(mob?'13.5px':'14px')+';font-weight:500;color:var(--ink)"><button data-plan-go style="flex:none;font-family:\'Geist Mono\',monospace;font-size:'+(mob?'10px':'10.5px')+';font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--primary);background:var(--primary-soft);padding:'+(mob?'4px 10px':'5px 11px')+';border-radius:100px;border:none;cursor:pointer">Plan trip →</button></div>'
+    + '<div style="display:flex;gap:'+(mob?'6px':'7px')+';margin-top:'+(mob?'11px':'13px')+';padding-left:'+(mob?'20px':'22px')+';'+(mob?'overflow-x:auto':'')+'">'+launchChipsHTML(mob)+'</div>'
+    + '</div>';
+}
+
+/* ---------- idle ---------- */
+function idleHTML(mob){
+  const m = boardModel();
+  let out = '';
+  if(!mob){
+    out += '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px"><div>'
+      + '<h1 style="font-family:\'Fraunces\',serif;font-weight:500;font-size:30px;letter-spacing:-.02em">Departures</h1>'
+      + '<p style="margin-top:4px;font-size:13.5px;color:var(--t2)">Live from <strong style="color:var(--ink);font-weight:600">'+m.stop+'</strong> · <span style="color:var(--cyan-h);font-weight:600">'+m.walk+' min walk from you</span></p></div>'
+      + '<span style="display:inline-flex;align-items:center;gap:7px;font-family:\'Geist Mono\',monospace;font-size:12px;font-weight:600;color:var(--success);background:var(--success-soft);padding:6px 12px;border-radius:100px"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse 1.2s infinite"></span>'+clock()+'</span></div>';
+  } else {
+    out += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><p style="font-size:13px;color:var(--t2)">Live from <strong style="color:var(--ink)">'+m.stop+'</strong> · <span style="color:var(--cyan-h);font-weight:600">'+m.walk+' min walk</span></p><span style="display:inline-flex;align-items:center;gap:5px;font-family:\'Geist Mono\',monospace;font-size:10.5px;font-weight:600;color:var(--success)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 1.2s infinite"></span>'+clock()+'</span></div>';
+  }
+  out += journeyCardHTML(m, mob);
+  out += '<div style="display:flex;gap:'+(mob?'7px':'8px')+';margin-bottom:'+(mob?'14px':'18px')+'">'+tabsHTML(mob)+'</div>';
+  out += boardHTML(m, mob);
+  out += altHTML(m.alt, mob);
+  if(!mob){
+    out += '<div style="margin-top:16px"><div style="font-family:\'Geist Mono\',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:10px">Planned disruptions</div>'
+      + disruptions.map(d=>'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><span style="flex:none;color:var(--danger)">'+icon('ban',15)+'</span><span style="flex:1;font-size:13px;color:var(--t2)">'+esc(d.t)+'</span></div>').join('')
+      + '</div>';
+  }
+  return out;
+}
+
+/* ---------- plan ---------- */
+function planHTML(mob){
+  const jHasTo = !!state.jTo;
+  const destChip = (d)=>{
+    const on = state.jTo===d.id;
+    const style = 'display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:100px;border:1px solid '+(on?'var(--primary)':'var(--border)')+';background:'+(on?'var(--primary-soft)':'var(--surface)')+';color:'+(on?'var(--primary)':'var(--ink)')+';font-family:Geist,sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex:none';
+    return '<button data-dest="'+d.id+'" style="'+style+'"><span style="font-size:14px">'+d.emoji+'</span>'+d.label+'</button>';
+  };
+  let out = '<div style="display:flex;align-items:center;gap:'+(mob?'10px':'12px')+';margin-bottom:'+(mob?'14px':'18px')+'">'
+    + '<button data-close-journey style="width:'+(mob?'32px':'34px')+';height:'+(mob?'32px':'34px')+';flex:none;border:1px solid var(--border);border-radius:50%;background:var(--surface);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center">'+icon('back',mob?16:17)+'</button>'
+    + '<span style="font-family:\'Fraunces\',serif;font-weight:500;font-size:'+(mob?'18px':'20px')+'">Plan your journey</span></div>';
+  out += '<div class="card" style="padding:'+(mob?'6px':'8px')+';margin-bottom:'+(mob?'14px':'18px')+'">'
+    + '<div style="display:flex;align-items:center;gap:'+(mob?'11px':'12px')+';padding:'+(mob?'11px 12px':'12px 14px')+'"><span style="width:'+(mob?'9px':'10px')+';height:'+(mob?'9px':'10px')+';flex:none;border-radius:50%;border:3px solid var(--cyan)"></span><span style="flex:1;font-size:14.5px;font-weight:500">Your location · Neumarkt</span></div>'
+    + '<div style="height:1px;background:var(--border);margin:0 '+(mob?'12px 0 26px':'14px 0 28px')+'"></div>'
+    + '<div style="display:flex;align-items:center;gap:'+(mob?'11px':'12px')+';padding:'+(mob?'11px 12px':'12px 14px')+'"><span style="width:'+(mob?'9px':'10px')+';height:'+(mob?'9px':'10px')+';flex:none;border-radius:50% 50% 50% 0;background:var(--primary);transform:rotate(45deg)"></span><input id="jToInput'+(mob?'M':'D')+'" type="text" value="'+esc(state.jToLabel)+'" placeholder="Where to?" style="flex:1;border:none;outline:none;background:transparent;font-family:\'Geist\',sans-serif;font-size:14.5px;font-weight:500;color:var(--ink)"></div>'
+    + '</div>';
+  if(!mob) out += '<div style="font-family:\'Geist Mono\',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:10px">Saved &amp; nearby</div>';
+  out += '<div style="display:flex;'+(mob?'gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px':'flex-wrap:wrap;gap:8px;margin-bottom:22px')+'">'+journeyDests.map(destChip).join('')+'</div>';
+  if(jHasTo){
+    const cards = routesForTo().map(r=>{
+      const mins = routeMins(r);
+      const legChips = r.legs.map(l=>{
+        if(l.type==='walk') return '<span style="display:inline-flex;align-items:center;gap:'+(mob?'3px':'4px')+';font-family:\'Geist Mono\',monospace;font-size:'+(mob?'11px':'11.5px')+';color:var(--t2)">'+icon('walk',mob?13:14)+l.mins+'′</span>';
+        if(l.type==='change') return '<span style="color:var(--t3)">'+icon('change',mob?13:14)+'</span>';
+        return '<span style="min-width:'+(mob?'24px':'26px')+';height:'+(mob?'22px':'24px')+';display:inline-flex;align-items:center;justify-content:center;border-radius:6px;padding:0 '+(mob?'6px':'7px')+';font-family:\'Geist Mono\',monospace;font-size:12px;font-weight:700;color:#fff;background:'+l.color+'">'+l.line+'</span>';
+      }).join('');
+      const changeText = r.changes===0?'Direct':r.changes+(r.changes===1?' change':' changes');
+      return '<button data-start="'+r.id+'" style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:'+(mob?'14px':'16px')+';padding:'+(mob?'14px':'16px 18px')+';box-shadow:var(--shadow);cursor:pointer;animation:fadeUp .3s ease both;width:100%">'
+        + '<div style="display:flex;align-items:center;gap:'+(mob?'9px':'10px')+';margin-bottom:'+(mob?'10px':'12px')+'"><span style="font-family:\'Geist Mono\',monospace;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--primary);background:var(--primary-soft);padding:'+(mob?'3px 9px':'4px 10px')+';border-radius:100px">'+r.kind+'</span><span style="font-size:12.5px;color:var(--t3)">'+changeText+'</span><span style="margin-left:auto;font-family:\'Fraunces\',serif;font-weight:600;font-size:'+(mob?'19px':'22px')+';line-height:1">'+mins+'<span style="font-size:'+(mob?'12px':'13px')+';color:var(--t3);font-family:\'Geist Mono\',monospace"> min</span></span></div>'
+        + '<div style="display:flex;align-items:center;gap:'+(mob?'5px':'6px')+';flex-wrap:wrap">'+legChips+'<span style="margin-left:auto;font-size:12.5px;color:var(--t2)">arrive '+hhmm(mins)+'</span></div></button>';
+    }).join('');
+    if(!mob) out += '<div style="font-family:\'Geist Mono\',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:12px">Routes to '+esc(state.jToLabel)+'</div>';
+    out += '<div style="display:flex;flex-direction:column;gap:'+(mob?'11px':'12px')+'">'+cards+'</div>';
+  }
+  return out;
+}
+
+/* ---------- active ---------- */
+function activeHTML(mob){
+  const steps = flattenRoute(currentRoute()).map((s,i)=>{
+    const cur = state.jProgress;
+    const accent = s.color || 'var(--primary)';
+    const done = i<cur, current = i===cur;
+    return { ...s, status: i<cur?'done':i===cur?'current':'next', done, current,
+      fillColor: (done||current)?accent:'transparent', ringColor:(done||current)?accent:'var(--border)',
+      dotClass: current?'jdot-current':'', lineColor: i<cur?accent:'var(--border)', badgeColor: s.color||'var(--t3)' };
+  });
+  const jLen = steps.length;
+  const jProg = Math.min(state.jProgress, Math.max(0,jLen-1));
+  const jNext = steps[jProg+1] || null;
+  const jArrived = jLen>0 && jProg>=jLen-1;
+  let jBanner='', jBannerSub='';
+  if(jArrived){ jBanner='You’ve arrived 🎉'; jBannerSub=state.jToLabel||''; }
+  else if(jNext){
+    if(jNext.kind==='alight'){ jBanner='Get off next · '+jNext.title.replace('Get off · ',''); jBannerSub='Prepare to exit'; }
+    else if(jNext.kind==='ride'){ jBanner='Next stop · '+jNext.title; jBannerSub = (steps.slice(jProg+1).filter(s=>s.station&&s.kind==='ride').length+1)+' stops to your exit'; }
+    else if(jNext.kind==='arrive'){ jBanner='Almost there'; jBannerSub='Final steps'; }
+    else { jBanner=jNext.title; jBannerSub=jNext.sub; }
+  }
+  const jCurColor = (steps[jProg] && steps[jProg].color) || 'var(--primary)';
+  const jPct = jLen>1 ? Math.round((jProg/(jLen-1))*100)+'%' : '0%';
+  const jRemain = steps.slice(jProg).reduce((a,s)=>a+(s.mins||(s.station?1:0)),0);
+  const banner = '<div style="position:relative;overflow:hidden;background:var(--ink);color:var(--bg);border-radius:'+(mob?'15px':'16px')+';padding:'+(mob?'15px 16px':'18px 20px')+';margin-bottom:8px;box-shadow:0 10px 28px rgba(20,16,8,.3)">'
+    + '<div style="display:flex;align-items:center;gap:'+(mob?'11px':'13px')+'"><span style="width:'+(mob?'9px':'10px')+';height:'+(mob?'9px':'10px')+';flex:none;border-radius:50%;background:'+jCurColor+';box-shadow:0 0 0 4px rgba(255,255,255,.16);animation:pulse 1.2s infinite"></span>'
+    + '<div style="flex:1;min-width:0"><div style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'9px':'10px')+';letter-spacing:.14em;text-transform:uppercase;opacity:.6">Live · next</div><div style="font-family:\'Fraunces\',serif;font-weight:600;font-size:'+(mob?'18px':'21px')+';letter-spacing:-.01em;line-height:1.1;margin-top:'+(mob?'2px':'3px')+'">'+esc(jBanner)+'</div>'+(jBannerSub?'<div style="font-size:'+(mob?'12px':'13px')+';opacity:.72;margin-top:'+(mob?'2px':'3px')+'">'+esc(jBannerSub)+'</div>':'')+'</div>'
+    + '<div style="text-align:right;flex:none"><div style="font-family:\'Geist Mono\',monospace;font-size:'+(mob?'9px':'10px')+';letter-spacing:.08em;opacity:.6">ARRIVE</div><div style="font-family:\'Fraunces\',serif;font-weight:600;font-size:'+(mob?'17px':'20px')+';margin-top:2px">'+hhmm(jRemain)+'</div></div></div>'
+    + '<div style="height:4px;border-radius:4px;background:rgba(255,255,255,.18);margin-top:'+(mob?'12px':'14px')+';overflow:hidden"><div style="height:100%;width:'+jPct+';background:'+jCurColor+';border-radius:4px;transition:width .6s ease"></div></div></div>';
+  const timeline = '<div class="card" style="padding:'+(mob?'6px 14px':'8px 18px')+'">'+steps.map(s=>{
+    const badge = s.kind==='board' || s.kind==='change' ? '<span style="min-width:'+(mob?'22px':'24px')+';height:'+(mob?'20px':'22px')+';display:inline-flex;align-items:center;justify-content:center;border-radius:'+(mob?'5px':'6px')+';padding:0 '+(mob?'5px':'6px')+';font-family:\'Geist Mono\',monospace;font-size:'+(mob?'10px':'11px')+';font-weight:700;color:#fff;background:'+s.badgeColor+'">'+(s.line||'')+'</span>' : '';
+    const now = s.current ? '<span style="margin-left:auto;display:inline-flex;align-items:center;gap:'+(mob?'4px':'5px')+';font-family:\'Geist Mono\',monospace;font-size:'+(mob?'9px':'10px')+';font-weight:600;color:var(--success)"><span style="width:'+(mob?5:6)+'px;height:'+(mob?5:6)+'px;border-radius:50%;background:var(--success);animation:pulse 1.1s infinite"></span>NOW</span>' : '';
+    const sub = s.sub ? '<div style="font-size:'+(mob?'11px':'12px')+';color:var(--t3);margin-top:'+(mob?'1px':'2px')+'">'+esc(s.sub)+'</div>' : '';
+    return '<div style="display:flex;gap:'+(mob?'12px':'14px')+'"><div style="flex:none;width:'+(mob?'18px':'22px')+';display:flex;flex-direction:column;align-items:center"><span class="'+s.dotClass+'" style="width:'+(mob?'12px':'13px')+';height:'+(mob?'12px':'13px')+';flex:none;border-radius:50%;border:2px solid '+s.ringColor+';background:'+s.fillColor+'"></span><span style="flex:1;width:2px;background:'+s.lineColor+';min-height:'+(mob?'14px':'18px')+'"></span></div>'
+      + '<div style="flex:1;min-width:0;padding-bottom:'+(mob?'7px':'8px')+'"><div style="display:flex;align-items:center;gap:'+(mob?'8px':'9px')+'">'+badge+'<span class="jstep-'+s.status+'" style="font-size:'+(mob?'13px':'14px')+';line-height:1.3">'+esc(s.title)+'</span>'+now+'</div>'+sub+'</div></div>';
+  }).join('')+'</div>';
+  const endBtn = '<button data-end-journey style="width:100%;margin-top:'+(mob?'12px':'14px')+';padding:'+(mob?'12px':'13px')+';border:1px solid var(--border);border-radius:'+(mob?'12px':'13px')+';background:var(--surface);color:var(--t2);font-family:\'Geist\',sans-serif;font-size:'+(mob?'13.5px':'14px')+';font-weight:600;cursor:pointer">End journey</button>';
+  let head = '';
+  if(!mob){
+    head = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><button data-back-plan style="width:34px;height:34px;flex:none;border:1px solid var(--border);border-radius:50%;background:var(--surface);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center">'+icon('back',17)+'</button><span style="font-family:\'Fraunces\',serif;font-weight:500;font-size:20px">Your location · Neumarkt → '+esc(state.jToLabel)+'</span></div>';
+  }
+  return head + banner + timeline + endBtn;
+}
+function currentRoute(){
+  const list = routesForTo();
+  return list.find(r=>r.id===state.jRoute) || list[0] || genericRoute(state.jToLabel||'Destination')[0];
+}
+
+/* ---------- aside (desktop only, static-ish) ---------- */
+function asideHTML(){
+  const stats = [['Feels like','34°'],['Humidity','41%'],['UV index','7 · High'],['Wind','12 km/h'],['Sunset','21:34']];
+  return '<div class="card" style="padding:18px;margin-bottom:16px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><span style="font-size:14px;font-weight:600">Weather · Cologne</span></div>'
+    + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px"><div><div style="font-family:\'Fraunces\',serif;font-weight:500;font-size:54px;line-height:.9;color:var(--amber)">32°</div><div style="font-size:14px;font-weight:500;margin-top:8px">Clear sky</div><div style="font-size:12.5px;color:var(--t2)">Dry next 8 hours</div></div><span style="color:var(--amber)">'+icon('sun',52)+'</span></div>'
+    + '<div style="border-top:1px solid var(--border);margin-top:14px;padding-top:6px">'+stats.map(s=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--t2)">'+s[0]+'</span><span style="font-family:\'Geist Mono\',monospace;font-size:12.5px;font-weight:500;color:var(--ink)">'+s[1]+'</span></div>').join('')+'</div></div>'
+    + '<div class="card" style="padding:18px;margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><span style="font-size:14px;font-weight:600">Rhine Level</span></div>'
+    + '<div style="display:flex;align-items:center;gap:14px"><span style="width:42px;height:42px;flex:none;border-radius:11px;background:var(--cyan-soft);color:var(--cyan);display:flex;align-items:center;justify-content:center">'+icon('wave',22)+'</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Cologne Gauge</div><div style="font-size:12.5px;color:var(--t2)">Rheinufer paths open</div></div><div style="text-align:right"><div style="font-family:\'Fraunces\',serif;font-weight:500;font-size:26px;color:var(--cyan);line-height:1">1.57</div><div style="font-family:\'Geist Mono\',monospace;font-size:10px;color:var(--t3);margin-top:2px">metres</div></div></div></div>'
+    + '<div class="card" style="padding:18px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:14px;font-weight:600">Live Disruptions</span><span style="font-family:\'Geist Mono\',monospace;font-size:11px;color:var(--danger);background:var(--danger-soft);padding:3px 8px;border-radius:100px">2 active</span></div>'
+    + disruptions.map(d=>'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><span style="flex:none;color:var(--danger)">'+icon('ban',16)+'</span><span style="flex:1;font-size:12.5px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(d.t)+'</span><span style="font-family:\'Geist Mono\',monospace;font-size:10.5px;color:var(--danger)">critical</span></div>').join('')+'</div>';
+}
+
+/* ---------- static chrome ---------- */
+function chromeInit(){
+  let sb = '<div class="brand"><span class="logo">E</span><span class="name">Expadu</span></div>';
+  sb += '<div class="navgroup">Plan</div>';
+  sb += '<button class="nav">'+icon('spark')+'Day Composer</button>';
+  sb += '<button class="nav">'+icon('today')+'Today</button>';
+  sb += '<div class="navgroup">City</div>';
+  sb += '<button class="nav">'+icon('place')+'Places</button>';
+  sb += '<button class="nav">'+icon('event')+'Events</button>';
+  sb += '<button class="nav on">'+icon('bus')+'Departures</button>';
+  sb += '<button class="nav">'+icon('doc')+'Bureaucracy</button>';
+  sb += '<div style="flex:1"></div>';
+  sb += '<button class="nav">'+icon('alert')+'Alerts</button>';
+  document.getElementById('deskSidebar').innerHTML = sb;
+
+  document.getElementById('phoneTop').innerHTML =
+    '<div style="width:30px;height:30px;border-radius:9px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:\'Fraunces\',serif;font-weight:600;font-size:16px">E</div>'
+    + '<span style="font-family:\'Fraunces\',serif;font-weight:600;font-size:18px">Departures</span>'
+    + '<button style="margin-left:auto;position:relative;width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:50%;cursor:pointer;color:var(--t2);display:flex;align-items:center;justify-content:center">'+icon('bell')+'<span style="position:absolute;top:-3px;right:-3px;min-width:16px;height:16px;border-radius:9px;background:var(--danger);color:#fff;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--bg)">5</span></button>';
+
+  const pnav = [['spark','Plan',false],['today','Today',false],['place','Places',false],['bus','Departures',true],['doc','Docs',false]];
+  document.getElementById('phoneNav').innerHTML = pnav.map(n=>'<button class="pnavbtn'+(n[2]?' on':'')+'">'+icon(n[0],19)+'<span>'+n[1]+'</span></button>').join('');
+}
+
+/* ---------- render ---------- */
+function bodyHTML(mob){
+  if(state.jStage==='plan') return planHTML(mob);
+  if(state.jStage==='active') return activeHTML(mob);
+  return idleHTML(mob);
+}
+function render(){
+  document.getElementById('deskDep').innerHTML = bodyHTML(false);
+  document.getElementById('mobDep').innerHTML = bodyHTML(true);
+  document.getElementById('deskAside').innerHTML = asideHTML();
+  wire();
+  // reflect stage in toolbar
+  document.querySelectorAll('#stageCtl button').forEach(b=>b.classList.toggle('on', b.dataset.stage===state.jStage));
+}
+function wire(){
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ state.depMode=b.dataset.tab; render(); });
+  document.querySelectorAll('[data-plan-go]').forEach(b=>b.onclick=()=>planGo());
+  document.querySelectorAll('[data-whereto]').forEach(el=>{ el.oninput=()=>{ state.whereTo=el.value; }; el.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); planGo(); } }; });
+  document.querySelectorAll('[data-close-journey]').forEach(b=>b.onclick=()=>{ state.jStage='idle'; state.jTo=''; state.jToLabel=''; state.whereTo=''; render(); });
+  document.querySelectorAll('[data-launch]').forEach(b=>b.onclick=()=>{ const d=journeyDests[+b.dataset.launch]; state.jTo=d.id; state.jToLabel=d.label+' · '+d.to; state.jStage='plan'; render(); });
+  document.querySelectorAll('[data-dest]').forEach(b=>b.onclick=()=>{ const d=journeyDests.find(x=>x.id===b.dataset.dest); state.jTo=d.id; state.jToLabel=d.label+' · '+d.to; render(); });
+  document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>{ startJourney(b.dataset.start); });
+  document.querySelectorAll('[data-end-journey]').forEach(b=>b.onclick=()=>{ endJourney(); });
+  document.querySelectorAll('[data-back-plan]').forEach(b=>b.onclick=()=>{ stopJourneyTimer(); state.jStage='plan'; state.jProgress=0; render(); });
+  ['jToInputD','jToInputM'].forEach(id=>{ const el=document.getElementById(id); if(el) el.onchange=()=>{ const v=el.value.trim(); state.jTo=v?'__text:'+v:''; state.jToLabel=v; render(); }; });
+}
+function startJourney(id){
+  state.jRoute=id; state.jStage='active'; state.jProgress=0;
+  stopJourneyTimer();
+  const steps = flattenRoute(currentRoute());
+  journeyTimer = setInterval(()=>{
+    if(state.jProgress>=steps.length-1){ stopJourneyTimer(); return; }
+    state.jProgress++; render();
+  }, 3000);
+  render();
+}
+function endJourney(){ stopJourneyTimer(); state.jStage='idle'; state.jProgress=0; state.jRoute=null; state.jTo=''; state.jToLabel=''; state.whereTo=''; render(); }
+function stopJourneyTimer(){ if(journeyTimer){ clearInterval(journeyTimer); journeyTimer=null; } }
+/* open the planner from the idle "Where to?" input — with the typed destination if any */
+function planGo(){ const v=(state.whereTo||'').trim(); if(v){ state.jTo='__text:'+v; state.jToLabel=v; } else { state.jTo=''; state.jToLabel=''; } state.jStage='plan'; render(); }
+
+/* live board tick (idle only) — never re-render while the user is typing a destination */
+function startBoardTimer(){ boardTimer = setInterval(()=>{ state.tick++; const ae=document.activeElement; const typing = ae && ae.hasAttribute && ae.hasAttribute('data-whereto'); if(state.jStage==='idle' && !typing) render(); }, 6000); }
+
+/* toolbar */
+document.querySelectorAll('#stageCtl button').forEach(b=>b.onclick=()=>{
+  const s=b.dataset.stage;
+  if(s==='active'){ if(!state.jTo){ const d=journeyDests[0]; state.jTo=d.id; state.jToLabel=d.label+' · '+d.to; } startJourney(currentRoute().id); return; }
+  stopJourneyTimer();
+  state.jStage=s;
+  if(s==='plan' && !state.jTo){ const d=journeyDests[0]; state.jTo=d.id; state.jToLabel=d.label+' · '+d.to; }
+  render();
+});
+document.querySelectorAll('#themeCtl button').forEach(b=>b.onclick=()=>{
+  state.dark = b.dataset.theme==='dark';
+  document.getElementById('deskApp').classList.toggle('dark', state.dark);
+  document.getElementById('mobPhone').classList.toggle('dark', state.dark);
+  document.body.classList.toggle('darkpage', state.dark);
+  document.querySelectorAll('#themeCtl button').forEach(x=>x.classList.toggle('on', x.dataset.theme===(state.dark?'dark':'light')));
+});
+
+chromeInit();
+render();
+startBoardTimer();
+</script>
+</body>
+</html>

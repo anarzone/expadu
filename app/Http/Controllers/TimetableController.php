@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserPlace;
 use App\Services\TimetableService;
 use App\Services\UserLocationService;
 use Illuminate\Http\Request;
@@ -21,6 +22,25 @@ class TimetableController extends Controller
 
         return Inertia::render('timetable', [
             'boards' => Inertia::defer(fn () => $timetable->boards($location['lat'], $location['lng'])),
+            // Saved places (Home / Work / pins) offered as one-tap journey
+            // destinations in the "Where to?" card. Unlike the Places "From"
+            // picker, coordinates are sent to the client here because the journey
+            // sheet plans the route from lat/lng directly.
+            'savedPlaces' => $request->user()->places()
+                ->whereNotNull('lat')
+                ->whereNotNull('lng')
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get(['id', 'name', 'category', 'emoji', 'lat', 'lng'])
+                ->map(fn (UserPlace $place) => [
+                    'id' => $place->id,
+                    'name' => $place->name,
+                    'category' => (string) $place->category,
+                    'emoji' => $place->emoji,
+                    'lat' => (float) $place->lat,
+                    'lng' => (float) $place->lng,
+                ])
+                ->all(),
         ]);
     }
 }
