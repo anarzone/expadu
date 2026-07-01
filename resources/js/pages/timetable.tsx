@@ -1,5 +1,9 @@
 import { Deferred, Head, usePage } from '@inertiajs/react';
-import { IconAlertTriangle } from '@tabler/icons-react';
+import {
+    IconAlertTriangle,
+    IconArrowRight,
+    IconBan,
+} from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { JourneyPlanner } from '@/components/departures/journey-planner';
 import type { SavedPlace } from '@/components/departures/journey-planner';
@@ -17,6 +21,16 @@ type Departure = {
     delay: number;
     cancelled: boolean;
     disrupted: boolean;
+    /** GTFS travel direction (0/1) — groups the board into lanes. */
+    direction: number | null;
+    /** The next stops ridden after this one ("via …"). */
+    via: string[];
+};
+
+/** A city/transit disruption from the shared middleware prop. */
+type DisruptionItem = {
+    title: string;
+    severity?: string;
 };
 
 type Board = {
@@ -194,6 +208,11 @@ function BoardRow({ dep }: { dep: Departure }) {
                         </span>
                     )}
                 </div>
+                {dep.via.length > 0 && (
+                    <div className="mt-[3px] truncate font-mono text-[11px] text-[var(--bd-sub)]">
+                        via {dep.via.join(' · ')}
+                    </div>
+                )}
             </div>
             {dep.cancelled ? (
                 <span className="shrink-0 font-mono text-xs text-[#ff6b54]">
@@ -215,14 +234,64 @@ function BoardRow({ dep }: { dep: Departure }) {
     );
 }
 
+/** "Toward {top destinations}" for a direction lane. */
+function laneLabel(rows: Departure[]): string {
+    const dests = [
+        ...new Set(rows.map((d) => d.destination).filter(Boolean)),
+    ].slice(0, 2);
+
+    return dests.length > 0 ? `Toward ${dests.join(' / ')}` : 'Departures';
+}
+
+function LaneHeader({
+    direction,
+    label,
+}: {
+    direction: number;
+    label: string;
+}) {
+    return (
+        <div className="flex items-center gap-2.5 border-y border-[var(--bd-line)] bg-[var(--bd-panel)] px-4 py-[11px] md:px-[18px]">
+            <IconArrowRight
+                size={14}
+                stroke={2.2}
+                className={`shrink-0 ${direction === 1 ? 'rotate-180' : ''}`}
+                style={{ color: direction === 0 ? '#3ddc97' : '#ffc24d' }}
+            />
+            <span className="truncate font-mono text-[11px] tracking-[0.1em] text-[var(--bd-ink)] uppercase">
+                {label}
+            </span>
+        </div>
+    );
+}
+
 function DepartureBoard({ board }: { board: NonNullable<Board> }) {
     const [expanded, setExpanded] = useState(false);
-    const visible = expanded
-        ? board.departures
-        : board.departures.slice(0, VISIBLE);
-    const hidden = board.departures.length - VISIBLE;
     const platform =
         board.departures[0]?.type === 'bus' ? 'KVB Bus' : 'KVB Stadtbahn';
+
+    // Direction lanes (v4): only when GTFS matched both travel directions —
+    // otherwise the board stays a flat list. Rows without a matched direction
+    // ride along at the bottom of the grouped board.
+    const dir0 = board.departures.filter((d) => d.direction === 0);
+    const dir1 = board.departures.filter((d) => d.direction === 1);
+    const ungrouped = board.departures.filter((d) => d.direction == null);
+    const grouped = dir0.length > 0 && dir1.length > 0;
+
+    const laneCap = Math.ceil(VISIBLE / 2);
+    // How many rows the collapsed board shows — the toggle renders whenever
+    // expanding would reveal more (and stays visible to collapse again).
+    const collapsedShown = grouped
+        ? Math.min(dir0.length, laneCap) + Math.min(dir1.length, laneCap)
+        : Math.min(board.departures.length, VISIBLE);
+    const hidden = board.departures.length - collapsedShown;
+
+    const lanes: Array<{ direction: number; rows: Departure[] }> = grouped
+        ? [
+              { direction: 0, rows: expanded ? dir0 : dir0.slice(0, laneCap) },
+              { direction: 1, rows: expanded ? dir1 : dir1.slice(0, laneCap) },
+          ]
+        : [];
 
     return (
         <div
@@ -238,14 +307,45 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
                     LIVE <LiveClock />
                 </span>
             </div>
-            <div>
-                {visible.map((dep, i) => (
-                    <BoardRow
-                        key={`${dep.line}-${dep.destination}-${i}`}
-                        dep={dep}
-                    />
-                ))}
-            </div>
+            {grouped ? (
+                <div>
+                    {lanes.map((lane) => (
+                        <div key={lane.direction}>
+                            <LaneHeader
+                                direction={lane.direction}
+                                label={laneLabel(
+                                    lane.direction === 0 ? dir0 : dir1,
+                                )}
+                            />
+                            {lane.rows.map((dep, i) => (
+                                <BoardRow
+                                    key={`${dep.line}-${dep.destination}-${i}`}
+                                    dep={dep}
+                                />
+                            ))}
+                        </div>
+                    ))}
+                    {expanded &&
+                        ungrouped.map((dep, i) => (
+                            <BoardRow
+                                key={`u-${dep.line}-${dep.destination}-${i}`}
+                                dep={dep}
+                            />
+                        ))}
+                </div>
+            ) : (
+                <div>
+                    {(expanded
+                        ? board.departures
+                        : board.departures.slice(0, VISIBLE)
+                    ).map((dep, i) => (
+                        <BoardRow
+                            key={`${dep.line}-${dep.destination}-${i}`}
+                            dep={dep}
+                        />
+                    ))}
+                </div>
+            )}
             {hidden > 0 && (
                 <button
                     onClick={() => setExpanded((e) => !e)}
@@ -279,6 +379,40 @@ function EmptyBoard({ mode }: { mode: Mode }) {
     return (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
             No live {what} for your nearest stop right now.
+        </div>
+    );
+}
+
+/** Known service problems under the board — from the shared disruptions prop. */
+function PlannedDisruptions({
+    disruptions,
+}: {
+    disruptions: DisruptionItem[];
+}) {
+    if (disruptions.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-4">
+            <div className="mb-2.5 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
+                Planned disruptions
+            </div>
+            {disruptions.map((d, i) => (
+                <div
+                    key={i}
+                    className="flex items-center gap-2.5 border-b border-border py-[9px]"
+                >
+                    <IconBan
+                        size={15}
+                        stroke={ICON_STROKE}
+                        className="shrink-0 text-danger"
+                    />
+                    <span className="min-w-0 flex-1 text-[13px] text-muted-foreground">
+                        {d.title}
+                    </span>
+                </div>
+            ))}
         </div>
     );
 }
@@ -386,9 +520,14 @@ function JourneyEntryCard({
 }
 
 export default function Timetable() {
-    const { boards, savedPlaces = [] } = usePage<{
+    const {
+        boards,
+        savedPlaces = [],
+        activeDisruptions = [],
+    } = usePage<{
         boards?: Boards;
         savedPlaces?: SavedPlace[];
+        activeDisruptions?: DisruptionItem[];
     }>().props;
     const [mode, setMode] = useState<Mode>('all');
     const [destination, setDestination] = useState<Destination | null>(null);
@@ -519,6 +658,9 @@ export default function Timetable() {
                                     <EmptyBoard mode={mode} />
                                 )}
                                 {alt && <AltCard alt={alt} />}
+                                <PlannedDisruptions
+                                    disruptions={activeDisruptions}
+                                />
                             </>
                         </Deferred>
                     </>

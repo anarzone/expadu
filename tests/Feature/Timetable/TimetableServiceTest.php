@@ -63,3 +63,27 @@ test('the departures page renders and defers the boards', function () {
         ->loadDeferredProps(fn ($reload) => $reload->has('boards'))
     );
 });
+
+test('board departures carry the GTFS direction lane and via stops', function () {
+    $this->mock(KvbApiService::class, function ($m) {
+        $m->shouldReceive('getStops')->andReturn([
+            ['name' => 'Neumarkt', 'area' => 'STRAB', 'lat' => 50.9364, 'lng' => 6.9470, 'lines' => ['1']],
+        ]);
+    });
+    $this->mock(GtfsDepartureService::class, function ($m) {
+        $m->shouldReceive('getDepartures')->andReturn([
+            'source' => 'trias_rt',
+            'departures' => [
+                ['line' => '1', 'direction' => 'Bensberg', 'type' => 'tram', 'color' => '#E2001A', 'departures' => [3, 13], 'delay' => 0],
+            ],
+        ]);
+        $m->shouldReceive('routeContext')->with('Neumarkt', '1', 'Bensberg')
+            ->andReturn(['direction' => 0, 'via' => ['Heumarkt', 'Deutz/Messe']]);
+    });
+
+    $boards = app(TimetableService::class)->boards(50.9364, 6.9470);
+    $departure = $boards['all']['departures'][0];
+
+    expect($departure['direction'])->toBe(0);
+    expect($departure['via'])->toBe(['Heumarkt', 'Deutz/Messe']);
+});

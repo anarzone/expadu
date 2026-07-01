@@ -44,18 +44,6 @@ function placeEmoji(place: SavedPlace): string {
     return '📍';
 }
 
-/** "44 min" under an hour, "1 h 5 min" above it. */
-function formatDuration(min: number): string {
-    if (min < 60) {
-        return `${min} min`;
-    }
-
-    const hours = Math.floor(min / 60);
-    const rest = min % 60;
-
-    return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
-}
-
 function transferText(journey: Journey): string {
     if (journey.mode !== 'transit') {
         return 'Direct';
@@ -119,7 +107,12 @@ function LegChips({ legs }: { legs: JourneyLeg[] }) {
                                 className="text-text-3"
                             />
                         )}
-                        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-primary px-1.5 font-mono text-xs font-bold text-white">
+                        <span
+                            className="inline-flex h-6 min-w-6 items-center justify-center rounded-md px-1.5 font-mono text-xs font-bold text-white"
+                            style={{
+                                background: leg.color ?? 'var(--color-primary)',
+                            }}
+                        >
                             {leg.line ?? '?'}
                         </span>
                     </span>
@@ -168,45 +161,133 @@ function RouteCard({
     );
 }
 
+type StepKind = 'walk' | 'board' | 'ride' | 'alight' | 'arrive';
+
 type Step = {
-    line?: string | null;
+    kind: StepKind;
     title: string;
     sub: string;
-    transit: boolean;
-    arrive?: boolean;
+    /** When this step is (scheduled to be) reached — drives the live cursor. */
+    at: number;
+    line?: string | null;
+    color?: string | null;
+    station?: boolean;
 };
 
-function legSteps(journey: Journey, destName: string): Step[] {
-    const steps: Step[] = journey.legs.map((leg) => {
-        if (isTransitLeg(leg)) {
-            return {
-                line: leg.line,
-                title: `Line ${leg.line ?? ''}${leg.headsign ? ` toward ${leg.headsign}` : ''}`,
-                sub: `${leg.stops ? `${leg.stops} stop${leg.stops === 1 ? '' : 's'} · ` : ''}get off at ${leg.to.name}`,
-                transit: true,
-            };
+/**
+ * The journey flattened station by station: walk legs, then per transit leg a
+ * board step, every ridden station, and the get-off — each stamped with its
+ * scheduled time so the view can place a live NOW cursor without GPS.
+ */
+function stationSteps(journey: Journey, destName: string): Step[] {
+    const steps: Step[] = [];
+
+    for (const leg of journey.legs) {
+        if (!isTransitLeg(leg)) {
+            const verb = leg.mode === 'bike' ? 'Cycle' : 'Walk';
+
+            steps.push({
+                kind: 'walk',
+                title: `${verb} to ${leg.to.name || destName}`,
+                sub: `${leg.duration_min} min${leg.mode === 'bike' ? ' by bike' : ' on foot'}`,
+                at: Date.parse(leg.depart_at),
+            });
+
+            continue;
         }
 
-        const verb = leg.mode === 'bike' ? 'Cycle' : 'Walk';
+        steps.push({
+            kind: 'board',
+            title: `Board Line ${leg.line ?? ''}`,
+            sub: leg.headsign
+                ? `towards ${leg.headsign}`
+                : `from ${leg.from.name}`,
+            at: Date.parse(leg.depart_at),
+            line: leg.line,
+            color: leg.color,
+        });
 
-        return {
-            title: `${verb} to ${leg.to.name || destName}`,
-            sub: `${leg.duration_min} min${leg.mode === 'bike' ? ' by bike' : ' on foot'}`,
-            transit: false,
-        };
-    });
+        for (const stop of leg.intermediate_stops ?? []) {
+            steps.push({
+                kind: 'ride',
+                title: stop.name,
+                sub: '',
+                at: Date.parse(stop.arrive_at),
+                line: leg.line,
+                color: leg.color,
+                station: true,
+            });
+        }
+
+        steps.push({
+            kind: 'alight',
+            title: `Get off · ${leg.to.name}`,
+            sub: 'your stop',
+            at: Date.parse(leg.arrive_at),
+            line: leg.line,
+            color: leg.color,
+            station: true,
+        });
+    }
 
     steps.push({
+        kind: 'arrive',
         title: 'You’ve arrived',
         sub: destName,
-        transit: false,
-        arrive: true,
+        at: Date.parse(journey.arrive_at),
     });
 
     return steps;
 }
 
-/** The chosen route as a leave-by banner + a leg-by-leg timeline. */
+/** The banner headline + subline for the upcoming step (mirrors the v4 mock). */
+function bannerFor(
+    steps: Step[],
+    currentIdx: number,
+    destName: string,
+): { title: string; sub: string } {
+    if (steps.length > 0 && currentIdx >= steps.length - 1) {
+        return { title: 'You’ve arrived 🎉', sub: destName };
+    }
+
+    const next = steps[currentIdx + 1];
+
+    if (!next) {
+        return { title: 'Ready when you are', sub: '' };
+    }
+
+    switch (next.kind) {
+        case 'alight':
+            return {
+                title: `Get off next · ${next.title.replace('Get off · ', '')}`,
+                sub: 'Prepare to exit',
+            };
+        case 'ride': {
+            const toExit =
+                steps
+                    .slice(currentIdx + 1)
+                    .findIndex((s) => s.kind === 'alight') + 1;
+
+            return {
+                title: `Next stop · ${next.title}`,
+                sub:
+                    toExit > 0
+                        ? `${toExit} stop${toExit === 1 ? '' : 's'} to your exit`
+                        : '',
+            };
+        }
+        case 'arrive':
+            return { title: 'Almost there', sub: 'Final steps' };
+        default:
+            return { title: next.title, sub: next.sub };
+    }
+}
+
+/**
+ * The chosen route as a live journey: a dark "Live · next" banner with a
+ * progress bar, and a station-by-station timeline whose NOW cursor advances on
+ * the schedule clock (no GPS feed yet — scheduled times, ticked live).
+ */
 function RouteDetail({
     journey,
     fromName,
@@ -220,7 +301,33 @@ function RouteDetail({
     onBack: () => void;
     onEnd: () => void;
 }) {
-    const steps = legSteps(journey, destName);
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 20_000);
+
+        return () => clearInterval(id);
+    }, []);
+
+    const steps = stationSteps(journey, destName);
+    // The last step whose scheduled time has passed; -1 before departure.
+    let currentIdx = -1;
+
+    for (let i = 0; i < steps.length; i++) {
+        if (steps[i].at <= now) {
+            currentIdx = i;
+        }
+    }
+
+    const banner = bannerFor(steps, currentIdx, destName);
+    const cursorColor =
+        (currentIdx >= 0 ? steps[currentIdx]?.color : steps[0]?.color) ??
+        'var(--color-primary)';
+    const pct =
+        steps.length > 1 && currentIdx > 0
+            ? Math.round((currentIdx / (steps.length - 1)) * 100)
+            : 0;
+    const beforeStart = currentIdx < 0;
 
     return (
         <div>
@@ -237,21 +344,33 @@ function RouteDetail({
                 </span>
             </div>
 
-            <div className="mb-2 overflow-hidden rounded-2xl bg-foreground p-5 text-background shadow-sm">
+            {/* Live NEXT banner */}
+            <div
+                className="relative mb-2 overflow-hidden rounded-2xl bg-foreground px-5 py-[18px] text-background"
+                style={{ boxShadow: '0 10px 30px rgba(20,16,8,.28)' }}
+            >
                 <div className="flex items-center gap-3">
+                    <span
+                        className="size-2.5 shrink-0 animate-pulse rounded-full"
+                        style={{
+                            background: cursorColor,
+                            boxShadow: '0 0 0 4px rgba(255,255,255,.16)',
+                        }}
+                    />
                     <div className="min-w-0 flex-1">
                         <div className="font-mono text-[10px] tracking-[0.14em] uppercase opacity-60">
-                            Your trip
+                            {beforeStart
+                                ? `Leave by ${journey.depart_time}`
+                                : 'Live · next'}
                         </div>
-                        <div className="mt-1 font-display text-[21px] leading-tight font-semibold">
-                            Leave by {journey.depart_time}
+                        <div className="mt-1 truncate font-display text-[21px] leading-tight font-semibold tracking-tight">
+                            {banner.title}
                         </div>
-                        <div className="mt-1 text-[13px] opacity-70">
-                            {formatDuration(journey.duration_min)}
-                            {journey.mode === 'transit' &&
-                                journey.transfers > 0 &&
-                                ` · ${journey.transfers} transfer${journey.transfers > 1 ? 's' : ''}`}
-                        </div>
+                        {banner.sub && (
+                            <div className="mt-1 truncate text-[13px] opacity-70">
+                                {banner.sub}
+                            </div>
+                        )}
                     </div>
                     <div className="shrink-0 text-right">
                         <div className="font-mono text-[10px] tracking-[0.08em] uppercase opacity-60">
@@ -262,44 +381,79 @@ function RouteDetail({
                         </div>
                     </div>
                 </div>
+                <div className="mt-3.5 h-1 overflow-hidden rounded bg-white/20">
+                    <div
+                        className="h-full rounded transition-[width] duration-500"
+                        style={{ width: `${pct}%`, background: cursorColor }}
+                    />
+                </div>
             </div>
 
+            {/* Station-by-station timeline */}
             <div className="rounded-2xl border border-border bg-card px-[18px] py-2 shadow-sm">
                 {steps.map((step, i) => {
                     const last = i === steps.length - 1;
-                    const accent = step.arrive
-                        ? 'var(--color-cyan)'
-                        : 'var(--color-primary)';
+                    const done = i < currentIdx;
+                    const current = i === currentIdx;
+                    const accent = step.color ?? 'var(--color-primary)';
 
                     return (
                         <div key={i} className="flex gap-3.5">
                             <div className="flex w-[22px] shrink-0 flex-col items-center">
                                 <span
-                                    className="size-[13px] shrink-0 rounded-full border-2"
+                                    className={`size-[13px] shrink-0 rounded-full border-2 ${current ? 'animate-pulse' : ''}`}
                                     style={{
-                                        borderColor: accent,
-                                        background: step.arrive
-                                            ? accent
-                                            : 'transparent',
+                                        borderColor:
+                                            done || current
+                                                ? accent
+                                                : 'var(--color-border)',
+                                        background:
+                                            done || current
+                                                ? accent
+                                                : 'transparent',
                                     }}
                                 />
                                 {!last && (
-                                    <span className="min-h-[18px] w-0.5 flex-1 bg-border" />
+                                    <span
+                                        className="min-h-[18px] w-0.5 flex-1"
+                                        style={{
+                                            background: done
+                                                ? accent
+                                                : 'var(--color-border)',
+                                        }}
+                                    />
                                 )}
                             </div>
                             <div className="min-w-0 flex-1 pb-2">
                                 <div className="flex items-center gap-2">
-                                    {step.transit && step.line && (
-                                        <span className="inline-flex h-[22px] min-w-6 items-center justify-center rounded-md bg-primary px-1.5 font-mono text-[11px] font-bold text-white">
+                                    {step.kind === 'board' && step.line && (
+                                        <span
+                                            className="inline-flex h-[22px] min-w-6 items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-bold text-white"
+                                            style={{ background: accent }}
+                                        >
                                             {step.line}
                                         </span>
                                     )}
-                                    <span className="text-sm leading-snug font-medium">
+                                    <span
+                                        className={`truncate text-sm leading-snug ${
+                                            done
+                                                ? 'text-text-3'
+                                                : current
+                                                  ? 'font-semibold'
+                                                  : 'text-muted-foreground'
+                                        }`}
+                                    >
                                         {step.title}
                                     </span>
+                                    {current && (
+                                        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold text-success">
+                                            <span className="size-1.5 animate-pulse rounded-full bg-success" />
+                                            NOW
+                                        </span>
+                                    )}
                                 </div>
                                 {step.sub && (
-                                    <div className="mt-0.5 text-xs text-muted-foreground">
+                                    <div className="mt-0.5 text-xs text-text-3">
                                         {step.sub}
                                     </div>
                                 )}
@@ -451,14 +605,18 @@ export function JourneyPlanner({
 
     const journeys = useMemo(() => {
         const list = data?.journeys ?? [];
+        // Up to three transit alternatives (the design's Fastest / Fewest
+        // changes / …) plus the fastest direct mode for the trade-off glance.
+        const transit = list
+            .filter((j) => j.mode === 'transit')
+            .sort((a, b) => a.duration_min - b.duration_min)
+            .slice(0, 3);
+        const direct = list
+            .filter((j) => j.mode !== 'transit')
+            .sort((a, b) => a.duration_min - b.duration_min)
+            .slice(0, 1);
 
-        return [...list]
-            .sort((a, b) => {
-                const rank = (j: Journey) => (j.mode === 'transit' ? 0 : 1);
-
-                return rank(a) - rank(b) || a.duration_min - b.duration_min;
-            })
-            .slice(0, 4);
+        return [...transit, ...direct];
     }, [data]);
 
     const fastestTransit = journeys.find((j) => j.mode === 'transit');

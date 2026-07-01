@@ -6,6 +6,11 @@ use Carbon\CarbonImmutable;
 
 final readonly class Leg
 {
+    /**
+     * @param  array<int, array{name: string, arrive_at: string, arrive_time: string}>|null  $intermediateStops
+     *                                                                                                           The stations ridden through (excluding board + get-off), in order —
+     *                                                                                                           powers the station-by-station journey timeline.
+     */
     public function __construct(
         public string $mode, // walk | bus | tram | subway | rail | ferry
         public Place $from,
@@ -17,6 +22,8 @@ final readonly class Leg
         public ?string $headsign = null,
         public ?string $polyline = null,
         public ?int $stopsCount = null, // stops ridden until get-off (transit legs)
+        public ?array $intermediateStops = null,
+        public ?string $lineColor = null, // "#RRGGBB" when the feed carries one
     ) {}
 
     public function isTransit(): bool
@@ -42,6 +49,8 @@ final readonly class Leg
             'duration_min' => $this->durationMin,
             'polyline' => $this->polyline,
             'stops' => $this->stopsCount,
+            'intermediate_stops' => $this->intermediateStops,
+            'color' => $this->lineColor,
         ];
     }
 
@@ -61,6 +70,8 @@ final readonly class Leg
             headsign: $data['headsign'] ?? null,
             polyline: $data['polyline'] ?? null,
             stopsCount: isset($data['stops']) ? (int) $data['stops'] : null,
+            intermediateStops: $data['intermediate_stops'] ?? null,
+            lineColor: $data['color'] ?? null,
         );
     }
 }

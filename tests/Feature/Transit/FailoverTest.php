@@ -5,6 +5,7 @@ use App\Services\VrsTriasService;
 use App\Transit\CircuitBreaker;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\Dto\Leg;
 use App\Transit\FailoverRouteService;
 use App\Transit\MotisAdapter;
 use App\Transit\TransitousAdapter;
@@ -230,4 +231,30 @@ test('a coordinate outside NRW short-circuits to degraded without calling any pr
 
     expect($result->source)->toBe('degraded');
     Http::assertNothingSent();
+});
+
+test('MOTIS transit legs carry the ridden stations and a line colour', function () {
+    Http::fake(['motis.test/api/v1/plan*' => Http::response(motisPlanFixture())]);
+
+    $result = app(RouteService::class)->plan(
+        new GeoPoint(50.9513, 6.9185),
+        new GeoPoint(50.9413, 6.9583),
+    );
+
+    $transitLeg = collect($result->journeys)
+        ->flatMap(fn ($journey) => $journey->legs)
+        ->first(fn ($leg) => $leg->isTransit() && $leg->intermediateStops !== null);
+
+    // The fixture's transit legs list their intermediate stops — the adapter
+    // must surface name + arrival (station-by-station journey timeline)…
+    expect($transitLeg)->not->toBeNull();
+    expect($transitLeg->intermediateStops[0])->toHaveKeys(['name', 'arrive_at', 'arrive_time']);
+    expect($transitLeg->intermediateStops[0]['name'])->not->toBe('');
+    // …and a badge colour (feed routeColor, else the KVB map).
+    expect($transitLeg->lineColor)->toStartWith('#');
+
+    // Round-trips the result cache (toArray/fromArray stay symmetric).
+    $leg = Leg::fromArray($transitLeg->toArray());
+    expect($leg->intermediateStops)->toBe($transitLeg->intermediateStops);
+    expect($leg->lineColor)->toBe($transitLeg->lineColor);
 });

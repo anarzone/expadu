@@ -2,6 +2,7 @@
 
 namespace App\Transit;
 
+use App\Services\KvbLineColors;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
@@ -280,6 +281,10 @@ class TransitousAdapter implements RouteService
                 stopsCount: $mode !== 'walk' && isset($rawLeg['intermediateStops'])
                     ? count($rawLeg['intermediateStops']) + 1
                     : null,
+                intermediateStops: $mode !== 'walk' && isset($rawLeg['intermediateStops'])
+                    ? $this->mapIntermediateStops((array) $rawLeg['intermediateStops'])
+                    : null,
+                lineColor: $this->mapLineColor($rawLeg, $mode),
             );
         }
 
@@ -294,6 +299,57 @@ class TransitousAdapter implements RouteService
             durationMin: (int) ceil(($itinerary['duration'] ?? 0) / 60),
             transfers: (int) ($itinerary['transfers'] ?? 0),
         );
+    }
+
+    /**
+     * The badge colour for a transit leg: the feed's route colour when it
+     * carries one, else the KVB brand map (Cologne is the service area).
+     *
+     * @param  array<string, mixed>  $rawLeg
+     */
+    private function mapLineColor(array $rawLeg, string $mode): ?string
+    {
+        if ($mode === 'walk' || $mode === 'bike') {
+            return null;
+        }
+
+        $routeColor = (string) ($rawLeg['routeColor'] ?? '');
+        if ($routeColor !== '') {
+            return '#'.ltrim($routeColor, '#');
+        }
+
+        return KvbLineColors::for((string) ($rawLeg['routeShortName'] ?? ''), $mode);
+    }
+
+    /**
+     * The stations a transit leg rides through (excluding board + get-off), in
+     * order — name + arrival, powering the station-by-station journey timeline.
+     *
+     * @param  array<int, array<string, mixed>>  $stops
+     * @return array<int, array{name: string, arrive_at: string, arrive_time: string}>
+     */
+    private function mapIntermediateStops(array $stops): array
+    {
+        $mapped = [];
+
+        foreach ($stops as $stop) {
+            $name = (string) ($stop['name'] ?? '');
+            $arrival = $stop['arrival'] ?? null;
+
+            if ($name === '' || $arrival === null) {
+                continue;
+            }
+
+            $arriveAt = CarbonImmutable::parse($arrival)->setTimezone('Europe/Berlin');
+
+            $mapped[] = [
+                'name' => $name,
+                'arrive_at' => $arriveAt->toIso8601String(),
+                'arrive_time' => $arriveAt->format('H:i'),
+            ];
+        }
+
+        return $mapped;
     }
 
     /**

@@ -110,6 +110,18 @@ class TimetableService
                 'disrupted' => (bool) ($d['disrupted'] ?? false),
             ])
             ->filter(fn ($d) => $d['minutes'] !== [])
+            ->map(function (array $d) use ($stop) {
+                // GTFS-static route context: travel direction (groups the board
+                // into lanes) + the next stops ridden ("via …"). Degrades to
+                // null/[] when GTFS can't match the live headsign.
+                try {
+                    $context = $this->gtfs->routeContext($stop['name'], $d['line'], $d['destination']);
+                } catch (\Throwable) {
+                    $context = ['direction' => null, 'via' => []];
+                }
+
+                return $d + ['direction' => $context['direction'], 'via' => $context['via']];
+            })
             ->values()
             ->all();
 

@@ -290,6 +290,67 @@ class GtfsDepartureService
     }
 
     /**
+     * Static route context for a line + headsign at a stop: the GTFS travel
+     * direction (direction_id) and the next stops ridden after this one ("via").
+     * Timetable-static, so cached long; a miss (renamed headsigns, no GTFS)
+     * degrades to nulls and the board simply renders ungrouped.
+     *
+     * @return array{direction: int|null, via: array<int, string>}
+     */
+    public function routeContext(string $stopName, string $line, string $destination): array
+    {
+        if ($line === '' || ! $this->hasGtfsData()) {
+            return ['direction' => null, 'via' => []];
+        }
+
+        $cacheKey = 'gtfs_route_ctx_'.md5("{$stopName}|{$line}|{$destination}");
+
+        return Cache::remember($cacheKey, 21600, function () use ($stopName, $line, $destination) {
+            $stopIds = GtfsStop::where('stop_name', 'ILIKE', "%{$stopName}%")
+                ->where('location_type', 0)
+                ->pluck('stop_id');
+
+            if ($stopIds->isEmpty()) {
+                return ['direction' => null, 'via' => []];
+            }
+
+            // A representative trip of this line through this stop whose
+            // headsign matches the live destination (exact, else fuzzy — TRIAS
+            // destinations don't always equal GTFS headsigns verbatim).
+            $trip = DB::table('gtfs_stop_times as st')
+                ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
+                ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
+                ->whereIn('st.stop_id', $stopIds)
+                ->where('r.route_short_name', $line)
+                ->where(fn ($q) => $q
+                    ->where('t.trip_headsign', $destination)
+                    ->orWhere('t.trip_headsign', 'ILIKE', "%{$destination}%")
+                    ->orWhereRaw('? ILIKE \'%\' || t.trip_headsign || \'%\'', [$destination]))
+                ->orderByRaw('(t.trip_headsign = ?) DESC', [$destination])
+                ->select('t.trip_id', 't.direction_id', 'st.stop_sequence')
+                ->first();
+
+            if ($trip === null) {
+                return ['direction' => null, 'via' => []];
+            }
+
+            $via = DB::table('gtfs_stop_times as st')
+                ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+                ->where('st.trip_id', $trip->trip_id)
+                ->where('st.stop_sequence', '>', $trip->stop_sequence)
+                ->orderBy('st.stop_sequence')
+                ->limit(2)
+                ->pluck('s.stop_name')
+                ->all();
+
+            return [
+                'direction' => $trip->direction_id !== null ? (int) $trip->direction_id : null,
+                'via' => $via,
+            ];
+        });
+    }
+
+    /**
      * Search stops by name.
      *
      * @return array<int, array{stop_id: string, stop_name: string, lat: float, lng: float}>

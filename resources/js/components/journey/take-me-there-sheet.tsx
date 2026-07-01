@@ -23,21 +23,34 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+/** A station ridden through on a transit leg (name + scheduled arrival). */
+export type IntermediateStop = {
+    name: string;
+    arrive_at: string;
+    arrive_time: string;
+};
+
 export type JourneyLeg = {
     mode: string;
     line: string | null;
     headsign: string | null;
     from: { name: string };
     to: { name: string };
+    depart_at: string;
+    arrive_at: string;
     depart_time: string;
     arrive_time: string;
     duration_min: number;
     stops: number | null;
     polyline: string | null;
+    color: string | null;
+    intermediate_stops: IntermediateStop[] | null;
 };
 
 export type Journey = {
     mode: 'transit' | 'bike' | 'walk';
+    depart_at: string;
+    arrive_at: string;
     depart_time: string;
     arrive_time: string;
     duration_min: number;
