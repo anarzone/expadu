@@ -13,22 +13,13 @@ import { Label } from '@/components/ui/label';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { edit } from '@/routes/security';
 import { disable, enable } from '@/routes/two-factor';
-import type { BreadcrumbItem } from '@/types';
 
 type Props = {
     canManageTwoFactor?: boolean;
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
 };
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Security settings',
-        href: edit(),
-    },
-];
 
 export default function Security({
     canManageTwoFactor = false,
@@ -51,7 +42,7 @@ export default function Security({
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs} rightPanel={null}>
+        <AppLayout rightPanel={null}>
             <Head title="Security settings" />
 
             <h1 className="sr-only">Security settings</h1>

@@ -1,18 +1,8 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
-import Heading from '@/components/heading';
 import { usePushSubscription } from '@/hooks/use-push-subscription';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { edit as editNotifications } from '@/routes/notifications';
-import type { BreadcrumbItem } from '@/types';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Notification settings',
-        href: editNotifications(),
-    },
-];
 
 /**
  * Per-type toggles. Keys map to the ActionBus preference gates
@@ -141,19 +131,13 @@ export default function NotificationsSettings() {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs} rightPanel={null}>
+        <AppLayout rightPanel={null}>
             <Head title="Notification settings" />
 
             <h1 className="sr-only">Notification settings</h1>
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <Heading
-                        variant="small"
-                        title="Notifications"
-                        description="Choose what Expadu pings you about, and where."
-                    />
-
                     {/* Master push toggle */}
                     <div className="overflow-hidden rounded-xl border border-border bg-card">
                         <div className="flex items-center justify-between bg-surface-2 px-4 py-[13px]">

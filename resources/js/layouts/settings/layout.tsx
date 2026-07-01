@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { IconX } from '@tabler/icons-react';
 import type { PropsWithChildren } from 'react';
+import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
@@ -40,14 +41,18 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="px-4 py-6">
-            <div className="mb-6 flex justify-end">
+            <div className="relative">
                 <button
                     onClick={() => router.visit('/dashboard')}
                     aria-label="Close settings"
-                    className="flex size-8 cursor-pointer items-center justify-center rounded-full text-[#6B6860] transition-colors hover:bg-[#EFEDE7] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                    className="absolute top-0 right-0 flex size-8 cursor-pointer items-center justify-center rounded-full text-[#6B6860] transition-colors hover:bg-[#EFEDE7] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                 >
                     <IconX size={18} stroke={2} />
                 </button>
+                <Heading
+                    title="Settings"
+                    description="Manage your profile and account settings"
+                />
             </div>
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">
