@@ -46,7 +46,7 @@ class FailoverRouteService implements RouteService
     /** Don't start a provider call with less than this much budget left. */
     private const MIN_ATTEMPT_SECONDS = 2.0;
 
-    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 3): JourneyResult
+    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6): JourneyResult
     {
         if (! $this->withinServiceArea($from) || ! $this->withinServiceArea($to)) {
             Log::warning('journey requested outside NRW service area', [

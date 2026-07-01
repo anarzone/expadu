@@ -47,13 +47,15 @@ class TransitousAdapter implements RouteService
      */
     protected float $planTimeout = 8.0;
 
-    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 3): JourneyResult
+    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6): JourneyResult
     {
         // Transit itineraries first. Deliberately NO directModes on this call:
         // when MOTIS is handed a fast direct (bike) route in the same request it
         // prunes comparable transit and the transit option vanishes entirely.
         // Two separate calls keep both. (Verified against the live engine.)
-        $journeys = $this->fetchBucket($from, $to, $departAt, $max, [], 'itineraries', $this->planTimeout);
+        $journeys = $this->pruneAbsurd(
+            $this->fetchBucket($from, $to, $departAt, $max, [], 'itineraries', $this->planTimeout),
+        );
 
         // Direct walk + bike, fetched PER MODE as best-effort calls. A single
         // combined `WALK,BIKE` call with numItineraries=1 only ever returns the
@@ -88,6 +90,52 @@ class TransitousAdapter implements RouteService
         }
 
         return new JourneyResult($journeys, $this->source());
+    }
+
+    /**
+     * Drop transit itineraries a rider would call nonsense. MOTIS keeps them
+     * because they win on another pareto axis (usually one transfer fewer),
+     * but the official apps filter both kinds:
+     *
+     *  - duration blow-ups — "23:33 → 05:28, wait out the night-service gap"
+     *    (survives only within double the best duration, 40-min grace floor);
+     *  - much-later departures — near midnight MOTIS pads the list with the
+     *    first trains of tomorrow (04:29 …) next to a 23:55 option. Keep the
+     *    window at 90 minutes after the earliest departure, topping back up
+     *    with the next-departing options if fewer than three survive.
+     *
+     * @param  list<Journey>  $journeys
+     * @return list<Journey>
+     */
+    private function pruneAbsurd(array $journeys): array
+    {
+        if (count($journeys) < 2) {
+            return $journeys;
+        }
+
+        $best = min(array_map(fn (Journey $j) => $j->durationMin, $journeys));
+        $cap = max($best * 2, $best + 40);
+
+        $sane = array_values(array_filter(
+            $journeys,
+            fn (Journey $j) => $j->durationMin <= $cap,
+        ));
+
+        if (count($sane) < 2) {
+            return $sane;
+        }
+
+        usort($sane, fn (Journey $a, Journey $b) => $a->departAt <=> $b->departAt);
+
+        $windowEnd = $sane[0]->departAt->addMinutes(90);
+        $inWindow = array_values(array_filter($sane, fn (Journey $j) => $j->departAt <= $windowEnd));
+        $later = array_values(array_filter($sane, fn (Journey $j) => $j->departAt > $windowEnd));
+
+        while (count($inWindow) < 3 && $later !== []) {
+            $inWindow[] = array_shift($later);
+        }
+
+        return $inWindow;
     }
 
     /**
@@ -205,13 +253,45 @@ class TransitousAdapter implements RouteService
 
         return collect($response->json())
             ->filter(fn ($hit) => isset($hit['lat'], $hit['lon'], $hit['name']))
-            ->map(fn ($hit) => new Place(
-                name: (string) $hit['name'],
-                point: new GeoPoint((float) $hit['lat'], (float) $hit['lon']),
-                stopId: ($hit['type'] ?? null) === 'STOP' ? ($hit['id'] ?? null) : null,
-            ))
+            ->map(function ($hit) {
+                // Address hits name the street; append the house number so
+                // "Vitalisstraße 204" doesn't collapse to "Vitalisstraße".
+                $name = (string) $hit['name'];
+                if (($hit['type'] ?? null) === 'ADDRESS' && ! empty($hit['houseNumber']) && ! str_contains($name, (string) $hit['houseNumber'])) {
+                    $name .= ' '.$hit['houseNumber'];
+                }
+
+                return new Place(
+                    name: $name,
+                    point: new GeoPoint((float) $hit['lat'], (float) $hit['lon']),
+                    stopId: ($hit['type'] ?? null) === 'STOP' ? ($hit['id'] ?? null) : null,
+                    kind: strtolower((string) ($hit['type'] ?? 'place')),
+                    area: $this->areaLabel($hit['areas'] ?? []),
+                );
+            })
             ->values()
             ->all();
+    }
+
+    /**
+     * "Bickendorf · Köln" from MOTIS area rows: the finest-grained district
+     * (highest admin level) plus the default city, skipping duplicates.
+     *
+     * @param  array<int, array<string, mixed>>  $areas
+     */
+    private function areaLabel(array $areas): ?string
+    {
+        if ($areas === []) {
+            return null;
+        }
+
+        $city = collect($areas)->firstWhere('default', true)['name'] ?? null;
+        $district = collect($areas)
+            ->filter(fn ($a) => ($a['adminLevel'] ?? 0) >= 9 && ($a['name'] ?? null) !== $city)
+            ->sortByDesc('adminLevel')
+            ->first()['name'] ?? null;
+
+        return implode(' · ', array_filter([$district, $city])) ?: null;
     }
 
     public function reverseGeocode(GeoPoint $point): ?Place

@@ -22,7 +22,7 @@ class TriasAdapter implements RouteService
         private readonly VrsTriasService $trias,
     ) {}
 
-    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 3): JourneyResult
+    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6): JourneyResult
     {
         $result = $this->trias->planJourney($from->lat, $from->lng, $to->lat, $to->lng, $max);
 

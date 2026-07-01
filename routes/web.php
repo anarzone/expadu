@@ -4,6 +4,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\EventReminderController;
 use App\Http\Controllers\Api\EventsController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\Api\JourneySuggestController;
 use App\Http\Controllers\Api\LocationConfirmController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\PlaceContextController;
@@ -97,6 +98,7 @@ $appRoutes = function () use ($appDomain) {
         Route::post('api/tiles/triage/undo', [TileTriageController::class, 'undo'])->name('api.tiles.triage.undo');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
+        Route::get('api/journey/suggest', JourneySuggestController::class)->name('api.journey.suggest');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
         Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
 

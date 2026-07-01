@@ -859,8 +859,10 @@ class VrsTriasService
             $options = ['timeout' => 3, 'connect_timeout' => 1];
             $this->applyVrsSsl($options);
 
+            // Single attempt: a departure board refreshes every ~30s anyway, so
+            // a retry storm only stretches the cold build (2 tries × 3s each);
+            // the trias_down breaker + the caller's fallbacks cover a miss.
             $response = Http::withOptions($options)
-                ->retry(2, 200, throw: false)
                 ->withHeaders(['Content-Type' => 'text/xml; charset=UTF-8'])
                 ->withBody($xml, 'text/xml')
                 ->post($url);

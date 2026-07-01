@@ -6,6 +6,8 @@ import {
     IconWalk,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
+import { DestinationSearch } from '@/components/departures/destination-search';
+import type { Suggestion } from '@/components/departures/destination-search';
 import type {
     Destination,
     Journey,
@@ -153,8 +155,8 @@ function RouteCard({
             </div>
             <div className="flex items-center gap-2">
                 <LegChips legs={journey.legs} />
-                <span className="ml-auto shrink-0 text-[12.5px] text-muted-foreground">
-                    arrive {journey.arrive_time}
+                <span className="ml-auto shrink-0 font-mono text-[12.5px] text-muted-foreground">
+                    {journey.depart_time} → {journey.arrive_time}
                 </span>
             </div>
         </button>
@@ -556,7 +558,6 @@ export function JourneyPlanner({
     const [data, setData] = useState<JourneyResponse | null>(null);
     const [error, setError] = useState(false);
     const [selected, setSelected] = useState<number | null>(null);
-    const [toText, setToText] = useState(destination.name);
 
     // The planner is re-mounted per destination (keyed in the page), so state
     // starts fresh on each new destination — the effect only fetches.
@@ -605,12 +606,12 @@ export function JourneyPlanner({
 
     const journeys = useMemo(() => {
         const list = data?.journeys ?? [];
-        // Up to three transit alternatives (the design's Fastest / Fewest
-        // changes / …) plus the fastest direct mode for the trade-off glance.
+        // Transit alternatives in departure order (the engine already prunes
+        // absurd ones) plus the fastest direct mode for the trade-off glance.
         const transit = list
             .filter((j) => j.mode === 'transit')
-            .sort((a, b) => a.duration_min - b.duration_min)
-            .slice(0, 3);
+            .sort((a, b) => Date.parse(a.depart_at) - Date.parse(b.depart_at))
+            .slice(0, 4);
         const direct = list
             .filter((j) => j.mode !== 'transit')
             .sort((a, b) => a.duration_min - b.duration_min)
@@ -619,7 +620,11 @@ export function JourneyPlanner({
         return [...transit, ...direct];
     }, [data]);
 
-    const fastestTransit = journeys.find((j) => j.mode === 'transit');
+    const fastestTransit = journeys
+        .filter((j) => j.mode === 'transit')
+        .reduce<
+            Journey | undefined
+        >((best, j) => (best === undefined || j.duration_min < best.duration_min ? j : best), undefined);
     const fromName = data?.from.name ?? 'Your location';
 
     // Route detail (a route was picked)
@@ -650,33 +655,43 @@ export function JourneyPlanner({
                 </span>
             </div>
 
-            {/* From → To */}
+            {/* From → To — both rows searchable (stations, streets, saved places) */}
             <div className="mb-[18px] rounded-2xl border border-border bg-card p-2 shadow-sm">
                 <div className="flex items-center gap-3 px-3.5 py-3">
                     <span className="size-2.5 shrink-0 rounded-full border-[3px] border-cyan" />
-                    <span className="flex-1 truncate text-[14.5px] font-medium">
-                        {fromName}
-                    </span>
+                    <DestinationSearch
+                        key={`from-${fromName}`}
+                        initial={fromName}
+                        placeholder="From"
+                        onSelect={(s: Suggestion) =>
+                            onPlan({
+                                ...destination,
+                                fromLat: s.lat,
+                                fromLng: s.lng,
+                                fromName: s.name,
+                            })
+                        }
+                    />
                 </div>
                 <div className="mx-3.5 ml-7 h-px bg-border" />
                 <div className="flex items-center gap-3 px-3.5 py-3">
                     <span className="size-2.5 shrink-0 rotate-45 rounded-[50%_50%_50%_0] bg-primary" />
-                    <input
-                        type="text"
-                        value={toText}
-                        onChange={(e) => setToText(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const query = toText.trim();
-
-                                if (query && query !== destination.name) {
-                                    onPlan({ query });
-                                }
-                            }
-                        }}
+                    <DestinationSearch
+                        initial={destination.name}
                         placeholder="Where to?"
-                        className="min-w-0 flex-1 border-none bg-transparent text-[14.5px] font-medium text-foreground outline-none placeholder:text-text-3"
+                        onSelect={(s: Suggestion) =>
+                            onPlan({
+                                name: s.name,
+                                emoji: s.emoji ?? undefined,
+                                lat: s.lat,
+                                lng: s.lng,
+                                // keep the chosen origin when re-targeting
+                                fromLat: destination.fromLat,
+                                fromLng: destination.fromLng,
+                                fromName: destination.fromName,
+                            })
+                        }
+                        onSubmitFree={(query) => onPlan({ query })}
                     />
                 </div>
             </div>

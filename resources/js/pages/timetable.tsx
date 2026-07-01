@@ -1,10 +1,13 @@
-import { Deferred, Head, usePage } from '@inertiajs/react';
+import { Head, usePage, usePoll } from '@inertiajs/react';
 import {
     IconAlertTriangle,
     IconArrowRight,
     IconBan,
 } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { DestinationSearch } from '@/components/departures/destination-search';
+import type { Suggestion } from '@/components/departures/destination-search';
+import { FlipText } from '@/components/departures/flip-digit';
 import { JourneyPlanner } from '@/components/departures/journey-planner';
 import type { SavedPlace } from '@/components/departures/journey-planner';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
@@ -222,7 +225,7 @@ function BoardRow({ dep }: { dep: Departure }) {
                 <div className="flex shrink-0 items-center gap-1.5">
                     {chips.map((chip, i) => (
                         <span key={i} className={chip.cls}>
-                            {chip.label}
+                            <FlipText text={chip.label} />
                         </span>
                     ))}
                     <span className="ml-px font-mono text-[11px] text-[var(--bd-sub)]">
@@ -458,16 +461,7 @@ function JourneyEntryCard({
     busy: boolean;
     onPlan: (target: Destination | { query: string }) => void;
 }) {
-    const [text, setText] = useState('');
     const launch = savedPlaces.slice(0, 3);
-
-    function submit() {
-        const query = text.trim();
-
-        if (query) {
-            onPlan({ query });
-        }
-    }
 
     return (
         <div className="mb-[18px] rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -480,26 +474,27 @@ function JourneyEntryCard({
             <div className="my-2 ml-1 h-px bg-border" />
             <div className="flex items-center gap-3">
                 <span className="size-2.5 shrink-0 rotate-45 rounded-[50%_50%_50%_0] bg-primary" />
-                <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            submit();
-                        }
-                    }}
+                <DestinationSearch
                     placeholder="Where to?"
-                    className="min-w-0 flex-1 border-none bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-text-3"
+                    onSelect={(s: Suggestion) =>
+                        onPlan({
+                            name: s.name,
+                            emoji: s.emoji ?? undefined,
+                            lat: s.lat,
+                            lng: s.lng,
+                        })
+                    }
+                    onSubmitFree={(query) => onPlan({ query })}
+                    trailing={(submit) => (
+                        <button
+                            onClick={submit}
+                            disabled={busy}
+                            className="shrink-0 rounded-full bg-primary-soft px-3 py-1.5 font-mono text-[10.5px] font-semibold tracking-[0.06em] text-primary uppercase disabled:opacity-60"
+                        >
+                            {busy ? 'Planning…' : 'Plan trip →'}
+                        </button>
+                    )}
                 />
-                <button
-                    onClick={submit}
-                    disabled={busy}
-                    className="shrink-0 rounded-full bg-primary-soft px-3 py-1.5 font-mono text-[10.5px] font-semibold tracking-[0.06em] text-primary uppercase disabled:opacity-60"
-                >
-                    {busy ? 'Planning…' : 'Plan trip →'}
-                </button>
             </div>
             {launch.length > 0 && (
                 <div className="mt-3 flex gap-1.5 overflow-x-auto pl-[22px]">
@@ -534,13 +529,30 @@ export default function Timetable() {
     const [planning, setPlanning] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
 
+    // Keep the board genuinely live: re-fetch the deferred boards prop every
+    // 30s (matches the server-side cache TTL). usePoll throttles in background
+    // tabs.
+    usePoll(30_000, { only: ['boards'], async: true });
+
+    // During a partial reload Inertia momentarily reports the deferred prop as
+    // undefined. Rendering through the last known value keeps the mounted
+    // board in place, so a refresh UPDATES the rows (letting the split-flap
+    // digits animate) instead of remounting them — and no skeleton flash.
+    const lastBoardsRef = useRef<Boards | undefined>(undefined);
+
+    if (boards !== undefined) {
+        lastBoardsRef.current = boards;
+    }
+
+    const liveBoards = boards ?? lastBoardsRef.current;
+
     function flash(message: string) {
         setToast(message);
         window.setTimeout(() => setToast(null), 2600);
     }
 
-    // Saved destinations arrive with coordinates; free text is geocoded to the
-    // best hit before the journey sheet opens.
+    // Suggestions arrive with coordinates; raw text (Enter before the
+    // dropdown loaded) resolves through the same suggest endpoint.
     async function planTo(target: Destination | { query: string }) {
         if ('lat' in target) {
             setDestination(target);
@@ -552,7 +564,7 @@ export default function Timetable() {
 
         try {
             const res = await fetch(
-                `/api/geocode?q=${encodeURIComponent(target.query)}`,
+                `/api/journey/suggest?q=${encodeURIComponent(target.query)}`,
                 { credentials: 'same-origin' },
             );
             const results = (await res.json()) as GeoResult[];
@@ -562,7 +574,6 @@ export default function Timetable() {
 
                 setDestination({
                     name: hit.name,
-                    address: hit.address ?? undefined,
                     lat: hit.lat,
                     lng: hit.lng,
                 });
@@ -576,7 +587,7 @@ export default function Timetable() {
         }
     }
 
-    const board = boards?.[mode] ?? null;
+    const board = liveBoards?.[mode] ?? null;
     const alt = board ? altSuggestion(board.departures) : null;
     const stop = board?.stop_name ?? 'your stop';
     const walk = board?.walk_min ?? null;
@@ -587,7 +598,7 @@ export default function Timetable() {
             <div className="mx-auto w-full max-w-[680px] px-4 pt-6 pb-24 md:px-6">
                 {destination ? (
                     <JourneyPlanner
-                        key={`${destination.lat},${destination.lng},${destination.name}`}
+                        key={`${destination.lat},${destination.lng},${destination.name},${destination.fromLat ?? ''},${destination.fromLng ?? ''}`}
                         destination={destination}
                         savedPlaces={savedPlaces}
                         onPlan={planTo}
@@ -650,7 +661,9 @@ export default function Timetable() {
                             ))}
                         </div>
 
-                        <Deferred data="boards" fallback={<BoardSkeleton />}>
+                        {liveBoards === undefined ? (
+                            <BoardSkeleton />
+                        ) : (
                             <>
                                 {board && board.departures.length > 0 ? (
                                     <DepartureBoard board={board} />
@@ -662,7 +675,7 @@ export default function Timetable() {
                                     disruptions={activeDisruptions}
                                 />
                             </>
-                        </Deferred>
+                        )}
                     </>
                 )}
             </div>

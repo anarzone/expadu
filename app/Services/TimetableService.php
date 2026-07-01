@@ -22,13 +22,19 @@ class TimetableService
     ) {}
 
     /**
+     * Stale-while-revalidate: after the first build, every request is served
+     * from cache instantly. Fresh for 25s; between 25s and 180s the stale
+     * boards return immediately while a deferred background refresh rebuilds
+     * them. Nobody waits on the TRIAS round-trip except the very first
+     * visitor of a location cell.
+     *
      * @return array{all: ?array, tram: ?array, bus: ?array}
      */
     public function boards(float $lat, float $lng): array
     {
-        return Cache::remember(
+        return Cache::flexible(
             sprintf('timetable:%.3f_%.3f', $lat, $lng),
-            30,
+            [25, 180],
             fn () => $this->build($lat, $lng),
         );
     }
@@ -44,10 +50,33 @@ class TimetableService
             return ['all' => null, 'tram' => null, 'bus' => null];
         }
 
+        $picks = [
+            'all' => $this->nearest($stops, $lat, $lng, null),
+            'tram' => $this->nearest($stops, $lat, $lng, 'STRAB'),
+            'bus' => $this->nearest($stops, $lat, $lng, 'BUS'),
+        ];
+
+        // "All" and a mode tab usually resolve to the same stop — fetch
+        // departures once per unique stop, not once per tab. TRIAS is the
+        // expensive hop, so this caps the cold build at two round-trips.
+        $departuresByStop = [];
+        foreach ($picks as $pick) {
+            $name = $pick['name'] ?? null;
+            if ($name === null || isset($departuresByStop[$name])) {
+                continue;
+            }
+
+            try {
+                $departuresByStop[$name] = $this->gtfs->getDepartures($name, 20);
+            } catch (\Throwable) {
+                $departuresByStop[$name] = ['departures' => [], 'source' => 'unavailable'];
+            }
+        }
+
         return [
-            'all' => $this->board($this->nearest($stops, $lat, $lng, null), $lat, $lng, null),
-            'tram' => $this->board($this->nearest($stops, $lat, $lng, 'STRAB'), $lat, $lng, 'tram'),
-            'bus' => $this->board($this->nearest($stops, $lat, $lng, 'BUS'), $lat, $lng, 'bus'),
+            'all' => $this->board($picks['all'], $departuresByStop, null),
+            'tram' => $this->board($picks['tram'], $departuresByStop, 'tram'),
+            'bus' => $this->board($picks['bus'], $departuresByStop, 'bus'),
         ];
     }
 
@@ -80,19 +109,16 @@ class TimetableService
 
     /**
      * @param  array<string, mixed>|null  $stop
+     * @param  array<string, array<string, mixed>>  $departuresByStop  prefetched per unique stop name
      * @return array<string, mixed>|null
      */
-    private function board(?array $stop, float $lat, float $lng, ?string $filterType): ?array
+    private function board(?array $stop, array $departuresByStop, ?string $filterType): ?array
     {
         if ($stop === null) {
             return null;
         }
 
-        try {
-            $result = $this->gtfs->getDepartures($stop['name'], 20);
-        } catch (\Throwable) {
-            $result = ['departures' => [], 'source' => 'unavailable'];
-        }
+        $result = $departuresByStop[$stop['name']] ?? ['departures' => [], 'source' => 'unavailable'];
 
         $departures = collect($result['departures'] ?? [])
             ->when($filterType !== null, fn ($c) => $c->filter(fn ($d) => ($d['type'] ?? null) === $filterType))

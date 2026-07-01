@@ -447,6 +447,98 @@ input[type='time']::-webkit-calendar-picker-indicator {
     border-color: var(--st-now);
 }
 
+/* Split-flap cells (airport-board digits). Each character is a cell of two
+   halves; on change the old top flap hinges down and the new bottom flap
+   hinges in — transform-only, GPU-composited. The flap faces need a solid
+   background so the layers underneath don't bleed through mid-rotation:
+   --flip-bg is the chip's effective surface colour (the .soon value is the
+   16% amber wash precomposited onto the board surface). */
+.dchip {
+    --flip-bg: var(--bd-bg);
+}
+.dchip.soon {
+    --flip-bg: #342d1f;
+}
+.dchip.now {
+    --flip-bg: var(--st-now);
+}
+.flipc-row {
+    display: inline-flex;
+    gap: 1px;
+}
+.flipc {
+    position: relative;
+    display: inline-block;
+    width: 1ch;
+    height: 1em;
+    line-height: 1em;
+    perspective: 240px;
+}
+.flipc-half {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    overflow: hidden;
+    background: var(--flip-bg, transparent);
+}
+.flipc-top {
+    top: 0;
+}
+.flipc-bottom {
+    bottom: 0;
+}
+.flipc-half > span {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 200%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.flipc-top > span {
+    top: 0;
+}
+.flipc-bottom > span {
+    bottom: 0;
+}
+.flipc-flip-top {
+    z-index: 2;
+    transform-origin: 50% 100%;
+    backface-visibility: hidden;
+    animation: flipc-top 0.22s ease-in both;
+}
+.flipc-flip-bottom {
+    z-index: 2;
+    transform-origin: 50% 0%;
+    backface-visibility: hidden;
+    animation: flipc-bottom 0.22s ease-out 0.22s both;
+}
+@keyframes flipc-top {
+    from {
+        transform: rotateX(0deg);
+    }
+    to {
+        transform: rotateX(-90deg);
+    }
+}
+@keyframes flipc-bottom {
+    from {
+        transform: rotateX(90deg);
+    }
+    to {
+        transform: rotateX(0deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .flipc-flip-top,
+    .flipc-flip-bottom {
+        animation: none;
+        visibility: hidden;
+    }
+}
+
 @layer utilities {
     /* Standard section padding: 24px vertical, 10px horizontal on mobile, 24px on desktop */
     .section-pad {
