@@ -54,6 +54,9 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
+          # Some backfills (e.g. spots:reveal-names --geocode over ~3k points)
+          # run well past the 10m default. Give them room to finish in one pass.
+          command_timeout: 40m
           envs: TARGET_ENV,ARTISAN_CMD
           script: |
             set -ef
