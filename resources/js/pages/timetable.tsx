@@ -54,6 +54,17 @@ type GeoResult = {
     lng: number;
 };
 
+/** A recent destination offered as a quick-launch pill. */
+type RecentDestination = {
+    name: string;
+    area: string | null;
+    lat: number;
+    lng: number;
+};
+
+/** An explicitly chosen journey origin (null = current location). */
+type Origin = { name: string; lat: number; lng: number } | null;
+
 const TABS: { key: Mode; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'tram', label: '🚊 Tram' },
@@ -148,15 +159,6 @@ function placeEmoji(place: SavedPlace): string {
     }
 
     return '📍';
-}
-
-function savedToDestination(place: SavedPlace): Destination {
-    return {
-        name: place.name,
-        emoji: placeEmoji(place),
-        lat: place.lat,
-        lng: place.lng,
-    };
 }
 
 /** A ticking wall clock (HH:MM:SS) — the board's "live" heartbeat. */
@@ -453,29 +455,81 @@ function AltCard({ alt }: { alt: Alt }) {
 function JourneyEntryCard({
     stop,
     savedPlaces,
+    recentDestinations,
+    origin,
+    onOriginChange,
     busy,
     onPlan,
 }: {
     stop: string;
     savedPlaces: SavedPlace[];
+    recentDestinations: RecentDestination[];
+    origin: Origin;
+    onOriginChange: (origin: Origin) => void;
     busy: boolean;
     onPlan: (target: Destination | { query: string }) => void;
 }) {
-    const launch = savedPlaces.slice(0, 3);
+    // Quick-launch pills: saved places first, recent destinations fill the
+    // rest (deduplicated by name), four max.
+    const pills: Array<{
+        key: string;
+        emoji: string;
+        name: string;
+        lat: number;
+        lng: number;
+    }> = [];
+
+    for (const place of savedPlaces) {
+        pills.push({
+            key: `s-${place.id}`,
+            emoji: placeEmoji(place),
+            name: place.name,
+            lat: place.lat,
+            lng: place.lng,
+        });
+    }
+
+    for (const recent of recentDestinations) {
+        if (
+            !pills.some(
+                (p) => p.name.toLowerCase() === recent.name.toLowerCase(),
+            )
+        ) {
+            pills.push({
+                key: `r-${recent.name}`,
+                emoji: '🕘',
+                name: recent.name,
+                lat: recent.lat,
+                lng: recent.lng,
+            });
+        }
+    }
 
     return (
         <div className="mb-[18px] rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-3">
                 <span className="size-2.5 shrink-0 rounded-full border-[3px] border-cyan" />
-                <span className="flex-1 text-sm font-semibold">
-                    You · {stop}
-                </span>
+                <DestinationSearch
+                    key={origin ? origin.name : 'live'}
+                    initial={origin?.name ?? ''}
+                    placeholder={`You · ${stop}`}
+                    role="origin"
+                    withCurrentLocation
+                    onSelect={(s: Suggestion) =>
+                        onOriginChange(
+                            s.kind === 'current'
+                                ? null
+                                : { name: s.name, lat: s.lat, lng: s.lng },
+                        )
+                    }
+                />
             </div>
             <div className="my-2 ml-1 h-px bg-border" />
             <div className="flex items-center gap-3">
                 <span className="size-2.5 shrink-0 rotate-45 rounded-[50%_50%_50%_0] bg-primary" />
                 <DestinationSearch
                     placeholder="Where to?"
+                    role="destination"
                     onSelect={(s: Suggestion) =>
                         onPlan({
                             name: s.name,
@@ -496,16 +550,23 @@ function JourneyEntryCard({
                     )}
                 />
             </div>
-            {launch.length > 0 && (
+            {pills.length > 0 && (
                 <div className="mt-3 flex gap-1.5 overflow-x-auto pl-[22px]">
-                    {launch.map((place) => (
+                    {pills.slice(0, 4).map((pill) => (
                         <button
-                            key={place.id}
-                            onClick={() => onPlan(savedToDestination(place))}
+                            key={pill.key}
+                            onClick={() =>
+                                onPlan({
+                                    name: pill.name,
+                                    emoji: pill.emoji,
+                                    lat: pill.lat,
+                                    lng: pill.lng,
+                                })
+                            }
                             className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1.5 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                         >
-                            <span>{placeEmoji(place)}</span>
-                            {place.name}
+                            <span>{pill.emoji}</span>
+                            {pill.name}
                         </button>
                     ))}
                 </div>
@@ -518,14 +579,18 @@ export default function Timetable() {
     const {
         boards,
         savedPlaces = [],
+        recentDestinations = [],
         activeDisruptions = [],
     } = usePage<{
         boards?: Boards;
         savedPlaces?: SavedPlace[];
+        recentDestinations?: RecentDestination[];
         activeDisruptions?: DisruptionItem[];
     }>().props;
     const [mode, setMode] = useState<Mode>('all');
     const [destination, setDestination] = useState<Destination | null>(null);
+    // An explicitly chosen From (via the board's origin field); null = live location.
+    const [origin, setOrigin] = useState<Origin>(null);
     const [planning, setPlanning] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
 
@@ -552,10 +617,24 @@ export default function Timetable() {
     }
 
     // Suggestions arrive with coordinates; raw text (Enter before the
-    // dropdown loaded) resolves through the same suggest endpoint.
+    // dropdown loaded) resolves through the same suggest endpoint. An
+    // explicitly chosen From rides along so the journey starts there.
+    function withOrigin(dest: Destination): Destination {
+        if (!origin || dest.fromLat != null) {
+            return dest;
+        }
+
+        return {
+            ...dest,
+            fromLat: origin.lat,
+            fromLng: origin.lng,
+            fromName: origin.name,
+        };
+    }
+
     async function planTo(target: Destination | { query: string }) {
         if ('lat' in target) {
-            setDestination(target);
+            setDestination(withOrigin(target));
 
             return;
         }
@@ -572,11 +651,13 @@ export default function Timetable() {
             if (results.length > 0) {
                 const hit = results[0];
 
-                setDestination({
-                    name: hit.name,
-                    lat: hit.lat,
-                    lng: hit.lng,
-                });
+                setDestination(
+                    withOrigin({
+                        name: hit.name,
+                        lat: hit.lat,
+                        lng: hit.lng,
+                    }),
+                );
             } else {
                 flash(`No match for "${target.query}"`);
             }
@@ -641,6 +722,9 @@ export default function Timetable() {
                         <JourneyEntryCard
                             stop={stop}
                             savedPlaces={savedPlaces}
+                            recentDestinations={recentDestinations}
+                            origin={origin}
+                            onOriginChange={setOrigin}
                             busy={planning}
                             onPlan={planTo}
                         />

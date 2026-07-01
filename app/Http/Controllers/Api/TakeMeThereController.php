@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\JourneyRecent;
 use App\Services\DisruptionService;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
@@ -63,6 +64,13 @@ class TakeMeThereController extends Controller
         }
 
         $to = new GeoPoint((float) $validated['to_lat'], (float) $validated['to_lng']);
+
+        // Google-Maps-style recents: remember the destination (and the origin
+        // when the user explicitly chose one) for the search-field defaults.
+        JourneyRecent::record($user->id, 'destination', (string) ($validated['to_name'] ?? ''), $to->lat, $to->lng);
+        if (isset($validated['from_lat'], $validated['from_lng'], $validated['from_name'])) {
+            JourneyRecent::record($user->id, 'origin', $validated['from_name'], $from->lat, $from->lng);
+        }
 
         $result = $routes->plan($from, $to);
 

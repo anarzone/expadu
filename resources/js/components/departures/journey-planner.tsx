@@ -663,13 +663,24 @@ export function JourneyPlanner({
                         key={`from-${fromName}`}
                         initial={fromName}
                         placeholder="From"
+                        role="origin"
+                        withCurrentLocation
                         onSelect={(s: Suggestion) =>
-                            onPlan({
-                                ...destination,
-                                fromLat: s.lat,
-                                fromLng: s.lng,
-                                fromName: s.name,
-                            })
+                            onPlan(
+                                s.kind === 'current'
+                                    ? {
+                                          name: destination.name,
+                                          emoji: destination.emoji,
+                                          lat: destination.lat,
+                                          lng: destination.lng,
+                                      }
+                                    : {
+                                          ...destination,
+                                          fromLat: s.lat,
+                                          fromLng: s.lng,
+                                          fromName: s.name,
+                                      },
+                            )
                         }
                     />
                 </div>
@@ -679,6 +690,7 @@ export function JourneyPlanner({
                     <DestinationSearch
                         initial={destination.name}
                         placeholder="Where to?"
+                        role="destination"
                         onSelect={(s: Suggestion) =>
                             onPlan({
                                 name: s.name,

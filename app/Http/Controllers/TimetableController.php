@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\JourneyRecent;
 use App\Models\UserPlace;
 use App\Services\TimetableService;
 use App\Services\UserLocationService;
@@ -39,6 +40,21 @@ class TimetableController extends Controller
                     'emoji' => $place->emoji,
                     'lat' => (float) $place->lat,
                     'lng' => (float) $place->lng,
+                ])
+                ->all(),
+            // Recent destinations round out the quick-launch pills under
+            // "Where to?" (saved places first, recents fill the rest).
+            'recentDestinations' => JourneyRecent::query()
+                ->where('user_id', $request->user()->id)
+                ->where('role', 'destination')
+                ->orderByDesc('last_used_at')
+                ->limit(4)
+                ->get()
+                ->map(fn (JourneyRecent $recent) => [
+                    'name' => $recent->name,
+                    'area' => $recent->area,
+                    'lat' => $recent->lat,
+                    'lng' => $recent->lng,
                 ])
                 ->all(),
         ]);

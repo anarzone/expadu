@@ -57,8 +57,11 @@ class TimetableService
         ];
 
         // "All" and a mode tab usually resolve to the same stop — fetch
-        // departures once per unique stop, not once per tab. TRIAS is the
-        // expensive hop, so this caps the cold build at two round-trips.
+        // departures once per unique stop, not once per tab. Each stop is its
+        // own SWR cache entry: a user whose GPS jitters into a fresh location
+        // cell (or a different user nearby) reuses the hot stop data instead
+        // of waiting on TRIAS, and the 30s board polls double as the warmer
+        // that keeps active stops perpetually fresh in the background.
         $departuresByStop = [];
         foreach ($picks as $pick) {
             $name = $pick['name'] ?? null;
@@ -67,7 +70,11 @@ class TimetableService
             }
 
             try {
-                $departuresByStop[$name] = $this->gtfs->getDepartures($name, 20);
+                $departuresByStop[$name] = Cache::flexible(
+                    'board_stop:'.$name,
+                    [20, 300],
+                    fn () => $this->gtfs->getDepartures($name, 20),
+                );
             } catch (\Throwable) {
                 $departuresByStop[$name] = ['departures' => [], 'source' => 'unavailable'];
             }
