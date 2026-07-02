@@ -743,11 +743,20 @@ export default function Timetable() {
                 router.reload({ only: ['boards'] });
                 then?.({ lat, lng, name });
             },
-            () => {
+            (err) => {
                 setLocating(false);
-                flash('Couldn’t get your location — check the permission.');
+                flash(
+                    err.code === err.PERMISSION_DENIED
+                        ? 'Location is blocked for this site. Allow it from the address-bar icon, then tap the dot again.'
+                        : err.code === err.POSITION_UNAVAILABLE
+                          ? 'Your device couldn’t find a location. On Mac, turn on System Settings → Privacy & Security → Location Services for your browser.'
+                          : 'Locating took too long — please try again.',
+                );
             },
-            { enableHighAccuracy: true, timeout: 8000 },
+            // Coarse (WiFi/IP) location is plenty to pick the nearest stop and
+            // is far more reliable on desktop than GPS-grade high accuracy;
+            // accept a recent cached fix so a retry is instant.
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
         );
     }
 
