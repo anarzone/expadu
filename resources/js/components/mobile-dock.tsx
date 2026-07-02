@@ -3,7 +3,7 @@ import {
     IconHome,
     IconCompass,
     IconBell,
-    IconUser,
+    IconBus,
     IconDots,
 } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -15,7 +15,7 @@ const dockItems = [
     { title: 'Home', href: '/dashboard', icon: IconHome },
     { title: 'Explore', href: '/explore', icon: IconCompass },
     { title: 'Alerts', href: '/alerts', icon: IconBell },
-    { title: 'Profile', href: '/profile', icon: IconUser },
+    { title: 'Departures', href: '/timetable', icon: IconBus },
 ];
 
 export function MobileDock() {
