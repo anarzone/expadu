@@ -21,13 +21,13 @@ class LocationConfirmController extends Controller
             'name' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $locations->confirm(
+        $name = $locations->confirm(
             $request->user(),
             (float) $validated['lat'],
             (float) $validated['lng'],
             $validated['name'] ?? null,
         );
 
-        return response()->json(['confirmed' => true]);
+        return response()->json(['confirmed' => true, 'name' => $name]);
     }
 }

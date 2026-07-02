@@ -102,15 +102,29 @@ function boardTint(color: string): string {
 }
 
 /**
- * The next three minutes as board chips. Only the soonest escalates
- * lead → soon (≤3 min) → now (≤0); the following two stay muted.
+ * Split the soonest departures into the hero — the one big flapping number,
+ * escalating lead → soon (≤3 min) → NOW (≤0) — and a muted "then …" tail. A
+ * real departure board shows ONE prominent time per row; the following minutes
+ * ride along small so three separate times never fuse into one long number.
  */
-function toChips(minutes: number[]): { label: string; cls: string }[] {
-    return minutes.slice(0, 3).map((m, i) => {
-        const state = i > 0 ? '' : m <= 0 ? ' now' : m <= 3 ? ' soon' : ' lead';
+function nextTimes(minutes: number[]): {
+    hero: { label: string; cls: string };
+    tail: string[];
+} {
+    if (minutes.length === 0) {
+        return { hero: { label: '—', cls: 'dchip' }, tail: [] };
+    }
 
-        return { label: m <= 0 ? 'NOW' : String(m), cls: `dchip${state}` };
-    });
+    const [first, ...rest] = minutes.slice(0, 3);
+    const state = first <= 0 ? ' now' : first <= 3 ? ' soon' : ' lead';
+
+    return {
+        hero: {
+            label: first <= 0 ? 'NOW' : String(first),
+            cls: `dchip${state}`,
+        },
+        tail: rest.map((m) => (m <= 0 ? 'now' : String(m))),
+    };
 }
 
 type Alt = {
@@ -191,7 +205,7 @@ function LiveClock() {
 }
 
 function BoardRow({ dep }: { dep: Departure }) {
-    const chips = toChips(dep.minutes);
+    const { hero, tail } = nextTimes(dep.minutes);
     const dim = dep.cancelled ? 0.5 : 1;
 
     return (
@@ -232,15 +246,20 @@ function BoardRow({ dep }: { dep: Departure }) {
                     no service
                 </span>
             ) : (
-                <div className="flex shrink-0 items-center gap-1.5">
-                    {chips.map((chip, i) => (
-                        <span key={i} className={chip.cls}>
-                            <FlipText text={chip.label} />
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                    <span className="flex items-baseline gap-1">
+                        <span className={hero.cls}>
+                            <FlipText text={hero.label} />
                         </span>
-                    ))}
-                    <span className="ml-px font-mono text-[11px] text-[var(--bd-sub)]">
-                        min
+                        <span className="font-mono text-[11px] text-[var(--bd-sub)]">
+                            min
+                        </span>
                     </span>
+                    {tail.length > 0 && (
+                        <span className="font-mono text-[11px] text-[var(--bd-sub)]">
+                            then {tail.join(' · ')}
+                        </span>
+                    )}
                 </div>
             )}
         </div>
@@ -529,7 +548,18 @@ function JourneyEntryCard({
     return (
         <div className="mb-[18px] rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-3">
-                <span className="size-2.5 shrink-0 rounded-full border-[3px] border-cyan" />
+                <button
+                    type="button"
+                    onClick={onUseCurrentLocation}
+                    disabled={locating}
+                    aria-label="Use my current location"
+                    title="Use my current location"
+                    className="-m-2 shrink-0 rounded-full p-2 transition hover:bg-cyan/10 disabled:opacity-50"
+                >
+                    <span
+                        className={`block size-2.5 rounded-full border-[3px] border-cyan ${locating ? 'animate-pulse' : ''}`}
+                    />
+                </button>
                 <DestinationSearch
                     key={locating ? 'locating' : (origin?.name ?? 'live')}
                     initial={locating ? 'Locating…' : (origin?.name ?? '')}
@@ -663,7 +693,7 @@ export default function Timetable() {
     // and set it as the journey origin. `then` re-plans an open journey from
     // the fresh position.
     function requestDeviceLocation(
-        then?: (coords: { lat: number; lng: number }) => void,
+        then?: (coords: { lat: number; lng: number; name: string }) => void,
     ) {
         if (locating) {
             return;
@@ -684,9 +714,13 @@ export default function Timetable() {
 
                 // Persist the anchor BEFORE reloading — the board re-roots
                 // from the confirmed location (valid 2h, beats inferred
-                // sources), so the reload must not race the write.
+                // sources), so the reload must not race the write. The endpoint
+                // reverse-geocodes the point and returns the street address,
+                // which we show in the From field instead of "Current location".
+                let name = 'Current location';
+
                 try {
-                    await fetch('/api/location/confirm', {
+                    const res = await fetch('/api/location/confirm', {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
@@ -695,14 +729,19 @@ export default function Timetable() {
                         },
                         body: JSON.stringify({ lat, lng }),
                     });
+                    const data = (await res.json()) as { name?: string };
+
+                    if (data.name) {
+                        name = data.name;
+                    }
                 } catch {
                     // Best effort — the board keeps its last known anchor.
                 }
 
-                setOrigin({ name: 'Current location', lat, lng });
+                setOrigin({ name, lat, lng });
                 setLocating(false);
                 router.reload({ only: ['boards'] });
-                then?.({ lat, lng });
+                then?.({ lat, lng, name });
             },
             () => {
                 setLocating(false);
@@ -717,12 +756,12 @@ export default function Timetable() {
             if (target.fromLat === null) {
                 // Explicit "Current location" from the planner — get the real
                 // device GPS, then replan this destination from it.
-                requestDeviceLocation(({ lat, lng }) =>
+                requestDeviceLocation(({ lat, lng, name }) =>
                     setDestination({
                         ...target,
                         fromLat: lat,
                         fromLng: lng,
-                        fromName: 'Current location',
+                        fromName: name,
                     }),
                 );
             } else if (target.fromLat != null && target.fromLng != null) {

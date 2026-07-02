@@ -26,15 +26,17 @@ class UserLocationService
     /**
      * Store an explicit "I'm here" confirmation, valid for two hours.
      */
-    public function confirm(User $user, float $lat, float $lng, ?string $name = null): void
+    public function confirm(User $user, float $lat, float $lng, ?string $name = null): string
     {
+        $resolved = $name ?? ($this->reverseGeocode($lat, $lng) ?? 'Confirmed location');
+
         Redis::setex(
             "confirmed_location:{$user->id}",
             2 * 3600,
             json_encode([
                 'lat' => $lat,
                 'lng' => $lng,
-                'name' => $name ?? ($this->reverseGeocode($lat, $lng) ?? 'Confirmed location'),
+                'name' => $resolved,
             ], JSON_THROW_ON_ERROR),
         );
 
@@ -46,6 +48,8 @@ class UserLocationService
         if ($veedel !== null && $veedel !== $user->veedel) {
             $user->update(['veedel' => $veedel]);
         }
+
+        return $resolved;
     }
 
     /**
