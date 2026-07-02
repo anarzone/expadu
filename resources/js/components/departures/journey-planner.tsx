@@ -669,10 +669,16 @@ export function JourneyPlanner({
                             onPlan(
                                 s.kind === 'current'
                                     ? {
+                                          // Explicit reset — null (not absent)
+                                          // so the page clears any board-level
+                                          // origin instead of re-applying it.
                                           name: destination.name,
                                           emoji: destination.emoji,
                                           lat: destination.lat,
                                           lng: destination.lng,
+                                          fromLat: null,
+                                          fromLng: null,
+                                          fromName: null,
                                       }
                                     : {
                                           ...destination,

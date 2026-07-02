@@ -28,15 +28,62 @@ class TimetableService
      * them. Nobody waits on the TRIAS round-trip except the very first
      * visitor of a location cell.
      *
+     * Cached departures store minutes AS FETCHED plus a fetched_at stamp;
+     * adjustForAge() shifts them to true minutes at request time — so a
+     * cache hit of any age still shows correct countdowns (a "7 min" tram
+     * cached 2 minutes ago renders as "5 min", and departed rows drop off).
+     *
      * @return array{all: ?array, tram: ?array, bus: ?array}
      */
     public function boards(float $lat, float $lng): array
     {
-        return Cache::flexible(
+        $boards = Cache::flexible(
             sprintf('timetable:%.3f_%.3f', $lat, $lng),
             [25, 180],
             fn () => $this->build($lat, $lng),
         );
+
+        return [
+            'all' => $this->adjustForAge($boards['all']),
+            'tram' => $this->adjustForAge($boards['tram']),
+            'bus' => $this->adjustForAge($boards['bus']),
+        ];
+    }
+
+    /**
+     * Re-anchor a cached board to "now": subtract the cache age from every
+     * departure minute, drop what already left, and hide the stamp.
+     *
+     * @param  array<string, mixed>|null  $board
+     * @return array<string, mixed>|null
+     */
+    private function adjustForAge(?array $board): ?array
+    {
+        if ($board === null) {
+            return null;
+        }
+
+        $elapsedMin = intdiv(max(0, time() - (int) ($board['fetched_at'] ?? time())), 60);
+        unset($board['fetched_at']);
+
+        if ($elapsedMin === 0) {
+            return $board;
+        }
+
+        $board['departures'] = collect($board['departures'])
+            ->map(function (array $dep) use ($elapsedMin) {
+                $dep['minutes'] = array_values(array_filter(
+                    array_map(fn ($m) => $m - $elapsedMin, $dep['minutes']),
+                    fn ($m) => $m >= 0,
+                ));
+
+                return $dep;
+            })
+            ->filter(fn (array $dep) => $dep['minutes'] !== [] || $dep['cancelled'])
+            ->values()
+            ->all();
+
+        return $board;
     }
 
     /**
@@ -70,13 +117,15 @@ class TimetableService
             }
 
             try {
+                // fetched_at anchors the cached minutes so any later read can
+                // shift them to true countdowns (see adjustForAge).
                 $departuresByStop[$name] = Cache::flexible(
                     'board_stop:'.$name,
                     [20, 300],
-                    fn () => $this->gtfs->getDepartures($name, 20),
+                    fn () => ['fetched_at' => time()] + $this->gtfs->getDepartures($name, 20),
                 );
             } catch (\Throwable) {
-                $departuresByStop[$name] = ['departures' => [], 'source' => 'unavailable'];
+                $departuresByStop[$name] = ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
             }
         }
 
@@ -162,6 +211,7 @@ class TimetableService
             'stop_name' => $stop['name'],
             'walk_min' => max(1, (int) ceil(($stop['_km'] ?? 0) / self::WALK_KMH * 60)),
             'source' => $result['source'] ?? 'gtfs',
+            'fetched_at' => (int) ($result['fetched_at'] ?? time()),
             'departures' => $departures,
         ];
     }

@@ -274,6 +274,9 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
     const [expanded, setExpanded] = useState(false);
     const platform =
         board.departures[0]?.type === 'bus' ? 'KVB Bus' : 'KVB Stadtbahn';
+    // Honest indicator: pulsing LIVE only when times come from a realtime
+    // feed (TRIAS / GTFS-RT); schedule data says so instead of pretending.
+    const live = board.source === 'trias_rt' || board.source === 'gtfs_rt';
 
     // Direction lanes (v4): only when GTFS matched both travel directions —
     // otherwise the board stays a flat list. Rows without a matched direction
@@ -307,10 +310,16 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
                 <span className="truncate font-mono text-[11px] tracking-[0.12em] text-[var(--bd-sub)] uppercase">
                     {platform} · {board.stop_name}
                 </span>
-                <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-[#3ddc97]">
-                    <span className="size-1.5 animate-pulse rounded-full bg-[#3ddc97]" />
-                    LIVE <LiveClock />
-                </span>
+                {live ? (
+                    <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-[#3ddc97]">
+                        <span className="size-1.5 animate-pulse rounded-full bg-[#3ddc97]" />
+                        LIVE <LiveClock />
+                    </span>
+                ) : (
+                    <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-[var(--bd-sub)]">
+                        SCHEDULE <LiveClock />
+                    </span>
+                )}
             </div>
             {grouped ? (
                 <div>
@@ -634,7 +643,28 @@ export default function Timetable() {
 
     async function planTo(target: Destination | { query: string }) {
         if ('lat' in target) {
-            setDestination(withOrigin(target));
+            if (target.fromLat === null) {
+                // Explicit "Current location" reset from the planner — clear
+                // the board origin too, and replan from the live position.
+                setOrigin(null);
+                setDestination({
+                    ...target,
+                    fromLat: undefined,
+                    fromLng: undefined,
+                    fromName: undefined,
+                });
+            } else if (target.fromLat != null && target.fromLng != null) {
+                // The planner chose an explicit origin — mirror it on the
+                // board's From field so both stay coherent.
+                setOrigin({
+                    name: target.fromName ?? 'Origin',
+                    lat: target.fromLat,
+                    lng: target.fromLng,
+                });
+                setDestination(target);
+            } else {
+                setDestination(withOrigin(target));
+            }
 
             return;
         }
