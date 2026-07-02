@@ -1,4 +1,4 @@
-import { Head, usePage, usePoll } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import {
     IconAlertTriangle,
     IconArrowRight,
@@ -64,6 +64,14 @@ type RecentDestination = {
 
 /** An explicitly chosen journey origin (null = current location). */
 type Origin = { name: string; lat: number; lng: number } | null;
+
+function csrfToken(): string {
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    );
+}
 
 const TABS: { key: Mode; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -467,6 +475,8 @@ function JourneyEntryCard({
     recentDestinations,
     origin,
     onOriginChange,
+    onUseCurrentLocation,
+    locating,
     busy,
     onPlan,
 }: {
@@ -475,6 +485,8 @@ function JourneyEntryCard({
     recentDestinations: RecentDestination[];
     origin: Origin;
     onOriginChange: (origin: Origin) => void;
+    onUseCurrentLocation: () => void;
+    locating: boolean;
     busy: boolean;
     onPlan: (target: Destination | { query: string }) => void;
 }) {
@@ -519,17 +531,22 @@ function JourneyEntryCard({
             <div className="flex items-center gap-3">
                 <span className="size-2.5 shrink-0 rounded-full border-[3px] border-cyan" />
                 <DestinationSearch
-                    initial={origin?.name ?? ''}
+                    key={locating ? 'locating' : (origin?.name ?? 'live')}
+                    initial={locating ? 'Locating…' : (origin?.name ?? '')}
                     placeholder={`You · ${stop}`}
                     role="origin"
                     withCurrentLocation
-                    onSelect={(s: Suggestion) =>
-                        onOriginChange(
-                            s.kind === 'current'
-                                ? null
-                                : { name: s.name, lat: s.lat, lng: s.lng },
-                        )
-                    }
+                    onSelect={(s: Suggestion) => {
+                        if (s.kind === 'current') {
+                            onUseCurrentLocation();
+                        } else {
+                            onOriginChange({
+                                name: s.name,
+                                lat: s.lat,
+                                lng: s.lng,
+                            });
+                        }
+                    }}
                 />
             </div>
             <div className="my-2 ml-1 h-px bg-border" />
@@ -600,6 +617,7 @@ export default function Timetable() {
     // An explicitly chosen From (via the board's origin field); null = live location.
     const [origin, setOrigin] = useState<Origin>(null);
     const [planning, setPlanning] = useState(false);
+    const [locating, setLocating] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
 
     // Keep the board genuinely live: re-fetch the deferred boards prop every
@@ -640,18 +658,73 @@ export default function Timetable() {
         };
     }
 
+    // Resolve the device's real GPS (browser permission prompt), anchor the
+    // app to it server-side so the board re-roots to the true nearest stop,
+    // and set it as the journey origin. `then` re-plans an open journey from
+    // the fresh position.
+    function requestDeviceLocation(
+        then?: (coords: { lat: number; lng: number }) => void,
+    ) {
+        if (locating) {
+            return;
+        }
+
+        if (!navigator.geolocation) {
+            flash('Location isn’t available on this device.');
+
+            return;
+        }
+
+        setLocating(true);
+
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+
+                // Persist the anchor BEFORE reloading — the board re-roots
+                // from the confirmed location (valid 2h, beats inferred
+                // sources), so the reload must not race the write.
+                try {
+                    await fetch('/api/location/confirm', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken(),
+                        },
+                        body: JSON.stringify({ lat, lng }),
+                    });
+                } catch {
+                    // Best effort — the board keeps its last known anchor.
+                }
+
+                setOrigin({ name: 'Current location', lat, lng });
+                setLocating(false);
+                router.reload({ only: ['boards'] });
+                then?.({ lat, lng });
+            },
+            () => {
+                setLocating(false);
+                flash('Couldn’t get your location — check the permission.');
+            },
+            { enableHighAccuracy: true, timeout: 8000 },
+        );
+    }
+
     async function planTo(target: Destination | { query: string }) {
         if ('lat' in target) {
             if (target.fromLat === null) {
-                // Explicit "Current location" reset from the planner — clear
-                // the board origin too, and replan from the live position.
-                setOrigin(null);
-                setDestination({
-                    ...target,
-                    fromLat: undefined,
-                    fromLng: undefined,
-                    fromName: undefined,
-                });
+                // Explicit "Current location" from the planner — get the real
+                // device GPS, then replan this destination from it.
+                requestDeviceLocation(({ lat, lng }) =>
+                    setDestination({
+                        ...target,
+                        fromLat: lat,
+                        fromLng: lng,
+                        fromName: 'Current location',
+                    }),
+                );
             } else if (target.fromLat != null && target.fromLng != null) {
                 // The planner chose an explicit origin — mirror it on the
                 // board's From field so both stay coherent.
@@ -754,6 +827,8 @@ export default function Timetable() {
                             recentDestinations={recentDestinations}
                             origin={origin}
                             onOriginChange={setOrigin}
+                            onUseCurrentLocation={requestDeviceLocation}
+                            locating={locating}
                             busy={planning}
                             onPlan={planTo}
                         />
