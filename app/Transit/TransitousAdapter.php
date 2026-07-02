@@ -3,6 +3,7 @@
 namespace App\Transit;
 
 use App\Services\KvbLineColors;
+use App\Support\PerfLogger;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
@@ -174,12 +175,12 @@ class TransitousAdapter implements RouteService
             $query['time'] = $departAt->utc()->toIso8601ZuluString();
         }
 
-        $response = Http::baseUrl($this->baseUrl())
+        $response = PerfLogger::measure("ext:{$this->source()}.plan", fn () => Http::baseUrl($this->baseUrl())
             ->timeout((int) ceil($timeout))
             ->connectTimeout((int) ceil(min(3.0, $timeout)))
             ->withHeaders(['User-Agent' => 'expadu.com'])
             ->get($this->planPath(), $query)
-            ->throw();
+            ->throw());
 
         $journeys = [];
         foreach ($response->json($bucket, []) as $itinerary) {
@@ -206,7 +207,7 @@ class TransitousAdapter implements RouteService
             $destinations,
         ));
 
-        $response = Http::baseUrl($this->baseUrl())
+        $response = PerfLogger::measure("ext:{$this->source()}.matrix", fn () => Http::baseUrl($this->baseUrl())
             ->timeout(6)
             ->connectTimeout(3)
             ->withHeaders(['User-Agent' => 'expadu.com'])
@@ -218,7 +219,7 @@ class TransitousAdapter implements RouteService
                 'maxMatchingDistance' => 1500,
                 'arriveBy' => 'false',
             ])
-            ->throw();
+            ->throw(), ['n' => count($destinations)]);
 
         $rows = $response->json();
 
@@ -244,12 +245,12 @@ class TransitousAdapter implements RouteService
             $params['place'] = "{$bias->lat},{$bias->lng}";
         }
 
-        $response = Http::baseUrl($this->baseUrl())
+        $response = PerfLogger::measure("ext:{$this->source()}.geocode", fn () => Http::baseUrl($this->baseUrl())
             ->timeout(5)
             ->connectTimeout(3)
             ->withHeaders(['User-Agent' => 'expadu.com'])
             ->get('/api/v1/geocode', $params)
-            ->throw();
+            ->throw());
 
         return collect($response->json())
             ->filter(fn ($hit) => isset($hit['lat'], $hit['lon'], $hit['name']))
