@@ -2,6 +2,7 @@ import {
     IconArrowLeft,
     IconArrowsExchange,
     IconBolt,
+    IconChevronDown,
     IconChevronRight,
     IconWalk,
 } from '@tabler/icons-react';
@@ -298,6 +299,241 @@ function hhmm(at: number): string {
     });
 }
 
+type TimelineItem =
+    | { type: 'step'; step: Step; i: number }
+    | {
+          type: 'rides';
+          rides: { step: Step; i: number }[];
+          minutes: number | null;
+      };
+
+/** Collapse a run of this many ridden stops (or more) into one toggle. */
+const COLLAPSE_MIN_STOPS = 3;
+
+/**
+ * Fold long in-vehicle stretches into a single "N stops · X min" node so the
+ * timeline stays scannable (Apple/Google Maps style); short rides stay inline.
+ */
+function groupTimeline(steps: Step[]): TimelineItem[] {
+    const items: TimelineItem[] = [];
+
+    for (let i = 0; i < steps.length; ) {
+        if (steps[i].kind !== 'ride') {
+            items.push({ type: 'step', step: steps[i], i });
+            i++;
+            continue;
+        }
+
+        const start = i;
+        const rides: { step: Step; i: number }[] = [];
+
+        while (i < steps.length && steps[i].kind === 'ride') {
+            rides.push({ step: steps[i], i });
+            i++;
+        }
+
+        if (rides.length < COLLAPSE_MIN_STOPS) {
+            for (const r of rides) {
+                items.push({ type: 'step', step: r.step, i: r.i });
+            }
+
+            continue;
+        }
+
+        const boardAt = steps[start - 1]?.at;
+        const alightAt = steps[i]?.at;
+        const minutes =
+            boardAt !== undefined &&
+            alightAt !== undefined &&
+            Number.isFinite(boardAt) &&
+            Number.isFinite(alightAt)
+                ? Math.round((alightAt - boardAt) / 60000)
+                : null;
+
+        items.push({ type: 'rides', rides, minutes });
+    }
+
+    return items;
+}
+
+/** One node on the journey timeline — a stop, board, get-off, walk or arrival. */
+function TimelineStep({
+    step,
+    done,
+    current,
+    last,
+    accent,
+}: {
+    step: Step;
+    done: boolean;
+    current: boolean;
+    last: boolean;
+    accent: string;
+}) {
+    const time = hhmm(step.at);
+    // Transit segments carry the line's colour (like Apple/Google); walking
+    // segments stay neutral until travelled.
+    const onVehicle = step.kind === 'board' || step.kind === 'ride';
+    const lineColor = onVehicle || done ? accent : 'var(--color-border)';
+    const dotBorder =
+        done || current || onVehicle ? accent : 'var(--color-border)';
+
+    return (
+        <div className="flex gap-3.5">
+            <div className="flex w-[22px] shrink-0 flex-col items-center">
+                <span
+                    className={`size-[13px] shrink-0 rounded-full border-2 ${current ? 'animate-pulse' : ''}`}
+                    style={{
+                        borderColor: dotBorder,
+                        background: done || current ? accent : 'transparent',
+                    }}
+                />
+                {!last && (
+                    <span
+                        className="min-h-[18px] w-0.5 flex-1"
+                        style={{ background: lineColor }}
+                    />
+                )}
+            </div>
+            <div className="min-w-0 flex-1 pb-2">
+                <div className="flex items-center gap-2">
+                    {step.kind === 'board' && step.line && (
+                        <span
+                            className="inline-flex h-[22px] min-w-6 items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-bold text-white"
+                            style={{ background: accent }}
+                        >
+                            {step.line}
+                        </span>
+                    )}
+                    <span
+                        className={`min-w-0 flex-1 truncate text-sm leading-snug ${
+                            done
+                                ? 'text-text-3'
+                                : current
+                                  ? 'font-semibold'
+                                  : 'text-muted-foreground'
+                        }`}
+                    >
+                        {step.title}
+                    </span>
+                    {current && (
+                        <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold text-success">
+                            <span className="size-1.5 animate-pulse rounded-full bg-success" />
+                            NOW
+                        </span>
+                    )}
+                    {time && (
+                        <span
+                            className={`shrink-0 font-mono text-[11px] tabular-nums ${
+                                done
+                                    ? 'text-text-3'
+                                    : current
+                                      ? 'text-foreground'
+                                      : 'text-muted-foreground'
+                            }`}
+                        >
+                            {time}
+                        </span>
+                    )}
+                </div>
+                {step.sub && (
+                    <div className="mt-0.5 text-xs text-text-3">{step.sub}</div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/**
+ * A collapsed in-vehicle stretch: one "N stops · X min" node that expands to
+ * the individual stops. Auto-expands while the live cursor is inside it, so you
+ * always see where you are.
+ */
+function RidesGroup({
+    rides,
+    currentIdx,
+    lastIndex,
+    minutes,
+}: {
+    rides: { step: Step; i: number }[];
+    currentIdx: number;
+    lastIndex: number;
+    minutes: number | null;
+}) {
+    const [open, setOpen] = useState(false);
+    const accent = rides[0].step.color ?? 'var(--color-primary)';
+    const firstI = rides[0].i;
+    const lastI = rides[rides.length - 1].i;
+    const containsCurrent = currentIdx >= firstI && currentIdx <= lastI;
+    const expanded = open || containsCurrent;
+
+    if (expanded) {
+        return (
+            <>
+                {!containsCurrent && (
+                    <button
+                        type="button"
+                        onClick={() => setOpen(false)}
+                        className="flex w-full gap-3.5 text-left"
+                    >
+                        <div className="flex w-[22px] shrink-0 justify-center">
+                            <span
+                                className="w-0.5 self-stretch"
+                                style={{ background: accent }}
+                            />
+                        </div>
+                        <div className="flex items-center gap-1 py-1 text-[11px] font-medium text-text-3">
+                            <IconChevronDown size={13} stroke={ICON_STROKE} />
+                            Hide stops
+                        </div>
+                    </button>
+                )}
+                {rides.map((r) => (
+                    <TimelineStep
+                        key={r.i}
+                        step={r.step}
+                        done={r.i < currentIdx}
+                        current={r.i === currentIdx}
+                        last={r.i === lastIndex}
+                        accent={accent}
+                    />
+                ))}
+            </>
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex w-full gap-3.5 text-left"
+        >
+            <div className="flex w-[22px] shrink-0 flex-col items-center">
+                <span
+                    className="size-[9px] shrink-0 rounded-full border-2"
+                    style={{
+                        borderColor: accent,
+                        background: 'var(--color-card)',
+                    }}
+                />
+                <span
+                    className="min-h-[22px] w-0.5 flex-1"
+                    style={{ background: accent }}
+                />
+            </div>
+            <div className="min-w-0 flex-1 pb-2 text-[13px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                    <IconChevronRight size={14} stroke={ICON_STROKE} />
+                    <span className="font-medium">{rides.length} stops</span>
+                    {minutes != null && (
+                        <span className="text-text-3">· {minutes} min</span>
+                    )}
+                </span>
+            </div>
+        </button>
+    );
+}
+
 /**
  * The chosen route as a live journey: a dark "Live · next" banner with a
  * progress bar, and a station-by-station timeline whose NOW cursor advances on
@@ -325,6 +561,7 @@ function RouteDetail({
     }, []);
 
     const steps = stationSteps(journey, destName);
+    const items = groupTimeline(steps);
     // The last step whose scheduled time has passed; -1 before departure.
     let currentIdx = -1;
 
@@ -406,89 +643,26 @@ function RouteDetail({
 
             {/* Station-by-station timeline */}
             <div className="rounded-2xl border border-border bg-card px-[18px] py-2 shadow-sm">
-                {steps.map((step, i) => {
-                    const last = i === steps.length - 1;
-                    const done = i < currentIdx;
-                    const current = i === currentIdx;
-                    const accent = step.color ?? 'var(--color-primary)';
-
-                    return (
-                        <div key={i} className="flex gap-3.5">
-                            <div className="flex w-[22px] shrink-0 flex-col items-center">
-                                <span
-                                    className={`size-[13px] shrink-0 rounded-full border-2 ${current ? 'animate-pulse' : ''}`}
-                                    style={{
-                                        borderColor:
-                                            done || current
-                                                ? accent
-                                                : 'var(--color-border)',
-                                        background:
-                                            done || current
-                                                ? accent
-                                                : 'transparent',
-                                    }}
-                                />
-                                {!last && (
-                                    <span
-                                        className="min-h-[18px] w-0.5 flex-1"
-                                        style={{
-                                            background: done
-                                                ? accent
-                                                : 'var(--color-border)',
-                                        }}
-                                    />
-                                )}
-                            </div>
-                            <div className="min-w-0 flex-1 pb-2">
-                                <div className="flex items-center gap-2">
-                                    {step.kind === 'board' && step.line && (
-                                        <span
-                                            className="inline-flex h-[22px] min-w-6 items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-bold text-white"
-                                            style={{ background: accent }}
-                                        >
-                                            {step.line}
-                                        </span>
-                                    )}
-                                    <span
-                                        className={`min-w-0 flex-1 truncate text-sm leading-snug ${
-                                            done
-                                                ? 'text-text-3'
-                                                : current
-                                                  ? 'font-semibold'
-                                                  : 'text-muted-foreground'
-                                        }`}
-                                    >
-                                        {step.title}
-                                    </span>
-                                    {current && (
-                                        <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold text-success">
-                                            <span className="size-1.5 animate-pulse rounded-full bg-success" />
-                                            NOW
-                                        </span>
-                                    )}
-                                    {hhmm(step.at) && (
-                                        <span
-                                            className={`shrink-0 font-mono text-[11px] tabular-nums ${
-                                                done
-                                                    ? 'text-text-3'
-                                                    : current
-                                                      ? 'text-foreground'
-                                                      : 'text-muted-foreground'
-                                            }`}
-                                        >
-                                            {hhmm(step.at)}
-                                        </span>
-                                    )}
-                                </div>
-                                {step.sub && (
-                                    <div className="mt-0.5 text-xs text-text-3">
-                                        {step.sub}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
+                {items.map((item) =>
+                    item.type === 'step' ? (
+                        <TimelineStep
+                            key={item.i}
+                            step={item.step}
+                            done={item.i < currentIdx}
+                            current={item.i === currentIdx}
+                            last={item.i === steps.length - 1}
+                            accent={item.step.color ?? 'var(--color-primary)'}
+                        />
+                    ) : (
+                        <RidesGroup
+                            key={`rides-${item.rides[0].i}`}
+                            rides={item.rides}
+                            currentIdx={currentIdx}
+                            lastIndex={steps.length - 1}
+                            minutes={item.minutes}
+                        />
+                    ),
+                )}
             </div>
 
             <button
