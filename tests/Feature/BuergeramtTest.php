@@ -2,21 +2,9 @@
 
 use App\Services\BuergeramtService;
 
-// The office directory behind the Slots tab and take-me-there. checkSlots is
-// service-scoped: it returns the offices in the service's category, each a
-// check_online link-out until a `slots:check` run overlays real availability
-// (see SmartCjmSlotsTest for the live-check pipeline).
-
-test('buergeramt service returns correct slot structure', function () {
-    $slots = app(BuergeramtService::class)->checkSlots('anmeldung');
-
-    expect($slots)->not->toBeEmpty();
-    foreach ($slots as $key => $slot) {
-        expect($key)->toBeIn(array_keys(BuergeramtService::OFFICES));
-        expect($slot)->toHaveKeys(['name', 'address', 'category', 'status', 'next_slot', 'booking_url']);
-        expect($slot['booking_url'])->not->toBe('');
-    }
-});
+// The office directory behind task "Take me there" and booking deep-links.
+// (Live slot availability was removed — the city IP-blocks crawling; the app
+// deep-links into the city's booking flow instead.)
 
 test('office resolution maps booking keys to concrete offices', function () {
     $service = app(BuergeramtService::class);

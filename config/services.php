@@ -76,18 +76,6 @@ return [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
     ],
 
-    /*
-     * Live appointment availability from the city's Smart CJM booking
-     * system (termine.stadt-koeln.de). Off, and staying off: robots.txt
-     * disallows crawling and the city firewall-blocked our datacenter IP on
-     * 2026-07-02. The Offices grid ships as a deep-link experience. This flag
-     * only gates the manual slots:check command (usable from an un-blocked
-     * host); it does not schedule anything.
-     */
-    'smartcjm' => [
-        'enabled' => env('SMARTCJM_SLOTS_ENABLED', false),
-    ],
-
     'vrs' => [
         'gtfsrt_url' => env('VRS_GTFSRT_URL'),
         'trias_url' => env('VRS_TRIAS_URL'),

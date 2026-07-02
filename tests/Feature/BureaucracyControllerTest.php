@@ -1,39 +1,17 @@
 <?php
 
 use App\Models\User;
-use App\Services\BuergeramtService;
 
-test('bureaucracy page renders with slot data for onboarded user', function () {
+test('bureaucracy page renders for an onboarded user', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('bureaucracy')
-        ->has('slots')
-    );
-});
-
-test('bureaucracy page includes correct slot structure', function () {
-    $user = User::factory()->onboarded()->create();
-    $this->actingAs($user);
-
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('bureaucracy')
-        ->where('slots', function ($slots) {
-            foreach ($slots as $key => $slot) {
-                expect($key)->toBeIn(array_keys(BuergeramtService::OFFICES));
-                expect($slot)->toHaveKeys(['name', 'address', 'status', 'next_slot', 'booking_url']);
-            }
-
-            return true;
-        })
-    );
+    $this->get(route('bureaucracy'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('bureaucracy')
+            ->has('tasks')
+        );
 });
 
 test('bureaucracy page requires authentication', function () {

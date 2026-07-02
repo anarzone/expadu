@@ -55,13 +55,4 @@ Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
 Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:00')->withoutOverlapping();
 
-// NOTE: the Bürgeramt/KFZ slot watcher (slots:check --all) is deliberately
-// NOT scheduled. termine.stadt-koeln.de disallows crawling in robots.txt and,
-// after a few hours of polling on 2026-07-02, firewall-blocked our datacenter
-// IP (194.8.223.109 drops SYNs from the shared prod+staging box). We respect
-// that: no automated fetching from our servers. The Offices grid ships as a
-// deep-link experience instead. The slots:check command still exists for a
-// manual run from an un-blocked host; re-scheduling here is a deliberate act
-// that should only follow the city allowlisting our egress.
-
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();

@@ -13,10 +13,8 @@ use App\Profile\Applicability;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\BuergeramtService;
-use App\Services\SmartCjm\SlotAvailabilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -45,7 +43,7 @@ class BureaucracyController extends Controller
      * React side renders without further logic: active / upcoming /
      * completed / not_applicable / info / no_longer_relevant + teasers.
      */
-    public function index(Request $request, BuergeramtService $buergeramtService, SlotAvailabilityService $slotAvailability, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): Response
+    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): Response
     {
         $user = $request->user();
         $profile = $generator->ensure($user);
@@ -113,15 +111,6 @@ class BureaucracyController extends Controller
                 && $ut->is_applicable
                 && in_array(Str::afterLast($ut->task->key ?? '', '.'), self::ARRIVAL_BASICS, true));
 
-        // The Offices grid is service-scoped: each service has its own queue
-        // and availability. Default to the user's most relevant open task,
-        // else Anmeldung. ?service= (set by the service picker) overrides.
-        $selectedService = $request->string('service')->toString();
-        if (! isset(BuergeramtService::SERVICES[$selectedService])) {
-            $selectedService = $this->defaultBookingService($userTasks) ?? BuergeramtService::DEFAULT_SERVICE;
-        }
-        $slots = $buergeramtService->checkSlots($selectedService, $slotAvailability->availabilityFor($selectedService));
-
         return Inertia::render('bureaucracy', [
             'situation' => $user->situation?->value,
             'path' => [
@@ -147,60 +136,7 @@ class BureaucracyController extends Controller
                 'total' => $totalActionable,
                 'percent' => $totalActionable > 0 ? (int) round(($doneCount / $totalActionable) * 100) : 0,
             ],
-            'slots' => $slots,
-            'selectedService' => $selectedService,
-            'slotsMeta' => $slotAvailability->meta($selectedService),
-            'bookingServices' => collect(BuergeramtService::SERVICES)->map(fn ($s, $key) => [
-                'key' => $key,
-                'name' => $s['name'],
-                'name_en' => $s['name_en'],
-                'emoji' => $s['emoji'],
-                'category' => $s['category'],
-                'duration' => $s['duration'],
-                'url' => BuergeramtService::BOOKING_URLS[$s['category']].'&service='.$s['uid'],
-            ])->values(),
         ]);
-    }
-
-    /**
-     * The booking service key tied to the user's most pressing open Amt task,
-     * so the Offices grid defaults to the queue they actually need. Null when
-     * no open task maps to a known service.
-     *
-     * @param  Collection<int, UserTask>  $userTasks
-     */
-    private function defaultBookingService(Collection $userTasks): ?string
-    {
-        return $userTasks
-            ->filter(fn (UserTask $ut) => ($ut->status ?? TaskStatus::NotStarted) !== TaskStatus::Done)
-            ->map(fn (UserTask $ut) => $ut->task?->booking_service_key)
-            ->first(fn (?string $key) => $key !== null && isset(BuergeramtService::SERVICES[$key]));
-    }
-
-    /**
-     * The Offices grid's "Check now" button: one live availability probe of
-     * the selected service against the city's booking system, then back to
-     * the page with fresh slots. The service's freshness window absorbs
-     * repeat taps, and a failed probe degrades to the cached/check_online
-     * view rather than erroring the page.
-     */
-    public function refreshSlots(Request $request, SlotAvailabilityService $slotAvailability): RedirectResponse
-    {
-        $serviceKey = $request->string('service')->toString();
-        if (! isset(BuergeramtService::SERVICES[$serviceKey])) {
-            $serviceKey = BuergeramtService::DEFAULT_SERVICE;
-        }
-
-        if ($slotAvailability->isEnabled()) {
-            try {
-                $slotAvailability->refresh($serviceKey);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-        }
-
-        // Land back on the same service so its fresh availability is shown.
-        return redirect()->route('bureaucracy', ['service' => $serviceKey]);
     }
 
     /**
@@ -370,15 +306,26 @@ class BureaucracyController extends Controller
             ->values()
             ->all();
 
+        $bookingKey = $task->booking_service_key;
         $bookingUrl = null;
-        if ($task->booking_service_key && isset(BuergeramtService::SERVICES[$task->booking_service_key])) {
-            $svc = BuergeramtService::SERVICES[$task->booking_service_key];
-            $bookingUrl = (BuergeramtService::BOOKING_URLS[$svc['category']] ?? '').'&service='.$svc['uid'];
-        } elseif ($task->booking_service_key && isset(BuergeramtService::BOOKING_URLS[$task->booking_service_key])) {
+        $category = null;
+        if ($bookingKey && isset(BuergeramtService::SERVICES[$bookingKey])) {
+            $svc = BuergeramtService::SERVICES[$bookingKey];
+            $category = $svc['category'];
+            $bookingUrl = (BuergeramtService::BOOKING_URLS[$category] ?? '').'&service='.$svc['uid'];
+        } elseif ($bookingKey && isset(BuergeramtService::BOOKING_URLS[$bookingKey])) {
             // Category-level keys (auslaenderbehoerde, finanzamt, kfz) link
             // to the category's booking calendar without a service deep-link.
-            $bookingUrl = BuergeramtService::BOOKING_URLS[$task->booking_service_key];
+            $category = $bookingKey;
+            $bookingUrl = BuergeramtService::BOOKING_URLS[$bookingKey];
         }
+
+        // Only pin an office (address + Take-me-there) for single-site
+        // services. Bürgeramt services span ten Kundenzentren and the office
+        // is chosen at the end of the city's booking flow, so we don't guess.
+        $office = in_array($category, BuergeramtService::SINGLE_SITE_CATEGORIES, true)
+            ? $buergeramtService->officeForTask($bookingKey, $user->veedel)
+            : null;
 
         return [
             'id' => $userTask->id,
@@ -404,7 +351,7 @@ class BureaucracyController extends Controller
             'links' => $task->links ?? [],
             'booking_service_key' => $task->booking_service_key,
             'booking_url' => $bookingUrl,
-            'office' => $buergeramtService->officeForTask($task->booking_service_key, $user->veedel),
+            'office' => $office,
             'appointment_at' => $userTask->appointment_at?->toIso8601String(),
             'is_applicable' => $userTask->is_applicable,
             'is_recurring' => $task->isRecurring(),

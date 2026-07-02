@@ -122,80 +122,13 @@ class BuergeramtService
     ];
 
     /**
-     * The service selected when none is specified.
-     */
-    const DEFAULT_SERVICE = 'anmeldung';
-
-    /**
-     * @var array<string, string>
-     */
-    const OFFICE_CATEGORIES = [
-        'deutz' => 'buergeramt', 'ehrenfeld' => 'buergeramt', 'kalk' => 'buergeramt',
-        'lindenthal' => 'buergeramt', 'chorweiler' => 'buergeramt', 'muelheim' => 'buergeramt',
-        'nippes' => 'buergeramt', 'porz' => 'buergeramt', 'rodenkirchen' => 'buergeramt',
-        'innenstadt' => 'buergeramt', 'auslaenderbehoerde' => 'auslaenderbehoerde',
-        'finanzamt_altstadt' => 'finanzamt', 'finanzamt_nord' => 'finanzamt',
-        'finanzamt_sued' => 'finanzamt', 'kfz' => 'kfz',
-    ];
-
-    /**
-     * The offices that handle a service, each with its soonest appointment.
+     * Single-site service categories — services offered at exactly one
+     * address, so a task can confidently show the office + Take-me-there.
+     * Bürgeramt services span the ten Kundenzentren and the concrete office
+     * is only chosen at the end of the city's booking flow, so they carry no
+     * pinned office.
      *
-     * Only offices in the service's category are returned (a Bürgeramt
-     * service lists the ten Kundenzentren; a KFZ service lists the
-     * Zulassungsstelle). $availability is the cached SlotAvailabilityService
-     * payload for this service, or null when it has never been checked:
-     *   - office present in availability  → available + next_slot + slot deep-link
-     *   - checked but office absent       → no_appointments (check the site)
-     *   - service never checked (null)    → check_online
-     *
-     * @param  array{offices: array<string, array{next_slot: string, booking_url: string, duration: int}>}|null  $availability
-     * @return array<string, array{name: string, address: string, category: string, status: string, next_slot: ?string, booking_url: string}>
+     * @var list<string>
      */
-    public function checkSlots(?string $serviceKey = null, ?array $availability = null): array
-    {
-        $serviceKey = isset(self::SERVICES[$serviceKey]) ? $serviceKey : self::DEFAULT_SERVICE;
-        $category = self::SERVICES[$serviceKey]['category'];
-        $liveOffices = $availability['offices'] ?? null;
-        $wasChecked = $availability !== null;
-
-        $fallbackUrl = (self::BOOKING_URLS[$category] ?? '').'&service='.self::SERVICES[$serviceKey]['uid'];
-
-        $slots = [];
-        foreach (self::OFFICES as $key => $office) {
-            if ((self::OFFICE_CATEGORIES[$key] ?? null) !== $category) {
-                continue;
-            }
-
-            $slot = $liveOffices[$key] ?? null;
-            $slots[$key] = [
-                'name' => $office['name'],
-                'address' => $office['address'],
-                'category' => $category,
-                'status' => $slot !== null ? 'available' : ($wasChecked ? 'no_appointments' : 'check_online'),
-                'next_slot' => $slot['next_slot'] ?? null,
-                'booking_url' => $slot['booking_url'] ?? $fallbackUrl,
-            ];
-        }
-
-        return $slots;
-    }
-
-    /**
-     * Map a Smart CJM booking location label onto an OFFICES key, e.g.
-     * "Kundenzentrum Innenstadt I" → innenstadt, "Kundenzentrum Mülheim" →
-     * muelheim. Null for locations the directory does not know.
-     */
-    public function officeKeyForLocation(string $label): ?string
-    {
-        $normalized = str_replace(['ü', 'ö', 'ä'], ['ue', 'oe', 'ae'], mb_strtolower($label));
-
-        foreach (array_keys(self::OFFICES) as $key) {
-            if (str_contains($normalized, $key)) {
-                return $key;
-            }
-        }
-
-        return null;
-    }
+    const SINGLE_SITE_CATEGORIES = ['auslaenderbehoerde', 'kfz', 'finanzamt'];
 }

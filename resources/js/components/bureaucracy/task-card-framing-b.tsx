@@ -7,6 +7,7 @@ import {
     IconFile,
     IconFlag,
     IconLock,
+    IconMapPin,
     IconShieldCheck,
 } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -585,6 +586,26 @@ export function TaskCardFramingB({
                                 Checked items are saved — pick up where you left
                                 off on any device.
                             </div>
+                        </div>
+                    )}
+
+                    {/* Where to go — only shown for single-site services, where
+                        the office is a definite address (KFZ, Ausländerbehörde,
+                        Finanzamt). Bürgeramt services pick the Kundenzentrum at
+                        the end of the city's booking flow, so no office is pinned. */}
+                    {task.office && (
+                        <div className="flex items-start gap-1.5 text-[13px] text-[#6B6860] dark:text-[#AAA89F]">
+                            <IconMapPin
+                                size={15}
+                                stroke={1.8}
+                                className="mt-0.5 shrink-0"
+                            />
+                            <span>
+                                <span className="font-semibold text-[#18170F] dark:text-[#F6F5F1]">
+                                    {task.office.name}
+                                </span>{' '}
+                                · {task.office.address}, Köln
+                            </span>
                         </div>
                     )}
 

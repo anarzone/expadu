@@ -454,9 +454,10 @@ test('task cards resolve their office (Bezirk Bürgeramt) and document origins',
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
-        // Anmeldung routes to the user's Bezirk office…
-        expect($cards['nee.anmeldung']['office']['name'])->toBe('Bürgeramt Ehrenfeld');
-        // …the permit to the single Ausländerbehörde site.
+        // Anmeldung (a Bürgeramt service) pins no office — the concrete
+        // Kundenzentrum is chosen at the end of the city's booking flow.
+        expect($cards['nee.anmeldung']['office'])->toBeNull();
+        // The permit is a single-site service, so its one office is pinned.
         expect($cards['nee.residence_permit']['office']['name'])->toBe('Ausländerbehörde Köln');
 
         // The bank task's Tax ID document points at the task that produces it.
