@@ -1,24 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 
 /**
- * One split-flap cell — a mechanical airport-board character. The cell is a
- * dark rounded tile with a visible seam across the middle; on change the old
- * top half hinges down and the new bottom half swings in with a slight
- * mechanical settle. Cells mount BLANK and flip their character in, so the
- * board arrives with the classic cascading flutter instead of only animating
- * on rare digit changes.
- *
- * `order` staggers cells (left to right) like the real boards, whose motors
- * never start in perfect sync.
+ * One split-flap tile — a single character cell on the airport-style board.
+ * The tile is a dark rounded plate with a seam across the middle; on change the
+ * old top leaf hinges down, THEN the new bottom leaf drops and settles with a
+ * slight mechanical overshoot (sequential, not a simultaneous fold). Tiles
+ * mount blank and flip their character in, so the board arrives with the
+ * classic cascade. `order` staggers tiles left-to-right within a field.
  */
-function FlipChar({ char, order = 0 }: { char: string; order?: number }) {
+function Tile({ char, order = 0 }: { char: string; order?: number }) {
     const [current, setCurrent] = useState(' ');
     const [next, setNext] = useState<string | null>(null);
     const settle = useRef<number | null>(null);
-    const delayMs = order * 90;
+    const stagger = Math.min(order, 12) * 22;
 
-    // Prop changed (or first mount from blank) → stage a flip. Render-phase
-    // adjustment per the React "adjusting state when a prop changes" pattern.
+    // Prop changed (or first flip-in from blank) → stage a flip. Render-phase
+    // state adjustment per the React "adjusting state when a prop changes" rule.
     if (char !== current && next !== char) {
         setNext(char);
     }
@@ -28,8 +26,8 @@ function FlipChar({ char, order = 0 }: { char: string; order?: number }) {
             return;
         }
 
-        // Fallback commit — fires if onAnimationEnd never does (reduced
-        // motion, tab hidden mid-flip).
+        // Fallback commit if onAnimationEnd never fires (reduced motion, tab
+        // hidden mid-flip) — covers the stagger plus both leaf durations.
         settle.current = window.setTimeout(() => {
             setNext((pending) => {
                 if (pending !== null) {
@@ -38,16 +36,16 @@ function FlipChar({ char, order = 0 }: { char: string; order?: number }) {
 
                 return null;
             });
-        }, 900 + delayMs);
+        }, 1000 + stagger);
 
         return () => {
             if (settle.current !== null) {
                 window.clearTimeout(settle.current);
             }
         };
-    }, [next, delayMs]);
+    }, [next, stagger]);
 
-    const commit = () => {
+    const commit = () =>
         setNext((pending) => {
             if (pending !== null) {
                 setCurrent(pending);
@@ -55,29 +53,28 @@ function FlipChar({ char, order = 0 }: { char: string; order?: number }) {
 
             return null;
         });
-    };
 
     return (
-        <span className="flipc">
-            <span className="flipc-half flipc-top">
+        <span className="tile">
+            <span className="tile-half tile-top">
                 <span>{next ?? current}</span>
             </span>
-            <span className="flipc-half flipc-bottom">
+            <span className="tile-half tile-bottom">
                 <span>{current}</span>
             </span>
             {next !== null && (
                 <>
                     <span
                         key={`t-${next}`}
-                        className="flipc-half flipc-top flipc-flip-top"
-                        style={{ animationDelay: `${delayMs}ms` }}
+                        className="tile-half tile-top tile-flip-top"
+                        style={{ animationDelay: `${stagger}ms` }}
                     >
                         <span>{current}</span>
                     </span>
                     <span
                         key={`b-${next}`}
-                        className="flipc-half flipc-bottom flipc-flip-bottom"
-                        style={{ animationDelay: `${delayMs + 320}ms` }}
+                        className="tile-half tile-bottom tile-flip-bottom"
+                        style={{ animationDelay: `${stagger + 250}ms` }}
                         onAnimationEnd={commit}
                     >
                         <span>{next}</span>
@@ -89,18 +86,50 @@ function FlipChar({ char, order = 0 }: { char: string; order?: number }) {
 }
 
 /**
- * A string of split-flap cells. Each character is its own cell, so when
- * "12" becomes "13" only the "3" flips — exactly like the mechanical boards.
- * Cells are keyed by position from the RIGHT edge so a length change
- * ("9" → "12") flips the aligned digits instead of remounting all of them.
+ * A field of split-flap tiles rendering one string, one character per tile —
+ * the building block of every board cell (line, destination, each time). Tiles
+ * are keyed by position, so when the text changes only the tiles whose glyph
+ * changed flip, exactly like a mechanical board.
+ *
+ * `width` fixes the tile count so columns line up row-to-row: shorter text is
+ * padded with blank tiles (right-aligned pads on the left, e.g. times; left
+ * pads on the right, e.g. destinations), longer text is clipped to the column.
+ * Omit `width` to hug the content. `tone` colours the glyphs (via `--ink`).
  */
-export function FlipText({ text }: { text: string }) {
-    const chars = [...text];
+export function TileField({
+    text,
+    width,
+    align = 'left',
+    tone,
+    label,
+}: {
+    text: string;
+    width?: number;
+    align?: 'left' | 'right';
+    tone?: string;
+    label?: string;
+}) {
+    let chars = [...text];
+
+    if (width != null) {
+        const blanks = Math.max(0, width - chars.length);
+        chars =
+            align === 'right'
+                ? [...Array<string>(blanks).fill(' '), ...chars].slice(-width)
+                : [...chars, ...Array<string>(blanks).fill(' ')].slice(
+                      0,
+                      width,
+                  );
+    }
 
     return (
-        <span className="flipc-row" aria-label={text}>
-            {chars.map((char, i) => (
-                <FlipChar key={chars.length - i} char={char} order={i} />
+        <span
+            className="tile-field"
+            aria-label={label ?? text}
+            style={tone ? ({ '--ink': tone } as CSSProperties) : undefined}
+        >
+            {chars.map((ch, i) => (
+                <Tile key={i} char={ch} order={i} />
             ))}
         </span>
     );

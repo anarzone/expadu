@@ -416,69 +416,59 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --bd-ink: #f3f7fb;
     --bd-sub: #9aa6b4;
 }
-/* A next-departure time as a row of split-flap cells (see .flipc). The chip
-   itself is just the invisible grouping; the state colours the GLYPHS the way
-   real boards use coloured type — lead white, soon amber, NOW green. */
-.dchip {
+/* Split-flap board tiles — the airport departure board. Every board cell
+   (line, destination, each time) is a field of identical character tiles, one
+   glyph per tile; on a data update only the tiles whose glyph changed flip.
+   Tile size scales down on phones so a whole row still fits; the column headers
+   derive their widths from the same --tw/--tg/--col-gap so they stay aligned. */
+.board {
+    --tw: 12px;
+    --th: 18px;
+    --tg: 2px;
+    --col-gap: 8px;
+}
+@media (min-width: 768px) {
+    .board {
+        --tw: 17px;
+        --th: 25px;
+        --tg: 2.5px;
+        --col-gap: 14px;
+    }
+}
+.tile-field {
     display: inline-flex;
-    align-items: center;
-    font-family: 'Geist Mono', ui-monospace, monospace;
-    font-size: 15px;
-    font-weight: 700;
-    --flip-ink: #7f8a99;
+    gap: var(--tg);
 }
-.dchip.lead {
-    --flip-ink: #f2f6fb;
-}
-.dchip.soon {
-    --flip-ink: var(--st-warn);
-}
-.dchip.now {
-    --flip-ink: var(--st-now);
-}
-
-/* Split-flap cells (the airport board). Each character sits in its own dark
-   tile with the mechanical seam across the middle; on change the old top half
-   hinges down, then the new bottom half swings in and settles with a slight
-   overshoot — transform-only, GPU-composited. Cells mount blank and flip
-   their character in, staggered left-to-right, so the whole board arrives
-   with the classic flutter. */
-.flipc-row {
-    display: inline-flex;
-    gap: 2px;
-}
-.flipc {
+.tile {
     position: relative;
     display: inline-block;
-    width: 17px;
-    height: 26px;
-    line-height: 26px;
-    border-radius: 3.5px;
+    width: var(--tw);
+    height: var(--th);
+    border-radius: 4px;
     background: #101318;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-    perspective: 320px;
-    color: var(--flip-ink, #e8edf4);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    perspective: 300px;
+    color: var(--ink, #e7ecf2);
 }
-.flipc-half {
+.tile-half {
     position: absolute;
     left: 0;
     width: 100%;
     height: 50%;
     overflow: hidden;
 }
-.flipc-top {
+.tile-top {
     top: 0;
-    background: linear-gradient(#232830, #1b2027);
-    border-radius: 3.5px 3.5px 0 0;
-    /* the mechanical seam */
+    background: linear-gradient(#262c34, #1b2027);
+    border-radius: 4px 4px 0 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.65);
 }
-.flipc-bottom {
+.tile-bottom {
     bottom: 0;
-    background: linear-gradient(#171b21, #1d222a);
-    border-radius: 0 0 3.5px 3.5px;
+    background: linear-gradient(#171b21, #1f242c);
+    border-radius: 0 0 4px 4px;
 }
-.flipc-half > span {
+.tile-half > span {
     position: absolute;
     left: 0;
     width: 100%;
@@ -486,48 +476,101 @@ input[type='time']::-webkit-calendar-picker-indicator {
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-weight: 700;
+    font-size: calc(var(--tw) * 0.86);
+    color: var(--ink, #e7ecf2);
 }
-.flipc-top > span {
+.tile-top > span {
     top: 0;
 }
-.flipc-bottom > span {
+.tile-bottom > span {
     bottom: 0;
 }
-.flipc-flip-top {
-    z-index: 2;
+/* Sequential mechanical flap: the old top leaf falls (accelerating, darkening),
+   then the new bottom leaf drops and settles with a slight overshoot. The
+   bottom's start delay is set inline (stagger + top duration) so tiles ripple
+   left-to-right. */
+.tile-flip-top {
+    z-index: 4;
     transform-origin: 50% 100%;
     backface-visibility: hidden;
-    animation: flipc-top 0.32s cubic-bezier(0.55, 0, 0.8, 0.6) both;
+    animation: tile-top-fall 0.25s cubic-bezier(0.36, 0.08, 0.66, 0.5) both;
 }
-.flipc-flip-bottom {
-    z-index: 2;
+.tile-flip-bottom {
+    z-index: 4;
     transform-origin: 50% 0%;
     backface-visibility: hidden;
-    /* lands with a slight mechanical overshoot */
-    animation: flipc-bottom 0.4s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+    animation: tile-bottom-fall 0.32s cubic-bezier(0.26, 1.3, 0.5, 1) both;
 }
-@keyframes flipc-top {
+@keyframes tile-top-fall {
     from {
-        transform: rotateX(0deg);
+        transform: rotateX(0);
+        filter: brightness(1);
     }
     to {
         transform: rotateX(-90deg);
+        filter: brightness(0.48);
     }
 }
-@keyframes flipc-bottom {
+@keyframes tile-bottom-fall {
     from {
         transform: rotateX(90deg);
+        filter: brightness(0.52);
     }
     to {
-        transform: rotateX(0deg);
+        transform: rotateX(0);
+        filter: brightness(1);
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    .flipc-flip-top,
-    .flipc-flip-bottom {
+    .tile-flip-top,
+    .tile-flip-bottom {
         animation: none;
         visibility: hidden;
     }
+}
+/* Column headers (next / then / then) over the three time columns, plus the
+   shared "min" unit. Widths derive from the tile metrics so the labels stay
+   centred over their columns at every breakpoint. */
+.board-hrow {
+    display: flex;
+    padding: 9px 12px 3px;
+}
+@media (min-width: 768px) {
+    .board-hrow {
+        padding: 11px 18px 3px;
+    }
+}
+.board-hgrp {
+    margin-left: auto;
+    display: flex;
+    gap: var(--col-gap);
+    align-items: flex-end;
+}
+.board-hl {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    color: #616b76;
+    text-align: center;
+}
+.board-hl-hero {
+    width: calc(var(--tw) * 3 + var(--tg) * 2);
+}
+.board-hl-then {
+    width: calc(var(--tw) * 2 + var(--tg));
+}
+.board-times {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--col-gap);
+}
+.board-min {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--bd-sub);
 }
 
 @layer utilities {

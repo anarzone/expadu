@@ -7,7 +7,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
-import { FlipText } from '@/components/departures/flip-digit';
+import { TileField } from '@/components/departures/flip-digit';
 import { JourneyPlanner } from '@/components/departures/journey-planner';
 import type { SavedPlace } from '@/components/departures/journey-planner';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
@@ -101,30 +101,44 @@ function boardTint(color: string): string {
     return BOARD_TINT[color.toLowerCase()] ?? color;
 }
 
-/**
- * Split the soonest departures into the hero — the one big flapping number,
- * escalating lead → soon (≤3 min) → NOW (≤0) — and a muted "then …" tail. A
- * real departure board shows ONE prominent time per row; the following minutes
- * ride along small so three separate times never fuse into one long number.
- */
-function nextTimes(minutes: number[]): {
-    hero: { label: string; cls: string };
-    tail: string[];
-} {
-    if (minutes.length === 0) {
-        return { hero: { label: '—', cls: 'dchip' }, tail: [] };
+/** Fixed tile columns so every row lines up (line, then the destination). */
+const LINE_W = 3;
+const DEST_W = 9;
+
+/** Glyph colour for a time by urgency — white upcoming, amber ≤3 min, green now. */
+function timeInk(minutes: number): string {
+    return minutes <= 0 ? '#46d17f' : minutes <= 3 ? '#ffbf3f' : '#eef2f7';
+}
+
+/** Lift a colour toward white until it's legible on the near-black board. */
+function lift(hex: string, minLum = 130): string {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+
+    if (!m) {
+        return '#e7ecf2';
     }
 
-    const [first, ...rest] = minutes.slice(0, 3);
-    const state = first <= 0 ? ' now' : first <= 3 ? ' soon' : ' lead';
+    const r = parseInt(m[1].slice(0, 2), 16);
+    const g = parseInt(m[1].slice(2, 4), 16);
+    const b = parseInt(m[1].slice(4, 6), 16);
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
-    return {
-        hero: {
-            label: first <= 0 ? 'NOW' : String(first),
-            cls: `dchip${state}`,
-        },
-        tail: rest.map((m) => (m <= 0 ? 'now' : String(m))),
-    };
+    if (lum >= minLum) {
+        return `#${m[1].toLowerCase()}`;
+    }
+
+    const t = (minLum - lum) / (255 - lum);
+    const hex2 = (c: number) =>
+        Math.round(c + (255 - c) * t)
+            .toString(16)
+            .padStart(2, '0');
+
+    return `#${hex2(r)}${hex2(g)}${hex2(b)}`;
+}
+
+/** The line's brand colour, lifted to stay readable as glyphs on the board. */
+function lineInk(color: string): string {
+    return lift(boardTint(color));
 }
 
 type Alt = {
@@ -205,63 +219,75 @@ function LiveClock() {
 }
 
 function BoardRow({ dep }: { dep: Departure }) {
-    const { hero, tail } = nextTimes(dep.minutes);
-    const dim = dep.cancelled ? 0.5 : 1;
+    const [a, b, c] = dep.minutes.slice(0, 3);
+    const cancelled = dep.cancelled;
+
+    // The soonest departure is the colour-coded hero; the next two ride along
+    // muted. Cancelled rows show dashes in red instead of a countdown.
+    const heroText = cancelled
+        ? '---'
+        : a == null
+          ? ''
+          : a <= 0
+            ? 'NOW'
+            : String(a);
+    const heroTone = cancelled ? '#ff6b54' : a == null ? '#69727f' : timeInk(a);
+    const showMin =
+        !cancelled && ((a != null && a > 0) || b != null || c != null);
 
     return (
-        <div className="flex items-center gap-4 border-b border-[var(--bd-line)] px-4 py-3 last:border-b-0 md:gap-[15px] md:px-[18px]">
-            <span
-                className="flex h-8 min-w-[42px] shrink-0 items-center justify-center rounded-lg px-2 font-mono text-sm font-bold text-white"
-                style={{ background: boardTint(dep.color), opacity: dim }}
-            >
-                {dep.line}
-            </span>
-            <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                    <span
-                        className="truncate text-[15px] font-semibold text-[var(--bd-ink)]"
-                        style={{ opacity: dim }}
-                    >
-                        {dep.destination || 'Cologne'}
-                    </span>
-                    {dep.delay > 0 && !dep.cancelled && (
-                        <span className="shrink-0 rounded-[5px] bg-[#ffc24d] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#0e1116]">
-                            +{dep.delay}
-                        </span>
-                    )}
-                    {dep.cancelled && (
-                        <span className="shrink-0 rounded-[5px] bg-[#ff6b54] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white">
-                            cancelled
-                        </span>
-                    )}
-                </div>
-                {dep.via.length > 0 && (
-                    <div className="mt-[3px] truncate font-mono text-[11px] text-[var(--bd-sub)]">
-                        via {dep.via.join(' · ')}
-                    </div>
-                )}
-            </div>
-            {dep.cancelled ? (
-                <span className="shrink-0 font-mono text-xs text-[#ff6b54]">
-                    no service
+        <div className="flex items-center gap-2 border-b border-[var(--bd-line)] px-3 py-2.5 last:border-b-0 md:gap-3 md:px-[18px]">
+            <TileField
+                text={dep.line}
+                width={LINE_W}
+                align="right"
+                tone={lineInk(dep.color)}
+                label={`Line ${dep.line}`}
+            />
+            <TileField
+                text={(dep.destination || 'Cologne').toUpperCase()}
+                width={DEST_W}
+                align="left"
+                tone="#eef2f7"
+                label={dep.destination || 'Cologne'}
+            />
+            <div className="board-times">
+                <TileField
+                    text={heroText}
+                    width={3}
+                    align="right"
+                    tone={heroTone}
+                    label={
+                        cancelled
+                            ? 'cancelled'
+                            : heroText === 'NOW'
+                              ? 'departing now'
+                              : heroText
+                                ? `${heroText} minutes`
+                                : 'no departures'
+                    }
+                />
+                <TileField
+                    text={cancelled || b == null ? '' : String(b)}
+                    width={2}
+                    align="right"
+                    tone="#69727f"
+                    label={b == null ? '' : `then ${b} minutes`}
+                />
+                <TileField
+                    text={cancelled || c == null ? '' : String(c)}
+                    width={2}
+                    align="right"
+                    tone="#69727f"
+                    label={c == null ? '' : `then ${c} minutes`}
+                />
+                <span
+                    className="board-min"
+                    style={{ visibility: showMin ? 'visible' : 'hidden' }}
+                >
+                    min
                 </span>
-            ) : (
-                <div className="flex shrink-0 flex-col items-end gap-0.5">
-                    <span className="flex items-baseline gap-1">
-                        <span className={hero.cls}>
-                            <FlipText text={hero.label} />
-                        </span>
-                        <span className="font-mono text-[11px] text-[var(--bd-sub)]">
-                            min
-                        </span>
-                    </span>
-                    {tail.length > 0 && (
-                        <span className="font-mono text-[11px] text-[var(--bd-sub)]">
-                            then {tail.join(' · ')}
-                        </span>
-                    )}
-                </div>
-            )}
+            </div>
         </div>
     );
 }
@@ -348,6 +374,21 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
                     </span>
                 )}
             </div>
+            {board.departures.length > 0 && (
+                <div className="board-hrow">
+                    <div className="board-hgrp">
+                        <span className="board-hl board-hl-hero">next</span>
+                        <span className="board-hl board-hl-then">then</span>
+                        <span className="board-hl board-hl-then">then</span>
+                        <span
+                            className="board-min"
+                            style={{ visibility: 'hidden' }}
+                        >
+                            min
+                        </span>
+                    </div>
+                </div>
+            )}
             {grouped ? (
                 <div>
                     {lanes.map((lane) => (
