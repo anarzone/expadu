@@ -1,9 +1,11 @@
 import {
+    IconAlertTriangle,
     IconArrowLeft,
     IconArrowsExchange,
     IconBolt,
     IconChevronDown,
     IconChevronRight,
+    IconTicket,
     IconWalk,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -11,6 +13,7 @@ import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
 import type {
     Destination,
+    FareAdvice,
     Journey,
     JourneyLeg,
     JourneyResponse,
@@ -59,28 +62,41 @@ function transferText(journey: Journey): string {
     return `${journey.transfers} change${journey.transfers > 1 ? 's' : ''}`;
 }
 
-function kindLabel(
-    journey: Journey,
-    fastestTransit: Journey | undefined,
-): string {
-    if (journey.mode === 'bike') {
-        return 'By bike';
-    }
-
-    if (journey.mode === 'walk') {
-        return 'On foot';
-    }
-
-    if (journey === fastestTransit) {
-        return 'Fastest';
-    }
-
-    if (fastestTransit && journey.transfers < fastestTransit.transfers) {
-        return 'Fewest changes';
-    }
-
-    return 'Alternative';
+/** Total walking (and cycling) minutes across a journey's legs. */
+function walkMinutes(journey: Journey): number {
+    return journey.legs
+        .filter((l) => l.mode === 'walk' || l.mode === 'bike')
+        .reduce((sum, l) => sum + l.duration_min, 0);
 }
+
+/** True when any line this journey rides has an active disruption. */
+function isDisrupted(
+    journey: Journey,
+    disruptions: { lines: string[] }[],
+): boolean {
+    const lines = new Set(
+        journey.legs
+            .map((l) => l.line)
+            .filter((l): l is string => l !== null && l !== ''),
+    );
+
+    return disruptions.some((d) => d.lines.some((line) => lines.has(line)));
+}
+
+function minBy<T>(items: T[], score: (item: T) => number): T {
+    return items.reduce(
+        (best, item) => (score(item) < score(best) ? item : best),
+        items[0],
+    );
+}
+
+/** Per-card presentation derived deterministically from the Pareto set. */
+type RouteMeta = {
+    label: string | null;
+    walkMin: number;
+    disrupted: boolean;
+    best: boolean;
+};
 
 /** A row of compact leg chips — walk minutes, line badges, change markers. */
 function LegChips({ legs }: { legs: JourneyLeg[] }) {
@@ -127,26 +143,57 @@ function LegChips({ legs }: { legs: JourneyLeg[] }) {
 
 function RouteCard({
     journey,
-    fastestTransit,
+    label,
+    walkMin,
+    disrupted,
+    highlight,
     onStart,
 }: {
     journey: Journey;
-    fastestTransit: Journey | undefined;
+    label: string | null;
+    walkMin: number;
+    disrupted: boolean;
+    highlight: boolean;
     onStart: () => void;
 }) {
     return (
         <button
             onClick={onStart}
-            className="animate-fade-up w-full rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary md:px-[18px]"
+            className={`animate-fade-up w-full rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors md:px-[18px] ${
+                highlight
+                    ? 'border-primary'
+                    : 'border-border hover:border-primary'
+            }`}
         >
             <div className="mb-3 flex items-center gap-2.5">
-                <span className="rounded-full bg-primary-soft px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] text-primary uppercase">
-                    {kindLabel(journey, fastestTransit)}
-                </span>
-                <span className="text-[12.5px] text-text-3">
+                {label && (
+                    <span
+                        className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] uppercase ${
+                            highlight
+                                ? 'bg-primary-soft text-primary'
+                                : 'bg-secondary text-muted-foreground'
+                        }`}
+                    >
+                        {label}
+                    </span>
+                )}
+                <span className="truncate text-[12.5px] text-text-3">
                     {transferText(journey)}
+                    {walkMin > 0 && ` · ${walkMin} min walk`}
                 </span>
-                <span className="ml-auto font-display text-[22px] leading-none font-semibold">
+                {disrupted && (
+                    <span
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold"
+                        style={{
+                            background: 'rgba(255,194,77,.18)',
+                            color: '#9a6300',
+                        }}
+                    >
+                        <IconAlertTriangle size={11} stroke={2.4} />
+                        Delays
+                    </span>
+                )}
+                <span className="ml-auto shrink-0 font-display text-[22px] leading-none font-semibold">
                     {journey.duration_min}
                     <span className="font-mono text-[13px] text-text-3">
                         {' '}
@@ -161,6 +208,26 @@ function RouteCard({
                 </span>
             </div>
         </button>
+    );
+}
+
+/** One-line fare summary for the trip (same across options — same OD). */
+function FareLine({ fare }: { fare: FareAdvice }) {
+    const price =
+        fare.price_eur != null
+            ? `€${fare.price_eur.toFixed(2)}${fare.estimated ? ' est.' : ''}`
+            : null;
+
+    return (
+        <div className="mb-2.5 flex items-center gap-2 rounded-xl bg-secondary px-3.5 py-2.5 text-[13px] text-muted-foreground">
+            <IconTicket size={15} stroke={ICON_STROKE} className="shrink-0" />
+            <span className="min-w-0 truncate">{fare.label}</span>
+            {price && (
+                <span className="ml-auto shrink-0 font-semibold text-foreground">
+                    {price}
+                </span>
+            )}
+        </div>
     );
 }
 
@@ -804,34 +871,93 @@ export function JourneyPlanner({
         destination.fromName,
     ]);
 
-    const journeys = useMemo(() => {
+    // The engine hands us a Pareto set (arrival time × transfers × walking).
+    // We label those trade-offs deterministically — one balanced "Best" plus
+    // the extremes that beat it on a dimension — and lead with Best, like the
+    // best transit apps, instead of a departure-ordered soup of "Alternatives".
+    const { ordered, meta } = useMemo<{
+        ordered: Journey[];
+        meta: RouteMeta[];
+    }>(() => {
         const list = data?.journeys ?? [];
-        // Transit alternatives in departure order (the engine already prunes
-        // absurd ones) plus the fastest direct mode for the trade-off glance.
-        const transit = list
-            .filter((j) => j.mode === 'transit')
-            .sort((a, b) => Date.parse(a.depart_at) - Date.parse(b.depart_at))
-            .slice(0, 4);
+        const disruptions = data?.disruptions ?? [];
+        const transit = list.filter((j) => j.mode === 'transit');
         const direct = list
             .filter((j) => j.mode !== 'transit')
             .sort((a, b) => a.duration_min - b.duration_min)
             .slice(0, 1);
 
-        return [...transit, ...direct];
+        if (transit.length === 0) {
+            return {
+                ordered: direct,
+                meta: direct.map((j) => ({
+                    label: j.mode === 'bike' ? 'By bike' : 'On foot',
+                    walkMin: j.mode === 'bike' ? 0 : j.duration_min,
+                    disrupted: false,
+                    best: false,
+                })),
+            };
+        }
+
+        const arriveMs = (j: Journey) => Date.parse(j.arrive_at);
+        const earliest = Math.min(...transit.map(arriveMs));
+        // Minutes later than the best arrival, penalised for each change and
+        // for walking — so Best only trades time for a materially simpler trip.
+        const score = (j: Journey) =>
+            (arriveMs(j) - earliest) / 60000 +
+            j.transfers * 5 +
+            walkMinutes(j) * 1.2;
+
+        const best = minBy(transit, score);
+        const fastest = minBy(transit, arriveMs);
+        const fewest = minBy(transit, (j) => j.transfers);
+        const leastWalk = minBy(transit, walkMinutes);
+
+        const rest = transit
+            .filter((j) => j !== best)
+            .sort((a, b) => arriveMs(a) - arriveMs(b));
+        const ordered = [...[best, ...rest].slice(0, 4), ...direct];
+
+        const meta = ordered.map<RouteMeta>((j) => {
+            if (j.mode !== 'transit') {
+                return {
+                    label: j.mode === 'bike' ? 'By bike' : 'On foot',
+                    walkMin: j.mode === 'bike' ? 0 : j.duration_min,
+                    disrupted: false,
+                    best: false,
+                };
+            }
+
+            let label: string | null = null;
+
+            if (j === best) {
+                label = 'Best';
+            } else if (j === fastest) {
+                label = 'Fastest';
+            } else if (j === fewest && j.transfers < best.transfers) {
+                label = 'Fewest changes';
+            } else if (j === leastWalk && walkMinutes(j) < walkMinutes(best)) {
+                label = 'Least walking';
+            }
+
+            return {
+                label,
+                walkMin: walkMinutes(j),
+                disrupted: isDisrupted(j, disruptions),
+                best: j === best,
+            };
+        });
+
+        return { ordered, meta };
     }, [data]);
 
-    const fastestTransit = journeys
-        .filter((j) => j.mode === 'transit')
-        .reduce<
-            Journey | undefined
-        >((best, j) => (best === undefined || j.duration_min < best.duration_min ? j : best), undefined);
     const fromName = data?.from.name ?? 'Your location';
 
     // Route detail (a route was picked)
-    if (selected != null && journeys[selected]) {
+    if (selected != null && ordered[selected]) {
         return (
             <RouteDetail
-                journey={journeys[selected]}
+                journey={ordered[selected]}
                 fromName={fromName}
                 destName={destination.name}
                 onBack={() => setSelected(null)}
@@ -972,7 +1098,7 @@ export function JourneyPlanner({
                 <DegradedNotice data={data.degraded} />
             )}
 
-            {data && data.source !== 'degraded' && journeys.length === 0 && (
+            {data && data.source !== 'degraded' && ordered.length === 0 && (
                 <div className="flex items-center justify-center gap-2 rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
                     <IconWalk
                         size={16}
@@ -983,25 +1109,31 @@ export function JourneyPlanner({
                 </div>
             )}
 
-            {data && data.source !== 'degraded' && journeys.length > 0 && (
-                <div className="flex flex-col gap-3">
-                    {journeys.map((journey, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <div className="min-w-0 flex-1">
-                                <RouteCard
-                                    journey={journey}
-                                    fastestTransit={fastestTransit}
-                                    onStart={() => setSelected(i)}
+            {data && data.source !== 'degraded' && ordered.length > 0 && (
+                <>
+                    {data.ticket && <FareLine fare={data.ticket} />}
+                    <div className="flex flex-col gap-3">
+                        {ordered.map((journey, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <RouteCard
+                                        journey={journey}
+                                        label={meta[i].label}
+                                        walkMin={meta[i].walkMin}
+                                        disrupted={meta[i].disrupted}
+                                        highlight={meta[i].best}
+                                        onStart={() => setSelected(i)}
+                                    />
+                                </div>
+                                <IconChevronRight
+                                    size={18}
+                                    stroke={ICON_STROKE}
+                                    className="shrink-0 text-text-3"
                                 />
                             </div>
-                            <IconChevronRight
-                                size={18}
-                                stroke={ICON_STROKE}
-                                className="shrink-0 text-text-3"
-                            />
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                </>
             )}
         </div>
     );
