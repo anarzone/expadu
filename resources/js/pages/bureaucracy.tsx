@@ -1,4 +1,5 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { IconRefresh } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
@@ -130,6 +131,32 @@ function slotsToOffices(slots: Record<string, SlotData>): OfficeData[] {
     });
 }
 
+// Live availability metadata (SlotAvailabilityService::meta on the backend)
+type SlotsMeta = {
+    enabled: boolean;
+    checked_at: string | null;
+    service: string | null;
+};
+
+function checkedAgoLabel(iso: string): string {
+    const mins = Math.max(
+        0,
+        Math.round((Date.now() - new Date(iso).getTime()) / 60000),
+    );
+
+    if (mins < 1) {
+        return 'just now';
+    }
+
+    if (mins < 60) {
+        return `${mins} min ago`;
+    }
+
+    const hours = Math.round(mins / 60);
+
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+}
+
 // One row of the derived document library: a unique document and every
 // task on the user's path that asks for it.
 type DerivedDoc = {
@@ -202,6 +229,7 @@ export default function Bureaucracy() {
 
     const {
         slots,
+        slotsMeta,
         situation,
         path,
         tasks: taskBuckets,
@@ -211,9 +239,10 @@ export default function Bureaucracy() {
         eligibility,
         settledSuggestion,
         progress,
-        bookingServices: _bookingServices,
+        bookingServices,
     } = usePage<{
         slots: Record<string, SlotData>;
+        slotsMeta?: SlotsMeta;
         situation: string | null;
         path: PathProp | null;
         tasks: Buckets;
@@ -231,6 +260,25 @@ export default function Bureaucracy() {
     const [activeTab, setActiveTab] = useTabState('checklist');
     const [docSearch, setDocSearch] = useState('');
     const [destination, setDestination] = useState<Destination | null>(null);
+    const [refreshingSlots, setRefreshingSlots] = useState(false);
+
+    // The Offices grid's manual availability check. The backend reuses a
+    // still-fresh result, so tapping repeatedly never multiplies probes.
+    function refreshSlots() {
+        if (refreshingSlots) {
+            return;
+        }
+
+        setRefreshingSlots(true);
+        router.post(
+            '/bureaucracy/slots/refresh',
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setRefreshingSlots(false),
+            },
+        );
+    }
     // Push deep-links land here as /bureaucracy?focus={task_id}.
     const focusTaskId = useMemo(() => {
         const raw = new URLSearchParams(window.location.search).get('focus');
@@ -531,6 +579,46 @@ export default function Bureaucracy() {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Live availability status + manual re-check */}
+                        {slotsMeta?.enabled && (
+                            <div className="mb-4 flex items-center justify-between gap-3 rounded-[9px] border border-[#E2DFD6] bg-white px-[13px] py-2 dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                    {slotsMeta.checked_at ? (
+                                        <>
+                                            Live{' '}
+                                            {bookingServices?.find(
+                                                (s) =>
+                                                    s.key === slotsMeta.service,
+                                            )?.name ?? slotsMeta.service}{' '}
+                                            availability · checked{' '}
+                                            {checkedAgoLabel(
+                                                slotsMeta.checked_at,
+                                            )}
+                                        </>
+                                    ) : (
+                                        'Live availability on — no check yet'
+                                    )}
+                                </span>
+                                <button
+                                    onClick={refreshSlots}
+                                    disabled={refreshingSlots}
+                                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-[#1A4CD4] bg-transparent px-3 py-[5px] text-xs font-semibold text-[#1A4CD4] transition-all hover:bg-[#EBF0FD] disabled:cursor-default disabled:opacity-60 dark:text-[#5B8DEF] dark:hover:bg-[#1A4CD4]/15"
+                                >
+                                    <IconRefresh
+                                        size={14}
+                                        className={
+                                            refreshingSlots
+                                                ? 'animate-spin'
+                                                : ''
+                                        }
+                                    />
+                                    {refreshingSlots
+                                        ? 'Checking…'
+                                        : 'Check now'}
+                                </button>
+                            </div>
+                        )}
 
                         {/* Grouped office cards */}
                         {(() => {

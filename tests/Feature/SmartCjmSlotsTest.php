@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Services\BuergeramtService;
 use App\Services\SmartCjm\SmartCjmClient;
 use Illuminate\Support\Carbon;
@@ -153,6 +154,71 @@ test('checkSlots overlays live availability onto the office directory', function
     // Offices the check never covered keep the link-out fallback.
     expect($slots['nippes']['status'])->toBe('check_online')
         ->and($slots['kfz']['status'])->toBe('check_online');
+});
+
+test('the refresh endpoint runs a live check and redirects back', function () {
+    config(['services.smartcjm.enabled' => true]);
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    Http::preventStrayRequests();
+    Http::fake([
+        'termine.stadt-koeln.de/*' => Http::sequence()
+            ->push(smartCjmFixture('services_page'))
+            ->push(smartCjmFixture('locations_page'))
+            ->push(smartCjmFixture('results_slots')),
+    ]);
+
+    $this->from(route('bureaucracy'))
+        ->post(route('bureaucracy.refresh-slots'))
+        ->assertRedirect(route('bureaucracy'));
+
+    Http::assertSentCount(3);
+    expect(Cache::get('buergeramt_slots_live')['service'])->toBe('anmeldung');
+});
+
+test('the refresh endpoint reuses a still-fresh result instead of re-probing', function () {
+    config(['services.smartcjm.enabled' => true]);
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    Cache::put('buergeramt_slots_live', [
+        'service' => 'anmeldung',
+        'category' => 'buergeramt',
+        'checked_at' => now()->toIso8601String(),
+        'offices' => [],
+    ], 600);
+    Http::fake();
+
+    $this->post(route('bureaucracy.refresh-slots'))->assertRedirect();
+
+    Http::assertNothingSent();
+});
+
+test('the refresh endpoint is a quiet no-op while the flag is off', function () {
+    config(['services.smartcjm.enabled' => false]);
+    $this->actingAs(User::factory()->onboarded()->create());
+    Http::fake();
+
+    $this->post(route('bureaucracy.refresh-slots'))->assertRedirect();
+
+    Http::assertNothingSent();
+    expect(Cache::has('buergeramt_slots_live'))->toBeFalse();
+});
+
+test('the bureaucracy page carries live-availability metadata', function () {
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    Cache::put('buergeramt_slots_live', [
+        'service' => 'anmeldung',
+        'category' => 'buergeramt',
+        'checked_at' => '2026-07-02T08:00:00+02:00',
+        'offices' => [],
+    ], 600);
+
+    $this->get(route('bureaucracy'))->assertInertia(fn ($page) => $page
+        ->component('bureaucracy')
+        ->where('slotsMeta.enabled', false)
+        ->where('slotsMeta.checked_at', '2026-07-02T08:00:00+02:00')
+        ->where('slotsMeta.service', 'anmeldung'));
 });
 
 test('booking location labels map onto office keys', function () {

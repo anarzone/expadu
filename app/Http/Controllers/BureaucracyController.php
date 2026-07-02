@@ -13,6 +13,7 @@ use App\Profile\Applicability;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\BuergeramtService;
+use App\Services\SmartCjm\SlotAvailabilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -43,7 +44,7 @@ class BureaucracyController extends Controller
      * React side renders without further logic: active / upcoming /
      * completed / not_applicable / info / no_longer_relevant + teasers.
      */
-    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): Response
+    public function index(Request $request, BuergeramtService $buergeramtService, SlotAvailabilityService $slotAvailability, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): Response
     {
         $user = $request->user();
         $profile = $generator->ensure($user);
@@ -139,6 +140,7 @@ class BureaucracyController extends Controller
                 'percent' => $totalActionable > 0 ? (int) round(($doneCount / $totalActionable) * 100) : 0,
             ],
             'slots' => $slots,
+            'slotsMeta' => $slotAvailability->meta(),
             'bookingServices' => collect(BuergeramtService::SERVICES)->map(fn ($s, $key) => [
                 'key' => $key,
                 'name' => $s['name'],
@@ -148,6 +150,26 @@ class BureaucracyController extends Controller
                 'url' => BuergeramtService::BOOKING_URLS[$s['category']].'&service='.$s['uid'],
             ])->values(),
         ]);
+    }
+
+    /**
+     * The Offices grid's "Check now" button: one live availability probe
+     * against the city's booking system, then back to the page with fresh
+     * slots. The service's freshness window absorbs repeat taps, and a
+     * failed probe degrades to the cached/check_online view rather than
+     * erroring the page.
+     */
+    public function refreshSlots(SlotAvailabilityService $slotAvailability): RedirectResponse
+    {
+        if ($slotAvailability->isEnabled()) {
+            try {
+                $slotAvailability->refresh('anmeldung');
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return back();
     }
 
     /**

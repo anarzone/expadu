@@ -36,6 +36,37 @@ export function OfficeCard({
                     Directions
                 </a>
             </div>
+            <div className="mt-2 flex items-center gap-2">
+                {office.status === 'check_online' ? (
+                    <a
+                        href={office.bookingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-full px-2.5 py-[3px] text-[11px] font-semibold no-underline"
+                        style={{
+                            background: office.colorS,
+                            color: office.color,
+                        }}
+                    >
+                        {office.statusLabel}
+                    </a>
+                ) : (
+                    <span
+                        className="rounded-full px-2.5 py-[3px] text-[11px] font-semibold"
+                        style={{
+                            background: office.colorS,
+                            color: office.color,
+                        }}
+                    >
+                        {office.statusLabel}
+                    </span>
+                )}
+                {office.status === 'available' && (
+                    <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                        Next: {office.nextSlot}
+                    </span>
+                )}
+            </div>
         </div>
     );
 }
