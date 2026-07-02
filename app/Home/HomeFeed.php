@@ -4,13 +4,17 @@ namespace App\Home;
 
 use App\Bureaucracy\PathGenerator;
 use App\Composer\IntentWeights;
+use App\Composer\TravelEstimator;
 use App\Models\Event;
 use App\Models\User;
 use App\Models\UserTask;
 use App\Profile\Applicability;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
+use App\Services\UserLocationService;
 use App\Services\WeatherService;
+use App\Transit\Dto\GeoPoint;
+use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -41,6 +45,8 @@ class HomeFeed
         private readonly DiscoveryFeed $discovery,
         private readonly PromptSuggestions $suggestions,
         private readonly PathGenerator $paths,
+        private readonly UserLocationService $locations,
+        private readonly TravelTimes $travel,
     ) {}
 
     /**
@@ -82,8 +88,78 @@ class HomeFeed
         // Tiles first: they claim the urgent things, so rails (and the
         // chip rule) can skip what's already surfaced.
         $this->tiles = $this->tileComposer->tiles($context);
-        $this->rails = $this->discovery->for($context);
+        $this->rails = $this->stampTravelMinutes($user, $this->discovery->for($context));
         $this->built = true;
+    }
+
+    /**
+     * Real "min away" on the feed's place cards — the same one-to-many street
+     * matrix (mode-aware, MOTIS with haversine failover) Places uses, so a card
+     * here and the same place there never disagree. One batched call for every
+     * spot/event card across all rails; no origin (GPS declined, nothing
+     * remembered) or an engine miss leaves travel_min null and the card simply
+     * doesn't show a distance — never a guess.
+     *
+     * @param  list<array<string, mixed>>  $rails
+     * @return list<array<string, mixed>>
+     */
+    private function stampTravelMinutes(User $user, array $rails): array
+    {
+        $origin = $this->locations->context($user, request(), $user->veedel ?: null);
+        if (! $origin->hasOrigin()) {
+            return $rails;
+        }
+
+        // Collect unique destinations across every rail (tasks carry no coords).
+        $destinations = [];
+        foreach ($rails as $rail) {
+            foreach ($rail['cards'] ?? [] as $card) {
+                if (($card['lat'] ?? 0.0) !== 0.0 && ($card['lng'] ?? 0.0) !== 0.0) {
+                    $destinations[$card['id']] = new GeoPoint((float) $card['lat'], (float) $card['lng']);
+                }
+            }
+        }
+        if ($destinations === []) {
+            return $rails;
+        }
+
+        try {
+            $minutes = $this->travel->minutes(
+                $user->transport_mode,
+                new GeoPoint($origin->lat, $origin->lng),
+                array_values($destinations),
+            );
+        } catch (\Throwable) {
+            $minutes = []; // feed must render even with the routing engine down
+        }
+
+        // Same fallback PlaceResource uses when the engine can't reach a
+        // destination: a straight-line estimate in the user's mode.
+        $byId = [];
+        foreach (array_keys($destinations) as $i => $id) {
+            $byId[$id] = $minutes[$i] ?? TravelEstimator::minutesFromKm(
+                $this->kmBetween($origin->lat, $origin->lng, $destinations[$id]->lat, $destinations[$id]->lng),
+                $user->transport_mode,
+            );
+        }
+
+        foreach ($rails as $r => $rail) {
+            foreach ($rail['cards'] ?? [] as $c => $card) {
+                $rails[$r]['cards'][$c]['travel_min'] = $byId[$card['id']] ?? null;
+            }
+        }
+
+        return $rails;
+    }
+
+    /** Great-circle distance in kilometres. */
+    private function kmBetween(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return 6371.0 * 2 * asin(min(1.0, sqrt($a)));
     }
 
     private function context(User $user): HomeContext

@@ -1,13 +1,17 @@
 <?php
 
 use App\Composer\IntentWeights;
+use App\Enums\LocationSource;
 use App\Home\HomeFeed;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Services\LocationContext;
+use App\Services\UserLocationService;
 use App\Services\WeatherService;
+use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -238,4 +242,67 @@ test('rain in the near-term window frames the feed as rainy', function () {
     $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
 
     expect($chips)->toContain('Rainy-day picks');
+});
+
+test('rail place cards carry real travel minutes when the user has an origin', function () {
+    $user = homeFeedUser();
+    Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9485, 'lng' => 6.9330]);
+
+    // The user's remembered origin (what the From control shows).
+    $this->mock(UserLocationService::class, function ($m) {
+        $m->shouldReceive('context')->andReturn(new LocationContext(
+            lat: 50.94, lng: 6.95, source: LocationSource::Live, label: 'Your location',
+        ));
+    });
+    $this->mock(TravelTimes::class, function ($m) {
+        $m->shouldReceive('minutes')->once()->andReturnUsing(
+            fn ($mode, $origin, $destinations) => array_fill(0, count($destinations), 9),
+        );
+    });
+
+    $rails = collect(app(HomeFeed::class)->rails($user));
+    $card = $rails->flatMap(fn ($rail) => $rail['cards'])->firstWhere('name', 'Stadtgarten');
+
+    expect($card['travel_min'])->toBe(9);
+});
+
+test('a routing outage degrades to a straight-line estimate, exactly like Places', function () {
+    $user = homeFeedUser();
+    Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9485, 'lng' => 6.9330]);
+
+    $this->mock(UserLocationService::class, function ($m) {
+        $m->shouldReceive('context')->andReturn(new LocationContext(
+            lat: 50.94, lng: 6.95, source: LocationSource::Live, label: 'Your location',
+        ));
+    });
+    $this->mock(TravelTimes::class, function ($m) {
+        $m->shouldReceive('minutes')->andThrow(new RuntimeException('routing down'));
+    });
+
+    $rails = collect(app(HomeFeed::class)->rails($user));
+    $card = $rails->flatMap(fn ($rail) => $rail['cards'])->firstWhere('name', 'Stadtgarten');
+
+    // The feed still renders AND still shows an estimated "min away".
+    expect($card)->not->toBeNull();
+    expect($card['travel_min'])->toBeInt()->toBeGreaterThan(0);
+});
+
+test('a brand-new user with no behaviour still gets a situation-driven feed', function () {
+    // Cold start: zero user_events → IntentWeights is empty. The feed must be
+    // fully situation-driven, never empty (the target user is a new arrival).
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'student',
+        'is_eu' => true,
+        'veedel' => 'Ehrenfeld',
+        'arrival_date' => now()->subDays(3),
+    ]);
+    Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9485, 'lng' => 6.9330]);
+    Spot::factory()->create(['name' => 'Museum Ludwig', 'category' => 'museum', 'veedel' => 'Altstadt-Nord', 'lat' => 50.9403, 'lng' => 6.9603]);
+
+    $feed = app(HomeFeed::class);
+    $chips = $feed->chips($user);
+    $rails = collect($feed->rails($user));
+
+    expect($chips)->not->toBeEmpty();
+    expect($rails->flatMap(fn ($rail) => $rail['cards'])->count())->toBeGreaterThan(0);
 });

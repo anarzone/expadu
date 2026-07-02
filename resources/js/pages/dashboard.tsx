@@ -153,6 +153,7 @@ type RailCard = {
     cost: string | null;
     lat: number;
     lng: number;
+    travel_min?: number | null;
     is_new: boolean;
     reason: string | null;
     photo_url?: string | null;
@@ -1005,6 +1006,11 @@ export default function Dashboard() {
                                                 [card.veedel, card.cost]
                                                     .filter(Boolean)
                                                     .join(' · ') || 'Cologne'
+                                            }
+                                            distance={
+                                                card.travel_min != null
+                                                    ? `${card.travel_min} min away`
+                                                    : null
                                             }
                                             photoUrl={card.photo_url}
                                             photoAttribution={

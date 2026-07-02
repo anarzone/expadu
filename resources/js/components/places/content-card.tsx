@@ -219,9 +219,15 @@ export function ContentCard({
                     <span className="block text-[13.5px] leading-tight font-semibold">
                         {title}
                     </span>
-                    {meta && (
-                        <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
+                    {(meta || distance) && (
+                        <span className="mt-0.5 block truncate text-[11.5px] text-muted-foreground">
                             {meta}
+                            {meta && distance && ' · '}
+                            {distance && (
+                                <span className="font-semibold text-cyan-h">
+                                    {distance}
+                                </span>
+                            )}
                         </span>
                     )}
                     {chips[0] && (
