@@ -16,6 +16,7 @@ use App\Services\BuergeramtService;
 use App\Services\SmartCjm\SlotAvailabilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -112,7 +113,14 @@ class BureaucracyController extends Controller
                 && $ut->is_applicable
                 && in_array(Str::afterLast($ut->task->key ?? '', '.'), self::ARRIVAL_BASICS, true));
 
-        $slots = $buergeramtService->checkSlots();
+        // The Offices grid is service-scoped: each service has its own queue
+        // and availability. Default to the user's most relevant open task,
+        // else Anmeldung. ?service= (set by the service picker) overrides.
+        $selectedService = $request->string('service')->toString();
+        if (! isset(BuergeramtService::SERVICES[$selectedService])) {
+            $selectedService = $this->defaultBookingService($userTasks) ?? BuergeramtService::DEFAULT_SERVICE;
+        }
+        $slots = $buergeramtService->checkSlots($selectedService, $slotAvailability->availabilityFor($selectedService));
 
         return Inertia::render('bureaucracy', [
             'situation' => $user->situation?->value,
@@ -140,12 +148,14 @@ class BureaucracyController extends Controller
                 'percent' => $totalActionable > 0 ? (int) round(($doneCount / $totalActionable) * 100) : 0,
             ],
             'slots' => $slots,
-            'slotsMeta' => $slotAvailability->meta(),
+            'selectedService' => $selectedService,
+            'slotsMeta' => $slotAvailability->meta($selectedService),
             'bookingServices' => collect(BuergeramtService::SERVICES)->map(fn ($s, $key) => [
                 'key' => $key,
                 'name' => $s['name'],
                 'name_en' => $s['name_en'],
                 'emoji' => $s['emoji'],
+                'category' => $s['category'],
                 'duration' => $s['duration'],
                 'url' => BuergeramtService::BOOKING_URLS[$s['category']].'&service='.$s['uid'],
             ])->values(),
@@ -153,23 +163,44 @@ class BureaucracyController extends Controller
     }
 
     /**
-     * The Offices grid's "Check now" button: one live availability probe
-     * against the city's booking system, then back to the page with fresh
-     * slots. The service's freshness window absorbs repeat taps, and a
-     * failed probe degrades to the cached/check_online view rather than
-     * erroring the page.
+     * The booking service key tied to the user's most pressing open Amt task,
+     * so the Offices grid defaults to the queue they actually need. Null when
+     * no open task maps to a known service.
+     *
+     * @param  Collection<int, UserTask>  $userTasks
      */
-    public function refreshSlots(SlotAvailabilityService $slotAvailability): RedirectResponse
+    private function defaultBookingService(Collection $userTasks): ?string
     {
+        return $userTasks
+            ->filter(fn (UserTask $ut) => ($ut->status ?? TaskStatus::NotStarted) !== TaskStatus::Done)
+            ->map(fn (UserTask $ut) => $ut->task?->booking_service_key)
+            ->first(fn (?string $key) => $key !== null && isset(BuergeramtService::SERVICES[$key]));
+    }
+
+    /**
+     * The Offices grid's "Check now" button: one live availability probe of
+     * the selected service against the city's booking system, then back to
+     * the page with fresh slots. The service's freshness window absorbs
+     * repeat taps, and a failed probe degrades to the cached/check_online
+     * view rather than erroring the page.
+     */
+    public function refreshSlots(Request $request, SlotAvailabilityService $slotAvailability): RedirectResponse
+    {
+        $serviceKey = $request->string('service')->toString();
+        if (! isset(BuergeramtService::SERVICES[$serviceKey])) {
+            $serviceKey = BuergeramtService::DEFAULT_SERVICE;
+        }
+
         if ($slotAvailability->isEnabled()) {
             try {
-                $slotAvailability->refresh('anmeldung');
+                $slotAvailability->refresh($serviceKey);
             } catch (\Throwable $e) {
                 report($e);
             }
         }
 
-        return back();
+        // Land back on the same service so its fresh availability is shown.
+        return redirect()->route('bureaucracy', ['service' => $serviceKey]);
     }
 
     /**

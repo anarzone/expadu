@@ -2,25 +2,27 @@
 
 namespace App\Console\Commands\Bureaucracy;
 
+use App\Services\BuergeramtService;
 use App\Services\SmartCjm\SlotAvailabilityService;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
 
 /**
- * One live availability check against the city's Smart CJM booking system,
- * feeding real next_slot/slots_today into the Offices grid (which otherwise
- * shows "Check online"). Scheduled during opening-ish hours and also
- * triggered by the grid's refresh button; both paths share
- * SlotAvailabilityService's freshness window, and everything is gated
- * behind services.smartcjm.enabled (the robots.txt posture switch).
+ * Live availability checks against the city's Smart CJM booking system,
+ * feeding real earliest-appointment times into the Offices grid. `--all`
+ * (scheduled) sweeps every bookable service; a single-service run backs the
+ * grid's "Check now" button. Both share SlotAvailabilityService's freshness
+ * window, and everything is gated behind services.smartcjm.enabled (the
+ * robots.txt posture switch).
  */
 class CheckSlotsCommand extends Command
 {
     protected $signature = 'slots:check
-        {service=anmeldung : Service key from BuergeramtService::SERVICES}
-        {--dry-run : Fetch and print availability without keeping the cache}';
+        {service? : Service key from BuergeramtService::SERVICES (defaults to anmeldung)}
+        {--all : Refresh every bookable service instead of one}
+        {--dry-run : Fetch and print without keeping the cache}';
 
-    protected $description = 'Check real appointment availability for a service across all offices';
+    protected $description = 'Check real appointment availability across all offices';
 
     public function handle(SlotAvailabilityService $slotAvailability): int
     {
@@ -30,8 +32,22 @@ class CheckSlotsCommand extends Command
             return self::FAILURE;
         }
 
+        if ($this->option('all')) {
+            $summary = $slotAvailability->refreshAll();
+            foreach ($summary as $service => $count) {
+                $this->line($count < 0
+                    ? "  <fg=red>✗</> {$service}: failed"
+                    : "  <fg=green>✓</> {$service}: {$count} office(s) with availability");
+            }
+            $this->info('Swept '.count($summary).' service(s).');
+
+            return self::SUCCESS;
+        }
+
+        $serviceKey = $this->argument('service') ?? BuergeramtService::DEFAULT_SERVICE;
+
         try {
-            $live = $slotAvailability->refresh($this->argument('service'), keepCache: ! $this->option('dry-run'));
+            $live = $slotAvailability->refresh($serviceKey, keepCache: ! $this->option('dry-run'));
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
 
@@ -39,14 +55,14 @@ class CheckSlotsCommand extends Command
         }
 
         $this->table(
-            ['Office', 'Next slot', 'Today', 'Total'],
-            collect($live['offices'])->map(fn (array $data, string $key) => [
-                $key, $data['next_slot'] ?? '—', $data['slots_today'], $data['slots_total'],
-            ])->values()->all(),
+            ['Office', 'Earliest appointment'],
+            collect($live['offices'])
+                ->sortBy('next_slot')
+                ->map(fn (array $data, string $key) => [$key, $data['next_slot']])
+                ->values()
+                ->all(),
         );
-
-        $totalSlots = array_sum(array_column($live['offices'], 'slots_total'));
-        $this->info("{$totalSlots} free slot(s) for {$this->argument('service')} across ".count($live['offices']).' office(s).');
+        $this->info(count($live['offices'])." office(s) with availability for {$serviceKey}.");
 
         return self::SUCCESS;
     }

@@ -55,14 +55,21 @@ Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
 Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:00')->withoutOverlapping();
 
-// Live Bürgeramt slot availability for the Offices grid — during booking
-// hours only (the city releases day-of batches in the mornings). ~90 runs/day
-// ≈ 270 requests; SMARTCJM_SLOTS_ENABLED is the posture switch (robots.txt
-// disallows crawling, owner accepted the risk 2026-07-02).
-Schedule::command('slots:check')
+// Live Bürgeramt/KFZ slot availability for the Offices grid — sweeps every
+// bookable service. Denser in the morning (the city releases day-of batches
+// then), sparser through the day. SMARTCJM_SLOTS_ENABLED is the posture
+// switch (robots.txt disallows crawling, owner accepted the risk 2026-07-02).
+Schedule::command('slots:check --all')
     ->timezone('Europe/Berlin')
-    ->everyTenMinutes()
-    ->between('6:00', '21:00')
+    ->everyThirtyMinutes()
+    ->between('7:00', '10:00')
+    ->withoutOverlapping()
+    ->when(fn () => (bool) config('services.smartcjm.enabled'));
+
+Schedule::command('slots:check --all')
+    ->timezone('Europe/Berlin')
+    ->everyTwoHours()
+    ->between('10:00', '21:00')
     ->withoutOverlapping()
     ->when(fn () => (bool) config('services.smartcjm.enabled'));
 

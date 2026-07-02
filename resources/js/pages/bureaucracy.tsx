@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { IconRefresh } from '@tabler/icons-react';
+import { IconChevronDown, IconRefresh } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
@@ -31,86 +31,81 @@ export type OfficeData = {
     address: string;
     category: string;
     status: string;
-    nextSlot: string;
-    distance: string;
+    nextSlotIso: string | null;
+    nextSlotLabel: string;
+    nextSlotRelative: string;
+    statusLabel: string;
     color: string;
     colorS: string;
-    statusLabel: string;
     bookingUrl: string;
     mapsUrl: string;
 };
 
-// Slot data from the backend (BuergeramtService)
+// Slot data from the backend (BuergeramtService::checkSlots) — one entry per
+// office, scoped to the selected service. next_slot is the soonest available
+// appointment (ISO) or null; booking_url deep-links that exact slot.
 type SlotData = {
     name: string;
     address: string;
     category: string;
     status: string;
     next_slot: string | null;
-    slots_today: number;
     booking_url: string;
 };
 
+/** "Thu, 23 Jul · 10:30" from an ISO datetime. */
+function formatSlot(iso: string): string {
+    return new Date(iso).toLocaleString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/** "today" / "tomorrow" / "in 5 days" / "in 3 weeks" from now. */
+function relativeDay(iso: string): string {
+    const days = Math.round(
+        (new Date(iso).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) /
+            86_400_000,
+    );
+
+    if (days <= 0) {
+        return 'today';
+    }
+
+    if (days === 1) {
+        return 'tomorrow';
+    }
+
+    if (days <= 13) {
+        return `in ${days} days`;
+    }
+
+    return `in ${Math.round(days / 7)} weeks`;
+}
+
 /**
- * Convert backend slot data + monitors into OfficeData for the UI.
+ * Convert backend slot data into UI office rows for the selected service.
  */
 function slotsToOffices(slots: Record<string, SlotData>): OfficeData[] {
     return Object.entries(slots).map(([key, slot]) => {
-        const isAvailable = slot.status === 'available';
-        const isMostlyBooked = slot.status === 'mostly_booked';
+        const encodedAddress = encodeURIComponent(`${slot.address}, Köln`);
 
-        let nextSlot = 'No slots';
+        let statusLabel = 'Check online →';
+        let color = '#1A4CD4';
+        let colorS = '#EBF0FD';
 
-        if (slot.next_slot) {
-            const d = new Date(slot.next_slot);
-            const now = new Date();
-            const diffDays = Math.round(
-                (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-            );
-
-            if (diffDays === 0) {
-                nextSlot = `Today ${d.toLocaleTimeString('en-DE', { hour: '2-digit', minute: '2-digit' })}`;
-            } else if (diffDays === 1) {
-                nextSlot = `Tomorrow ${d.toLocaleTimeString('en-DE', { hour: '2-digit', minute: '2-digit' })}`;
-            } else if (diffDays <= 7) {
-                nextSlot = d.toLocaleDateString('en-DE', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                });
-            } else {
-                nextSlot = `In ${Math.ceil(diffDays / 7)} weeks`;
-            }
-        }
-
-        let statusLabel = 'Fully booked';
-        let color = '#C4271A';
-        let colorS = '#FDE8E6';
-
-        if (
-            slot.status === 'check_online' ||
-            slot.status === 'unavailable' ||
-            slot.status === 'checking'
-        ) {
-            statusLabel = 'Check online →';
-            color = '#1A4CD4';
-            colorS = '#EBF0FD';
-        } else if (isAvailable) {
-            statusLabel =
-                slot.slots_today === 1
-                    ? '1 slot available'
-                    : `${slot.slots_today} slots available`;
+        if (slot.status === 'available' && slot.next_slot) {
+            statusLabel = formatSlot(slot.next_slot);
             color = '#0A7C52';
             colorS = '#D4F0E6';
-        } else if (isMostlyBooked) {
-            statusLabel = 'Mostly booked';
+        } else if (slot.status === 'no_appointments') {
+            statusLabel = 'No appointment found';
             color = '#C47D0E';
             colorS = '#FDF0D4';
         }
-
-        const encodedAddress = encodeURIComponent(`${slot.address}, Köln`);
 
         return {
             id: key,
@@ -118,14 +113,13 @@ function slotsToOffices(slots: Record<string, SlotData>): OfficeData[] {
             address: `${slot.address}, Köln`,
             category: slot.category ?? 'buergeramt',
             status: slot.status,
-            nextSlot,
-            distance: '',
+            nextSlotIso: slot.next_slot,
+            nextSlotLabel: slot.next_slot ? formatSlot(slot.next_slot) : '',
+            nextSlotRelative: slot.next_slot ? relativeDay(slot.next_slot) : '',
+            statusLabel,
             color,
             colorS,
-            statusLabel,
-            bookingUrl:
-                slot.booking_url ||
-                'https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071',
+            bookingUrl: slot.booking_url,
             mapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`,
         };
     });
@@ -135,7 +129,6 @@ function slotsToOffices(slots: Record<string, SlotData>): OfficeData[] {
 type SlotsMeta = {
     enabled: boolean;
     checked_at: string | null;
-    service: string | null;
 };
 
 function checkedAgoLabel(iso: string): string {
@@ -213,6 +206,12 @@ const TABS = [
     { id: 'slots', label: 'Offices & Slots' },
 ];
 
+// Service picker groups, mirroring the booking calendars behind them.
+const SLOT_SERVICE_GROUPS = [
+    { key: 'buergeramt', label: 'Bürgeramt / Kundenzentren' },
+    { key: 'kfz', label: 'KFZ-Zulassungsstelle' },
+];
+
 // ============================================================
 // Page
 // ============================================================
@@ -223,6 +222,7 @@ export default function Bureaucracy() {
         name: string;
         name_en: string;
         emoji: string;
+        category: string;
         duration: number;
         url: string;
     };
@@ -230,6 +230,7 @@ export default function Bureaucracy() {
     const {
         slots,
         slotsMeta,
+        selectedService,
         situation,
         path,
         tasks: taskBuckets,
@@ -243,6 +244,7 @@ export default function Bureaucracy() {
     } = usePage<{
         slots: Record<string, SlotData>;
         slotsMeta?: SlotsMeta;
+        selectedService?: string;
         situation: string | null;
         path: PathProp | null;
         tasks: Buckets;
@@ -262,8 +264,25 @@ export default function Bureaucracy() {
     const [destination, setDestination] = useState<Destination | null>(null);
     const [refreshingSlots, setRefreshingSlots] = useState(false);
 
-    // The Offices grid's manual availability check. The backend reuses a
-    // still-fresh result, so tapping repeatedly never multiplies probes.
+    // Switch which service's availability the grid shows. Reads the cached
+    // result for that service (instant); the URL carries ?service so a
+    // refresh re-checks the right queue. preserveState keeps the active tab.
+    function switchService(key: string) {
+        router.get(
+            '/bureaucracy',
+            { service: key },
+            {
+                only: ['slots', 'slotsMeta', 'selectedService'],
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    }
+
+    // The Offices grid's manual availability check for the selected service.
+    // The backend reuses a still-fresh result, so tapping repeatedly never
+    // multiplies probes against the city.
     function refreshSlots() {
         if (refreshingSlots) {
             return;
@@ -272,9 +291,10 @@ export default function Bureaucracy() {
         setRefreshingSlots(true);
         router.post(
             '/bureaucracy/slots/refresh',
-            {},
+            { service: selectedService ?? '' },
             {
                 preserveScroll: true,
+                preserveState: true,
                 onFinish: () => setRefreshingSlots(false),
             },
         );
@@ -312,8 +332,6 @@ export default function Bureaucracy() {
             // Geocoder down — the booking link remains the fallback.
         }
     }
-    const [slotFilter, setSlotFilter] = useState('all');
-    const [slotSearch, setSlotSearch] = useState('');
 
     const derivedDocs = useMemo(
         () => deriveDocuments(taskBuckets),
@@ -503,102 +521,61 @@ export default function Bureaucracy() {
                             <div className="mb-1.5 text-[10px] font-bold tracking-[0.10em] uppercase opacity-65">
                                 Appointments · Cologne
                             </div>
-                            <div className="relative z-[1] mb-3 font-display text-xl">
-                                Government offices &amp; locations
+                            <div className="relative z-[1] mb-2 font-display text-xl">
+                                Real appointment times
                             </div>
-                            <div className="relative z-[1] mb-3.5 text-[13px] opacity-80">
-                                Book online — select your service, then the
-                                system shows available offices and times.
+                            <div className="relative z-[1] text-[13px] opacity-80">
+                                Pick what you need — we show the soonest slot at
+                                every office and link you straight to booking.
                             </div>
-                            <a
-                                href="https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="relative z-[1] inline-flex items-center gap-2 rounded-[9px] bg-white/90 px-5 py-[10px] text-sm font-semibold text-[#1A4CD4] no-underline transition-all hover:bg-white"
+                        </div>
+
+                        {/* Service picker — availability is per-service */}
+                        <label className="mb-1.5 block text-xs font-semibold text-[#6B6860] dark:text-[#AAA89F]">
+                            What do you need?
+                        </label>
+                        <div className="relative mb-3">
+                            <select
+                                value={selectedService ?? ''}
+                                onChange={(e) => switchService(e.target.value)}
+                                className="w-full cursor-pointer appearance-none rounded-[11px] border border-[#E2DFD6] bg-white py-3 pr-10 pl-3.5 text-sm font-semibold text-[#18170F] outline-none focus:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1]"
                             >
-                                🏛️ Book Bürgeramt appointment →
-                            </a>
-                        </div>
+                                {SLOT_SERVICE_GROUPS.map((grp) => {
+                                    const items = (
+                                        bookingServices ?? []
+                                    ).filter((s) => s.category === grp.key);
 
-                        {/* Search */}
-                        <div className="mb-3 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
-                            <span className="text-[15px] text-[#AAA89F]">
-                                🔍
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Search offices…"
-                                value={slotSearch}
-                                onChange={(e) => setSlotSearch(e.target.value)}
-                                className="flex-1 border-none bg-transparent text-sm text-[#18170F] outline-none placeholder:text-[#AAA89F] dark:text-[#F6F5F1]"
+                                    return items.length === 0 ? null : (
+                                        <optgroup
+                                            key={grp.key}
+                                            label={grp.label}
+                                        >
+                                            {items.map((s) => (
+                                                <option
+                                                    key={s.key}
+                                                    value={s.key}
+                                                >
+                                                    {s.name_en} · {s.name}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    );
+                                })}
+                            </select>
+                            <IconChevronDown
+                                size={18}
+                                className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[#AAA89F]"
                             />
-                            {slotSearch && (
-                                <button
-                                    onClick={() => setSlotSearch('')}
-                                    className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]"
-                                >
-                                    ✕
-                                </button>
-                            )}
                         </div>
 
-                        {/* Category filter pills */}
-                        <div
-                            className="mb-4 flex gap-1.5 overflow-x-auto"
-                            style={{ scrollbarWidth: 'none' }}
-                        >
-                            {[
-                                { id: 'all', label: `All (${offices.length})` },
-                                {
-                                    id: 'buergeramt',
-                                    label: `🏛️ Bürgeramt (${offices.filter((o) => o.category === 'buergeramt').length})`,
-                                },
-                                {
-                                    id: 'auslaenderbehoerde',
-                                    label: `🛂 Ausländerb. (${offices.filter((o) => o.category === 'auslaenderbehoerde').length})`,
-                                },
-                                {
-                                    id: 'finanzamt',
-                                    label: `📋 Finanzamt (${offices.filter((o) => o.category === 'finanzamt').length})`,
-                                },
-                                {
-                                    id: 'kfz',
-                                    label: `🚗 KFZ (${offices.filter((o) => o.category === 'kfz').length})`,
-                                },
-                            ].map((f) => (
-                                <button
-                                    key={f.id}
-                                    onClick={() => setSlotFilter(f.id)}
-                                    className={`shrink-0 cursor-pointer rounded-full border px-3 py-[5px] text-xs font-medium whitespace-nowrap transition-all ${
-                                        slotFilter === f.id
-                                            ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white'
-                                            : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'
-                                    }`}
-                                >
-                                    {f.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Live availability status + manual re-check */}
-                        {slotsMeta?.enabled && (
-                            <div className="mb-4 flex items-center justify-between gap-3 rounded-[9px] border border-[#E2DFD6] bg-white px-[13px] py-2 dark:border-[#3A3930] dark:bg-[#1E1D15]">
-                                <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
-                                    {slotsMeta.checked_at ? (
-                                        <>
-                                            Live{' '}
-                                            {bookingServices?.find(
-                                                (s) =>
-                                                    s.key === slotsMeta.service,
-                                            )?.name ?? slotsMeta.service}{' '}
-                                            availability · checked{' '}
-                                            {checkedAgoLabel(
-                                                slotsMeta.checked_at,
-                                            )}
-                                        </>
-                                    ) : (
-                                        'Live availability on — no check yet'
-                                    )}
+                        {/* Live-availability status + manual re-check */}
+                        {slotsMeta?.enabled ? (
+                            <div className="mb-4 flex items-center justify-between gap-3 rounded-[11px] border border-[#E2DFD6] bg-white px-3.5 py-2.5 dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                <span className="flex items-center gap-1.5 text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                    <span className="inline-block size-2 shrink-0 rounded-full bg-[#0A7C52]" />
+                                    {slotsMeta.checked_at
+                                        ? `Live availability · checked ${checkedAgoLabel(slotsMeta.checked_at)}`
+                                        : 'Live availability on — no check yet'}
                                 </span>
                                 <button
                                     onClick={refreshSlots}
@@ -618,105 +595,97 @@ export default function Bureaucracy() {
                                         : 'Check now'}
                                 </button>
                             </div>
+                        ) : (
+                            <div className="mb-4 rounded-[11px] border border-[#E2DFD6] bg-[#EFEDE7] px-3.5 py-2.5 text-xs text-[#6B6860] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                                Live checks are off — the links below open the
+                                city's booking system directly.
+                            </div>
                         )}
 
-                        {/* Grouped office cards */}
+                        {/* Office cards, soonest appointment first */}
                         {(() => {
-                            const q = slotSearch.toLowerCase().trim();
-                            const filtered = offices.filter((o) => {
-                                const matchCategory =
-                                    slotFilter === 'all' ||
-                                    o.category === slotFilter;
-                                const matchSearch =
-                                    !q ||
-                                    o.name.toLowerCase().includes(q) ||
-                                    o.address.toLowerCase().includes(q);
-
-                                return matchCategory && matchSearch;
-                            });
-
-                            if (filtered.length === 0) {
-                                return (
-                                    <div className="py-12 text-center text-[#AAA89F]">
-                                        <div className="mb-3 text-4xl">🔍</div>
-                                        <div className="mb-1.5 text-[15px] font-semibold text-[#6B6860] dark:text-[#AAA89F]">
-                                            No offices found
-                                        </div>
-                                        <div className="text-[13px]">
-                                            Try a different filter or search
-                                            term
-                                        </div>
-                                    </div>
-                                );
-                            }
-
-                            const GROUPS = [
-                                {
-                                    key: 'buergeramt',
-                                    label: 'Bürgeramt',
-                                    emoji: '🏛️',
-                                },
-                                {
-                                    key: 'auslaenderbehoerde',
-                                    label: 'Ausländerbehörde',
-                                    emoji: '🛂',
-                                },
-                                {
-                                    key: 'finanzamt',
-                                    label: 'Finanzamt',
-                                    emoji: '📋',
-                                },
-                                {
-                                    key: 'kfz',
-                                    label: 'KFZ-Zulassungsstelle',
-                                    emoji: '🚗',
-                                },
-                            ];
-
-                            return GROUPS.map((group) => {
-                                const groupOffices = filtered.filter(
-                                    (o) => o.category === group.key,
-                                );
-
-                                if (groupOffices.length === 0) {
-                                    return null;
+                            const rank = (o: OfficeData) =>
+                                o.status === 'available'
+                                    ? 0
+                                    : o.status === 'no_appointments'
+                                      ? 1
+                                      : 2;
+                            const sorted = [...offices].sort((a, b) => {
+                                if (rank(a) !== rank(b)) {
+                                    return rank(a) - rank(b);
                                 }
 
-                                const bookingUrl = groupOffices[0]?.bookingUrl;
+                                if (a.nextSlotIso && b.nextSlotIso) {
+                                    return a.nextSlotIso.localeCompare(
+                                        b.nextSlotIso,
+                                    );
+                                }
 
-                                return (
-                                    <div key={group.key} className="mb-5">
-                                        <div className="mb-2 flex items-center justify-between">
-                                            <span className="text-sm font-bold">
-                                                {group.emoji} {group.label}
-                                            </span>
-                                            {bookingUrl && (
-                                                <a
-                                                    href={bookingUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs font-semibold text-[#1A4CD4] no-underline transition-colors hover:text-[#1540B8] dark:text-[#5B8DEF]"
-                                                >
-                                                    Book appointment →
-                                                </a>
-                                            )}
-                                        </div>
-                                        {groupOffices.map((office) => (
-                                            <OfficeCard
-                                                key={office.id}
-                                                office={office}
-                                                onTakeMeThere={() =>
-                                                    takeMeThereToOffice({
-                                                        name: office.name,
-                                                        address: office.address,
-                                                    })
-                                                }
-                                            />
-                                        ))}
-                                    </div>
-                                );
+                                return a.name.localeCompare(b.name);
                             });
+                            const soonest = sorted.find(
+                                (o) => o.status === 'available',
+                            );
+
+                            return (
+                                <>
+                                    {/* Soonest-across-Cologne highlight */}
+                                    {soonest && (
+                                        <a
+                                            href={soonest.bookingUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mb-4 flex items-center justify-between gap-3 rounded-[14px] border border-[#0A7C52]/30 bg-[#D4F0E6] px-4 py-3 no-underline transition-all hover:border-[#0A7C52]/60 dark:bg-[#0A7C52]/15"
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="text-[10px] font-bold tracking-[0.08em] text-[#0A7C52] uppercase">
+                                                    Soonest across Cologne ·{' '}
+                                                    {soonest.nextSlotRelative}
+                                                </div>
+                                                <div className="mt-0.5 truncate text-sm font-bold text-[#0A5A3C] dark:text-[#7FE0B8]">
+                                                    {soonest.nextSlotLabel}
+                                                </div>
+                                                <div className="truncate text-xs text-[#0A7C52]">
+                                                    {soonest.name}
+                                                </div>
+                                            </div>
+                                            <span className="shrink-0 rounded-full bg-[#0A7C52] px-3.5 py-1.5 text-xs font-semibold text-white">
+                                                Book →
+                                            </span>
+                                        </a>
+                                    )}
+
+                                    {sorted.map((office) => (
+                                        <OfficeCard
+                                            key={office.id}
+                                            office={office}
+                                            onTakeMeThere={() =>
+                                                takeMeThereToOffice({
+                                                    name: office.name,
+                                                    address: office.address,
+                                                })
+                                            }
+                                        />
+                                    ))}
+                                </>
+                            );
                         })()}
+
+                        {/* Tax offices book through Elster, not this system */}
+                        <a
+                            href="https://www.elster.de/eportal/start"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 flex items-center justify-between gap-3 rounded-[11px] border border-[#E2DFD6] bg-white px-3.5 py-2.5 text-xs no-underline transition-all hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                        >
+                            <span className="text-[#6B6860] dark:text-[#AAA89F]">
+                                Finanzamt (tax office) appointments run through
+                                Elster
+                            </span>
+                            <span className="shrink-0 font-semibold text-[#1A4CD4] dark:text-[#5B8DEF]">
+                                Open Elster →
+                            </span>
+                        </a>
                     </div>
                 )}
             </div>

@@ -28,7 +28,7 @@ test('bureaucracy page includes correct slot structure', function () {
         ->where('slots', function ($slots) {
             foreach ($slots as $key => $slot) {
                 expect($key)->toBeIn(array_keys(BuergeramtService::OFFICES));
-                expect($slot)->toHaveKeys(['name', 'address', 'status', 'next_slot', 'slots_today']);
+                expect($slot)->toHaveKeys(['name', 'address', 'status', 'next_slot', 'booking_url']);
             }
 
             return true;
