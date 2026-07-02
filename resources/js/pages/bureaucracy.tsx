@@ -1,5 +1,9 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { IconChevronDown, IconRefresh } from '@tabler/icons-react';
+import {
+    IconChevronDown,
+    IconExternalLink,
+    IconRefresh,
+} from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
@@ -522,11 +526,11 @@ export default function Bureaucracy() {
                                 Appointments · Cologne
                             </div>
                             <div className="relative z-[1] mb-2 font-display text-xl">
-                                Real appointment times
+                                Book at a Cologne office
                             </div>
                             <div className="relative z-[1] text-[13px] opacity-80">
-                                Pick what you need — we show the soonest slot at
-                                every office and link you straight to booking.
+                                Pick what you need — we take you straight to
+                                booking at the office that suits you.
                             </div>
                         </div>
 
@@ -596,9 +600,15 @@ export default function Bureaucracy() {
                                 </button>
                             </div>
                         ) : (
-                            <div className="mb-4 rounded-[11px] border border-[#E2DFD6] bg-[#EFEDE7] px-3.5 py-2.5 text-xs text-[#6B6860] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]">
-                                Live checks are off — the links below open the
-                                city's booking system directly.
+                            <div className="mb-4 flex items-start gap-2 rounded-[11px] border border-[#E2DFD6] bg-[#EFEDE7] px-3.5 py-2.5 text-xs text-[#6B6860] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                                <IconExternalLink
+                                    size={14}
+                                    className="mt-0.5 shrink-0"
+                                />
+                                <span>
+                                    Tap an office to see live times and pick a
+                                    slot on the city's booking system.
+                                </span>
                             </div>
                         )}
 

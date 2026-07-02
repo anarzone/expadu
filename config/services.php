@@ -78,9 +78,11 @@ return [
 
     /*
      * Live appointment availability from the city's Smart CJM booking
-     * system (termine.stadt-koeln.de). Off by default: robots.txt asks not
-     * to be crawled, so checks stay explicit (slots:check) and unscheduled
-     * until a posture is agreed with the city.
+     * system (termine.stadt-koeln.de). Off, and staying off: robots.txt
+     * disallows crawling and the city firewall-blocked our datacenter IP on
+     * 2026-07-02. The Offices grid ships as a deep-link experience. This flag
+     * only gates the manual slots:check command (usable from an un-blocked
+     * host); it does not schedule anything.
      */
     'smartcjm' => [
         'enabled' => env('SMARTCJM_SLOTS_ENABLED', false),

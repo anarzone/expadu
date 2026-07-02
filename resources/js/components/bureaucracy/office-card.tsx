@@ -9,6 +9,9 @@ export function OfficeCard({
     onTakeMeThere?: () => void;
 }) {
     const isAvailable = office.status === 'available';
+    // The blue "check online" chip would just duplicate the Book button, so
+    // it only shows when it carries real signal (a date, or "no appointment").
+    const showChip = office.status !== 'check_online';
 
     return (
         <div className="mb-2 rounded-[14px] border border-[#E2DFD6] bg-white px-3.5 py-3 dark:border-[#3A3930] dark:bg-[#1E1D15]">
@@ -25,12 +28,19 @@ export function OfficeCard({
                         {office.address}
                     </div>
                 </div>
-                <span
-                    className="shrink-0 rounded-full px-2.5 py-[3px] text-[11px] font-semibold"
-                    style={{ background: office.colorS, color: office.color }}
-                >
-                    {isAvailable ? office.nextSlotRelative : office.statusLabel}
-                </span>
+                {showChip && (
+                    <span
+                        className="shrink-0 rounded-full px-2.5 py-[3px] text-[11px] font-semibold"
+                        style={{
+                            background: office.colorS,
+                            color: office.color,
+                        }}
+                    >
+                        {isAvailable
+                            ? office.nextSlotRelative
+                            : office.statusLabel}
+                    </span>
+                )}
             </div>
 
             {isAvailable && (
@@ -50,7 +60,7 @@ export function OfficeCard({
                             : 'border border-[#E2DFD6] bg-[#EFEDE7] text-[#1A4CD4] hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#5B8DEF]'
                     }`}
                 >
-                    {isAvailable ? 'Book this slot →' : 'Check online →'}
+                    {isAvailable ? 'Book this slot →' : 'Book online →'}
                 </a>
                 {onTakeMeThere && (
                     <button

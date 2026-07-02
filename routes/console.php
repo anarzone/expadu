@@ -55,22 +55,13 @@ Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
 Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:00')->withoutOverlapping();
 
-// Live Bürgeramt/KFZ slot availability for the Offices grid — sweeps every
-// bookable service. Denser in the morning (the city releases day-of batches
-// then), sparser through the day. SMARTCJM_SLOTS_ENABLED is the posture
-// switch (robots.txt disallows crawling, owner accepted the risk 2026-07-02).
-Schedule::command('slots:check --all')
-    ->timezone('Europe/Berlin')
-    ->everyThirtyMinutes()
-    ->between('7:00', '10:00')
-    ->withoutOverlapping()
-    ->when(fn () => (bool) config('services.smartcjm.enabled'));
-
-Schedule::command('slots:check --all')
-    ->timezone('Europe/Berlin')
-    ->everyTwoHours()
-    ->between('10:00', '21:00')
-    ->withoutOverlapping()
-    ->when(fn () => (bool) config('services.smartcjm.enabled'));
+// NOTE: the Bürgeramt/KFZ slot watcher (slots:check --all) is deliberately
+// NOT scheduled. termine.stadt-koeln.de disallows crawling in robots.txt and,
+// after a few hours of polling on 2026-07-02, firewall-blocked our datacenter
+// IP (194.8.223.109 drops SYNs from the shared prod+staging box). We respect
+// that: no automated fetching from our servers. The Offices grid ships as a
+// deep-link experience instead. The slots:check command still exists for a
+// manual run from an un-blocked host; re-scheduling here is a deliberate act
+// that should only follow the city allowlisting our egress.
 
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();
