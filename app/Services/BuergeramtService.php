@@ -116,25 +116,25 @@ class BuergeramtService
     ];
 
     /**
-     * Check appointment slots across all Bürgeramt offices.
-     * Attempts real scraping of the NetAppoint booking page.
-     * Results cached for 3 minutes.
+     * The office directory with appointment availability. Offices covered by
+     * a recent `slots:check` run carry real next_slot/slots_today (or a
+     * confirmed fully_booked); everything else falls back to check_online
+     * with a direct booking link. Results cached for 3 minutes.
      *
-     * @return array<string, array{name: string, address: string, category: string, status: string, next_slot: ?string, slots_today: int}>
+     * @return array<string, array{name: string, address: string, category: string, status: string, next_slot: ?string, slots_today: int, booking_url: string}>
      */
     public function checkSlots(): array
     {
         return Cache::remember('buergeramt_slots', 180, function () {
-            return $this->scrapeAllOffices();
+            return $this->applyLiveAvailability($this->officeDirectory());
         });
     }
 
     /**
-     * Build slot data for all offices.
-     * The booking system (termine.stadt-koeln.de) is a JavaScript SPA that cannot be scraped.
-     * We provide direct booking links so users can check and book directly.
+     * The static office directory: every office as check_online with its
+     * booking link, before any live availability is overlaid.
      */
-    protected function scrapeAllOffices(): array
+    protected function officeDirectory(): array
     {
         $slots = [];
 
@@ -152,5 +152,49 @@ class BuergeramtService
         }
 
         return $slots;
+    }
+
+    /**
+     * Overlay real availability from the last `slots:check` run. Only
+     * offices that run actually covered are touched: covered with slots →
+     * available, covered without → fully_booked (honest city-wide scarcity),
+     * never checked → left as check_online.
+     */
+    protected function applyLiveAvailability(array $slots): array
+    {
+        $live = Cache::get('buergeramt_slots_live');
+        if (! is_array($live) || ! isset($live['offices'])) {
+            return $slots;
+        }
+
+        foreach ($live['offices'] as $key => $availability) {
+            if (! isset($slots[$key])) {
+                continue;
+            }
+
+            $slots[$key]['status'] = $availability['slots_total'] > 0 ? 'available' : 'fully_booked';
+            $slots[$key]['next_slot'] = $availability['next_slot'];
+            $slots[$key]['slots_today'] = $availability['slots_today'];
+        }
+
+        return $slots;
+    }
+
+    /**
+     * Map a Smart CJM booking location label onto an OFFICES key, e.g.
+     * "Kundenzentrum Innenstadt I" → innenstadt, "Kundenzentrum Mülheim" →
+     * muelheim. Null for locations the directory does not know.
+     */
+    public function officeKeyForLocation(string $label): ?string
+    {
+        $normalized = str_replace(['ü', 'ö', 'ä'], ['ue', 'oe', 'ae'], mb_strtolower($label));
+
+        foreach (array_keys(self::OFFICES) as $key) {
+            if (str_contains($normalized, $key)) {
+                return $key;
+            }
+        }
+
+        return null;
     }
 }

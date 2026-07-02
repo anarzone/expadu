@@ -3,9 +3,9 @@
 use App\Services\BuergeramtService;
 use Illuminate\Support\Facades\Cache;
 
-// Slot *monitoring* was removed (the booking system is an unscrapeable
-// SPA, so detection never worked — the honest model is link-out). What
-// remains is the office directory the Slots tab and take-me-there use.
+// The office directory behind the Slots tab and take-me-there. Offices
+// default to a check_online link-out; a `slots:check` run overlays real
+// availability (see SmartCjmSlotsTest for the live-check pipeline).
 
 test('buergeramt service returns correct slot structure', function () {
     $slots = app(BuergeramtService::class)->checkSlots();

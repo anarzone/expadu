@@ -76,6 +76,16 @@ return [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
     ],
 
+    /*
+     * Live appointment availability from the city's Smart CJM booking
+     * system (termine.stadt-koeln.de). Off by default: robots.txt asks not
+     * to be crawled, so checks stay explicit (slots:check) and unscheduled
+     * until a posture is agreed with the city.
+     */
+    'smartcjm' => [
+        'enabled' => env('SMARTCJM_SLOTS_ENABLED', false),
+    ],
+
     'vrs' => [
         'gtfsrt_url' => env('VRS_GTFSRT_URL'),
         'trias_url' => env('VRS_TRIAS_URL'),
