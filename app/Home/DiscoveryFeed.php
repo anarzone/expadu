@@ -50,18 +50,22 @@ class DiscoveryFeed
         $rain = $context->rainExpected;
         $homeAreas = $profile->defaultAreas;
         $affinity = CategoryAffinity::map($profile);
+        $originLat = $context->originLat;
+        $originLng = $context->originLng;
 
         // Drop places the user took out of discovery — "been" (consumed) or
         // "not interested" (rejected). Per-user, so it sits outside the cached
-        // global scan below.
+        // scan below.
         $hidden = $this->hiddenSpotIds($context->userId);
 
-        // The catalogue scan is global (no per-user data) so it's cached; the
-        // scoring below stays per-request. Pulling the whole light catalogue
-        // lets culture/indoor compete with activities; pickCards diversifies.
-        $scored = $this->spotPool()
+        // The pool is the NEAREST spots to where the user actually is (cached
+        // per ~1km cell), so "nearby" is genuinely nearby — not 2,000 arbitrary
+        // lowest-id rows from across the city. Scoring stays per-request and now
+        // rewards proximity, so a park next door beats a far museum of equal
+        // appeal. With no known origin it falls back to the global catalogue.
+        $scored = $this->spotPool($originLat, $originLng)
             ->reject(fn (Spot $spot) => isset($hidden[$spot->id]))
-            ->map(fn (Spot $spot) => $this->scoreSpot($spot, $weights, $homeAreas, $rain, $affinity))
+            ->map(fn (Spot $spot) => $this->scoreSpot($spot, $weights, $homeAreas, $rain, $affinity, $originLat, $originLng))
             ->sortByDesc('score')
             ->values();
 
@@ -111,7 +115,7 @@ class DiscoveryFeed
      * @param  array<string, float>  $affinity
      * @return array{spot: Spot, category: string, score: float}
      */
-    private function scoreSpot(Spot $spot, array $weights, array $homeAreas, bool $rain, array $affinity): array
+    private function scoreSpot(Spot $spot, array $weights, array $homeAreas, bool $rain, array $affinity, ?float $originLat, ?float $originLng): array
     {
         $category = $this->category($spot);
         $key = "{$category}|".($spot->veedel ?? '');
@@ -120,9 +124,37 @@ class DiscoveryFeed
             + ($weights[$key] ?? 0.0) * 25.0                            // behaviour refines
             + CategoryAppeal::score($category) * 20.0                   // café-demoting baseline
             + (in_array($spot->veedel, $homeAreas, true) ? 8.0 : 0.0)   // home-area nudge
+            + $this->proximityScore($spot, $originLat, $originLng)      // near ranks above far
             + ($rain && in_array($category, self::OUTDOOR, true) ? -25.0 : 0.0);
 
         return ['spot' => $spot, 'category' => $category, 'score' => $score];
+    }
+
+    /**
+     * A distance-decay bonus so a place a short hop away outranks an equally
+     * appealing one across the city — the term that makes "nearby" true. Full
+     * value at the door, fading to zero by ~6km (a sensible browse radius in
+     * Cologne). Off entirely when we don't know where the user is.
+     */
+    private function proximityScore(Spot $spot, ?float $originLat, ?float $originLng): float
+    {
+        if ($originLat === null || $originLng === null || $spot->lat === null || $spot->lng === null) {
+            return 0.0;
+        }
+
+        $km = $this->kmBetween($originLat, $originLng, (float) $spot->lat, (float) $spot->lng);
+
+        return 35.0 * max(0.0, 1.0 - $km / 6.0);
+    }
+
+    /** Great-circle distance in kilometres. */
+    private function kmBetween(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return 6371.0 * 2 * asin(min(1.0, sqrt($a)));
     }
 
     /**
@@ -344,16 +376,40 @@ class DiscoveryFeed
      *
      * @return Collection<int, Spot>
      */
-    private function spotPool(): Collection
+    private function spotPool(?float $originLat, ?float $originLng): Collection
     {
         // Cache plain rows (not Eloquent models) and re-hydrate — serialising
         // a model collection is fragile across cache drivers (it can come back
         // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
-        $rows = Cache::remember(self::SCAN_CACHE_KEY, self::SCAN_TTL, fn () => Spot::query()
-            ->select('id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution')
+        $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution'];
+
+        // No origin (GPS declined, nothing remembered): the old global, lowest-id
+        // pool, cached once for everyone.
+        if ($originLat === null || $originLng === null) {
+            $rows = Cache::remember(self::SCAN_CACHE_KEY, self::SCAN_TTL, fn () => Spot::query()
+                ->select($columns)
+                ->whereNotNull('lat')
+                ->whereNotNull('lng')
+                ->orderBy('id')
+                ->limit(self::POOL)
+                ->get()
+                ->toArray());
+
+            return Spot::hydrate($rows);
+        }
+
+        // Nearest-first to the user, cached per ~1km cell (rounded so nearby
+        // sessions share the scan). PostGIS-free haversine, same formula the
+        // composer's candidate pool uses.
+        $cellLat = round($originLat, 2);
+        $cellLng = round($originLng, 2);
+        $distance = '6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))';
+
+        $rows = Cache::remember(self::SCAN_CACHE_KEY.":{$cellLat},{$cellLng}", self::SCAN_TTL, fn () => Spot::query()
+            ->select($columns)
             ->whereNotNull('lat')
             ->whereNotNull('lng')
-            ->orderBy('id')
+            ->orderByRaw($distance, [$cellLat, $cellLng, $cellLat])
             ->limit(self::POOL)
             ->get()
             ->toArray());

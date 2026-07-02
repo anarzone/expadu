@@ -57,6 +57,27 @@ test('discovery rails rank spots and split home area from new areas', function (
     expect(collect($new['cards'])->pluck('veedel'))->not->toContain('Ehrenfeld');
 });
 
+test('with a known origin, the feed ranks a nearby spot above an equally appealing far one', function () {
+    $user = feedUser();
+    // Two parks of identical category/appeal; one next door, one across the city.
+    $near = Spot::factory()->create(['name' => 'Near Park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9490, 'lng' => 6.9200]);
+    $far = Spot::factory()->create(['name' => 'Far Park', 'category' => 'park', 'veedel' => 'Porz', 'lat' => 50.8800, 'lng' => 7.0500]);
+
+    // Origin sits right on the near park.
+    $rails = collect(app(DiscoveryFeed::class)->for(homeContext($user, [
+        'originLat' => 50.9490,
+        'originLng' => 6.9200,
+    ])));
+
+    $lead = collect($rails->firstWhere('key', 'made_for_today')['cards'])->pluck('name');
+    $nearPos = $lead->search('Near Park');
+    $farPos = $lead->search('Far Park');
+
+    expect($nearPos)->not->toBeFalse();
+    // The nearby park outranks the far one purely on proximity.
+    expect($farPos === false || $nearPos < $farPos)->toBeTrue();
+});
+
 test('the tonight rail surfaces today\'s upcoming events', function () {
     $user = feedUser();
     Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);

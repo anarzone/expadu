@@ -88,7 +88,7 @@ class HomeFeed
         // Tiles first: they claim the urgent things, so rails (and the
         // chip rule) can skip what's already surfaced.
         $this->tiles = $this->tileComposer->tiles($context);
-        $this->rails = $this->stampTravelMinutes($user, $this->discovery->for($context));
+        $this->rails = $this->stampTravelMinutes($user, $context, $this->discovery->for($context));
         $this->built = true;
     }
 
@@ -103,12 +103,13 @@ class HomeFeed
      * @param  list<array<string, mixed>>  $rails
      * @return list<array<string, mixed>>
      */
-    private function stampTravelMinutes(User $user, array $rails): array
+    private function stampTravelMinutes(User $user, HomeContext $context, array $rails): array
     {
-        $origin = $this->locations->context($user, request(), $user->veedel ?: null);
-        if (! $origin->hasOrigin()) {
+        if (! $context->hasOrigin()) {
             return $rails;
         }
+        $originLat = $context->originLat;
+        $originLng = $context->originLng;
 
         // Collect unique destinations across every rail (tasks carry no coords).
         $destinations = [];
@@ -126,7 +127,7 @@ class HomeFeed
         try {
             $minutes = $this->travel->minutes(
                 $user->transport_mode,
-                new GeoPoint($origin->lat, $origin->lng),
+                new GeoPoint($originLat, $originLng),
                 array_values($destinations),
             );
         } catch (\Throwable) {
@@ -138,7 +139,7 @@ class HomeFeed
         $byId = [];
         foreach (array_keys($destinations) as $i => $id) {
             $byId[$id] = $minutes[$i] ?? TravelEstimator::minutesFromKm(
-                $this->kmBetween($origin->lat, $origin->lng, $destinations[$id]->lat, $destinations[$id]->lng),
+                $this->kmBetween($originLat, $originLng, $destinations[$id]->lat, $destinations[$id]->lng),
                 $user->transport_mode,
             );
         }
@@ -172,10 +173,17 @@ class HomeFeed
         $forecast = $this->safeForecast();
         $profile = $this->profiles->build($user);
 
+        // The shared origin (live / confirmed / remembered), resolved ONCE:
+        // the discovery pool + proximity ranking and the travel-minutes stamp
+        // both read it, so "nearby" is genuinely nearby and never re-resolved.
+        $origin = $this->locations->context($user, request(), $user->veedel ?: null);
+
         return $this->context = new HomeContext(
             userId: $user->id,
             profile: $profile,
             now: $now,
+            originLat: $origin->hasOrigin() ? $origin->lat : null,
+            originLng: $origin->hasOrigin() ? $origin->lng : null,
             // Only frame the feed as "rainy" when the forecast genuinely loaded
             // (broken/unavailable weather must never trigger it) AND rain falls
             // in the near-term window — `rain_soon`, the same window the weather

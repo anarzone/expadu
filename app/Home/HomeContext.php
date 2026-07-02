@@ -35,7 +35,17 @@ class HomeContext
         public readonly bool $isEvening,
         public readonly Collection $openTasks,
         public readonly Collection $tonightEvents,
+        // Where the user is right now (shared origin: live/confirmed/remembered),
+        // null when unknown. The feed uses it so "nearby" is genuinely nearby —
+        // the pool is the nearest spots and proximity ranks them.
+        public readonly ?float $originLat = null,
+        public readonly ?float $originLng = null,
     ) {}
+
+    public function hasOrigin(): bool
+    {
+        return $this->originLat !== null && $this->originLng !== null;
+    }
 
     public function hasEventsTonight(): bool
     {

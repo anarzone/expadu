@@ -166,5 +166,7 @@ function homeContext(User $user, array $overrides = []): HomeContext
             ->with('task')
             ->get(),
         tonightEvents: $overrides['tonightEvents'] ?? collect(),
+        originLat: $overrides['originLat'] ?? null,
+        originLng: $overrides['originLng'] ?? null,
     );
 }
