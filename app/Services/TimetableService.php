@@ -183,9 +183,12 @@ class TimetableService
                 'destination' => (string) ($d['direction'] ?? ''),
                 'type' => (string) ($d['type'] ?? ''),
                 'color' => $this->color($d),
+                // A departure board answers "can I catch something soon?" —
+                // beyond a 2h horizon ("740 min") it's noise, so those rows
+                // drop off entirely.
                 'minutes' => array_values(array_filter(
                     (array) ($d['departures'] ?? []),
-                    fn ($m) => is_numeric($m),
+                    fn ($m) => is_numeric($m) && $m <= 120,
                 )),
                 'delay' => (int) ($d['delay'] ?? 0),
                 'cancelled' => (bool) ($d['cancelled'] ?? false),

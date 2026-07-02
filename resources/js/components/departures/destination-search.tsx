@@ -150,7 +150,9 @@ export function DestinationSearch({
     }
 
     function pick(suggestion: Suggestion) {
-        setText(suggestion.kind === 'current' ? '' : suggestion.name);
+        // "Current location" keeps its label visible in the field — an empty
+        // input read as "nothing happened".
+        setText(suggestion.name);
         setOpen(false);
         setDirty(false);
         onSelect(suggestion);

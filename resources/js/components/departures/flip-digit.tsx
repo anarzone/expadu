@@ -1,21 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * One split-flap cell — an airport-board character that flips on change. The
- * static halves always show a full character (top = incoming, bottom =
- * outgoing); on change two overlay flaps rotate on the X axis: the old top
- * hinges down, then the new bottom hinges in. Transform-only, so the flip
- * stays smooth, and a timer commits the swap even when the animation is
- * suppressed (prefers-reduced-motion).
+ * One split-flap cell — a mechanical airport-board character. The cell is a
+ * dark rounded tile with a visible seam across the middle; on change the old
+ * top half hinges down and the new bottom half swings in with a slight
+ * mechanical settle. Cells mount BLANK and flip their character in, so the
+ * board arrives with the classic cascading flutter instead of only animating
+ * on rare digit changes.
+ *
+ * `order` staggers cells (left to right) like the real boards, whose motors
+ * never start in perfect sync.
  */
-function FlipChar({ char }: { char: string }) {
-    const [current, setCurrent] = useState(char);
+function FlipChar({ char, order = 0 }: { char: string; order?: number }) {
+    const [current, setCurrent] = useState(' ');
     const [next, setNext] = useState<string | null>(null);
     const settle = useRef<number | null>(null);
+    const delayMs = order * 90;
 
-    // Prop changed → stage a flip. Render-phase adjustment (per the React
-    // "adjusting state when a prop changes" pattern) — settles immediately
-    // because the condition is false once next === char.
+    // Prop changed (or first mount from blank) → stage a flip. Render-phase
+    // adjustment per the React "adjusting state when a prop changes" pattern.
     if (char !== current && next !== char) {
         setNext(char);
     }
@@ -35,14 +38,14 @@ function FlipChar({ char }: { char: string }) {
 
                 return null;
             });
-        }, 560);
+        }, 900 + delayMs);
 
         return () => {
             if (settle.current !== null) {
                 window.clearTimeout(settle.current);
             }
         };
-    }, [next]);
+    }, [next, delayMs]);
 
     const commit = () => {
         setNext((pending) => {
@@ -67,12 +70,14 @@ function FlipChar({ char }: { char: string }) {
                     <span
                         key={`t-${next}`}
                         className="flipc-half flipc-top flipc-flip-top"
+                        style={{ animationDelay: `${delayMs}ms` }}
                     >
                         <span>{current}</span>
                     </span>
                     <span
                         key={`b-${next}`}
                         className="flipc-half flipc-bottom flipc-flip-bottom"
+                        style={{ animationDelay: `${delayMs + 320}ms` }}
                         onAnimationEnd={commit}
                     >
                         <span>{next}</span>
@@ -95,7 +100,7 @@ export function FlipText({ text }: { text: string }) {
     return (
         <span className="flipc-row" aria-label={text}>
             {chars.map((char, i) => (
-                <FlipChar key={chars.length - i} char={char} />
+                <FlipChar key={chars.length - i} char={char} order={i} />
             ))}
         </span>
     );

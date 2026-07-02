@@ -416,63 +416,48 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --bd-ink: #f3f7fb;
     --bd-sub: #9aa6b4;
 }
-/* A next-departure minute chip. Base is muted; the soonest chip escalates
-   lead → soon (amber) → now (green). */
+/* A next-departure time as a row of split-flap cells (see .flipc). The chip
+   itself is just the invisible grouping; the state colours the GLYPHS the way
+   real boards use coloured type — lead white, soon amber, NOW green. */
 .dchip {
-    min-width: 34px;
-    height: 30px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    padding: 0 7px;
     font-family: 'Geist Mono', ui-monospace, monospace;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
-    border: 1px solid var(--bd-line);
-    color: var(--bd-sub);
+    --flip-ink: #7f8a99;
 }
 .dchip.lead {
-    color: var(--bd-ink);
-    border-color: var(--bd-sub);
+    --flip-ink: #f2f6fb;
 }
 .dchip.soon {
-    background: rgba(255, 194, 77, 0.16);
-    color: var(--st-warn);
-    border-color: rgba(255, 194, 77, 0.42);
+    --flip-ink: var(--st-warn);
 }
 .dchip.now {
-    background: var(--st-now);
-    color: #0e1116;
-    border-color: var(--st-now);
+    --flip-ink: var(--st-now);
 }
 
-/* Split-flap cells (airport-board digits). Each character is a cell of two
-   halves; on change the old top flap hinges down and the new bottom flap
-   hinges in — transform-only, GPU-composited. The flap faces need a solid
-   background so the layers underneath don't bleed through mid-rotation:
-   --flip-bg is the chip's effective surface colour (the .soon value is the
-   16% amber wash precomposited onto the board surface). */
-.dchip {
-    --flip-bg: var(--bd-bg);
-}
-.dchip.soon {
-    --flip-bg: #342d1f;
-}
-.dchip.now {
-    --flip-bg: var(--st-now);
-}
+/* Split-flap cells (the airport board). Each character sits in its own dark
+   tile with the mechanical seam across the middle; on change the old top half
+   hinges down, then the new bottom half swings in and settles with a slight
+   overshoot — transform-only, GPU-composited. Cells mount blank and flip
+   their character in, staggered left-to-right, so the whole board arrives
+   with the classic flutter. */
 .flipc-row {
     display: inline-flex;
-    gap: 1px;
+    gap: 2px;
 }
 .flipc {
     position: relative;
     display: inline-block;
-    width: 1ch;
-    height: 1em;
-    line-height: 1em;
-    perspective: 240px;
+    width: 17px;
+    height: 26px;
+    line-height: 26px;
+    border-radius: 3.5px;
+    background: #101318;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    perspective: 320px;
+    color: var(--flip-ink, #e8edf4);
 }
 .flipc-half {
     position: absolute;
@@ -480,13 +465,18 @@ input[type='time']::-webkit-calendar-picker-indicator {
     width: 100%;
     height: 50%;
     overflow: hidden;
-    background: var(--flip-bg, transparent);
 }
 .flipc-top {
     top: 0;
+    background: linear-gradient(#232830, #1b2027);
+    border-radius: 3.5px 3.5px 0 0;
+    /* the mechanical seam */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.65);
 }
 .flipc-bottom {
     bottom: 0;
+    background: linear-gradient(#171b21, #1d222a);
+    border-radius: 0 0 3.5px 3.5px;
 }
 .flipc-half > span {
     position: absolute;
@@ -507,13 +497,14 @@ input[type='time']::-webkit-calendar-picker-indicator {
     z-index: 2;
     transform-origin: 50% 100%;
     backface-visibility: hidden;
-    animation: flipc-top 0.22s ease-in both;
+    animation: flipc-top 0.32s cubic-bezier(0.55, 0, 0.8, 0.6) both;
 }
 .flipc-flip-bottom {
     z-index: 2;
     transform-origin: 50% 0%;
     backface-visibility: hidden;
-    animation: flipc-bottom 0.22s ease-out 0.22s both;
+    /* lands with a slight mechanical overshoot */
+    animation: flipc-bottom 0.4s cubic-bezier(0.22, 1.4, 0.36, 1) both;
 }
 @keyframes flipc-top {
     from {

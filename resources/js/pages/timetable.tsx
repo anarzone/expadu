@@ -519,7 +519,6 @@ function JourneyEntryCard({
             <div className="flex items-center gap-3">
                 <span className="size-2.5 shrink-0 rounded-full border-[3px] border-cyan" />
                 <DestinationSearch
-                    key={origin ? origin.name : 'live'}
                     initial={origin?.name ?? ''}
                     placeholder={`You · ${stop}`}
                     role="origin"
