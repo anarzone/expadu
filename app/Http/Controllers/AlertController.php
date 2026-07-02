@@ -20,7 +20,9 @@ class AlertController extends Controller
         // the shared widgets panel, so this only feeds the list + header count.
         $alerts = $request->user()->alerts()
             ->whereNull('dismissed_at')
-            ->orderByDesc('created_at')
+            // updated_at so a coalesced card (a weather warning refreshed this
+            // poll) rises to the top instead of sitting at its first-seen time.
+            ->orderByDesc('updated_at')
             ->limit(80)
             ->get();
 
@@ -55,7 +57,11 @@ class AlertController extends Controller
             'body' => (string) $alert->body,
             'deep_link' => $alert->deep_link,
             'read' => $alert->read_at !== null,
-            'created_at' => $alert->created_at?->toIso8601String(),
+            // The card's timestamp is its last activity, so a refreshed weather
+            // card reads "just now", not the hour it first appeared.
+            'created_at' => ($alert->updated_at ?? $alert->created_at)?->toIso8601String(),
+            // >1 when the same subject recurred while this card stayed live.
+            'occurrences' => (int) ($alert->occurrence_count ?? 1),
         ];
     }
 

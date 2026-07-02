@@ -45,30 +45,27 @@ class RecordContextAlert
             return;
         }
 
-        // Same dedup window as the notification path: one alert per (user, title)
-        // per day, so an action re-scored every poll doesn't spam the center.
-        $alreadyToday = Alert::query()
-            ->where('user_id', $user->id)
-            ->where('title', $title)
-            ->where('created_at', '>=', now()->subDay())
-            ->exists();
-        if ($alreadyToday) {
-            return;
-        }
-
         $subtype = AlertClassifier::subtypeForActionType($action->type);
         $severity = AlertClassifier::severity($action->severity);
 
-        Alert::create([
-            'user_id' => $user->id,
-            'type' => AlertClassifier::alertType($subtype),
-            'subtype' => $subtype,
-            'severity' => $severity,
-            'category' => AlertClassifier::category($subtype),
-            'lane' => AlertClassifier::lane($subtype, $severity),
-            'title' => $title,
-            'body' => (string) ($data['body'] ?? $data['summary'] ?? ''),
-            'deep_link' => $data['url'] ?? null,
-        ]);
+        // Coalesce recurrences of the same subject onto ONE live card instead of
+        // a new row every poll: weather/rhine/market collapse to one evolving
+        // card per kind, transit/bureaucracy keep their per-line/per-task grain.
+        // Alert::record refreshes the text + severity, bumps it to the top, and
+        // only re-marks it unread when the situation has escalated.
+        Alert::record(
+            $user->id,
+            AlertClassifier::groupKey($action->type, $action->actionKey),
+            [
+                'type' => AlertClassifier::alertType($subtype),
+                'subtype' => $subtype,
+                'severity' => $severity,
+                'category' => AlertClassifier::category($subtype),
+                'lane' => AlertClassifier::lane($subtype, $severity),
+                'title' => $title,
+                'body' => (string) ($data['body'] ?? $data['summary'] ?? ''),
+                'deep_link' => $data['url'] ?? null,
+            ],
+        );
     }
 }

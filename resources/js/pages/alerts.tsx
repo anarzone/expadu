@@ -30,6 +30,7 @@ type Alert = {
     deep_link: string | null;
     read: boolean;
     created_at: string;
+    occurrences: number;
 };
 
 /** Severity → left border + icon-tile tint (the design's sev-* classes). */
@@ -155,6 +156,14 @@ function AlertCard({
                     <span className="font-mono text-[10.5px] text-text-3">
                         {timeAgo(alert.created_at)}
                     </span>
+                    {alert.occurrences > 1 && (
+                        <>
+                            <span className="text-[11px] text-text-3">·</span>
+                            <span className="font-mono text-[10.5px] text-text-3">
+                                updated {alert.occurrences}×
+                            </span>
+                        </>
+                    )}
                 </div>
                 {alert.action_label && alert.deep_link && (
                     <div className="mt-3">

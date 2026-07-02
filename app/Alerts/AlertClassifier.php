@@ -93,6 +93,24 @@ class AlertClassifier
         };
     }
 
+    /**
+     * The subject key an alert coalesces on. City-wide conditions collapse to
+     * one evolving card per kind — an expat wants "the weather alert", not a
+     * new one each time the reading changes. Everything else keeps its natural
+     * per-subject grain (per line, per disruption, per task) so distinct things
+     * stay distinct; the volatile per-user suffix is dropped since alert rows
+     * are already scoped to a user.
+     */
+    public static function groupKey(string $actionType, string $actionKey): string
+    {
+        return match ($actionType) {
+            'weather_alert' => 'weather',
+            'rhine_level' => 'rhine',
+            'market_closure' => 'market',
+            default => (string) preg_replace('/:user:\d+$/', '', $actionKey),
+        };
+    }
+
     /** ScoredAction `type` → the alert `subtype` string we persist. */
     public static function subtypeForActionType(string $actionType): string
     {

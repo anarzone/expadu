@@ -97,6 +97,66 @@ test('re-inserting the same action within a day does not duplicate the alert', f
     expect(Alert::where('user_id', $user->id)->count())->toBe(1);
 });
 
+test('weather changing through the day collapses onto ONE evolving card', function () {
+    $user = User::factory()->create();
+    // Three DISTINCT weather warnings (different ids) — the exact pile-up the
+    // owner reported: a new card every time conditions shift.
+    foreach (['rain-1', 'wind-2', 'heat-3'] as $id) {
+        // Distinct action keys + payloads the way the real WeatherEvaluator does.
+        $action = new ScoredAction(
+            type: 'weather_alert', actionKey: "weather:{$id}:user:{$user->id}", score: 50.0,
+            severity: 'moderate', validUntil: CarbonImmutable::now()->addHour(),
+            deliverChannels: ['dashboard', 'alert_page'],
+            payload: ['alert' => ['title' => "Weather update {$id}", 'description' => 'Conditions changing']],
+            createdAt: CarbonImmutable::now(),
+        );
+        app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $action));
+    }
+
+    $weather = Alert::where('user_id', $user->id)->where('subtype', 'weather')->get();
+    expect($weather)->toHaveCount(1);
+    expect((int) $weather->first()->occurrence_count)->toBe(3);
+});
+
+test('different transit lines stay as separate cards', function () {
+    $user = User::factory()->create();
+    foreach (['1', '9'] as $line) {
+        $action = new ScoredAction(
+            type: 'transit_disruption', actionKey: "disruption:d{$line}:user:{$user->id}", score: 50.0,
+            severity: 'major', validUntil: CarbonImmutable::now()->addHour(),
+            deliverChannels: ['dashboard', 'alert_page'], payload: ['lines' => [$line]],
+            createdAt: CarbonImmutable::now(),
+        );
+        app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $action));
+    }
+
+    expect(Alert::where('user_id', $user->id)->count())->toBe(2);
+});
+
+test('a coalesced card re-surfaces as unread only when the situation escalates', function () {
+    $user = User::factory()->create();
+    $key = "weather:storm:user:{$user->id}";
+    $make = fn (string $sev) => new ScoredAction(
+        type: 'weather_alert', actionKey: $key, score: 50.0, severity: $sev,
+        validUntil: CarbonImmutable::now()->addHour(), deliverChannels: ['dashboard', 'alert_page'],
+        payload: ['alert' => ['title' => 'Storm warning', 'description' => 'Heavy storm']],
+        createdAt: CarbonImmutable::now(),
+    );
+
+    app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $make('moderate')));
+    Alert::where('user_id', $user->id)->update(['read_at' => now()]); // user reads it
+
+    // A routine refresh at the same severity must NOT re-nag.
+    app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $make('moderate')));
+    expect(Alert::where('user_id', $user->id)->first()->read_at)->not->toBeNull();
+
+    // Escalation to critical re-surfaces it as unread.
+    app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $make('critical')));
+    $alert = Alert::where('user_id', $user->id)->first();
+    expect($alert->read_at)->toBeNull();
+    expect($alert->severity)->toBe('danger');
+});
+
 test('the notification path skips ContextEngine classes so the center is not double-written', function () {
     $user = User::factory()->create();
     $n = new BureaucracyDeadlineNotification('Register your address', 'overdue', -2, '2026-06-20', 5);
