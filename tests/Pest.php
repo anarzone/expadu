@@ -31,15 +31,18 @@ pest()->extend(TestCase::class)
         // scan, which would otherwise leak across tests after DB rollback.
         Cache::flush();
 
-        // Per-user location anchors live in raw Redis (not the array cache), so
-        // they survive DB rollback and leak a "confirmed"/ping origin into the
-        // next test that reuses an auto-increment id (Postgres sequences don't
-        // roll back, so ids climb across the suite — a fixed range can't catch
-        // them). keys() returns prefixed names but del() re-applies the prefix,
-        // so strip it first, then clear every match.
+        // Per-user location anchors and notification throttle counters live in
+        // raw Redis (not the array cache), so they survive DB rollback and leak
+        // into the next test that reuses an auto-increment id (Postgres
+        // sequences don't roll back, so ids climb across the suite — a fixed
+        // range can't catch them). notif_throttle:last:{id} is the nastiest:
+        // combined with each test's random travelTo, a leaked future timestamp
+        // makes canPush()'s interval check go negative and silently strip the
+        // 'push' channel. keys() returns prefixed names but del() re-applies the
+        // prefix, so strip it first, then clear every match.
         $prefix = (string) config('database.redis.options.prefix');
         $strip = fn (string $key): string => str_starts_with($key, $prefix) ? substr($key, strlen($prefix)) : $key;
-        foreach (['confirmed_location:*', 'location_history:*'] as $pattern) {
+        foreach (['confirmed_location:*', 'location_history:*', 'notif_throttle:*'] as $pattern) {
             $stale = array_map($strip, Redis::keys($pattern));
             if ($stale !== []) {
                 Redis::del(...$stale);
