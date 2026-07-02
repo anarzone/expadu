@@ -211,9 +211,16 @@ class CandidateRepository
     /**
      * @return list<Candidate>
      */
+    /** Event categories/chips that mean an open-air thing rain should discourage. */
+    private const OUTDOOR_EVENT_HINTS = ['market', 'festival', 'open_air', 'street', 'flohmarkt', 'food', 'sport', 'outdoor', 'park'];
+
     private function eventCandidates(Constraints $constraints): array
     {
         return Event::query()
+            // Only quality-gated events reach a plan — the same filter the events
+            // page uses. Without it, unvetted scraped rows landed in itineraries.
+            ->visible()
+            ->with('venue')
             ->whereBetween('starts_at', [$constraints->windowStart, $constraints->windowEnd])
             ->orderBy('starts_at')
             ->limit(50)
@@ -225,9 +232,9 @@ class CandidateRepository
                 name: $event->title,
                 lat: (float) $event->lat,
                 lng: (float) $event->lng,
-                veedel: null,
+                veedel: $event->venue?->veedel,
                 category: (string) ($event->category ?? 'event'),
-                outdoor: false,
+                outdoor: $this->eventIsOutdoor($event),
                 typicalDurationMin: $event->ends_at
                     ? max(30, (int) $event->starts_at->diffInMinutes($event->ends_at))
                     : 120,
@@ -236,9 +243,26 @@ class CandidateRepository
                 closesAt: null,
                 fixedStart: CarbonImmutable::parse($event->starts_at),
                 swappable: false, // fixed-time, like appointments
+                // A curated (expat-relevant / high-quality) event is the kind of
+                // thing worth building a day around — let it win the hero role.
+                isLandmark: (bool) $event->is_curated,
             ))
             ->values()
             ->all();
+    }
+
+    /** True when an event's category or chips read as open-air (rain should discourage it). */
+    private function eventIsOutdoor(Event $event): bool
+    {
+        $haystack = mb_strtolower((string) ($event->category ?? '').' '.implode(' ', is_array($event->chips) ? $event->chips : []));
+
+        foreach (self::OUTDOOR_EVENT_HINTS as $hint) {
+            if (str_contains($haystack, $hint)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function spotCostTier(Spot $spot): string

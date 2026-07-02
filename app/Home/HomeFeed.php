@@ -195,10 +195,15 @@ class HomeFeed
             isWeekendWindow: ($now->isFriday() && $now->hour >= 15) || $now->isSaturday() || $now->isSunday(),
             isEvening: $now->hour >= 17,
             openTasks: $this->applicableOpenTasks($user, $profile),
+            // Quality-gated (same filter as the events page) so unvetted scraped
+            // rows never surface as "Tonight"; curated expat-relevant events lead,
+            // then soonest first.
             tonightEvents: Event::query()
+                ->visible()
                 ->whereDate('starts_at', today())
                 ->where('starts_at', '>', now())
                 ->whereNotNull('location')
+                ->orderByDesc('is_curated')
                 ->orderBy('starts_at')
                 ->limit(20)
                 ->get(),

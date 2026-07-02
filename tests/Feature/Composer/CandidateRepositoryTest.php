@@ -3,8 +3,10 @@
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\FeasibilityFilter;
+use App\Models\Event;
 use App\Models\Spot;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 function spotWithHours(array $overrides): Spot
 {
@@ -120,4 +122,38 @@ test('wikidata or wikipedia tags mark a spot as a landmark', function () {
 
     expect(collect($candidates)->firstWhere('name', 'Famous Park')->isLandmark)->toBeTrue();
     expect(collect($candidates)->firstWhere('name', 'Plain Park')->isLandmark)->toBeFalse();
+});
+
+test('only quality-gated events reach the composer; a curated outdoor event is a landmark', function () {
+    $window = new Constraints(
+        windowStart: CarbonImmutable::parse('2026-06-15 10:00', 'Europe/Berlin'),
+        windowEnd: CarbonImmutable::parse('2026-06-15 22:00', 'Europe/Berlin'),
+    );
+    $at = fn (Event $e, float $lat, float $lng) => DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?', [$lng, $lat, $e->id],
+    );
+
+    // A junk event below every quality bar must not reach a plan.
+    $junk = Event::factory()->create([
+        'title' => 'Junk Event', 'category' => 'other', 'is_curated' => false,
+        'relevance' => 0.1, 'quality_score' => 0.1,
+        'starts_at' => CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'),
+    ]);
+    $at($junk, 50.94, 6.95);
+
+    // A curated open-air market — quality-gated in, marked outdoor + hero.
+    $market = Event::factory()->create([
+        'title' => 'Ehrenfeld Street Market', 'category' => 'market', 'is_curated' => true,
+        'relevance' => 0.9, 'quality_score' => 0.9,
+        'starts_at' => CarbonImmutable::parse('2026-06-15 15:00', 'Europe/Berlin'),
+    ]);
+    $at($market, 50.95, 6.92);
+
+    $candidates = collect(app(CandidateRepository::class)->candidatesFor($window));
+
+    expect($candidates->firstWhere('name', 'Junk Event'))->toBeNull();
+    $m = $candidates->firstWhere('name', 'Ehrenfeld Street Market');
+    expect($m)->not->toBeNull();
+    expect($m->outdoor)->toBeTrue();
+    expect($m->isLandmark)->toBeTrue();
 });
