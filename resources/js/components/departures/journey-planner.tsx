@@ -285,6 +285,19 @@ function bannerFor(
     }
 }
 
+/** A step's scheduled time as HH:MM in Cologne time (matches the leg times). */
+function hhmm(at: number): string {
+    if (!Number.isFinite(at)) {
+        return '';
+    }
+
+    return new Date(at).toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Berlin',
+    });
+}
+
 /**
  * The chosen route as a live journey: a dark "Live · next" banner with a
  * progress bar, and a station-by-station timeline whose NOW cursor advances on
@@ -437,7 +450,7 @@ function RouteDetail({
                                         </span>
                                     )}
                                     <span
-                                        className={`truncate text-sm leading-snug ${
+                                        className={`min-w-0 flex-1 truncate text-sm leading-snug ${
                                             done
                                                 ? 'text-text-3'
                                                 : current
@@ -448,9 +461,22 @@ function RouteDetail({
                                         {step.title}
                                     </span>
                                     {current && (
-                                        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold text-success">
+                                        <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold text-success">
                                             <span className="size-1.5 animate-pulse rounded-full bg-success" />
                                             NOW
+                                        </span>
+                                    )}
+                                    {hhmm(step.at) && (
+                                        <span
+                                            className={`shrink-0 font-mono text-[11px] tabular-nums ${
+                                                done
+                                                    ? 'text-text-3'
+                                                    : current
+                                                      ? 'text-foreground'
+                                                      : 'text-muted-foreground'
+                                            }`}
+                                        >
+                                            {hhmm(step.at)}
                                         </span>
                                     )}
                                 </div>
