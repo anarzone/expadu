@@ -128,6 +128,15 @@ class CandidateRepository
         [$opensAt, $closesAt, $closedToday] = $this->hoursOn($spot->opening_hours, $day);
         $tags = is_array($spot->tags) ? $spot->tags : [];
 
+        // No real hours → typical hours for the category, marked assumed. This
+        // is what keeps museums out of 22:00 plans and playgrounds out of the
+        // dark; verified opening_hours always win over the defaults.
+        $hoursAssumed = false;
+        if ($opensAt === null && $closesAt === null && ! $closedToday) {
+            [$opensAt, $closesAt] = CategoryHours::defaults($category, $day);
+            $hoursAssumed = $opensAt !== null || $closesAt !== null;
+        }
+
         return new Candidate(
             id: "spot:{$spot->id}",
             type: 'spot',
@@ -143,6 +152,7 @@ class CandidateRepository
             closesAt: $closesAt,
             isLandmark: isset($tags['wikidata']) || isset($tags['wikipedia']),
             closedToday: $closedToday,
+            hoursAssumed: $hoursAssumed,
         );
     }
 

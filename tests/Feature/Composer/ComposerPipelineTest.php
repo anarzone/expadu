@@ -302,8 +302,11 @@ test('the repeat cap stops a day stacking one category', function () {
         ]);
     }
 
-    $uncapped = filler()->fill(defaultConstraints(), $pitches, neutralContext(), 50.94, 6.95);
-    $capped = filler()->fill(defaultConstraints(), $pitches, neutralContext(), 50.94, 6.95, null, 2);
+    // Explicit permissive roles so the archetype's window pacing doesn't bound
+    // the slot count — this test is purely about the repeat cap.
+    $manySlots = [new Role([], 6)];
+    $uncapped = filler()->fill(defaultConstraints(), $pitches, neutralContext(), 50.94, 6.95, $manySlots);
+    $capped = filler()->fill(defaultConstraints(), $pitches, neutralContext(), 50.94, 6.95, $manySlots, 2);
 
     expect(count($uncapped->slots))->toBeGreaterThan(2);
     expect(count($capped->slots))->toBeLessThanOrEqual(2);

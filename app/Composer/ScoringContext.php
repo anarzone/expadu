@@ -23,5 +23,7 @@ final readonly class ScoringContext
         public array $pinnedIds = [],
         /** @var array<string, float> category => situation/interest affinity */
         public array $affinity = [],
+        /** Seeds the deterministic day-to-day rotation term; null disables it. */
+        public ?string $rotationSeed = null,
     ) {}
 }

@@ -29,18 +29,31 @@ enum Archetype: string
     private const WIND_DOWN = ['viewpoint', 'park', 'lake'];
 
     /**
+     * @param  int|null  $windowMinutes  paces Balanced: a short window gets 2
+     *                                   stops, a full day ~4 with room to breathe
+     *                                   — never 6 back-to-back. Null = legacy max.
      * @return list<Role>
      */
-    public function roles(): array
+    public function roles(?int $windowMinutes = null): array
     {
         return match ($this) {
-            self::Balanced => [new Role([], 6)],
+            self::Balanced => [new Role([], $this->pacedCount($windowMinutes))],
             self::OneMainPlusSupports => [new Role(self::HERO, 1, hero: true), new Role(self::SUPPORT, 1)],
             self::ExploreVeedel => [new Role([], 3)],
             self::ChillNearby => [new Role(self::CHILL, 2)],
             self::MakeADayOfIt => [new Role(self::HERO, 1, hero: true), new Role(self::MEAL, 1), new Role(self::WIND_DOWN, 1)],
             self::Anchored => [new Role(self::SUPPORT, 2)],
         };
+    }
+
+    /** Roughly one stop per 2½ hours, between 2 and 6 — a day, not a checklist. */
+    private function pacedCount(?int $windowMinutes): int
+    {
+        if ($windowMinutes === null) {
+            return 6;
+        }
+
+        return max(2, min(6, intdiv($windowMinutes, 150)));
     }
 
     /** Explore-a-Veedel clusters every pick into one neighbourhood. */

@@ -201,7 +201,8 @@ class ComposerController extends Controller
             intentWeights: $intents->for($user),
             companions: $constraints->companions,
             pinnedIds: $pins,
-            affinity: CategoryAffinity::map($profile),
+            affinity: $this->planAffinity($profile, $constraints->companions),
+            rotationSeed: $this->rotationSeed($user, $constraints),
         );
 
         // The candidate pool, nearest-per-category to where the day starts.
@@ -282,6 +283,31 @@ class ComposerController extends Controller
         }
 
         return $constraints->categories[0];
+    }
+
+    /**
+     * The scoring affinity for THIS plan: the profile's map, overridden by an
+     * explicit "with the kids" — the profile may have no children, but today's
+     * outing does.
+     *
+     * @return array<string, float>
+     */
+    private function planAffinity(Profile $profile, ?string $companions): array
+    {
+        $map = CategoryAffinity::map($profile);
+
+        return $companions === 'kids' ? CategoryAffinity::withKids($map) : $map;
+    }
+
+    /**
+     * Seeds the scorer's deterministic day-to-day rotation: same user, same
+     * plan date → the same plan on every recompose; a new day (or another
+     * user) shuffles the near-equal picks. Swap derives the same seed from the
+     * stored constraints, so alternatives rank consistently with the plan.
+     */
+    private function rotationSeed(User $user, Constraints $constraints): string
+    {
+        return $user->id.':'.$constraints->windowStart->toDateString();
     }
 
     /**
@@ -468,7 +494,8 @@ class ComposerController extends Controller
             intentWeights: $intents->for($user),
             companions: $plan->constraints->companions,
             pinnedIds: $pins,
-            affinity: CategoryAffinity::map($profile),
+            affinity: $this->planAffinity($profile, $plan->constraints->companions),
+            rotationSeed: $this->rotationSeed($user, $plan->constraints),
         );
 
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);

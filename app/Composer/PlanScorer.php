@@ -24,6 +24,8 @@ class PlanScorer
         'appeal' => 18.0,          // activities lead; cafés/bars don't dominate
         'landmark' => 12.0,        // notable places make the day's "main" pick
         'affinity' => 22.0,        // the user's situation + picked interests
+        'daypart' => 15.0,         // the hour shapes the pick: lunch → food, evening → bar, daylight → park
+        'rotation' => 8.0,         // deterministic day-to-day variety among near-equals
     ];
 
     public function __construct(
@@ -91,6 +93,18 @@ class PlanScorer
         // Situation + picked interests — the same signal the home feed leads on.
         $score += self::WEIGHTS['affinity'] * CategoryAffinity::score($candidate->category, $context->affinity);
 
+        // Time-of-day fit: lunch favours food, the evening favours bars and
+        // viewpoints, daylight favours parks. Soft — feasibility (via real or
+        // assumed hours) draws the hard line.
+        $score += self::WEIGHTS['daypart'] * CategoryHours::dayFit($candidate->category, $cursor);
+
+        // Rotation: a small deterministic per-day shuffle among near-equal
+        // candidates, so today's plan isn't a copy of yesterday's. Seeded by
+        // user + plan date upstream; no seed (tests, swaps of old plans) → off.
+        if ($context->rotationSeed !== null) {
+            $score += self::WEIGHTS['rotation'] * $this->rotation($context->rotationSeed, $candidate->id);
+        }
+
         // Pinned "plan around this" picks from the home feed dominate so the
         // filler places them wherever they're feasible.
         if (in_array($candidate->id, $context->pinnedIds, true)) {
@@ -98,6 +112,12 @@ class PlanScorer
         }
 
         return round($score, 2);
+    }
+
+    /** Stable hash of (seed, candidate) mapped to [0, 1] — same day, same order; new day, new order. */
+    private function rotation(string $seed, string $candidateId): float
+    {
+        return (crc32("{$seed}|{$candidateId}") % 1000) / 999.0;
     }
 
     private function companionFit(Candidate $candidate, ?string $companions): float

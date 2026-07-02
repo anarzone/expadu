@@ -30,6 +30,7 @@ final readonly class Candidate
         public ?string $subtitle = null,            // e.g. office + documents line
         public bool $isLandmark = false,            // notable (OSM wikidata/wikipedia) → hero pick
         public bool $closedToday = false,           // real opening hours say shut on the plan's day
+        public bool $hoursAssumed = false,          // opens/closes are category defaults, not verified hours
     ) {}
 
     public function isFixedTime(): bool

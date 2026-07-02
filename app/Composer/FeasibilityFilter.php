@@ -68,8 +68,9 @@ class FeasibilityFilter
             return false;
         }
 
-        // A day with kids never routes through a bar.
-        if ($constraints->companions === 'kids' && $candidate->category === 'bar') {
+        // A day with kids never routes through a bar or a coworking space.
+        if ($constraints->companions === 'kids'
+            && in_array($candidate->category, ['bar', 'coworking'], true)) {
             return false;
         }
 

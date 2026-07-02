@@ -41,7 +41,9 @@ class PlanNarrator
                 : "🚶 {$slot->travelMinFromPrevious} min away";
         }
 
-        if ($candidate->closesAt !== null) {
+        // Only verified opening hours are stated as fact — assumed category
+        // defaults shape the plan but are never claimed to the user.
+        if ($candidate->closesAt !== null && ! $candidate->hoursAssumed) {
             $parts[] = 'open till '.$candidate->closesAt->format('H:i');
         }
 

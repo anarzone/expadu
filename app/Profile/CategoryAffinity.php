@@ -21,6 +21,9 @@ class CategoryAffinity
 
     public const KID_UNFRIENDLY = ['bar', 'coworking', 'cafe'];
 
+    /** Where a day WITH the kids actually leads — stronger than merely kid-compatible. */
+    public const KID_STRONG = ['playground', 'zoo', 'park', 'swimming', 'lake'];
+
     /** Landmarks worth knowing when you've just arrived. */
     public const LANDMARK = ['attraction', 'viewpoint', 'museum', 'park', 'zoo'];
 
@@ -95,6 +98,30 @@ class CategoryAffinity
             if (($map[$category] ?? self::NEUTRAL) > self::DEMOTE) {
                 $map[$category] = self::STRONG;
             }
+        }
+
+        return $map;
+    }
+
+    /**
+     * An explicit "with the kids" day overrides whatever the situation implied:
+     * playgrounds/zoos/parks lead, kid-compatible stays fine, kid-unfriendly is
+     * floored. Applied on top of map() when the composer's companions=kids —
+     * the PROFILE may have no children, but today's plan does.
+     *
+     * @param  array<string, float>  $map
+     * @return array<string, float>
+     */
+    public static function withKids(array $map): array
+    {
+        foreach (self::KID_FRIENDLY as $category) {
+            $map[$category] = max($map[$category] ?? self::NEUTRAL, self::BOOST);
+        }
+        foreach (self::KID_STRONG as $category) {
+            $map[$category] = max($map[$category] ?? self::NEUTRAL, self::STRONG);
+        }
+        foreach (self::KID_UNFRIENDLY as $category) {
+            $map[$category] = self::DEMOTE;
         }
 
         return $map;

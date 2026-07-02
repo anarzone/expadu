@@ -116,7 +116,7 @@ class SlotFiller
         //    it, with Balanced — one permissive role that fills the window — the
         //    default greedy behaviour.
         $archetype = $constraints->archetype ?? Archetype::forVibe($constraints->vibe) ?? Archetype::Balanced;
-        $roleList = $roles ?? $archetype->roles();
+        $roleList = $roles ?? $archetype->roles($constraints->windowMinutes());
         $targetVeedel = $roles === null && $archetype->singleVeedel() ? ($context->preferredAreas[0] ?? null) : null;
 
         $beforeRoles = count($slots);

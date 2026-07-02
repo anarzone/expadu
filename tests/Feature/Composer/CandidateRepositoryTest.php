@@ -70,9 +70,12 @@ test('a raw-string opening_hours does not break the candidate pool', function ()
     $candidates = app(CandidateRepository::class)->candidatesFor(mondayWindow());
     $cand = collect($candidates)->firstWhere('name', 'Scraped Bistro');
 
+    // Unparseable hours fall back to the category's typical hours, marked
+    // assumed — never claimed to the user, never a fatal.
     expect($cand)->not->toBeNull();
-    expect($cand->opensAt)->toBeNull();
-    expect($cand->closesAt)->toBeNull();
+    expect($cand->hoursAssumed)->toBeTrue();
+    expect($cand->opensAt?->format('H:i'))->toBe('11:30');
+    expect($cand->closesAt?->format('H:i'))->toBe('23:00');
     expect($cand->closedToday)->toBeFalse();
 });
 
