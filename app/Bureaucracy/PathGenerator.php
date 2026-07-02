@@ -4,6 +4,7 @@ namespace App\Bureaucracy;
 
 use App\Models\Task;
 use App\Models\User;
+use App\Models\UserTask;
 use App\Profile\Applicability;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
@@ -30,10 +31,24 @@ class PathGenerator
 
         $existing = $user->userTasks()->pluck('task_id')->all();
 
-        $this->publishedTasks()
+        $missing = $this->publishedTasks()
             ->reject(fn (Task $task) => in_array($task->id, $existing, true))
-            ->filter(fn (Task $task) => $this->applicability($task, $profile) === Applicability::Yes)
-            ->each(fn (Task $task) => $user->userTasks()->create(['task_id' => $task->id]));
+            ->filter(fn (Task $task) => $this->applicability($task, $profile) === Applicability::Yes);
+
+        // One batched INSERT, not one query per task — a fresh onboarding
+        // materialises dozens of rows on its very first page load. Every other
+        // user_tasks column carries a DB default or is nullable.
+        if ($missing->isNotEmpty()) {
+            $now = now();
+            UserTask::query()->insert(
+                $missing->map(fn (Task $task) => [
+                    'user_id' => $user->id,
+                    'task_id' => $task->id,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all(),
+            );
+        }
 
         return $profile;
     }

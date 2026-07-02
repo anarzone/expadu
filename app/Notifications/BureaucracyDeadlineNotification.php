@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -18,6 +19,7 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
         public int $daysRemaining,
         public string $deadline,
         public ?int $taskId = null,
+        public ?string $appointmentAt = null, // ISO — set when the deadline IS a booked appointment
     ) {}
 
     /**
@@ -68,12 +70,25 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
         return match ($this->tier) {
             'overdue' => 'Overdue: '.$this->taskTitle,
             'critical' => 'Deadline approaching: '.$this->taskTitle,
+            'appointment_today' => 'Appointment today: '.$this->taskTitle,
+            'appointment_tomorrow' => 'Appointment tomorrow: '.$this->taskTitle,
+            'appointment_soon' => 'Appointment coming up: '.$this->taskTitle,
             default => 'Reminder: '.$this->taskTitle,
         };
     }
 
     private function body(): string
     {
+        if ($this->appointmentAt !== null) {
+            $at = Carbon::parse($this->appointmentAt);
+
+            return match ($this->tier) {
+                'appointment_today' => 'Today at '.$at->format('H:i').'. Have your documents ready — the checklist has the list.',
+                'appointment_tomorrow' => 'Tomorrow at '.$at->format('H:i').'. Lay out the documents tonight.',
+                default => $at->format('l j M').' at '.$at->format('H:i').'. Time to gather the documents.',
+            };
+        }
+
         if ($this->tier === 'overdue') {
             $days = abs($this->daysRemaining);
 

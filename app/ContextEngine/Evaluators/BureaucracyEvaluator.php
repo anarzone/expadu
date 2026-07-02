@@ -45,13 +45,19 @@ class BureaucracyEvaluator
             return;
         }
 
-        $deadline = $task->computeDeadlineFor($user);
+        // A booked appointment IS the deadline (absolute_deadline prefers it):
+        // someone who booked for the 28th must not be nagged "overdue!" off the
+        // rule-based date, and DOES deserve day-before/day-of reminders.
+        $appointment = $userTask->appointment_at;
+        $deadline = $userTask->absolute_deadline;
         if (! $deadline) {
             return;
         }
 
         $daysRemaining = (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false);
-        $tier = $this->classifyTier($daysRemaining);
+        $tier = $appointment !== null
+            ? $this->classifyAppointmentTier($daysRemaining)
+            : $this->classifyTier($daysRemaining);
         if ($tier === null) {
             return;
         }
@@ -87,6 +93,7 @@ class BureaucracyEvaluator
                 'days_remaining' => $daysRemaining,
                 'tier' => $tier,
                 'deadline' => $deadline->toDateString(),
+                'appointment_at' => $appointment?->toIso8601String(),
                 'booking_service_key' => $task->booking_service_key,
             ],
             createdAt: CarbonImmutable::now(),
@@ -115,14 +122,31 @@ class BureaucracyEvaluator
     }
 
     /**
+     * A booked appointment gets its own arc — a "coming up" nudge, a
+     * day-before reminder, a day-of reminder — and goes SILENT once the slot
+     * has passed (nagging "overdue" about an appointment already attended, or
+     * missed, helps no one; the checklist still shows the loose end).
+     */
+    private function classifyAppointmentTier(int $daysRemaining): ?string
+    {
+        return match (true) {
+            $daysRemaining < 0 => null,
+            $daysRemaining === 0 => 'appointment_today',
+            $daysRemaining === 1 => 'appointment_tomorrow',
+            $daysRemaining <= 7 => 'appointment_soon',
+            default => null,
+        };
+    }
+
+    /**
      * @return array{0: string, 1: CarbonInterface}
      */
     private function tierMeta(string $tier, CarbonInterface $deadline): array
     {
         return match ($tier) {
             'overdue' => ['critical', now()->addDays(7)],
-            'critical' => ['critical', $deadline],
-            'urgent' => ['major', $deadline],
+            'critical', 'appointment_today' => ['critical', $deadline->copy()->endOfDay()],
+            'urgent', 'appointment_tomorrow' => ['major', $deadline],
             default => ['moderate', $deadline],
         };
     }
