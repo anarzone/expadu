@@ -388,22 +388,44 @@ function makeUserDot(): HTMLElement {
     return el;
 }
 
-/** Build a teardrop pin element (rotated square + counter-rotated emoji). */
+/**
+ * Build a teardrop pin. MapLibre positions a marker by rewriting the element's
+ * own `transform` on every frame, so the element it owns — the OUTER wrapper
+ * here — must carry no transform and no transform transition; otherwise each
+ * pan frame animates and the pin visibly slides/lags behind the map. The
+ * rotated teardrop and its counter-rotated emoji live on an inner child that
+ * MapLibre never touches.
+ */
 function makePin(emoji: string, label: string): HTMLElement {
     const el = document.createElement('div');
     el.setAttribute('role', 'button');
     el.setAttribute('tabindex', '0');
     el.setAttribute('aria-label', label);
-    el.innerHTML = `<span>${emoji}</span>`;
+    el.style.cssText = 'cursor:pointer;will-change:transform';
+
+    const teardrop = document.createElement('div');
+    teardrop.innerHTML = `<span>${emoji}</span>`;
+    el.appendChild(teardrop);
+
     stylePin(el, false);
 
     return el;
 }
 
-/** Apply default or selected styling to a pin (themed via CSS vars). */
+/**
+ * Style a pin's inner teardrop (themed via CSS vars). Nothing here touches the
+ * outer element's transform — that is MapLibre's, for positioning — so only the
+ * selected pin's stacking is set on the outer element.
+ */
 function stylePin(el: HTMLElement, isSelected: boolean): void {
+    const teardrop = el.firstElementChild as HTMLElement | null;
+
+    if (!teardrop) {
+        return;
+    }
+
     const size = isSelected ? 40 : 34;
-    el.style.cssText = [
+    teardrop.style.cssText = [
         `width:${size}px`,
         `height:${size}px`,
         'border-radius:100px 100px 100px 2px',
@@ -411,15 +433,18 @@ function stylePin(el: HTMLElement, isSelected: boolean): void {
         `background:${isSelected ? 'var(--accent)' : 'var(--card)'}`,
         'border:1.5px solid var(--accent)',
         'box-shadow:0 2px 6px rgba(24,23,15,.18)',
-        'cursor:pointer',
         'display:flex',
         'align-items:center',
         'justify-content:center',
-        `z-index:${isSelected ? 3 : 1}`,
-        'transition:transform .12s, background .12s, width .12s, height .12s',
+        // Only the selection change animates — never a positional transform
+        // (that lives on the MapLibre-owned outer element; transitioning it is
+        // what made pins slide while panning).
+        'transition:background .12s, width .12s, height .12s',
     ].join(';');
 
-    const span = el.firstElementChild as HTMLElement | null;
+    el.style.zIndex = isSelected ? '3' : '1';
+
+    const span = teardrop.firstElementChild as HTMLElement | null;
 
     if (span) {
         span.style.cssText = [
