@@ -42,6 +42,20 @@ class TransitousAdapter implements RouteService
     ];
 
     /**
+     * Rail plus the street-level modes that reach it (tram/subway/walk) — but
+     * NO bus. Used for the "rail rescue" re-plan: a competitive S-Bahn route is
+     * often pruned because a bus stops a little nearer the door and so arrives
+     * a minute sooner; dropping buses lets the S-Bahn + short walk surface.
+     */
+    private const RAIL_FIRST_MODES = 'TRAM,SUBWAY,METRO,RAIL,REGIONAL_RAIL,REGIONAL_FAST_RAIL,HIGHSPEED_RAIL,LONG_DISTANCE,NIGHT_RAIL,FERRY';
+
+    /**
+     * Only attempt the rail rescue on trips long enough for rail to plausibly
+     * help — short hops never benefit and shouldn't pay for the extra call.
+     */
+    private const RAIL_RESCUE_MIN_METRES = 2500;
+
+    /**
      * Per-call HTTP timeout, in seconds, for the plan endpoint. The failover
      * tightens this to fit its remaining wall-clock budget (see
      * {@see FailoverRouteService}); on its own the adapter uses a generous
@@ -72,6 +86,34 @@ class TransitousAdapter implements RouteService
                 } catch (\Throwable) {
                     // Best effort — a via that yields nothing must not fail the plan.
                 }
+            }
+        }
+
+        // Rail rescue: when the set has no *simple* rail option on a trip long
+        // enough for it to matter, MOTIS has likely pruned a competitive S-Bahn
+        // one (out-arrived by a bus that stops nearer the door, or buried under
+        // a 3-change bus+rail combo). Re-plan without buses so the S-Bahn + short
+        // walk surfaces, keeping only the journeys that actually ride rail.
+        // Best-effort: a failure leaves the set as-is.
+        if (! $this->hasEasyRail($itineraries) && $this->metresBetween($from, $to) >= self::RAIL_RESCUE_MIN_METRES) {
+            try {
+                $railItineraries = $this->fetchBucket(
+                    $from, $to, $departAt, 3,
+                    $timeExtra + [
+                        'transitModes' => self::RAIL_FIRST_MODES,
+                        'maxPreTransitTime' => 1200,
+                        'maxPostTransitTime' => 1200,
+                    ],
+                    'itineraries', min($this->planTimeout, 4.0),
+                );
+
+                foreach ($railItineraries as $journey) {
+                    if ($this->ridesRail($journey)) {
+                        $itineraries[] = $journey;
+                    }
+                }
+            } catch (\Throwable) {
+                // The primary plan stands on its own.
             }
         }
 
@@ -212,6 +254,48 @@ class TransitousAdapter implements RouteService
             ->take(6)
             ->values()
             ->all();
+    }
+
+    /**
+     * True when a journey already rides rail with at most one change — a
+     * "good enough" S-Bahn option, so the rescue re-plan isn't worth its call.
+     * A rail leg buried under a 3-change bus combo doesn't count.
+     *
+     * @param  list<Journey>  $journeys
+     */
+    private function hasEasyRail(array $journeys): bool
+    {
+        foreach ($journeys as $journey) {
+            if ($this->ridesRail($journey) && $journey->transfers <= 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** True when the journey has at least one rail leg. */
+    private function ridesRail(Journey $journey): bool
+    {
+        foreach ($journey->legs as $leg) {
+            if ($leg->mode === 'rail') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Great-circle distance between two points, in metres (haversine). */
+    private function metresBetween(GeoPoint $a, GeoPoint $b): float
+    {
+        $earth = 6371000.0;
+        $dLat = deg2rad($b->lat - $a->lat);
+        $dLng = deg2rad($b->lng - $a->lng);
+        $h = sin($dLat / 2) ** 2
+            + cos(deg2rad($a->lat)) * cos(deg2rad($b->lat)) * sin($dLng / 2) ** 2;
+
+        return $earth * 2 * asin(min(1.0, sqrt($h)));
     }
 
     /**
@@ -469,9 +553,13 @@ class TransitousAdapter implements RouteService
             return null;
         }
 
-        $routeColor = (string) ($rawLeg['routeColor'] ?? '');
-        if ($routeColor !== '') {
-            return '#'.ltrim($routeColor, '#');
+        $routeColor = strtoupper(ltrim((string) ($rawLeg['routeColor'] ?? ''), '#'));
+
+        // VRS uses 000000 as an "unset" sentinel for most lines (all S-Bahn,
+        // many buses), which would paint them flat black — treat it as no
+        // colour so the branded fallback (S-Bahn green, tram hues) wins.
+        if ($routeColor !== '' && $routeColor !== '000000') {
+            return '#'.$routeColor;
         }
 
         return KvbLineColors::for((string) ($rawLeg['routeShortName'] ?? ''), $mode);

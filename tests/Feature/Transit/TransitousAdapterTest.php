@@ -203,3 +203,100 @@ test('plan throws on http error so the failover can catch it', function () {
 
     (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.92), new GeoPoint(50.94, 6.96));
 })->throws(RequestException::class);
+
+/** A leg factory for the rail-rescue / colour tests. */
+function fakeLeg(string $mode, array $extra = []): array
+{
+    return array_merge([
+        'mode' => $mode,
+        'from' => ['name' => 'A', 'lat' => 50.95, 'lon' => 6.90],
+        'to' => ['name' => 'B', 'lat' => 50.98, 'lon' => 6.95],
+        'startTime' => '2026-07-06T07:00:00Z',
+        'endTime' => '2026-07-06T07:20:00Z',
+        'duration' => 1200,
+    ], $extra);
+}
+
+function fakeItinerary(array $legs, int $transfers, int $durationSec): array
+{
+    return [
+        'startTime' => '2026-07-06T07:00:00Z',
+        'endTime' => '2026-07-06T07:00:00Z',
+        'duration' => $durationSec,
+        'transfers' => $transfers,
+        'legs' => $legs,
+    ];
+}
+
+test('re-plans without buses to surface a competitive S-Bahn route the primary set pruned', function () {
+    // Primary set: a tram+bus route, no rail. The rescue call (transitModes,
+    // no bus) answers with the pruned tram→S-Bahn option.
+    $busOnly = ['itineraries' => [fakeItinerary(
+        [fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('BUS', ['routeShortName' => '140'])],
+        1, 3540,
+    )]];
+    $railRescue = ['itineraries' => [fakeItinerary(
+        [fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'S19'])],
+        1, 3600,
+    )]];
+
+    Http::fake(fn ($request) => str_contains(urldecode($request->url()), 'transitModes=')
+        ? Http::response($railRescue)
+        : Http::response($busOnly));
+
+    // ~4.8 km apart — far enough that the rail rescue is worth a call.
+    $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
+
+    $lines = collect($result->journeys)->flatMap(fn ($j) => $j->lines())->all();
+    expect($lines)->toContain('S19');
+
+    // The rescue call dropped buses and widened the access/egress walk.
+    Http::assertSent(fn ($r) => str_contains(urldecode($r->url()), 'transitModes=')
+        && ! str_contains(urldecode($r->url()), 'BUS')
+        && str_contains($r->url(), 'maxPostTransitTime'));
+});
+
+test('does not re-plan without buses when a simple rail option already exists', function () {
+    $withRail = ['itineraries' => [fakeItinerary(
+        [fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'S19'])],
+        1, 3600,
+    )]];
+
+    Http::fake(['api.transitous.org/*' => Http::response($withRail)]);
+
+    (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
+
+    Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'transitModes='));
+});
+
+test('does not attempt the rail rescue on short trips', function () {
+    Http::fake(['api.transitous.org/*' => Http::response(['itineraries' => [fakeItinerary(
+        [fakeLeg('TRAM', ['routeShortName' => '12'])], 0, 900,
+    )]])]);
+
+    // ~250 m apart — below the rescue distance floor.
+    (new TransitousAdapter)->plan(new GeoPoint(50.9500, 6.9500), new GeoPoint(50.9520, 6.9515));
+
+    Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'transitModes='));
+});
+
+test('a black feed colour falls back to the branded S-Bahn green', function () {
+    Http::fake(['api.transitous.org/*' => Http::response(['itineraries' => [fakeItinerary(
+        [
+            fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'S19', 'routeColor' => '000000']),
+            fakeLeg('TRAM', ['routeShortName' => '1', 'routeColor' => 'E2001A']),
+        ],
+        1, 1800,
+    )]])]);
+
+    // Short trip + a simple rail option → no rescue; just exercise colour mapping.
+    $legs = (new TransitousAdapter)->plan(new GeoPoint(50.9500, 6.9500), new GeoPoint(50.9520, 6.9515))
+        ->journeys[0]->legs;
+
+    $rail = collect($legs)->firstWhere('mode', 'rail');
+    $tram = collect($legs)->firstWhere('mode', 'tram');
+
+    // 000000 is treated as "unset" → S-Bahn green; a real colour passes through.
+    expect($rail->lineColor)->toBe('#008D4B');
+    expect($tram->lineColor)->toBe('#E2001A');
+});

@@ -15,6 +15,12 @@ final class KvbLineColors
 
     private const BUS = '#4A4A4A';
 
+    /** DB S-Bahn green — the S6/S11/S19… identity riders recognise. */
+    private const SBAHN = '#008D4B';
+
+    /** Regionalbahn / RegionalExpress (RB, RE, RRX) — a neutral rail slate. */
+    private const REGIONAL = '#455A6B';
+
     /** Approximate KVB tram line colours — refined by GTFS route_color later. */
     private const TRAM = [
         '1' => '#E2001A',
@@ -37,6 +43,16 @@ final class KvbLineColors
 
         if (isset(self::TRAM[$line])) {
             return self::TRAM[$line];
+        }
+
+        // S-Bahn keeps its green identity (S6, S11, S19 — "S" + a digit, so
+        // SchnellBus "SB40" doesn't match). Regional trains get a rail slate.
+        if (preg_match('/^S\d/', $line)) {
+            return self::SBAHN;
+        }
+
+        if (preg_match('/^(RB|RE|RRX|MRB)/i', $line)) {
+            return self::REGIONAL;
         }
 
         // Night buses (N…) and numbered bus lines.
