@@ -117,6 +117,22 @@ const FILTERS = [
 
 type FilterKey = (typeof FILTERS)[number]['key'];
 
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTES = [
+    '00',
+    '05',
+    '10',
+    '15',
+    '20',
+    '25',
+    '30',
+    '35',
+    '40',
+    '45',
+    '50',
+    '55',
+];
+
 /** Transit modes offered as avoid/allow toggles, in display order. */
 const MODE_ORDER = [
     { key: 'tram', label: 'Tram' },
@@ -858,10 +874,12 @@ export function JourneyPlanner({
     const [timeMode, setTimeMode] = useState<'now' | 'depart' | 'arrive'>(
         'now',
     );
-    // Day chip (0 = today, 1 = tomorrow) + a HH:MM time, assembled into the
-    // depart_at the server plans against.
+    // Day chip (0 = today, 1 = tomorrow) + hour/minute selects, assembled into
+    // the depart_at the server plans against. Selects (not a native time input)
+    // so entry is reliable on every browser.
     const [dayOffset, setDayOffset] = useState(0);
-    const [timeOfDay, setTimeOfDay] = useState('');
+    const [hh, setHh] = useState('');
+    const [mm, setMm] = useState('00');
     // Client-side mode filter — hide options that ride an excluded mode.
     const [excludedModes, setExcludedModes] = useState<Set<string>>(new Set());
     // "Show more options" — server also routes via interchanges for extra
@@ -873,7 +891,7 @@ export function JourneyPlanner({
     // picked — selecting "Arrive by" with no time would mean "arrive by now"
     // and drop every future option.
     const timeQuery = useMemo(() => {
-        if (timeMode === 'now' || !timeOfDay) {
+        if (timeMode === 'now' || hh === '') {
             return '';
         }
 
@@ -881,8 +899,8 @@ export function JourneyPlanner({
         d.setDate(d.getDate() + dayOffset);
         const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        return `${ymd}T${timeOfDay}`;
-    }, [timeMode, dayOffset, timeOfDay]);
+        return `${ymd}T${hh}:${mm}`;
+    }, [timeMode, dayOffset, hh, mm]);
     const arriveBy = timeMode === 'arrive' && timeQuery !== '';
 
     // The planner is re-mounted per destination (keyed in the page), so state
@@ -1252,13 +1270,46 @@ export function JourneyPlanner({
                                 {label}
                             </button>
                         ))}
-                        <input
-                            type="time"
-                            value={timeOfDay}
-                            onChange={(e) => setTimeOfDay(e.target.value)}
-                            aria-label="Time"
-                            className="rounded-full border border-border bg-card px-3.5 py-1.5 text-[12.5px] font-semibold text-foreground [color-scheme:light] focus:border-primary focus:outline-none"
-                        />
+                        <span className="relative">
+                            <select
+                                value={hh}
+                                onChange={(e) => setHh(e.target.value)}
+                                aria-label="Hour"
+                                className="cursor-pointer appearance-none rounded-full border border-border bg-card py-1.5 pr-7 pl-3.5 text-[12.5px] font-semibold text-foreground focus:border-primary focus:outline-none"
+                            >
+                                <option value="">Hour</option>
+                                {HOURS.map((h) => (
+                                    <option key={h} value={h}>
+                                        {h}
+                                    </option>
+                                ))}
+                            </select>
+                            <IconChevronDown
+                                size={13}
+                                stroke={ICON_STROKE}
+                                className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-text-3"
+                            />
+                        </span>
+                        <span className="text-text-3">:</span>
+                        <span className="relative">
+                            <select
+                                value={mm}
+                                onChange={(e) => setMm(e.target.value)}
+                                aria-label="Minute"
+                                className="cursor-pointer appearance-none rounded-full border border-border bg-card py-1.5 pr-7 pl-3.5 text-[12.5px] font-semibold text-foreground focus:border-primary focus:outline-none"
+                            >
+                                {MINUTES.map((m) => (
+                                    <option key={m} value={m}>
+                                        {m}
+                                    </option>
+                                ))}
+                            </select>
+                            <IconChevronDown
+                                size={13}
+                                stroke={ICON_STROKE}
+                                className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-text-3"
+                            />
+                        </span>
                     </div>
                 )}
             </div>

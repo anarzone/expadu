@@ -690,20 +690,88 @@ function JourneyEntryCard({
     );
 }
 
+/** The open plan encoded as URL query params (refresh-safe, shareable). */
+function destinationToParams(d: Destination): Record<string, string> {
+    const p: Record<string, string> = {
+        to_name: d.name,
+        to_lat: String(d.lat),
+        to_lng: String(d.lng),
+    };
+
+    if (d.fromLat != null && d.fromLng != null) {
+        p.from_lat = String(d.fromLat);
+        p.from_lng = String(d.fromLng);
+
+        if (d.fromName) {
+            p.from_name = d.fromName;
+        }
+    }
+
+    return p;
+}
+
+/** Restore an open plan from the URL on load — null when there's no plan. */
+function parseDestinationFromUrl(url: string): Destination | null {
+    const q = new URLSearchParams(url.split('?')[1] ?? '');
+    const lat = q.get('to_lat');
+    const lng = q.get('to_lng');
+    const name = q.get('to_name');
+
+    if (!lat || !lng || !name) {
+        return null;
+    }
+
+    const dest: Destination = { name, lat: Number(lat), lng: Number(lng) };
+    const fromLat = q.get('from_lat');
+    const fromLng = q.get('from_lng');
+
+    if (fromLat && fromLng) {
+        dest.fromLat = Number(fromLat);
+        dest.fromLng = Number(fromLng);
+        dest.fromName = q.get('from_name') ?? undefined;
+    }
+
+    return dest;
+}
+
 export default function Timetable() {
+    const page = usePage<{
+        boards?: Boards;
+        savedPlaces?: SavedPlace[];
+        recentDestinations?: RecentDestination[];
+        activeDisruptions?: DisruptionItem[];
+    }>();
     const {
         boards,
         savedPlaces = [],
         recentDestinations = [],
         activeDisruptions = [],
-    } = usePage<{
-        boards?: Boards;
-        savedPlaces?: SavedPlace[];
-        recentDestinations?: RecentDestination[];
-        activeDisruptions?: DisruptionItem[];
-    }>().props;
+    } = page.props;
     const [mode, setMode] = useState<Mode>('all');
-    const [destination, setDestination] = useState<Destination | null>(null);
+    // The open plan lives in the URL, so it survives a refresh and is shareable.
+    const [destination, setDestination] = useState<Destination | null>(() =>
+        parseDestinationFromUrl(page.url),
+    );
+    const destSynced = useRef(false);
+
+    // Reflect the open plan into the URL (replace, no server round-trip) so a
+    // refresh restores it; clearing it returns to the plain board URL.
+    useEffect(() => {
+        if (!destSynced.current) {
+            destSynced.current = true;
+
+            return;
+        }
+
+        const search = destination
+            ? `?${new URLSearchParams(destinationToParams(destination))}`
+            : '';
+        window.history.replaceState(
+            window.history.state,
+            '',
+            `/timetable${search}`,
+        );
+    }, [destination]);
     // An explicitly chosen From (via the board's origin field); null = live location.
     const [origin, setOrigin] = useState<Origin>(null);
     const [planning, setPlanning] = useState(false);
