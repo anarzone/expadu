@@ -778,9 +778,12 @@ function RouteDetail({
                 </span>
             </div>
 
-            {/* Live NEXT banner */}
+            {/* Live NEXT banner — a dark "ink" hero. The foreground/background
+                tokens flip per theme, so pin it dark in dark mode too (an
+                elevated surface + light text) instead of inverting to a glaring
+                light block. */}
             <div
-                className="relative mb-2 overflow-hidden rounded-2xl bg-foreground px-5 py-[18px] text-background transition-shadow"
+                className="relative mb-2 overflow-hidden rounded-2xl border border-transparent bg-foreground px-5 py-[18px] text-background transition-shadow dark:border-border dark:bg-secondary dark:text-foreground"
                 style={{
                     boxShadow: getOffNext
                         ? '0 0 0 2px #ffc24d, 0 10px 30px rgba(20,16,8,.28)'

@@ -22,7 +22,7 @@ export function TripBanner() {
         <button
             type="button"
             onClick={() => router.visit('/timetable')}
-            className="group flex w-full items-center gap-3 border-b border-black/10 bg-foreground px-4 py-2.5 text-left text-background md:px-6"
+            className="group flex w-full items-center gap-3 border-b border-black/10 bg-foreground px-4 py-2.5 text-left text-background md:px-6 dark:border-border dark:bg-secondary dark:text-foreground"
         >
             <span className="relative flex size-2.5 shrink-0">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-cyan opacity-60" />
