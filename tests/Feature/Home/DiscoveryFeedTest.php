@@ -57,6 +57,41 @@ test('discovery rails rank spots and split home area from new areas', function (
     expect(collect($new['cards'])->pluck('veedel'))->not->toContain('Ehrenfeld');
 });
 
+test('the home rail keeps "in your area" honest — a same-area spot beyond the radius is dropped', function () {
+    $user = feedUser(); // veedel Ehrenfeld
+
+    // A cluster right by the origin, plus ONE spot ~5km east but still in the
+    // same home Veedel (so it passes the membership filter). homeAreas is the
+    // whole Bezirk, so without a distance bound the far spot would wear an
+    // "in your area" badge — the exact bug reported on staging (spots 10km+
+    // away under "Around Merkenich").
+    foreach (range(1, 4) as $i) {
+        Spot::factory()->create(['name' => "Near Park {$i}", 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9500, 'lng' => 6.9200]);
+        Spot::factory()->create(['name' => "Near Play {$i}", 'category' => 'playground', 'veedel' => 'Ehrenfeld', 'lat' => 50.9500, 'lng' => 6.9200]);
+    }
+    Spot::factory()->create(['name' => 'Far Park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9500, 'lng' => 6.9900]); // ~4.9km east
+
+    $rails = collect(app(DiscoveryFeed::class)->for(homeContext($user, [
+        'originLat' => 50.9500,
+        'originLng' => 6.9200,
+    ])));
+
+    $home = $rails->firstWhere('key', 'around_home');
+    expect($home)->not->toBeNull();
+
+    $km = fn (float $lat, float $lng): float => 6371.0 * 2 * asin(min(1.0, sqrt(
+        sin(deg2rad($lat - 50.9500) / 2) ** 2
+        + cos(deg2rad(50.9500)) * cos(deg2rad($lat)) * sin(deg2rad($lng - 6.9200) / 2) ** 2
+    )));
+
+    // Every "in your area" card is genuinely within the neighbourhood radius…
+    foreach ($home['cards'] as $card) {
+        expect($km($card['lat'], $card['lng']))->toBeLessThanOrEqual(2.5);
+    }
+    // …and the ~5km spot never appears there, despite sharing the home Veedel.
+    expect(collect($home['cards'])->pluck('name'))->not->toContain('Far Park');
+});
+
 test('with a known origin, the feed ranks a nearby spot above an equally appealing far one', function () {
     $user = feedUser();
     // Two parks of identical category/appeal; one next door, one across the city.

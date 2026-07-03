@@ -41,6 +41,17 @@ class DiscoveryFeed
     private const CAP_PER_CATEGORY = 2;
 
     /**
+     * "Your home area" must read as genuinely nearby. We derive homeAreas from
+     * the whole administrative Bezirk (≈12 Stadtteile, ~14km across in
+     * Chorweiler), so membership alone let spots 10km+ away wear an "in your
+     * area" badge. Bound the home rail to a neighbourhood radius of the origin
+     * (≈30 min on foot at the edge, most cards far closer since it's
+     * nearest-first). Staging: 103 home-area spots fall inside this radius of
+     * Merkenich, so the rail still fills comfortably.
+     */
+    private const HOME_RADIUS_KM = 2.5;
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function for(HomeContext $context): array
@@ -98,7 +109,7 @@ class DiscoveryFeed
                 : null,
             $this->situationRail($scored, $profile, $rain, $shown),
             $this->tonightRail($context),
-            $this->homeRail($scored, $homeAreas, $profile->veedel, $rain, $shown),
+            $this->homeRail($scored, $homeAreas, $profile->veedel, $rain, $shown, $originLat, $originLng),
             $this->newRail($scored, $homeAreas, $rain, $shown),
             $this->paperworkRail($context),
         ]));
@@ -161,9 +172,30 @@ class DiscoveryFeed
      * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
      * @param  array<int, true>  $shown  spot ids already placed in earlier rails
      */
-    private function homeRail(Collection $scored, array $homeAreas, ?string $veedel, bool $rain, array &$shown): ?array
+    private function homeRail(Collection $scored, array $homeAreas, ?string $veedel, bool $rain, array &$shown, ?float $originLat, ?float $originLng): ?array
     {
         $home = $scored->filter(fn ($x) => in_array($x['spot']->veedel, $homeAreas, true));
+
+        // Bound to a neighbourhood radius of the origin — the SAME anchor the
+        // card "min away" is measured from — so an "in your area" badge and the
+        // travel figure can never contradict each other, and re-order
+        // nearest-first so the closest spots lead. With no known origin we can't
+        // measure distance (and travel_min is null too, so no number shows) —
+        // fall back to plain membership.
+        if ($originLat !== null && $originLng !== null) {
+            $home = $home
+                ->map(function (array $x) use ($originLat, $originLng): array {
+                    $x['km'] = ($x['spot']->lat === null || $x['spot']->lng === null)
+                        ? INF
+                        : $this->kmBetween($originLat, $originLng, (float) $x['spot']->lat, (float) $x['spot']->lng);
+
+                    return $x;
+                })
+                ->filter(fn (array $x) => $x['km'] <= self::HOME_RADIUS_KM)
+                ->sortBy('km')
+                ->values();
+        }
+
         if ($home->isEmpty()) {
             return null;
         }
