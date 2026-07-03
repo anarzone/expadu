@@ -72,7 +72,11 @@ class TakeMeThereController extends Controller
             JourneyRecent::record($user->id, 'origin', $validated['from_name'], $from->lat, $from->lng);
         }
 
-        $result = $routes->plan($from, $to);
+        // Ask for a wide Pareto set (arrival × changes × walking) so the list
+        // can show the real spread of alternatives — direct-ish with a longer
+        // walk vs. an extra change with less — not just the top few. pruneAbsurd
+        // still drops night-gap junk; the client sorts/filters the rest.
+        $result = $routes->plan($from, $to, null, 10);
 
         // Journey-aware Rheinlandtarif advice for the transit option (walk/bike
         // options are free and carry no ticket). Computed for the first transit

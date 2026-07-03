@@ -90,13 +90,23 @@ function minBy<T>(items: T[], score: (item: T) => number): T {
     );
 }
 
-/** Per-card presentation derived deterministically from the Pareto set. */
-type RouteMeta = {
-    label: string | null;
+/** A route plus the facts the list needs to sort, filter and badge it. */
+type RouteItem = {
+    journey: Journey;
     walkMin: number;
     disrupted: boolean;
-    best: boolean;
 };
+
+/** Sort/filter chips over the option list — deterministic, no re-query. */
+const FILTERS = [
+    { key: 'best', label: 'Best' },
+    { key: 'fastest', label: 'Fastest' },
+    { key: 'fewest', label: 'Fewest changes' },
+    { key: 'direct', label: 'Direct' },
+    { key: 'leastwalk', label: 'Least walking' },
+] as const;
+
+type FilterKey = (typeof FILTERS)[number]['key'];
 
 /** A row of compact leg chips — walk minutes, line badges, change markers. */
 function LegChips({ legs }: { legs: JourneyLeg[] }) {
@@ -824,7 +834,8 @@ export function JourneyPlanner({
 }) {
     const [data, setData] = useState<JourneyResponse | null>(null);
     const [error, setError] = useState(false);
-    const [selected, setSelected] = useState<number | null>(null);
+    const [selected, setSelected] = useState<Journey | null>(null);
+    const [filter, setFilter] = useState<FilterKey>('best');
 
     // The planner is re-mounted per destination (keyed in the page), so state
     // starts fresh on each new destination — the effect only fetches.
@@ -875,28 +886,32 @@ export function JourneyPlanner({
     // We label those trade-offs deterministically — one balanced "Best" plus
     // the extremes that beat it on a dimension — and lead with Best, like the
     // best transit apps, instead of a departure-ordered soup of "Alternatives".
-    const { ordered, meta } = useMemo<{
-        ordered: Journey[];
-        meta: RouteMeta[];
-    }>(() => {
+    // The full labelled list, best-first — no cap, so every Pareto trade-off
+    // (direct-with-a-longer-walk vs. an-extra-change-with-less) is available;
+    // the filter chips sort/subset it below.
+    const items = useMemo<RouteItem[]>(() => {
         const list = data?.journeys ?? [];
         const disruptions = data?.disruptions ?? [];
         const transit = list.filter((j) => j.mode === 'transit');
         const direct = list
             .filter((j) => j.mode !== 'transit')
             .sort((a, b) => a.duration_min - b.duration_min)
-            .slice(0, 1);
+            .slice(0, 2);
+
+        const toItem = (j: Journey): RouteItem => ({
+            journey: j,
+            walkMin:
+                j.mode === 'transit'
+                    ? walkMinutes(j)
+                    : j.mode === 'bike'
+                      ? 0
+                      : j.duration_min,
+            disrupted:
+                j.mode === 'transit' ? isDisrupted(j, disruptions) : false,
+        });
 
         if (transit.length === 0) {
-            return {
-                ordered: direct,
-                meta: direct.map((j) => ({
-                    label: j.mode === 'bike' ? 'By bike' : 'On foot',
-                    walkMin: j.mode === 'bike' ? 0 : j.duration_min,
-                    disrupted: false,
-                    best: false,
-                })),
-            };
+            return direct.map(toItem);
         }
 
         const arriveMs = (j: Journey) => Date.parse(j.arrive_at);
@@ -909,55 +924,52 @@ export function JourneyPlanner({
             walkMinutes(j) * 1.2;
 
         const best = minBy(transit, score);
-        const fastest = minBy(transit, arriveMs);
-        const fewest = minBy(transit, (j) => j.transfers);
-        const leastWalk = minBy(transit, walkMinutes);
-
         const rest = transit
             .filter((j) => j !== best)
             .sort((a, b) => arriveMs(a) - arriveMs(b));
-        const ordered = [...[best, ...rest].slice(0, 4), ...direct];
 
-        const meta = ordered.map<RouteMeta>((j) => {
-            if (j.mode !== 'transit') {
-                return {
-                    label: j.mode === 'bike' ? 'By bike' : 'On foot',
-                    walkMin: j.mode === 'bike' ? 0 : j.duration_min,
-                    disrupted: false,
-                    best: false,
-                };
-            }
-
-            let label: string | null = null;
-
-            if (j === best) {
-                label = 'Best';
-            } else if (j === fastest) {
-                label = 'Fastest';
-            } else if (j === fewest && j.transfers < best.transfers) {
-                label = 'Fewest changes';
-            } else if (j === leastWalk && walkMinutes(j) < walkMinutes(best)) {
-                label = 'Least walking';
-            }
-
-            return {
-                label,
-                walkMin: walkMinutes(j),
-                disrupted: isDisrupted(j, disruptions),
-                best: j === best,
-            };
-        });
-
-        return { ordered, meta };
+        return [best, ...rest, ...direct].map(toItem);
     }, [data]);
+
+    // The chip re-sorts/subsets the transit options client-side; direct
+    // walk/bike always ride along at the end (they are the "or just walk" tail).
+    const visible = useMemo<RouteItem[]>(() => {
+        const transitItems = items.filter(
+            (it) => it.journey.mode === 'transit',
+        );
+        const directItems = items.filter((it) => it.journey.mode !== 'transit');
+        const arr = (it: RouteItem) => Date.parse(it.journey.arrive_at);
+
+        let t = transitItems;
+
+        if (filter === 'fastest') {
+            t = [...transitItems].sort((a, b) => arr(a) - arr(b));
+        } else if (filter === 'fewest') {
+            t = [...transitItems].sort(
+                (a, b) =>
+                    a.journey.transfers - b.journey.transfers ||
+                    arr(a) - arr(b),
+            );
+        } else if (filter === 'leastwalk') {
+            t = [...transitItems].sort(
+                (a, b) => a.walkMin - b.walkMin || arr(a) - arr(b),
+            );
+        } else if (filter === 'direct') {
+            t = transitItems
+                .filter((it) => it.journey.transfers === 0)
+                .sort((a, b) => arr(a) - arr(b));
+        }
+
+        return [...t, ...directItems];
+    }, [items, filter]);
 
     const fromName = data?.from.name ?? 'Your location';
 
     // Route detail (a route was picked)
-    if (selected != null && ordered[selected]) {
+    if (selected) {
         return (
             <RouteDetail
-                journey={ordered[selected]}
+                journey={selected}
                 fromName={fromName}
                 destName={destination.name}
                 onBack={() => setSelected(null)}
@@ -1098,7 +1110,7 @@ export function JourneyPlanner({
                 <DegradedNotice data={data.degraded} />
             )}
 
-            {data && data.source !== 'degraded' && ordered.length === 0 && (
+            {data && data.source !== 'degraded' && items.length === 0 && (
                 <div className="flex items-center justify-center gap-2 rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
                     <IconWalk
                         size={16}
@@ -1109,30 +1121,72 @@ export function JourneyPlanner({
                 </div>
             )}
 
-            {data && data.source !== 'degraded' && ordered.length > 0 && (
+            {data && data.source !== 'degraded' && items.length > 0 && (
                 <>
                     {data.ticket && <FareLine fare={data.ticket} />}
-                    <div className="flex flex-col gap-3">
-                        {ordered.map((journey, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                                <div className="min-w-0 flex-1">
-                                    <RouteCard
-                                        journey={journey}
-                                        label={meta[i].label}
-                                        walkMin={meta[i].walkMin}
-                                        disrupted={meta[i].disrupted}
-                                        highlight={meta[i].best}
-                                        onStart={() => setSelected(i)}
-                                    />
-                                </div>
-                                <IconChevronRight
-                                    size={18}
-                                    stroke={ICON_STROKE}
-                                    className="shrink-0 text-text-3"
-                                />
-                            </div>
+
+                    <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                        {FILTERS.map((f) => (
+                            <button
+                                key={f.key}
+                                onClick={() => setFilter(f.key)}
+                                className={`shrink-0 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                                    filter === f.key
+                                        ? 'border-foreground bg-foreground text-background'
+                                        : 'border-border bg-card text-muted-foreground hover:border-primary'
+                                }`}
+                            >
+                                {f.label}
+                            </button>
                         ))}
                     </div>
+
+                    {visible.length === 0 ? (
+                        <div className="rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
+                            No direct route — try another filter.
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {visible.map((it, i) => {
+                                const isTop = i === 0;
+                                const label =
+                                    it.journey.mode !== 'transit'
+                                        ? it.journey.mode === 'bike'
+                                            ? 'By bike'
+                                            : 'On foot'
+                                        : isTop
+                                          ? (FILTERS.find(
+                                                (f) => f.key === filter,
+                                            )?.label ?? null)
+                                          : null;
+
+                                return (
+                                    <div
+                                        key={`${it.journey.depart_at}-${it.journey.arrive_at}-${i}`}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <RouteCard
+                                                journey={it.journey}
+                                                label={label}
+                                                walkMin={it.walkMin}
+                                                disrupted={it.disrupted}
+                                                highlight={isTop}
+                                                onStart={() =>
+                                                    setSelected(it.journey)
+                                                }
+                                            />
+                                        </div>
+                                        <IconChevronRight
+                                            size={18}
+                                            stroke={ICON_STROKE}
+                                            className="shrink-0 text-text-3"
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </>
             )}
         </div>
