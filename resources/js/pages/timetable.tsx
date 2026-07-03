@@ -73,6 +73,25 @@ function csrfToken(): string {
     );
 }
 
+/** Great-circle distance between two points, in metres. */
+function haversineM(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+): number {
+    const r = 6371000;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2;
+
+    return r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const TABS: { key: Mode; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'tram', label: '🚊 Tram' },
@@ -690,6 +709,12 @@ export default function Timetable() {
     const [planning, setPlanning] = useState(false);
     const [locating, setLocating] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
+    // Live-follow: on once the board is rooted at the device's real location.
+    // followRef holds the position the board currently reflects; the board
+    // re-roots when the user moves clear of it.
+    const [following, setFollowing] = useState(false);
+    const followRef = useRef<{ lat: number; lng: number } | null>(null);
+    const lastFollowRef = useRef(0);
 
     // Keep the board genuinely live: re-fetch the deferred boards prop every
     // 30s (matches the server-side cache TTL). usePoll throttles in background
@@ -729,10 +754,41 @@ export default function Timetable() {
         };
     }
 
-    // Resolve the device's real GPS (browser permission prompt), anchor the
-    // app to it server-side so the board re-roots to the true nearest stop,
-    // and set it as the journey origin. `then` re-plans an open journey from
-    // the fresh position.
+    // Anchor the app to a point: persist it server-side (the board re-roots
+    // from the confirmed location, valid 2h and beating inferred sources) and
+    // mirror it in the From field. The endpoint reverse-geocodes the point;
+    // returns the street name shown instead of "Current location".
+    async function confirmLocation(lat: number, lng: number): Promise<string> {
+        let name = 'Current location';
+
+        try {
+            const res = await fetch('/api/location/confirm', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body: JSON.stringify({ lat, lng }),
+            });
+            const data = (await res.json()) as { name?: string };
+
+            if (data.name) {
+                name = data.name;
+            }
+        } catch {
+            // Best effort — the board keeps its last known anchor.
+        }
+
+        setOrigin({ name, lat, lng });
+        router.reload({ only: ['boards'] });
+
+        return name;
+    }
+
+    // Resolve the device's real GPS (browser permission prompt), anchor to it,
+    // and start live-following so the board tracks the user as they move.
+    // `then` re-plans an open journey from the fresh position.
     function requestDeviceLocation(
         then?: (coords: { lat: number; lng: number; name: string }) => void,
     ) {
@@ -752,36 +808,12 @@ export default function Timetable() {
             async (pos) => {
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
+                const name = await confirmLocation(lat, lng);
 
-                // Persist the anchor BEFORE reloading — the board re-roots
-                // from the confirmed location (valid 2h, beats inferred
-                // sources), so the reload must not race the write. The endpoint
-                // reverse-geocodes the point and returns the street address,
-                // which we show in the From field instead of "Current location".
-                let name = 'Current location';
-
-                try {
-                    const res = await fetch('/api/location/confirm', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken(),
-                        },
-                        body: JSON.stringify({ lat, lng }),
-                    });
-                    const data = (await res.json()) as { name?: string };
-
-                    if (data.name) {
-                        name = data.name;
-                    }
-                } catch {
-                    // Best effort — the board keeps its last known anchor.
-                }
-
-                setOrigin({ name, lat, lng });
                 setLocating(false);
-                router.reload({ only: ['boards'] });
+                followRef.current = { lat, lng };
+                lastFollowRef.current = Date.now();
+                setFollowing(true);
                 then?.({ lat, lng, name });
             },
             (err) => {
@@ -801,6 +833,73 @@ export default function Timetable() {
         );
     }
 
+    // While following, re-root the board to the user's new nearest stop once
+    // they move clear (>150 m) of the position it currently reflects. Runs only
+    // with the board visible and the tab foregrounded; coarse GPS plus a 20s
+    // floor keep it light. Picking an explicit From turns following off.
+    useEffect(() => {
+        if (!following || destination !== null || !navigator.geolocation) {
+            return;
+        }
+
+        let watchId: number | null = null;
+
+        const start = () => {
+            if (watchId !== null || document.hidden) {
+                return;
+            }
+
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const from = followRef.current;
+                    const now = Date.now();
+
+                    if (
+                        from &&
+                        haversineM(from.lat, from.lng, lat, lng) < 150
+                    ) {
+                        return;
+                    }
+
+                    if (now - lastFollowRef.current < 20_000) {
+                        return;
+                    }
+
+                    followRef.current = { lat, lng };
+                    lastFollowRef.current = now;
+                    void confirmLocation(lat, lng);
+                },
+                () => {
+                    // Lost the fix — keep the last anchor.
+                },
+                {
+                    enableHighAccuracy: false,
+                    maximumAge: 30_000,
+                    timeout: 20_000,
+                },
+            );
+        };
+
+        const stop = () => {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+        };
+
+        const onVisibility = () => (document.hidden ? stop() : start());
+
+        start();
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return () => {
+            stop();
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+    }, [following, destination]);
+
     async function planTo(target: Destination | { query: string }) {
         if ('lat' in target) {
             if (target.fromLat === null) {
@@ -816,7 +915,9 @@ export default function Timetable() {
                 );
             } else if (target.fromLat != null && target.fromLng != null) {
                 // The planner chose an explicit origin — mirror it on the
-                // board's From field so both stay coherent.
+                // board's From field so both stay coherent, and stop following
+                // the device (the board is no longer rooted at "you").
+                setFollowing(false);
                 setOrigin({
                     name: target.fromName ?? 'Origin',
                     lat: target.fromLat,
@@ -915,7 +1016,12 @@ export default function Timetable() {
                             savedPlaces={savedPlaces}
                             recentDestinations={recentDestinations}
                             origin={origin}
-                            onOriginChange={setOrigin}
+                            onOriginChange={(o) => {
+                                // A hand-picked From means the board is no
+                                // longer rooted at "you" — stop following.
+                                setFollowing(false);
+                                setOrigin(o);
+                            }}
                             onUseCurrentLocation={requestDeviceLocation}
                             locating={locating}
                             busy={planning}
