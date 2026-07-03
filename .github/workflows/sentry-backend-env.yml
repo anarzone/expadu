@@ -1,0 +1,115 @@
+name: Sentry Backend Env
+
+# Manually-triggered helper to set the backend Sentry runtime env
+# (SENTRY_LARAVEL_DSN + SENTRY_ENVIRONMENT) on a box, since the ops console is
+# deliberately artisan-only and cannot mutate host env.
+#
+#  - mode=inspect : read-only. Prints service names + env source + whether the
+#                   SENTRY vars are already present. Never prints secret VALUES.
+#  - mode=apply   : writes a docker-compose override that injects the two vars
+#                   into the app service (merge-safe, reversible) and recreates.
+#                   For production (Coolify-managed) it upserts via the Coolify
+#                   API instead of touching files, then redeploys.
+#
+# The DSN comes from the SENTRY_LARAVEL_DSN repo secret — never hard-coded.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        required: true
+        options: [staging, production]
+      mode:
+        description: inspect (read-only) or apply
+        type: choice
+        required: true
+        default: inspect
+        options: [inspect, apply]
+
+concurrency:
+  group: sentry-env-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Configure staging via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          MODE: ${{ inputs.mode }}
+          DSN: ${{ secrets.SENTRY_LARAVEL_DSN }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: MODE,DSN
+          script: |
+            set -ef
+            cd /data/staging
+            SVC=$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.service" }}' staging-app 2>/dev/null || echo app)
+            echo "compose service for staging-app: $SVC"
+            if [ "$MODE" = "inspect" ]; then
+              echo "--- files ---"; ls -1 /data/staging
+              echo "--- current SENTRY vars in container (names only) ---"
+              docker exec staging-app printenv | grep '^SENTRY' | cut -d= -f1 || echo "none"
+              exit 0
+            fi
+            # apply: a merge-safe override that injects the two vars into the app service.
+            cat > /data/staging/docker-compose.sentry.override.yml <<EOF
+            services:
+              $SVC:
+                environment:
+                  SENTRY_LARAVEL_DSN: "$DSN"
+                  SENTRY_ENVIRONMENT: "staging"
+            EOF
+            docker compose -f docker-compose.yml -f docker-compose.sentry.override.yml up -d --force-recreate "$SVC" \
+              || docker compose -f compose.yaml -f docker-compose.sentry.override.yml up -d --force-recreate "$SVC"
+            echo "--- verify (names only) ---"
+            docker exec staging-app printenv | grep '^SENTRY' | cut -d= -f1
+
+  production:
+    if: inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure production via Coolify API
+        env:
+          MODE: ${{ inputs.mode }}
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
+          DSN: ${{ secrets.SENTRY_LARAVEL_DSN }}
+        run: |
+          set -e
+          base="${COOLIFY_URL%/}"
+          auth="Authorization: Bearer ${COOLIFY_TOKEN}"
+          echo "--- current backend Sentry env keys on the app (names only) ---"
+          curl -s -H "$auth" "$base/api/v1/applications/$APP_UUID/envs" \
+            | python3 -c 'import json,sys
+try: d=json.load(sys.stdin)
+except: d=[]
+print("\n".join(sorted(e.get("key","") for e in d if str(e.get("key","")).startswith("SENTRY"))) or "none")'
+          if [ "$MODE" = "inspect" ]; then exit 0; fi
+          upsert () {
+            key="$1"; val="$2"
+            # PATCH updates when present; POST creates when absent. Try update, fall back to create.
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH -H "$auth" -H 'Content-Type: application/json' \
+              "$base/api/v1/applications/$APP_UUID/envs" \
+              -d "{\"key\":\"$key\",\"value\":\"$val\",\"is_preview\":false}")
+            if [ "$code" -ge 400 ]; then
+              curl -s -o /dev/null -w 'create %{http_code}\n' -X POST -H "$auth" -H 'Content-Type: application/json' \
+                "$base/api/v1/applications/$APP_UUID/envs" \
+                -d "{\"key\":\"$key\",\"value\":\"$val\",\"is_preview\":false}"
+            else
+              echo "update $key $code"
+            fi
+          }
+          upsert SENTRY_LARAVEL_DSN "$DSN"
+          upsert SENTRY_ENVIRONMENT "production"
+          echo "--- redeploy ---"
+          curl -s -o /dev/null -w 'deploy %{http_code}\n' -H "$auth" "$base/api/v1/deploy?uuid=$APP_UUID&force=false"
