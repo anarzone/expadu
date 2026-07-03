@@ -5,6 +5,7 @@ import {
     IconBolt,
     IconChevronDown,
     IconChevronRight,
+    IconClock,
     IconTicket,
     IconWalk,
 } from '@tabler/icons-react';
@@ -115,6 +116,15 @@ const FILTERS = [
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]['key'];
+
+/** Transit modes offered as avoid/allow toggles, in display order. */
+const MODE_ORDER = [
+    { key: 'tram', label: 'Tram' },
+    { key: 'subway', label: 'U-Bahn' },
+    { key: 'rail', label: 'S-Bahn' },
+    { key: 'bus', label: 'Bus' },
+    { key: 'ferry', label: 'Ferry' },
+] as const;
 
 /** A row of compact leg chips — walk minutes, line badges, change markers. */
 function LegChips({ legs }: { legs: JourneyLeg[] }) {
@@ -844,9 +854,20 @@ export function JourneyPlanner({
     const [error, setError] = useState(false);
     const [selected, setSelected] = useState<Journey | null>(null);
     const [filter, setFilter] = useState<FilterKey>('best');
+    // Plan for later: 'now' | 'depart' (leave at) | 'arrive' (be there by).
+    const [timeMode, setTimeMode] = useState<'now' | 'depart' | 'arrive'>(
+        'now',
+    );
+    const [timeValue, setTimeValue] = useState('');
+    // Client-side mode filter — hide options that ride an excluded mode.
+    const [excludedModes, setExcludedModes] = useState<Set<string>>(new Set());
+
+    const timeQuery = timeMode !== 'now' && timeValue ? timeValue : '';
+    const arriveBy = timeMode === 'arrive';
 
     // The planner is re-mounted per destination (keyed in the page), so state
-    // starts fresh on each new destination — the effect only fetches.
+    // starts fresh on each new destination — the effect fetches, and re-fetches
+    // when the depart/arrive time changes (a server-side re-plan).
     useEffect(() => {
         let cancelled = false;
 
@@ -865,11 +886,20 @@ export function JourneyPlanner({
             }
         }
 
+        if (timeQuery) {
+            params.set('depart_at', timeQuery);
+
+            if (arriveBy) {
+                params.set('arrive_by', '1');
+            }
+        }
+
         fetch(`/api/journey?${params}`, { credentials: 'same-origin' })
             .then((res) => res.json())
             .then((json: JourneyResponse) => {
                 if (!cancelled) {
                     setData(json);
+                    setError(false);
                 }
             })
             .catch(() => {
@@ -888,6 +918,8 @@ export function JourneyPlanner({
         destination.fromLat,
         destination.fromLng,
         destination.fromName,
+        timeQuery,
+        arriveBy,
     ]);
 
     // The engine hands us a Pareto set (arrival time × transfers × walking).
@@ -953,14 +985,38 @@ export function JourneyPlanner({
         return [best, ...rest, ...direct].map(toItem);
     }, [data]);
 
-    // The chip re-sorts/subsets the whole list client-side. Sort filters rank
-    // every option by their criterion (so a fast bike can top "Fastest"); Best
-    // keeps the best-first order; Direct is the no-change subset.
+    // Transit modes present in the current results — drives the toggles.
+    const availableModes = useMemo(() => {
+        const present = new Set<string>();
+        (data?.journeys ?? []).forEach((j) =>
+            j.legs.forEach((l) => {
+                if (l.mode !== 'walk' && l.mode !== 'bike') {
+                    present.add(l.mode);
+                }
+            }),
+        );
+
+        return MODE_ORDER.filter((m) => present.has(m.key));
+    }, [data]);
+
+    // Mode toggles hide options riding an excluded mode; the chip then
+    // re-sorts/subsets what's left. Sort filters rank every option (so a fast
+    // bike can top "Fastest"); Best keeps best-first; Direct is the no-change
+    // subset.
     const visible = useMemo<RouteItem[]>(() => {
         const arr = (it: RouteItem) => Date.parse(it.journey.arrive_at);
+        const pool =
+            excludedModes.size === 0
+                ? items
+                : items.filter(
+                      (it) =>
+                          !it.journey.legs.some((l) =>
+                              excludedModes.has(l.mode),
+                          ),
+                  );
 
         if (filter === 'fastest') {
-            return [...items].sort(
+            return [...pool].sort(
                 (a, b) =>
                     a.journey.duration_min - b.journey.duration_min ||
                     arr(a) - arr(b),
@@ -968,7 +1024,7 @@ export function JourneyPlanner({
         }
 
         if (filter === 'fewest') {
-            return [...items].sort(
+            return [...pool].sort(
                 (a, b) =>
                     a.journey.transfers - b.journey.transfers ||
                     arr(a) - arr(b),
@@ -976,21 +1032,21 @@ export function JourneyPlanner({
         }
 
         if (filter === 'leastwalk') {
-            return [...items].sort(
+            return [...pool].sort(
                 (a, b) => a.walkMin - b.walkMin || arr(a) - arr(b),
             );
         }
 
         if (filter === 'direct') {
-            return items
+            return pool
                 .filter((it) => it.journey.transfers === 0)
                 .sort(
                     (a, b) => a.journey.duration_min - b.journey.duration_min,
                 );
         }
 
-        return items;
-    }, [items, filter]);
+        return pool;
+    }, [items, filter, excludedModes]);
 
     const fromName = data?.from.name ?? 'Your location';
 
@@ -1118,6 +1174,36 @@ export function JourneyPlanner({
                 Routes to {destination.name}
             </div>
 
+            {/* Plan for later — leave-at / arrive-by (a server-side re-plan) */}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+                <IconClock
+                    size={15}
+                    stroke={ICON_STROKE}
+                    className="shrink-0 text-text-3"
+                />
+                <select
+                    value={timeMode}
+                    onChange={(e) =>
+                        setTimeMode(
+                            e.target.value as 'now' | 'depart' | 'arrive',
+                        )
+                    }
+                    className="cursor-pointer rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px] font-semibold text-foreground"
+                >
+                    <option value="now">Leave now</option>
+                    <option value="depart">Depart at</option>
+                    <option value="arrive">Arrive by</option>
+                </select>
+                {timeMode !== 'now' && (
+                    <input
+                        type="datetime-local"
+                        value={timeValue}
+                        onChange={(e) => setTimeValue(e.target.value)}
+                        className="rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px] text-foreground"
+                    />
+                )}
+            </div>
+
             {!data && !error && (
                 <div className="flex flex-col gap-2.5">
                     {[1, 2].map((i) => (
@@ -1154,6 +1240,43 @@ export function JourneyPlanner({
                 <>
                     {data.ticket && <FareLine fare={data.ticket} />}
 
+                    {availableModes.length > 1 && (
+                        <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+                            <span className="mr-0.5 font-mono text-[10.5px] tracking-[0.08em] text-text-3 uppercase">
+                                Modes
+                            </span>
+                            {availableModes.map((m) => {
+                                const on = !excludedModes.has(m.key);
+
+                                return (
+                                    <button
+                                        key={m.key}
+                                        onClick={() =>
+                                            setExcludedModes((prev) => {
+                                                const next = new Set(prev);
+
+                                                if (next.has(m.key)) {
+                                                    next.delete(m.key);
+                                                } else {
+                                                    next.add(m.key);
+                                                }
+
+                                                return next;
+                                            })
+                                        }
+                                        className={`cursor-pointer rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors ${
+                                            on
+                                                ? 'border-border bg-card text-foreground'
+                                                : 'border-border bg-secondary text-text-3 line-through'
+                                        }`}
+                                    >
+                                        {m.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
                     <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
                         {FILTERS.map((f) => (
                             <button
@@ -1172,7 +1295,8 @@ export function JourneyPlanner({
 
                     {visible.length === 0 ? (
                         <div className="rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
-                            No direct route — try another filter.
+                            No route matches these filters — clear one to see
+                            more.
                         </div>
                     ) : (
                         <div className="flex flex-col gap-3">

@@ -48,14 +48,14 @@ class TransitousAdapter implements RouteService
      */
     protected float $planTimeout = 8.0;
 
-    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6): JourneyResult
+    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false): JourneyResult
     {
         // Transit itineraries first. Deliberately NO directModes on this call:
         // when MOTIS is handed a fast direct (bike) route in the same request it
         // prunes comparable transit and the transit option vanishes entirely.
         // Two separate calls keep both. (Verified against the live engine.)
         $journeys = $this->pruneAbsurd(
-            $this->fetchBucket($from, $to, $departAt, $max, [], 'itineraries', $this->planTimeout),
+            $this->fetchBucket($from, $to, $departAt, $max, $arriveBy ? ['arriveBy' => 'true'] : [], 'itineraries', $this->planTimeout),
         );
 
         // Direct walk + bike, fetched PER MODE as best-effort calls. A single

@@ -9,6 +9,7 @@ use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\FareAdvisor;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -35,6 +36,10 @@ class TakeMeThereController extends Controller
             'from_lat' => ['nullable', 'numeric', 'between:-90,90'],
             'from_lng' => ['nullable', 'numeric', 'between:-180,180'],
             'from_name' => ['nullable', 'string', 'max:120'],
+            // Plan for later / by a deadline: an ISO time and whether it's the
+            // arrival ("arrive by") rather than the departure ("depart at").
+            'depart_at' => ['nullable', 'date'],
+            'arrive_by' => ['nullable', 'boolean'],
         ]);
 
         $user = $request->user();
@@ -76,7 +81,12 @@ class TakeMeThereController extends Controller
         // can show the real spread of alternatives — direct-ish with a longer
         // walk vs. an extra change with less — not just the top few. pruneAbsurd
         // still drops night-gap junk; the client sorts/filters the rest.
-        $result = $routes->plan($from, $to, null, 10);
+        $departAt = isset($validated['depart_at'])
+            ? CarbonImmutable::parse($validated['depart_at'])
+            : null;
+        $arriveBy = (bool) ($validated['arrive_by'] ?? false);
+
+        $result = $routes->plan($from, $to, $departAt, 10, $arriveBy);
 
         // Journey-aware Rheinlandtarif advice for the transit option (walk/bike
         // options are free and carry no ticket). Computed for the first transit
