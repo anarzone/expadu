@@ -13,6 +13,7 @@ import type { SavedPlace } from '@/components/departures/journey-planner';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { ICON_STROKE } from '@/constants/icons';
+import type { ActiveTrip } from '@/hooks/use-active-trip';
 import AppLayout from '@/layouts/app-layout';
 
 type Departure = {
@@ -734,23 +735,60 @@ function parseDestinationFromUrl(url: string): Destination | null {
     return dest;
 }
 
+/** The live trip's endpoints as a planner Destination (origin kept as From). */
+function activeTripToDestination(trip: ActiveTrip | null): Destination | null {
+    if (!trip) {
+        return null;
+    }
+
+    return {
+        name: trip.destination.name,
+        emoji: trip.destination.emoji ?? undefined,
+        lat: trip.destination.lat,
+        lng: trip.destination.lng,
+        fromLat: trip.origin?.lat ?? null,
+        fromLng: trip.origin?.lng ?? null,
+        fromName: trip.origin?.name ?? null,
+    };
+}
+
+/** True when this plan's destination is the one the live trip runs to. */
+function destinationMatchesTrip(
+    dest: Destination | null,
+    trip: ActiveTrip | null,
+): boolean {
+    if (!dest || !trip) {
+        return false;
+    }
+
+    return (
+        Math.abs(dest.lat - trip.destination.lat) < 1e-4 &&
+        Math.abs(dest.lng - trip.destination.lng) < 1e-4
+    );
+}
+
 export default function Timetable() {
     const page = usePage<{
         boards?: Boards;
         savedPlaces?: SavedPlace[];
         recentDestinations?: RecentDestination[];
         activeDisruptions?: DisruptionItem[];
+        activeTrip?: ActiveTrip | null;
     }>();
     const {
         boards,
         savedPlaces = [],
         recentDestinations = [],
         activeDisruptions = [],
+        activeTrip = null,
     } = page.props;
     const [mode, setMode] = useState<Mode>('all');
-    // The open plan lives in the URL, so it survives a refresh and is shareable.
-    const [destination, setDestination] = useState<Destination | null>(() =>
-        parseDestinationFromUrl(page.url),
+    // The open plan lives in the URL (refresh-safe, shareable); failing that a
+    // live trip reopens straight to its journey when you return to Departures.
+    const [destination, setDestination] = useState<Destination | null>(
+        () =>
+            parseDestinationFromUrl(page.url) ??
+            activeTripToDestination(activeTrip),
     );
     const destSynced = useRef(false);
 
@@ -1042,6 +1080,11 @@ export default function Timetable() {
                         key={`${destination.lat},${destination.lng},${destination.name},${destination.fromLat ?? ''},${destination.fromLng ?? ''}`}
                         destination={destination}
                         savedPlaces={savedPlaces}
+                        initialSelected={
+                            destinationMatchesTrip(destination, activeTrip)
+                                ? activeTrip?.journey
+                                : null
+                        }
                         onPlan={planTo}
                         onClose={() => setDestination(null)}
                     />

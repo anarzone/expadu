@@ -6,6 +6,7 @@ import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { MobileDock } from '@/components/mobile-dock';
 import { MobileTopBar } from '@/components/mobile-top-bar';
 import { RightPanel } from '@/components/right-panel';
+import { TripBanner } from '@/components/trip-banner';
 import { useBackgroundLocation } from '@/hooks/use-background-location';
 import { useTracker } from '@/hooks/use-tracker';
 import type { AppLayoutProps } from '@/types';
@@ -35,6 +36,7 @@ export default function AppSidebarLayout({
                     breadcrumbs={breadcrumbs}
                     showBack={showBack}
                 />
+                <TripBanner />
                 {fullWidth ? (
                     <div className="flex-1 overflow-hidden">{children}</div>
                 ) : (

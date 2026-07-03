@@ -62,6 +62,10 @@ class HandleInertiaRequests extends Middleware
             'serviceErrors' => fn () => session('serviceErrors', []),
             'notificationPreferences' => fn () => $request->user()?->notificationPreference?->preferences ?? NotificationPreference::defaults(),
             'userSettings' => fn () => $request->user()?->userSetting?->settings ?? UserSetting::defaults(),
+            // The user's live trip (if any) — powers the app-wide "trip in
+            // progress" banner and lets Departures reopen the journey. Cheap
+            // indexed lookup; present on first paint so the banner never flickers.
+            'activeTrip' => fn () => $request->user()?->activeTrip?->toShared(),
             // User location — cached per request to avoid redundant places queries
             'userLocation' => function () use ($request) {
                 $user = $request->user();

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TakeMeThereController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
+use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\ComposerController;
 use App\Http\Controllers\EventController;
@@ -99,6 +100,9 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
         Route::get('api/journey/suggest', JourneySuggestController::class)->name('api.journey.suggest');
+        // Live trip session — persists the chosen journey across screens/closes.
+        Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.start');
+        Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
         Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
 

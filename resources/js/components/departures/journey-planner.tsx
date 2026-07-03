@@ -6,6 +6,7 @@ import {
     IconChevronDown,
     IconChevronRight,
     IconClock,
+    IconPlayerPlayFilled,
     IconTicket,
     IconWalk,
 } from '@tabler/icons-react';
@@ -20,6 +21,8 @@ import type {
     JourneyResponse,
 } from '@/components/journey/take-me-there-sheet';
 import { ICON_STROKE } from '@/constants/icons';
+import { useActiveTrip } from '@/hooks/use-active-trip';
+import type { TripPlace } from '@/hooks/use-active-trip';
 
 /** A saved place (Home / Work / pin) offered as a one-tap destination. */
 export type SavedPlace = {
@@ -69,6 +72,22 @@ function routeSignature(journey: Journey): string {
         .filter((l) => l.mode !== 'walk' && l.mode !== 'bike')
         .map((l) => l.line ?? '?')
         .join('>');
+}
+
+/** Same departure at the same times on the same lines — the persisted trip. */
+function sameJourney(
+    a: Journey | null | undefined,
+    b: Journey | null,
+): boolean {
+    if (!a || !b) {
+        return false;
+    }
+
+    return (
+        a.depart_at === b.depart_at &&
+        a.arrive_at === b.arrive_at &&
+        routeSignature(a) === routeSignature(b)
+    );
 }
 
 /** Total walking (and cycling) minutes across a journey's legs. */
@@ -654,13 +673,20 @@ function RouteDetail({
     journey,
     fromName,
     destName,
+    active,
+    busy,
     onBack,
+    onStart,
     onEnd,
 }: {
     journey: Journey;
     fromName: string;
     destName: string;
+    /** True once this journey is the persisted, live trip (vs. a preview). */
+    active: boolean;
+    busy: boolean;
     onBack: () => void;
+    onStart: () => void;
     onEnd: () => void;
 }) {
     const [now, setNow] = useState(() => Date.now());
@@ -776,12 +802,24 @@ function RouteDetail({
                 )}
             </div>
 
-            <button
-                onClick={onEnd}
-                className="mt-3.5 w-full rounded-[13px] border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger"
-            >
-                End journey
-            </button>
+            {active ? (
+                <button
+                    onClick={onEnd}
+                    disabled={busy}
+                    className="mt-3.5 w-full rounded-[13px] border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
+                >
+                    {busy ? 'Ending…' : 'End journey'}
+                </button>
+            ) : (
+                <button
+                    onClick={onStart}
+                    disabled={busy}
+                    className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[13px] bg-primary py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+                >
+                    <IconPlayerPlayFilled size={17} />
+                    {busy ? 'Starting…' : 'Start journey'}
+                </button>
+            )}
         </div>
     );
 }
@@ -858,17 +896,23 @@ function DegradedNotice({
 export function JourneyPlanner({
     destination,
     savedPlaces,
+    initialSelected,
     onPlan,
     onClose,
 }: {
     destination: Destination;
     savedPlaces: SavedPlace[];
+    /** The persisted trip's journey, so a live trip reopens straight to detail. */
+    initialSelected?: Journey | null;
     onPlan: (target: Destination | { query: string }) => void;
     onClose: () => void;
 }) {
+    const { activeTrip, start, end, busy } = useActiveTrip();
     const [data, setData] = useState<JourneyResponse | null>(null);
     const [error, setError] = useState(false);
-    const [selected, setSelected] = useState<Journey | null>(null);
+    const [selected, setSelected] = useState<Journey | null>(
+        initialSelected ?? null,
+    );
     const [filter, setFilter] = useState<FilterKey>('best');
     // Plan for later: 'now' | 'depart' (leave at) | 'arrive' (be there by).
     const [timeMode, setTimeMode] = useState<'now' | 'depart' | 'arrive'>(
@@ -1095,15 +1139,39 @@ export function JourneyPlanner({
 
     const fromName = data?.from.name ?? 'Your location';
 
-    // Route detail (a route was picked)
+    // Route detail (a route was picked). Starting persists it as the live trip;
+    // ending clears the session and returns to the board.
     if (selected) {
+        const isActive = sameJourney(activeTrip?.journey, selected);
+
+        const handleStart = () => {
+            const dest: TripPlace = {
+                name: destination.name,
+                lat: destination.lat,
+                lng: destination.lng,
+                emoji: destination.emoji ?? null,
+            };
+            const origin: TripPlace | null = data?.from
+                ? {
+                      name: data.from.name,
+                      lat: data.from.lat,
+                      lng: data.from.lng,
+                  }
+                : null;
+
+            start(selected, dest, origin);
+        };
+
         return (
             <RouteDetail
                 journey={selected}
                 fromName={fromName}
                 destName={destination.name}
+                active={isActive}
+                busy={busy}
                 onBack={() => setSelected(null)}
-                onEnd={onClose}
+                onStart={handleStart}
+                onEnd={() => end().then(onClose)}
             />
         );
     }

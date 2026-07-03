@@ -144,6 +144,12 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasOne(UserSetting::class);
     }
 
+    /** @return HasOne<ActiveTrip, $this> */
+    public function activeTrip(): HasOne
+    {
+        return $this->hasOne(ActiveTrip::class);
+    }
+
     /** Check if user wants a specific notification type */
     public function wantsNotification(string $type): bool
     {
