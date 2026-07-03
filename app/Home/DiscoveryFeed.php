@@ -10,6 +10,7 @@ use App\Models\SpotFeedback;
 use App\Models\UserTask;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
+use App\Services\NearbyPlaces;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -50,6 +51,8 @@ class DiscoveryFeed
      * Merkenich, so the rail still fills comfortably.
      */
     private const HOME_RADIUS_KM = 2.5;
+
+    public function __construct(private readonly NearbyPlaces $nearby) {}
 
     /**
      * @return list<array<string, mixed>>
@@ -153,19 +156,9 @@ class DiscoveryFeed
             return 0.0;
         }
 
-        $km = $this->kmBetween($originLat, $originLng, (float) $spot->lat, (float) $spot->lng);
+        $km = NearbyPlaces::km($originLat, $originLng, (float) $spot->lat, (float) $spot->lng);
 
         return 35.0 * max(0.0, 1.0 - $km / 6.0);
-    }
-
-    /** Great-circle distance in kilometres. */
-    private function kmBetween(float $lat1, float $lng1, float $lat2, float $lng2): float
-    {
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
-
-        return 6371.0 * 2 * asin(min(1.0, sqrt($a)));
     }
 
     /**
@@ -187,7 +180,7 @@ class DiscoveryFeed
                 ->map(function (array $x) use ($originLat, $originLng): array {
                     $x['km'] = ($x['spot']->lat === null || $x['spot']->lng === null)
                         ? INF
-                        : $this->kmBetween($originLat, $originLng, (float) $x['spot']->lat, (float) $x['spot']->lng);
+                        : NearbyPlaces::km($originLat, $originLng, (float) $x['spot']->lat, (float) $x['spot']->lng);
 
                     return $x;
                 })
@@ -431,20 +424,16 @@ class DiscoveryFeed
         }
 
         // Nearest-first to the user, cached per ~1km cell (rounded so nearby
-        // sessions share the scan). PostGIS-free haversine, same formula the
-        // composer's candidate pool uses.
+        // sessions share the scan). Proximity is resolved by the shared
+        // NearbyPlaces service — the single source of the distance maths.
         $cellLat = round($originLat, 2);
         $cellLng = round($originLng, 2);
-        $distance = '6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))';
 
-        $rows = Cache::remember(self::SCAN_CACHE_KEY.":{$cellLat},{$cellLng}", self::SCAN_TTL, fn () => Spot::query()
-            ->select($columns)
-            ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->orderByRaw($distance, [$cellLat, $cellLng, $cellLat])
-            ->limit(self::POOL)
-            ->get()
-            ->toArray());
+        $rows = Cache::remember(
+            self::SCAN_CACHE_KEY.":{$cellLat},{$cellLng}",
+            self::SCAN_TTL,
+            fn () => $this->nearby->nearest($cellLat, $cellLng, self::POOL, null, $columns)->toArray(),
+        );
 
         return Spot::hydrate($rows);
     }

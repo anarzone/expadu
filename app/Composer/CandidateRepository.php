@@ -4,6 +4,7 @@ namespace App\Composer;
 
 use App\Models\Event;
 use App\Models\Spot;
+use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -62,11 +63,13 @@ class CandidateRepository
      */
     private function spotCandidates(CarbonImmutable $day, float $originLat, float $originLng): array
     {
-        $distance = '6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))';
+        // The shared great-circle formula (single source in NearbyPlaces), used
+        // here inside a per-category ROW_NUMBER window the service can't express.
+        $distance = NearbyPlaces::DISTANCE_KM_SQL;
 
         $ranked = DB::table('spots')
             ->select('id')
-            ->selectRaw("ROW_NUMBER() OVER (PARTITION BY category ORDER BY ({$distance}), id) AS rn", [$originLat, $originLng, $originLat])
+            ->selectRaw("ROW_NUMBER() OVER (PARTITION BY category ORDER BY ({$distance}), id) AS rn", NearbyPlaces::bindings($originLat, $originLng))
             ->whereNotNull('lat')
             ->whereNotNull('lng');
 
@@ -84,7 +87,7 @@ class CandidateRepository
         // closest spots when many categories each contribute their dozen.
         return Spot::query()
             ->whereIn('id', $ids)
-            ->orderByRaw("({$distance}), id", [$originLat, $originLng, $originLat])
+            ->orderByRaw("({$distance}), id", NearbyPlaces::bindings($originLat, $originLng))
             ->get()
             ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day))
             ->all();

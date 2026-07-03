@@ -9,10 +9,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
+use App\Services\NearbyPlaces;
 use App\Services\UserLocationService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -31,6 +31,7 @@ class PlacesController extends Controller
     public function __construct(
         private readonly UserLocationService $locations,
         private readonly TravelTimes $travel,
+        private readonly NearbyPlaces $nearby,
     ) {}
 
     private const PER_PAGE = 20;
@@ -55,7 +56,7 @@ class PlacesController extends Controller
         $origin = $this->locations->context($request->user(), $request);
 
         $spot->distance_km = $origin->hasOrigin()
-            ? $this->haversineKm($origin->lat, $origin->lng, (float) $spot->lat, (float) $spot->lng)
+            ? NearbyPlaces::km($origin->lat, $origin->lng, (float) $spot->lat, (float) $spot->lng)
             : null;
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
         $spot->activities = $this->activitiesForParks(collect([$spot]))[$spot->name] ?? [];
@@ -160,11 +161,8 @@ class PlacesController extends Controller
             // and Bezirk boundaries don't apply. The radius grows past 3 km only
             // as far as it must to surface at least 3 places (sparse edge of the
             // city), so the list is never near-empty.
-            $radiusKm = $this->radiusForAtLeast($query, $origin->lat, $origin->lng, self::NEAR_RADIUS_KM);
-            $query->whereRaw(
-                '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
-                [$origin->lat, $origin->lng, $origin->lat, $radiusKm],
-            );
+            $radiusKm = $this->nearby->radiusForAtLeast($query, $origin->lat, $origin->lng, self::NEAR_RADIUS_KM);
+            $this->nearby->withinKm($query, $origin->lat, $origin->lng, $radiusKm);
         } elseif ($near) {
             // Near requested but we don't know where the user is → empty; the
             // response flags needs_location so the UI can prompt for a fix.
@@ -184,12 +182,12 @@ class PlacesController extends Controller
                 $nearbyIncluded = true;
                 $cLat = (float) $centroid->centroid_lat;
                 $cLng = (float) $centroid->centroid_lng;
-                $radiusKm = $this->radiusForAtLeast($query, $cLat, $cLng, 2.0);
+                $radiusKm = $this->nearby->radiusForAtLeast($query, $cLat, $cLng, 2.0);
                 $query->where(function ($q) use ($veedel, $cLat, $cLng, $radiusKm) {
                     $q->where('veedel', $veedel)
                         ->orWhereRaw(
-                            '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
-                            [$cLat, $cLng, $cLat, $radiusKm],
+                            '('.NearbyPlaces::DISTANCE_KM_SQL.') <= ?',
+                            [...NearbyPlaces::bindings($cLat, $cLng), $radiusKm],
                         );
                 });
             } else {
@@ -212,8 +210,8 @@ class PlacesController extends Controller
 
         if ($origin->hasOrigin()) {
             $query->selectRaw(
-                '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as distance_km',
-                [$origin->lat, $origin->lng, $origin->lat],
+                '('.NearbyPlaces::DISTANCE_KM_SQL.') as distance_km',
+                NearbyPlaces::bindings($origin->lat, $origin->lng),
             );
         } else {
             $query->selectRaw('NULL::float8 as distance_km');
@@ -295,29 +293,6 @@ class PlacesController extends Controller
      * $min — nearest-first, widening only as much as it must. A large radius
      * ("show all") when fewer than $min matches exist anywhere.
      *
-     * @param  Builder<Spot>  $candidates
-     */
-    private function radiusForAtLeast(Builder $candidates, float $lat, float $lng, float $preferredKm, int $min = 3): float
-    {
-        $nth = (clone $candidates)
-            ->selectRaw(
-                '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) as d',
-                [$lat, $lng, $lat],
-            )
-            ->reorder('d')
-            ->offset($min - 1)
-            ->limit(1)
-            ->first();
-
-        if ($nth === null || $nth->d === null) {
-            return 100.0;
-        }
-
-        // +50m buffer so the Nth match itself — sitting exactly on the computed
-        // distance — survives float rounding when the WHERE re-evaluates it.
-        return max($preferredKm, (float) $nth->d + 0.05);
-    }
-
     /**
      * What you can do in each park on this page — the distinct facility
      * kinds inside it, as ready-to-render chips.
@@ -354,11 +329,6 @@ class PlacesController extends Controller
                 ->values()
                 ->all())
             ->all();
-    }
-
-    private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
-    {
-        return 6371 * acos(min(1, cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($lng2) - deg2rad($lng1)) + sin(deg2rad($lat1)) * sin(deg2rad($lat2))));
     }
 
     /**
