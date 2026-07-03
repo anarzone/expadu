@@ -10,7 +10,7 @@ import {
     IconTicket,
     IconWalk,
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
 import type {
@@ -31,6 +31,7 @@ import {
 import { ICON_STROKE } from '@/constants/icons';
 import { useActiveTrip } from '@/hooks/use-active-trip';
 import type { TripPlace } from '@/hooks/use-active-trip';
+import { useTripProgress } from '@/hooks/use-trip-progress';
 
 /** A saved place (Home / Work / pin) offered as a one-tap destination. */
 export type SavedPlace = {
@@ -318,6 +319,9 @@ type Step = {
     sub: string;
     /** When this step is (scheduled to be) reached — drives the live cursor. */
     at: number;
+    /** Where this step is — lets live GPS snap the cursor to it. */
+    lat: number | null;
+    lng: number | null;
     line?: string | null;
     color?: string | null;
     station?: boolean;
@@ -326,12 +330,16 @@ type Step = {
 /**
  * The journey flattened station by station: walk legs, then per transit leg a
  * board step, every ridden station, and the get-off — each stamped with its
- * scheduled time so the view can place a live NOW cursor without GPS.
+ * scheduled time and coordinates so the view can place a NOW cursor from the
+ * schedule clock or a live GPS fix.
  */
 function stationSteps(journey: Journey, destName: string): Step[] {
     const steps: Step[] = [];
+    let lastTo: { lat: number; lng: number } | null = null;
 
     for (const leg of journey.legs) {
+        lastTo = { lat: leg.to.lat, lng: leg.to.lng };
+
         if (!isTransitLeg(leg)) {
             const verb = leg.mode === 'bike' ? 'Cycle' : 'Walk';
 
@@ -340,6 +348,8 @@ function stationSteps(journey: Journey, destName: string): Step[] {
                 title: `${verb} to ${leg.to.name || destName}`,
                 sub: `${leg.duration_min} min${leg.mode === 'bike' ? ' by bike' : ' on foot'}`,
                 at: Date.parse(leg.depart_at),
+                lat: leg.to.lat,
+                lng: leg.to.lng,
             });
 
             continue;
@@ -352,6 +362,8 @@ function stationSteps(journey: Journey, destName: string): Step[] {
                 ? `towards ${leg.headsign}`
                 : `from ${leg.from.name}`,
             at: Date.parse(leg.depart_at),
+            lat: leg.from.lat,
+            lng: leg.from.lng,
             line: leg.line,
             color: leg.color,
         });
@@ -362,6 +374,8 @@ function stationSteps(journey: Journey, destName: string): Step[] {
                 title: stop.name,
                 sub: '',
                 at: Date.parse(stop.arrive_at),
+                lat: stop.lat,
+                lng: stop.lng,
                 line: leg.line,
                 color: leg.color,
                 station: true,
@@ -373,6 +387,8 @@ function stationSteps(journey: Journey, destName: string): Step[] {
             title: `Get off · ${leg.to.name}`,
             sub: 'your stop',
             at: Date.parse(leg.arrive_at),
+            lat: leg.to.lat,
+            lng: leg.to.lng,
             line: leg.line,
             color: leg.color,
             station: true,
@@ -384,6 +400,8 @@ function stationSteps(journey: Journey, destName: string): Step[] {
         title: 'You’ve arrived',
         sub: destName,
         at: Date.parse(journey.arrive_at),
+        lat: lastTo?.lat ?? null,
+        lng: lastTo?.lng ?? null,
     });
 
     return steps;
@@ -710,29 +728,35 @@ function RouteDetail({
     onSwitch: () => void;
     onEnd: () => void;
 }) {
-    const [now, setNow] = useState(() => Date.now());
+    const steps = useMemo(
+        () => stationSteps(journey, destName),
+        [journey, destName],
+    );
+    // Live position: GPS-driven for a started trip (foreground), else the
+    // schedule clock. Only a real, active trip watches GPS — previews don't.
+    const { currentIdx, live } = useTripProgress(steps, active);
+    const items = groupTimeline(steps);
+
+    // Buzz once when the exit is the next stop (only under a real GPS fix).
+    const getOffNext = steps[currentIdx + 1]?.kind === 'alight';
+    const alertedRef = useRef(-1);
 
     useEffect(() => {
-        const id = setInterval(() => setNow(Date.now()), 20_000);
-
-        return () => clearInterval(id);
-    }, []);
-
-    const steps = stationSteps(journey, destName);
-    const items = groupTimeline(steps);
-    // The last step whose scheduled time has passed; -1 before departure.
-    let currentIdx = -1;
-
-    for (let i = 0; i < steps.length; i++) {
-        if (steps[i].at <= now) {
-            currentIdx = i;
+        if (live && getOffNext && alertedRef.current !== currentIdx) {
+            alertedRef.current = currentIdx;
+            navigator.vibrate?.(300);
         }
-    }
+
+        if (!getOffNext) {
+            alertedRef.current = -1;
+        }
+    }, [live, getOffNext, currentIdx]);
 
     const banner = bannerFor(steps, currentIdx, destName);
-    const cursorColor =
-        (currentIdx >= 0 ? steps[currentIdx]?.color : steps[0]?.color) ??
-        'var(--color-primary)';
+    const cursorColor = getOffNext
+        ? '#ffc24d'
+        : ((currentIdx >= 0 ? steps[currentIdx]?.color : steps[0]?.color) ??
+          'var(--color-primary)');
     const pct =
         steps.length > 1 && currentIdx > 0
             ? Math.round((currentIdx / (steps.length - 1)) * 100)
@@ -756,8 +780,12 @@ function RouteDetail({
 
             {/* Live NEXT banner */}
             <div
-                className="relative mb-2 overflow-hidden rounded-2xl bg-foreground px-5 py-[18px] text-background"
-                style={{ boxShadow: '0 10px 30px rgba(20,16,8,.28)' }}
+                className="relative mb-2 overflow-hidden rounded-2xl bg-foreground px-5 py-[18px] text-background transition-shadow"
+                style={{
+                    boxShadow: getOffNext
+                        ? '0 0 0 2px #ffc24d, 0 10px 30px rgba(20,16,8,.28)'
+                        : '0 10px 30px rgba(20,16,8,.28)',
+                }}
             >
                 <div className="flex items-center gap-3">
                     <span
@@ -771,7 +799,11 @@ function RouteDetail({
                         <div className="font-mono text-[10px] tracking-[0.14em] uppercase opacity-60">
                             {beforeStart
                                 ? `Leave by ${journey.depart_time}`
-                                : 'Live · next'}
+                                : getOffNext
+                                  ? 'Get off next'
+                                  : live
+                                    ? 'Live GPS · next'
+                                    : 'Live · next'}
                         </div>
                         <div className="mt-1 truncate font-display text-[21px] leading-tight font-semibold tracking-tight">
                             {banner.title}

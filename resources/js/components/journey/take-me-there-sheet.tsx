@@ -37,8 +37,8 @@ export type JourneyLeg = {
     mode: string;
     line: string | null;
     headsign: string | null;
-    from: { name: string };
-    to: { name: string };
+    from: { name: string; lat: number; lng: number };
+    to: { name: string; lat: number; lng: number };
     depart_at: string;
     arrive_at: string;
     depart_time: string;
