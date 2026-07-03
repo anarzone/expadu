@@ -96,6 +96,41 @@ test('includes direct walk and bike routes alongside transit', function () {
     Http::assertSent(fn ($req) => str_contains(urldecode($req->url()), 'directModes=WALK'));
 });
 
+test('intermediate stops carry coordinates for GPS matching', function () {
+    Http::fake([
+        'api.transitous.org/api/v3/plan*' => Http::response([
+            'itineraries' => [[
+                'startTime' => '2026-06-19T06:00:00Z',
+                'endTime' => '2026-06-19T06:31:00Z',
+                'duration' => 1860,
+                'transfers' => 0,
+                'legs' => [[
+                    'mode' => 'TRAM',
+                    'from' => ['name' => 'START', 'lat' => 50.95, 'lon' => 6.92],
+                    'to' => ['name' => 'END', 'lat' => 50.9413, 'lon' => 6.9583],
+                    'startTime' => '2026-06-19T06:05:00Z',
+                    'endTime' => '2026-06-19T06:28:00Z',
+                    'duration' => 1380,
+                    'routeShortName' => '12',
+                    'intermediateStops' => [[
+                        'name' => 'Köln Ebertplatz',
+                        'arrival' => '2026-06-19T06:15:00Z',
+                        'lat' => 50.9506,
+                        'lon' => 6.9588,
+                    ]],
+                ]],
+            ]],
+        ]),
+    ]);
+
+    $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.92), new GeoPoint(50.9413, 6.9583));
+    $stops = $result->journeys[0]->legs[0]->intermediateStops;
+
+    expect($stops[0]['name'])->toBe('Köln Ebertplatz');
+    expect($stops[0]['lat'])->toBe(50.9506);
+    expect($stops[0]['lng'])->toBe(6.9588);
+});
+
 test('geocode maps stops with ids', function () {
     Http::fake([
         'api.transitous.org/api/v1/geocode*' => Http::response([

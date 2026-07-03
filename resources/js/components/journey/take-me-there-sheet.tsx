@@ -28,6 +28,9 @@ export type IntermediateStop = {
     name: string;
     arrive_at: string;
     arrive_time: string;
+    /** Stop coordinates — power live GPS map-matching during a trip. */
+    lat: number | null;
+    lng: number | null;
 };
 
 export type JourneyLeg = {

@@ -479,10 +479,11 @@ class TransitousAdapter implements RouteService
 
     /**
      * The stations a transit leg rides through (excluding board + get-off), in
-     * order — name + arrival, powering the station-by-station journey timeline.
+     * order — name + arrival + coordinates. The lat/lng power live GPS
+     * map-matching ("which stop am I at?") in the in-journey tracker.
      *
      * @param  array<int, array<string, mixed>>  $stops
-     * @return array<int, array{name: string, arrive_at: string, arrive_time: string}>
+     * @return array<int, array{name: string, arrive_at: string, arrive_time: string, lat: ?float, lng: ?float}>
      */
     private function mapIntermediateStops(array $stops): array
     {
@@ -502,6 +503,8 @@ class TransitousAdapter implements RouteService
                 'name' => $name,
                 'arrive_at' => $arriveAt->toIso8601String(),
                 'arrive_time' => $arriveAt->format('H:i'),
+                'lat' => isset($stop['lat']) ? (float) $stop['lat'] : null,
+                'lng' => isset($stop['lon']) ? (float) $stop['lon'] : null,
             ];
         }
 

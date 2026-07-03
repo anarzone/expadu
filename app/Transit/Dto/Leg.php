@@ -7,9 +7,9 @@ use Carbon\CarbonImmutable;
 final readonly class Leg
 {
     /**
-     * @param  array<int, array{name: string, arrive_at: string, arrive_time: string}>|null  $intermediateStops
-     *                                                                                                           The stations ridden through (excluding board + get-off), in order —
-     *                                                                                                           powers the station-by-station journey timeline.
+     * @param  array<int, array{name: string, arrive_at: string, arrive_time: string, lat: ?float, lng: ?float}>|null  $intermediateStops
+     *                                                                                                                                     The stations ridden through (excluding board + get-off), in order —
+     *                                                                                                                                     powers the timeline and live GPS map-matching.
      */
     public function __construct(
         public string $mode, // walk | bus | tram | subway | rail | ferry
