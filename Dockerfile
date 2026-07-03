@@ -69,6 +69,16 @@ RUN cp .env.example .env \
     && sed -i 's|APP_URL=.*|APP_URL=https://expadu.com|' .env \
     && php artisan key:generate --force
 
+# Frontend Sentry config is baked at BUILD time — Vite reads VITE_* from the
+# process env when compiling. CI passes these as --build-arg per environment;
+# empty defaults keep local `docker build` working with the browser side dark.
+ARG VITE_SENTRY_DSN_PUBLIC=""
+ARG VITE_SENTRY_ENVIRONMENT=""
+ARG VITE_SENTRY_RELEASE=""
+ENV VITE_SENTRY_DSN_PUBLIC=$VITE_SENTRY_DSN_PUBLIC \
+    VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT \
+    VITE_SENTRY_RELEASE=$VITE_SENTRY_RELEASE
+
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm run build && npm run build:ssr
 

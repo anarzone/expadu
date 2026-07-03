@@ -198,6 +198,13 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # Frontend Sentry is baked at build time. DSN comes from a repo secret
+          # (it's public — shipped to browsers — but a secret keeps the log clean);
+          # the environment is derived from the branch, the release from the sha.
+          build-args: |
+            VITE_SENTRY_DSN_PUBLIC=${{ secrets.VITE_SENTRY_DSN_PUBLIC }}
+            VITE_SENTRY_ENVIRONMENT=${{ steps.tag.outputs.tag == 'staging' && 'staging' || 'production' }}
+            VITE_SENTRY_RELEASE=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
