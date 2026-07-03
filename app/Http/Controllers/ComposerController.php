@@ -255,6 +255,10 @@ class ComposerController extends Controller
                 'source' => $originContext->source->value,
                 'label' => $originContext->label,
                 'area' => $originArea,
+                // Coordinates so "take me there" starts from the plan's own
+                // origin (e.g. "from Home") — not a re-resolved live GPS fix.
+                'lat' => $originLat,
+                'lng' => $originLng,
             ],
         ]);
     }

@@ -605,6 +605,13 @@ export default function Composer() {
             lat: slot.lat,
             lng: slot.lng,
             arriveBy: slot.is_appointment ? slot.start_time : undefined,
+            // Start the journey from the plan's OWN origin (e.g. "from Home"),
+            // the same point the plan measured "same area / N min" against — not
+            // a re-resolved live GPS fix that would silently make a 12-min hop
+            // read as an hour. "I'm here →" still overrides to the real position.
+            fromLat: origin?.lat ?? null,
+            fromLng: origin?.lng ?? null,
+            fromName: origin?.label ?? null,
         });
     }
 

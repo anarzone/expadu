@@ -108,6 +108,12 @@ test('compose builds a plan from real candidates and stores it', function () {
     expect($response->json('plan.slots'))->not->toBeEmpty();
     expect($response->json('notices'))->toBeArray();
     expect(Cache::get("composer:plan:{$user->id}"))->not->toBeNull();
+
+    // The plan origin's coordinates ride along so "take me there" starts from
+    // the same point the plan measured "same area / N min" against — not a
+    // re-resolved live GPS fix that would turn a 12-min hop into an hour.
+    expect($response->json('origin.lat'))->toEqual(50.9485);
+    expect($response->json('origin.lng'))->toEqual(6.9230);
 });
 
 test('compose carries a dry weather line for a plan today, not in the notices', function () {
