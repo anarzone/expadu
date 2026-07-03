@@ -260,17 +260,46 @@ test('re-plans without buses to surface a competitive S-Bahn route the primary s
         && str_contains($r->url(), 'maxPostTransitTime'));
 });
 
-test('does not re-plan without buses when a simple rail option already exists', function () {
-    $withRail = ['itineraries' => [fakeItinerary(
+test('does not re-plan when a clean bus-free rail option already exists', function () {
+    // Tram 12 -> S19 (no bus) is already a clean rail route, so no rescue.
+    $cleanRail = ['itineraries' => [fakeItinerary(
         [fakeLeg('TRAM', ['routeShortName' => '12']), fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'S19'])],
         1, 3600,
     )]];
 
-    Http::fake(['api.transitous.org/*' => Http::response($withRail)]);
+    Http::fake(['api.transitous.org/*' => Http::response($cleanRail)]);
+    Cache::put('motis:rail-stations', [['lat' => 50.98, 'lng' => 6.95]]);
 
     (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
 
     Http::assertNotSent(fn ($r) => str_contains(urldecode($r->url()), 'transitModes='));
+});
+
+test('re-plans when the only rail option relies on a bus (recovers rail + walk)', function () {
+    // Primary offers only S19 -> bus (a bus egress); the rescue answers with the
+    // cleaner rail-only route MOTIS's default egress-walk cap had hidden.
+    $busTailed = ['itineraries' => [fakeItinerary(
+        [fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'S19']), fakeLeg('BUS', ['routeShortName' => '141'])],
+        1, 2400,
+    )]];
+    $railOnly = ['itineraries' => [fakeItinerary(
+        [fakeLeg('REGIONAL_RAIL', ['routeShortName' => 'S19'])],
+        0, 1560,
+    )]];
+
+    Http::fake(fn ($request) => str_contains(urldecode($request->url()), 'transitModes=')
+        ? Http::response($railOnly)
+        : Http::response($busTailed));
+
+    Cache::put('motis:rail-stations', [['lat' => 50.98, 'lng' => 6.95]]);
+
+    $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
+
+    // A bus-free rail journey (rail + walk only) is now among the options.
+    $cleanRail = collect($result->journeys)->first(fn ($j) => collect($j->legs)->contains(fn ($l) => $l->mode === 'rail')
+        && collect($j->legs)->doesntContain(fn ($l) => $l->mode === 'bus'));
+
+    expect($cleanRail)->not->toBeNull();
 });
 
 test('does not attempt the rail rescue on short trips', function () {

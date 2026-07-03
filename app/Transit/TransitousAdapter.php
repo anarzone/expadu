@@ -97,15 +97,17 @@ class TransitousAdapter implements RouteService
             }
         }
 
-        // Rail rescue: when the set has no *simple* rail option, yet a station
-        // sits within walking reach of either end, MOTIS has likely pruned a
-        // competitive S-Bahn one (out-arrived by a bus that stops nearer the
-        // door, or buried under a 3-change bus+rail combo). Re-plan without buses
-        // so the S-Bahn + short walk surfaces, keeping only the journeys that
-        // actually ride rail — an addition to the full multi-modal set, never a
-        // replacement. Best-effort: a failure leaves the set as-is.
+        // Rail rescue: when the set has no *clean* rail option (rail + short
+        // walk, no bus feeder/egress), yet a station sits within walking reach
+        // of either end, MOTIS has likely hidden the nicest S-Bahn route —
+        // either pruned outright, or degraded to "S-Bahn -> bus -> walk" because
+        // its default egress-walk cap is too short to reach the door from the
+        // platform. Re-plan without buses and with a wider walk budget so the
+        // "ride rail, walk the last bit" route surfaces, keeping only journeys
+        // that actually ride rail — an addition to the full multi-modal set,
+        // never a replacement. Best-effort: a failure leaves the set as-is.
         if (
-            ! $this->hasEasyRail($itineraries)
+            ! $this->hasCleanRail($itineraries)
             && $this->metresBetween($from, $to) >= self::RAIL_RESCUE_MIN_METRES
             && $this->railStationNear($from, $to)
         ) {
@@ -270,16 +272,32 @@ class TransitousAdapter implements RouteService
     }
 
     /**
-     * True when a journey already rides rail with at most one change — a
-     * "good enough" S-Bahn option, so the rescue re-plan isn't worth its call.
-     * A rail leg buried under a 3-change bus combo doesn't count.
+     * True when a journey already offers a *clean* rail option: it rides rail,
+     * makes at most one change, and uses no bus. A rail leg with a bus feeder or
+     * egress (e.g. S19 -> bus -> walk) does NOT count — MOTIS falls back to that
+     * when its default egress-walk cap can't reach the door from the platform,
+     * so the nicer "ride rail, walk the last bit" route is exactly what the
+     * wider-walk rescue re-plan recovers.
      *
      * @param  list<Journey>  $journeys
      */
-    private function hasEasyRail(array $journeys): bool
+    private function hasCleanRail(array $journeys): bool
     {
         foreach ($journeys as $journey) {
-            if ($this->ridesRail($journey) && $journey->transfers <= 1) {
+            if (! $this->ridesRail($journey) || $journey->transfers > 1) {
+                continue;
+            }
+
+            $usesBus = false;
+
+            foreach ($journey->legs as $leg) {
+                if ($leg->mode === 'bus') {
+                    $usesBus = true;
+                    break;
+                }
+            }
+
+            if (! $usesBus) {
                 return true;
             }
         }
