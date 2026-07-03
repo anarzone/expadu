@@ -862,8 +862,11 @@ export function JourneyPlanner({
     // Client-side mode filter — hide options that ride an excluded mode.
     const [excludedModes, setExcludedModes] = useState<Set<string>>(new Set());
 
+    // Only apply the time once one is actually picked — selecting "Arrive by"
+    // (or "Depart at") with no time yet must NOT re-plan, or an empty arrive-by
+    // means "arrive by now" and drops every future option.
     const timeQuery = timeMode !== 'now' && timeValue ? timeValue : '';
-    const arriveBy = timeMode === 'arrive';
+    const arriveBy = timeMode === 'arrive' && timeQuery !== '';
 
     // The planner is re-mounted per destination (keyed in the page), so state
     // starts fresh on each new destination — the effect fetches, and re-fetches
