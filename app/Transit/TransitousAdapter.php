@@ -12,6 +12,7 @@ use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -50,10 +51,17 @@ class TransitousAdapter implements RouteService
     private const RAIL_FIRST_MODES = 'TRAM,SUBWAY,METRO,RAIL,REGIONAL_RAIL,REGIONAL_FAST_RAIL,HIGHSPEED_RAIL,LONG_DISTANCE,NIGHT_RAIL,FERRY';
 
     /**
-     * Only attempt the rail rescue on trips long enough for rail to plausibly
-     * help — short hops never benefit and shouldn't pay for the extra call.
+     * Skip the rail rescue on trivial hops — too short for rail to ever help,
+     * regardless of a station being nearby.
      */
-    private const RAIL_RESCUE_MIN_METRES = 2500;
+    private const RAIL_RESCUE_MIN_METRES = 1500;
+
+    /**
+     * A rail station within this distance of the origin or destination makes
+     * the rail rescue worth a call — otherwise there's no train to catch and
+     * the extra request is wasted.
+     */
+    private const RAIL_STOP_NEAR_METRES = 1300;
 
     /**
      * Per-call HTTP timeout, in seconds, for the plan endpoint. The failover
@@ -89,13 +97,18 @@ class TransitousAdapter implements RouteService
             }
         }
 
-        // Rail rescue: when the set has no *simple* rail option on a trip long
-        // enough for it to matter, MOTIS has likely pruned a competitive S-Bahn
-        // one (out-arrived by a bus that stops nearer the door, or buried under
-        // a 3-change bus+rail combo). Re-plan without buses so the S-Bahn + short
-        // walk surfaces, keeping only the journeys that actually ride rail.
-        // Best-effort: a failure leaves the set as-is.
-        if (! $this->hasEasyRail($itineraries) && $this->metresBetween($from, $to) >= self::RAIL_RESCUE_MIN_METRES) {
+        // Rail rescue: when the set has no *simple* rail option, yet a station
+        // sits within walking reach of either end, MOTIS has likely pruned a
+        // competitive S-Bahn one (out-arrived by a bus that stops nearer the
+        // door, or buried under a 3-change bus+rail combo). Re-plan without buses
+        // so the S-Bahn + short walk surfaces, keeping only the journeys that
+        // actually ride rail — an addition to the full multi-modal set, never a
+        // replacement. Best-effort: a failure leaves the set as-is.
+        if (
+            ! $this->hasEasyRail($itineraries)
+            && $this->metresBetween($from, $to) >= self::RAIL_RESCUE_MIN_METRES
+            && $this->railStationNear($from, $to)
+        ) {
             try {
                 $railItineraries = $this->fetchBucket(
                     $from, $to, $departAt, 3,
@@ -284,6 +297,48 @@ class TransitousAdapter implements RouteService
         }
 
         return false;
+    }
+
+    /** True when a rail station is within walking reach of either endpoint. */
+    private function railStationNear(GeoPoint $from, GeoPoint $to): bool
+    {
+        foreach ($this->railStations() as $stop) {
+            if (
+                $this->metresBetween($from, new GeoPoint($stop['lat'], $stop['lng'])) <= self::RAIL_STOP_NEAR_METRES
+                || $this->metresBetween($to, new GeoPoint($stop['lat'], $stop['lng'])) <= self::RAIL_STOP_NEAR_METRES
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Coordinates of every rail (route_type 2 — S-Bahn + regional) platform in
+     * the loaded feed. The static set is cached for a month; the proximity test
+     * then runs in memory, so the rescue gate costs no per-request query.
+     *
+     * @return list<array{lat: float, lng: float}>
+     */
+    private function railStations(): array
+    {
+        return Cache::remember('motis:rail-stations', now()->addDays(30), function () {
+            return DB::table('gtfs_stops')
+                ->whereIn('stop_id', function ($query) {
+                    $query->select('st.stop_id')->distinct()
+                        ->from('gtfs_stop_times as st')
+                        ->whereIn('st.trip_id', function ($trips) {
+                            $trips->select('t.trip_id')
+                                ->from('gtfs_trips as t')
+                                ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
+                                ->where('r.route_type', 2);
+                        });
+                })
+                ->get(['stop_lat', 'stop_lng'])
+                ->map(fn ($stop) => ['lat' => (float) $stop->stop_lat, 'lng' => (float) $stop->stop_lng])
+                ->all();
+        });
     }
 
     /** Great-circle distance between two points, in metres (haversine). */

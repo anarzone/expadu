@@ -3,6 +3,7 @@
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TransitousAdapter;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 test('maps a real MOTIS plan response to journeys', function () {
@@ -243,6 +244,9 @@ test('re-plans without buses to surface a competitive S-Bahn route the primary s
     Http::fake(fn ($request) => str_contains(urldecode($request->url()), 'transitModes=')
         ? Http::response($railRescue)
         : Http::response($busOnly));
+
+    // A rail station sits on the destination, so the rescue is worth a call.
+    Cache::put('motis:rail-stations', [['lat' => 50.98, 'lng' => 6.95]]);
 
     // ~4.8 km apart — far enough that the rail rescue is worth a call.
     $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
