@@ -46,7 +46,7 @@ class FailoverRouteService implements RouteService
     /** Don't start a provider call with less than this much budget left. */
     private const MIN_ATTEMPT_SECONDS = 2.0;
 
-    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false): JourneyResult
+    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
     {
         if (! $this->withinServiceArea($from) || ! $this->withinServiceArea($to)) {
             Log::warning('journey requested outside NRW service area', [
@@ -57,16 +57,17 @@ class FailoverRouteService implements RouteService
         }
 
         $cacheKey = sprintf(
-            'journey:%.4f,%.4f:%.4f,%.4f:%s:%d:%d',
+            'journey:%.4f,%.4f:%.4f,%.4f:%s:%d:%d:%d',
             $from->lat, $from->lng, $to->lat, $to->lng,
             $departAt?->format('YmdHi') ?? 'now',
             $max,
             $arriveBy ? 1 : 0,
+            $variety ? 1 : 0,
         );
 
         // Cache the ARRAY form, never the DTO — Redis deserialises cached
         // objects to __PHP_Incomplete_Class on a hit. Reconstruct on read.
-        $cached = Cache::remember($cacheKey, 60, function () use ($from, $to, $departAt, $max, $arriveBy) {
+        $cached = Cache::remember($cacheKey, 60, function () use ($from, $to, $departAt, $max, $arriveBy, $variety) {
             $deadline = $this->now() + self::JOURNEY_BUDGET_SECONDS;
 
             foreach (['motis' => $this->motis, 'transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
@@ -91,7 +92,7 @@ class FailoverRouteService implements RouteService
                     : $adapter;
 
                 try {
-                    $result = $bounded->plan($from, $to, $departAt, $max, $arriveBy);
+                    $result = $bounded->plan($from, $to, $departAt, $max, $arriveBy, $variety);
                     $this->breaker->recordSuccess($name);
 
                     return $result->toArray();

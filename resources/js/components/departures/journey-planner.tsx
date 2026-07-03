@@ -861,6 +861,10 @@ export function JourneyPlanner({
     const [timeValue, setTimeValue] = useState('');
     // Client-side mode filter — hide options that ride an excluded mode.
     const [excludedModes, setExcludedModes] = useState<Set<string>>(new Set());
+    // "Show more options" — server also routes via interchanges for extra
+    // combinations (slower, so an explicit opt-in with a loading state).
+    const [showMore, setShowMore] = useState(false);
+    const [moreLoading, setMoreLoading] = useState(false);
 
     // Only apply the time once one is actually picked — selecting "Arrive by"
     // (or "Depart at") with no time yet must NOT re-plan, or an empty arrive-by
@@ -897,17 +901,23 @@ export function JourneyPlanner({
             }
         }
 
+        if (showMore) {
+            params.set('more', '1');
+        }
+
         fetch(`/api/journey?${params}`, { credentials: 'same-origin' })
             .then((res) => res.json())
             .then((json: JourneyResponse) => {
                 if (!cancelled) {
                     setData(json);
                     setError(false);
+                    setMoreLoading(false);
                 }
             })
             .catch(() => {
                 if (!cancelled) {
                     setError(true);
+                    setMoreLoading(false);
                 }
             });
 
@@ -923,6 +933,7 @@ export function JourneyPlanner({
         destination.fromName,
         timeQuery,
         arriveBy,
+        showMore,
     ]);
 
     // The engine hands us a Pareto set (arrival time × transfers × walking).
@@ -1343,6 +1354,21 @@ export function JourneyPlanner({
                             })}
                         </div>
                     )}
+
+                    <button
+                        onClick={() => {
+                            setMoreLoading(true);
+                            setShowMore((v) => !v);
+                        }}
+                        disabled={moreLoading}
+                        className="mt-3 w-full cursor-pointer rounded-[13px] border border-border bg-card py-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+                    >
+                        {moreLoading
+                            ? 'Finding more…'
+                            : showMore
+                              ? 'Show fewer options'
+                              : 'Show more options'}
+                    </button>
                 </>
             )}
         </div>

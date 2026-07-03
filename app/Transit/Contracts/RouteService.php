@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
  */
 interface RouteService
 {
-    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false): JourneyResult;
+    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult;
 
     /**
      * @return list<Place>

@@ -11,6 +11,7 @@ use App\Transit\Dto\JourneyResult;
 use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -48,15 +49,33 @@ class TransitousAdapter implements RouteService
      */
     protected float $planTimeout = 8.0;
 
-    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false): JourneyResult
+    public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
     {
         // Transit itineraries first. Deliberately NO directModes on this call:
         // when MOTIS is handed a fast direct (bike) route in the same request it
         // prunes comparable transit and the transit option vanishes entirely.
         // Two separate calls keep both. (Verified against the live engine.)
-        $journeys = $this->pruneAbsurd(
-            $this->fetchBucket($from, $to, $departAt, $max, $arriveBy ? ['arriveBy' => 'true'] : [], 'itineraries', $this->planTimeout),
-        );
+        $timeExtra = $arriveBy ? ['arriveBy' => 'true'] : [];
+        $itineraries = $this->fetchBucket($from, $to, $departAt, $max, $timeExtra, 'itineraries', $this->planTimeout);
+
+        // "Show more options": force routes through the city's interchanges so
+        // the list surfaces sensible-but-non-optimal combinations (e.g. change
+        // at Ebertplatz onto a different line) that the Pareto set drops.
+        if ($variety) {
+            foreach ($this->corridorVias($from, $to) as $viaId) {
+                try {
+                    $itineraries = array_merge($itineraries, $this->fetchBucket(
+                        $from, $to, $departAt, 3,
+                        $timeExtra + ['via' => $viaId],
+                        'itineraries', min($this->planTimeout, 3.0),
+                    ));
+                } catch (\Throwable) {
+                    // Best effort — a via that yields nothing must not fail the plan.
+                }
+            }
+        }
+
+        $journeys = $this->pruneAbsurd($itineraries);
 
         // Direct walk + bike, fetched PER MODE as best-effort calls. A single
         // combined `WALK,BIKE` call with numItineraries=1 only ever returns the
@@ -137,6 +156,62 @@ class TransitousAdapter implements RouteService
         }
 
         return $inWindow;
+    }
+
+    /**
+     * Cologne's main interchange stops, geocoded to MOTIS stop ids (cached),
+     * used as `via` points to surface alternative line combinations.
+     *
+     * @return list<array{id: string, lat: float, lng: float}>
+     */
+    private function interchanges(): array
+    {
+        return Cache::remember('motis:interchanges', now()->addDays(30), function () {
+            $names = [
+                'Köln Ebertplatz', 'Köln Neumarkt', 'Köln Appellhofplatz',
+                'Köln Friesenplatz', 'Köln Rudolfplatz', 'Köln Barbarossaplatz',
+                'Köln Heumarkt', 'Köln Hauptbahnhof', 'Köln Zülpicher Platz',
+                'Köln Poststr.', 'Köln Deutz',
+            ];
+
+            $out = [];
+            foreach ($names as $name) {
+                try {
+                    $stop = collect($this->geocode($name))
+                        ->first(fn (Place $p) => $p->stopId !== null);
+                } catch (\Throwable) {
+                    $stop = null;
+                }
+
+                if ($stop !== null && $stop->stopId !== null) {
+                    $out[] = ['id' => $stop->stopId, 'lat' => $stop->point->lat, 'lng' => $stop->point->lng];
+                }
+            }
+
+            return $out;
+        });
+    }
+
+    /**
+     * Interchange stop ids within the trip's bounding box — so a `via` detours
+     * through a hub on the corridor, not clear across the city.
+     *
+     * @return list<string>
+     */
+    private function corridorVias(GeoPoint $from, GeoPoint $to): array
+    {
+        $minLat = min($from->lat, $to->lat) - 0.02;
+        $maxLat = max($from->lat, $to->lat) + 0.02;
+        $minLng = min($from->lng, $to->lng) - 0.02;
+        $maxLng = max($from->lng, $to->lng) + 0.02;
+
+        return collect($this->interchanges())
+            ->filter(fn (array $ic) => $ic['lat'] >= $minLat && $ic['lat'] <= $maxLat
+                && $ic['lng'] >= $minLng && $ic['lng'] <= $maxLng)
+            ->pluck('id')
+            ->take(6)
+            ->values()
+            ->all();
     }
 
     /**

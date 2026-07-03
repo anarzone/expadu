@@ -40,6 +40,9 @@ class TakeMeThereController extends Controller
             // arrival ("arrive by") rather than the departure ("depart at").
             'depart_at' => ['nullable', 'date'],
             'arrive_by' => ['nullable', 'boolean'],
+            // "Show more options": also route via the city's interchanges to
+            // surface alternative line combinations the Pareto set drops.
+            'more' => ['nullable', 'boolean'],
         ]);
 
         $user = $request->user();
@@ -85,8 +88,9 @@ class TakeMeThereController extends Controller
             ? CarbonImmutable::parse($validated['depart_at'])
             : null;
         $arriveBy = (bool) ($validated['arrive_by'] ?? false);
+        $variety = (bool) ($validated['more'] ?? false);
 
-        $result = $routes->plan($from, $to, $departAt, 10, $arriveBy);
+        $result = $routes->plan($from, $to, $departAt, 10, $arriveBy, $variety);
 
         // Journey-aware Rheinlandtarif advice for the transit option (walk/bike
         // options are free and carry no ticket). Computed for the first transit
