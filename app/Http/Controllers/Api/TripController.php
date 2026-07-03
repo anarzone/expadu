@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendTripStopReminder;
 use App\Models\ActiveTrip;
+use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -44,7 +47,75 @@ class TripController extends Controller
             ],
         );
 
+        $this->scheduleGetOffReminders($trip, $request->user());
+
         return response()->json(['trip' => $trip->toShared()]);
+    }
+
+    /**
+     * Lead time before a stop's scheduled arrival to nudge the traveller —
+     * roughly one stop early, so there's time to reach the doors.
+     */
+    private const REMINDER_LEAD_SECONDS = 120;
+
+    /**
+     * Queue a "get off" web push for each transit exit (changes + the final
+     * stop), timed from the journey's schedule so it lands even with the app
+     * closed. Jobs self-validate against the live trip at run time, so a later
+     * end/switch simply makes the stale ones no-op — no cancellation needed.
+     */
+    private function scheduleGetOffReminders(ActiveTrip $trip, User $user): void
+    {
+        // No point queuing anything the user can't or won't receive.
+        if (
+            ! $user->wantsNotification('transit')
+            || ! $user->pushSubscriptions()->exists()
+        ) {
+            return;
+        }
+
+        $legs = $trip->journey['legs'] ?? [];
+
+        $transitIndexes = [];
+
+        foreach ($legs as $i => $leg) {
+            $mode = $leg['mode'] ?? '';
+
+            if ($mode !== 'walk' && $mode !== 'bike') {
+                $transitIndexes[] = $i;
+            }
+        }
+
+        if ($transitIndexes === []) {
+            return;
+        }
+
+        $lastTransit = end($transitIndexes);
+        $startedAt = $trip->started_at->toIso8601String();
+
+        foreach ($transitIndexes as $i) {
+            $arriveAt = $legs[$i]['arrive_at'] ?? null;
+            $stopName = $legs[$i]['to']['name'] ?? null;
+
+            if ($arriveAt === null || $stopName === null) {
+                continue;
+            }
+
+            $fireAt = CarbonImmutable::parse($arriveAt)
+                ->subSeconds(self::REMINDER_LEAD_SECONDS);
+
+            // A stop already at/behind us can't be reminded about.
+            if (! $fireAt->isFuture()) {
+                continue;
+            }
+
+            SendTripStopReminder::dispatch(
+                $user->id,
+                $startedAt,
+                $stopName,
+                $i === $lastTransit,
+            )->delay($fireAt);
+        }
     }
 
     /** End the active trip (arrived, or abandoned). */
