@@ -20,6 +20,14 @@ import type {
     JourneyLeg,
     JourneyResponse,
 } from '@/components/journey/take-me-there-sheet';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
 import { useActiveTrip } from '@/hooks/use-active-trip';
 import type { TripPlace } from '@/hooks/use-active-trip';
@@ -74,20 +82,17 @@ function routeSignature(journey: Journey): string {
         .join('>');
 }
 
-/** Same departure at the same times on the same lines — the persisted trip. */
-function sameJourney(
-    a: Journey | null | undefined,
-    b: Journey | null,
-): boolean {
+/**
+ * Same route = same line sequence. Matched by lines (not exact departure time),
+ * because the option list refreshes to the *next* departure of each route while
+ * a trip you already boarded keeps its original — so timestamps drift apart.
+ */
+function sameRoute(a: Journey | null | undefined, b: Journey | null): boolean {
     if (!a || !b) {
         return false;
     }
 
-    return (
-        a.depart_at === b.depart_at &&
-        a.arrive_at === b.arrive_at &&
-        routeSignature(a) === routeSignature(b)
-    );
+    return routeSignature(a) === routeSignature(b);
 }
 
 /** Total walking (and cycling) minutes across a journey's legs. */
@@ -210,6 +215,7 @@ function RouteCard({
     walkMin,
     disrupted,
     highlight,
+    onTrip,
     onStart,
 }: {
     journey: Journey;
@@ -217,19 +223,29 @@ function RouteCard({
     walkMin: number;
     disrupted: boolean;
     highlight: boolean;
+    /** This route is the one the live trip is currently on. */
+    onTrip: boolean;
     onStart: () => void;
 }) {
     return (
         <button
             onClick={onStart}
             className={`animate-fade-up w-full rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors md:px-[18px] ${
-                highlight
-                    ? 'border-primary'
-                    : 'border-border hover:border-primary'
+                onTrip
+                    ? 'border-success ring-1 ring-success'
+                    : highlight
+                      ? 'border-primary'
+                      : 'border-border hover:border-primary'
             }`}
         >
             <div className="mb-3 flex items-center gap-2.5">
-                {label && (
+                {onTrip && (
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success/12 px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] text-success uppercase">
+                        <span className="size-1.5 animate-pulse rounded-full bg-success" />
+                        On this trip
+                    </span>
+                )}
+                {label && !onTrip && (
                     <span
                         className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] uppercase ${
                             highlight
@@ -674,9 +690,11 @@ function RouteDetail({
     fromName,
     destName,
     active,
+    hasActiveTrip,
     busy,
     onBack,
     onStart,
+    onSwitch,
     onEnd,
 }: {
     journey: Journey;
@@ -684,9 +702,12 @@ function RouteDetail({
     destName: string;
     /** True once this journey is the persisted, live trip (vs. a preview). */
     active: boolean;
+    /** A trip is live — possibly a different route (drives Switch vs Start). */
+    hasActiveTrip: boolean;
     busy: boolean;
     onBack: () => void;
     onStart: () => void;
+    onSwitch: () => void;
     onEnd: () => void;
 }) {
     const [now, setNow] = useState(() => Date.now());
@@ -810,6 +831,20 @@ function RouteDetail({
                 >
                     {busy ? 'Ending…' : 'End journey'}
                 </button>
+            ) : hasActiveTrip ? (
+                <div className="mt-3.5">
+                    <button
+                        onClick={onSwitch}
+                        disabled={busy}
+                        className="flex w-full items-center justify-center gap-2 rounded-[13px] border border-foreground bg-card py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:opacity-60"
+                    >
+                        <IconArrowsExchange size={17} stroke={ICON_STROKE} />
+                        Switch to this route
+                    </button>
+                    <p className="mt-2 text-center text-xs text-text-3">
+                        Replaces your current trip
+                    </p>
+                </div>
             ) : (
                 <button
                     onClick={onStart}
@@ -889,6 +924,86 @@ function DegradedNotice({
 }
 
 /**
+ * Guard against accidentally abandoning a live trip: picking a different route
+ * while one is running asks for an explicit confirm before it replaces it.
+ */
+function SwitchTripDialog({
+    open,
+    busy,
+    fromDest,
+    toDest,
+    onCancel,
+    onConfirm,
+}: {
+    open: boolean;
+    busy: boolean;
+    fromDest: string;
+    toDest: string;
+    onCancel: () => void;
+    onConfirm: () => void;
+}) {
+    return (
+        <Dialog
+            open={open}
+            onOpenChange={(o) => {
+                if (!o) {
+                    onCancel();
+                }
+            }}
+        >
+            <DialogContent className="gap-3 rounded-2xl border-border bg-card sm:max-w-sm">
+                <DialogHeader>
+                    <DialogTitle className="font-display text-xl">
+                        Switch your trip?
+                    </DialogTitle>
+                    <DialogDescription className="text-[13.5px] leading-relaxed">
+                        {fromDest && fromDest !== toDest ? (
+                            <>
+                                This ends your current trip to{' '}
+                                <span className="font-semibold text-foreground">
+                                    {fromDest}
+                                </span>{' '}
+                                and starts this route to{' '}
+                                <span className="font-semibold text-foreground">
+                                    {toDest}
+                                </span>
+                                .
+                            </>
+                        ) : (
+                            <>
+                                This replaces the route on your current trip to{' '}
+                                <span className="font-semibold text-foreground">
+                                    {toDest}
+                                </span>
+                                .
+                            </>
+                        )}
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-1 gap-2">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        disabled={busy}
+                        className="rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+                    >
+                        Keep current
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={busy}
+                        className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
+                    >
+                        {busy ? 'Switching…' : 'Switch trip'}
+                    </button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/**
  * The inline journey planner that replaces the board once a destination is
  * chosen: an editable From → To with saved shortcuts, live route options from
  * /api/journey, and a per-route leg-by-leg detail.
@@ -914,6 +1029,8 @@ export function JourneyPlanner({
         initialSelected ?? null,
     );
     const [filter, setFilter] = useState<FilterKey>('best');
+    // Open the "switch trip" confirm before replacing a running trip.
+    const [switchOpen, setSwitchOpen] = useState(false);
     // Plan for later: 'now' | 'depart' (leave at) | 'arrive' (be there by).
     const [timeMode, setTimeMode] = useState<'now' | 'depart' | 'arrive'>(
         'now',
@@ -1139,12 +1256,23 @@ export function JourneyPlanner({
 
     const fromName = data?.from.name ?? 'Your location';
 
-    // Route detail (a route was picked). Starting persists it as the live trip;
-    // ending clears the session and returns to the board.
-    if (selected) {
-        const isActive = sameJourney(activeTrip?.journey, selected);
+    // A live trip counts as "this route" only when it runs to the same place
+    // (the planner's current destination) and rides the same line sequence.
+    const tripHere =
+        !!activeTrip &&
+        Math.abs(activeTrip.destination.lat - destination.lat) < 1e-4 &&
+        Math.abs(activeTrip.destination.lng - destination.lng) < 1e-4;
+    const isTripRoute = (j: Journey): boolean =>
+        tripHere && sameRoute(activeTrip?.journey, j);
 
-        const handleStart = () => {
+    // Route detail (a route was picked). Starting persists it as the live trip;
+    // ending clears the session and returns to the board. Picking a different
+    // route while a trip runs asks to confirm before replacing it.
+    if (selected) {
+        const isActive = isTripRoute(selected);
+        const hasActiveTrip = !!activeTrip;
+
+        const startJourney = () => {
             const dest: TripPlace = {
                 name: destination.name,
                 lat: destination.lat,
@@ -1159,20 +1287,34 @@ export function JourneyPlanner({
                   }
                 : null;
 
-            start(selected, dest, origin);
+            return start(selected, dest, origin);
         };
 
         return (
-            <RouteDetail
-                journey={selected}
-                fromName={fromName}
-                destName={destination.name}
-                active={isActive}
-                busy={busy}
-                onBack={() => setSelected(null)}
-                onStart={handleStart}
-                onEnd={() => end().then(onClose)}
-            />
+            <>
+                <RouteDetail
+                    journey={selected}
+                    fromName={fromName}
+                    destName={destination.name}
+                    active={isActive}
+                    hasActiveTrip={hasActiveTrip}
+                    busy={busy}
+                    onBack={() => setSelected(null)}
+                    onStart={startJourney}
+                    onSwitch={() => setSwitchOpen(true)}
+                    onEnd={() => end().then(onClose)}
+                />
+                <SwitchTripDialog
+                    open={switchOpen}
+                    busy={busy}
+                    fromDest={activeTrip?.destination.name ?? ''}
+                    toDest={destination.name}
+                    onCancel={() => setSwitchOpen(false)}
+                    onConfirm={() => {
+                        startJourney().then(() => setSwitchOpen(false));
+                    }}
+                />
+            </>
         );
     }
 
@@ -1480,6 +1622,7 @@ export function JourneyPlanner({
                         <div className="flex flex-col gap-3">
                             {visible.map((it, i) => {
                                 const isTop = i === 0;
+                                const onTrip = isTripRoute(it.journey);
                                 const label =
                                     it.journey.mode !== 'transit'
                                         ? it.journey.mode === 'bike'
@@ -1503,8 +1646,16 @@ export function JourneyPlanner({
                                                 walkMin={it.walkMin}
                                                 disrupted={it.disrupted}
                                                 highlight={isTop}
+                                                onTrip={onTrip}
                                                 onStart={() =>
-                                                    setSelected(it.journey)
+                                                    // Reopen the real live trip
+                                                    // (boarded times), not the
+                                                    // list's next departure.
+                                                    setSelected(
+                                                        onTrip && activeTrip
+                                                            ? activeTrip.journey
+                                                            : it.journey,
+                                                    )
                                                 }
                                             />
                                         </div>
