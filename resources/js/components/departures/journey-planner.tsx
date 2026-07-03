@@ -858,7 +858,10 @@ export function JourneyPlanner({
     const [timeMode, setTimeMode] = useState<'now' | 'depart' | 'arrive'>(
         'now',
     );
-    const [timeValue, setTimeValue] = useState('');
+    // Day chip (0 = today, 1 = tomorrow) + a HH:MM time, assembled into the
+    // depart_at the server plans against.
+    const [dayOffset, setDayOffset] = useState(0);
+    const [timeOfDay, setTimeOfDay] = useState('');
     // Client-side mode filter — hide options that ride an excluded mode.
     const [excludedModes, setExcludedModes] = useState<Set<string>>(new Set());
     // "Show more options" — server also routes via interchanges for extra
@@ -866,10 +869,20 @@ export function JourneyPlanner({
     const [showMore, setShowMore] = useState(false);
     const [moreLoading, setMoreLoading] = useState(false);
 
-    // Only apply the time once one is actually picked — selecting "Arrive by"
-    // (or "Depart at") with no time yet must NOT re-plan, or an empty arrive-by
-    // means "arrive by now" and drops every future option.
-    const timeQuery = timeMode !== 'now' && timeValue ? timeValue : '';
+    // Assemble depart_at from the day + time, and only once a time is actually
+    // picked — selecting "Arrive by" with no time would mean "arrive by now"
+    // and drop every future option.
+    const timeQuery = useMemo(() => {
+        if (timeMode === 'now' || !timeOfDay) {
+            return '';
+        }
+
+        const d = new Date();
+        d.setDate(d.getDate() + dayOffset);
+        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        return `${ymd}T${timeOfDay}`;
+    }, [timeMode, dayOffset, timeOfDay]);
     const arriveBy = timeMode === 'arrive' && timeQuery !== '';
 
     // The planner is re-mounted per destination (keyed in the page), so state
@@ -1188,33 +1201,65 @@ export function JourneyPlanner({
                 Routes to {destination.name}
             </div>
 
-            {/* Plan for later — leave-at / arrive-by (a server-side re-plan) */}
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-                <IconClock
-                    size={15}
-                    stroke={ICON_STROKE}
-                    className="shrink-0 text-text-3"
-                />
-                <select
-                    value={timeMode}
-                    onChange={(e) =>
-                        setTimeMode(
-                            e.target.value as 'now' | 'depart' | 'arrive',
-                        )
-                    }
-                    className="cursor-pointer rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px] font-semibold text-foreground"
-                >
-                    <option value="now">Leave now</option>
-                    <option value="depart">Depart at</option>
-                    <option value="arrive">Arrive by</option>
-                </select>
-                {timeMode !== 'now' && (
-                    <input
-                        type="datetime-local"
-                        value={timeValue}
-                        onChange={(e) => setTimeValue(e.target.value)}
-                        className="rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px] text-foreground"
+            {/* Plan for later — segmented, in the app's own pill language */}
+            <div className="mb-3">
+                <div className="flex items-center gap-2">
+                    <IconClock
+                        size={15}
+                        stroke={ICON_STROKE}
+                        className="shrink-0 text-text-3"
                     />
+                    <div className="flex gap-1.5">
+                        {(
+                            [
+                                ['now', 'Leave now'],
+                                ['depart', 'Depart at'],
+                                ['arrive', 'Arrive by'],
+                            ] as const
+                        ).map(([m, label]) => (
+                            <button
+                                key={m}
+                                onClick={() => setTimeMode(m)}
+                                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                                    timeMode === m
+                                        ? 'border-foreground bg-foreground text-background'
+                                        : 'border-border bg-card text-muted-foreground hover:border-primary'
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {timeMode !== 'now' && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[23px]">
+                        {(
+                            [
+                                [0, 'Today'],
+                                [1, 'Tomorrow'],
+                            ] as const
+                        ).map(([off, label]) => (
+                            <button
+                                key={off}
+                                onClick={() => setDayOffset(off)}
+                                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                                    dayOffset === off
+                                        ? 'border-foreground bg-foreground text-background'
+                                        : 'border-border bg-card text-muted-foreground hover:border-primary'
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                        <input
+                            type="time"
+                            value={timeOfDay}
+                            onChange={(e) => setTimeOfDay(e.target.value)}
+                            aria-label="Time"
+                            className="rounded-full border border-border bg-card px-3.5 py-1.5 text-[12.5px] font-semibold text-foreground [color-scheme:light] focus:border-primary focus:outline-none"
+                        />
+                    </div>
                 )}
             </div>
 
