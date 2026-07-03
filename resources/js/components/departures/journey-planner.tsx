@@ -62,6 +62,14 @@ function transferText(journey: Journey): string {
     return `${journey.transfers} change${journey.transfers > 1 ? 's' : ''}`;
 }
 
+/** The transit line sequence, e.g. "12>3" — identifies a distinct route. */
+function routeSignature(journey: Journey): string {
+    return journey.legs
+        .filter((l) => l.mode !== 'walk' && l.mode !== 'bike')
+        .map((l) => l.line ?? '?')
+        .join('>');
+}
+
 /** Total walking (and cycling) minutes across a journey's legs. */
 function walkMinutes(journey: Journey): number {
     return journey.legs
@@ -892,7 +900,21 @@ export function JourneyPlanner({
     const items = useMemo<RouteItem[]>(() => {
         const list = data?.journeys ?? [];
         const disruptions = data?.disruptions ?? [];
-        const transit = list.filter((j) => j.mode === 'transit');
+        // One card per distinct line-combination — the soonest departure — so
+        // the list reads as different routes, not the same route repeated every
+        // ten minutes (MOTIS returns several departures of each optimal route).
+        const bySignature = new Map<string, Journey>();
+
+        for (const j of list.filter((x) => x.mode === 'transit')) {
+            const s = routeSignature(j);
+            const prev = bySignature.get(s);
+
+            if (!prev || Date.parse(j.depart_at) < Date.parse(prev.depart_at)) {
+                bySignature.set(s, j);
+            }
+        }
+
+        const transit = [...bySignature.values()];
         const direct = list
             .filter((j) => j.mode !== 'transit')
             .sort((a, b) => a.duration_min - b.duration_min)
@@ -931,36 +953,43 @@ export function JourneyPlanner({
         return [best, ...rest, ...direct].map(toItem);
     }, [data]);
 
-    // The chip re-sorts/subsets the transit options client-side; direct
-    // walk/bike always ride along at the end (they are the "or just walk" tail).
+    // The chip re-sorts/subsets the whole list client-side. Sort filters rank
+    // every option by their criterion (so a fast bike can top "Fastest"); Best
+    // keeps the best-first order; Direct is the no-change subset.
     const visible = useMemo<RouteItem[]>(() => {
-        const transitItems = items.filter(
-            (it) => it.journey.mode === 'transit',
-        );
-        const directItems = items.filter((it) => it.journey.mode !== 'transit');
         const arr = (it: RouteItem) => Date.parse(it.journey.arrive_at);
 
-        let t = transitItems;
-
         if (filter === 'fastest') {
-            t = [...transitItems].sort((a, b) => arr(a) - arr(b));
-        } else if (filter === 'fewest') {
-            t = [...transitItems].sort(
+            return [...items].sort(
+                (a, b) =>
+                    a.journey.duration_min - b.journey.duration_min ||
+                    arr(a) - arr(b),
+            );
+        }
+
+        if (filter === 'fewest') {
+            return [...items].sort(
                 (a, b) =>
                     a.journey.transfers - b.journey.transfers ||
                     arr(a) - arr(b),
             );
-        } else if (filter === 'leastwalk') {
-            t = [...transitItems].sort(
-                (a, b) => a.walkMin - b.walkMin || arr(a) - arr(b),
-            );
-        } else if (filter === 'direct') {
-            t = transitItems
-                .filter((it) => it.journey.transfers === 0)
-                .sort((a, b) => arr(a) - arr(b));
         }
 
-        return [...t, ...directItems];
+        if (filter === 'leastwalk') {
+            return [...items].sort(
+                (a, b) => a.walkMin - b.walkMin || arr(a) - arr(b),
+            );
+        }
+
+        if (filter === 'direct') {
+            return items
+                .filter((it) => it.journey.transfers === 0)
+                .sort(
+                    (a, b) => a.journey.duration_min - b.journey.duration_min,
+                );
+        }
+
+        return items;
     }, [items, filter]);
 
     const fromName = data?.from.name ?? 'Your location';
