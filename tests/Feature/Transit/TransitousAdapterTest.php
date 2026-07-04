@@ -2,6 +2,7 @@
 
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TransitousAdapter;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -195,6 +196,57 @@ test('travelMatrix returns all-null when the response length mismatches', functi
     );
 
     expect($minutes)->toBe([null, null]);
+});
+
+test('an arrive-by search keeps the latest arrivals, not the earliest', function () {
+    // A UTC tram leg arriving at $arrZ (44 min ride), the shape MOTIS returns.
+    $itin = function (string $arrZ) {
+        $depZ = CarbonImmutable::parse($arrZ)->subMinutes(44)->toIso8601ZuluString();
+
+        return [
+            'startTime' => $depZ,
+            'endTime' => $arrZ,
+            'duration' => 2640,
+            'transfers' => 0,
+            'legs' => [[
+                'mode' => 'TRAM',
+                'routeShortName' => '12',
+                'from' => ['name' => 'A', 'lat' => 50.95, 'lon' => 6.90],
+                'to' => ['name' => 'B', 'lat' => 50.98, 'lon' => 6.95],
+                'startTime' => $depZ,
+                'endTime' => $arrZ,
+                'duration' => 2640,
+            ]],
+        ];
+    };
+
+    // Target: arrive by 20:30 local (18:30Z). MOTIS returns a backward spread of
+    // arrivals; only those close to the target should survive the prune.
+    Http::fake(['api.transitous.org/*' => Http::response(['itineraries' => [
+        $itin('2026-07-06T15:00:00Z'), // 17:00 local — hours early
+        $itin('2026-07-06T16:00:00Z'), // 18:00 local — too early
+        $itin('2026-07-06T17:00:00Z'), // 19:00 local
+        $itin('2026-07-06T17:45:00Z'), // 19:45 local
+        $itin('2026-07-06T18:10:00Z'), // 20:10 local
+        $itin('2026-07-06T18:25:00Z'), // 20:25 local — closest to target
+    ]])]);
+
+    $result = (new TransitousAdapter)->plan(
+        new GeoPoint(50.95, 6.90),
+        new GeoPoint(50.98, 6.95),
+        CarbonImmutable::parse('2026-07-06T18:30:00Z'),
+        10,
+        true, // arriveBy
+    );
+
+    $arrivals = collect($result->journeys)
+        ->filter(fn ($j) => $j->mode() === 'transit')
+        ->map(fn ($j) => $j->arriveAt->setTimezone('Europe/Berlin')->format('H:i'))
+        ->all();
+
+    expect($arrivals)->toContain('20:25');       // the option closest to the target
+    expect($arrivals)->not->toContain('17:00');  // the far-too-early one is pruned
+    expect($arrivals)->not->toContain('18:00');
 });
 
 test('plan throws on http error so the failover can catch it', function () {

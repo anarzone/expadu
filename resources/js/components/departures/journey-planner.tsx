@@ -1210,21 +1210,30 @@ export function JourneyPlanner({
         }
 
         const arriveMs = (j: Journey) => Date.parse(j.arrive_at);
-        const earliest = Math.min(...transit.map(arriveMs));
-        // Minutes later than the best arrival, penalised for each change and
-        // for walking — so Best only trades time for a materially simpler trip.
+        // Anchor on the target-appropriate end: for "arrive by" the LATEST
+        // arrival (closest to the requested time, least dead time), otherwise
+        // the earliest (soonest there). Distance from that anchor, penalised for
+        // each change and for walking — so Best only trades time for a
+        // materially simpler trip.
+        const anchor = arriveBy
+            ? Math.max(...transit.map(arriveMs))
+            : Math.min(...transit.map(arriveMs));
         const score = (j: Journey) =>
-            (arriveMs(j) - earliest) / 60000 +
+            Math.abs(arriveMs(j) - anchor) / 60000 +
             j.transfers * 5 +
             walkMinutes(j) * 1.2;
 
         const best = minBy(transit, score);
         const rest = transit
             .filter((j) => j !== best)
-            .sort((a, b) => arriveMs(a) - arriveMs(b));
+            .sort((a, b) =>
+                arriveBy
+                    ? arriveMs(b) - arriveMs(a)
+                    : arriveMs(a) - arriveMs(b),
+            );
 
         return [best, ...rest, ...direct].map(toItem);
-    }, [data]);
+    }, [data, arriveBy]);
 
     // Transit modes present in the current results — drives the toggles.
     const availableModes = useMemo(() => {

@@ -132,7 +132,7 @@ class TransitousAdapter implements RouteService
             }
         }
 
-        $journeys = $this->pruneAbsurd($itineraries);
+        $journeys = $this->pruneAbsurd($itineraries, $arriveBy);
 
         // Direct walk + bike, fetched PER MODE as best-effort calls. A single
         // combined `WALK,BIKE` call with numItineraries=1 only ever returns the
@@ -140,7 +140,9 @@ class TransitousAdapter implements RouteService
         // vanished — each mode needs its own call. A hiccup on one must never
         // drop transit or the other mode. Caps are generous so the sheet offers
         // all three modes for any reasonable city trip; only a truly absurd
-        // option is dropped (walk past 90 min, bike past 80).
+        // option is dropped (walk past 90 min, bike past 80). The time anchor
+        // ($timeExtra carries arriveBy) applies here too, so a bike option on an
+        // "arrive by" search arrives by the target instead of leaving at it.
         $directCaps = ['BIKE' => 4800, 'WALK' => 5400];
         foreach ($directCaps as $directMode => $maxDirectTime) {
             try {
@@ -149,7 +151,7 @@ class TransitousAdapter implements RouteService
                     $to,
                     $departAt,
                     1,
-                    ['directModes' => $directMode, 'maxDirectTime' => $maxDirectTime],
+                    ['directModes' => $directMode, 'maxDirectTime' => $maxDirectTime] + $timeExtra,
                     'direct',
                     min($this->planTimeout, 5.0),
                 );
@@ -176,15 +178,18 @@ class TransitousAdapter implements RouteService
      *
      *  - duration blow-ups — "23:33 → 05:28, wait out the night-service gap"
      *    (survives only within double the best duration, 40-min grace floor);
-     *  - much-later departures — near midnight MOTIS pads the list with the
-     *    first trains of tomorrow (04:29 …) next to a 23:55 option. Keep the
-     *    window at 90 minutes after the earliest departure, topping back up
-     *    with the next-departing options if fewer than three survive.
+     *  - off-target trips — MOTIS pads the list with far-away options: the
+     *    first trains of tomorrow (04:29 …) next to a 23:55 "leave now", or —
+     *    on an "arrive by" search — journeys arriving hours before the target.
+     *    Keep a 90-minute window anchored on the relevant end (earliest
+     *    departure for leave-now/depart-at; LATEST arrival for arrive-by, so the
+     *    options closest to the requested arrival survive), topping back up with
+     *    the next-nearest options if fewer than three remain.
      *
      * @param  list<Journey>  $journeys
      * @return list<Journey>
      */
-    private function pruneAbsurd(array $journeys): array
+    private function pruneAbsurd(array $journeys, bool $arriveBy = false): array
     {
         if (count($journeys) < 2) {
             return $journeys;
@@ -202,14 +207,26 @@ class TransitousAdapter implements RouteService
             return $sane;
         }
 
-        usort($sane, fn (Journey $a, Journey $b) => $a->departAt <=> $b->departAt);
+        if ($arriveBy) {
+            // Anchor on the LATEST arrival — the option closest to the requested
+            // "arrive by" time — and keep the 90 minutes of arrivals before it.
+            usort($sane, fn (Journey $a, Journey $b) => $b->arriveAt <=> $a->arriveAt);
 
-        $windowEnd = $sane[0]->departAt->addMinutes(90);
-        $inWindow = array_values(array_filter($sane, fn (Journey $j) => $j->departAt <= $windowEnd));
-        $later = array_values(array_filter($sane, fn (Journey $j) => $j->departAt > $windowEnd));
+            $windowStart = $sane[0]->arriveAt->subMinutes(90);
+            $inWindow = array_values(array_filter($sane, fn (Journey $j) => $j->arriveAt >= $windowStart));
+            $rest = array_values(array_filter($sane, fn (Journey $j) => $j->arriveAt < $windowStart));
+        } else {
+            // Anchor on the earliest departure — the soonest you can leave — and
+            // keep the 90 minutes of departures after it.
+            usort($sane, fn (Journey $a, Journey $b) => $a->departAt <=> $b->departAt);
 
-        while (count($inWindow) < 3 && $later !== []) {
-            $inWindow[] = array_shift($later);
+            $windowEnd = $sane[0]->departAt->addMinutes(90);
+            $inWindow = array_values(array_filter($sane, fn (Journey $j) => $j->departAt <= $windowEnd));
+            $rest = array_values(array_filter($sane, fn (Journey $j) => $j->departAt > $windowEnd));
+        }
+
+        while (count($inWindow) < 3 && $rest !== []) {
+            $inWindow[] = array_shift($rest);
         }
 
         return $inWindow;
