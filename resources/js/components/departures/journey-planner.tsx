@@ -1104,6 +1104,10 @@ export function JourneyPlanner({
     // when the depart/arrive time changes (a server-side re-plan).
     useEffect(() => {
         let cancelled = false;
+        // Abort the previous request when the query changes (e.g. the user
+        // nudges hour then minute) so an earlier, slower response can't land
+        // after a later one and show stale/after-target results.
+        const controller = new AbortController();
 
         const params = new URLSearchParams({
             to_lat: String(destination.lat),
@@ -1132,7 +1136,10 @@ export function JourneyPlanner({
             params.set('more', '1');
         }
 
-        fetch(`/api/journey?${params}`, { credentials: 'same-origin' })
+        fetch(`/api/journey?${params}`, {
+            credentials: 'same-origin',
+            signal: controller.signal,
+        })
             .then((res) => res.json())
             .then((json: JourneyResponse) => {
                 if (!cancelled) {
@@ -1141,8 +1148,9 @@ export function JourneyPlanner({
                     setMoreLoading(false);
                 }
             })
-            .catch(() => {
-                if (!cancelled) {
+            .catch((err: unknown) => {
+                // An aborted request is expected on re-query — not an error.
+                if (!cancelled && (err as Error)?.name !== 'AbortError') {
                     setError(true);
                     setMoreLoading(false);
                 }
@@ -1150,6 +1158,7 @@ export function JourneyPlanner({
 
         return () => {
             cancelled = true;
+            controller.abort();
         };
     }, [
         destination.lat,
