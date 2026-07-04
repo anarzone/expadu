@@ -1173,16 +1173,23 @@ export function JourneyPlanner({
     const items = useMemo<RouteItem[]>(() => {
         const list = data?.journeys ?? [];
         const disruptions = data?.disruptions ?? [];
-        // One card per distinct line-combination — the soonest departure — so
-        // the list reads as different routes, not the same route repeated every
-        // ten minutes (MOTIS returns several departures of each optimal route).
+        // One card per distinct line-combination so the list reads as different
+        // routes, not the same one repeated every ten minutes (MOTIS returns
+        // several departures of each). Keep the departure that best fits the
+        // search: soonest for leave-now/depart-at, but the LATEST for "arrive
+        // by" (it arrives closest to the requested time).
         const bySignature = new Map<string, Journey>();
 
         for (const j of list.filter((x) => x.mode === 'transit')) {
             const s = routeSignature(j);
             const prev = bySignature.get(s);
+            const better =
+                !prev ||
+                (arriveBy
+                    ? Date.parse(j.depart_at) > Date.parse(prev.depart_at)
+                    : Date.parse(j.depart_at) < Date.parse(prev.depart_at));
 
-            if (!prev || Date.parse(j.depart_at) < Date.parse(prev.depart_at)) {
+            if (better) {
                 bySignature.set(s, j);
             }
         }
