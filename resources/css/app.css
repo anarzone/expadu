@@ -530,15 +530,13 @@ input[type='time']::-webkit-calendar-picker-indicator {
         visibility: hidden;
     }
 }
-/* A departure row: the line + terminus flex to fill the row (the scannable
-   filler); the next departure is the bigger hero clock time pinned to the
-   right, with the upcoming times stacked small beneath it. */
+/* A departure row (one per departure, airport-board style): line badge (col 1),
+   terminus (col 2) and the clock time (col 3), all on a single baseline. */
 .board-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     column-gap: 8px;
-    row-gap: 2px;
     padding: 7px 12px;
     border-bottom: 1px solid var(--bd-line);
 }
@@ -551,8 +549,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
         padding: 8px 18px;
     }
 }
-/* line badge (col 1), terminus (col 2), time (col 3) all share row 1 so they
-   line up; the "then" list drops to row 2 under the time. */
 .board-row > .tile-field {
     grid-column: 1;
     grid-row: 1;
@@ -587,21 +583,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
     font-size: calc(var(--tw) * 0.78);
     color: var(--bd-sub);
     margin: 0 1px;
-}
-.board-then {
-    grid-column: 3;
-    grid-row: 2;
-    justify-self: end;
-    font-family: 'Geist Mono', ui-monospace, monospace;
-    font-size: 11px;
-    letter-spacing: 0.02em;
-    color: var(--bd-sub);
-    white-space: nowrap;
-}
-@media (min-width: 768px) {
-    .board-then {
-        font-size: 12px;
-    }
 }
 
 @layer utilities {

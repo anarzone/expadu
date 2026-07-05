@@ -249,36 +249,73 @@ function clockAt(base: Date, minutes: number): string {
     });
 }
 
-function BoardRow({ dep }: { dep: Departure }) {
+/** One upcoming departure — a line's row exploded down to a single time. */
+type DepartureInstance = { dep: Departure; minute: number | null; key: string };
+
+/**
+ * A real airport/train board shows one row per departure, not per line. Explode
+ * each line's upcoming minutes into an instance each, then sort soonest-first so
+ * the lane reads as a single time-ordered list. Cancelled lines ride once at the
+ * bottom.
+ */
+function explode(deps: Departure[]): DepartureInstance[] {
+    const out: DepartureInstance[] = [];
+
+    for (const dep of deps) {
+        if (dep.cancelled) {
+            out.push({
+                dep,
+                minute: null,
+                key: `${dep.line}-${dep.destination}-x`,
+            });
+
+            continue;
+        }
+
+        for (const m of dep.minutes) {
+            out.push({
+                dep,
+                minute: m,
+                key: `${dep.line}-${dep.destination}-${m}`,
+            });
+        }
+    }
+
+    return out.sort((x, y) => {
+        if (x.minute == null) {
+            return 1;
+        }
+
+        if (y.minute == null) {
+            return -1;
+        }
+
+        return x.minute - y.minute;
+    });
+}
+
+function BoardRow({ dep, minute }: { dep: Departure; minute: number | null }) {
     // Absolute departure times are anchored to when the board loaded. (A long
     // open session drifts with cache age; the clean fix is a server-sent
     // generated-at stamp.)
     const [base] = useState(() => new Date());
-    const [a, b, c] = dep.minutes.slice(0, 3);
     const cancelled = dep.cancelled;
 
-    // The line + terminus stay the big, scannable element. The next departure
-    // rides alongside as a smaller clock time (what a board flips) — NOW at the
-    // platform — with the upcoming times stacked quietly beneath it.
+    // Line + terminus on the left, this departure's clock time on the right —
+    // NOW at the platform, --:-- when cancelled. One departure per row.
     const heroText = cancelled
         ? '--:--'
-        : a == null
+        : minute == null
           ? ''
-          : a <= 0
+          : minute <= 0
             ? 'NOW'
-            : clockAt(base, a);
-    const heroTone = cancelled ? '#ff6b54' : a == null ? '#69727f' : timeInk(a);
+            : clockAt(base, minute);
+    const heroTone = cancelled
+        ? '#ff6b54'
+        : minute == null
+          ? '#69727f'
+          : timeInk(minute);
     const colon = heroText.indexOf(':');
-
-    const laters = [b, c]
-        .filter((m): m is number => m != null)
-        .map((m) => clockAt(base, m));
-
-    const thenLine = cancelled ? (
-        <span style={{ color: '#ff6b54' }}>cancelled</span>
-    ) : laters.length > 0 ? (
-        `then ${laters.join(' · ')}`
-    ) : null;
 
     return (
         <div className="board-row">
@@ -327,15 +364,14 @@ function BoardRow({ dep }: { dep: Departure }) {
                     </>
                 )}
             </span>
-            {thenLine != null && <span className="board-then">{thenLine}</span>}
         </div>
     );
 }
 
 /** "Toward {top destinations}" for a direction lane. */
-function laneLabel(rows: Departure[]): string {
+function laneLabel(rows: DepartureInstance[]): string {
     const dests = [
-        ...new Set(rows.map((d) => d.destination).filter(Boolean)),
+        ...new Set(rows.map((r) => r.dep.destination).filter(Boolean)),
     ].slice(0, 2);
 
     return dests.length > 0 ? `Toward ${dests.join(' / ')}` : 'Departures';
@@ -374,25 +410,35 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
     // Direction lanes (v4): only when GTFS matched both travel directions —
     // otherwise the board stays a flat list. Rows without a matched direction
     // ride along at the bottom of the grouped board.
-    const dir0 = board.departures.filter((d) => d.direction === 0);
-    const dir1 = board.departures.filter((d) => d.direction === 1);
-    const ungrouped = board.departures.filter((d) => d.direction == null);
+    const dir0 = explode(board.departures.filter((d) => d.direction === 0));
+    const dir1 = explode(board.departures.filter((d) => d.direction === 1));
+    const ungrouped = explode(
+        board.departures.filter((d) => d.direction == null),
+    );
+    const flat = explode(board.departures);
     const grouped = dir0.length > 0 && dir1.length > 0;
 
     const laneCap = Math.ceil(VISIBLE / 2);
-    // How many rows the collapsed board shows — the toggle renders whenever
-    // expanding would reveal more (and stays visible to collapse again).
+    // How many departure rows the collapsed board shows — the toggle renders
+    // whenever expanding reveals more (and stays visible to collapse again).
     const collapsedShown = grouped
         ? Math.min(dir0.length, laneCap) + Math.min(dir1.length, laneCap)
-        : Math.min(board.departures.length, VISIBLE);
-    const hidden = board.departures.length - collapsedShown;
+        : Math.min(flat.length, VISIBLE);
+    const hidden = flat.length - collapsedShown;
 
-    const lanes: Array<{ direction: number; rows: Departure[] }> = grouped
-        ? [
-              { direction: 0, rows: expanded ? dir0 : dir0.slice(0, laneCap) },
-              { direction: 1, rows: expanded ? dir1 : dir1.slice(0, laneCap) },
-          ]
-        : [];
+    const lanes: Array<{ direction: number; rows: DepartureInstance[] }> =
+        grouped
+            ? [
+                  {
+                      direction: 0,
+                      rows: expanded ? dir0 : dir0.slice(0, laneCap),
+                  },
+                  {
+                      direction: 1,
+                      rows: expanded ? dir1 : dir1.slice(0, laneCap),
+                  },
+              ]
+            : [];
 
     return (
         <div
@@ -424,33 +470,35 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
                                     lane.direction === 0 ? dir0 : dir1,
                                 )}
                             />
-                            {lane.rows.map((dep, i) => (
+                            {lane.rows.map((inst, i) => (
                                 <BoardRow
-                                    key={`${dep.line}-${dep.destination}-${i}`}
-                                    dep={dep}
+                                    key={`${inst.key}-${i}`}
+                                    dep={inst.dep}
+                                    minute={inst.minute}
                                 />
                             ))}
                         </div>
                     ))}
                     {expanded &&
-                        ungrouped.map((dep, i) => (
+                        ungrouped.map((inst, i) => (
                             <BoardRow
-                                key={`u-${dep.line}-${dep.destination}-${i}`}
-                                dep={dep}
+                                key={`u-${inst.key}-${i}`}
+                                dep={inst.dep}
+                                minute={inst.minute}
                             />
                         ))}
                 </div>
             ) : (
                 <div>
-                    {(expanded
-                        ? board.departures
-                        : board.departures.slice(0, VISIBLE)
-                    ).map((dep, i) => (
-                        <BoardRow
-                            key={`${dep.line}-${dep.destination}-${i}`}
-                            dep={dep}
-                        />
-                    ))}
+                    {(expanded ? flat : flat.slice(0, VISIBLE)).map(
+                        (inst, i) => (
+                            <BoardRow
+                                key={`${inst.key}-${i}`}
+                                dep={inst.dep}
+                                minute={inst.minute}
+                            />
+                        ),
+                    )}
                 </div>
             )}
             {hidden > 0 && (
