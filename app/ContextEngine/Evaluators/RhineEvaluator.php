@@ -50,7 +50,12 @@ class RhineEvaluator implements ShouldQueue
                         score: $score,
                         severity: $severity,
                         validUntil: CarbonImmutable::now()->addHours(12),
-                        deliverChannels: [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_ALERT_PAGE],
+                        // Alert-page only: a river gauge reading is not an act-now
+                        // Today need for the general population (no action, no plan
+                        // intersection). It stays on the record for the flood-exposed
+                        // to browse. Promote back to Today only when fused with a
+                        // riverside place/route at a genuinely disruptive level.
+                        deliverChannels: [ScoredAction::CHANNEL_ALERT_PAGE],
                         payload: [
                             'level' => $event->level,
                             'threshold' => $event->thresholdCrossed,

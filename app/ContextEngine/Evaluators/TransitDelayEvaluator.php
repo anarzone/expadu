@@ -14,8 +14,12 @@ use Illuminate\Queue\InteractsWithQueue;
 
 /**
  * Matches a delayed line to users whose saved places are served by it.
- * Dashboard/alert-page only for moderate delays; push reserved for
- * major delays (>= 30 min or cancellations) on matched lines.
+ * Alert-page only: a line delay is a genuine Today need only when the user is
+ * actually about to board it (a live departure), which this evaluator can't yet
+ * know — "a saved place is on this line" is not "boarding now", so it isn't
+ * act-now enough for a dashboard tile. It stays on the record, and a major delay
+ * (>= 30 min or cancellation) still pushes. Fusing with a live leave-by (Phase 2)
+ * is what earns it back onto Today.
  */
 class TransitDelayEvaluator implements ShouldQueue
 {
@@ -65,8 +69,8 @@ class TransitDelayEvaluator implements ShouldQueue
             severity: $severity,
             validUntil: CarbonImmutable::now()->addHours(2),
             deliverChannels: $event->delayMin >= 30
-                ? [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_ALERT_PAGE, ScoredAction::CHANNEL_PUSH]
-                : [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_ALERT_PAGE],
+                ? [ScoredAction::CHANNEL_ALERT_PAGE, ScoredAction::CHANNEL_PUSH]
+                : [ScoredAction::CHANNEL_ALERT_PAGE],
             payload: [
                 'line' => $event->line,
                 'direction' => $event->direction,
