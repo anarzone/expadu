@@ -45,6 +45,15 @@ class TileComposer
 
     private const DEMOTE_CAP = 60.0;
 
+    /**
+     * Tile types whose consequence is severe enough that a user's own
+     * dismissals must never bury them — suppressing a legal deadline is the app
+     * helping the user fail. Immunity keys on CONSEQUENCE, not the severity
+     * colour: an "urgent" deadline renders as info/warn (not danger) yet is
+     * still catastrophic to miss, so severity alone under-protects it.
+     */
+    private const DEMOTE_IMMUNE_TYPES = ['bureaucracy_deadline'];
+
     public function __construct(
         private ActionBus $bus,
         private GermanHolidayService $holidays,
@@ -74,7 +83,8 @@ class TileComposer
 
         // Rank by score, demoting types the user has recently dismissed so
         // "you'll see fewer like this" is real — but never a danger-severity
-        // tile (a storm or overdue deadline must not be buried by a past dismiss).
+        // tile nor a consequence-floor type (a storm, or any legal deadline,
+        // must not be buried by a past dismiss). See rank().
         $penalties = $this->dismissPenalties($context->userId);
         usort($tiles, fn (Tile $a, Tile $b) => $this->rank($b, $penalties) <=> $this->rank($a, $penalties));
 
@@ -87,7 +97,7 @@ class TileComposer
     /** Effective sort score: the tile's score less any dismissal demotion. */
     private function rank(Tile $tile, array $penalties): float
     {
-        if ($tile->severity === 'danger') {
+        if ($tile->severity === 'danger' || in_array($tile->type, self::DEMOTE_IMMUNE_TYPES, true)) {
             return $tile->score;
         }
 

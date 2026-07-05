@@ -5,6 +5,7 @@ use App\ContextEngine\ScoredAction;
 use App\Home\TileComposer;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\UserEvent;
 use App\Models\UserTask;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Redis;
@@ -108,6 +109,46 @@ test('dashboard-only filtering respects deliver channels', function () {
     $tiles = app(TileComposer::class)->tiles(homeContext($user));
 
     expect(collect($tiles)->pluck('type'))->not->toContain('transit_disruption');
+});
+
+test('a legal deadline is immune to dismissal demotion even when it is not danger-severity', function () {
+    // An "urgent" deadline (4–7 days out) tiles at score 65 with INFO severity —
+    // not danger. Under the old danger-only rule, three dismissals would demote
+    // 'bureaucracy_deadline' by 60 and sink it below a lesser tile. The floor
+    // rule keys on consequence, so it must stay on top: the app must never learn
+    // to bury a legal deadline just because the user cleared it before.
+    $user = User::factory()->onboarded()->create(['arrival_date' => now()]);
+
+    $task = Task::factory()->create([
+        'title' => 'Register your address (Anmeldung)',
+        'situation' => [$user->situation->value],
+        'deadline_type' => 'days_since_arrival',
+        'deadline_days' => 6, // → 6 days left → 'urgent' → score 65, severity info
+    ]);
+    UserTask::create(['user_id' => $user->id, 'task_id' => $task->id, 'is_applicable' => true]);
+
+    // A competing tile that would win once the deadline is demoted (65 − 60 = 5).
+    app(ActionBus::class)->insert($user, busAction('transit_disruption', 60.0, [
+        'disruption_id' => 9,
+        'lines' => ['1'],
+        'stops_affected' => [],
+    ]));
+
+    // Three prior dismissals of the deadline type — a full demotion under the cap.
+    foreach (range(1, 3) as $i) {
+        UserEvent::create([
+            'user_id' => $user->id,
+            'event_type' => 'card_dismissed',
+            'session_id' => 'test',
+            'payload' => ['card_type' => 'bureaucracy_deadline', 'source' => 'tile_dismiss'],
+        ]);
+    }
+
+    $types = collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('type');
+
+    // Deadline still outranks the disruption despite three dismissals.
+    expect($types->search('bureaucracy_deadline'))
+        ->toBeLessThan($types->search('transit_disruption'));
 });
 
 test('no generic weekend composer shortcut tile, even inside the weekend window', function () {
