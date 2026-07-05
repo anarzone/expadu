@@ -221,28 +221,32 @@ change. Make each existing tile *declare* its consequence-class and lifecycle st
 - **Tests:** each tile maps to the right class/stage; a `dormant` need is withheld;
   the floor still holds via consequence.
 
-### Phase 2 — The fusion organ (highest value)
+### Phase 2 — The fusion organ (highest value) — **weather cut SHIPPED**
 
 Intersect signals × the user's actual day. This is the differentiator and the
 largest slice; split it so early wins land first.
 
-- **2a — extend `HomeContext` with "the day":** the active composer plan (Redis,
-  72h TTL), places-with-`arrive_by` leave-by anchors, saved/intended events. Purely
-  additive; nothing consumes it yet.
-- **2b — `NeedFusion` step:** for each candidate, compute intersection with the day.
-  "Rain from 16:00" × a 17:00 outdoor plan → `PlanAtRisk` need with the resolving
-  action; no intersection → advisory-rain drops to Alerts-only.
-- **2c — split `weather_alert`:** hazard (storm/ice/heat — keep, loud,
-  unconditional) vs advisory (needs 2b intersection).
-- **2d — `transit_disruption` × live leave-by** → "your commute leg is disrupted,
-  leave early / reroute," else demote.
-- **2e — `tonight_events`** gated on saved/intent (keep the good `claim()` + 2h
+- ✅ **2a — `HomeContext` carries "the day":** the pinned Today plan's slots
+  (`TodayPlanStore`) + `arrive_by` commute anchors active today, with
+  `outdoorExposureAfter($time)` as the intersection query. (Saved/intended events
+  fold in with 2e.)
+- ✅ **2b — fusion for weather:** advisory rain becomes a tile only when
+  `outdoorExposureAfter(rainStart)` finds an outdoor plan stop or a commute;
+  otherwise Alerts-only. The tile names the exposure. Lives as `TileComposer::
+  weatherTile()` for now; extract a `NeedFusion` service when 2d needs it too.
+- ✅ **2c — `weather_alert` split by kind:** `CheckWeatherAlerts` tags rain
+  `advisory` (+ `from` time) vs ice/heat/wind `hazard`; hazards tile
+  unconditionally, advisories go through 2b.
+- ☐ **2d — `transit_disruption` × live leave-by** → "your commute leg is disrupted,
+  leave early / reroute," else demote. (Reuse the `HomeContext` anchors + a
+  line-to-anchor check; likely the point to extract `NeedFusion`.)
+- ☐ **2e — `tonight_events`** gated on saved/intent (keep the good `claim()` + 2h
   window).
-- **2f — consequence-grouping (optional, hard):** rain + disruption on the same
+- ☐ **2f — consequence-grouping (optional, hard):** rain + disruption on the same
   plan-slot → one "your evening is shaky" need. Deterministic but mis-groupable;
   ship last, behind the rest.
-- **Tests:** fusion fixtures — signal × plan → need; no-plan → Alerts-only; hazard
-  weather bypasses intersection; grouping merges same-slot threats.
+- Tests shipped for the weather cut: signal × plan → need; signal × commute → need;
+  no-exposure → Alerts-only; hazard bypasses intersection; kind/`from` tagging.
 
 ### Phase 3 — The acclimation loop (learning)
 
