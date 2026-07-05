@@ -243,8 +243,10 @@ largest slice; split it so early wins land first.
   `HomeContext::hasLiveCommuteToday()` + `disruptionTile()` escalate the subtitle
   (on your line + a commute today → "leave early or reroute"). Kept the tile-method
   pattern — the logic stayed small, so no separate `NeedFusion` service yet.
-- ☐ **2e — `tonight_events`** gated on saved/intent (keep the good `claim()` + 2h
-  window).
+- ✅ **2e — `tonight_events` gated on intent:** the urgent tile fires only for an
+  event the user has an `EventReminder`/`EventAttendee` for (`HomeContext::
+  intendedEventIds`), soonest within the 2h window, still `claim()`-ed so the rail
+  won't repeat it. The rail's browse pool is untouched — it keeps owning discovery.
 - ☐ **2f — consequence-grouping (optional, hard):** rain + disruption on the same
   plan-slot → one "your evening is shaky" need. Deterministic but mis-groupable;
   ship last, behind the rest.
