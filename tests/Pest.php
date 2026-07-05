@@ -168,5 +168,7 @@ function homeContext(User $user, array $overrides = []): HomeContext
         tonightEvents: $overrides['tonightEvents'] ?? collect(),
         originLat: $overrides['originLat'] ?? null,
         originLng: $overrides['originLng'] ?? null,
+        todayPlanSlots: $overrides['todayPlanSlots'] ?? [],
+        leaveByAnchors: $overrides['leaveByAnchors'] ?? [],
     );
 }

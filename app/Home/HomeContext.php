@@ -3,6 +3,7 @@
 namespace App\Home;
 
 use App\Models\Event;
+use App\Models\UserPlace;
 use App\Models\UserTask;
 use App\Profile\Profile;
 use Carbon\CarbonImmutable;
@@ -40,11 +41,48 @@ class HomeContext
         // the pool is the nearest spots and proximity ranks them.
         public readonly ?float $originLat = null,
         public readonly ?float $originLng = null,
+        // "The user's day", read by the fusion step so a world-signal (rain, a
+        // disruption) can be tested against what they're actually doing — the
+        // difference between "it will rain" and "your plan will get wet".
+        /** @var list<array<string, mixed>> slots of the pinned Today plan (TodayPlanStore) */
+        public readonly array $todayPlanSlots = [],
+        /** @var list<UserPlace> places with an arrive_by that are active today */
+        public readonly array $leaveByAnchors = [],
     ) {}
 
     public function hasOrigin(): bool
     {
         return $this->originLat !== null && $this->originLng !== null;
+    }
+
+    /**
+     * The label of an outdoor exposure — a pinned outdoor plan stop, or a commute
+     * the user is still heading out for — happening at or after `$time`, or null
+     * if the day holds nothing the weather would spoil. This is what turns a rain
+     * advisory into a plan-at-risk need (or lets it stay off Today entirely).
+     */
+    public function outdoorExposureAfter(CarbonImmutable $time): ?string
+    {
+        foreach ($this->todayPlanSlots as $slot) {
+            if (! ($slot['outdoor'] ?? false) || empty($slot['start_at'])) {
+                continue;
+            }
+            if (CarbonImmutable::parse($slot['start_at'])->gte($time)) {
+                return is_string($slot['name'] ?? null) ? $slot['name'] : 'your plan';
+            }
+        }
+
+        foreach ($this->leaveByAnchors as $anchor) {
+            $arriveBy = $anchor->arrive_by ?? null;
+            if (! is_string($arriveBy) || $arriveBy === '') {
+                continue;
+            }
+            if ($this->now->setTimeFromTimeString($arriveBy)->gte($time)) {
+                return $anchor->name ? "your trip to {$anchor->name}" : 'your commute';
+            }
+        }
+
+        return null;
     }
 
     public function hasEventsTonight(): bool

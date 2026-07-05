@@ -115,8 +115,9 @@ test('dismissing a kind of alert demotes it in the ranking', function () {
     $user = User::factory()->onboarded()->create();
     $bus = app(ActionBus::class);
 
-    // Two soft (warn) alerts; weather outranks rhine on raw score.
-    $bus->insert($user, triageBusAction('weather_alert', 60.0, 'major', ['alert' => ['title' => 'Rain', 'description' => 'x']]));
+    // Two soft (warn) alerts; weather outranks rhine on raw score. A hazard-kind
+    // weather alert always tiles (no plan/day fusion needed for this test).
+    $bus->insert($user, triageBusAction('weather_alert', 60.0, 'major', ['alert' => ['title' => 'Heat warning', 'description' => 'x', 'kind' => 'hazard']]));
     $bus->insert($user, triageBusAction('rhine_level', 55.0, 'major', ['level' => 5, 'threshold' => 4]));
 
     $before = collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('type');
@@ -134,8 +135,8 @@ test('a danger-severity alert is never demoted by past dismissals', function () 
     $user = User::factory()->onboarded()->create();
     $bus = app(ActionBus::class);
 
-    // A CRITICAL weather alert (danger) sitting just above a warn rhine alert.
-    $bus->insert($user, triageBusAction('weather_alert', 60.0, 'critical', ['alert' => ['title' => 'Storm', 'description' => 'x']]));
+    // A CRITICAL weather alert (danger hazard) sitting just above a warn rhine alert.
+    $bus->insert($user, triageBusAction('weather_alert', 60.0, 'critical', ['alert' => ['title' => 'Storm', 'description' => 'x', 'kind' => 'hazard']]));
     $bus->insert($user, triageBusAction('rhine_level', 55.0, 'major', ['level' => 5, 'threshold' => 4]));
 
     // Heavy prior dismissals that would otherwise bury weather alerts.

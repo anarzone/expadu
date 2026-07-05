@@ -128,6 +128,23 @@ test('deduplicates same alert within 12 hours', function () {
     Event::assertDispatchedTimes(WeatherChanged::class, 1);
 });
 
+test('rain is tagged advisory with a start time; extreme temps are tagged hazard', function () {
+    // The kind drives Today fusion: rain (advisory) is gated on a plan/commute,
+    // ice/heat (hazard) shows unconditionally. `from` lets the fusion test it.
+    [$current, $forecast] = weatherMock(['temperature' => -5], '16:00');
+    mockWeather($current, $forecast);
+
+    $this->artisan('weather:check-alerts')->assertSuccessful();
+
+    Event::assertDispatched(WeatherChanged::class, function ($event) {
+        $rain = collect($event->alerts)->firstWhere('kind', 'advisory');
+        $freeze = collect($event->alerts)->firstWhere('kind', 'hazard');
+
+        return $rain && ($rain['from'] ?? null) === '16:00' && str_contains($rain['title'], 'Rain')
+            && $freeze && str_contains($freeze['title'], 'Freezing');
+    });
+});
+
 test('a shifted rain start time does not mint a second rain alert the same day', function () {
     // The forecast's rain-start drifts between refreshes (16:00 → 18:00). Keyed on
     // the day, the second run supersedes the first instead of emitting a duplicate

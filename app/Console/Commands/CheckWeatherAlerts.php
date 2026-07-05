@@ -41,12 +41,19 @@ class CheckWeatherAlerts extends Command
         // it minted a fresh alert each time that never superseded the last — two
         // "Rain expected from …" cards for one afternoon of rain. A day key makes
         // a later run supersede the earlier one (same dedup key + same actionKey).
+        // `kind` splits weather into two needs: an *advisory* (rain — you can
+        // mitigate by umbrella/rerouting, so it only earns a Today tile when it
+        // threatens an actual plan/commute) versus a *hazard* (ice/heat/wind — an
+        // environmental danger shown unconditionally). `from` carries the rain
+        // start so the fusion step can test it against the user's day.
         $rainStart = $forecast['rain_starts'] ?? null;
         if ($rainStart) {
             $alerts[] = [
                 'summary' => "Rain expected from {$rainStart}",
                 'detail' => 'Consider taking an umbrella or switching to transit.',
                 'key' => 'rain_'.now()->format('Y-m-d'),
+                'kind' => 'advisory',
+                'from' => $rainStart,
             ];
         }
 
@@ -57,6 +64,7 @@ class CheckWeatherAlerts extends Command
                 'summary' => "Freezing temperatures: {$temp}°C",
                 'detail' => 'Watch for icy roads and sidewalks. Dress warmly.',
                 'key' => 'freeze_'.date('Y-m-d'),
+                'kind' => 'hazard',
             ];
         }
 
@@ -66,6 +74,7 @@ class CheckWeatherAlerts extends Command
                 'summary' => "Heat warning: {$temp}°C",
                 'detail' => 'Stay hydrated and avoid direct sun. Check on vulnerable neighbors.',
                 'key' => 'heat_'.date('Y-m-d'),
+                'kind' => 'hazard',
             ];
         }
 
@@ -76,6 +85,7 @@ class CheckWeatherAlerts extends Command
                 'summary' => "Strong wind gusts: {$windGusts} km/h",
                 'detail' => 'Cycling may be dangerous. Consider transit.',
                 'key' => 'wind_'.date('Y-m-d-H'),
+                'kind' => 'hazard',
             ];
         }
 
@@ -100,6 +110,8 @@ class CheckWeatherAlerts extends Command
                 'severity' => $alert['severity'] ?? 'minor',
                 'title' => $alert['summary'] ?? '',
                 'description' => $alert['detail'] ?? '',
+                'kind' => $alert['kind'] ?? 'advisory',
+                'from' => $alert['from'] ?? null,
             ];
         }
 

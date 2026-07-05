@@ -141,7 +141,7 @@ class TileComposer
                 continue;
             }
 
-            $tile = $this->actionToTile($action);
+            $tile = $this->actionToTile($action, $context);
             if ($tile !== null) {
                 $tiles[] = $tile;
             }
@@ -150,7 +150,7 @@ class TileComposer
         return $tiles;
     }
 
-    private function actionToTile(ScoredAction $action): ?Tile
+    private function actionToTile(ScoredAction $action, HomeContext $context): ?Tile
     {
         return match ($action->type) {
             'transit_disruption' => new Tile(
@@ -183,16 +183,7 @@ class TileComposer
                     'action_key' => $action->actionKey,
                 ],
             ),
-            'weather_alert' => new Tile(
-                type: 'weather_alert',
-                title: (string) ($action->payload['alert']['title'] ?? 'Weather alert'),
-                subtitle: (string) ($action->payload['alert']['description'] ?? ''),
-                emoji: '🌧️',
-                severity: $action->severity === 'critical' ? 'danger' : 'warn',
-                score: $action->score,
-                key: $action->actionKey,
-                meta: ['action_key' => $action->actionKey],
-            ),
+            'weather_alert' => $this->weatherTile($action, $context),
             'rhine_level' => new Tile(
                 type: 'rhine_level',
                 title: 'Rhine level: '.($action->payload['level'] ?? '?').'m',
@@ -217,6 +208,54 @@ class TileComposer
             // task for that office.
             default => null,
         };
+    }
+
+    /**
+     * Weather fusion. A HAZARD (ice/heat/wind) always earns a tile — it's an
+     * environmental danger you can't opt out of. An ADVISORY (rain) earns one
+     * only when it threatens what the user is actually doing: an outdoor plan stop
+     * or a commute at/after the rain starts. With nothing to spoil it stays on the
+     * Alerts record, off Today — a bare "it will rain" is a fact you can verify by
+     * looking out the window, not an act-now need.
+     */
+    private function weatherTile(ScoredAction $action, HomeContext $context): ?Tile
+    {
+        $alert = $action->payload['alert'] ?? [];
+        $title = (string) ($alert['title'] ?? 'Weather alert');
+
+        if (($alert['kind'] ?? 'advisory') === 'hazard') {
+            return new Tile(
+                type: 'weather_alert',
+                title: $title,
+                subtitle: (string) ($alert['description'] ?? ''),
+                emoji: '🌡️',
+                severity: $action->severity === 'critical' ? 'danger' : 'warn',
+                score: $action->score,
+                key: $action->actionKey,
+                meta: ['action_key' => $action->actionKey],
+            );
+        }
+
+        $from = $alert['from'] ?? null;
+        $rainAt = (! is_string($from) || $from === '' || $from === 'now')
+            ? $context->now
+            : $context->now->setTimeFromTimeString($from);
+
+        $exposure = $context->outdoorExposureAfter($rainAt);
+        if ($exposure === null) {
+            return null;
+        }
+
+        return new Tile(
+            type: 'weather_alert',
+            title: $title,
+            subtitle: ucfirst($exposure).' may get caught in the rain — plan around it.',
+            emoji: '🌧️',
+            severity: 'warn',
+            score: $action->score,
+            key: $action->actionKey,
+            meta: ['action_key' => $action->actionKey, 'exposure' => $exposure],
+        );
     }
 
     private function disruptionTitle(ScoredAction $action): string

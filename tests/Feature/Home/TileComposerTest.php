@@ -6,6 +6,7 @@ use App\Home\TileComposer;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
+use App\Models\UserPlace;
 use App\Models\UserTask;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Redis;
@@ -111,6 +112,72 @@ test('buergeramt_slot bus actions produce no tile (the slot feature was removed)
 
     expect(collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('type'))
         ->not->toContain('buergeramt_slot');
+});
+
+test('rain fuses with the day: an outdoor plan after the rain earns a plan-at-risk tile', function () {
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('weather_alert', 50.0, [
+        'alert' => ['title' => 'Rain expected from 16:00', 'description' => 'x', 'kind' => 'advisory', 'from' => '16:00'],
+    ]));
+
+    $now = CarbonImmutable::parse('2026-07-05 10:00', 'Europe/Berlin');
+    $tiles = app(TileComposer::class)->tiles(homeContext($user, [
+        'now' => $now,
+        'todayPlanSlots' => [
+            ['outdoor' => true, 'name' => 'Rheinpark', 'start_at' => $now->setTime(17, 0)->toIso8601String()],
+        ],
+    ]));
+
+    $weather = collect($tiles)->firstWhere('type', 'weather_alert');
+    expect($weather)->not->toBeNull()
+        ->and($weather['subtitle'])->toContain('Rheinpark');
+});
+
+test('rain with nothing outdoors to spoil stays off Today (Alerts-only)', function () {
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('weather_alert', 50.0, [
+        'alert' => ['title' => 'Rain expected from 16:00', 'description' => 'x', 'kind' => 'advisory', 'from' => '16:00'],
+    ]));
+
+    // Empty day (no plan, no commute) → the rain advisory earns no Today tile.
+    $tiles = app(TileComposer::class)->tiles(homeContext($user, [
+        'now' => CarbonImmutable::parse('2026-07-05 10:00', 'Europe/Berlin'),
+    ]));
+
+    expect(collect($tiles)->pluck('type'))->not->toContain('weather_alert');
+});
+
+test('rain fuses with a commute: a leave-by anchor after the rain earns a tile', function () {
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('weather_alert', 50.0, [
+        'alert' => ['title' => 'Rain expected from 08:00', 'description' => 'x', 'kind' => 'advisory', 'from' => '08:00'],
+    ]));
+
+    $now = CarbonImmutable::parse('2026-07-05 07:00', 'Europe/Berlin');
+    $anchor = new UserPlace(['name' => 'Work', 'category' => 'work', 'arrive_by' => '09:00']);
+
+    $tiles = app(TileComposer::class)->tiles(homeContext($user, [
+        'now' => $now,
+        'leaveByAnchors' => [$anchor],
+    ]));
+
+    $weather = collect($tiles)->firstWhere('type', 'weather_alert');
+    expect($weather)->not->toBeNull()
+        ->and($weather['subtitle'])->toContain('Work');
+});
+
+test('a weather hazard (ice/heat/wind) always tiles, even with an empty day', function () {
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('weather_alert', 50.0, [
+        'alert' => ['title' => 'Heat warning: 35°C', 'description' => 'x', 'kind' => 'hazard'],
+    ]));
+
+    expect(collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('type'))
+        ->toContain('weather_alert');
 });
 
 test('tile list is capped at eight', function () {

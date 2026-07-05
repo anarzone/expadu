@@ -4,9 +4,11 @@ namespace App\Home;
 
 use App\Bureaucracy\PathGenerator;
 use App\Composer\IntentWeights;
+use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Models\Event;
 use App\Models\User;
+use App\Models\UserPlace;
 use App\Models\UserTask;
 use App\Profile\Applicability;
 use App\Profile\Profile;
@@ -47,6 +49,7 @@ class HomeFeed
         private readonly PathGenerator $paths,
         private readonly UserLocationService $locations,
         private readonly TravelTimes $travel,
+        private readonly TodayPlanStore $todayPlan,
     ) {}
 
     /**
@@ -207,6 +210,16 @@ class HomeFeed
                 ->orderBy('starts_at')
                 ->limit(20)
                 ->get(),
+            // "The user's day" for the fusion step: the pinned Today plan's slots
+            // and the commutes (arrive_by places) that are relevant today.
+            todayPlanSlots: $this->todayPlan->get($user)['slots'] ?? [],
+            leaveByAnchors: UserPlace::query()
+                ->where('user_id', $user->id)
+                ->whereNotNull('arrive_by')
+                ->get()
+                ->filter->isActiveToday()
+                ->values()
+                ->all(),
         );
     }
 
