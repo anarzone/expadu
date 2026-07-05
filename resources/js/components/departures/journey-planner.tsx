@@ -1047,6 +1047,7 @@ export function JourneyPlanner({
     destination,
     savedPlaces,
     initialSelected,
+    onDetailChange,
     onPlan,
     onClose,
 }: {
@@ -1054,6 +1055,8 @@ export function JourneyPlanner({
     savedPlaces: SavedPlace[];
     /** The persisted trip's journey, so a live trip reopens straight to detail. */
     initialSelected?: Journey | null;
+    /** Report whether the picked-route detail is open, so the page can keep it in the URL. */
+    onDetailChange?: (open: boolean) => void;
     onPlan: (target: Destination | { query: string }) => void;
     onClose: () => void;
 }) {
@@ -1082,6 +1085,12 @@ export function JourneyPlanner({
     // combinations (slower, so an explicit opt-in with a loading state).
     const [showMore, setShowMore] = useState(false);
     const [moreLoading, setMoreLoading] = useState(false);
+
+    // Mirror the route-detail view up so the page keeps it in the URL — a
+    // picked route means the live journey detail is showing (refresh-safe).
+    useEffect(() => {
+        onDetailChange?.(selected !== null);
+    }, [selected, onDetailChange]);
 
     // Assemble depart_at from the day + time, and only once a time is actually
     // picked — selecting "Arrive by" with no time would mean "arrive by now"

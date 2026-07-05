@@ -735,21 +735,9 @@ function parseDestinationFromUrl(url: string): Destination | null {
     return dest;
 }
 
-/** The live trip's endpoints as a planner Destination (origin kept as From). */
-function activeTripToDestination(trip: ActiveTrip | null): Destination | null {
-    if (!trip) {
-        return null;
-    }
-
-    return {
-        name: trip.destination.name,
-        emoji: trip.destination.emoji ?? undefined,
-        lat: trip.destination.lat,
-        lng: trip.destination.lng,
-        fromLat: trip.origin?.lat ?? null,
-        fromLng: trip.origin?.lng ?? null,
-        fromName: trip.origin?.name ?? null,
-    };
+/** Whether the URL marks the picked-route (live journey) detail as open. */
+function routeDetailOpenFromUrl(url: string): boolean {
+    return new URLSearchParams(url.split('?')[1] ?? '').get('view') === 'route';
 }
 
 /** True when this plan's destination is the one the live trip runs to. */
@@ -783,17 +771,20 @@ export default function Timetable() {
         activeTrip = null,
     } = page.props;
     const [mode, setMode] = useState<Mode>('all');
-    // The open plan lives in the URL (refresh-safe, shareable); failing that a
-    // live trip reopens straight to its journey when you return to Departures.
-    const [destination, setDestination] = useState<Destination | null>(
-        () =>
-            parseDestinationFromUrl(page.url) ??
-            activeTripToDestination(activeTrip),
+    // The open plan and whether its route detail is showing both live in the
+    // URL (refresh-safe, shareable) so a refresh restores the exact view
+    // instead of jumping into the active trip.
+    const [destination, setDestination] = useState<Destination | null>(() =>
+        parseDestinationFromUrl(page.url),
+    );
+    const [routeDetailOpen, setRouteDetailOpen] = useState(() =>
+        routeDetailOpenFromUrl(page.url),
     );
     const destSynced = useRef(false);
 
-    // Reflect the open plan into the URL (replace, no server round-trip) so a
-    // refresh restores it; clearing it returns to the plain board URL.
+    // Reflect the open plan (and its route detail) into the URL (replace, no
+    // server round-trip) so a refresh restores it; clearing it returns to the
+    // plain board URL.
     useEffect(() => {
         if (!destSynced.current) {
             destSynced.current = true;
@@ -801,15 +792,21 @@ export default function Timetable() {
             return;
         }
 
-        const search = destination
-            ? `?${new URLSearchParams(destinationToParams(destination))}`
-            : '';
+        const params = destination
+            ? new URLSearchParams(destinationToParams(destination))
+            : new URLSearchParams();
+
+        if (destination && routeDetailOpen) {
+            params.set('view', 'route');
+        }
+
+        const search = params.toString();
         window.history.replaceState(
             window.history.state,
             '',
-            `/timetable${search}`,
+            `/timetable${search ? `?${search}` : ''}`,
         );
-    }, [destination]);
+    }, [destination, routeDetailOpen]);
     // An explicitly chosen From (via the board's origin field); null = live location.
     const [origin, setOrigin] = useState<Origin>(null);
     const [planning, setPlanning] = useState(false);
@@ -1081,12 +1078,17 @@ export default function Timetable() {
                         destination={destination}
                         savedPlaces={savedPlaces}
                         initialSelected={
+                            routeDetailOpen &&
                             destinationMatchesTrip(destination, activeTrip)
-                                ? activeTrip?.journey
+                                ? (activeTrip?.journey ?? null)
                                 : null
                         }
+                        onDetailChange={setRouteDetailOpen}
                         onPlan={planTo}
-                        onClose={() => setDestination(null)}
+                        onClose={() => {
+                            setDestination(null);
+                            setRouteDetailOpen(false);
+                        }}
                     />
                 ) : (
                     <>
