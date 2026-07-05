@@ -214,19 +214,12 @@ class TileComposer
                 key: $action->actionKey,
                 meta: ['action_key' => $action->actionKey],
             ),
-            'market_closure' => new Tile(
-                type: 'rhythm_warning',
-                title: 'Shops closed: '.($action->payload['day'] ?? ''),
-                subtitle: (string) ($action->payload['reason'] ?? ''),
-                emoji: '🛒',
-                severity: 'neutral',
-                score: $action->score,
-                key: $action->actionKey,
-                meta: ['action_key' => $action->actionKey],
-            ),
-            // bureaucracy_task bus actions are skipped — the deadline tiles
-            // below are computed live on every request, which beats replaying
-            // yesterday's 09:00 snapshot.
+            // market_closure and bureaucracy_task bus actions are skipped — both
+            // are recomputed live every request (rhythmTiles() and deadlineTiles()
+            // respectively), which beats replaying an older snapshot. Crucially
+            // for market_closure: the synthetic rhythm tile derives from the SAME
+            // isShopsClosedTomorrow() predicate, so mapping the bus action too
+            // would surface the identical closure twice (the market/holiday dup).
             default => null,
         };
     }

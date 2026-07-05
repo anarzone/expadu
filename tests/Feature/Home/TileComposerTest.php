@@ -81,6 +81,23 @@ test('bus bureaucracy_task actions are skipped in favour of live deadline tiles'
     expect(collect($tiles)->pluck('title'))->not->toContain('Stale snapshot task');
 });
 
+test('market_closure bus actions are skipped in favour of the live rhythm tile', function () {
+    // The synthetic rhythmTiles() derives the shop-closure warning from the same
+    // isShopsClosedTomorrow() predicate that produced this bus action, so mapping
+    // the bus action to a tile too would show the identical closure twice.
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('market_closure', 70.0, [
+        'market_id' => 'all',
+        'day' => now()->addDay()->toDateString(),
+        'reason' => 'Sunday',
+    ]));
+
+    $titles = collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('title');
+
+    expect($titles)->not->toContain('Shops closed: '.now()->addDay()->toDateString());
+});
+
 test('tile list is capped at eight', function () {
     $user = User::factory()->onboarded()->create();
     $bus = app(ActionBus::class);
