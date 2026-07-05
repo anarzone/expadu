@@ -127,3 +127,19 @@ test('deduplicates same alert within 12 hours', function () {
 
     Event::assertDispatchedTimes(WeatherChanged::class, 1);
 });
+
+test('a shifted rain start time does not mint a second rain alert the same day', function () {
+    // The forecast's rain-start drifts between refreshes (16:00 → 18:00). Keyed on
+    // the day, the second run supersedes the first instead of emitting a duplicate
+    // "Rain expected from …" alert. Under the old start-time key this dispatched
+    // twice — the two-rain-cards bug.
+    [$current, $forecast] = weatherMock([], '16:00');
+    mockWeather($current, $forecast);
+    $this->artisan('weather:check-alerts')->assertSuccessful();
+
+    [$current2, $forecast2] = weatherMock([], '18:00');
+    mockWeather($current2, $forecast2);
+    $this->artisan('weather:check-alerts')->assertSuccessful();
+
+    Event::assertDispatchedTimes(WeatherChanged::class, 1);
+});

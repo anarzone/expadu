@@ -35,13 +35,18 @@ class CheckWeatherAlerts extends Command
 
         $alerts = [];
 
-        // Check for rain starting
+        // Check for rain starting.
+        // Identity is the DAY, not the start time: the forecast's rain-start
+        // drifts across refreshes (16:00 at 08:00, 18:00 by 10:00), and keying on
+        // it minted a fresh alert each time that never superseded the last — two
+        // "Rain expected from …" cards for one afternoon of rain. A day key makes
+        // a later run supersede the earlier one (same dedup key + same actionKey).
         $rainStart = $forecast['rain_starts'] ?? null;
         if ($rainStart) {
             $alerts[] = [
                 'summary' => "Rain expected from {$rainStart}",
                 'detail' => 'Consider taking an umbrella or switching to transit.',
-                'key' => "rain_{$rainStart}",
+                'key' => 'rain_'.now()->format('Y-m-d'),
             ];
         }
 
