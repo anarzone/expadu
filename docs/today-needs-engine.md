@@ -1,0 +1,284 @@
+# Today: from a notification feed to a needs engine
+
+**Status:** design thesis + phased plan (2026-07-05). Bugs in Phase 0 are shipped;
+everything below Phase 0 is proposed, not built.
+
+**Scope:** the Today screen's "Right Now" band — `app/Home/TileComposer.php`,
+`Tile.php`, `TileTriage.php`, the ContextEngine evaluators that feed it, and the
+`dashboard.tsx` presentation. Not the prompt/composer box, not the discovery rails.
+
+---
+
+## Part I — Thesis
+
+### The reframe
+
+Today's "Right Now" is built as a **notification feed**: evaluators detect
+world-events (rain, a disruption, a Rhine gauge crossing), score them 0–100, the
+composer merges them with a few synthetic tiles, caps at 8, and renders. That is
+"alerts."
+
+What the surface should be is a **daily brief of _needs_**. An alert answers
+_"what happened in the world?"_ A need answers _"what does **this** person have to
+know or do **today**, given their situation and their actual day?"_ The current
+system does only the first and hopes ranking approximates the second. It doesn't —
+ranking *orders* noise, it doesn't *remove* it.
+
+The optimisation target is **precision of the promise**: everything shown is worth
+the interruption. Once a user learns _"if Expadu surfaces something, it matters,"_
+they stop cross-checking other sources — and that belief is the moat. So the metric
+is not coverage or engagement; it is _"is this brief believed?"_ — which means it is
+usually short, and sometimes empty.
+
+### Five principles
+
+1. **Needs are trajectories, not booleans.** A need emerges → *ripens* into a
+   decision window → *peaks* → resolves or converts to a consequence. Scoring
+   collapses that arc into one instant. Anmeldung on day 1 (nothing to do yet) and
+   day 13 (window closing) are different states. The right question is not "how
+   urgent 0–100" but "where is this need in its lifecycle, and is the user inside
+   the window where they can act?" The system must be able to say **"not yet"**
+   (a promise to surface later), which is different from "doesn't exist" (amnesia).
+   The bureaucracy deadline tiers (`overdue`/`critical`/`urgent`) are already a
+   crude version of this — the one tile that gets it right.
+
+2. **The value is lead time, not "now."** The most valuable thing an app can do for
+   an expat is give lead time on friction a local sees coming. "Shops are closed"
+   is worthless (too late); "you have 4 hours before everything shuts for 36" is
+   the product. Reframe every signal by its **lead time to consequence** — the best
+   items on Today are often about a *foreseeable near-future the user can still
+   change*, not the present.
+
+3. **Organise by consequence, not by source.** Tiles are grouped by where they came
+   from (weather / transit / bureaucracy). The user never experiences "a weather
+   alert" — they experience _"my evening is at risk."_ The unit is the **threatened
+   thing in the user's life**, and this yields a deeper dedup than any key fix: rain
+   *and* a disruption that both hit the same 17:00 plan are **one need**, not two
+   tiles. A tiny vocabulary of consequences covers it:
+   **plan-at-risk · window-closing · caught-out · opportunity · on-track.**
+
+4. **Error costs are asymmetric — the gate is not uniform.** Missing a legal
+   deadline (false negative) is catastrophic → err loud. Showing an irrelevant
+   market tile (false positive) spends trust → err quiet. One global "show if
+   score > X" cannot encode this; each need type carries its own answer to _"which
+   way do we fail?"_
+
+5. **Silence is a feature.** A brief that is sometimes empty is trustworthy; a feed
+   always full of filler trains people to ignore it. When nothing clears the gate,
+   Today says _"nothing needs you right now"_ and hands off to the composer. If
+   needs are rare when done honestly, **Today is primarily a launchpad** (the ask/
+   plan box) with a thin, occasional needs band — not a wall of tiles.
+
+### The gate — what "needed" means operationally
+
+A candidate signal earns a place only by clearing four tests (tuned per type, per
+principle 4):
+
+| Test | Question |
+|---|---|
+| Actionability | Can the user *do* something, now? |
+| Personal intersection | Does it touch *their* plan / places / commute / open task? |
+| Decision window | Do they need it *now* to decide? |
+| Novelty | Have we already said it, unchanged? |
+
+Most raw signals should fail this — correctly. The complete record still lives on
+the Alerts page, so Today can afford to be aggressive: nothing is lost, it's one
+tap away. **This is why the two-surface split (Today vs Alerts) earns its keep** —
+but only as long as Today stays ruthlessly curated. When it doesn't (the rain dup),
+the home screen reads as a noisy copy of Alerts and the whole architecture looks
+redundant.
+
+### The learning loop — day 1 vs day 90
+
+The resolution of a need is the highest-quality signal the app ever gets, and today
+five-sixths of it is discarded: `TileTriage` distinguishes done / snooze / dismiss
+but only `dismiss` feeds any learning, and it learns one blunt thing — demote the
+*type*.
+
+**Resolution is multi-dimensional, and the dimensions demand opposite corrections:**
+
+| How it resolved | Meaning | Correction |
+|---|---|---|
+| Acted (took the action) | Right need, right framing | more of this |
+| "Already handled" | Right need, **too late** | surface **earlier** |
+| "Not relevant" | Wrong need | surface **less** |
+| Snoozed | Right need, wrong moment | shift **timing** |
+| Ignored → expired | Weak / not actionable | reframe or drop |
+| Never seen (expired between sessions) | **Delivery** timing | deliver at a different hour |
+
+"Too late," "wrong," and "annoying" need *earlier*, *less*, *differently* — a single
+demotion number cannot encode three opposite fixes.
+
+**The grain of learning** must be `need-class × consequence × context`, not `type`.
+Too coarse (all "weather") and you bury the storm with the drizzle; per-instance and
+nothing accumulates. Choosing that grain is the real engineering problem.
+
+**Cold start = cohort prior → personal posterior.** Day 1: run on a situation-cohort
+prior ("new non-EU arrivals need Anmeldung early and act on it"). Each user's own
+resolutions pull them off the prior toward personal truth. That is the literal
+answer to day-1-vs-day-90:
+
+- **Day 1** — cohort prior; smart for a typical member of your situation.
+- **Day 30** — learned you act on paperwork instantly (nag once), already know the
+  Sunday rhythm (drop it — you *graduated* that lesson), care about plan-protection.
+- **Day 90** — mostly quiet; speaks only for real plan-risk and the next ripening
+  milestone. The manual has faded because you became a local.
+
+**The floor — what must never be learned away.** For catastrophic-false-negative
+needs (legal deadlines), learning may tune *how* you nag (timing, framing) but never
+*whether*. Learning has a floor, and the floor is set by **consequence, not
+preference**. (Phase 0's `DEMOTE_IMMUNE_TYPES` is the v0 of this.)
+
+**Silence is unobservable, so learn conservatively.** You only get feedback on needs
+you *showed*; correct silence and *incorrectly* missing something both produce no
+event. Two partial escapes: (a) **consequence as delayed ground truth** — a deadline
+that goes overdue *is* the label "should have surfaced sooner"; (b) **rationed
+exploration** — occasionally surface a low-confidence need to stay honest, but on a
+*trust* surface this is far more expensive than on a content feed, so ration it hard
+and lean on priors + consequence-truth instead. **This loop optimises toward
+_silence_ — its measure of success is how little it eventually has to say.**
+
+---
+
+## Part II — Audit of the current tiles
+
+Nine tile types run through the thesis. Three are already need-shaped and are the
+template; three are source-driven noise for most users; the rest are real needs
+starved of the one thing never computed: the intersection with the user's day.
+
+| Tile | Need or raw signal? | Fail direction | Verdict |
+|---|---|---|---|
+| `bureaucracy_deadline` | Need (deadline, action, stakes) | Loud (legal FN catastrophic) | ✅ Keep — the model tile |
+| `buergeramt_slot` | Need *if* you need that office | Loud, matching cohort only | ⚠️ Verify it's alive + task-gated |
+| `tonight_events` | Discovery in an urgency costume | Quiet | ◐ Keep only when saved/intended |
+| `transit_disruption` | Need *only* × an active trip | Loud on your trip, else quiet | ◐ Fuse with a live trip/leave-by |
+| `market/rhythm closure` | Need — the purest expat "caught-out" | Quiet, recurring | ◐ Keep — must decay with tenure |
+| `weather_alert` | Two things in one type | Split | ⚠️ Hazard (loud) vs advisory (fuse-or-drop) |
+| `transit_delay` | Signal — minutes before a boarding | Quiet | ❌ Drop from Today |
+| `rhine_level` | Signal — an ungeacted gauge reading | Quiet for ~everyone | ❌ Alerts-only (flood cohort excepted) |
+
+**Cross-cutting patterns (visible only across the whole list):**
+
+1. **Source-driven artifacts** — rhine, transit_delay, advisory-rain, generic
+   tonight-events exist because they were *easy to detect*, not because users need
+   them. Supply-side, not demand-side. Drop candidates.
+2. **The fusion gap is universal** — nearly every tile becomes a real need only when
+   crossed with the user's plan/trip/task/place, and almost none of them do it. The
+   half-measures (`TransitDisruptionEvaluator` line-scoring, `WeatherEvaluator`'s
+   `hasNextAnchor` score-bump) prove the instinct exists but was never built into an
+   actual intersection step. **One missing organ degrades six of nine tiles.**
+3. **Three tiles already show the way** — `bureaucracy_deadline` (lifecycle tiers),
+   `tonight_events` (cross-surface `claim()` + time-window gate), the *concept* of
+   `buergeramt_slot`. The redesign is "make every tile as need-shaped as
+   bureaucracy_deadline already is," not invent-from-scratch.
+4. **The floor was under-enforced** — consequence ≠ severity; fixed in Phase 0.
+5. **The rain dup had siblings** — any two producers narrating one real-world fact
+   echo (market/holiday; rain start-times); fixed in Phase 0.
+6. **Acclimation decay is entirely absent** — nothing gets quieter as the user
+   becomes a local. A day-200 resident gets day-1 nagging.
+
+---
+
+## Part III — Phased plan
+
+Sequenced for **standalone value at each stop** — the user can halt after any phase
+and Today is strictly better. Backend-first, deterministic, no LLM required (an LLM
+can later *narrate* fused needs but never *choose* them). Each slice ships with Pest
+coverage, Pint, staging verify — the house rules.
+
+### Phase 0 — Cleanup & honest baseline — **SHIPPED (partial)**
+
+Cheap, reversible, no new machinery; buys immediate quiet and honesty.
+
+- ✅ **Floor violation** — demotion immunity keyed on consequence, not severity
+  (`f00c318`). A dismissed urgent/critical legal deadline can no longer be buried.
+- ✅ **Market/holiday dup** — the bus `market_closure` tile skipped; `rhythmTiles()`
+  owns closures live (`d2e927b`).
+- ✅ **Rain dup** — rain identity is the day, not the drifting start time (`7d5113d`).
+- ☐ **Verify `buergeramt_slot`** — the audit found a render path but **no evaluator
+  produces it**. Either wire it to open appointment-needing tasks, or remove the
+  dead arm. Honesty prerequisite before we lean on it as "the best tile."
+- ☐ **Drop pure-noise tiles to Alerts-only** — `rhine_level` and `transit_delay`
+  stop delivering to `CHANNEL_DASHBOARD` (keep `CHANNEL_ALERT_PAGE`). One-line
+  channel changes; immediately quieter. Advisory-rain waits for Phase 2 (can't yet
+  detect "without a plan").
+
+### Phase 1 — The need model (structural foundation)
+
+Introduce the vocabulary the rest depends on, mostly a refactor with little visible
+change. Make each existing tile *declare* its consequence-class and lifecycle stage.
+
+- `ConsequenceClass` enum — `PlanAtRisk | WindowClosing | CaughtOut | Opportunity |
+  OnTrack`. Add to `Tile`.
+- `LifecycleStage` — `dormant | ripe | peaking | lapsed`. Generalise the
+  bureaucracy tier logic (`UserTask::deadline_status`) into a shared notion so any
+  need can be "not yet." Tiles for `dormant` needs are withheld (the honest
+  "not yet"), not shown-at-low-score.
+- Promote `DEMOTE_IMMUNE_TYPES` into a consequence-derived floor (immunity follows
+  from `WindowClosing`/`CaughtOut` legal needs, not a hardcoded type list).
+- **Tests:** each tile maps to the right class/stage; a `dormant` need is withheld;
+  the floor still holds via consequence.
+
+### Phase 2 — The fusion organ (highest value)
+
+Intersect signals × the user's actual day. This is the differentiator and the
+largest slice; split it so early wins land first.
+
+- **2a — extend `HomeContext` with "the day":** the active composer plan (Redis,
+  72h TTL), places-with-`arrive_by` leave-by anchors, saved/intended events. Purely
+  additive; nothing consumes it yet.
+- **2b — `NeedFusion` step:** for each candidate, compute intersection with the day.
+  "Rain from 16:00" × a 17:00 outdoor plan → `PlanAtRisk` need with the resolving
+  action; no intersection → advisory-rain drops to Alerts-only.
+- **2c — split `weather_alert`:** hazard (storm/ice/heat — keep, loud,
+  unconditional) vs advisory (needs 2b intersection).
+- **2d — `transit_disruption` × live leave-by** → "your commute leg is disrupted,
+  leave early / reroute," else demote.
+- **2e — `tonight_events`** gated on saved/intent (keep the good `claim()` + 2h
+  window).
+- **2f — consequence-grouping (optional, hard):** rain + disruption on the same
+  plan-slot → one "your evening is shaky" need. Deterministic but mis-groupable;
+  ship last, behind the rest.
+- **Tests:** fusion fixtures — signal × plan → need; no-plan → Alerts-only; hazard
+  weather bypasses intersection; grouping merges same-slot threats.
+
+### Phase 3 — The acclimation loop (learning)
+
+- Capture the full resolution vocabulary: extend `TileTriageController` to record
+  *why* (already-handled vs not-relevant) and capture `acted` (take-me-there taps
+  already flow through `/api/track`).
+- Learn at `need-class × consequence × context` grain (generalise
+  `dismissPenalties`), not per-type.
+- **Cohort priors** table/service → personal posterior; solves cold-start and makes
+  Today smart on day 1.
+- **Acclimation decay:** rhythm/closure needs quiet as `already-handled` accrues;
+  the consequence floor holds (legal needs never silenced).
+- Rationed exploration + consequence-as-ground-truth for the silence blind spot.
+- **Tests:** the six resolution modes drive the right correction; cohort prior used
+  when personal signal is thin; decay quiets a repeatedly-handled type; the floor
+  survives N dismissals.
+
+### Phase 4 — The brief UI (presentation)
+
+- Restructure `dashboard.tsx` "Right Now" from a flat 8-tile list into a hierarchy:
+  **The one thing** (≤1 lead) · **Because of your day** (fused, plan-coupled) ·
+  **Good to know** (collapsed ambient) · **calm state** ("nothing needs you").
+- Verbs shift to **resolve-first** (Take me there · Book · Start · Find swap); triage
+  (done/snooze/dismiss) becomes the "you got it wrong" escape hatch, not the primary
+  action.
+- Rebalance the screen so the composer is primary and the needs band is thin when
+  needs are few. Prototype-first per house rules; match v4 tokens + dark mode.
+- **Tests:** Pest browser smoke over `/dashboard` for each hierarchy state incl. the
+  empty/calm state; no JS errors.
+
+### Recommended path
+
+Phase 0 (finish the two ☐ items — an afternoon) → **Phase 2a+2b+2c** is the
+value core (fusion turns the biggest set of tiles from noise into needs). Phases 1,
+3, 4 are real but larger; 1 can fold into 2 if we want to move fast, 3 and 4 are the
+"day-90 smart" and "reads like a brief" payoffs and can follow once fusion proves
+out on staging.
+
+**Guardrail:** the whole redesign is only safe because the Alerts page remains the
+complete, lossless record. Never drop a signal entirely — demote it off Today, keep
+it on Alerts.
