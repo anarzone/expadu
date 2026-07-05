@@ -98,6 +98,21 @@ test('market_closure bus actions are skipped in favour of the live rhythm tile',
     expect($titles)->not->toContain('Shops closed: '.now()->addDay()->toDateString());
 });
 
+test('buergeramt_slot bus actions produce no tile (the slot feature was removed)', function () {
+    // Nothing produces buergeramt_slot any more — the live slot-checker was
+    // removed and booking is a static deep-link on the task card. A stray action
+    // must not render a "slot available" tile that can never be acted on.
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('buergeramt_slot', 60.0, [
+        'office_id' => 'innenstadt',
+        'dates' => ['2026-07-10'],
+    ]));
+
+    expect(collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('type'))
+        ->not->toContain('buergeramt_slot');
+});
+
 test('tile list is capped at eight', function () {
     $user = User::factory()->onboarded()->create();
     $bus = app(ActionBus::class);

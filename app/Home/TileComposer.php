@@ -193,17 +193,6 @@ class TileComposer
                 key: $action->actionKey,
                 meta: ['action_key' => $action->actionKey],
             ),
-            'buergeramt_slot' => new Tile(
-                type: 'buergeramt_slot',
-                title: 'Bürgeramt slot available',
-                subtitle: count($action->payload['dates'] ?? []).' date(s) at '.($action->payload['office_id'] ?? ''),
-                emoji: '📅',
-                severity: 'info',
-                score: $action->score,
-                key: $action->actionKey,
-                href: '/bureaucracy',
-                meta: ['action_key' => $action->actionKey],
-            ),
             'rhine_level' => new Tile(
                 type: 'rhine_level',
                 title: 'Rhine level: '.($action->payload['level'] ?? '?').'m',
@@ -220,6 +209,12 @@ class TileComposer
             // for market_closure: the synthetic rhythm tile derives from the SAME
             // isShopsClosedTomorrow() predicate, so mapping the bus action too
             // would surface the identical closure twice (the market/holiday dup).
+            //
+            // buergeramt_slot has no arm because nothing produces it: the live
+            // slot-checker was removed (no availability access), so booking is a
+            // static deep-link on the bureaucracy task card instead. If a real
+            // slot source ever returns, gate its tile on the user having an open
+            // task for that office.
             default => null,
         };
     }
