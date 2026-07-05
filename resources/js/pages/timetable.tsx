@@ -217,7 +217,7 @@ function placeEmoji(place: SavedPlace): string {
     return '📍';
 }
 
-/** A ticking wall clock (HH:MM:SS) — the board's "live" heartbeat. */
+/** A ticking wall clock (HH:MM) — the board's "live" heartbeat. */
 function LiveClock() {
     const [now, setNow] = useState(() => new Date());
 
@@ -232,31 +232,56 @@ function LiveClock() {
             {now.toLocaleTimeString('de-DE', {
                 hour: '2-digit',
                 minute: '2-digit',
-                second: '2-digit',
             })}
         </>
     );
 }
 
+/** A departure's clock time (HH:MM) = the board's reference moment + countdown. */
+function clockAt(base: Date, minutes: number): string {
+    const d = new Date(base.getTime());
+    d.setSeconds(0, 0);
+    d.setMinutes(d.getMinutes() + minutes);
+
+    return d.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
 function BoardRow({ dep }: { dep: Departure }) {
+    // Absolute departure times are anchored to when the board loaded. (A long
+    // open session drifts with cache age; the clean fix is a server-sent
+    // generated-at stamp.)
+    const [base] = useState(() => new Date());
     const [a, b, c] = dep.minutes.slice(0, 3);
     const cancelled = dep.cancelled;
 
-    // The soonest departure is the colour-coded hero; the next two ride along
-    // muted. Cancelled rows show dashes in red instead of a countdown.
+    // The line + terminus stay the big, scannable element. The next departure
+    // rides alongside as a smaller clock time (what a board flips) — NOW at the
+    // platform — with the upcoming times stacked quietly beneath it.
     const heroText = cancelled
-        ? '---'
+        ? '--:--'
         : a == null
           ? ''
           : a <= 0
             ? 'NOW'
-            : String(a);
+            : clockAt(base, a);
     const heroTone = cancelled ? '#ff6b54' : a == null ? '#69727f' : timeInk(a);
-    const showMin =
-        !cancelled && ((a != null && a > 0) || b != null || c != null);
+    const colon = heroText.indexOf(':');
+
+    const laters = [b, c]
+        .filter((m): m is number => m != null)
+        .map((m) => clockAt(base, m));
+
+    const thenLine = cancelled ? (
+        <span style={{ color: '#ff6b54' }}>cancelled</span>
+    ) : laters.length > 0 ? (
+        `then ${laters.join(' · ')}`
+    ) : null;
 
     return (
-        <div className="flex items-center gap-2 border-b border-[var(--bd-line)] px-3 py-2.5 last:border-b-0 md:gap-3 md:px-[18px]">
+        <div className="board-row">
             <TileField
                 text={dep.line}
                 width={LINE_W}
@@ -272,41 +297,39 @@ function BoardRow({ dep }: { dep: Departure }) {
                 label={dep.destination || 'Cologne'}
             />
             <div className="board-times">
-                <TileField
-                    text={heroText}
-                    width={3}
-                    align="right"
-                    tone={heroTone}
-                    label={
+                <span
+                    className="board-hero"
+                    aria-label={
                         cancelled
                             ? 'cancelled'
                             : heroText === 'NOW'
                               ? 'departing now'
                               : heroText
-                                ? `${heroText} minutes`
+                                ? `departs at ${heroText}`
                                 : 'no departures'
                     }
-                />
-                <TileField
-                    text={cancelled || b == null ? '' : String(b)}
-                    width={2}
-                    align="right"
-                    tone="#69727f"
-                    label={b == null ? '' : `then ${b} minutes`}
-                />
-                <TileField
-                    text={cancelled || c == null ? '' : String(c)}
-                    width={2}
-                    align="right"
-                    tone="#69727f"
-                    label={c == null ? '' : `then ${c} minutes`}
-                />
-                <span
-                    className="board-min"
-                    style={{ visibility: showMin ? 'visible' : 'hidden' }}
                 >
-                    min
+                    {colon < 0 ? (
+                        <TileField text={heroText} tone={heroTone} label="" />
+                    ) : (
+                        <>
+                            <TileField
+                                text={heroText.slice(0, colon)}
+                                tone={heroTone}
+                                label=""
+                            />
+                            <span className="board-hero-colon">:</span>
+                            <TileField
+                                text={heroText.slice(colon + 1)}
+                                tone={heroTone}
+                                label=""
+                            />
+                        </>
+                    )}
                 </span>
+                {thenLine != null && (
+                    <span className="board-then">{thenLine}</span>
+                )}
             </div>
         </div>
     );
@@ -394,21 +417,6 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
                     </span>
                 )}
             </div>
-            {board.departures.length > 0 && (
-                <div className="board-hrow">
-                    <div className="board-hgrp">
-                        <span className="board-hl board-hl-hero">next</span>
-                        <span className="board-hl board-hl-then">then</span>
-                        <span className="board-hl board-hl-then">then</span>
-                        <span
-                            className="board-min"
-                            style={{ visibility: 'hidden' }}
-                        >
-                            min
-                        </span>
-                    </div>
-                </div>
-            )}
             {grouped ? (
                 <div>
                     {lanes.map((lane) => (
