@@ -237,9 +237,12 @@ largest slice; split it so early wins land first.
 - ✅ **2c — `weather_alert` split by kind:** `CheckWeatherAlerts` tags rain
   `advisory` (+ `from` time) vs ice/heat/wind `hazard`; hazards tile
   unconditionally, advisories go through 2b.
-- ☐ **2d — `transit_disruption` × live leave-by** → "your commute leg is disrupted,
-  leave early / reroute," else demote. (Reuse the `HomeContext` anchors + a
-  line-to-anchor check; likely the point to extract `NeedFusion`.)
+- ✅ **2d — `transit_disruption` × live route:** the evaluator gates Today on the
+  disruption touching the user (their line / a saved place / a critical strike —
+  killing the major broadcast-to-all) and records `on_user_line`;
+  `HomeContext::hasLiveCommuteToday()` + `disruptionTile()` escalate the subtitle
+  (on your line + a commute today → "leave early or reroute"). Kept the tile-method
+  pattern — the logic stayed small, so no separate `NeedFusion` service yet.
 - ☐ **2e — `tonight_events`** gated on saved/intent (keep the good `claim()` + 2h
   window).
 - ☐ **2f — consequence-grouping (optional, hard):** rain + disruption on the same
