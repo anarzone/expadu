@@ -385,9 +385,19 @@ class TileComposer
      */
     private function tonightEventsTile(HomeContext $context): array
     {
-        $soon = $context->tonightEvents->first();
+        if ($context->intendedEventIds === []) {
+            return [];
+        }
 
-        if ($soon === null || $context->now->diffInMinutes($soon->starts_at, false) > self::TONIGHT_URGENT_MINUTES) {
+        // Only an event the user actually cares about (a reminder or attendance)
+        // earns an urgent tile — a generic "some event is soon" is discovery, and
+        // the tonight rail owns that. Soonest of the intended events within window.
+        $soon = $context->tonightEvents
+            ->whereIn('id', $context->intendedEventIds)
+            ->sortBy('starts_at')
+            ->first(fn ($event) => $context->now->diffInMinutes($event->starts_at, false) <= self::TONIGHT_URGENT_MINUTES);
+
+        if ($soon === null) {
             return [];
         }
 

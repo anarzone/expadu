@@ -3,6 +3,7 @@
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
 use App\Home\TileComposer;
+use App\Models\Event;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
@@ -211,6 +212,28 @@ test('a weather hazard (ice/heat/wind) always tiles, even with an empty day', fu
 
     expect(collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('type'))
         ->toContain('weather_alert');
+});
+
+test('the tonight tile fires only for an event the user intends', function () {
+    $user = User::factory()->onboarded()->create();
+    $now = CarbonImmutable::parse('2026-07-05 18:00', 'Europe/Berlin');
+    $event = Event::factory()->create(['title' => 'Jazz Night', 'starts_at' => $now->addMinutes(45)]);
+
+    // Intended (a reminder/attendance surfaced its id) → urgent tile.
+    $intended = app(TileComposer::class)->tiles(homeContext($user, [
+        'now' => $now,
+        'tonightEvents' => collect([$event]),
+        'intendedEventIds' => [$event->id],
+    ]));
+    expect(collect($intended)->pluck('type'))->toContain('tonight_events');
+
+    // Same imminent event, no intent → discovery, not an act-now tile.
+    $notIntended = app(TileComposer::class)->tiles(homeContext($user, [
+        'now' => $now,
+        'tonightEvents' => collect([$event]),
+        'intendedEventIds' => [],
+    ]));
+    expect(collect($notIntended)->pluck('type'))->not->toContain('tonight_events');
 });
 
 test('tile list is capped at eight', function () {

@@ -7,6 +7,8 @@ use App\Composer\IntentWeights;
 use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Models\Event;
+use App\Models\EventAttendee;
+use App\Models\EventReminder;
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Models\UserTask;
@@ -181,6 +183,36 @@ class HomeFeed
         // both read it, so "nearby" is genuinely nearby and never re-resolved.
         $origin = $this->locations->context($user, request(), $user->veedel ?: null);
 
+        // Quality-gated (same filter as the events page) so unvetted scraped rows
+        // never surface as "Tonight"; curated expat-relevant events lead, soonest
+        // first. Resolved before the DTO so the intended-event lookup can reuse it.
+        $tonightEvents = Event::query()
+            ->visible()
+            ->whereDate('starts_at', today())
+            ->where('starts_at', '>', now())
+            ->whereNotNull('location')
+            ->orderByDesc('is_curated')
+            ->orderBy('starts_at')
+            ->limit(20)
+            ->get();
+
+        // Which of tonight's events the user has signalled intent for (a reminder
+        // or attendance) — the urgent tile fires only for these, not any event.
+        $eventIds = $tonightEvents->pluck('id');
+        $intendedEventIds = $eventIds->isEmpty() ? [] : EventReminder::query()
+            ->where('user_id', $user->id)
+            ->whereIn('event_id', $eventIds)
+            ->pluck('event_id')
+            ->merge(
+                EventAttendee::query()
+                    ->where('user_id', $user->id)
+                    ->whereIn('event_id', $eventIds)
+                    ->pluck('event_id')
+            )
+            ->unique()
+            ->values()
+            ->all();
+
         return $this->context = new HomeContext(
             userId: $user->id,
             profile: $profile,
@@ -198,18 +230,7 @@ class HomeFeed
             isWeekendWindow: ($now->isFriday() && $now->hour >= 15) || $now->isSaturday() || $now->isSunday(),
             isEvening: $now->hour >= 17,
             openTasks: $this->applicableOpenTasks($user, $profile),
-            // Quality-gated (same filter as the events page) so unvetted scraped
-            // rows never surface as "Tonight"; curated expat-relevant events lead,
-            // then soonest first.
-            tonightEvents: Event::query()
-                ->visible()
-                ->whereDate('starts_at', today())
-                ->where('starts_at', '>', now())
-                ->whereNotNull('location')
-                ->orderByDesc('is_curated')
-                ->orderBy('starts_at')
-                ->limit(20)
-                ->get(),
+            tonightEvents: $tonightEvents,
             // "The user's day" for the fusion step: the pinned Today plan's slots
             // and the commutes (arrive_by places) that are relevant today.
             todayPlanSlots: $this->todayPlan->get($user)['slots'] ?? [],
@@ -220,6 +241,7 @@ class HomeFeed
                 ->filter->isActiveToday()
                 ->values()
                 ->all(),
+            intendedEventIds: $intendedEventIds,
         );
     }
 

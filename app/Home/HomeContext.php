@@ -48,6 +48,8 @@ class HomeContext
         public readonly array $todayPlanSlots = [],
         /** @var list<UserPlace> places with an arrive_by that are active today */
         public readonly array $leaveByAnchors = [],
+        /** @var list<int> ids of today's events the user has a reminder or attendance for */
+        public readonly array $intendedEventIds = [],
     ) {}
 
     public function hasOrigin(): bool

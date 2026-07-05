@@ -4,6 +4,7 @@ use App\Composer\IntentWeights;
 use App\Enums\LocationSource;
 use App\Home\HomeFeed;
 use App\Models\Event;
+use App\Models\EventReminder;
 use App\Models\Spot;
 use App\Models\Task;
 use App\Models\User;
@@ -52,11 +53,20 @@ test('weather and intent weights resolve once across chips, tiles and rails', fu
         ->and($rails)->toBeArray();
 });
 
-test('an imminent event becomes an urgent tile and is not repeated in the rail', function () {
+test('an imminent event the user intends becomes an urgent tile, not repeated in the rail', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'));
     $user = homeFeedUser();
     Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
-    eventAtTonight('Imminent Meetup', now()->addMinutes(45));
+    $event = eventAtTonight('Imminent Meetup', now()->addMinutes(45));
+
+    // The user cares about it (set a reminder) — that's what earns the urgent tile.
+    EventReminder::create([
+        'user_id' => $user->id,
+        'event_id' => $event->id,
+        'occurrence_start' => $event->starts_at,
+        'offset_minutes' => 30,
+        'remind_at' => now(),
+    ]);
 
     $feed = app(HomeFeed::class);
     $tiles = collect($feed->tiles($user));
@@ -66,6 +76,19 @@ test('an imminent event becomes an urgent tile and is not repeated in the rail',
     expect($tiles->pluck('type'))->toContain('tonight_events');
     // …and is NOT repeated in the tonight rail (no triplication).
     expect($rails->firstWhere('key', 'tonight'))->toBeNull();
+});
+
+test('an imminent event the user has not saved earns no urgent tile (rail owns discovery)', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'));
+    $user = homeFeedUser();
+    Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
+    eventAtTonight('Random Meetup', now()->addMinutes(45));
+
+    $feed = app(HomeFeed::class);
+
+    // No reminder/attendance → not an act-now need; it lives in the tonight rail.
+    expect(collect($feed->tiles($user))->pluck('type'))->not->toContain('tonight_events');
+    expect(collect($feed->rails($user))->firstWhere('key', 'tonight'))->not->toBeNull();
 });
 
 test('a distant event stays a rail and earns no urgent tile', function () {
