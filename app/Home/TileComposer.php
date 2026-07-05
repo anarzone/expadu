@@ -153,22 +153,7 @@ class TileComposer
     private function actionToTile(ScoredAction $action, HomeContext $context): ?Tile
     {
         return match ($action->type) {
-            'transit_disruption' => new Tile(
-                type: 'transit_disruption',
-                title: $this->disruptionTitle($action),
-                subtitle: $action->severity === 'critical'
-                    ? 'Major impact — check before you leave'
-                    : 'Affects stops near your places',
-                emoji: '⚠️',
-                severity: $action->severity === 'critical' ? 'danger' : 'warn',
-                score: $action->score,
-                key: $action->actionKey,
-                href: '/alerts',
-                meta: [
-                    'lines' => $action->payload['lines'] ?? [],
-                    'action_key' => $action->actionKey,
-                ],
-            ),
+            'transit_disruption' => $this->disruptionTile($action, $context),
             'transit_delay' => new Tile(
                 type: 'transit_delay',
                 title: "Line {$action->payload['line']} delayed {$action->payload['delay_min']} min",
@@ -255,6 +240,42 @@ class TileComposer
             score: $action->score,
             key: $action->actionKey,
             meta: ['action_key' => $action->actionKey, 'exposure' => $exposure],
+        );
+    }
+
+    /**
+     * A disruption tile, framed by how much it touches the user. Only reaches
+     * here when it's dashboard-worthy (their line, a saved place, or a critical
+     * strike — see TransitDisruptionEvaluator). The subtitle escalates: a line
+     * they ride AND a commute today → an act-now "leave early"; their line but no
+     * trip today → ambient "one of your lines"; otherwise the city-wide notice.
+     */
+    private function disruptionTile(ScoredAction $action, HomeContext $context): Tile
+    {
+        $onUserLine = (bool) ($action->payload['on_user_line'] ?? false);
+        $onRouteToday = $onUserLine && $context->hasLiveCommuteToday();
+
+        $subtitle = match (true) {
+            $onRouteToday => 'On your route today — leave early or reroute.',
+            $action->severity === 'critical' => 'Major impact — check before you leave',
+            $onUserLine => "It's on one of your lines",
+            default => 'Affects stops near your places',
+        };
+
+        return new Tile(
+            type: 'transit_disruption',
+            title: $this->disruptionTitle($action),
+            subtitle: $subtitle,
+            emoji: '⚠️',
+            severity: $action->severity === 'critical' ? 'danger' : 'warn',
+            score: $action->score,
+            key: $action->actionKey,
+            href: '/alerts',
+            meta: [
+                'lines' => $action->payload['lines'] ?? [],
+                'action_key' => $action->actionKey,
+                'on_route_today' => $onRouteToday,
+            ],
         );
     }
 

@@ -57,7 +57,7 @@ function fakeUserLines(array $lines): void
     });
 }
 
-test('disruption on a line near user places emits a scored action', function () {
+test('disruption on a line near user places emits a scored action flagged on_user_line', function () {
     $user = User::factory()->onboarded()->create();
     UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home']);
     fakeUserLines(['12', '15']);
@@ -71,10 +71,14 @@ test('disruption on a line near user places emits a scored action', function () 
         expiresAt: null,
     ));
 
-    $actions = app(ActionBus::class)->topK($user->id, 10);
+    $disruption = collect(app(ActionBus::class)->topK($user->id, 10))
+        ->firstWhere('type', 'transit_disruption');
 
-    expect($actions)->not->toBeEmpty();
-    expect(collect($actions)->pluck('type')->all())->toContain('transit_disruption');
+    // A line the user rides: on the dashboard AND flagged so the tile can frame it
+    // as an on-your-route need when there's also a commute today.
+    expect($disruption)->not->toBeNull()
+        ->and($disruption->payload['on_user_line'] ?? false)->toBeTrue()
+        ->and($disruption->deliverChannels)->toContain(ScoredAction::CHANNEL_DASHBOARD);
 });
 
 test('moderate disruption on unrelated line does not emit action', function () {
@@ -94,7 +98,7 @@ test('moderate disruption on unrelated line does not emit action', function () {
     expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty();
 });
 
-test('major disruption broadcasts to all onboarded users without push', function () {
+test('a major disruption on an unrelated line is recorded but stays off Today', function () {
     $user = User::factory()->onboarded()->create();
     fakeUserLines([]);
 
@@ -107,11 +111,36 @@ test('major disruption broadcasts to all onboarded users without push', function
         expiresAt: null,
     ));
 
-    $actions = app(ActionBus::class)->topK($user->id, 10);
-    $disruption = collect($actions)->firstWhere('type', 'transit_disruption');
+    $disruption = collect(app(ActionBus::class)->topK($user->id, 10))
+        ->firstWhere('type', 'transit_disruption');
 
-    expect($disruption)->not->toBeNull();
-    expect($disruption->deliverChannels)->not->toContain(ScoredAction::CHANNEL_PUSH);
+    // Still recorded for everyone (Alerts page), but a merely-major strike on a
+    // line they don't ride is not an act-now Today need — no dashboard, no push.
+    expect($disruption)->not->toBeNull()
+        ->and($disruption->deliverChannels)->toContain(ScoredAction::CHANNEL_ALERT_PAGE)
+        ->and($disruption->deliverChannels)->not->toContain(ScoredAction::CHANNEL_DASHBOARD)
+        ->and($disruption->deliverChannels)->not->toContain(ScoredAction::CHANNEL_PUSH);
+});
+
+test('a critical disruption reaches Today even on an unrelated line', function () {
+    $user = User::factory()->onboarded()->create();
+    fakeUserLines([]);
+
+    event(new TransitDisruptionDetected(
+        disruptionId: 280,
+        lines: ['99'],
+        stopsAffected: [],
+        severity: 'critical',
+        bbox: null,
+        expiresAt: null,
+    ));
+
+    // A city-wide critical strike is hazard-like: worth Today even off your route.
+    $disruption = collect(app(ActionBus::class)->topK($user->id, 10))
+        ->firstWhere('type', 'transit_disruption');
+
+    expect($disruption)->not->toBeNull()
+        ->and($disruption->deliverChannels)->toContain(ScoredAction::CHANNEL_DASHBOARD);
 });
 
 test('critical disruption on matched line includes push channel', function () {

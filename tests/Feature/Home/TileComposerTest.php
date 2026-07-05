@@ -169,6 +169,39 @@ test('rain fuses with a commute: a leave-by anchor after the rain earns a tile',
         ->and($weather['subtitle'])->toContain('Work');
 });
 
+test('a disruption on your line while you commute today reads as on-your-route', function () {
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('transit_disruption', 55.0, [
+        'disruption_id' => 5,
+        'lines' => ['1'],
+        'stops_affected' => [],
+        'on_user_line' => true,
+    ]));
+
+    $anchor = new UserPlace(['name' => 'Work', 'category' => 'work', 'arrive_by' => '09:00']);
+    $tiles = app(TileComposer::class)->tiles(homeContext($user, ['leaveByAnchors' => [$anchor]]));
+
+    $disruption = collect($tiles)->firstWhere('type', 'transit_disruption');
+    expect($disruption['subtitle'])->toContain('your route today');
+});
+
+test('a disruption on your line with no commute today stays ambient', function () {
+    $user = User::factory()->onboarded()->create();
+
+    app(ActionBus::class)->insert($user, busAction('transit_disruption', 55.0, [
+        'disruption_id' => 6,
+        'lines' => ['1'],
+        'stops_affected' => [],
+        'on_user_line' => true,
+    ]));
+
+    // No commute anchors → it's relevant (your line) but not act-now.
+    $disruption = collect(app(TileComposer::class)->tiles(homeContext($user)))
+        ->firstWhere('type', 'transit_disruption');
+    expect($disruption['subtitle'])->toContain('one of your lines');
+});
+
 test('a weather hazard (ice/heat/wind) always tiles, even with an empty day', function () {
     $user = User::factory()->onboarded()->create();
 

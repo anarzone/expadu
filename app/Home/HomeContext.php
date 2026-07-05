@@ -56,6 +56,16 @@ class HomeContext
     }
 
     /**
+     * Whether the user has a commute today — a place with an arrive_by that is
+     * active now. This is what turns "a line you ride is disrupted" (ambient)
+     * into "your route today is disrupted, leave early" (act-now).
+     */
+    public function hasLiveCommuteToday(): bool
+    {
+        return $this->leaveByAnchors !== [];
+    }
+
+    /**
      * The label of an outdoor exposure — a pinned outdoor plan stop, or a commute
      * the user is still heading out for — happening at or after `$time`, or null
      * if the day holds nothing the weather would spoil. This is what turns a rain

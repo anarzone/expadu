@@ -15,12 +15,13 @@ use Illuminate\Queue\InteractsWithQueue;
 /**
  * Matches a disruption to users via their saved places: a line match
  * (the disrupted line serves a stop near one of the user's places) beats
- * a geo match (a saved place sits inside the disruption bbox). Major and
- * critical disruptions additionally reach every onboarded user's
- * dashboard — strikes matter city-wide.
+ * a geo match (a saved place sits inside the disruption bbox).
  *
- * Push is reserved for critical disruptions on line-matched users; all
- * other matches are dashboard/alert-page only.
+ * Today (dashboard) is reserved for disruptions that actually touch the user —
+ * their line or a saved place — plus city-wide CRITICAL strikes. A merely-major
+ * disruption on a line they don't use is still recorded (all onboarded users) but
+ * only on the Alerts page, not the home screen: a strike across town isn't an
+ * act-now Today need. Push stays reserved for critical disruptions on their line.
  */
 class TransitDisruptionEvaluator implements ShouldQueue
 {
@@ -76,11 +77,15 @@ class TransitDisruptionEvaluator implements ShouldQueue
             validUntil: $event->expiresAt
                 ? CarbonImmutable::instance($event->expiresAt)
                 : CarbonImmutable::now()->addHours(6),
-            deliverChannels: $this->channelsFor($event->severity, $lineMatch),
+            deliverChannels: $this->channelsFor($event->severity, $lineMatch, $geoMatch),
             payload: [
                 'disruption_id' => $event->disruptionId,
                 'lines' => $event->lines,
                 'stops_affected' => $event->stopsAffected,
+                // Whether a disrupted line is one the user actually rides — the
+                // fusion step pairs this with "a commute today" to frame it as an
+                // on-your-route need instead of a generic city notice.
+                'on_user_line' => $lineMatch,
             ],
             createdAt: CarbonImmutable::now(),
         );
@@ -101,9 +106,15 @@ class TransitDisruptionEvaluator implements ShouldQueue
     }
 
     /** @return list<string> */
-    private function channelsFor(string $severity, bool $lineMatch): array
+    private function channelsFor(string $severity, bool $lineMatch, bool $geoMatch): array
     {
-        $channels = [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_ALERT_PAGE];
+        $channels = [ScoredAction::CHANNEL_ALERT_PAGE];
+
+        // Dashboard only when the disruption touches the user (their line or a
+        // saved place) or is a city-wide critical strike — otherwise Alerts-only.
+        if ($lineMatch || $geoMatch || $severity === 'critical') {
+            $channels[] = ScoredAction::CHANNEL_DASHBOARD;
+        }
 
         if ($severity === 'critical' && $lineMatch) {
             $channels[] = ScoredAction::CHANNEL_PUSH;
