@@ -534,9 +534,11 @@ input[type='time']::-webkit-calendar-picker-indicator {
    filler); the next departure is the bigger hero clock time pinned to the
    right, with the upcoming times stacked small beneath it. */
 .board-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
+    column-gap: 8px;
+    row-gap: 2px;
     padding: 7px 12px;
     border-bottom: 1px solid var(--bd-line);
 }
@@ -545,25 +547,28 @@ input[type='time']::-webkit-calendar-picker-indicator {
 }
 @media (min-width: 768px) {
     .board-row {
-        gap: 12px;
+        column-gap: 12px;
         padding: 8px 18px;
     }
 }
+/* line badge (col 1), terminus (col 2), time (col 3) all share row 1 so they
+   line up; the "then" list drops to row 2 under the time. */
+.board-row > .tile-field {
+    grid-column: 1;
+    grid-row: 1;
+}
 .board-dest {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 1;
     min-width: 0;
     display: flex;
     align-items: center;
     overflow: hidden;
 }
-.board-times {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-}
 .board-hero {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
     --tw: 14px;
     --th: 21px;
     display: flex;
@@ -584,6 +589,9 @@ input[type='time']::-webkit-calendar-picker-indicator {
     margin: 0 1px;
 }
 .board-then {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
     font-family: 'Geist Mono', ui-monospace, monospace;
     font-size: 11px;
     letter-spacing: 0.02em;

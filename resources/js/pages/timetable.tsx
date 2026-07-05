@@ -297,41 +297,37 @@ function BoardRow({ dep }: { dep: Departure }) {
                     label={dep.destination || 'Cologne'}
                 />
             </div>
-            <div className="board-times">
-                <span
-                    className="board-hero"
-                    aria-label={
-                        cancelled
-                            ? 'cancelled'
-                            : heroText === 'NOW'
-                              ? 'departing now'
-                              : heroText
-                                ? `departs at ${heroText}`
-                                : 'no departures'
-                    }
-                >
-                    {colon < 0 ? (
-                        <TileField text={heroText} tone={heroTone} label="" />
-                    ) : (
-                        <>
-                            <TileField
-                                text={heroText.slice(0, colon)}
-                                tone={heroTone}
-                                label=""
-                            />
-                            <span className="board-hero-colon">:</span>
-                            <TileField
-                                text={heroText.slice(colon + 1)}
-                                tone={heroTone}
-                                label=""
-                            />
-                        </>
-                    )}
-                </span>
-                {thenLine != null && (
-                    <span className="board-then">{thenLine}</span>
+            <span
+                className="board-hero"
+                aria-label={
+                    cancelled
+                        ? 'cancelled'
+                        : heroText === 'NOW'
+                          ? 'departing now'
+                          : heroText
+                            ? `departs at ${heroText}`
+                            : 'no departures'
+                }
+            >
+                {colon < 0 ? (
+                    <TileField text={heroText} tone={heroTone} label="" />
+                ) : (
+                    <>
+                        <TileField
+                            text={heroText.slice(0, colon)}
+                            tone={heroTone}
+                            label=""
+                        />
+                        <span className="board-hero-colon">:</span>
+                        <TileField
+                            text={heroText.slice(colon + 1)}
+                            tone={heroTone}
+                            label=""
+                        />
+                    </>
                 )}
-            </div>
+            </span>
+            {thenLine != null && <span className="board-then">{thenLine}</span>}
         </div>
     );
 }
