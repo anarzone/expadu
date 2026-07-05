@@ -186,22 +186,24 @@ and Today is strictly better. Backend-first, deterministic, no LLM required (an 
 can later *narrate* fused needs but never *choose* them). Each slice ships with Pest
 coverage, Pint, staging verify — the house rules.
 
-### Phase 0 — Cleanup & honest baseline — **SHIPPED (partial)**
+### Phase 0 — Cleanup & honest baseline — **SHIPPED**
 
 Cheap, reversible, no new machinery; buys immediate quiet and honesty.
 
-- ✅ **Floor violation** — demotion immunity keyed on consequence, not severity
-  (`f00c318`). A dismissed urgent/critical legal deadline can no longer be buried.
+- ✅ **Floor violation** — demotion immunity keyed on consequence, not severity.
+  A dismissed urgent/critical legal deadline can no longer be buried.
 - ✅ **Market/holiday dup** — the bus `market_closure` tile skipped; `rhythmTiles()`
-  owns closures live (`d2e927b`).
-- ✅ **Rain dup** — rain identity is the day, not the drifting start time (`7d5113d`).
-- ☐ **Verify `buergeramt_slot`** — the audit found a render path but **no evaluator
-  produces it**. Either wire it to open appointment-needing tasks, or remove the
-  dead arm. Honesty prerequisite before we lean on it as "the best tile."
-- ☐ **Drop pure-noise tiles to Alerts-only** — `rhine_level` and `transit_delay`
-  stop delivering to `CHANNEL_DASHBOARD` (keep `CHANNEL_ALERT_PAGE`). One-line
-  channel changes; immediately quieter. Advisory-rain waits for Phase 2 (can't yet
-  detect "without a plan").
+  owns closures live.
+- ✅ **Rain dup** — rain identity is the day, not the drifting forecast start time.
+- ✅ **`buergeramt_slot` verified dead → removed** — nothing produces it (the live
+  slot-checker was removed; booking is now a static task-card deep-link). The dead
+  `actionToTile` arm is deleted, with a note on how to re-gate it (on an open office
+  task) if a real slot source ever returns.
+- ✅ **Pure-noise tiles demoted to Alerts-only** — `RhineEvaluator` and
+  `TransitDelayEvaluator` no longer deliver `CHANNEL_DASHBOARD`; they stay on the
+  Alerts record (a major ≥30-min delay keeps push). Their `actionToTile` arms remain
+  as dormant rendering for the Phase 2 return. Advisory-rain waits for Phase 2
+  (can't yet detect "without a plan").
 
 ### Phase 1 — The need model (structural foundation)
 
