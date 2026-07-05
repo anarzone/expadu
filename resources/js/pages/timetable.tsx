@@ -121,9 +121,9 @@ function boardTint(color: string): string {
     return BOARD_TINT[color.toLowerCase()] ?? color;
 }
 
-/** Fixed tile columns so every row lines up (line, then the destination). */
+/** The line badge is a fixed-width column so the numbers line up; the terminus
+ *  flexes to fill the row. */
 const LINE_W = 3;
-const DEST_W = 9;
 
 /** Glyph colour for a time by urgency — white upcoming, amber ≤3 min, green now. */
 function timeInk(minutes: number): string {
@@ -289,13 +289,14 @@ function BoardRow({ dep }: { dep: Departure }) {
                 tone={lineInk(dep.color)}
                 label={`Line ${dep.line}`}
             />
-            <TileField
-                text={(dep.destination || 'Cologne').toUpperCase()}
-                width={DEST_W}
-                align="left"
-                tone="#eef2f7"
-                label={dep.destination || 'Cologne'}
-            />
+            <div className="board-dest">
+                <TileField
+                    text={(dep.destination || 'Cologne').toUpperCase()}
+                    align="left"
+                    tone="#eef2f7"
+                    label={dep.destination || 'Cologne'}
+                />
+            </div>
             <div className="board-times">
                 <span
                     className="board-hero"

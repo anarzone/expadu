@@ -530,16 +530,14 @@ input[type='time']::-webkit-calendar-picker-indicator {
         visibility: hidden;
     }
 }
-/* A departure row: the line + terminus stay the big, scannable element; the
-   next departure rides alongside as a smaller clock time (a real board flips
-   times, not raw countdowns), with the upcoming times stacked quietly beneath
-   it. The left is centred against that block so there's no dead band under the
-   destination. */
+/* A departure row: the line + terminus flex to fill the row (the scannable
+   filler); the next departure is the bigger hero clock time pinned to the
+   right, with the upcoming times stacked small beneath it. */
 .board-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 9px 12px;
+    padding: 7px 12px;
     border-bottom: 1px solid var(--bd-line);
 }
 .board-row:last-child {
@@ -548,27 +546,32 @@ input[type='time']::-webkit-calendar-picker-indicator {
 @media (min-width: 768px) {
     .board-row {
         gap: 12px;
-        padding: 10px 18px;
+        padding: 8px 18px;
     }
 }
+.board-dest {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
 .board-times {
-    margin-left: auto;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 3px;
+    gap: 2px;
 }
 .board-hero {
-    --tw: 11px;
-    --th: 16px;
+    --tw: 14px;
+    --th: 21px;
     display: flex;
     align-items: center;
     gap: var(--tg);
 }
 @media (min-width: 768px) {
     .board-hero {
-        --tw: 15px;
-        --th: 22px;
+        --tw: 20px;
+        --th: 28px;
     }
 }
 .board-hero-colon {
