@@ -54,9 +54,11 @@ jobs:
             SVC=$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.service" }}' staging-app 2>/dev/null || echo app)
             echo "compose service for staging-app: $SVC"
             if [ "$MODE" = "inspect" ]; then
-              echo "--- files ---"; ls -1 /data/staging
-              echo "--- current SENTRY vars in container (names only) ---"
-              docker exec staging-app printenv | grep '^SENTRY' | cut -d= -f1 || echo "none"
+              echo "--- files (incl. hidden) ---"; ls -1a /data/staging
+              echo "--- SENTRY vars in container: name + SET/EMPTY, values never printed ---"
+              docker exec staging-app printenv \
+                | awk -F= '/^SENTRY/{ n=length($0)-length($1)-1; print $1" = "(n>0?"SET ("n" chars)":"EMPTY") }' \
+                | sort || echo "none"
               exit 0
             fi
             # apply: a merge-safe override that injects the two vars into the app service.
