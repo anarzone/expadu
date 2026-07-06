@@ -306,7 +306,14 @@ class UserLocationService
     }
 
     /**
-     * Get the last GPS ping from Redis within the last 30 minutes.
+     * Get the last *usable* GPS ping from Redis within the last 30 minutes.
+     *
+     * The history intentionally also stores rejected readings (poor accuracy or
+     * impossible speed jumps — common on weak networks; see
+     * EventTrackingService::storeLocationInRedis) for debugging. Those must
+     * never anchor a board or distance: a single bad fix would drag the
+     * departures board to the wrong station. So walk newest-first and return
+     * the first *accepted* fix, skipping any tagged `rejected`.
      *
      * @return array{lat: float, lng: float}|null
      */
@@ -316,22 +323,28 @@ class UserLocationService
         $thirtyMinAgo = now()->subMinutes(30)->timestamp;
 
         try {
-            // Get the most recent entry (highest score = most recent timestamp)
-            $entries = Redis::zrevrangebyscore($key, '+inf', $thirtyMinAgo, ['LIMIT' => [0, 1]]);
+            // Newest first. Scan a small window so a burst of rejected weak-signal
+            // readings can't hide the last good fix behind them.
+            $entries = Redis::zrevrangebyscore($key, '+inf', $thirtyMinAgo, ['LIMIT' => [0, 25]]);
 
-            if (empty($entries)) {
-                return null;
+            foreach ($entries as $raw) {
+                $data = json_decode((string) $raw, true);
+
+                if (! is_array($data) || ! isset($data['lat'], $data['lng'])) {
+                    continue;
+                }
+
+                if (! empty($data['rejected'])) {
+                    continue;
+                }
+
+                return [
+                    'lat' => (float) $data['lat'],
+                    'lng' => (float) $data['lng'],
+                ];
             }
 
-            $data = json_decode($entries[0], true);
-            if (! $data || ! isset($data['lat'], $data['lng'])) {
-                return null;
-            }
-
-            return [
-                'lat' => (float) $data['lat'],
-                'lng' => (float) $data['lng'],
-            ];
+            return null;
         } catch (\Throwable) {
             return null;
         }
