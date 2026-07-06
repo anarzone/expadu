@@ -42,4 +42,24 @@ test.describe('Dashboard (Today)', () => {
         }
         expect(errors).toHaveLength(0);
     });
+
+    test('the brief renders (a need lane or the calm state)', async ({
+        page,
+    }) => {
+        await page.goto('/dashboard');
+        await page.waitForLoadState('networkidle');
+        // Deferred tiles settle after first paint.
+        await page.waitForTimeout(1200);
+
+        // The brief resolves to one of two shapes: a lane label when something
+        // needs the user, or the calm state when nothing does. Either proves it
+        // rendered — the flat "Right now" list is gone.
+        await expect(
+            page
+                .getByText(
+                    /Needs you first|Because of your day|Good to know|Nothing needs you right now/i,
+                )
+                .first(),
+        ).toBeVisible();
+    });
 });

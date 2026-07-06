@@ -175,12 +175,97 @@ type Rail = {
     cards: RailCard[];
 };
 
-const tileClasses: Record<Tile['severity'], string> = {
-    danger: 'border-danger-soft border-l-danger bg-danger-soft',
-    warn: 'border-warn-soft border-l-warn bg-warn-soft',
-    info: 'border-accent-soft border-l-primary bg-accent-soft',
-    neutral: 'border-border border-l-border bg-card',
+/**
+ * The brief's three lanes. A tile's TYPE decides its lane, not its score:
+ * ambient rhythm/river context is quiet background; a legal deadline (or any
+ * danger-severity strike) is the one thing that needs you first; everything
+ * else is fused to your actual day.
+ */
+const AMBIENT_TYPES = ['rhythm_warning', 'rhine_level'];
+const LEAD_TYPES = ['bureaucracy_deadline'];
+
+/**
+ * Resolve-first copy per tile type: the verb leads, the deep-link carries it.
+ * href falls back to the tile's own href when the backend set one. Ambient
+ * types have no resolve — they're context, not a call to act.
+ */
+const TILE_RESOLVE: Record<
+    string,
+    { verb: string; href: string; secondary?: { label: string; href: string } }
+> = {
+    bureaucracy_deadline: {
+        verb: 'Book appointment',
+        href: '/bureaucracy',
+        secondary: { label: 'Open checklist', href: '/bureaucracy' },
+    },
+    transit_disruption: { verb: 'See routes', href: '/alerts' },
+    transit_delay: { verb: 'See routes', href: '/alerts' },
+    weather_alert: { verb: 'Plan around it', href: '/composer' },
+    tonight_events: { verb: 'Take me there', href: '/events' },
+    rhine_level: { verb: 'See details', href: '/alerts' },
 };
+
+/** Day-need card: white, with a soft-tinted glyph graded by consequence. */
+const NEED_ICON: Record<Tile['severity'], string> = {
+    danger: 'bg-danger-soft text-danger',
+    warn: 'bg-amber-soft text-amber',
+    info: 'bg-cyan-soft text-cyan-h',
+    neutral: 'bg-surface-2 text-text-2',
+};
+
+/**
+ * Lead card: same footprint as a need row, set apart only by colour — a
+ * consequence-graded wash, a solid glyph, and a matching resolve verb.
+ */
+const LEAD_STYLE: Record<
+    Tile['severity'],
+    { wrap: string; solid: string; resolve: string }
+> = {
+    danger: {
+        wrap: 'border-l-danger bg-danger-soft',
+        solid: 'bg-danger text-card',
+        resolve: 'text-danger',
+    },
+    // critical AND urgent deadlines share the amber wash — the countdown flag
+    // ("3 days left" vs "5 days left") carries the precise urgency, so colour
+    // stays a coarse, monotonic signal: red = overdue, amber = still upcoming.
+    // (Primary-orange for info read hotter than the deep-red overdue above it.)
+    warn: {
+        wrap: 'border-l-warn bg-warn-soft',
+        solid: 'bg-warn text-card',
+        resolve: 'text-warn',
+    },
+    info: {
+        wrap: 'border-l-warn bg-warn-soft',
+        solid: 'bg-warn text-card',
+        resolve: 'text-warn',
+    },
+    neutral: {
+        wrap: 'border-l-border bg-card',
+        solid: 'bg-surface-2 text-text-2',
+        resolve: 'text-primary',
+    },
+};
+
+/** The lead's countdown flag, from a bureaucracy tile's deadline meta. */
+function leadFlag(tile: Tile): string | null {
+    const urgency = tile.meta?.urgency as string | undefined;
+    const days = tile.meta?.days_remaining as number | null | undefined;
+
+    if (urgency === 'overdue') {
+        return 'Overdue';
+    }
+
+    if (days == null) {
+        return null;
+    }
+
+    if (days <= 0) {
+        return 'Due today';
+    }
+
+    return `${days} ${days === 1 ? 'day' : 'days'} left`;
+}
 
 function getGreeting(name?: string): string {
     const hour = new Date().getHours();
@@ -218,85 +303,290 @@ const TRIAGE_NOTES: Record<TileAction, string> = {
     dismiss: '✕ Dismissed — fewer like this from now on',
 };
 
+/** A small uppercase lane label in the brief. */
+function SectionLabel({ children }: { children: string }) {
+    return (
+        <div className="mb-2.5 font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
+            {children}
+        </div>
+    );
+}
+
 /**
- * A "Right now" urgency tile (v4): neutral icon + title/subtitle, then three
- * triage actions — Mark done · Snooze · Dismiss. The title area still deep-links
- * (e.g. a deadline → /bureaucracy); the actions clear it from the feed.
+ * The lead — "needs you first". Structurally a need row, but set apart by a
+ * consequence-graded wash, a solid glyph, a countdown flag, and a matching
+ * resolve verb. No triage: a legal deadline isn't something you snooze away.
  */
-function TileCard({
+function LeadCard({ tile }: { tile: Tile }) {
+    const Icon = TILE_ICONS[tile.type] ?? IconAlertTriangle;
+    const style = LEAD_STYLE[tile.severity];
+    const resolve = TILE_RESOLVE[tile.type];
+    const href = tile.href ?? resolve?.href ?? null;
+    const flag = leadFlag(tile);
+
+    return (
+        <div
+            className={`relative flex gap-3 rounded-[15px] border border-l-[3px] border-border p-3.5 shadow-sm ${style.wrap}`}
+        >
+            {flag && (
+                <span
+                    className={`absolute top-3 right-3 rounded-full px-2 py-[3px] font-mono text-[9.5px] font-medium tracking-[0.06em] uppercase ${style.solid}`}
+                >
+                    {flag}
+                </span>
+            )}
+            <span
+                className={`flex size-[38px] shrink-0 items-center justify-center rounded-[11px] ${style.solid}`}
+            >
+                <Icon size={19} stroke={ICON_STROKE} />
+            </span>
+            <div className="min-w-0 flex-1">
+                <div className="pr-[76px] text-[14.5px] leading-[1.25] font-semibold tracking-[-0.01em]">
+                    {tile.title}
+                </div>
+                {/* The flag already carries the countdown, which is all a
+                    bureaucracy subtitle says — so show the subtitle only when
+                    there's no flag (a danger transit/weather lead), where it
+                    holds the real "what to do" line. */}
+                {tile.subtitle && !flag && (
+                    <div className="mt-0.5 text-[13px] leading-[1.45] text-text-2">
+                        {tile.subtitle}
+                    </div>
+                )}
+                <div className="mt-2.5 flex flex-wrap items-center gap-4">
+                    {href && (
+                        <Link
+                            href={href}
+                            prefetch
+                            className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${style.resolve}`}
+                        >
+                            {resolve?.verb ?? 'Open'}
+                            <IconArrowRight size={14} stroke={2} />
+                        </Link>
+                    )}
+                    {resolve?.secondary && (
+                        <Link
+                            href={resolve.secondary.href}
+                            className="text-[13px] font-medium text-text-3 transition-colors hover:text-foreground"
+                        >
+                            {resolve.secondary.label}
+                        </Link>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * A fused day-need — weather×plan, transit×commute, a saved event. Leads with a
+ * resolve verb; the triage trio (done · snooze · dismiss) tucks into the corner.
+ */
+function NeedCard({
     tile,
     onAction,
 }: {
     tile: Tile;
     onAction: (action: TileAction) => void;
 }) {
-    const TileIcon = TILE_ICONS[tile.type];
-    const inner = (
-        <span className="flex min-w-0 flex-1 items-center gap-3.5 text-left">
-            <span className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] bg-surface-2 leading-none text-text-2">
-                {TileIcon ? (
-                    <TileIcon size={18} stroke={ICON_STROKE} />
-                ) : (
-                    <span className="text-[18px]">{tile.emoji}</span>
-                )}
-            </span>
-            <span className="min-w-0 flex-1">
-                <span className="block text-sm leading-[1.35] font-semibold text-foreground">
-                    {tile.title}
-                </span>
-                {tile.subtitle && (
-                    <span className="mt-0.5 block text-[13px] leading-[1.4] text-text-2">
-                        {tile.subtitle}
-                    </span>
-                )}
-            </span>
-        </span>
-    );
-
-    const actionBtn =
-        'flex size-[30px] shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border bg-card text-text-2 transition-colors';
+    const Icon = TILE_ICONS[tile.type] ?? IconAlertTriangle;
+    const resolve = TILE_RESOLVE[tile.type];
+    const href = tile.href ?? resolve?.href ?? null;
+    const triageBtn =
+        'flex size-[26px] shrink-0 cursor-pointer items-center justify-center rounded-full text-text-3 transition-colors hover:bg-surface-2';
 
     return (
-        <div
-            className={`flex items-center gap-3 rounded-[14px] border border-l-[3px] p-[15px] transition-all hover:-translate-y-px hover:shadow-sm ${tileClasses[tile.severity]}`}
-        >
-            {tile.href ? (
-                <Link
-                    href={tile.href}
-                    prefetch
-                    className="flex min-w-0 flex-1 items-center"
-                >
-                    {inner}
-                </Link>
-            ) : (
-                inner
-            )}
-            <div className="flex shrink-0 items-center gap-[5px]">
+        <div className="relative flex gap-3 rounded-[14px] border border-border bg-card p-3.5 shadow-sm">
+            <div className="absolute top-2.5 right-2.5 flex gap-0.5">
                 <button
                     onClick={() => onAction('done')}
                     title="Mark done"
                     aria-label="Mark done"
-                    className={`${actionBtn} hover:border-success hover:text-success`}
+                    className={`${triageBtn} hover:text-success`}
                 >
-                    <IconCheck size={15} stroke={2.2} />
+                    <IconCheck size={14} stroke={2.2} />
                 </button>
                 <button
                     onClick={() => onAction('snooze')}
                     title="Snooze"
                     aria-label="Snooze"
-                    className={`${actionBtn} hover:border-warn hover:text-warn`}
+                    className={`${triageBtn} hover:text-warn`}
                 >
-                    <IconClock size={15} stroke={ICON_STROKE} />
+                    <IconClock size={14} stroke={ICON_STROKE} />
                 </button>
                 <button
                     onClick={() => onAction('dismiss')}
                     title="Dismiss"
                     aria-label="Dismiss"
-                    className={`${actionBtn} hover:border-danger hover:text-danger`}
+                    className={`${triageBtn} hover:text-danger`}
                 >
-                    <IconX size={15} stroke={2} />
+                    <IconX size={14} stroke={2} />
                 </button>
             </div>
+            <span
+                className={`flex size-[38px] shrink-0 items-center justify-center rounded-[11px] ${NEED_ICON[tile.severity]}`}
+            >
+                <Icon size={19} stroke={ICON_STROKE} />
+            </span>
+            <div className="min-w-0 flex-1">
+                <div className="pr-[84px] text-[14.5px] leading-[1.25] font-semibold tracking-[-0.01em]">
+                    {tile.title}
+                </div>
+                {tile.subtitle && (
+                    <div className="mt-0.5 text-[13px] leading-[1.45] text-text-2">
+                        {tile.subtitle}
+                    </div>
+                )}
+                {href && (
+                    <Link
+                        href={href}
+                        prefetch
+                        className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary"
+                    >
+                        {resolve?.verb ?? 'Open'}
+                        <IconArrowRight size={14} stroke={2} />
+                    </Link>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/** Ambient context — rhythm/river. Quiet, dashed, dismiss-only. */
+function AmbientRow({
+    tile,
+    onDismiss,
+}: {
+    tile: Tile;
+    onDismiss: () => void;
+}) {
+    const Icon = TILE_ICONS[tile.type] ?? IconAlertTriangle;
+
+    return (
+        <div className="flex items-center gap-3 rounded-[13px] border border-dashed border-border px-3.5 py-3">
+            <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-text-2">
+                <Icon size={16} stroke={ICON_STROKE} />
+            </span>
+            <div className="min-w-0 flex-1">
+                <div className="text-[13.5px] leading-snug font-medium">
+                    {tile.title}
+                </div>
+                {tile.subtitle && (
+                    <div className="text-[12.5px] text-text-3">
+                        {tile.subtitle}
+                    </div>
+                )}
+            </div>
+            <button
+                onClick={onDismiss}
+                title="Dismiss"
+                aria-label="Dismiss"
+                className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-text-3 transition-colors hover:bg-surface-2"
+            >
+                <IconX size={14} stroke={2} />
+            </button>
+        </div>
+    );
+}
+
+/** The silence state — nothing needs the user right now. */
+function CalmCard() {
+    return (
+        <div className="rounded-[16px] border border-border bg-card p-6 text-center shadow-sm">
+            <span className="mx-auto mb-3 flex size-9 items-center justify-center rounded-[11px] bg-success-soft text-success">
+                <IconCheck size={19} stroke={ICON_STROKE} />
+            </span>
+            <div className="font-display text-[18px] font-medium">
+                Nothing needs you right now
+            </div>
+            <p className="mx-auto mt-1 max-w-[340px] text-[13.5px] leading-relaxed text-text-2">
+                No deadlines, disruptions, or weather to plan around. Your day’s
+                clear — plan something?
+            </p>
+        </div>
+    );
+}
+
+/**
+ * The brief: the "Right now" feed re-read as a hierarchy of need. Deadlines
+ * that need you first, the day's fused signals ("because of your day"), then
+ * quiet ambient context ("good to know"). A tile's TYPE picks its lane — legal
+ * deadlines lead (never triageable), fused weather/transit/events sit under the
+ * day, rhythm/river is background. Tiles arrive pre-sorted by score, so the most
+ * urgent deadline leads; a second deadline stays "needs you first" rather than
+ * being mislabelled — the target user often has several at once. Silence across
+ * all three lanes is a valid, first-class state.
+ */
+function Brief({
+    tiles,
+    hidden,
+    onTriage,
+}: {
+    tiles: Tile[];
+    hidden: Set<string>;
+    onTriage: (tile: Tile, key: string, action: TileAction) => void;
+}) {
+    const items = tiles
+        .map((tile, i) => ({ tile, k: tile.key || `${tile.type}-${i}` }))
+        .filter(({ k }) => !hidden.has(k));
+
+    const leads = items.filter((it) => LEAD_TYPES.includes(it.tile.type));
+    const ambient = items.filter((it) => AMBIENT_TYPES.includes(it.tile.type));
+    const needs = items.filter(
+        (it) =>
+            !LEAD_TYPES.includes(it.tile.type) &&
+            !AMBIENT_TYPES.includes(it.tile.type),
+    );
+
+    if (leads.length === 0 && needs.length === 0 && ambient.length === 0) {
+        return (
+            <div>
+                <SectionLabel>Right now</SectionLabel>
+                <CalmCard />
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-6">
+            {leads.length > 0 && (
+                <div>
+                    <SectionLabel>Needs you first</SectionLabel>
+                    <div className="flex flex-col gap-2.5">
+                        {leads.map(({ tile, k }) => (
+                            <LeadCard key={k} tile={tile} />
+                        ))}
+                    </div>
+                </div>
+            )}
+            {needs.length > 0 && (
+                <div>
+                    <SectionLabel>Because of your day</SectionLabel>
+                    <div className="flex flex-col gap-2.5">
+                        {needs.map(({ tile, k }) => (
+                            <NeedCard
+                                key={k}
+                                tile={tile}
+                                onAction={(action) => onTriage(tile, k, action)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+            {ambient.length > 0 && (
+                <div>
+                    <SectionLabel>Good to know</SectionLabel>
+                    <div className="flex flex-col gap-2">
+                        {ambient.map(({ tile, k }) => (
+                            <AmbientRow
+                                key={k}
+                                tile={tile}
+                                onDismiss={() => onTriage(tile, k, 'dismiss')}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -886,49 +1176,28 @@ export default function Dashboard() {
                     <PushPromptCard />
                 </div>
 
-                {/* Right now (urgency tiles) */}
-                <div className="mb-3 flex items-center gap-2.5">
-                    <span className="font-mono text-[11px] tracking-[0.12em] text-text-3 uppercase">
-                        Right now
-                    </span>
-                </div>
+                {/* The brief — "Right now" re-read as a hierarchy of need */}
                 <Deferred
                     data="tiles"
                     fallback={
-                        <div className="flex flex-col gap-2.5">
-                            {[1, 2].map((i) => (
-                                <div
-                                    key={i}
-                                    className="h-[76px] animate-pulse rounded-[14px] bg-secondary"
-                                />
-                            ))}
+                        <div>
+                            <div className="mb-2.5 h-3 w-28 animate-pulse rounded bg-secondary" />
+                            <div className="flex flex-col gap-2.5">
+                                {[1, 2].map((i) => (
+                                    <div
+                                        key={i}
+                                        className="h-[76px] animate-pulse rounded-[14px] bg-secondary"
+                                    />
+                                ))}
+                            </div>
                         </div>
                     }
                 >
-                    <div className="flex flex-col gap-2.5">
-                        {(tiles ?? []).map((tile, i) => {
-                            const key = `${tile.type}-${i}`;
-
-                            if (hiddenTiles.has(key)) {
-                                return null;
-                            }
-
-                            return (
-                                <TileCard
-                                    key={key}
-                                    tile={tile}
-                                    onAction={(action) =>
-                                        triageTile(tile, key, action)
-                                    }
-                                />
-                            );
-                        })}
-                        {(tiles ?? []).length === 0 && (
-                            <div className="rounded-[14px] border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-                                Nothing urgent right now. Enjoy your day.
-                            </div>
-                        )}
-                    </div>
+                    <Brief
+                        tiles={tiles ?? []}
+                        hidden={hiddenTiles}
+                        onTriage={triageTile}
+                    />
                 </Deferred>
 
                 {/* Discovery rails */}
