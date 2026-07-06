@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today — the brief (Phase 4 prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Expadu v4 tokens (from resources/css/app.css) ── */
+  :root{
+    --background:#faf6ee; --foreground:#211d15; --card:#fffdf8;
+    --primary:#ff3902; --primary-foreground:#fff; --primary-soft:#ffe3d8; --primary-h:#e02f00;
+    --cyan:#05badd; --cyan-h:#0a7f99; --cyan-soft:#d8f3fb; --cyan-bd:#aedfeb;
+    --secondary:#f1ebdf; --muted:#f1ebdf; --muted-foreground:#6e6657;
+    --border:#e6ddcb; --ring:#ff3902;
+    --orange:#ff8007; --orange-soft:#ffe7cf;
+    --amber:#e8a200; --amber-soft:#fff0cd;
+    --navy:#2b4871; --navy-soft:#e1e7f1;
+    --success:#0f7a4f; --success-soft:#e2f3ea;
+    --warn:#c47d0e; --warn-soft:#faecd0;
+    --danger:#c4271a; --danger-soft:#fbe2de;
+    --text-1:#211d15; --text-2:#6e6657; --text-3:#a89f8c;
+    --shadow:0 1px 2px rgba(33,29,21,.05),0 8px 28px rgba(33,29,21,.06);
+    --shadow-sm:0 1px 2px rgba(33,29,21,.06);
+    --font-display:"Fraunces",ui-serif,Georgia,serif;
+    --font-sans:"Geist",ui-sans-serif,system-ui,sans-serif;
+    --font-mono:"Geist Mono",ui-monospace,monospace;
+  }
+  html.dark{
+    --background:#18170f; --foreground:#f6f5f1; --card:#211f16;
+    --primary:#ff5c33; --primary-foreground:#1a1710; --primary-soft:#3a2013; --primary-h:#ff6f4a;
+    --cyan:#3ccfe8; --cyan-soft:#0e2b33; --cyan-bd:#1c4650;
+    --secondary:#2a2820; --muted:#2a2820; --muted-foreground:#a89f8c;
+    --border:#36332a; --ring:#ff5c33;
+    --amber:#eab308; --amber-soft:#332a10;
+    --navy:#8fa6cc; --navy-soft:#1b2436;
+    --success:#34d399; --success-soft:#122e24;
+    --warn:#e0a336; --warn-soft:#33270f;
+    --danger:#f0705f; --danger-soft:#33110d;
+    --text-1:#f6f5f1; --text-2:#a89f8c; --text-3:#6e6657;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--background);color:var(--foreground);
+    font-family:var(--font-sans);-webkit-font-smoothing:antialiased;
+    padding:40px 16px 80px;min-height:100vh;
+  }
+  .stage{max-width:600px;margin:0 auto}
+
+  /* control bar */
+  .controls{
+    max-width:600px;margin:0 auto 18px;display:flex;gap:8px;align-items:center;
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-3);
+  }
+  .controls .seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--card)}
+  .controls .seg button{
+    font:inherit;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);
+    background:transparent;border:0;padding:6px 12px;cursor:pointer;
+  }
+  .controls .seg button.on{background:var(--primary);color:var(--primary-foreground)}
+  .controls .grow{flex:1}
+
+  /* header */
+  .kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--muted-foreground) 70%,transparent);margin-bottom:6px}
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:22px}
+  h1{font-family:var(--font-display);font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1.12}
+  .wx{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;box-shadow:var(--shadow-sm);white-space:nowrap}
+  .wx svg{width:15px;height:15px;color:var(--text-2)}
+
+  /* composer */
+  .ask{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:var(--shadow-sm);margin-bottom:12px}
+  .ask .lbl{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--muted-foreground) 75%,transparent);margin-bottom:10px}
+  .ask .lbl svg{width:12px;height:12px;color:var(--primary)}
+  .ask .row{display:flex;align-items:center;gap:10px}
+  .ask input{flex:1;min-width:0;border:0;background:transparent;font-size:16px;color:var(--foreground);outline:none;font-family:var(--font-sans)}
+  .ask input::placeholder{color:color-mix(in srgb,var(--muted-foreground) 60%,transparent)}
+  .go{width:38px;height:38px;flex:none;border:0;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font-size:17px;cursor:pointer;display:grid;place-items:center;box-shadow:var(--shadow-sm)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--card);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:500;color:var(--muted-foreground);cursor:pointer}
+  .chip svg{width:14px;height:14px}
+  .hint{font-size:11.5px;color:color-mix(in srgb,var(--muted-foreground) 80%,transparent);margin:2px 0 4px;display:flex;gap:6px;align-items:center}
+  .hint svg{width:12px;height:12px;color:var(--primary)}
+
+  /* ── THE BRIEF ── */
+  .brief{margin-top:26px}
+  .seclabel{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--muted-foreground) 70%,transparent);margin:22px 0 10px}
+  .seclabel:first-child{margin-top:0}
+
+  /* the one thing — SAME card as a need row, set apart only by colour */
+  .lead{position:relative;display:flex;gap:13px;
+    background:linear-gradient(135deg,color-mix(in srgb,var(--danger-soft) 92%,var(--card)),color-mix(in srgb,var(--danger-soft) 42%,var(--card)));
+    border:1px solid color-mix(in srgb,var(--danger) 22%,var(--border));
+    border-left:3px solid var(--danger);
+    border-radius:15px;padding:14px;box-shadow:var(--shadow-sm);margin-bottom:10px}
+  .lead .ico{width:38px;height:38px;flex:none;border-radius:11px;display:grid;place-items:center;
+    background:var(--danger);color:var(--card);box-shadow:0 2px 9px color-mix(in srgb,var(--danger) 34%,transparent)}
+  .lead .ico svg{width:19px;height:19px}
+  .lead .body{flex:1;min-width:0}
+  .lead .t{font-size:14.5px;font-weight:600;letter-spacing:-.01em;line-height:1.25;padding-right:74px}
+  .lead .s{font-size:13px;color:var(--text-2);line-height:1.45;margin-top:2px}
+  .lead .flag{position:absolute;top:12px;right:12px;background:var(--danger);color:var(--card);
+    font-family:var(--font-mono);font-size:9.5px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;white-space:nowrap}
+  .lead .actions{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-top:10px}
+  .lead .resolve{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--danger);cursor:pointer}
+  .lead .resolve svg{width:14px;height:14px}
+  .lead .alt{color:var(--text-3);font-weight:500;font-size:13px;cursor:pointer}
+
+  /* because of your day — fused need cards */
+  .need{position:relative;display:flex;gap:13px;background:var(--card);border:1px solid var(--border);border-radius:15px;padding:14px;box-shadow:var(--shadow-sm);margin-bottom:10px}
+  .ico{width:38px;height:38px;flex:none;border-radius:11px;display:grid;place-items:center}
+  .ico svg{width:19px;height:19px}
+  .ico.amber{background:var(--amber-soft);color:var(--amber)}
+  .ico.orange{background:var(--primary-soft);color:var(--primary)}
+  .ico.cyan{background:var(--cyan-soft);color:var(--cyan-h)}
+  .need .body{flex:1;min-width:0}
+  .need .t{font-size:14.5px;font-weight:600;letter-spacing:-.01em;line-height:1.25}
+  .need .s{font-size:13px;color:var(--text-2);line-height:1.45;margin-top:2px}
+  .need .resolve{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;font-weight:600;color:var(--primary);cursor:pointer}
+  .need .resolve svg{width:14px;height:14px}
+  .need .alt{color:var(--text-3);font-weight:500;margin-left:14px;cursor:pointer}
+  .triage{position:absolute;top:10px;right:10px;display:flex;gap:2px}
+  .triage button{width:26px;height:26px;border-radius:999px;border:0;background:transparent;color:var(--text-3);cursor:pointer;display:grid;place-items:center}
+  .triage button svg{width:14px;height:14px}
+  .triage button:hover{background:var(--muted);color:var(--text-2)}
+
+  /* good to know — ambient */
+  .ambient{display:flex;align-items:center;gap:11px;background:transparent;border:1px dashed var(--border);border-radius:13px;padding:11px 13px;margin-bottom:8px}
+  .ambient .ico{width:30px;height:30px;border-radius:9px;background:var(--muted);color:var(--text-2)}
+  .ambient .ico svg{width:16px;height:16px}
+  .ambient .t{font-size:13.5px;font-weight:500}
+  .ambient .s{font-size:12.5px;color:var(--text-3)}
+  .ambient .x{margin-left:auto;color:var(--text-3);background:0;border:0;cursor:pointer;width:24px;height:24px;display:grid;place-items:center}
+  .ambient .x svg{width:14px;height:14px}
+
+  /* calm state */
+  .calm{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px 22px;text-align:center;box-shadow:var(--shadow-sm)}
+  .calm .big{font-family:var(--font-display);font-size:18px;font-weight:500;margin-bottom:5px}
+  .calm p{font-size:13.5px;color:var(--text-2);line-height:1.5}
+  .calm .spark{width:34px;height:34px;border-radius:11px;background:var(--success-soft);color:var(--success);display:grid;place-items:center;margin:0 auto 12px}
+  .calm .spark svg{width:19px;height:19px}
+
+  .note{max-width:600px;margin:26px auto 0;font-size:12px;color:var(--text-3);line-height:1.6;border-top:1px dashed var(--border);padding-top:14px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <span>Today · the brief</span>
+  <span class="grow"></span>
+  <span class="seg" id="stateSeg">
+    <button data-state="busy" class="on">Busy day</button>
+    <button data-state="calm">Calm day</button>
+  </span>
+  <span class="seg" id="themeSeg">
+    <button data-theme="light" class="on">☀</button>
+    <button data-theme="dark">☾</button>
+  </span>
+</div>
+
+<main class="stage">
+  <div class="kicker">Sun, 5 July 2026 · Cologne</div>
+  <div class="head">
+    <h1>Good afternoon, Anar</h1>
+    <span class="wx">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.6 4.6 0 1 1 .5 -9.16A6 6 0 1 1 18 16"/></svg>
+      22°
+    </span>
+  </div>
+
+  <!-- launchpad: the composer stays the anchor -->
+  <div class="ask">
+    <div class="lbl">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6"/></svg>
+      Ask or plan
+    </div>
+    <div class="row">
+      <input placeholder="Plan something, ask about paperwork, find a place…">
+      <button class="go">→</button>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2H6a2 2 0 0 1 -2 -2z"/><path d="M16 3v4M8 3v4M4 11h16"/></svg>Plan my weekend</span>
+    <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5 5.5 .8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8z"/></svg>More pitch</span>
+    <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M6 6 4.5 4.5M18 18l1.5 1.5M6 18l-1.5 1.5M18 6l1.5-1.5"/></svg>Free afternoon</span>
+  </div>
+  <div class="hint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 3.9 4.3 .6-3.1 3 .7 4.3-3.8 -2 -3.8 2 .7 -4.3 -3.1 -3 4.3 -.6z"/></svg>
+    Suggestions from your situation, the weather and what you tap.
+  </div>
+
+  <!-- ═══ BUSY-DAY BRIEF ═══ -->
+  <section class="brief" id="briefBusy">
+
+    <!-- the one thing -->
+    <div class="seclabel">Needs you first</div>
+    <div class="lead">
+      <span class="flag">3 days left</span>
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7 -3L13.7 3.9a2 2 0 0 0 -3.4 0z"/></svg></div>
+      <div class="body">
+        <div class="t">Register your address — Anmeldung</div>
+        <div class="s">14-day deadline is Wednesday. Bürgeramt Nippes slots open 08:00 and go fast.</div>
+        <div class="actions">
+          <span class="resolve">Book appointment<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <span class="alt">Open checklist</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- because of your day -->
+    <div class="seclabel">Because of your day</div>
+
+    <div class="need">
+      <div class="triage">
+        <button title="Done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button>
+        <button title="Snooze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+        <button title="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.6 4.6 0 1 1 .5 -9.16A6 6 0 1 1 18 16"/><path d="M11 19l-1 2M15 19l-1 2M8 20l-1 2"/></svg></div>
+      <div class="body">
+        <div class="t">Rain from 16:00</div>
+        <div class="s">Your 17:00 Rheinpark plan may get caught in it.</div>
+        <div><span class="resolve">Find an indoor swap<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><span class="alt">Move it earlier</span></div>
+      </div>
+    </div>
+
+    <div class="need">
+      <div class="triage">
+        <button title="Done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button>
+        <button title="Snooze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+        <button title="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="ico orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7 -3L13.7 3.9a2 2 0 0 0 -3.4 0z"/></svg></div>
+      <div class="body">
+        <div class="t">Line 1 disrupted</div>
+        <div class="s">On your route to work today — leave by 08:35 or reroute.</div>
+        <div><span class="resolve">See routes<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+      </div>
+    </div>
+
+    <div class="need">
+      <div class="triage">
+        <button title="Done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button>
+        <button title="Snooze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+        <button title="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="ico cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5v2M15 11v2M15 17v2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2H5a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4V7a2 2 0 0 1 2 -2z"/></svg></div>
+      <div class="body">
+        <div class="t">Jazz im Stadtgarten — 20:00</div>
+        <div class="s">You saved this. Doors in about 3 hours, in Ehrenfeld.</div>
+        <div><span class="resolve">Take me there<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+      </div>
+    </div>
+
+    <!-- good to know -->
+    <div class="seclabel">Good to know</div>
+    <div class="ambient">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5h15l-1.5 9h-13z"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/><path d="M6 5 4 3H2"/></svg></div>
+      <div>
+        <div class="t">Tomorrow is Fronleichnam — everything's shut</div>
+        <div class="s">Public holiday in NRW. Stock up today.</div>
+      </div>
+      <button class="x" title="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+  </section>
+
+  <!-- ═══ CALM-DAY BRIEF ═══ -->
+  <section class="brief" id="briefCalm" hidden>
+    <div class="seclabel">Right now</div>
+    <div class="calm">
+      <div class="spark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div>
+      <div class="big">Nothing needs you right now</div>
+      <p>Anmeldung's booked, no disruptions on your lines, dry till evening.<br>Your afternoon's clear — plan something?</p>
+    </div>
+  </section>
+
+  <div class="note">
+    <strong>Phase 4 prototype — the "brief".</strong> "Right Now" becomes a hierarchy of need, not a flat tile list:
+    <b>Needs you first</b> (≤1 lead — a hard deadline in its window) · <b>Because of your day</b> (the Phase 2 fusions: weather×plan, transit×commute, saved event — each leads with a <em>resolve</em> verb, triage tucked to the corner) · <b>Good to know</b> (ambient rhythm, quiet). Toggle <b>Calm day</b> to see the silence state. Open in a browser for exact Fraunces/Geist type.
+  </div>
+</main>
+
+<script>
+  const stateSeg=document.getElementById('stateSeg');
+  const themeSeg=document.getElementById('themeSeg');
+  const busy=document.getElementById('briefBusy');
+  const calm=document.getElementById('briefCalm');
+  stateSeg.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    stateSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    const isCalm=b.dataset.state==='calm';
+    busy.hidden=isCalm; calm.hidden=!isCalm;
+  });
+  themeSeg.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    themeSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    document.documentElement.classList.toggle('dark',b.dataset.theme==='dark');
+  });
+</script>
+</body>
+</html>
