@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { login, register } from '@/routes';
 
 const features = [
@@ -24,9 +24,16 @@ const features = [
 
 export default function Welcome({
     canRegister = true,
+    appUrl,
 }: {
     canRegister?: boolean;
+    appUrl: string;
 }) {
+    // A signed-in visitor (session shared across expadu.com ↔ app.expadu.com)
+    // shouldn't be offered Log in / Get started — they get "Open the app".
+    const { auth } = usePage<{ auth: { user?: unknown } }>().props;
+    const isAuthed = Boolean(auth?.user);
+
     return (
         <>
             <Head title="Your City. Your Guide.">
@@ -44,19 +51,30 @@ export default function Welcome({
                         Expadu
                     </span>
                     <nav className="flex items-center gap-3">
-                        <Link
-                            href={login()}
-                            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
-                        >
-                            Log in
-                        </Link>
-                        {canRegister && (
-                            <Link
-                                href={register()}
-                                className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:bg-accent-hover"
+                        {isAuthed ? (
+                            <a
+                                href={appUrl}
+                                className="rounded-lg bg-primary px-5 py-2 text-sm font-medium whitespace-nowrap text-primary-foreground transition hover:bg-accent-hover"
                             >
-                                Get started
-                            </Link>
+                                Open the app →
+                            </a>
+                        ) : (
+                            <>
+                                <Link
+                                    href={login()}
+                                    className="rounded-lg px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
+                                >
+                                    Log in
+                                </Link>
+                                {canRegister && (
+                                    <Link
+                                        href={register()}
+                                        className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:bg-accent-hover"
+                                    >
+                                        Get started
+                                    </Link>
+                                )}
+                            </>
                         )}
                     </nav>
                 </header>
@@ -73,23 +91,34 @@ export default function Welcome({
                         home.
                     </p>
                     <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-                        {canRegister && (
-                            <Link
-                                href={register()}
-                                className="rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-lg transition hover:bg-accent-hover hover:shadow-xl"
+                        {isAuthed ? (
+                            <a
+                                href={appUrl}
+                                className="rounded-xl bg-primary px-8 py-3.5 text-base font-semibold whitespace-nowrap text-primary-foreground shadow-lg transition hover:bg-accent-hover hover:shadow-xl"
                             >
-                                Get started free
-                            </Link>
+                                Open the app →
+                            </a>
+                        ) : (
+                            <>
+                                {canRegister && (
+                                    <Link
+                                        href={register()}
+                                        className="rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-lg transition hover:bg-accent-hover hover:shadow-xl"
+                                    >
+                                        Get started free
+                                    </Link>
+                                )}
+                                <Link
+                                    href={login()}
+                                    className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                                >
+                                    Already have an account?{' '}
+                                    <span className="underline underline-offset-4">
+                                        Log in
+                                    </span>
+                                </Link>
+                            </>
                         )}
-                        <Link
-                            href={login()}
-                            className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
-                        >
-                            Already have an account?{' '}
-                            <span className="underline underline-offset-4">
-                                Log in
-                            </span>
-                        </Link>
                     </div>
 
                     {/* Feature cards */}

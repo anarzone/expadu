@@ -57,9 +57,14 @@ $marketingDomain = config('app.marketing_domain');
 
 // ── Marketing site (expadu.com) ──────────────────────────────────────────
 $marketingRoutes = function () {
-    Route::inertia('/', 'welcome', [
+    Route::get('/', fn () => Inertia::render('welcome', [
         'canRegister' => Features::enabled(Features::registration()),
-    ])->name('home');
+        // Absolute URL to the app, resolved per request so it points at the
+        // app subdomain (app.expadu.com) even though this route lives on the
+        // marketing domain. Lets an already signed-in visitor get an
+        // "Open the app" link instead of a login button.
+        'appUrl' => route('dashboard'),
+    ]))->name('home');
 
     // Marketing pages will be built here (blog, FAQ, public events, etc.)
     // For now, only the welcome page exists. All other URLs on expadu.com return 404.
