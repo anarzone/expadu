@@ -79,36 +79,44 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Configure production via Coolify API
+      # Prod runs on the SAME box as staging and is deployed over SSH, not the
+      # Coolify API (see ci.yml deploy-production). The Coolify API path proved
+      # unreachable, so inspect/apply go over SSH against the Coolify-managed
+      # service dir + container — same mechanism as the staging job.
+      # NOTE: prod's durable env home is really Coolify's own env store; a
+      # compose override written here is a stopgap Coolify may regenerate.
+      - name: Configure production via SSH
+        uses: appleboy/ssh-action@v1
         env:
           MODE: ${{ inputs.mode }}
-          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
-          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
-          APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
           DSN: ${{ secrets.SENTRY_LARAVEL_DSN }}
-        run: |
-          set -e
-          base="${COOLIFY_URL%/}"
-          auth="Authorization: Bearer ${COOLIFY_TOKEN}"
-          echo "--- current backend Sentry env keys on the app (names only) ---"
-          curl -s -H "$auth" "$base/api/v1/applications/$APP_UUID/envs" \
-            | python3 -c "import json,sys; d=json.loads(sys.stdin.read() or '[]'); print(chr(10).join(sorted(e.get('key','') for e in d if str(e.get('key','')).startswith('SENTRY'))) or 'none')"
-          if [ "$MODE" = "inspect" ]; then exit 0; fi
-          upsert () {
-            key="$1"; val="$2"
-            # PATCH updates when present; POST creates when absent. Try update, fall back to create.
-            code=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH -H "$auth" -H 'Content-Type: application/json' \
-              "$base/api/v1/applications/$APP_UUID/envs" \
-              -d "{\"key\":\"$key\",\"value\":\"$val\",\"is_preview\":false}")
-            if [ "$code" -ge 400 ]; then
-              curl -s -o /dev/null -w 'create %{http_code}\n' -X POST -H "$auth" -H 'Content-Type: application/json' \
-                "$base/api/v1/applications/$APP_UUID/envs" \
-                -d "{\"key\":\"$key\",\"value\":\"$val\",\"is_preview\":false}"
-            else
-              echo "update $key $code"
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: MODE,DSN
+          script: |
+            set -ef
+            APPDIR=/data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
+            CONTAINER=app-eg4gsc4ok8g0cwkcsso48wso
+            cd "$APPDIR"
+            SVC=$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.service" }}' "$CONTAINER" 2>/dev/null || echo app)
+            echo "compose service for $CONTAINER: $SVC"
+            if [ "$MODE" = "inspect" ]; then
+              echo "--- files (incl. hidden) ---"; ls -1a "$APPDIR"
+              echo "--- SENTRY vars in container: name + SET/EMPTY, values never printed ---"
+              docker exec "$CONTAINER" printenv \
+                | awk -F= '/^SENTRY/{ n=length($0)-length($1)-1; print $1" = "(n>0?"SET ("n" chars)":"EMPTY") }' \
+                | sort || echo "none"
+              exit 0
             fi
-          }
-          upsert SENTRY_LARAVEL_DSN "$DSN"
-          upsert SENTRY_ENVIRONMENT "production"
-          echo "--- redeploy ---"
-          curl -s -o /dev/null -w 'deploy %{http_code}\n' -H "$auth" "$base/api/v1/deploy?uuid=$APP_UUID&force=false"
+            cat > "$APPDIR/docker-compose.sentry.override.yml" <<EOF
+            services:
+              $SVC:
+                environment:
+                  SENTRY_LARAVEL_DSN: "$DSN"
+                  SENTRY_ENVIRONMENT: "production"
+            EOF
+            docker compose -f docker-compose.yml -f docker-compose.sentry.override.yml up -d --force-recreate "$SVC" \
+              || docker compose -f compose.yaml -f docker-compose.sentry.override.yml up -d --force-recreate "$SVC"
+            docker exec "$CONTAINER" printenv | grep '^SENTRY' | cut -d= -f1
