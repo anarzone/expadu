@@ -530,47 +530,59 @@ input[type='time']::-webkit-calendar-picker-indicator {
         visibility: hidden;
     }
 }
-/* Column headers (next / then / then) over the three time columns, plus the
-   shared "min" unit. Widths derive from the tile metrics so the labels stay
-   centred over their columns at every breakpoint. */
-.board-hrow {
-    display: flex;
-    padding: 9px 12px 3px;
+/* A departure row (one per departure, airport-board style): line badge (col 1),
+   terminus (col 2) and the clock time (col 3), all on a single baseline. */
+.board-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 8px;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--bd-line);
+}
+.board-row:last-child {
+    border-bottom: 0;
 }
 @media (min-width: 768px) {
-    .board-hrow {
-        padding: 11px 18px 3px;
+    .board-row {
+        column-gap: 12px;
+        padding: 8px 18px;
     }
 }
-.board-hgrp {
-    margin-left: auto;
-    display: flex;
-    gap: var(--col-gap);
-    align-items: flex-end;
+.board-row > .tile-field {
+    grid-column: 1;
+    grid-row: 1;
 }
-.board-hl {
-    font-family: 'Geist Mono', ui-monospace, monospace;
-    font-size: 10px;
-    letter-spacing: 0.09em;
-    color: #616b76;
-    text-align: center;
-}
-.board-hl-hero {
-    width: calc(var(--tw) * 3 + var(--tg) * 2);
-}
-.board-hl-then {
-    width: calc(var(--tw) * 2 + var(--tg));
-}
-.board-times {
-    margin-left: auto;
+.board-dest {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: var(--col-gap);
+    overflow: hidden;
 }
-.board-min {
+.board-hero {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    --tw: 14px;
+    --th: 21px;
+    display: flex;
+    align-items: center;
+    gap: var(--tg);
+}
+@media (min-width: 768px) {
+    .board-hero {
+        --tw: 20px;
+        --th: 28px;
+    }
+}
+.board-hero-colon {
     font-family: 'Geist Mono', ui-monospace, monospace;
-    font-size: 12px;
+    font-weight: 700;
+    font-size: calc(var(--tw) * 0.78);
     color: var(--bd-sub);
+    margin: 0 1px;
 }
 
 @layer utilities {

@@ -121,9 +121,9 @@ function boardTint(color: string): string {
     return BOARD_TINT[color.toLowerCase()] ?? color;
 }
 
-/** Fixed tile columns so every row lines up (line, then the destination). */
+/** The line badge is a fixed-width column so the numbers line up; the terminus
+ *  flexes to fill the row. */
 const LINE_W = 3;
-const DEST_W = 9;
 
 /** Glyph colour for a time by urgency — white upcoming, amber ≤3 min, green now. */
 function timeInk(minutes: number): string {
@@ -217,7 +217,7 @@ function placeEmoji(place: SavedPlace): string {
     return '📍';
 }
 
-/** A ticking wall clock (HH:MM:SS) — the board's "live" heartbeat. */
+/** A ticking wall clock (HH:MM) — the board's "live" heartbeat. */
 function LiveClock() {
     const [now, setNow] = useState(() => new Date());
 
@@ -232,31 +232,93 @@ function LiveClock() {
             {now.toLocaleTimeString('de-DE', {
                 hour: '2-digit',
                 minute: '2-digit',
-                second: '2-digit',
             })}
         </>
     );
 }
 
-function BoardRow({ dep }: { dep: Departure }) {
-    const [a, b, c] = dep.minutes.slice(0, 3);
+/** A departure's clock time (HH:MM) = the board's reference moment + countdown. */
+function clockAt(base: Date, minutes: number): string {
+    const d = new Date(base.getTime());
+    d.setSeconds(0, 0);
+    d.setMinutes(d.getMinutes() + minutes);
+
+    return d.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+/** One upcoming departure — a line's row exploded down to a single time. */
+type DepartureInstance = { dep: Departure; minute: number | null; key: string };
+
+/**
+ * A real airport/train board shows one row per departure, not per line. Explode
+ * each line's upcoming minutes into an instance each, then sort soonest-first so
+ * the lane reads as a single time-ordered list. Cancelled lines ride once at the
+ * bottom.
+ */
+function explode(deps: Departure[]): DepartureInstance[] {
+    const out: DepartureInstance[] = [];
+
+    for (const dep of deps) {
+        if (dep.cancelled) {
+            out.push({
+                dep,
+                minute: null,
+                key: `${dep.line}-${dep.destination}-x`,
+            });
+
+            continue;
+        }
+
+        for (const m of dep.minutes) {
+            out.push({
+                dep,
+                minute: m,
+                key: `${dep.line}-${dep.destination}-${m}`,
+            });
+        }
+    }
+
+    return out.sort((x, y) => {
+        if (x.minute == null) {
+            return 1;
+        }
+
+        if (y.minute == null) {
+            return -1;
+        }
+
+        return x.minute - y.minute;
+    });
+}
+
+function BoardRow({ dep, minute }: { dep: Departure; minute: number | null }) {
+    // Absolute departure times are anchored to when the board loaded. (A long
+    // open session drifts with cache age; the clean fix is a server-sent
+    // generated-at stamp.)
+    const [base] = useState(() => new Date());
     const cancelled = dep.cancelled;
 
-    // The soonest departure is the colour-coded hero; the next two ride along
-    // muted. Cancelled rows show dashes in red instead of a countdown.
+    // Line + terminus on the left, this departure's clock time on the right —
+    // NOW at the platform, --:-- when cancelled. One departure per row.
     const heroText = cancelled
-        ? '---'
-        : a == null
+        ? '--:--'
+        : minute == null
           ? ''
-          : a <= 0
+          : minute <= 0
             ? 'NOW'
-            : String(a);
-    const heroTone = cancelled ? '#ff6b54' : a == null ? '#69727f' : timeInk(a);
-    const showMin =
-        !cancelled && ((a != null && a > 0) || b != null || c != null);
+            : clockAt(base, minute);
+    const heroTone = cancelled
+        ? '#ff6b54'
+        : minute == null
+          ? '#69727f'
+          : timeInk(minute);
+    const colon = heroText.indexOf(':');
 
     return (
-        <div className="flex items-center gap-2 border-b border-[var(--bd-line)] px-3 py-2.5 last:border-b-0 md:gap-3 md:px-[18px]">
+        <div className="board-row">
             <TileField
                 text={dep.line}
                 width={LINE_W}
@@ -264,58 +326,52 @@ function BoardRow({ dep }: { dep: Departure }) {
                 tone={lineInk(dep.color)}
                 label={`Line ${dep.line}`}
             />
-            <TileField
-                text={(dep.destination || 'Cologne').toUpperCase()}
-                width={DEST_W}
-                align="left"
-                tone="#eef2f7"
-                label={dep.destination || 'Cologne'}
-            />
-            <div className="board-times">
+            <div className="board-dest">
                 <TileField
-                    text={heroText}
-                    width={3}
-                    align="right"
-                    tone={heroTone}
-                    label={
-                        cancelled
-                            ? 'cancelled'
-                            : heroText === 'NOW'
-                              ? 'departing now'
-                              : heroText
-                                ? `${heroText} minutes`
-                                : 'no departures'
-                    }
+                    text={(dep.destination || 'Cologne').toUpperCase()}
+                    align="left"
+                    tone="#eef2f7"
+                    label={dep.destination || 'Cologne'}
                 />
-                <TileField
-                    text={cancelled || b == null ? '' : String(b)}
-                    width={2}
-                    align="right"
-                    tone="#69727f"
-                    label={b == null ? '' : `then ${b} minutes`}
-                />
-                <TileField
-                    text={cancelled || c == null ? '' : String(c)}
-                    width={2}
-                    align="right"
-                    tone="#69727f"
-                    label={c == null ? '' : `then ${c} minutes`}
-                />
-                <span
-                    className="board-min"
-                    style={{ visibility: showMin ? 'visible' : 'hidden' }}
-                >
-                    min
-                </span>
             </div>
+            <span
+                className="board-hero"
+                aria-label={
+                    cancelled
+                        ? 'cancelled'
+                        : heroText === 'NOW'
+                          ? 'departing now'
+                          : heroText
+                            ? `departs at ${heroText}`
+                            : 'no departures'
+                }
+            >
+                {colon < 0 ? (
+                    <TileField text={heroText} tone={heroTone} label="" />
+                ) : (
+                    <>
+                        <TileField
+                            text={heroText.slice(0, colon)}
+                            tone={heroTone}
+                            label=""
+                        />
+                        <span className="board-hero-colon">:</span>
+                        <TileField
+                            text={heroText.slice(colon + 1)}
+                            tone={heroTone}
+                            label=""
+                        />
+                    </>
+                )}
+            </span>
         </div>
     );
 }
 
 /** "Toward {top destinations}" for a direction lane. */
-function laneLabel(rows: Departure[]): string {
+function laneLabel(rows: DepartureInstance[]): string {
     const dests = [
-        ...new Set(rows.map((d) => d.destination).filter(Boolean)),
+        ...new Set(rows.map((r) => r.dep.destination).filter(Boolean)),
     ].slice(0, 2);
 
     return dests.length > 0 ? `Toward ${dests.join(' / ')}` : 'Departures';
@@ -354,25 +410,35 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
     // Direction lanes (v4): only when GTFS matched both travel directions —
     // otherwise the board stays a flat list. Rows without a matched direction
     // ride along at the bottom of the grouped board.
-    const dir0 = board.departures.filter((d) => d.direction === 0);
-    const dir1 = board.departures.filter((d) => d.direction === 1);
-    const ungrouped = board.departures.filter((d) => d.direction == null);
+    const dir0 = explode(board.departures.filter((d) => d.direction === 0));
+    const dir1 = explode(board.departures.filter((d) => d.direction === 1));
+    const ungrouped = explode(
+        board.departures.filter((d) => d.direction == null),
+    );
+    const flat = explode(board.departures);
     const grouped = dir0.length > 0 && dir1.length > 0;
 
     const laneCap = Math.ceil(VISIBLE / 2);
-    // How many rows the collapsed board shows — the toggle renders whenever
-    // expanding would reveal more (and stays visible to collapse again).
+    // How many departure rows the collapsed board shows — the toggle renders
+    // whenever expanding reveals more (and stays visible to collapse again).
     const collapsedShown = grouped
         ? Math.min(dir0.length, laneCap) + Math.min(dir1.length, laneCap)
-        : Math.min(board.departures.length, VISIBLE);
-    const hidden = board.departures.length - collapsedShown;
+        : Math.min(flat.length, VISIBLE);
+    const hidden = flat.length - collapsedShown;
 
-    const lanes: Array<{ direction: number; rows: Departure[] }> = grouped
-        ? [
-              { direction: 0, rows: expanded ? dir0 : dir0.slice(0, laneCap) },
-              { direction: 1, rows: expanded ? dir1 : dir1.slice(0, laneCap) },
-          ]
-        : [];
+    const lanes: Array<{ direction: number; rows: DepartureInstance[] }> =
+        grouped
+            ? [
+                  {
+                      direction: 0,
+                      rows: expanded ? dir0 : dir0.slice(0, laneCap),
+                  },
+                  {
+                      direction: 1,
+                      rows: expanded ? dir1 : dir1.slice(0, laneCap),
+                  },
+              ]
+            : [];
 
     return (
         <div
@@ -394,21 +460,6 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
                     </span>
                 )}
             </div>
-            {board.departures.length > 0 && (
-                <div className="board-hrow">
-                    <div className="board-hgrp">
-                        <span className="board-hl board-hl-hero">next</span>
-                        <span className="board-hl board-hl-then">then</span>
-                        <span className="board-hl board-hl-then">then</span>
-                        <span
-                            className="board-min"
-                            style={{ visibility: 'hidden' }}
-                        >
-                            min
-                        </span>
-                    </div>
-                </div>
-            )}
             {grouped ? (
                 <div>
                     {lanes.map((lane) => (
@@ -419,33 +470,35 @@ function DepartureBoard({ board }: { board: NonNullable<Board> }) {
                                     lane.direction === 0 ? dir0 : dir1,
                                 )}
                             />
-                            {lane.rows.map((dep, i) => (
+                            {lane.rows.map((inst, i) => (
                                 <BoardRow
-                                    key={`${dep.line}-${dep.destination}-${i}`}
-                                    dep={dep}
+                                    key={`${inst.key}-${i}`}
+                                    dep={inst.dep}
+                                    minute={inst.minute}
                                 />
                             ))}
                         </div>
                     ))}
                     {expanded &&
-                        ungrouped.map((dep, i) => (
+                        ungrouped.map((inst, i) => (
                             <BoardRow
-                                key={`u-${dep.line}-${dep.destination}-${i}`}
-                                dep={dep}
+                                key={`u-${inst.key}-${i}`}
+                                dep={inst.dep}
+                                minute={inst.minute}
                             />
                         ))}
                 </div>
             ) : (
                 <div>
-                    {(expanded
-                        ? board.departures
-                        : board.departures.slice(0, VISIBLE)
-                    ).map((dep, i) => (
-                        <BoardRow
-                            key={`${dep.line}-${dep.destination}-${i}`}
-                            dep={dep}
-                        />
-                    ))}
+                    {(expanded ? flat : flat.slice(0, VISIBLE)).map(
+                        (inst, i) => (
+                            <BoardRow
+                                key={`${inst.key}-${i}`}
+                                dep={inst.dep}
+                                minute={inst.minute}
+                            />
+                        ),
+                    )}
                 </div>
             )}
             {hidden > 0 && (
@@ -735,21 +788,9 @@ function parseDestinationFromUrl(url: string): Destination | null {
     return dest;
 }
 
-/** The live trip's endpoints as a planner Destination (origin kept as From). */
-function activeTripToDestination(trip: ActiveTrip | null): Destination | null {
-    if (!trip) {
-        return null;
-    }
-
-    return {
-        name: trip.destination.name,
-        emoji: trip.destination.emoji ?? undefined,
-        lat: trip.destination.lat,
-        lng: trip.destination.lng,
-        fromLat: trip.origin?.lat ?? null,
-        fromLng: trip.origin?.lng ?? null,
-        fromName: trip.origin?.name ?? null,
-    };
+/** Whether the URL marks the picked-route (live journey) detail as open. */
+function routeDetailOpenFromUrl(url: string): boolean {
+    return new URLSearchParams(url.split('?')[1] ?? '').get('view') === 'route';
 }
 
 /** True when this plan's destination is the one the live trip runs to. */
@@ -783,17 +824,20 @@ export default function Timetable() {
         activeTrip = null,
     } = page.props;
     const [mode, setMode] = useState<Mode>('all');
-    // The open plan lives in the URL (refresh-safe, shareable); failing that a
-    // live trip reopens straight to its journey when you return to Departures.
-    const [destination, setDestination] = useState<Destination | null>(
-        () =>
-            parseDestinationFromUrl(page.url) ??
-            activeTripToDestination(activeTrip),
+    // The open plan and whether its route detail is showing both live in the
+    // URL (refresh-safe, shareable) so a refresh restores the exact view
+    // instead of jumping into the active trip.
+    const [destination, setDestination] = useState<Destination | null>(() =>
+        parseDestinationFromUrl(page.url),
+    );
+    const [routeDetailOpen, setRouteDetailOpen] = useState(() =>
+        routeDetailOpenFromUrl(page.url),
     );
     const destSynced = useRef(false);
 
-    // Reflect the open plan into the URL (replace, no server round-trip) so a
-    // refresh restores it; clearing it returns to the plain board URL.
+    // Reflect the open plan (and its route detail) into the URL (replace, no
+    // server round-trip) so a refresh restores it; clearing it returns to the
+    // plain board URL.
     useEffect(() => {
         if (!destSynced.current) {
             destSynced.current = true;
@@ -801,15 +845,21 @@ export default function Timetable() {
             return;
         }
 
-        const search = destination
-            ? `?${new URLSearchParams(destinationToParams(destination))}`
-            : '';
+        const params = destination
+            ? new URLSearchParams(destinationToParams(destination))
+            : new URLSearchParams();
+
+        if (destination && routeDetailOpen) {
+            params.set('view', 'route');
+        }
+
+        const search = params.toString();
         window.history.replaceState(
             window.history.state,
             '',
-            `/timetable${search}`,
+            `/timetable${search ? `?${search}` : ''}`,
         );
-    }, [destination]);
+    }, [destination, routeDetailOpen]);
     // An explicitly chosen From (via the board's origin field); null = live location.
     const [origin, setOrigin] = useState<Origin>(null);
     const [planning, setPlanning] = useState(false);
@@ -1081,12 +1131,17 @@ export default function Timetable() {
                         destination={destination}
                         savedPlaces={savedPlaces}
                         initialSelected={
+                            routeDetailOpen &&
                             destinationMatchesTrip(destination, activeTrip)
-                                ? activeTrip?.journey
+                                ? (activeTrip?.journey ?? null)
                                 : null
                         }
+                        onDetailChange={setRouteDetailOpen}
                         onPlan={planTo}
-                        onClose={() => setDestination(null)}
+                        onClose={() => {
+                            setDestination(null);
+                            setRouteDetailOpen(false);
+                        }}
                     />
                 ) : (
                     <>

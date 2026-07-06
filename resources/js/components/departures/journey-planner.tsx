@@ -1047,6 +1047,7 @@ export function JourneyPlanner({
     destination,
     savedPlaces,
     initialSelected,
+    onDetailChange,
     onPlan,
     onClose,
 }: {
@@ -1054,6 +1055,8 @@ export function JourneyPlanner({
     savedPlaces: SavedPlace[];
     /** The persisted trip's journey, so a live trip reopens straight to detail. */
     initialSelected?: Journey | null;
+    /** Report whether the picked-route detail is open, so the page can keep it in the URL. */
+    onDetailChange?: (open: boolean) => void;
     onPlan: (target: Destination | { query: string }) => void;
     onClose: () => void;
 }) {
@@ -1082,6 +1085,12 @@ export function JourneyPlanner({
     // combinations (slower, so an explicit opt-in with a loading state).
     const [showMore, setShowMore] = useState(false);
     const [moreLoading, setMoreLoading] = useState(false);
+
+    // Mirror the route-detail view up so the page keeps it in the URL — a
+    // picked route means the live journey detail is showing (refresh-safe).
+    useEffect(() => {
+        onDetailChange?.(selected !== null);
+    }, [selected, onDetailChange]);
 
     // Assemble depart_at from the day + time, and only once a time is actually
     // picked — selecting "Arrive by" with no time would mean "arrive by now"
@@ -1316,6 +1325,20 @@ export function JourneyPlanner({
 
     const fromName = data?.from.name ?? 'Your location';
 
+    // Reset the origin to the live current location. Null (not absent) so the
+    // page clears any board-level origin instead of re-applying it — shared by
+    // the cyan origin dot and the "Current location" suggestion row.
+    const resetOriginToLocation = () =>
+        onPlan({
+            name: destination.name,
+            emoji: destination.emoji,
+            lat: destination.lat,
+            lng: destination.lng,
+            fromLat: null,
+            fromLng: null,
+            fromName: null,
+        });
+
     // A live trip counts as "this route" only when it runs to the same place
     // (the planner's current destination) and rides the same line sequence.
     const tripHere =
@@ -1396,36 +1419,33 @@ export function JourneyPlanner({
             {/* From → To — both rows searchable (stations, streets, saved places) */}
             <div className="mb-[18px] rounded-2xl border border-border bg-card p-2 shadow-sm">
                 <div className="flex items-center gap-3 px-3.5 py-3">
-                    <span className="size-2.5 shrink-0 rounded-full border-[3px] border-cyan" />
+                    <button
+                        type="button"
+                        onClick={resetOriginToLocation}
+                        aria-label="Use my current location"
+                        title="Use my current location"
+                        className="-m-2 shrink-0 rounded-full p-2 transition hover:bg-cyan/10"
+                    >
+                        <span className="block size-2.5 rounded-full border-[3px] border-cyan" />
+                    </button>
                     <DestinationSearch
                         key={`from-${fromName}`}
                         initial={fromName}
                         placeholder="From"
                         role="origin"
                         withCurrentLocation
-                        onSelect={(s: Suggestion) =>
-                            onPlan(
-                                s.kind === 'current'
-                                    ? {
-                                          // Explicit reset — null (not absent)
-                                          // so the page clears any board-level
-                                          // origin instead of re-applying it.
-                                          name: destination.name,
-                                          emoji: destination.emoji,
-                                          lat: destination.lat,
-                                          lng: destination.lng,
-                                          fromLat: null,
-                                          fromLng: null,
-                                          fromName: null,
-                                      }
-                                    : {
-                                          ...destination,
-                                          fromLat: s.lat,
-                                          fromLng: s.lng,
-                                          fromName: s.name,
-                                      },
-                            )
-                        }
+                        onSelect={(s: Suggestion) => {
+                            if (s.kind === 'current') {
+                                resetOriginToLocation();
+                            } else {
+                                onPlan({
+                                    ...destination,
+                                    fromLat: s.lat,
+                                    fromLng: s.lng,
+                                    fromName: s.name,
+                                });
+                            }
+                        }}
                     />
                 </div>
                 <div className="mx-3.5 ml-7 h-px bg-border" />
