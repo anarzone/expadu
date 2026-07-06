@@ -33,7 +33,7 @@ class TimetableService
      * cache hit of any age still shows correct countdowns (a "7 min" tram
      * cached 2 minutes ago renders as "5 min", and departed rows drop off).
      *
-     * @return array{all: ?array, tram: ?array, bus: ?array}
+     * @return array{all: ?array, tram: ?array, bus: ?array, rail: ?array}
      */
     public function boards(float $lat, float $lng): array
     {
@@ -43,10 +43,13 @@ class TimetableService
             fn () => $this->build($lat, $lng),
         );
 
+        // `?? null` tolerates a stale cached build from before `rail` existed
+        // during a deploy — it fills in on the next rebuild.
         return [
             'all' => $this->adjustForAge($boards['all']),
             'tram' => $this->adjustForAge($boards['tram']),
             'bus' => $this->adjustForAge($boards['bus']),
+            'rail' => $this->adjustForAge($boards['rail'] ?? null),
         ];
     }
 
@@ -87,14 +90,14 @@ class TimetableService
     }
 
     /**
-     * @return array{all: ?array, tram: ?array, bus: ?array}
+     * @return array{all: ?array, tram: ?array, bus: ?array, rail: ?array}
      */
     private function build(float $lat, float $lng): array
     {
         $stops = $this->kvb->getStops();
 
         if ($stops === []) {
-            return ['all' => null, 'tram' => null, 'bus' => null];
+            return ['all' => null, 'tram' => null, 'bus' => null, 'rail' => null];
         }
 
         $picks = [
@@ -133,6 +136,11 @@ class TimetableService
             'all' => $this->board($picks['all'], $departuresByStop, null),
             'tram' => $this->board($picks['tram'], $departuresByStop, 'tram'),
             'bus' => $this->board($picks['bus'], $departuresByStop, 'bus'),
+            // S/RE/RB rail has no KVB stop of its own (KVB Open Data is tram +
+            // bus only), so it surfaces at the nearest combined station — ride
+            // the rail board off the "all" pick and let the tab hide itself
+            // when that stop has no trains.
+            'rail' => $this->board($picks['all'], $departuresByStop, 'rail'),
         ];
     }
 
@@ -176,8 +184,18 @@ class TimetableService
 
         $result = $departuresByStop[$stop['name']] ?? ['departures' => [], 'source' => 'unavailable'];
 
+        // Cologne has no separate metro: KVB Stadtbahn runs as a street tram and
+        // dives underground downtown, where VRS may report it as "metro"/subway.
+        // Fold both under the Tram tab so a Stadtbahn never vanishes from it.
+        $allowedTypes = match ($filterType) {
+            'tram' => ['tram', 'subway'],
+            'bus' => ['bus'],
+            'rail' => ['rail'],
+            default => null,
+        };
+
         $departures = collect($result['departures'] ?? [])
-            ->when($filterType !== null, fn ($c) => $c->filter(fn ($d) => ($d['type'] ?? null) === $filterType))
+            ->when($allowedTypes !== null, fn ($c) => $c->filter(fn ($d) => in_array($d['type'] ?? '', $allowedTypes, true)))
             ->map(fn ($d) => [
                 'line' => (string) ($d['line'] ?? '?'),
                 'destination' => (string) ($d['direction'] ?? ''),

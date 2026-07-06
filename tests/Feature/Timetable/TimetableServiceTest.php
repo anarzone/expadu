@@ -64,6 +64,39 @@ test('the departures page renders and defers the boards', function () {
     );
 });
 
+test('the tram board keeps underground Stadtbahn and a rail board surfaces trains', function () {
+    $this->mock(KvbApiService::class, function ($m) {
+        // Only a Stadtbahn stop nearby — no bus stop, so the Bus board is null.
+        $m->shouldReceive('getStops')->andReturn([
+            ['name' => 'Dom/Hbf', 'area' => 'STRAB', 'lat' => 50.9430, 'lng' => 6.9585, 'lines' => ['5', '16', '18']],
+        ]);
+    });
+    $this->mock(GtfsDepartureService::class, function ($m) {
+        $m->shouldReceive('getDepartures')->andReturn([
+            'source' => 'trias_rt',
+            'departures' => [
+                ['line' => '5', 'direction' => 'Ossendorf', 'type' => 'tram', 'color' => '#1A4CD4', 'departures' => [2], 'delay' => 0],
+                // VRS can report the underground stretch as "subway" — it's still a Stadtbahn.
+                ['line' => '16', 'direction' => 'Niehl', 'type' => 'subway', 'color' => '#1A4CD4', 'departures' => [4], 'delay' => 0],
+                ['line' => 'S12', 'direction' => 'Hennef', 'type' => 'rail', 'color' => '#1A4CD4', 'departures' => [6], 'delay' => 0],
+            ],
+        ]);
+        $m->shouldReceive('routeContext')->andReturn(['direction' => null, 'via' => []]);
+    });
+
+    $boards = app(TimetableService::class)->boards(50.9430, 6.9585);
+
+    // Tram tab keeps the underground Stadtbahn (type "subway") next to surface trams.
+    expect(collect($boards['tram']['departures'])->pluck('line')->all())->toBe(['5', '16']);
+
+    // Rail rides the "all" pick and shows only trains.
+    expect(collect($boards['rail']['departures'])->pluck('line')->all())->toBe(['S12']);
+    expect(collect($boards['rail']['departures'])->pluck('type')->unique()->all())->toBe(['rail']);
+
+    // No nearby bus stop → null board → the frontend hides the Bus tab.
+    expect($boards['bus'])->toBeNull();
+});
+
 test('board departures carry the GTFS direction lane and via stops', function () {
     $this->mock(KvbApiService::class, function ($m) {
         $m->shouldReceive('getStops')->andReturn([
