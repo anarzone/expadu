@@ -90,10 +90,7 @@ jobs:
           auth="Authorization: Bearer ${COOLIFY_TOKEN}"
           echo "--- current backend Sentry env keys on the app (names only) ---"
           curl -s -H "$auth" "$base/api/v1/applications/$APP_UUID/envs" \
-            | python3 -c 'import json,sys
-try: d=json.load(sys.stdin)
-except: d=[]
-print("\n".join(sorted(e.get("key","") for e in d if str(e.get("key","")).startswith("SENTRY"))) or "none")'
+            | python3 -c "import json,sys; d=json.loads(sys.stdin.read() or '[]'); print(chr(10).join(sorted(e.get('key','') for e in d if str(e.get('key','')).startswith('SENTRY'))) or 'none')"
           if [ "$MODE" = "inspect" ]; then exit 0; fi
           upsert () {
             key="$1"; val="$2"
