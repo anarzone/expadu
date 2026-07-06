@@ -87,6 +87,47 @@ test('the confirmed location is the shared origin', function () {
     expect($origin->label)->toBe('Mülheim');
 });
 
+test('a recent accepted ping anchors the origin', function () {
+    Redis::zadd("location_history:{$this->user->id}", now()->timestamp, json_encode([
+        'lat' => 50.9485, 'lng' => 6.9230, 'at' => now()->toIso8601String(),
+    ]));
+
+    $origin = $this->service->context($this->user, Request::create('/api/places'));
+
+    expect($origin->source)->toBe(LocationSource::Ping);
+    expect($origin->lat)->toBe(50.9485);
+    expect($origin->lng)->toBe(6.9230);
+});
+
+test('a rejected weak-signal ping never anchors the origin', function () {
+    // Weak-network noise (bad accuracy / impossible speed) is stored for
+    // debugging but must not drag the board to the wrong station. An older
+    // accepted fix behind it wins.
+    $key = "location_history:{$this->user->id}";
+    Redis::zadd($key, now()->subMinutes(5)->timestamp, json_encode([
+        'lat' => 50.9485, 'lng' => 6.9230, 'at' => now()->subMinutes(5)->toIso8601String(),
+    ]));
+    Redis::zadd($key, now()->timestamp, json_encode([
+        'lat' => 50.0000, 'lng' => 7.5000, 'rejected' => 'accuracy_800m', 'at' => now()->toIso8601String(),
+    ]));
+
+    $origin = $this->service->context($this->user, Request::create('/api/places'));
+
+    expect($origin->source)->toBe(LocationSource::Ping);
+    expect($origin->lat)->toBe(50.9485);
+    expect($origin->lng)->toBe(6.9230);
+});
+
+test('a history of only rejected pings resolves to no origin', function () {
+    Redis::zadd("location_history:{$this->user->id}", now()->timestamp, json_encode([
+        'lat' => 50.0000, 'lng' => 7.5000, 'rejected' => 'speed_400kmh', 'at' => now()->toIso8601String(),
+    ]));
+
+    $origin = $this->service->context($this->user, Request::create('/api/places'));
+
+    expect($origin->source)->toBe(LocationSource::None);
+});
+
 test('veedelAt resolves a coordinate to its nearest Veedel', function () {
     // No boundaries loaded → nearest-centroid fallback (the local/staging case).
     DB::table('veedels')->insert([

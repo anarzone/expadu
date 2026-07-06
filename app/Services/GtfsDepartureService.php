@@ -497,8 +497,12 @@ class GtfsDepartureService
     /**
      * Log departure response to Redis for debugging (30-day TTL).
      * Key: departure_debug:{user_id}, sorted set scored by timestamp.
+     *
+     * $locationSource records HOW the board's origin was resolved (gps /
+     * confirmed / last_ping / home / default) — the key signal when a user
+     * reports the board rooted at the wrong station.
      */
-    public static function logDepartureDebug(int $userId, string $page, array $result, ?float $lat = null, ?float $lng = null): void
+    public static function logDepartureDebug(int $userId, string $page, array $result, ?float $lat = null, ?float $lng = null, ?string $locationSource = null): void
     {
         try {
             $key = "departure_debug:{$userId}";
@@ -510,6 +514,7 @@ class GtfsDepartureService
                 'page' => $page,
                 'stop' => $result['stop_name'] ?? null,
                 'source' => $result['source'] ?? null,
+                'location_source' => $locationSource,
                 'lines' => $lines,
                 'count' => count($result['departures'] ?? []),
                 'lat' => $lat ? round($lat, 6) : null,

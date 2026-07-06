@@ -28,18 +28,57 @@ test.describe('Departures', () => {
         ).toBeVisible();
     });
 
-    test('switching mode tabs does not error', async ({ page }) => {
+    test('switching between the available mode tabs does not error', async ({
+        page,
+    }) => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
 
         await page.goto('/timetable');
         await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(1200);
 
-        await page.getByRole('button', { name: /Tram/ }).click();
-        await page.getByRole('button', { name: /Bus/ }).click();
-        await page.waitForTimeout(300);
+        // Mode tabs are adaptive — only modes with live departures appear, so
+        // click through whichever are on offer rather than assuming all exist.
+        for (const label of [/Tram/, /Bus/, /Train/, /^All$/]) {
+            const tab = page.getByRole('button', { name: label });
+
+            if (await tab.count()) {
+                await tab.first().click();
+                await page.waitForTimeout(200);
+            }
+        }
 
         expect(errors).toHaveLength(0);
+    });
+
+    test('only offers mode tabs that have live departures', async ({ page }) => {
+        await page.goto('/timetable');
+        await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(1500);
+
+        // "All" is always offered.
+        await expect(
+            page.getByRole('button', { name: 'All', exact: true }),
+        ).toBeVisible();
+
+        // Any mode tab that IS shown must render a real board, never the empty
+        // state — hiding empty modes is the whole point.
+        for (const label of [/Tram/, /Bus/, /Train/]) {
+            const tab = page.getByRole('button', { name: label });
+
+            if (!(await tab.count())) {
+                continue;
+            }
+
+            await tab.first().click();
+            await page.waitForTimeout(400);
+
+            await expect(page.locator('.board-row').first()).toBeVisible();
+            await expect(
+                page.getByText(/No live (trams|buses|trains) for your/),
+            ).toHaveCount(0);
+        }
     });
 
     test('shows departures as clock times, not a countdown grid', async ({

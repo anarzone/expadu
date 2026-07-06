@@ -44,9 +44,9 @@ type Board = {
     departures: Departure[];
 } | null;
 
-type Boards = { all: Board; tram: Board; bus: Board };
+type Boards = { all: Board; tram: Board; bus: Board; rail: Board };
 
-type Mode = 'all' | 'tram' | 'bus';
+type Mode = 'all' | 'tram' | 'bus' | 'rail';
 
 type GeoResult = {
     name: string;
@@ -93,11 +93,25 @@ function haversineM(
     return r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const TABS: { key: Mode; label: string }[] = [
+const MODE_TABS: { key: Mode; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'tram', label: '🚊 Tram' },
     { key: 'bus', label: '🚌 Bus' },
+    { key: 'rail', label: '🚆 Train' },
 ];
+
+/**
+ * Only offer a mode tab when that mode actually has departures near the user —
+ * a bus-only stop shows no Tram/Train tab, an S-Bahn station gains a Train tab.
+ * "All" is always present. Until the boards load, show just "All".
+ */
+function availableTabs(
+    boards: Boards | undefined,
+): { key: Mode; label: string }[] {
+    return MODE_TABS.filter(
+        (t) => t.key === 'all' || (boards?.[t.key]?.departures.length ?? 0) > 0,
+    );
+}
 
 const VISIBLE = 6;
 
@@ -401,8 +415,13 @@ function LaneHeader({
 
 function DepartureBoard({ board }: { board: NonNullable<Board> }) {
     const [expanded, setExpanded] = useState(false);
+    const kind = board.departures[0]?.type;
     const platform =
-        board.departures[0]?.type === 'bus' ? 'KVB Bus' : 'KVB Stadtbahn';
+        kind === 'bus'
+            ? 'KVB Bus'
+            : kind === 'rail'
+              ? 'S-Bahn / Regional'
+              : 'KVB Stadtbahn';
     // Honest indicator: pulsing LIVE only when times come from a realtime
     // feed (TRIAS / GTFS-RT); schedule data says so instead of pretending.
     const live = board.source === 'trias_rt' || board.source === 'gtfs_rt';
@@ -529,7 +548,13 @@ function BoardSkeleton() {
 
 function EmptyBoard({ mode }: { mode: Mode }) {
     const what =
-        mode === 'tram' ? 'trams' : mode === 'bus' ? 'buses' : 'departures';
+        mode === 'tram'
+            ? 'trams'
+            : mode === 'bus'
+              ? 'buses'
+              : mode === 'rail'
+                ? 'trains'
+                : 'departures';
 
     return (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
@@ -889,6 +914,25 @@ export default function Timetable() {
 
     const liveBoards = boards ?? lastBoardsRef.current;
 
+    // Adaptive mode tabs: only offer modes that actually run near the user.
+    const tabs = availableTabs(liveBoards);
+
+    // If the selected mode drops out (the last tram left, or a poll re-rooted
+    // the board at a bus-only stop), fall back to "All" so the view is never
+    // stuck on an empty, tab-less mode.
+    useEffect(() => {
+        if (!liveBoards) {
+            return;
+        }
+
+        const stillRunning =
+            mode === 'all' || (liveBoards[mode]?.departures.length ?? 0) > 0;
+
+        if (!stillRunning) {
+            setMode('all');
+        }
+    }, [liveBoards, mode]);
+
     function flash(message: string) {
         setToast(message);
         window.setTimeout(() => setToast(null), 2600);
@@ -1195,7 +1239,7 @@ export default function Timetable() {
                         />
 
                         <div className="mb-[18px] flex gap-2">
-                            {TABS.map((tab) => (
+                            {tabs.map((tab) => (
                                 <button
                                     key={tab.key}
                                     onClick={() => setMode(tab.key)}
