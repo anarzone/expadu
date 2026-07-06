@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
+use App\Services\GtfsDepartureService;
 use App\Services\TimetableService;
 use App\Services\UserLocationService;
 use Illuminate\Http\Request;
@@ -20,9 +21,25 @@ class TimetableController extends Controller
     public function __invoke(Request $request, TimetableService $timetable): Response
     {
         $location = app(UserLocationService::class)->resolve($request->user(), $request);
+        $userId = $request->user()->id;
 
         return Inertia::render('timetable', [
-            'boards' => Inertia::defer(fn () => $timetable->boards($location['lat'], $location['lng'])),
+            'boards' => Inertia::defer(function () use ($timetable, $location, $userId) {
+                $boards = $timetable->boards($location['lat'], $location['lng']);
+
+                // Debug trail: record where the board rooted and WHY (location
+                // source) so a "wrong station" report is diagnosable per user.
+                GtfsDepartureService::logDepartureDebug(
+                    $userId,
+                    'timetable',
+                    $boards['all'] ?? ['departures' => []],
+                    $location['lat'],
+                    $location['lng'],
+                    $location['source'] ?? null,
+                );
+
+                return $boards;
+            }),
             // Saved places (Home / Work / pins) offered as one-tap journey
             // destinations in the "Where to?" card. Unlike the Places "From"
             // picker, coordinates are sent to the client here because the journey
