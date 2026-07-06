@@ -269,18 +269,27 @@ largest slice; split it so early wins land first.
   when personal signal is thin; decay quiets a repeatedly-handled type; the floor
   survives N dismissals.
 
-### Phase 4 — The brief UI (presentation)
+### Phase 4 — The brief UI (presentation) — **SHIPPED**
 
-- Restructure `dashboard.tsx` "Right Now" from a flat 8-tile list into a hierarchy:
-  **The one thing** (≤1 lead) · **Because of your day** (fused, plan-coupled) ·
-  **Good to know** (collapsed ambient) · **calm state** ("nothing needs you").
-- Verbs shift to **resolve-first** (Take me there · Book · Start · Find swap); triage
-  (done/snooze/dismiss) becomes the "you got it wrong" escape hatch, not the primary
-  action.
-- Rebalance the screen so the composer is primary and the needs band is thin when
-  needs are few. Prototype-first per house rules; match v4 tokens + dark mode.
-- **Tests:** Pest browser smoke over `/dashboard` for each hierarchy state incl. the
-  empty/calm state; no JS errors.
+- `dashboard.tsx` "Right Now" is now the brief (`Brief` + `LeadCard`/`NeedCard`/
+  `AmbientRow`/`CalmCard`), replacing the flat 8-tile list. A tile's TYPE picks its
+  lane: **Needs you first** (bureaucracy deadlines — lead, no triage), **Because of
+  your day** (fused weather/transit/events — resolve-first, triage tucked to the
+  corner), **Good to know** (ambient rhythm/river — dashed, dismiss-only). Nothing
+  across all three → **Nothing needs you right now** (calm state).
+- Verbs are **resolve-first** (`TILE_RESOLVE`: Book appointment · See routes · Plan
+  around it · Take me there); the triage trio stays as the escape hatch, not the lead.
+- The lead is set apart by colour, not size — same footprint as a need row, with a
+  consequence-graded wash + solid glyph + countdown flag. Multiple deadlines stack in
+  "Needs you first", **colour-graded red (overdue) → amber (upcoming)**; the flag
+  carries the precise days so colour stays a coarse monotonic signal.
+- Backend contract unchanged (still the flat scored `tiles` array); the hierarchy is a
+  pure view concern. Reuses the existing triage plumbing + `Deferred` boundary.
+- **Tests:** `tests/Browser/dashboard.spec.ts` asserts the brief renders (a lane label
+  or the calm state) with no JS errors. Prototype approved first (`prototype/today-brief-v4.html`).
+- **Follow-up:** the bureaucracy-deadline subtitle is just the countdown label (the flag
+  covers it, so it's suppressed on the lead) — enrich it backend-side with the richer
+  "14-day deadline is Wednesday, slots open 08:00" line the prototype showed.
 
 ### Recommended path
 
