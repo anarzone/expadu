@@ -3,6 +3,7 @@ import {
     IconAlertTriangle,
     IconArrowRight,
     IconBan,
+    IconHistory,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
@@ -650,9 +651,11 @@ function JourneyEntryCard({
 }) {
     // Quick-launch pills: saved places first, recent destinations fill the
     // rest (deduplicated by name), four max.
+    // emoji is the pill's leading glyph; null marks a recent, which renders the
+    // Tabler history icon instead of an emoji (matches the search dropdown).
     const pills: Array<{
         key: string;
-        emoji: string;
+        emoji: string | null;
         name: string;
         lat: number;
         lng: number;
@@ -676,7 +679,7 @@ function JourneyEntryCard({
         ) {
             pills.push({
                 key: `r-${recent.name}`,
-                emoji: '🕘',
+                emoji: null,
                 name: recent.name,
                 lat: recent.lat,
                 lng: recent.lng,
@@ -752,14 +755,22 @@ function JourneyEntryCard({
                             onClick={() =>
                                 onPlan({
                                     name: pill.name,
-                                    emoji: pill.emoji,
+                                    emoji: pill.emoji ?? undefined,
                                     lat: pill.lat,
                                     lng: pill.lng,
                                 })
                             }
                             className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1.5 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                         >
-                            <span>{pill.emoji}</span>
+                            {pill.emoji ? (
+                                <span>{pill.emoji}</span>
+                            ) : (
+                                <IconHistory
+                                    size={14}
+                                    stroke={ICON_STROKE}
+                                    className="shrink-0"
+                                />
+                            )}
                             {pill.name}
                         </button>
                     ))}
