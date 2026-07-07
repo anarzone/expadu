@@ -32,7 +32,11 @@ class OnboardingRequest extends FormRequest
                 Situation::DigitalNomad->value,
                 Situation::Other->value,
             ], true))],
-            'arrival_date' => ['required', 'date', 'before_or_equal:today'],
+            // Planning mode: a not-yet-arrived expat has no arrival date. The
+            // engine already renders this as the "Before you fly" phase with
+            // every deadline paused, so we simply store a null arrival.
+            'arrival_planned' => ['nullable', 'boolean'],
+            'arrival_date' => ['nullable', 'exclude_if:arrival_planned,true', 'required_unless:arrival_planned,true', 'date', 'before_or_equal:today'],
             'veedel' => ['required', 'string', Rule::in($veedels)],
             'german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
             // Whether they already hold a Deutschlandticket — drives the

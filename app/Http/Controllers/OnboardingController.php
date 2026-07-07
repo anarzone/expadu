@@ -97,10 +97,15 @@ class OnboardingController extends Controller
         $entryMode = $validated['entry_mode'] ?? null;
         $housing = $validated['housing_status'] ?? null;
         $visaExpires = $validated['visa_expires_at'] ?? null;
-        unset($validated['entry_mode'], $validated['housing_status'], $validated['visa_expires_at']);
+        // Planning mode stores no arrival date (excluded by the request rules).
+        $planning = (bool) ($validated['arrival_planned'] ?? false);
+        unset($validated['entry_mode'], $validated['housing_status'], $validated['visa_expires_at'], $validated['arrival_planned']);
 
         $user->update([
             ...$validated,
+            // "Before you fly": a null arrival pauses every deadline. Explicit
+            // null also clears a prior date when re-onboarding into planning mode.
+            'arrival_date' => $planning ? null : ($validated['arrival_date'] ?? null),
             'city' => 'Köln', // Cologne-only for now; the field unlocks other NRW cities later
             'onboarded_at' => now(),
         ]);

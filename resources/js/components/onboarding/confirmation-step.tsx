@@ -112,6 +112,14 @@ export function ConfirmationStep({
                             <b className="text-foreground">{arrivalLabel}</b>
                         </>
                     )}
+                    {!arrivalLabel && data.arrival_planned && (
+                        <>
+                            ,{' '}
+                            <b className="text-foreground">
+                                planning your move
+                            </b>
+                        </>
+                    )}
                     .
                 </p>
             </div>

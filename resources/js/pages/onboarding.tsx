@@ -21,6 +21,8 @@ export type OnboardingData = {
     german_level: string;
     has_deutschlandticket: boolean;
     arrival_date: string;
+    // "I haven't arrived yet" — submits a null arrival, pausing all deadlines.
+    arrival_planned: boolean;
     interests: string[];
 };
 
@@ -80,6 +82,7 @@ export default function Onboarding() {
         german_level: '',
         has_deutschlandticket: false,
         arrival_date: defaultArrival,
+        arrival_planned: false,
         interests: [],
     });
 
@@ -128,7 +131,10 @@ export default function Onboarding() {
                     : true;
             }
             case 3:
-                return form.data.veedel !== '' && form.data.arrival_date !== '';
+                return (
+                    form.data.veedel !== '' &&
+                    (form.data.arrival_planned || form.data.arrival_date !== '')
+                );
             case 4:
                 return form.data.interests.length >= 3; // at least 3 interests
             case 5:
@@ -186,6 +192,7 @@ export default function Onboarding() {
                             veedels={veedels ?? {}}
                             veedel={form.data.veedel}
                             arrivalDate={form.data.arrival_date}
+                            arrivalPlanned={form.data.arrival_planned}
                             germanLevel={form.data.german_level}
                             housingStatus={form.data.housing_status}
                             hasDeutschlandticket={
@@ -195,6 +202,15 @@ export default function Onboarding() {
                             onArrivalDateChange={(v) =>
                                 form.setData('arrival_date', v)
                             }
+                            onArrivalPlannedChange={(planned) => {
+                                form.setData('arrival_planned', planned);
+                                // Clear the date in planning mode; restore the
+                                // sensible default when they say they've arrived.
+                                form.setData(
+                                    'arrival_date',
+                                    planned ? '' : defaultArrival,
+                                );
+                            }}
                             onGermanLevelChange={(v) =>
                                 form.setData('german_level', v)
                             }

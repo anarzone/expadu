@@ -30,11 +30,13 @@ export function VeedelStep({
     veedels,
     veedel,
     arrivalDate,
+    arrivalPlanned,
     germanLevel,
     housingStatus,
     hasDeutschlandticket,
     onVeedelChange,
     onArrivalDateChange,
+    onArrivalPlannedChange,
     onGermanLevelChange,
     onHousingStatusChange,
     onDticketChange,
@@ -42,11 +44,13 @@ export function VeedelStep({
     veedels: Record<string, string[]>;
     veedel: string;
     arrivalDate: string;
+    arrivalPlanned: boolean;
     germanLevel: string;
     housingStatus: string;
     hasDeutschlandticket: boolean;
     onVeedelChange: (value: string) => void;
     onArrivalDateChange: (value: string) => void;
+    onArrivalPlannedChange: (value: boolean) => void;
     onGermanLevelChange: (value: string) => void;
     onHousingStatusChange: (value: string) => void;
     onDticketChange: (value: boolean) => void;
@@ -136,41 +140,84 @@ export function VeedelStep({
                     <div className="mb-2 text-[13px] font-semibold">
                         When did you arrive in Germany?
                     </div>
-                    <div className="flex gap-2.5">
-                        <select
-                            value={selectedMonth}
-                            onChange={(e) =>
-                                updateDate(Number(e.target.value), selectedYear)
-                            }
-                            className="flex-1 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
-                        >
-                            {months.map((m, i) => (
-                                <option key={m} value={i}>
-                                    {m}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            value={selectedYear}
-                            onChange={(e) =>
-                                updateDate(
-                                    selectedMonth,
-                                    Number(e.target.value),
-                                )
-                            }
-                            className="w-[100px] rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
-                        >
-                            {years.map((y) => (
-                                <option key={y} value={y}>
-                                    {y}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="mb-2.5 flex gap-2">
+                        {[
+                            {
+                                planned: false,
+                                emoji: '📍',
+                                label: "I'm here",
+                            },
+                            {
+                                planned: true,
+                                emoji: '🗓️',
+                                label: 'Still planning',
+                            },
+                        ].map((opt) => (
+                            <button
+                                key={String(opt.planned)}
+                                type="button"
+                                onClick={() =>
+                                    onArrivalPlannedChange(opt.planned)
+                                }
+                                className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                    arrivalPlanned === opt.planned
+                                        ? 'border-primary bg-accent-soft text-primary'
+                                        : 'border-border bg-card hover:border-primary/30'
+                                }`}
+                            >
+                                {opt.emoji} {opt.label}
+                            </button>
+                        ))}
                     </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                        We use this to compute your registration deadline —
-                        nothing else.
-                    </p>
+                    {arrivalPlanned ? (
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                            No date yet — we'll keep every deadline paused and
+                            show your plan in <strong>Before you fly</strong>{' '}
+                            mode. Set your arrival once you land and the clock
+                            starts.
+                        </p>
+                    ) : (
+                        <>
+                            <div className="flex gap-2.5">
+                                <select
+                                    value={selectedMonth}
+                                    onChange={(e) =>
+                                        updateDate(
+                                            Number(e.target.value),
+                                            selectedYear,
+                                        )
+                                    }
+                                    className="flex-1 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
+                                >
+                                    {months.map((m, i) => (
+                                        <option key={m} value={i}>
+                                            {m}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) =>
+                                        updateDate(
+                                            selectedMonth,
+                                            Number(e.target.value),
+                                        )
+                                    }
+                                    className="w-[100px] rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
+                                >
+                                    {years.map((y) => (
+                                        <option key={y} value={y}>
+                                            {y}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                We use this to compute your registration
+                                deadline — nothing else.
+                            </p>
+                        </>
+                    )}
                 </div>
 
                 <div>
