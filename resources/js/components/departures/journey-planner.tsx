@@ -1576,7 +1576,7 @@ export function JourneyPlanner({
                                 onClick={() => setTimeMode(m)}
                                 className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
                                     timeMode === m
-                                        ? 'border-foreground bg-foreground text-background'
+                                        ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
                                         : 'border-border bg-card text-muted-foreground hover:border-primary'
                                 }`}
                             >
@@ -1599,7 +1599,7 @@ export function JourneyPlanner({
                                 onClick={() => setDayOffset(off)}
                                 className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
                                     dayOffset === off
-                                        ? 'border-foreground bg-foreground text-background'
+                                        ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
                                         : 'border-border bg-card text-muted-foreground hover:border-primary'
                                 }`}
                             >
@@ -1746,7 +1746,7 @@ export function JourneyPlanner({
                                 onClick={() => setFilter(f.key)}
                                 className={`shrink-0 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
                                     filter === f.key
-                                        ? 'border-foreground bg-foreground text-background'
+                                        ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
                                         : 'border-border bg-card text-muted-foreground hover:border-primary'
                                 }`}
                             >

@@ -1264,7 +1264,7 @@ export default function Timetable() {
                                     onClick={() => setMode(tab.key)}
                                     className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
                                         mode === tab.key
-                                            ? 'border-foreground bg-foreground text-background'
+                                            ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
                                             : 'border-border bg-card text-muted-foreground hover:border-primary'
                                     }`}
                                 >
