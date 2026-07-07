@@ -28,6 +28,25 @@ run_check() {
     fi
 }
 
+# Secret scan FIRST — catch a hardcoded credential before it's ever committed,
+# and fail fast (before the slower Pint/test steps). Scans only staged changes.
+echo -e "${YELLOW}▶ Running Secret Scan (gitleaks)...${NC}"
+if command -v gitleaks >/dev/null 2>&1; then
+    if gitleaks git --staged --redact --no-banner; then
+        echo -e "${GREEN}✓ Secret Scan (gitleaks) passed${NC}"
+        echo ""
+    else
+        echo -e "${RED}✗ Secret Scan failed — a secret was found in your staged changes.${NC}"
+        echo -e "${RED}  Remove it (use \${{ secrets.* }} in CI, .env locally), then re-commit.${NC}"
+        echo -e "${YELLOW}  False positive? append a 'gitleaks:allow' comment on the line, or add it to .gitleaksignore.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${RED}⚠ gitleaks NOT installed — secret scan SKIPPED.${NC}"
+    echo -e "${YELLOW}  Install it so leaks are caught locally:  brew install gitleaks${NC}"
+    echo ""
+fi
+
 # PHP: Run Pint on dirty files
 run_check "PHP Code Style (Pint)" "vendor/bin/pint --dirty"
 

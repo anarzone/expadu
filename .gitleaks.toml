@@ -1,0 +1,21 @@
+# Gitleaks configuration for Expadu.
+#
+# Runs on every commit via .husky/pre-commit (gitleaks git --staged) to catch a
+# secret before it ever leaves the machine. Keeps the full default ruleset
+# (AWS, GitHub, Stripe, private keys, generic high-entropy api-key, …) and adds
+# a Dify rule — Dify keys aren't in the defaults, and a Dify key is what leaked
+# once already (GitGuardian incident, .github/workflows/sentry-backend-env.yml).
+
+title = "Expadu gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "dify-api-key"
+description = "Dify API key"
+# Dify keys are `app-` followed by 24 alphanumeric chars. The entropy guard
+# keeps ordinary `app-` identifiers (component names, asset hashes) from firing.
+regex = '''\bapp-[a-zA-Z0-9]{24}\b'''
+keywords = ["app-"]
+entropy = 3.5
