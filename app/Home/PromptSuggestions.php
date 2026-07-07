@@ -2,6 +2,8 @@
 
 namespace App\Home;
 
+use App\Enums\SpotCategory;
+
 /**
  * The dynamic prompt chips under the search box — personalised WITHOUT an LLM.
  * Each chip is chosen from a template library gated by real signals from the
@@ -50,7 +52,12 @@ class PromptSuggestions
 
         $topCategory = $this->topCategory($context->intentWeights);
         if ($topCategory !== null) {
-            $candidates[] = ['p' => 45, 'label' => 'More '.$topCategory, 'icon' => 'star', 'prompt' => "{$topCategory} today"];
+            // Humanise the raw signal slug ("dog_park") for both the chip label
+            // and the prompt — "More dog_park" read as a bug, and "dog_park
+            // today" didn't parse (the parser expects "dog park", with a space).
+            $enum = SpotCategory::tryFrom($topCategory);
+            $label = $enum ? mb_strtolower($enum->label()) : str_replace('_', ' ', $topCategory);
+            $candidates[] = ['p' => 45, 'label' => 'More '.$label, 'icon' => 'star', 'prompt' => "{$label} today"];
         }
 
         // Always-available fallbacks so there are never fewer than a few chips.

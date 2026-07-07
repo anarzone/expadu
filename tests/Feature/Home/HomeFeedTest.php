@@ -53,6 +53,20 @@ test('weather and intent weights resolve once across chips, tiles and rails', fu
         ->and($rails)->toBeArray();
 });
 
+test('the "more" chip humanises the learned category slug', function () {
+    $user = homeFeedUser();
+    // The top signalled category is a raw slug ("dog_park"); the chip must read
+    // "More dog park", not "More dog_park".
+    $this->mock(IntentWeights::class, function ($m) {
+        $m->shouldReceive('for')->andReturn(['dog_park|Ehrenfeld' => 5]);
+    });
+
+    $chips = collect(app(HomeFeed::class)->chips($user))->pluck('label');
+
+    expect($chips)->toContain('More dog park')
+        ->not->toContain('More dog_park');
+});
+
 test('an imminent event the user intends becomes an urgent tile, not repeated in the rail', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'));
     $user = homeFeedUser();
