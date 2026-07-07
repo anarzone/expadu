@@ -3,6 +3,28 @@
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
+use Illuminate\Support\Facades\DB;
+
+test('deadline status resolves without lazy-loading the user, and is memoised', function () {
+    // The home feed reads deadline_status for every open task, several times
+    // each (tiles + paperwork rail sort + card). With the task + user relations
+    // set (as the feed does), a computation must not touch the DB — no per-task
+    // user load — and a second read must reuse the memo, not recompute.
+    $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(10)]);
+    $task = Task::factory()->create(['deadline_type' => 'days_since_arrival', 'deadline_days' => 14]);
+    $ut = UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
+    $ut->setRelation('user', $user);
+    $ut->setRelation('task', $task);
+
+    DB::enableQueryLog();
+    $first = $ut->deadline_status;
+    $second = $ut->deadline_status;
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($queries)->toBeEmpty()          // relations were used, nothing lazy-loaded
+        ->and($second)->toBe($first);      // memoised — same array, not recomputed
+});
 
 test('overdue task has correct deadline status', function () {
     $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(20)]);

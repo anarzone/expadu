@@ -74,12 +74,26 @@ class UserTask extends Model
         return $task->computeDeadlineFor($user);
     }
 
+    /** @var array{days_remaining: int|null, urgency: string, label: string, priority_boost: int}|null */
+    private ?array $deadlineStatusMemo = null;
+
     /**
-     * Compute deadline status with urgency and priority boost.
+     * Deadline status with urgency and priority boost. Memoised per instance:
+     * the home feed reads it several times per task (tiles + paperwork rail sort
+     * + rail card), and each computation rebuilds the profile — once is enough
+     * within a request, and the feed never mutates a task after loading it.
      *
      * @return array{days_remaining: int|null, urgency: string, label: string, priority_boost: int}
      */
     public function getDeadlineStatusAttribute(): array
+    {
+        return $this->deadlineStatusMemo ??= $this->computeDeadlineStatus();
+    }
+
+    /**
+     * @return array{days_remaining: int|null, urgency: string, label: string, priority_boost: int}
+     */
+    private function computeDeadlineStatus(): array
     {
         $deadline = $this->absolute_deadline;
 

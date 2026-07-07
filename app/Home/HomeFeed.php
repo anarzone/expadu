@@ -275,6 +275,10 @@ class HomeFeed
             ->notSnoozed()
             ->with('task')
             ->get()
+            // deadline_status reads $ut->user for every task (tiles + paperwork
+            // rail, several times each). They all belong to this one user, so set
+            // the relation up front rather than lazy-loading it per task.
+            ->each(fn (UserTask $ut) => $ut->setRelation('user', $user))
             ->filter(fn (UserTask $ut) => $ut->task !== null
                 && $this->paths->applicability($ut->task, $profile) === Applicability::Yes)
             ->values();
