@@ -43,11 +43,22 @@ class CandidateRepository
      */
     public function candidatesFor(Constraints $constraints, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG): array
     {
-        return array_slice(
-            [...$this->spotCandidates($constraints->windowStart, $originLat, $originLng), ...$this->eventCandidates($constraints)],
-            0,
-            self::MAX_CANDIDATES,
-        );
+        $events = $this->eventCandidates($constraints);
+        $spots = $this->spotCandidates($constraints->windowStart, $originLat, $originLng);
+
+        // Events get a RESERVED slice, not the leftovers. At prod volume ~20
+        // categories each contribute their dozen nearest spots — well over
+        // MAX_CANDIDATES on their own — so a plain merge-then-slice truncated
+        // every event away and curated events could never reach a plan. Events
+        // are few (the query caps them at 50) and worth building a day around,
+        // so they keep their room; the rest of the budget is the nearest spots,
+        // as before. The total still respects MAX_CANDIDATES for the O(n) stages.
+        $spotBudget = max(self::MAX_CANDIDATES - count($events), 0);
+
+        return [
+            ...array_slice($spots, 0, $spotBudget),
+            ...$events,
+        ];
     }
 
     /**

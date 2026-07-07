@@ -3,6 +3,7 @@
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\FeasibilityFilter;
+use App\Enums\SpotCategory;
 use App\Models\Event;
 use App\Models\Spot;
 use Carbon\CarbonImmutable;
@@ -122,6 +123,48 @@ test('wikidata or wikipedia tags mark a spot as a landmark', function () {
 
     expect(collect($candidates)->firstWhere('name', 'Famous Park')->isLandmark)->toBeTrue();
     expect(collect($candidates)->firstWhere('name', 'Plain Park')->isLandmark)->toBeFalse();
+});
+
+test('a curated event survives a spot pool that overflows the candidate cap', function () {
+    // The blocker: spots were merged BEFORE events and the whole list sliced to
+    // MAX_CANDIDATES. At prod volume the nearest-per-category spots overflow that
+    // cap on their own, so every event was truncated away — curated events could
+    // never reach a plan. Overflow the pool here (18 categories × 12 nearest =
+    // 216 > 200) and prove the event still makes it in.
+    $rows = [];
+    foreach (SpotCategory::placesFines() as $category) {
+        foreach (range(1, 12) as $i) {
+            $rows[] = [
+                'name' => "{$category} {$i}",
+                'category' => $category,
+                'lat' => 50.94,
+                'lng' => 6.95,
+            ];
+        }
+    }
+    Spot::query()->insert($rows);
+    expect(count($rows))->toBeGreaterThan(200); // the pool overflows the cap
+
+    $event = Event::factory()->create([
+        'title' => 'Curated Rooftop Market',
+        'category' => 'market',
+        'is_curated' => true,
+        'relevance' => 0.9,
+        'quality_score' => 0.9,
+        'starts_at' => CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'),
+    ]);
+    DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+        [6.95, 50.94, $event->id],
+    );
+
+    $candidates = app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.94, 6.95);
+
+    // The event is in the pool despite the spot overflow, the cap is still
+    // respected, and spots weren't crowded out either.
+    expect(collect($candidates)->firstWhere('id', "event:{$event->id}"))->not->toBeNull();
+    expect(count($candidates))->toBeLessThanOrEqual(200);
+    expect(collect($candidates)->where('type', 'spot'))->not->toBeEmpty();
 });
 
 test('only quality-gated events reach the composer; a curated outdoor event is a landmark', function () {
