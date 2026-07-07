@@ -42,9 +42,11 @@ class SpotSearchController extends Controller
             $query->where('category', $category);
         }
 
-        // Add distance calculation and sort by distance
+        // Add distance calculation and sort by distance. The acos argument is
+        // clamped to [-1, 1]: float rounding can push it just past 1.0 when a
+        // spot sits on the origin, and Postgres' acos then errors out (a 500).
         $spots = $query
-            ->selectRaw('*, (6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))) as distance_km', [$userLat, $userLng, $userLat])
+            ->selectRaw('*, (6371 * acos(least(1, greatest(-1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat)))))) as distance_km', [$userLat, $userLng, $userLat])
             ->orderBy('distance_km')
             ->limit((int) ($request->query('limit', 50)))
             ->get();
