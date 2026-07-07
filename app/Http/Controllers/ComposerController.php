@@ -554,11 +554,28 @@ class ComposerController extends Controller
     {
         $validated = $request->validate([
             'prompt' => ['nullable', 'string', 'max:500'],
+            // The slot ids still shown in the Today draft. Present when the user
+            // removed a pick before saving — persist exactly what's on screen,
+            // not the fuller plan the compose cached, which resurrected removals.
+            'keep' => ['nullable', 'array'],
+            'keep.*' => ['string'],
         ]);
 
         $stored = Cache::get($this->planKey($request->user()));
         if (! is_array($stored) || empty($stored['slots'])) {
             return response()->json(['message' => 'No plan to save — compose one first.'], 404);
+        }
+
+        if ($validated['keep'] ?? null) {
+            $keep = $validated['keep'];
+            $stored['slots'] = array_values(array_filter(
+                $stored['slots'],
+                fn ($slot) => in_array($slot['id'] ?? null, $keep, true),
+            ));
+
+            if ($stored['slots'] === []) {
+                return response()->json(['message' => 'No picks left to save.'], 422);
+            }
         }
 
         $today->save($request->user(), $stored, $validated['prompt'] ?? null);

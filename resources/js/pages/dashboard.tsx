@@ -761,13 +761,17 @@ export default function Dashboard() {
         );
     }
 
-    // Persist the inline draft to Today: it's the same plan already cached by
-    // compose, so save it, drop the draft, and reload the pinned-plan prop.
+    // Persist the inline draft to Today. Send the picks still on screen so a
+    // removed one stays gone — the compose cache still holds the fuller plan, so
+    // saving without `keep` would resurrect anything the user dropped.
     async function savePreviewToToday() {
         setSavingPreview(true);
 
         try {
-            await composerPost('/composer/save', { prompt: previewPrompt });
+            await composerPost('/composer/save', {
+                prompt: previewPrompt,
+                keep: (preview ?? []).map((slot) => slot.id),
+            });
             setPreview(null);
             setActivePrompt(null);
             router.reload({ only: ['savedPlan'] });

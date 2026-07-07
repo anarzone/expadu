@@ -210,6 +210,43 @@ test('save pins the composed plan to Today, surfaces it on the home feed, and cl
     expect(app(TodayPlanStore::class)->get($user))->toBeNull();
 });
 
+test('save honours the picks still shown — a removed draft pick stays gone', function () {
+    // The Today draft lets you remove a pick before saving. The compose cache
+    // still holds the fuller plan, so save must persist only the picks the user
+    // kept, not resurrect the one they dropped.
+    $user = composerUser();
+    Spot::factory()->count(5)->sequence(fn ($seq) => [
+        'name' => "Cafe {$seq->index}",
+        'category' => 'cafe',
+        'lat' => 50.9485 + $seq->index * 0.001,
+        'lng' => 6.9230,
+    ])->create();
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->setTime(12, 0);
+    $compose = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->copy()->setTime(20, 0)->toIso8601String(),
+        ],
+    ]);
+    $compose->assertOk();
+    $ids = collect($compose->json('plan.slots'))->pluck('id');
+    expect($ids->count())->toBeGreaterThan(1);
+
+    $dropped = $ids->first();
+    $kept = $ids->slice(1)->values()->all();
+
+    $this->postJson('/composer/save', ['prompt' => 'this afternoon', 'keep' => $kept])
+        ->assertOk()
+        ->assertJsonPath('saved', true);
+
+    $saved = app(TodayPlanStore::class)->get($user);
+    expect(collect($saved['slots'])->pluck('id'))
+        ->not->toContain($dropped)
+        ->toContain($kept[0]);
+});
+
 test('save without a composed plan is a 404, not a crash', function () {
     $this->actingAs(composerUser());
 
