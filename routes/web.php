@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\BureaucracyController;
+use App\Http\Controllers\BureaucracyDemoController;
 use App\Http\Controllers\ComposerController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
@@ -192,6 +193,8 @@ $appRoutes = function () use ($appDomain) {
 
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+        // Admin/local-only: view the real bureaucracy page as any synthetic persona.
+        Route::get('bureaucracy/demo', BureaucracyDemoController::class)->name('bureaucracy.demo');
         Route::post('bureaucracy/path', [BureaucracyController::class, 'setPath'])->name('bureaucracy.set-path');
         Route::post('bureaucracy/settle', [BureaucracyController::class, 'settle'])->name('bureaucracy.settle');
         Route::post('profile/attributes', [ProfileAttributeController::class, 'store'])->name('profile.attributes');

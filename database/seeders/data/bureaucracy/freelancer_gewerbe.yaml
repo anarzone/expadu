@@ -48,7 +48,12 @@ tasks:
 
   - title: Register your trade (Gewerbeanmeldung)
     key: gw.gewerbeanmeldung
-    depends_on: [gw.residence_permit]
+    # Root on the universal Anmeldung, NOT gw.residence_permit: that permit is
+    # non_eu_only + gated to d_visa/visa_free, so hard-depending on it blocks the
+    # trade registration forever for EU traders and non-EU who already hold a
+    # permit. The permit is a soft prerequisite for non-EU only — conveyed in the
+    # copy + document list below, not as a hard DAG edge.
+    depends_on: [fre.anmeldung]
     description: |
       Once your permit allows it, register the trade at the Gewerbeamt — €26 for a sole
       proprietorship in Cologne, fully online via the NRW business portal, with the

@@ -279,3 +279,52 @@ test('redo onboarding re-asks everything but keeps all progress', function () {
         return true;
     });
 });
+
+test('planning mode completes onboarding with no arrival date', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->post(route('onboarding.complete'), [
+        'situation' => 'non_eu_employee',
+        'veedel' => 'Ehrenfeld',
+        'arrival_planned' => true, // "Still planning" — no arrival date
+        'housing_status' => 'long_term',
+        'entry_mode' => 'd_visa',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ]);
+
+    $response->assertRedirect(route('dashboard'));
+
+    $user->refresh();
+    expect($user->onboarded_at)->not->toBeNull();
+    expect($user->arrival_date)->toBeNull();
+});
+
+test('planning mode lands in the Before-you-fly phase with no firing deadlines', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'non_eu_employee',
+        'veedel' => 'Ehrenfeld',
+        'arrival_planned' => true,
+        'housing_status' => 'long_term',
+        'entry_mode' => 'visa_free',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ])->assertRedirect(route('dashboard'));
+
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+        $props = $page->toArray()['props'];
+        expect($props['phases']['current'])->toBe('before');
+
+        // Without an arrival date, no card carries a concrete deadline.
+        $cards = [...$props['tasks']['active'], ...$props['tasks']['upcoming']];
+        foreach ($cards as $card) {
+            expect($card['deadline'])->toBeNull();
+        }
+
+        return true;
+    });
+});

@@ -15,6 +15,7 @@ use App\Profile\ProfileEngine;
 use App\Services\BuergeramtService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -53,6 +54,22 @@ class BureaucracyController extends Controller
             ->get()
             ->filter(fn (UserTask $ut) => $ut->task !== null && $ut->task->is_published);
 
+        return Inertia::render('bureaucracy', $this->buildPayload(
+            $user, $profile, $userTasks, $buergeramtService, $profileEngine, $generator, $eligibility,
+        ));
+    }
+
+    /**
+     * Shape the bureaucracy page payload from a profile and its user_task rows.
+     * Pure and write-free: the demo switcher (BureaucracyDemoController) feeds
+     * it a synthetic user + in-memory user_tasks to render any persona without
+     * persisting a single row.
+     *
+     * @param  Collection<int, UserTask>  $userTasks
+     * @return array<string, mixed>
+     */
+    public function buildPayload(User $user, Profile $profile, Collection $userTasks, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): array
+    {
         // Done task keys unlock dependants: a card is blocked while any of
         // its depends_on keys is not completed.
         $doneKeys = $userTasks
@@ -111,7 +128,7 @@ class BureaucracyController extends Controller
                 && $ut->is_applicable
                 && in_array(Str::afterLast($ut->task->key ?? '', '.'), self::ARRIVAL_BASICS, true));
 
-        return Inertia::render('bureaucracy', [
+        return [
             'situation' => $user->situation?->value,
             'path' => [
                 'current' => $user->bureaucracy_path,
@@ -136,7 +153,7 @@ class BureaucracyController extends Controller
                 'total' => $totalActionable,
                 'percent' => $totalActionable > 0 ? (int) round(($doneCount / $totalActionable) * 100) : 0,
             ],
-        ]);
+        ];
     }
 
     /**
