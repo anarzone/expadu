@@ -437,7 +437,9 @@ export default function Composer() {
     // Archetype dropped in the v4 sentence model — compose with null.
     const [archetype] = useState<string | null>(null);
     const [locked, setLocked] = useState<string[]>([]);
-    const [excluded] = useState<string[]>([]);
+    // Picks the user has shuffled away — accumulated so Shuffle keeps rolling
+    // forward instead of re-offering something it discarded two shuffles ago.
+    const [excluded, setExcluded] = useState<string[]>([]);
     const [origin, setOrigin] = useState<PlacesOrigin | null>(null);
     const [locating, setLocating] = useState(false);
     // Places-style area picker: the selected Bezirk ('all' | 'near' | a name).
@@ -643,15 +645,15 @@ export default function Composer() {
             return;
         }
 
-        // Re-roll the unlocked picks for this recompose only (keeping locked).
+        // Re-roll the unlocked picks, accumulating them into the excluded set so
+        // repeated shuffles keep finding NEW picks instead of cycling back to one
+        // discarded earlier (keeping locked picks in place).
         const unlocked = plan.slots
             .filter((s) => s.swappable && !locked.includes(s.id))
             .map((s) => s.id);
-        void runCompose(constraints, {
-            archetype,
-            locked,
-            excluded: [...excluded, ...unlocked],
-        });
+        const next = [...new Set([...excluded, ...unlocked])];
+        setExcluded(next);
+        void runCompose(constraints, { archetype, locked, excluded: next });
     }
 
     // "My location": drop any explicit pick, take a fresh GPS fix, persist it as
