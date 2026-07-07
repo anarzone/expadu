@@ -42,6 +42,7 @@ import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
+import { berlinHour, berlinTimeOnDay } from '@/lib/berlin-time';
 
 type Constraints = {
     window_start: string;
@@ -233,24 +234,24 @@ function costLabel(tier: string): string | null {
     return tier === 'free' ? 'free' : tier === 'low' ? 'budget' : null;
 }
 
-/** A time preset → a window on the plan's existing day. */
+/**
+ * A time preset → a window on the plan's existing day. The daypart is Cologne
+ * wall-clock time (berlinTimeOnDay), not the device's local time — so a phone
+ * still on another timezone composes the afternoon the user actually means.
+ */
 function timeWindowPatch(preset: string, c: Constraints): Partial<Constraints> {
-    const day = new Date(c.window_start);
-    const at = (h: number) => {
-        const d = new Date(day);
-        d.setHours(h, 0, 0, 0);
-
-        return d.toISOString();
-    };
     const [s, e] = TIME_RANGES[preset] ?? TIME_RANGES.afternoon;
 
-    return { window_start: at(s), window_end: at(e) };
+    return {
+        window_start: berlinTimeOnDay(c.window_start, s),
+        window_end: berlinTimeOnDay(c.window_start, e),
+    };
 }
 
 /** Which preset the current window reads as — for the chip + highlight. */
 function timePresetKey(c: Constraints): string {
-    const h = new Date(c.window_start).getHours();
-    const end = new Date(c.window_end).getHours();
+    const h = berlinHour(c.window_start);
+    const end = berlinHour(c.window_end);
 
     if (end - h >= 9) {
         return 'allday';
@@ -811,6 +812,7 @@ export default function Composer() {
     const weekday = constraints
         ? new Date(constraints.window_start).toLocaleDateString('en-GB', {
               weekday: 'long',
+              timeZone: 'Europe/Berlin',
           })
         : null;
 
