@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands\Bureaucracy;
 
+use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\PathGenerator;
 use App\Enums\Situation;
 use App\Models\Task;
-use App\Models\User;
 use App\Profile\Applicability;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
@@ -100,39 +100,9 @@ class CoverageCommand extends Command
      */
     private function personas(): array
     {
-        $seeds = [
-            // label, situation, is_eu, path, entry_mode
-            ['EU employee', Situation::EuEmployee, true, null, 'has_permit'],
-            ['EU student', Situation::Student, true, null, 'has_permit'],
-            ['EU freelancer (liberal)', Situation::Freelancer, true, null, 'has_permit'],
-            ['EU freelancer (Gewerbe)', Situation::Freelancer, true, 'freelancer_gewerbe', 'has_permit'],
-            ['Non-EU employee · standard · D-visa', Situation::NonEuEmployee, false, null, 'd_visa'],
-            ['Non-EU employee · standard · visa-free', Situation::NonEuEmployee, false, null, 'visa_free'],
-            ['Non-EU employee · standard · has permit', Situation::NonEuEmployee, false, null, 'has_permit'],
-            ['Non-EU employee · Blue Card · D-visa', Situation::NonEuEmployee, false, 'non_eu_employee_blue_card', 'd_visa'],
-            ['Non-EU employee · Chancenkarte · visa-free', Situation::NonEuEmployee, false, 'non_eu_employee_chancenkarte', 'visa_free'],
-            ['Non-EU student · D-visa', Situation::Student, false, null, 'd_visa'],
-            ['Non-EU freelancer (liberal §21.5) · D-visa', Situation::Freelancer, false, null, 'd_visa'],
-            ['Non-EU freelancer (Gewerbe §21.1) · D-visa', Situation::Freelancer, false, 'freelancer_gewerbe', 'd_visa'],
-            ['Family reunification → non-EU sponsor', Situation::FamilyReunification, false, null, 'd_visa'],
-            ['Family reunification → German sponsor', Situation::FamilyReunification, false, 'family_reunification_of_german', 'd_visa'],
-            ['Family reunification → EU sponsor', Situation::FamilyReunification, false, 'family_reunification_of_eu_citizen', 'visa_free'],
-            ['Digital nomad / other · non-EU', Situation::DigitalNomad, false, null, 'visa_free'],
-            ['Still figuring it out (Other) · EU', Situation::Other, true, null, 'has_permit'],
-        ];
-
         $personas = [];
-        foreach ($seeds as [$label, $situation, $isEu, $path, $entry]) {
-            $base = [
-                'label' => $label,
-                'situation' => $situation,
-                'is_eu' => $isEu,
-                'path' => $path,
-                'entry_mode' => $entry,
-                'housing_status' => 'long_term',
-                'license_country' => null,
-                'life' => [],
-            ];
+        foreach (BureaucracyPersonas::coverage() as $seed) {
+            $base = [...$seed, 'housing' => 'long_term', 'license' => null, 'life' => []];
 
             if (! $this->option('full')) {
                 $personas[] = $base;
@@ -150,10 +120,9 @@ class CoverageCommand extends Command
                         foreach ([[], ['child_born'], ['graduated'], ['child_born', 'graduated']] as $life) {
                             $personas[] = [
                                 ...$base,
-                                'label' => $label,
                                 'entry_mode' => $entryMode,
-                                'housing_status' => $housing,
-                                'license_country' => $license,
+                                'housing' => $housing,
+                                'license' => $license,
                                 'life' => $life,
                             ];
                         }
@@ -170,29 +139,7 @@ class CoverageCommand extends Command
      */
     private function profileFor(array $persona): Profile
     {
-        $attributes = [
-            'entry_mode' => $persona['entry_mode'],
-            'housing_status' => $persona['housing_status'],
-        ];
-        if ($persona['license_country'] !== null) {
-            $attributes['license_country'] = $persona['license_country'];
-        }
-        // Life events are date-valued: recording one wakes its gated tasks.
-        foreach ($persona['life'] as $event) {
-            $attributes["{$event}_at"] = now()->subMonth()->toDateString();
-        }
-
-        $user = new User([
-            'situation' => $persona['situation']->value,
-            'is_eu' => $persona['is_eu'],
-            'bureaucracy_path' => $persona['path'],
-            'arrival_date' => now()->subDays(10)->toDateString(),
-            'veedel' => 'Altstadt-Nord',
-            'profile_attributes' => $attributes,
-            'interests' => [],
-        ]);
-
-        return $this->engine->build($user);
+        return $this->engine->build(BureaucracyPersonas::userFor($persona));
     }
 
     /**
