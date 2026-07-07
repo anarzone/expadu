@@ -13,6 +13,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
+import { PlaceGlyph } from '@/components/departures/place-glyph';
 import type {
     Destination,
     FareAdvice,
@@ -45,22 +46,6 @@ export type SavedPlace = {
 
 function isTransitLeg(leg: JourneyLeg): boolean {
     return leg.mode !== 'walk' && leg.mode !== 'bike';
-}
-
-function placeEmoji(place: SavedPlace): string {
-    if (place.emoji) {
-        return place.emoji;
-    }
-
-    if (place.category === 'home') {
-        return '🏠';
-    }
-
-    if (place.category === 'work') {
-        return '💼';
-    }
-
-    return '📍';
 }
 
 function transferText(journey: Journey): string {
@@ -1485,7 +1470,7 @@ export function JourneyPlanner({
                                 onClick={() =>
                                     onPlan({
                                         name: place.name,
-                                        emoji: placeEmoji(place),
+                                        emoji: place.emoji ?? undefined,
                                         lat: place.lat,
                                         lng: place.lng,
                                     })
@@ -1496,7 +1481,11 @@ export function JourneyPlanner({
                                         : 'border-border bg-card text-foreground hover:border-primary'
                                 }`}
                             >
-                                <span>{placeEmoji(place)}</span>
+                                <PlaceGlyph
+                                    emoji={place.emoji}
+                                    category={place.category}
+                                    size={16}
+                                />
                                 {place.name}
                             </button>
                         ))}
