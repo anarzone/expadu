@@ -23,9 +23,15 @@ class TravelEstimator implements EstimatesTravel
 
     private const WALK_MAX_KM = 1.2;
 
-    /** Nothing in Cologne is further than this; beyond it the input coords
-     *  are bad (a mis-geocoded venue), so clamp rather than show 1500 min. */
-    private const MAX_MIN = 90;
+    /** Nothing in greater Cologne is further than this from any origin in the
+     *  metro; a larger straight line means the input coords are bad (a venue
+     *  mis-geocoded to another city). Only THOSE are capped — real distances
+     *  keep their honest, distinct minutes so the "X min away" label never
+     *  collapses a 12 km spot and a 3 km spot to the same number. */
+    private const MAX_REALISTIC_KM = 50.0;
+
+    /** The number a mis-geocoded row shows instead of an absurd "1500 min". */
+    private const MISGEOCODE_MIN = 90;
 
     public function minutesBetween(float $fromLat, float $fromLng, float $toLat, float $toLng): int
     {
@@ -41,7 +47,15 @@ class TravelEstimator implements EstimatesTravel
      */
     public static function minutesFromKm(float $km, ?TransportMode $mode = null): int
     {
-        $minutes = match ($mode) {
+        // A straight line longer than the metro area is a data error, not a long
+        // trip — cap it so a bad coordinate can't render a nonsensical number.
+        // Real distances are NOT capped: clamping every far venue to one value
+        // is what made distinct distances all read the same "min away".
+        if ($km > self::MAX_REALISTIC_KM) {
+            return self::MISGEOCODE_MIN;
+        }
+
+        return match ($mode) {
             TransportMode::Walk => max(1, (int) ceil($km / self::WALK_KMH * 60)),
             TransportMode::Bike => max(1, (int) ceil($km / self::BIKE_KMH * 60)),
             // transit / unset → the composer's distance-tiered model (unchanged).
@@ -49,8 +63,6 @@ class TravelEstimator implements EstimatesTravel
                 ? max(1, (int) ceil($km / self::WALK_KMH * 60))
                 : self::TRANSIT_OVERHEAD_MIN + (int) ceil($km / self::TRANSIT_KMH * 60),
         };
-
-        return min(self::MAX_MIN, $minutes);
     }
 
     public function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
