@@ -325,7 +325,7 @@ class ComposerController extends Controller
         }
 
         return $constraints->withCategories(array_values(array_unique([
-            ...SpotCategory::finesForCoarse($soloCategory),
+            ...SpotCategory::finesForSelector($soloCategory),
             ...self::COMPLEMENT_FINES,
         ])));
     }
@@ -363,10 +363,10 @@ class ComposerController extends Controller
      *
      * @return list<Role>
      */
-    private function activityRoles(string $coarse): array
+    private function activityRoles(string $selector): array
     {
         return [
-            new Role(SpotCategory::finesForCoarse($coarse), 1, hero: true),
+            new Role(SpotCategory::finesForSelector($selector), 1, hero: true),
             new Role(self::REFUEL_FINES, 1),
             new Role(self::UNWIND_FINES, 1),
         ];

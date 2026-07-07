@@ -630,6 +630,44 @@ test('a solo activity composes an anchored day plus a browse list, not six of th
     expect($optionCats->every(fn ($c) => $c === 'pitch'))->toBeTrue();
 });
 
+test('a solo fine-category activity is the day the plan is built around', function () {
+    // The blocker: 'basketball' rolls up into the coarse 'court' bucket, so the
+    // old finesForCoarse('basketball') returned [] — the hero role and the
+    // widened pool lost the activity entirely, and a "basketball tomorrow" plan
+    // came back as café + park with no basketball anywhere. Same class for
+    // tennis / skatepark / library / bar.
+    $user = composerUser();
+
+    Spot::factory()->create(['name' => 'Hoops Court', 'category' => 'basketball', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.924]);
+    Spot::factory()->create(['name' => 'Streetball Cage', 'category' => 'basketball', 'veedel' => 'Ehrenfeld', 'lat' => 50.950, 'lng' => 6.925]);
+    Spot::factory()->create(['name' => 'Eck Café', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.9491, 'lng' => 6.9241]);
+    Spot::factory()->create(['name' => 'Stadtpark', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.951, 'lng' => 6.926]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(11, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(8)->toIso8601String(),
+            'areas' => [],
+            'categories' => ['basketball'],
+        ],
+    ]);
+
+    $response->assertOk();
+
+    // The plan actually contains the requested activity (the regression), and it
+    // leads as the hero.
+    $planCats = collect($response->json('plan.slots'))->pluck('category');
+    expect($planCats)->toContain('basketball');
+    expect($response->json('plan.slots.0.category'))->toBe('basketball');
+
+    // The browse list is that activity only — never café/park complements.
+    $optionCats = collect($response->json('options'))->pluck('category');
+    expect($optionCats)->not->toBeEmpty();
+    expect($optionCats->every(fn ($c) => $c === 'basketball'))->toBeTrue();
+});
+
 test('compose starts the plan from the resolved origin, not home', function () {
     $user = composerUser(); // confirmed fix at 50.9485, 6.9230
     Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);

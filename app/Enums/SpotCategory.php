@@ -140,6 +140,28 @@ enum SpotCategory: string
         ));
     }
 
+    /**
+     * Fine category values for a selector that may be EITHER a coarse bucket
+     * ('court' → all its fines) OR an already-fine value ('basketball' → itself).
+     *
+     * Mirrors how the composer's feasibility filter widens a request: a fine
+     * value always matches itself. Bare finesForCoarse() returns [] for a fine
+     * value that heads no coarse family of its own (basketball/tennis roll up
+     * into 'court'; library/bar into 'other') — so a solo "basketball" plan was
+     * silently emptied to complements. This never returns [] for a known value,
+     * so the composer builds the day around exactly what was asked for.
+     *
+     * @return list<string>
+     */
+    public static function finesForSelector(string $selector): array
+    {
+        $fines = self::finesForCoarse($selector);
+
+        // Not a coarse bucket → the selector is already a fine value (or an
+        // unknown token like an event category); return it as-is.
+        return $fines !== [] ? $fines : [$selector];
+    }
+
     /** All fine category values that belong to the Places page (non-'other'). */
     public static function placesFines(): array
     {
