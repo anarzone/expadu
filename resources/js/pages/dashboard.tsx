@@ -1434,7 +1434,7 @@ export default function Dashboard() {
 
             {triageToast && (
                 <div className="fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 md:bottom-8">
-                    <div className="flex items-center gap-3 rounded-full bg-foreground py-2 pr-2 pl-4 text-[13px] font-medium text-background shadow-lg">
+                    <div className="flex items-center gap-3 rounded-full border border-transparent bg-foreground py-2 pr-2 pl-4 text-[13px] font-medium text-background shadow-lg dark:border-border dark:bg-secondary dark:text-foreground">
                         <span>{triageToast.text}</span>
                         <button
                             onClick={triageToast.onUndo}
