@@ -188,20 +188,22 @@ export function ChecklistFramingB({
                 </div>
             )}
 
-            {/* Progress hero */}
-            <div className="relative overflow-hidden rounded-[20px] bg-primary p-6 text-white dark:bg-primary">
-                <div className="absolute -top-12 -right-12 size-44 rounded-full bg-white/5" />
-                <div className="text-[10px] font-bold tracking-[0.1em] text-white/65 uppercase">
+            {/* Progress hero — a neutral card with the primary used as an
+                accent (progress fill + done count), matching the Today/Alerts
+                card language rather than a filled colour block. */}
+            <div className="relative overflow-hidden rounded-[20px] border border-border bg-card p-6">
+                <div className="absolute -top-12 -right-12 size-44 rounded-full bg-primary/5" />
+                <div className="text-[10px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
                     Your settlement checklist · {situationLabel}
                     {pathLabel ? ` — ${pathLabel}` : ''}
                 </div>
-                <h2 className="mt-1.5 font-display text-2xl leading-tight font-normal">
+                <h2 className="mt-1.5 font-display text-2xl leading-tight font-normal text-foreground">
                     {allDone
                         ? "🎉 You're all settled."
                         : `${progress.done} of ${progress.total} tasks complete — you're making good progress.`}
                 </h2>
                 {!allDone && nextDeadline && (
-                    <p className="mt-1 text-[13px] text-white/80">
+                    <p className="mt-1 text-[13px] text-muted-foreground">
                         {nextDeadline.days_remaining !== null &&
                         nextDeadline.days_remaining < 0
                             ? 'Overdue'
@@ -209,14 +211,14 @@ export function ChecklistFramingB({
                         : {nextDeadline.title}
                     </p>
                 )}
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/20">
+                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
                     <div
-                        className="h-full bg-white transition-[width] duration-500 ease-out"
+                        className="h-full bg-primary transition-[width] duration-500 ease-out"
                         style={{ width: `${progress.percent}%` }}
                     />
                 </div>
-                <div className="mt-2 flex justify-between font-mono text-[13px] text-white/80">
-                    <span>{progress.done} done</span>
+                <div className="mt-2 flex justify-between font-mono text-[13px] text-muted-foreground">
+                    <span className="text-primary">{progress.done} done</span>
                     <span>{progress.total - progress.done} remaining</span>
                 </div>
             </div>
