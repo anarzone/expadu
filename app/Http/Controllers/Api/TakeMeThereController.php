@@ -9,6 +9,7 @@ use App\Services\DisruptionService;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +31,19 @@ class TakeMeThereController extends Controller
      * imminent departure they could catch isn't dropped as unreachable.
      */
     private const AT_STOP_METRES = 150;
+
+    /**
+     * Outer bound for the "tight" surface. Beyond this a soon departure isn't
+     * realistically catchable, so the walk-folded plan is simply correct and we
+     * don't pay for a second plan.
+     */
+    private const SPRINT_METRES = 500;
+
+    /** Normal walking pace (~5 km/h), for the access walk we quote the user. */
+    private const WALK_M_PER_MIN = 83;
+
+    /** Brisk walk / light jog — the feasibility bound for "could still catch it". */
+    private const SPRINT_M_PER_MIN = 110;
 
     public function __invoke(
         Request $request,
@@ -98,14 +112,36 @@ class TakeMeThereController extends Controller
         $arriveBy = (bool) ($validated['arrive_by'] ?? false);
         $variety = (bool) ($validated['more'] ?? false);
 
-        // If the user is essentially standing at a stop, plan from the stop
-        // itself. The routing engine otherwise folds in the walk to the stop and
-        // drops an imminent departure as "unreachable" — but they can catch it
-        // if they're already there. Show it; let them decide. The response keeps
-        // the real origin so the map + fare still reflect where they are.
-        $planFrom = $this->atStopOrigin($from) ?? $from;
+        // Where the user boards. If they're essentially standing at a stop, plan
+        // from the stop itself — the engine otherwise folds in the walk and drops
+        // an imminent departure as "unreachable" even though they're right there.
+        // The response keeps the real origin so the map + fare still reflect where
+        // they are.
+        $nearest = $this->nearestStop($from);
+        $atStop = $nearest !== null && $nearest['metres'] <= self::AT_STOP_METRES;
 
-        $result = $routes->plan($planFrom, $to, $departAt, 10, $arriveBy, $variety);
+        $result = $routes->plan(
+            $atStop ? $nearest['point'] : $from,
+            $to, $departAt, 10, $arriveBy, $variety,
+        );
+
+        $journeys = array_map(fn (Journey $j) => $j->toArray(), $result->journeys);
+
+        // Near a stop but not at it, on a "leave now" search: the walk-folded plan
+        // drops departures the user might still make at a jog. Surface the single
+        // soonest such departure, flagged "tight", and let them decide.
+        if (! $atStop
+            && $departAt === null
+            && ! $arriveBy
+            && $nearest !== null
+            && $nearest['metres'] <= self::SPRINT_METRES
+        ) {
+            $tight = $this->tightOption($routes, $nearest, $to, $result->journeys);
+
+            if ($tight !== null) {
+                array_unshift($journeys, $tight);
+            }
+        }
 
         // Journey-aware Rheinlandtarif advice for the transit option (walk/bike
         // options are free and carry no ticket). Computed for the first transit
@@ -141,7 +177,9 @@ class TakeMeThereController extends Controller
             ->all();
 
         return response()->json([
-            ...$result->toArray(),
+            'source' => $result->source,
+            'journeys' => $journeys,
+            'degraded' => $result->degraded,
             'from' => ['name' => $fromName, 'lat' => $from->lat, 'lng' => $from->lng],
             'to' => ['name' => $validated['to_name'] ?? '', 'lat' => $to->lat, 'lng' => $to->lng],
             'ticket' => $ticket,
@@ -150,19 +188,20 @@ class TakeMeThereController extends Controller
     }
 
     /**
-     * The nearest transit stop when the origin is within {@see self::AT_STOP_METRES}
-     * of it — i.e. the user is basically on the platform, so the plan should
-     * start there. GPS at a stop reads tens of metres off, hence a generous
-     * radius. Null when nothing is that close (plan from the real origin).
+     * The nearest boardable transit stop to an origin, with its crow-flies
+     * distance and name. Ordered by a cheap Manhattan proxy in SQL, then the real
+     * haversine on the winner. Null when the feed has no located stops.
+     *
+     * @return array{point: GeoPoint, metres: float, name: string}|null
      */
-    private function atStopOrigin(GeoPoint $from): ?GeoPoint
+    private function nearestStop(GeoPoint $from): ?array
     {
         $stop = GtfsStop::query()
             ->where('location_type', 0)
             ->whereNotNull('stop_lat')
             ->whereNotNull('stop_lng')
             ->selectRaw(
-                'stop_lat, stop_lng, (ABS(stop_lat - ?) + ABS(stop_lng - ?)) as dist',
+                'stop_name, stop_lat, stop_lng, (ABS(stop_lat - ?) + ABS(stop_lng - ?)) as dist',
                 [$from->lat, $from->lng],
             )
             ->orderBy('dist')
@@ -172,13 +211,84 @@ class TakeMeThereController extends Controller
             return null;
         }
 
-        $metres = $this->metresBetween(
-            $from->lat, $from->lng, (float) $stop->stop_lat, (float) $stop->stop_lng,
-        );
+        return [
+            'point' => new GeoPoint((float) $stop->stop_lat, (float) $stop->stop_lng),
+            'metres' => $this->metresBetween(
+                $from->lat, $from->lng, (float) $stop->stop_lat, (float) $stop->stop_lng,
+            ),
+            'name' => (string) $stop->stop_name,
+        ];
+    }
 
-        return $metres <= self::AT_STOP_METRES
-            ? new GeoPoint((float) $stop->stop_lat, (float) $stop->stop_lng)
-            : null;
+    /**
+     * The soonest departure from {@see $nearest} that the walk-folded plan drops
+     * as unreachable but the user could still catch at a brisk pace — annotated
+     * with the access walk so the UI can flag it "tight". A second plan from the
+     * stop (zero access walk) surfaces the imminent departures; we keep only one
+     * that (a) leaves sooner than anything the safe plan already offers and
+     * (b) is reachable at a jog. Null when there's nothing worth the hustle.
+     *
+     * @param  array{point: GeoPoint, metres: float, name: string}  $nearest
+     * @param  list<Journey>  $safeJourneys
+     * @return array<string, mixed>|null
+     */
+    private function tightOption(RouteService $routes, array $nearest, GeoPoint $to, array $safeJourneys): ?array
+    {
+        $now = CarbonImmutable::now();
+        $walkMin = $nearest['metres'] / self::WALK_M_PER_MIN;
+        $hustleMin = $nearest['metres'] / self::SPRINT_M_PER_MIN;
+
+        // The soonest transit departure the safe plan already offers — a tight
+        // option is only worth showing if it beats this.
+        $safeEarliest = null;
+        foreach ($safeJourneys as $journey) {
+            if ($journey->mode() !== 'transit') {
+                continue;
+            }
+            if ($safeEarliest === null || $journey->departAt->lt($safeEarliest)) {
+                $safeEarliest = $journey->departAt;
+            }
+        }
+
+        // Nothing sooner than the safe plan is catchable even at a jog — skip the
+        // extra plan entirely.
+        if ($safeEarliest !== null
+            && ($safeEarliest->getTimestamp() - $now->getTimestamp()) / 60 <= $hustleMin
+        ) {
+            return null;
+        }
+
+        $stopResult = $routes->plan($nearest['point'], $to, null, 10, false, false);
+
+        $best = null;
+        foreach ($stopResult->journeys as $journey) {
+            if ($journey->mode() !== 'transit') {
+                continue;
+            }
+
+            $departsInMin = ($journey->departAt->getTimestamp() - $now->getTimestamp()) / 60;
+
+            if ($departsInMin < $hustleMin) {
+                continue; // gone before they could reach the stop, even at a jog
+            }
+            if ($safeEarliest !== null && ! $journey->departAt->lt($safeEarliest)) {
+                continue; // no sooner than an option they can make comfortably
+            }
+            if ($best === null || $journey->departAt->lt($best->departAt)) {
+                $best = $journey;
+            }
+        }
+
+        if ($best === null) {
+            return null;
+        }
+
+        return [
+            ...$best->toArray(),
+            'tight' => true,
+            'access_walk_min' => max(1, (int) round($walkMin)),
+            'access_stop_name' => $nearest['name'],
+        ];
     }
 
     private function metresBetween(float $lat1, float $lng1, float $lat2, float $lng2): float
