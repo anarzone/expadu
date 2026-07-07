@@ -11,6 +11,10 @@ class ServicesController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Services directory isn't launch-ready yet — render a coming-soon screen
+        // and skip the provider query below. Delete this guard to re-enable it.
+        return Inertia::render('services', ['comingSoon' => true]);
+
         $user = $request->user();
         $home = $user->places()->orderBy('sort_order')->first();
         $lat = $home?->lat ?? 50.9375;

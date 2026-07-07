@@ -1,9 +1,11 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { IconFirstAidKit } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { ServiceCard } from '@/components/services/service-card';
 import type { ServiceData } from '@/components/services/service-card';
 import { ServicesRightPanel } from '@/components/services/services-right-panel';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
 
 // ============================================================
@@ -81,10 +83,51 @@ const CATEGORIES = [
 // Page Component
 // ============================================================
 
+/**
+ * Launch gate: the services directory isn't ready yet (provider data + the v4
+ * redesign are still pending), so the page shows a coming-soon screen. The
+ * server sends `comingSoon` from ServicesController — remove that flag there to
+ * restore the directory below.
+ */
+function ServicesComingSoon() {
+    return (
+        <AppLayout
+            breadcrumbs={[{ title: 'Services', href: '/services' }]}
+            rightPanel={null}
+        >
+            <Head title="Services" />
+            <div className="mx-auto flex min-h-[68vh] w-full max-w-[540px] flex-col items-center justify-center px-6 text-center">
+                <span className="mb-6 flex size-16 items-center justify-center rounded-[20px] bg-accent-soft text-primary shadow-sm">
+                    <IconFirstAidKit size={30} stroke={ICON_STROKE} />
+                </span>
+                <span className="mb-3 font-mono text-[11px] font-medium tracking-[0.16em] text-primary uppercase">
+                    Coming soon
+                </span>
+                <h1 className="font-display text-[30px] leading-[1.15] font-medium tracking-[-0.02em]">
+                    A directory you can trust
+                </h1>
+                <p className="mt-3.5 max-w-[440px] text-[15px] leading-relaxed text-text-2">
+                    English-speaking doctors, dentists, tax advisors, lawyers
+                    and more — insurance-aware and sorted by what’s nearest.
+                    We’re vetting providers now so every listing earns its
+                    place.
+                </p>
+                <Link
+                    href="/dashboard"
+                    className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover"
+                >
+                    Back to Today
+                </Link>
+            </div>
+        </AppLayout>
+    );
+}
+
 export default function Services() {
-    const { dbServices, categoryCounts } = usePage<{
+    const { dbServices, categoryCounts, comingSoon } = usePage<{
         dbServices?: DbService[];
         categoryCounts?: Record<string, number>;
+        comingSoon?: boolean;
     }>().props;
 
     const [activeCat, setActiveCat] = useState('all');
@@ -115,6 +158,10 @@ export default function Services() {
             return matchCat && matchQ;
         });
     }, [services, activeCat, search]);
+
+    if (comingSoon) {
+        return <ServicesComingSoon />;
+    }
 
     return (
         <AppLayout
