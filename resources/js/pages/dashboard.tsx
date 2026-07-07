@@ -200,7 +200,12 @@ const TILE_RESOLVE: Record<
     },
     transit_disruption: { verb: 'See routes', href: '/alerts' },
     transit_delay: { verb: 'See routes', href: '/alerts' },
-    weather_alert: { verb: 'Plan around it', href: '/composer' },
+    weather_alert: {
+        verb: 'Plan around it',
+        // Carry a prompt so the CTA composes a plan (rain-aware via the scorer)
+        // instead of dead-ending on the empty composer.
+        href: `/composer?prompt=${encodeURIComponent('plan my day today')}`,
+    },
     tonight_events: { verb: 'Take me there', href: '/events' },
     rhine_level: { verb: 'See details', href: '/alerts' },
 };

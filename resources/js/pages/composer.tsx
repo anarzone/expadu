@@ -1709,10 +1709,29 @@ export default function Composer() {
                             stroke={ICON_STROKE}
                             className="mx-auto mb-2 text-muted-foreground"
                         />
-                        <p className="text-sm text-muted-foreground">
-                            Tell me about your day on the Today screen and I'll
-                            compose it.
+                        <p className="mb-4 text-sm text-muted-foreground">
+                            Tell me about your day and I'll compose it — or
+                            start from one of these:
                         </p>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            {[
+                                'Free afternoon nearby',
+                                'Something to do today',
+                                'Plan my weekend',
+                            ].map((starter) => (
+                                <button
+                                    key={starter}
+                                    onClick={() =>
+                                        router.visit(
+                                            `/composer?prompt=${encodeURIComponent(starter)}`,
+                                        )
+                                    }
+                                    className="rounded-full border border-border px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+                                >
+                                    {starter}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
