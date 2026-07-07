@@ -483,6 +483,10 @@ export default function Composer() {
     }, []);
     // Debounce handle for the From address search.
     const fromSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Bumped on every compose so a slower earlier request can't overwrite a
+    // newer one — rapid chip edits otherwise raced and could leave a plan that
+    // didn't match the chips on screen.
+    const composeGenRef = useRef(0);
 
     const runCompose = useCallback(
         async (
@@ -493,6 +497,7 @@ export default function Composer() {
                 excluded?: string[];
             } = {},
         ) => {
+            const gen = ++composeGenRef.current;
             setComposing(true);
             setError(null);
 
@@ -516,6 +521,12 @@ export default function Composer() {
                     // (coords resolved server-side) or a searched / pinned point.
                     ...fromParams(fromOverrideRef.current),
                 });
+
+                // A newer compose has started — drop this stale response.
+                if (gen !== composeGenRef.current) {
+                    return;
+                }
+
                 setPlan(json.plan);
                 setOptions(json.options ?? json.plan.slots);
                 setNotices(json.notices ?? []);
@@ -526,11 +537,19 @@ export default function Composer() {
                     setFacets(json.facets);
                 }
             } catch {
+                if (gen !== composeGenRef.current) {
+                    return;
+                }
+
                 setError(
                     'Could not compose your day. Try adjusting the chips.',
                 );
             } finally {
-                setComposing(false);
+                // Only the latest compose clears the spinner, so a stale one
+                // finishing mid-flight can't hide that a newer one is running.
+                if (gen === composeGenRef.current) {
+                    setComposing(false);
+                }
             }
         },
         [pins],
