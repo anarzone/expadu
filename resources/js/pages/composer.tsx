@@ -1709,7 +1709,7 @@ export default function Composer() {
                                     <button
                                         onClick={saveToToday}
                                         disabled={saving}
-                                        className="flex-1 rounded-[12px] bg-foreground py-[13px] text-[15px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+                                        className="flex-1 rounded-[12px] border border-transparent bg-foreground py-[13px] text-[15px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60 dark:border-border dark:bg-secondary dark:text-foreground"
                                     >
                                         {saving ? 'Saving…' : 'Save to Today'}
                                     </button>

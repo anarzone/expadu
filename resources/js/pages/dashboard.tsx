@@ -1165,7 +1165,7 @@ export default function Dashboard() {
                                 <button
                                     onClick={() => void savePreviewToToday()}
                                     disabled={savingPreview}
-                                    className="flex-1 cursor-pointer rounded-[10px] bg-foreground py-2.5 text-[13px] font-semibold whitespace-nowrap text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+                                    className="flex-1 cursor-pointer rounded-[10px] border border-transparent bg-foreground py-2.5 text-[13px] font-semibold whitespace-nowrap text-background transition-opacity hover:opacity-90 disabled:opacity-60 dark:border-border dark:bg-secondary dark:text-foreground"
                                 >
                                     {savingPreview
                                         ? 'Saving…'
