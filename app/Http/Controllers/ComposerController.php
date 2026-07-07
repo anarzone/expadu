@@ -470,20 +470,13 @@ class ComposerController extends Controller
             return response()->json(['message' => 'This slot is fixed and cannot be swapped.'], 422);
         }
 
-        if (isset($plan->slots[$slotIndex])) {
-            $outgoing = $plan->slots[$slotIndex]->candidate;
+        // The pick being swapped away is added to this slot's reject list so the
+        // swapper never re-offers it. The negative intent signal, though, is only
+        // recorded once the swap actually lands (below) — writing it here punished
+        // the category even when the swap 422'd for "no alternative fits".
+        $outgoing = $plan->slots[$slotIndex]->candidate ?? null;
+        if ($outgoing !== null) {
             $rejected[] = $outgoing->id;
-
-            // Swap-away is a negative intent signal for the scorer.
-            UserEvent::create([
-                'user_id' => $user->id,
-                'event_type' => 'composer_swap_away',
-                'payload' => [
-                    'candidate_id' => $outgoing->id,
-                    'category' => $outgoing->category,
-                    'veedel' => $outgoing->veedel,
-                ],
-            ]);
         }
 
         $profile = $profiles->build($user);
@@ -518,6 +511,20 @@ class ComposerController extends Controller
 
         if ($swapped === null) {
             return response()->json(['message' => 'No alternative fits this slot.'], 422);
+        }
+
+        // The swap landed — record the swap-away as a negative intent signal now,
+        // never before the attempt (a failed swap must not skew the scorer).
+        if ($outgoing !== null) {
+            UserEvent::create([
+                'user_id' => $user->id,
+                'event_type' => 'composer_swap_away',
+                'payload' => [
+                    'candidate_id' => $outgoing->id,
+                    'category' => $outgoing->category,
+                    'veedel' => $outgoing->veedel,
+                ],
+            ]);
         }
 
         // Re-narrate so the swapped slot (and the one after it) keep their "why".

@@ -549,6 +549,32 @@ test('a pinned spot is anchored into the plan even when it ranks low', function 
     expect(collect($response->json('plan.slots'))->pluck('id'))->toContain("spot:{$pinned->id}");
 });
 
+test('a swap that finds no alternative 422s without recording a negative signal', function () {
+    $user = composerUser();
+
+    // Exactly one feasible spot: it fills the only slot, so swapping it has
+    // nothing to swap TO — the swapper returns null and the endpoint 422s. The
+    // swap-away signal must not have been recorded for a swap that never landed.
+    Spot::factory()->create(['name' => 'Lonely Cafe', 'category' => 'cafe', 'lat' => 50.9485, 'lng' => 6.9230]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $compose = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(2)->toIso8601String(),
+        ],
+    ]);
+    $compose->assertOk();
+    $idx = collect($compose->json('plan.slots'))->search(fn ($s) => $s['swappable'] === true);
+    expect($idx)->not->toBeFalse();
+
+    $this->postJson('/composer/swap', ['slot' => $idx])->assertUnprocessable();
+
+    expect(UserEvent::where('user_id', $user->id)->where('event_type', 'composer_swap_away')->exists())
+        ->toBeFalse();
+});
+
 test('swap without a stored plan 404s', function () {
     $this->actingAs(composerUser());
 
