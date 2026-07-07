@@ -59,6 +59,13 @@ export type Journey = {
     duration_min: number;
     transfers: number;
     legs: JourneyLeg[];
+    /** A departure the walk-folded plan drops as unreachable, surfaced anyway so
+     * the user can decide to jog for it. Present only on that one option. */
+    tight?: boolean;
+    /** Minutes on foot to the boarding stop — the walk this option omits. */
+    access_walk_min?: number;
+    /** Name of that boarding stop, for the "N-min walk to …" flag. */
+    access_stop_name?: string;
 };
 
 export type JourneyResponse = {

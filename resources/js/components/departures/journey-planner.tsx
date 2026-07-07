@@ -7,6 +7,7 @@ import {
     IconChevronRight,
     IconClock,
     IconPlayerPlayFilled,
+    IconRun,
     IconTicket,
     IconWalk,
 } from '@tabler/icons-react';
@@ -270,6 +271,53 @@ function RouteCard({
                 <LegChips legs={journey.legs} />
                 <span className="ml-auto shrink-0 font-mono text-[12.5px] text-muted-foreground">
                     {journey.depart_time} → {journey.arrive_time}
+                </span>
+            </div>
+        </button>
+    );
+}
+
+/**
+ * The "leave now" option: a departure the walk-folded plan drops as unreachable,
+ * shown anyway with the access walk it omits so the user can decide to jog for
+ * it. Amber-flagged (a caution, not a recommendation) and always led with — it's
+ * the soonest thing they might still make.
+ */
+function TightCard({
+    journey,
+    onStart,
+}: {
+    journey: Journey;
+    onStart: () => void;
+}) {
+    const walk = journey.access_walk_min ?? 0;
+    const stop = journey.access_stop_name ?? 'the stop';
+
+    return (
+        <button
+            onClick={onStart}
+            className="animate-fade-up w-full rounded-2xl border border-[#ffc24d8c] bg-[#ffc24d1a] p-4 text-left shadow-sm transition-colors hover:border-[#ffc24d] md:px-[18px] dark:border-[#ffc24d66] dark:bg-[#ffc24d14]"
+        >
+            <div className="mb-3 flex items-center gap-2.5">
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#ffc24d33] px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] text-[#9a6300] uppercase dark:text-[#f0b64a]">
+                    <IconRun size={12} stroke={2.4} />
+                    Leave now
+                </span>
+                <span className="min-w-0 truncate text-[12.5px] text-text-3">
+                    {walk} min walk to {stop} · tight
+                </span>
+                <span className="ml-auto shrink-0 font-display text-[22px] leading-none font-semibold">
+                    {journey.duration_min}
+                    <span className="font-mono text-[13px] text-text-3">
+                        {' '}
+                        min
+                    </span>
+                </span>
+            </div>
+            <div className="flex items-center gap-2">
+                <LegChips legs={journey.legs} />
+                <span className="ml-auto shrink-0 font-mono text-[12.5px] text-muted-foreground">
+                    dep {journey.depart_time}
                 </span>
             </div>
         </button>
@@ -1174,7 +1222,9 @@ export function JourneyPlanner({
     // (direct-with-a-longer-walk vs. an-extra-change-with-less) is available;
     // the filter chips sort/subset it below.
     const items = useMemo<RouteItem[]>(() => {
-        const list = data?.journeys ?? [];
+        // The "leave now" option is handled on its own (below) — keep it out of
+        // the ranked, deduped, filterable pool so it always shows first as-is.
+        const list = (data?.journeys ?? []).filter((j) => !j.tight);
         const disruptions = data?.disruptions ?? [];
         // One card per distinct line-combination so the list reads as different
         // routes, not the same one repeated every ten minutes (MOTIS returns
@@ -1244,6 +1294,13 @@ export function JourneyPlanner({
 
         return [best, ...rest, ...direct].map(toItem);
     }, [data, arriveBy]);
+
+    // The single "leave now" option (if the backend flagged one), kept out of the
+    // ranked list so filters and dedup never touch it — always led with, as-is.
+    const tight = useMemo(
+        () => (data?.journeys ?? []).find((j) => j.tight) ?? null,
+        [data],
+    );
 
     // Transit modes present in the current results — drives the toggles.
     const availableModes = useMemo(() => {
@@ -1628,6 +1685,22 @@ export function JourneyPlanner({
             {data && data.source !== 'degraded' && items.length > 0 && (
                 <>
                     {data.ticket && <FareLine fare={data.ticket} />}
+
+                    {tight && (
+                        <div className="mb-2.5 flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                                <TightCard
+                                    journey={tight}
+                                    onStart={() => setSelected(tight)}
+                                />
+                            </div>
+                            <IconChevronRight
+                                size={18}
+                                stroke={ICON_STROKE}
+                                className="shrink-0 text-text-3"
+                            />
+                        </div>
+                    )}
 
                     {availableModes.length > 1 && (
                         <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
