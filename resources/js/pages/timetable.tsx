@@ -3,14 +3,19 @@ import {
     IconAlertTriangle,
     IconArrowRight,
     IconBan,
+    IconBus,
     IconHistory,
+    IconTrain,
+    IconTrainFilled,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
 import { TileField } from '@/components/departures/flip-digit';
 import { JourneyPlanner } from '@/components/departures/journey-planner';
 import type { SavedPlace } from '@/components/departures/journey-planner';
+import { PlaceGlyph } from '@/components/departures/place-glyph';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { ICON_STROKE } from '@/constants/icons';
@@ -94,11 +99,24 @@ function haversineM(
     return r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const MODE_TABS: { key: Mode; label: string }[] = [
+type ModeTab = {
+    key: Mode;
+    label: string;
+    Icon?: ComponentType<{
+        size?: number;
+        stroke?: number;
+        className?: string;
+    }>;
+};
+
+// Neutral mode icons: they inherit the tab's own text colour (light/dark safe).
+// Tabler has one rail glyph, so Tram is the outline train and Train the filled
+// one — distinct without relying on colour.
+const MODE_TABS: ModeTab[] = [
     { key: 'all', label: 'All' },
-    { key: 'tram', label: '🚊 Tram' },
-    { key: 'bus', label: '🚌 Bus' },
-    { key: 'rail', label: '🚆 Train' },
+    { key: 'tram', label: 'Tram', Icon: IconTrain },
+    { key: 'bus', label: 'Bus', Icon: IconBus },
+    { key: 'rail', label: 'Train', Icon: IconTrainFilled },
 ];
 
 /**
@@ -106,9 +124,7 @@ const MODE_TABS: { key: Mode; label: string }[] = [
  * a bus-only stop shows no Tram/Train tab, an S-Bahn station gains a Train tab.
  * "All" is always present. Until the boards load, show just "All".
  */
-function availableTabs(
-    boards: Boards | undefined,
-): { key: Mode; label: string }[] {
+function availableTabs(boards: Boards | undefined): ModeTab[] {
     return MODE_TABS.filter(
         (t) => t.key === 'all' || (boards?.[t.key]?.departures.length ?? 0) > 0,
     );
@@ -214,22 +230,6 @@ function altSuggestion(deps: Departure[]): Alt | null {
         altColor: alt.color,
         altLine: alt.line,
     };
-}
-
-function placeEmoji(place: SavedPlace): string {
-    if (place.emoji) {
-        return place.emoji;
-    }
-
-    if (place.category === 'home') {
-        return '🏠';
-    }
-
-    if (place.category === 'work') {
-        return '💼';
-    }
-
-    return '📍';
 }
 
 /** A ticking wall clock (HH:MM) — the board's "live" heartbeat. */
@@ -651,11 +651,13 @@ function JourneyEntryCard({
 }) {
     // Quick-launch pills: saved places first, recent destinations fill the
     // rest (deduplicated by name), four max.
-    // emoji is the pill's leading glyph; null marks a recent, which renders the
-    // Tabler history icon instead of an emoji (matches the search dropdown).
+    // Each pill carries its leading glyph (a saved place's emoji or category
+    // icon, or the recent-history icon) plus the emoji to pass along when
+    // planning (custom emoji only — a default place plans without one).
     const pills: Array<{
         key: string;
-        emoji: string | null;
+        glyph: ReactNode;
+        planEmoji: string | undefined;
         name: string;
         lat: number;
         lng: number;
@@ -664,7 +666,14 @@ function JourneyEntryCard({
     for (const place of savedPlaces) {
         pills.push({
             key: `s-${place.id}`,
-            emoji: placeEmoji(place),
+            glyph: (
+                <PlaceGlyph
+                    emoji={place.emoji}
+                    category={place.category}
+                    size={14}
+                />
+            ),
+            planEmoji: place.emoji ?? undefined,
             name: place.name,
             lat: place.lat,
             lng: place.lng,
@@ -679,7 +688,14 @@ function JourneyEntryCard({
         ) {
             pills.push({
                 key: `r-${recent.name}`,
-                emoji: null,
+                glyph: (
+                    <IconHistory
+                        size={14}
+                        stroke={ICON_STROKE}
+                        className="shrink-0"
+                    />
+                ),
+                planEmoji: undefined,
                 name: recent.name,
                 lat: recent.lat,
                 lng: recent.lng,
@@ -755,22 +771,14 @@ function JourneyEntryCard({
                             onClick={() =>
                                 onPlan({
                                     name: pill.name,
-                                    emoji: pill.emoji ?? undefined,
+                                    emoji: pill.planEmoji,
                                     lat: pill.lat,
                                     lng: pill.lng,
                                 })
                             }
                             className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1.5 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                         >
-                            {pill.emoji ? (
-                                <span>{pill.emoji}</span>
-                            ) : (
-                                <IconHistory
-                                    size={14}
-                                    stroke={ICON_STROKE}
-                                    className="shrink-0"
-                                />
-                            )}
+                            {pill.glyph}
                             {pill.name}
                         </button>
                     ))}
@@ -1254,12 +1262,19 @@ export default function Timetable() {
                                 <button
                                     key={tab.key}
                                     onClick={() => setMode(tab.key)}
-                                    className={`cursor-pointer rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
+                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
                                         mode === tab.key
                                             ? 'border-foreground bg-foreground text-background'
                                             : 'border-border bg-card text-muted-foreground hover:border-primary'
                                     }`}
                                 >
+                                    {tab.Icon && (
+                                        <tab.Icon
+                                            size={16}
+                                            stroke={ICON_STROKE}
+                                            className="shrink-0"
+                                        />
+                                    )}
                                     {tab.label}
                                 </button>
                             ))}
