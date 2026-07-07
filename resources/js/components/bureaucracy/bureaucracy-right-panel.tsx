@@ -33,7 +33,7 @@ const TIER_STYLES: Record<string, string> = {
         'bg-[#FDE8E6] text-[#C4271A] dark:bg-[#C4271A]/25 dark:text-[#FF7D70]',
     urgent: 'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
     approaching:
-        'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#5B8DEF]',
+        'bg-primary-soft text-primary dark:bg-primary/20 dark:text-primary',
     on_track:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
 };

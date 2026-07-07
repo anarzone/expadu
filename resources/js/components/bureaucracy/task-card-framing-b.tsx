@@ -78,7 +78,7 @@ export type FramingBTask = {
 const TONE_CLASSES: Record<FramingBTask['status_tone'], string> = {
     neutral:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
-    info: 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#5B8DEF]',
+    info: 'bg-primary-soft text-primary dark:bg-primary/20 dark:text-primary',
     warn: 'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
     success:
         'bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20 dark:text-[#4FB489]',
@@ -104,7 +104,7 @@ const TIER_CLASSES: Record<FramingBTask['deadline_tier'], string> = {
         'bg-[#FDE8E6] text-[#C4271A] dark:bg-[#C4271A]/25 dark:text-[#FF7D70]',
     urgent: 'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
     approaching:
-        'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#5B8DEF]',
+        'bg-primary-soft text-primary dark:bg-primary/20 dark:text-primary',
     on_track:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
     no_deadline:
@@ -118,7 +118,7 @@ const TYPE_CHIPS: Partial<
 > = {
     wait: {
         label: '📬 Arrives by post',
-        cls: 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#5B8DEF]',
+        cls: 'bg-primary-soft text-primary dark:bg-primary/20 dark:text-primary',
     },
     decision: {
         label: '⚖️ A decision, not a chore',
@@ -387,7 +387,7 @@ export function TaskCardFramingB({
                                             { preserveScroll: true },
                                         );
                                     }}
-                                    className="shrink-0 cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                                    className="shrink-0 cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                                 >
                                     I've moved in →
                                 </button>
@@ -416,7 +416,7 @@ export function TaskCardFramingB({
                                                     { preserveScroll: true },
                                                 );
                                             }}
-                                            className="cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                                            className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                                         >
                                             Set expiry
                                         </button>
@@ -481,7 +481,7 @@ export function TaskCardFramingB({
                             <ol className="space-y-3">
                                 {task.how_to_steps.map((step, i) => (
                                     <li key={i} className="flex gap-3">
-                                        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#EBF0FD] text-[11px] font-bold text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#5B8DEF]">
+                                        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[11px] font-bold text-primary dark:bg-primary/20 dark:text-primary">
                                             {i + 1}
                                         </span>
                                         <div className="min-w-0 flex-1">
@@ -496,7 +496,7 @@ export function TaskCardFramingB({
                                                     href={step.link}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[#1A4CD4] hover:underline dark:text-[#5B8DEF]"
+                                                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline dark:text-primary"
                                                 >
                                                     Open link
                                                     <IconExternalLink
@@ -548,7 +548,7 @@ export function TaskCardFramingB({
                                                 onChange={() =>
                                                     toggleDoc(label)
                                                 }
-                                                className="mt-0.5 size-4 shrink-0 cursor-pointer accent-[#1A4CD4]"
+                                                className="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary"
                                             />
                                             <span className="min-w-0 flex-1">
                                                 <span
@@ -572,7 +572,7 @@ export function TaskCardFramingB({
                                                     ))}
                                                 {typeof doc !== 'string' &&
                                                     doc.from_title && (
-                                                        <span className="mt-0.5 block text-[11px] text-[#1A4CD4] dark:text-[#8FAAF0]">
+                                                        <span className="mt-0.5 block text-[11px] text-primary dark:text-primary">
                                                             ← you get this from
                                                             "{doc.from_title}"
                                                         </span>
@@ -618,7 +618,7 @@ export function TaskCardFramingB({
                                     href={task.booking_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#1A4CD4] px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                                 >
                                     Book appointment{' '}
                                     <IconExternalLink size={14} stroke={1.8} />
@@ -627,7 +627,7 @@ export function TaskCardFramingB({
                             {task.office && onTakeMeThere && (
                                 <button
                                     onClick={() => onTakeMeThere(task.office!)}
-                                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] font-semibold text-[#18170F] transition-colors hover:border-primary dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-primary"
                                     title={`${task.office.name} — ${task.office.address}`}
                                 >
                                     🚌 Take me there
@@ -639,7 +639,7 @@ export function TaskCardFramingB({
                                     href={link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] font-semibold text-[#1A4CD4] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#5B8DEF]"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] font-semibold text-primary transition-colors hover:border-primary dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-primary"
                                 >
                                     {new URL(link).hostname.replace('www.', '')}{' '}
                                     <IconExternalLink size={12} stroke={1.8} />
@@ -671,7 +671,7 @@ export function TaskCardFramingB({
                                     <button
                                         onClick={saveAppointment}
                                         disabled={busy}
-                                        className={`cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
+                                        className={`cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
                                     >
                                         Save
                                     </button>
@@ -713,8 +713,8 @@ export function TaskCardFramingB({
                                         disabled={busy || active}
                                         className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-all ${
                                             active
-                                                ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white dark:border-[#5B8DEF] dark:bg-[#5B8DEF]'
-                                                : 'border-[#E2DFD6] bg-white text-[#6B6860] hover:border-[#1A4CD4] hover:text-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F] dark:hover:border-[#5B8DEF] dark:hover:text-[#5B8DEF]'
+                                                ? 'border-primary bg-primary text-white dark:border-primary dark:bg-primary'
+                                                : 'border-[#E2DFD6] bg-white text-[#6B6860] hover:border-primary hover:text-primary dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F] dark:hover:border-primary dark:hover:text-primary'
                                         } ${busy ? 'opacity-50' : ''}`}
                                     >
                                         {STATUS_LABEL[s]}
@@ -737,7 +737,7 @@ export function TaskCardFramingB({
                             <button
                                 onClick={markApplicable}
                                 disabled={busy}
-                                className="cursor-pointer text-xs text-[#1A4CD4] hover:underline dark:text-[#5B8DEF]"
+                                className="cursor-pointer text-xs text-primary hover:underline dark:text-primary"
                             >
                                 Restore as applicable
                             </button>
