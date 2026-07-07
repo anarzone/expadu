@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Gtfs\GtfsStop;
 use App\Models\JourneyRecent;
 use App\Services\DisruptionService;
 use App\Services\UserLocationService;
@@ -23,6 +24,13 @@ use Illuminate\Http\Request;
  */
 class TakeMeThereController extends Controller
 {
+    /**
+     * A user within this many metres of a stop is treated as already standing
+     * there, so the plan originates from the stop (~zero access walk) and an
+     * imminent departure they could catch isn't dropped as unreachable.
+     */
+    private const AT_STOP_METRES = 150;
+
     public function __invoke(
         Request $request,
         RouteService $routes,
@@ -90,7 +98,14 @@ class TakeMeThereController extends Controller
         $arriveBy = (bool) ($validated['arrive_by'] ?? false);
         $variety = (bool) ($validated['more'] ?? false);
 
-        $result = $routes->plan($from, $to, $departAt, 10, $arriveBy, $variety);
+        // If the user is essentially standing at a stop, plan from the stop
+        // itself. The routing engine otherwise folds in the walk to the stop and
+        // drops an imminent departure as "unreachable" — but they can catch it
+        // if they're already there. Show it; let them decide. The response keeps
+        // the real origin so the map + fare still reflect where they are.
+        $planFrom = $this->atStopOrigin($from) ?? $from;
+
+        $result = $routes->plan($planFrom, $to, $departAt, 10, $arriveBy, $variety);
 
         // Journey-aware Rheinlandtarif advice for the transit option (walk/bike
         // options are free and carry no ticket). Computed for the first transit
@@ -132,5 +147,48 @@ class TakeMeThereController extends Controller
             'ticket' => $ticket,
             'disruptions' => $relevantDisruptions,
         ]);
+    }
+
+    /**
+     * The nearest transit stop when the origin is within {@see self::AT_STOP_METRES}
+     * of it — i.e. the user is basically on the platform, so the plan should
+     * start there. GPS at a stop reads tens of metres off, hence a generous
+     * radius. Null when nothing is that close (plan from the real origin).
+     */
+    private function atStopOrigin(GeoPoint $from): ?GeoPoint
+    {
+        $stop = GtfsStop::query()
+            ->where('location_type', 0)
+            ->whereNotNull('stop_lat')
+            ->whereNotNull('stop_lng')
+            ->selectRaw(
+                'stop_lat, stop_lng, (ABS(stop_lat - ?) + ABS(stop_lng - ?)) as dist',
+                [$from->lat, $from->lng],
+            )
+            ->orderBy('dist')
+            ->first();
+
+        if ($stop === null) {
+            return null;
+        }
+
+        $metres = $this->metresBetween(
+            $from->lat, $from->lng, (float) $stop->stop_lat, (float) $stop->stop_lng,
+        );
+
+        return $metres <= self::AT_STOP_METRES
+            ? new GeoPoint((float) $stop->stop_lat, (float) $stop->stop_lng)
+            : null;
+    }
+
+    private function metresBetween(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $r = 6371000;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return $r * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 }
