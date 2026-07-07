@@ -39,6 +39,7 @@ import { ICON_STROKE } from '@/constants/icons';
 import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
+import { berlinHour } from '@/lib/berlin-time';
 
 type Tile = {
     type: string;
@@ -273,7 +274,9 @@ function leadFlag(tile: Tile): string | null {
 }
 
 function getGreeting(name?: string): string {
-    const hour = new Date().getHours();
+    // Cologne's hour, not the device's — a phone still on another timezone
+    // shouldn't say "Good morning" when it's afternoon in Köln.
+    const hour = berlinHour(new Date().toISOString());
     const part =
         hour < 12
             ? 'Good morning'
@@ -880,6 +883,7 @@ export default function Dashboard() {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
+                        timeZone: 'Europe/Berlin',
                     })}
                     {' · Cologne'}
                 </div>
