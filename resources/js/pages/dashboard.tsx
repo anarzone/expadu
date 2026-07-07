@@ -1260,9 +1260,17 @@ export default function Dashboard() {
                                         );
                                     }
 
-                                    const spotId = Number(
-                                        card.id.replace('spot:', ''),
-                                    );
+                                    // Event cards carry an "event:{id}" id and
+                                    // real coords but no place-detail endpoint,
+                                    // spot feedback, or composer pin — those are
+                                    // spot-only. Parse a spot id only from a
+                                    // "spot:" card; an event routes straight to
+                                    // take-me-there instead of Number("event:42")
+                                    // → NaN → /api/places/NaN (a 500 on tap).
+                                    const isSpot = card.id.startsWith('spot:');
+                                    const spotId = isSpot
+                                        ? Number(card.id.slice(5))
+                                        : null;
                                     const planned = Boolean(pins[card.id]);
 
                                     return (
@@ -1291,51 +1299,76 @@ export default function Dashboard() {
                                                     ? [{ label: card.reason }]
                                                     : []
                                             }
-                                            feedback={{
-                                                state: stateFor(spotId),
-                                                onAction: (action, rating) =>
-                                                    setFeedback(
-                                                        spotId,
-                                                        action,
-                                                        rating,
-                                                    ),
-                                            }}
-                                            overlayTopRight={
-                                                <button
-                                                    onClick={() =>
-                                                        togglePin(card)
-                                                    }
-                                                    title={
-                                                        planned
-                                                            ? 'Remove from plan'
-                                                            : "Add to today's plan"
-                                                    }
-                                                    aria-label={
-                                                        planned
-                                                            ? `Remove ${card.name} from plan`
-                                                            : `Add ${card.name} to plan`
-                                                    }
-                                                    className={`flex size-[26px] items-center justify-center rounded-full shadow-sm transition-colors ${
-                                                        planned
-                                                            ? 'bg-primary text-white'
-                                                            : 'bg-white/90 text-primary'
-                                                    }`}
-                                                >
-                                                    {planned ? (
-                                                        <IconCheck
-                                                            size={15}
-                                                            stroke={2.5}
-                                                        />
-                                                    ) : (
-                                                        <IconPlus
-                                                            size={15}
-                                                            stroke={2.5}
-                                                        />
-                                                    )}
-                                                </button>
+                                            feedback={
+                                                spotId !== null
+                                                    ? {
+                                                          state: stateFor(
+                                                              spotId,
+                                                          ),
+                                                          onAction: (
+                                                              action,
+                                                              rating,
+                                                          ) =>
+                                                              setFeedback(
+                                                                  spotId,
+                                                                  action,
+                                                                  rating,
+                                                              ),
+                                                      }
+                                                    : undefined
                                             }
-                                            onActivate={() =>
-                                                openDetail(spotId, card)
+                                            overlayTopRight={
+                                                spotId === null ? undefined : (
+                                                    <button
+                                                        onClick={() =>
+                                                            togglePin(card)
+                                                        }
+                                                        title={
+                                                            planned
+                                                                ? 'Remove from plan'
+                                                                : "Add to today's plan"
+                                                        }
+                                                        aria-label={
+                                                            planned
+                                                                ? `Remove ${card.name} from plan`
+                                                                : `Add ${card.name} to plan`
+                                                        }
+                                                        className={`flex size-[26px] items-center justify-center rounded-full shadow-sm transition-colors ${
+                                                            planned
+                                                                ? 'bg-primary text-white'
+                                                                : 'bg-white/90 text-primary'
+                                                        }`}
+                                                    >
+                                                        {planned ? (
+                                                            <IconCheck
+                                                                size={15}
+                                                                stroke={2.5}
+                                                            />
+                                                        ) : (
+                                                            <IconPlus
+                                                                size={15}
+                                                                stroke={2.5}
+                                                            />
+                                                        )}
+                                                    </button>
+                                                )
+                                            }
+                                            onActivate={
+                                                spotId !== null
+                                                    ? () =>
+                                                          openDetail(
+                                                              spotId,
+                                                              card,
+                                                          )
+                                                    : () =>
+                                                          setDestination({
+                                                              name: card.name,
+                                                              emoji: categoryEmoji(
+                                                                  card.category,
+                                                              ),
+                                                              lat: card.lat,
+                                                              lng: card.lng,
+                                                          })
                                             }
                                         />
                                     );
