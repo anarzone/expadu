@@ -1752,7 +1752,16 @@ export default function Composer() {
                     onClose={() => setDetail(null)}
                     onNavigate={(target) => {
                         setDetail(null);
-                        setDestination(target);
+                        // Start the route from the plan's own origin — the same
+                        // point the card's "N min away" was measured against —
+                        // just like the plan-slot take-me-there does, so the two
+                        // never contradict each other.
+                        setDestination({
+                            ...target,
+                            fromLat: origin?.lat ?? null,
+                            fromLng: origin?.lng ?? null,
+                            fromName: origin?.label ?? null,
+                        });
                     }}
                 />
             )}

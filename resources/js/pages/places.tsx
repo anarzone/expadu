@@ -1557,7 +1557,14 @@ export default function Places() {
                     onNavigate={(target) => {
                         setDetail(null);
                         setHopStack([]);
-                        setDestination(target);
+                        // Route from the active "From", so directions start where
+                        // the card's "N min away" was measured — not live GPS.
+                        setDestination({
+                            ...target,
+                            fromLat: origin?.lat ?? null,
+                            fromLng: origin?.lng ?? null,
+                            fromName: origin?.label ?? null,
+                        });
                     }}
                     onOpenPlace={hopTo}
                     onBack={hopStack.length > 0 ? hopBack : undefined}
@@ -1587,7 +1594,14 @@ export default function Places() {
                     onNavigate={(target) => {
                         setRichPlace(null);
                         setHopStack([]);
-                        setDestination(target);
+                        // Route from the active "From", so directions start where
+                        // the card's "N min away" was measured — not live GPS.
+                        setDestination({
+                            ...target,
+                            fromLat: origin?.lat ?? null,
+                            fromLng: origin?.lng ?? null,
+                            fromName: origin?.label ?? null,
+                        });
                     }}
                     onOpenPlace={hopTo}
                     onBack={hopStack.length > 0 ? hopBack : undefined}
