@@ -1,0 +1,41 @@
+{
+    "name": "Expadu",
+    "short_name": "Expadu",
+    "description": "Your city. Your guide.",
+    "lang": "en",
+    "categories": ["travel", "utilities", "navigation"],
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#faf6ee",
+    "background_color": "#faf6ee",
+    "icons": [
+        { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+        { "src": "/favicon-96x96.png", "type": "image/png", "sizes": "96x96" },
+        {
+            "src": "/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "any"
+        },
+        {
+            "src": "/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any"
+        },
+        {
+            "src": "/icon-maskable-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icon-maskable-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "maskable"
+        }
+    ]
+}

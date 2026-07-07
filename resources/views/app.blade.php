@@ -23,11 +23,11 @@
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
             html {
-                background-color: #F6F5F1;
+                background-color: #faf6ee;
             }
 
             html.dark {
-                background-color: #18170F;
+                background-color: #18170f;
             }
         </style>
 
@@ -45,9 +45,16 @@
         <meta property="og:locale" content="en_US">
 
         <link rel="canonical" href="{{ url()->current() }}">
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+        {{-- Favicons & app icons (Expadu mark). ?v=1 busts the hard-cached stock icons. --}}
+        <link rel="icon" type="image/png" href="/favicon-96x96.png?v=1" sizes="96x96">
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=1">
+        <link rel="shortcut icon" href="/favicon.ico?v=1">
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1">
+        <meta name="apple-mobile-web-app-title" content="Expadu">
+        <link rel="manifest" href="/site.webmanifest">
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf6ee">
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#18170f">
 
         {{-- Preload critical font weights for fastest text rendering --}}
         <link rel="preload" href="/fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin>
