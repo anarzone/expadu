@@ -167,14 +167,14 @@ export function ChecklistFramingB({
                                         step.state === 'done'
                                             ? 'bg-[#0A7C52]'
                                             : step.state === 'now'
-                                              ? 'bg-[#1A4CD4]'
+                                              ? 'bg-primary'
                                               : 'bg-[#EFEDE7] dark:bg-[#2A2920]'
                                     }`}
                                 />
                                 <span
                                     className={`font-mono text-[9.5px] tracking-[0.04em] uppercase ${
                                         step.state === 'now'
-                                            ? 'font-semibold text-[#1A4CD4] dark:text-[#5B8DEF]'
+                                            ? 'font-semibold text-primary dark:text-primary'
                                             : step.state === 'done'
                                               ? 'text-[#0A7C52] dark:text-[#4FB489]'
                                               : 'text-[#AAA89F] dark:text-[#6B6860]'
@@ -188,20 +188,22 @@ export function ChecklistFramingB({
                 </div>
             )}
 
-            {/* Progress hero */}
-            <div className="relative overflow-hidden rounded-[20px] bg-[#1A4CD4] p-6 text-white dark:bg-[#1A4CD4]">
-                <div className="absolute -top-12 -right-12 size-44 rounded-full bg-white/5" />
-                <div className="text-[10px] font-bold tracking-[0.1em] text-white/65 uppercase">
+            {/* Progress hero — a neutral card with the primary used as an
+                accent (progress fill + done count), matching the Today/Alerts
+                card language rather than a filled colour block. */}
+            <div className="relative overflow-hidden rounded-[20px] border border-border bg-card p-6">
+                <div className="absolute -top-12 -right-12 size-44 rounded-full bg-primary/5" />
+                <div className="text-[10px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
                     Your settlement checklist · {situationLabel}
                     {pathLabel ? ` — ${pathLabel}` : ''}
                 </div>
-                <h2 className="mt-1.5 font-display text-2xl leading-tight font-normal">
+                <h2 className="mt-1.5 font-display text-2xl leading-tight font-normal text-foreground">
                     {allDone
                         ? "🎉 You're all settled."
                         : `${progress.done} of ${progress.total} tasks complete — you're making good progress.`}
                 </h2>
                 {!allDone && nextDeadline && (
-                    <p className="mt-1 text-[13px] text-white/80">
+                    <p className="mt-1 text-[13px] text-muted-foreground">
                         {nextDeadline.days_remaining !== null &&
                         nextDeadline.days_remaining < 0
                             ? 'Overdue'
@@ -209,14 +211,14 @@ export function ChecklistFramingB({
                         : {nextDeadline.title}
                     </p>
                 )}
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/20">
+                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
                     <div
-                        className="h-full bg-white transition-[width] duration-500 ease-out"
+                        className="h-full bg-primary transition-[width] duration-500 ease-out"
                         style={{ width: `${progress.percent}%` }}
                     />
                 </div>
-                <div className="mt-2 flex justify-between font-mono text-[13px] text-white/80">
-                    <span>{progress.done} done</span>
+                <div className="mt-2 flex justify-between font-mono text-[13px] text-muted-foreground">
+                    <span className="text-primary">{progress.done} done</span>
                     <span>{progress.total - progress.done} remaining</span>
                 </div>
             </div>
@@ -457,7 +459,7 @@ function TeaserCard({ teaser }: { teaser: Teaser }) {
             <div className="flex items-center gap-2.5 text-sm font-semibold text-[#6B6860] dark:text-[#AAA89F]">
                 🔒 {teaser.title}
             </div>
-            <p className="mt-1.5 mb-2.5 text-[12.5px] text-[#1A4CD4] dark:text-[#8FAAF0]">
+            <p className="mt-1.5 mb-2.5 text-[12.5px] text-primary dark:text-primary">
                 {teaser.question}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -466,7 +468,7 @@ function TeaserCard({ teaser }: { teaser: Teaser }) {
                         key={opt.value}
                         onClick={() => answer(opt.value)}
                         disabled={busy}
-                        className={`cursor-pointer rounded-full border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-2 text-[12.5px] font-semibold transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:border-[#5B8DEF] ${busy ? 'opacity-50' : ''}`}
+                        className={`cursor-pointer rounded-full border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-2 text-[12.5px] font-semibold transition-colors hover:border-primary dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:border-primary ${busy ? 'opacity-50' : ''}`}
                     >
                         {opt.label}
                     </button>
@@ -527,7 +529,7 @@ function PathRefinement({ path }: { path: PathProp }) {
                 </span>
                 <button
                     onClick={() => setOpen(true)}
-                    className="cursor-pointer font-semibold text-[#1A4CD4] hover:underline dark:text-[#5B8DEF]"
+                    className="cursor-pointer font-semibold text-primary hover:underline dark:text-primary"
                 >
                     Change
                 </button>
@@ -536,11 +538,11 @@ function PathRefinement({ path }: { path: PathProp }) {
     }
 
     return (
-        <div className="rounded-[14px] border border-[#1A4CD4] bg-[#EBF0FD] p-4 dark:border-[#5B8DEF]/60 dark:bg-[#1A4CD4]/15">
+        <div className="rounded-[14px] border border-primary bg-primary-soft p-4 dark:border-primary/60 dark:bg-primary/15">
             <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
                 One question to sharpen your checklist: {copy.question}
             </div>
-            <p className="mt-0.5 mb-3 text-xs text-[#1A4CD4] dark:text-[#8FAAF0]">
+            <p className="mt-0.5 mb-3 text-xs text-primary dark:text-primary">
                 {copy.note}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -554,8 +556,8 @@ function PathRefinement({ path }: { path: PathProp }) {
                             disabled={busy}
                             className={`cursor-pointer rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-semibold transition-colors ${
                                 active
-                                    ? 'border-[#1A4CD4] bg-white text-[#1A4CD4] dark:border-[#5B8DEF] dark:bg-[#1E1D15] dark:text-[#5B8DEF]'
-                                    : 'border-[#E2DFD6] bg-white text-[#18170F] hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]'
+                                    ? 'border-primary bg-white text-primary dark:border-primary dark:bg-[#1E1D15] dark:text-primary'
+                                    : 'border-[#E2DFD6] bg-white text-[#18170F] hover:border-primary dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-primary'
                             } ${busy ? 'opacity-50' : ''}`}
                         >
                             {opt.label}
@@ -600,11 +602,11 @@ function SettledBanner() {
     }
 
     return (
-        <div className="rounded-[14px] border border-[#1A4CD4] bg-[#EBF0FD] p-4 dark:border-[#5B8DEF]/60 dark:bg-[#1A4CD4]/15">
+        <div className="rounded-[14px] border border-primary bg-primary-soft p-4 dark:border-primary/60 dark:bg-primary/15">
             <div className="text-sm font-semibold text-[#18170F] dark:text-[#F6F5F1]">
                 🏡 Already settled in Germany?
             </div>
-            <p className="mt-0.5 mb-3 text-xs text-[#1A4CD4] dark:text-[#8FAAF0]">
+            <p className="mt-0.5 mb-3 text-xs text-primary dark:text-primary">
                 You've been here a while. If you've handled the basics, we'll
                 mark Anmeldung, Steuer-ID, bank account, health insurance and
                 the Rundfunkbeitrag as done — and hide the steps for working
@@ -614,14 +616,14 @@ function SettledBanner() {
                 <button
                     onClick={settle}
                     disabled={busy}
-                    className={`cursor-pointer rounded-full border-[1.5px] border-[#1A4CD4] bg-[#1A4CD4] px-3.5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
+                    className={`cursor-pointer rounded-full border-[1.5px] border-primary bg-primary px-3.5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
                 >
                     Yes, I'm settled
                 </button>
                 <button
                     onClick={() => setDismissed(true)}
                     disabled={busy}
-                    className="cursor-pointer rounded-full border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                    className="cursor-pointer rounded-full border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#18170F] transition-colors hover:border-primary dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-primary"
                 >
                     Not yet
                 </button>
@@ -714,7 +716,7 @@ function InfoCard({
         <div
             className={`rounded-[14px] p-4 ${
                 later
-                    ? 'bg-[#EBF0FD] dark:bg-[#1A4CD4]/15'
+                    ? 'bg-primary-soft dark:bg-primary/15'
                     : 'bg-[#FDF0D4] dark:bg-[#C47D0E]/15'
             }`}
         >
@@ -736,7 +738,7 @@ function InfoCard({
                             href={link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#1A4CD4] hover:underline dark:text-[#8FAAF0]"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline dark:text-primary"
                         >
                             {new URL(link).hostname.replace('www.', '')}
                             <IconExternalLink size={11} stroke={1.8} />
@@ -764,7 +766,7 @@ function InfoCard({
                         <button
                             onClick={recordEvent}
                             disabled={busy}
-                            className={`cursor-pointer rounded-lg bg-[#1A4CD4] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
+                            className={`cursor-pointer rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 ${busy ? 'opacity-50' : ''}`}
                         >
                             {action.label}
                         </button>

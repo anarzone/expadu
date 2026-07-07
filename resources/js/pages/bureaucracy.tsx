@@ -212,7 +212,7 @@ export default function Bureaucracy() {
                                 onClick={() => setActiveTab(t.id)}
                                 className={`cursor-pointer border-b-2 border-none bg-transparent px-3 py-2 text-[13px] font-semibold transition-all ${
                                     activeTab === t.id
-                                        ? 'border-[#1A4CD4] text-[#1A4CD4] dark:border-[#5B8DEF] dark:text-[#5B8DEF]'
+                                        ? 'border-primary text-primary dark:border-primary dark:text-primary'
                                         : 'border-transparent text-[#6B6860] dark:text-[#AAA89F]'
                                 }`}
                             >
@@ -260,7 +260,7 @@ export default function Bureaucracy() {
                             </p>
 
                             {/* Search */}
-                            <div className="mb-4 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
+                            <div className="mb-4 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-primary focus-within:bg-white dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
                                 <span className="text-[15px] text-[#AAA89F]">
                                     🔍
                                 </span>
