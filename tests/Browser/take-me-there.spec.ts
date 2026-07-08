@@ -77,6 +77,43 @@ const JOURNEY = {
     ],
 };
 
+// A single deterministic place so a card renders regardless of what's seeded
+// in the e2e user's default area — the test is about the journey sheet, not
+// the place listing.
+const LISTING = {
+    data: [
+        {
+            id: 1,
+            name: 'Museum Ludwig',
+            category: 'culture',
+            fine_label: 'Museum',
+            emoji: '🏛️',
+            veedel: 'Ehrenfeld',
+            park: null,
+            lat: 50.9403,
+            lng: 6.9602,
+            photo_url: null,
+            photo_attribution: null,
+            distance_min: 12,
+            open_now: true,
+            opening_hours_text: 'Open access',
+            price_text: 'free',
+            feature_chips: [],
+            tip: null,
+            tip_is_generic: true,
+            cluster_size: 1,
+            activities: [],
+            transit_hint: null,
+            facts: [],
+            feedback_state: null,
+            feedback_rating: null,
+        },
+    ],
+    meta: { total: 1, current_page: 1, last_page: 1 },
+    nearby_included: false,
+    origin: { source: 'confirmed', label: 'Your location' },
+};
+
 // The built app registers a service worker that handles /api/journey, and SW
 // requests bypass page.route — block it so the deterministic mock below applies.
 test.use({ serviceWorkers: 'block' });
@@ -88,6 +125,9 @@ test.describe('Take me there — multi-modal selector', () => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
 
+        await page.route(/\/api\/places\?/, (route) =>
+            route.fulfill({ json: LISTING }),
+        );
         await page.route(/\/api\/journey/, (route) =>
             route.fulfill({ json: JOURNEY }),
         );

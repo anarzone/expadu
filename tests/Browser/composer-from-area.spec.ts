@@ -47,7 +47,11 @@ const SLOT = {
     is_landmark: false,
 };
 
-function composeBody(area: string | null, source: string) {
+// A compose response whose origin echoes the picked From: a resolved label
+// means the user chose a start (source 'confirmed'); no label is the honest
+// "Your location" placeholder. The search area is deliberately independent of
+// the From — it stays "all Cologne" until the user changes the area word.
+function composeBody(originLabel: string | null) {
     return {
         plan: { constraints: constraints(), slots: [SLOT] },
         notices: [],
@@ -55,15 +59,13 @@ function composeBody(area: string | null, source: string) {
             categories: [{ value: 'park', label: 'Parks' }],
             areas: ['Nippes', 'Ehrenfeld', 'Sülz'],
         },
-        origin: {
-            source,
-            label: source === 'area' ? area : 'Your location',
-            area,
-        },
+        origin: originLabel
+            ? { source: 'confirmed', label: originLabel, area: null }
+            : { source: 'none', label: 'Your location', area: null },
     };
 }
 
-test('the plan area follows the chosen From, never a fixed home', async ({
+test('the origin follows the chosen From and stays honest, never a fixed home', async ({
     page,
 }) => {
     const errors: string[] = [];
@@ -80,35 +82,56 @@ test('the plan area follows the chosen From, never a fixed home', async ({
         }),
     );
 
-    // First compose: no location known → honest "Any area". Once the user picks
-    // a start, the body carries from_area and the resolved area follows it.
+    // The origin echoes whatever From the body carries: none on the first
+    // compose, then the searched place once the user picks one.
     await page.route(/\/composer\/compose/, (route) => {
         const body = route.request().postDataJSON() as {
-            from_area?: string | null;
+            from_label?: string | null;
         };
-        const picked = body?.from_area ?? null;
-        route.fulfill({
-            json: picked ? composeBody(picked, 'area') : composeBody(null, 'none'),
-        });
+        route.fulfill({ json: composeBody(body?.from_label ?? null) });
     });
+
+    // A geocoded address to pick as the From origin.
+    await page.route(/\/api\/geocode/, (route) =>
+        route.fulfill({
+            json: [
+                {
+                    name: 'Sülz',
+                    street: 'Sülzgürtel',
+                    city: 'Köln',
+                    lat: 50.92,
+                    lng: 6.93,
+                },
+            ],
+        }),
+    );
 
     await page.goto('/composer?prompt=' + encodeURIComponent('free afternoon'));
     await page.waitForLoadState('networkidle');
 
-    // No location yet → the area is an honest "Any area", never "Around <home>".
-    await expect(page.getByText('Any area')).toBeVisible();
+    // No location yet → honest sentence words: search "all Cologne", start from
+    // "Your location" — never a guessed "Around <home>".
+    await expect(
+        page.getByRole('button', { name: 'all Cologne' }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('button', { name: 'Your location' }),
+    ).toBeVisible();
     await expect(page.getByText(/Around/)).toHaveCount(0);
 
-    // Open the From picker and start somewhere else without being there.
-    await page
-        .getByRole('button', { name: 'Set where the plan starts from' })
-        .click();
-    await expect(page.getByText('Use my current location')).toBeVisible();
-    await page.getByRole('menuitem', { name: 'Sülz' }).click();
+    // Open the From word and start somewhere else without being there.
+    await page.getByRole('button', { name: 'Your location' }).click();
+    await expect(page.getByText('Measure distances from')).toBeVisible();
+    await page.getByPlaceholder(/Search an address or place/).fill('Sülz');
+    await page.getByRole('button', { name: /Sülz/ }).click();
 
-    // Origin and the search area now both follow the pick.
-    await expect(page.getByText('From Sülz')).toBeVisible();
-    await expect(page.getByText('Around Sülz')).toBeVisible();
+    // The origin word follows the pick; the search area stays independent.
+    await expect(
+        page.getByRole('button', { name: 'Sülz', exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('button', { name: 'all Cologne' }),
+    ).toBeVisible();
 
     expect(errors).toHaveLength(0);
 

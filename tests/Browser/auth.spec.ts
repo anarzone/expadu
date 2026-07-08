@@ -19,8 +19,11 @@ test.describe('Authentication', () => {
         await page.locator('input#password').fill('wrong-password');
         await page.getByRole('button', { name: 'Log in' }).click();
 
+        // The credential error surfaces both as an auto-dismissing toast (a
+        // <div>) and as a persistent inline field error (a <p>). Scope to the
+        // paragraph so the assertion is unambiguous and doesn't race the toast.
         await expect(
-            page.getByText(/credentials|invalid|These credentials/i),
+            page.getByRole('paragraph').filter({ hasText: /credentials/i }),
         ).toBeVisible({ timeout: 5_000 });
     });
 

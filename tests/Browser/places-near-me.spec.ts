@@ -67,16 +67,16 @@ test('Near me browses a radius around your location', async ({ page }) => {
 
     await page.goto('/explore');
 
-    // Tap the lead "Near me" rail card → locate → confirm → near=1.
-    await page.getByText('Near me').click();
+    // "Near me" lives inside the area picker — open it, then pick the radius
+    // scope. That locates → confirms → refetches with near=1.
+    await page.getByRole('button', { name: /Searching in/i }).click();
+    await page.getByRole('button', { name: 'Near me' }).click();
 
-    await expect(page.getByText('Near you')).toBeVisible();
+    // The active scope flips to "Near you" (the area pill) and the near=1
+    // results load. Scope the label to the pill button — "Near you" also shows
+    // in the results count line, so a bare getByText would be ambiguous.
+    await expect(page.getByRole('button', { name: /Near you/i })).toBeVisible();
     await expect(page.getByText('Nordpark')).toBeVisible();
-
-    // The "Near me" rail card is the active scope (not a Bezirk).
-    await expect(
-        page.getByRole('button', { name: /Near me/ }),
-    ).toHaveAttribute('aria-pressed', 'true');
 
     await page.screenshot({ path: '/tmp/near-me-real.png' });
 });
