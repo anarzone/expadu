@@ -142,11 +142,10 @@ jobs:
   browser-test:
     name: Browser Tests
     runs-on: ubuntu-latest
-    # NON-BLOCKING for now: this runs the Playwright suite and uploads its
-    # report so interaction regressions are visible, but no deploy job lists it
-    # in `needs` yet — the suite still has a few drifted specs to stabilise
-    # before it can safely gate a launch-week deploy. To make it a required
-    # check, add `browser-test` to deploy-staging / deploy-production `needs`.
+    # Gates deploys: deploy-staging / deploy-production list this in `needs`, so
+    # a red Playwright suite blocks the ship. Runs the auth + chromium projects
+    # against a freshly built app + seeded DB (+ the E2E user), serves on :8080,
+    # and uploads the report so any regression is visible.
     timeout-minutes: 25
 
     services:
@@ -379,8 +378,9 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     # Tests must pass before we deploy — build runs in parallel with them but
-    # the image only ships if both come back green.
-    needs: [build-and-push, test]
+    # the image only ships if the unit/feature suite and the browser suite come
+    # back green.
+    needs: [build-and-push, test, browser-test]
     if: github.ref == 'refs/heads/staging' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
@@ -401,7 +401,7 @@ jobs:
 
   deploy-production:
     name: Deploy to Production
-    needs: [build-and-push, test]
+    needs: [build-and-push, test, browser-test]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
