@@ -169,6 +169,13 @@ jobs:
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
       APP_URL: http://localhost:8080
+      # `npm run build` runs before `.env` exists, so without this Laravel
+      # defaults APP_ENV to production — which flips on URL::forceScheme('https')
+      # and makes Wayfinder bake absolute https://localhost:8080/* route URLs
+      # into the bundle. The real login POST then targets https on the http-only
+      # dev server and dies with "Couldn't reach the server". Pin local so the
+      # build emits relative route URLs.
+      APP_ENV: local
 
     steps:
       - uses: actions/checkout@v4
