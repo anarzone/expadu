@@ -32,11 +32,19 @@ class ProfileController extends Controller
     {
         $request->user()->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
+        $emailChanged = $request->user()->isDirty('email');
+
+        if ($emailChanged) {
             $request->user()->email_verified_at = null;
         }
 
         $request->user()->save();
+
+        // A changed email un-verifies the account, so send a fresh link —
+        // otherwise the user is bounced to the verify wall with no way through.
+        if ($emailChanged) {
+            $request->user()->sendEmailVerificationNotification();
+        }
 
         return back();
     }
