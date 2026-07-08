@@ -851,6 +851,8 @@ export default function Profile() {
                                 'Student',
                                 'Freelancer',
                                 'Family reunification',
+                                'Digital nomad',
+                                'Other',
                             ]}
                             subText="Affects your checklist and visa guidance"
                         />

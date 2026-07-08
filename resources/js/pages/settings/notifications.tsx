@@ -12,19 +12,15 @@ import SettingsLayout from '@/layouts/settings/layout';
 
 /**
  * Per-type toggles. Keys map to the ActionBus preference gates
- * (see NotificationPreference::defaults): transit / burgeramt / checklist /
- * events / weather / rhine / digest.
+ * (see NotificationPreference::defaults): transit / checklist / events /
+ * weather / rhine / digest. (The `burgeramt` gate has no live producer since
+ * the slot-checker was removed, so it isn't surfaced as a toggle.)
  */
 const NOTIFICATION_TYPES: { id: string; label: string; sub: string }[] = [
     {
         id: 'transit',
         label: 'Transit disruptions',
-        sub: 'Delays on your saved routes',
-    },
-    {
-        id: 'burgeramt',
-        label: 'Bürgeramt slots',
-        sub: 'New appointments available',
+        sub: "Delays on lines and trips you're taking",
     },
     {
         id: 'checklist',

@@ -8,8 +8,6 @@ import SettingsLayout from '@/layouts/settings/layout';
 /** Frontend key → the /user-settings backend key. */
 const KEYS = {
     shareLocation: 'share_location',
-    personalised: 'personalised_content',
-    shareAnonymised: 'share_anonymised',
 } as const;
 
 function csrf(): string {
@@ -28,8 +26,6 @@ export default function PrivacySettings() {
     const s = userSettings ?? {};
     const [toggles, setToggles] = useState({
         shareLocation: (s.share_location as boolean) ?? true,
-        personalised: (s.personalised_content as boolean) ?? true,
-        shareAnonymised: (s.share_anonymised as boolean) ?? true,
     });
 
     const persist = useCallback((key: keyof typeof KEYS, value: boolean) => {
@@ -73,18 +69,6 @@ export default function PrivacySettings() {
                             sub="Improves departure times accuracy"
                             on={toggles.shareLocation}
                             onToggle={() => toggle('shareLocation')}
-                        />
-                        <ToggleRow
-                            label="Personalised content"
-                            sub="Use activity to improve recommendations"
-                            on={toggles.personalised}
-                            onToggle={() => toggle('personalised')}
-                        />
-                        <ToggleRow
-                            label="Share anonymised data"
-                            sub="Help improve Expadu for all expats"
-                            on={toggles.shareAnonymised}
-                            onToggle={() => toggle('shareAnonymised')}
                         />
                     </ToggleCard>
                 </div>
