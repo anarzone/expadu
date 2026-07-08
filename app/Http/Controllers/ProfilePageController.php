@@ -57,8 +57,12 @@ class ProfilePageController extends Controller
                 'events_joined' => $user->attendingEvents()->count(),
                 'tasks_completed' => $taskProgress,
                 'tasks_total' => $totalTasks,
+                // Days SINCE arrival (arrival → now). The operand order matters:
+                // Carbon returns a signed diff, so now()->diffInDays(arrival)
+                // yields a negative for a past arrival ("-267 DAYS"). Clamp so a
+                // not-yet-arrived date never shows negative.
                 'days_in_germany' => $user->arrival_date
-                    ? (int) now()->diffInDays($user->arrival_date)
+                    ? max(0, (int) $user->arrival_date->diffInDays(now()))
                     : null,
             ],
             'interests' => $user->interests ?? [],
