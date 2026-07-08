@@ -635,7 +635,15 @@ export default function Profile() {
         });
     }
 
-    const germanBadge = (user.german_level as string)?.toUpperCase() ?? '—';
+    // Situation lives on Profile; account (name / email / password) lives in
+    // Settings. The header carries situation + how long you've been in Cologne.
+    const daysHere =
+        stats?.days_in_germany != null
+            ? `${stats.days_in_germany} ${stats.days_in_germany === 1 ? 'day' : 'days'} in Cologne`
+            : null;
+    const profileSubtitle =
+        [profileSituation, daysHere].filter(Boolean).join(' · ') ||
+        'Complete your profile';
 
     return (
         <AppLayout
@@ -644,148 +652,18 @@ export default function Profile() {
         >
             <Head title="Profile" />
             <div className="mx-auto w-full max-w-[680px]">
-                {/* ── Profile Hero ── */}
-                <div
-                    className="relative overflow-hidden"
-                    style={{
-                        background:
-                            'linear-gradient(145deg, #1A3A8F 0%, #1A4CD4 100%)',
-                        color: 'white',
-                        padding: '24px 20px 0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    {/* Decorative circle */}
-                    <div
-                        className="pointer-events-none absolute"
-                        style={{
-                            top: -80,
-                            right: -60,
-                            width: 260,
-                            height: 260,
-                            background: 'rgba(255,255,255,.05)',
-                            borderRadius: '50%',
-                        }}
-                    />
-                    {/* Top row */}
-                    <div className="relative z-[1] mb-5 flex w-full items-center gap-3.5">
-                        <div
-                            className="flex shrink-0 items-center justify-center rounded-full"
-                            style={{
-                                width: 60,
-                                height: 60,
-                                background: 'rgba(255,255,255,.2)',
-                                border: '2px solid rgba(255,255,255,.3)',
-                                fontSize: 24,
-                                fontWeight: 700,
-                            }}
-                        >
-                            {(profileName.charAt(0) || '?').toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <div
-                                style={{
-                                    fontFamily: "'Fraunces', serif",
-                                    fontSize: 22,
-                                    fontWeight: 500,
-                                    lineHeight: 1.1,
-                                    marginBottom: 4,
-                                }}
-                            >
-                                {profileName || 'Your profile'}
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: 11,
-                                    opacity: 0.75,
-                                    lineHeight: 1.5,
-                                }}
-                            >
-                                {[profileSituation, profileCity]
-                                    .filter(Boolean)
-                                    .join(' · ') || 'Complete your profile'}
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setProfilePage('details')}
-                            className="shrink-0 cursor-pointer rounded-full border-none whitespace-nowrap transition-all hover:bg-[rgba(255,255,255,0.15)]"
-                            style={{
-                                padding: '7px 14px',
-                                border: '1.5px solid rgba(255,255,255,.4)',
-                                background: 'transparent',
-                                color: 'white',
-                                fontFamily: "'Geist', sans-serif",
-                                fontSize: 12,
-                                fontWeight: 600,
-                            }}
-                        >
-                            Edit profile
-                        </button>
+                {/* ── Profile header (simple — no hero) ── */}
+                <div className="flex items-center gap-3.5 px-1 pt-3 pb-5">
+                    <div className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-primary font-display text-[22px] font-semibold text-white">
+                        {(profileName.charAt(0) || '?').toUpperCase()}
                     </div>
-                    {/* Stats */}
-                    <div
-                        className="relative z-[1] flex w-full"
-                        style={{
-                            borderTop: '1px solid rgba(255,255,255,.15)',
-                        }}
-                    >
-                        {[
-                            {
-                                num: String(stats?.events_joined ?? 0),
-                                lbl: 'Events',
-                            },
-                            {
-                                num: String(stats?.tasks_completed ?? 0),
-                                lbl: 'Tasks',
-                            },
-                            {
-                                num:
-                                    stats?.days_in_germany != null
-                                        ? String(stats.days_in_germany)
-                                        : '—',
-                                lbl: 'Days',
-                            },
-                            {
-                                num: germanBadge,
-                                lbl: 'German',
-                            },
-                        ].map((stat, i, arr) => (
-                            <div
-                                key={stat.lbl}
-                                className="flex-1 text-center"
-                                style={{
-                                    padding: '14px 4px',
-                                    borderRight:
-                                        i < arr.length - 1
-                                            ? '1px solid rgba(255,255,255,.1)'
-                                            : 'none',
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontFamily: "'Geist Mono', monospace",
-                                        fontSize: 20,
-                                        fontWeight: 600,
-                                        lineHeight: 1,
-                                    }}
-                                >
-                                    {stat.num}
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: 9,
-                                        opacity: 0.65,
-                                        marginTop: 3,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.07em',
-                                    }}
-                                >
-                                    {stat.lbl}
-                                </div>
-                            </div>
-                        ))}
+                    <div className="min-w-0 flex-1">
+                        <div className="font-display text-[21px] leading-tight font-semibold">
+                            {profileName || 'Your profile'}
+                        </div>
+                        <div className="mt-1 text-[13px] text-muted-foreground">
+                            {profileSubtitle}
+                        </div>
                     </div>
                 </div>
 
@@ -801,40 +679,6 @@ export default function Profile() {
                         onBack={() => setProfilePage(null)}
                         backLabel="← Back to Profile"
                     >
-                        <InlineEditRow
-                            field="name"
-                            label="Name"
-                            value={profileName}
-                            editing={editingField}
-                            editValue={editValue}
-                            onStartEdit={startEdit}
-                            onEditValue={setEditValue}
-                            onSave={saveEdit}
-                            onCancel={cancelEdit}
-                        />
-                        <InlineEditRow
-                            field="email"
-                            label="Email"
-                            value={profileEmail}
-                            editing={editingField}
-                            editValue={editValue}
-                            onStartEdit={startEdit}
-                            onEditValue={setEditValue}
-                            onSave={saveEdit}
-                            onCancel={cancelEdit}
-                            inputType="email"
-                        />
-                        <InlineEditRow
-                            field="city"
-                            label="City"
-                            value={profileCity}
-                            editing={editingField}
-                            editValue={editValue}
-                            onStartEdit={startEdit}
-                            onEditValue={setEditValue}
-                            onSave={saveEdit}
-                            onCancel={cancelEdit}
-                        />
                         <InlineEditRow
                             field="situation"
                             label="Situation"
