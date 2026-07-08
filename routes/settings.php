@@ -13,10 +13,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/notifications', [NotificationController::class, 'edit'])->name('notifications.edit');
 
-    // Privacy + Transit read the shared userSettings / auth.user props and write
-    // through the existing /user-settings and /settings/profile endpoints, so
-    // they need no dedicated controller.
-    Route::inertia('settings/privacy', 'settings/privacy')->name('privacy.edit');
+    // Transit reads the shared userSettings / auth.user props and writes through
+    // the existing /user-settings and /settings/profile endpoints, so it needs
+    // no dedicated controller. Location sharing folded in here (it's a transit
+    // setting); the old /settings/privacy path redirects for stray bookmarks.
+    Route::redirect('settings/privacy', '/settings/transit');
     Route::inertia('settings/transit', 'settings/transit')->name('transit.edit');
 });
 

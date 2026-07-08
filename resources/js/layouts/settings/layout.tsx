@@ -8,7 +8,6 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editNotifications } from '@/routes/notifications';
-import { edit as editPrivacy } from '@/routes/privacy';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import { edit as editTransit } from '@/routes/transit';
@@ -22,10 +21,6 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Notifications',
         href: editNotifications(),
-    },
-    {
-        title: 'Privacy & data',
-        href: editPrivacy(),
     },
     {
         title: 'Transit & tickets',
