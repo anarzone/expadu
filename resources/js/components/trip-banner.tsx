@@ -18,10 +18,36 @@ export function TripBanner() {
     const dest = activeTrip.destination.name;
     const arrive = activeTrip.journey.arrive_time;
 
+    // Reopen the live journey timeline — not just the board. Carry the trip's
+    // destination (and origin, unless it was "current location") plus
+    // view=route, mirroring the param names the timetable parses back into an
+    // open plan. A plain /timetable visit only ever lands on the board.
+    const openTrip = () => {
+        const { destination, origin } = activeTrip;
+        const params = new URLSearchParams({
+            to_name: destination.name,
+            to_lat: String(destination.lat),
+            to_lng: String(destination.lng),
+        });
+
+        if (origin) {
+            params.set('from_lat', String(origin.lat));
+            params.set('from_lng', String(origin.lng));
+
+            if (origin.name) {
+                params.set('from_name', origin.name);
+            }
+        }
+
+        params.set('view', 'route');
+
+        router.visit(`/timetable?${params.toString()}`);
+    };
+
     return (
         <button
             type="button"
-            onClick={() => router.visit('/timetable')}
+            onClick={openTrip}
             className="group flex w-full items-center gap-3 border-b border-black/10 bg-foreground px-4 py-2.5 text-left text-background md:px-6 dark:border-border dark:bg-secondary dark:text-foreground"
         >
             <span className="relative flex size-2.5 shrink-0">
