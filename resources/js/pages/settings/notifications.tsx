@@ -142,18 +142,33 @@ export default function NotificationsSettings() {
                         </div>
                     </ToggleCard>
 
-                    {/* Per-type toggles */}
-                    <ToggleCard>
-                        {NOTIFICATION_TYPES.map((setting) => (
-                            <ToggleRow
-                                key={setting.id}
-                                label={setting.label}
-                                sub={setting.sub}
-                                on={!!toggles[setting.id]}
-                                onToggle={() => toggle(setting.id)}
-                            />
-                        ))}
-                    </ToggleCard>
+                    {/* Per-type toggles. These also gate the in-app alerts
+                        feed, so they stay meaningful when device push is off —
+                        the sub-label spells that out to avoid the "do these do
+                        anything?" confusion. */}
+                    <div>
+                        <div className="mb-2 px-1">
+                            <div className="text-[13.5px] font-semibold">
+                                Alert types
+                            </div>
+                            <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                                {isSubscribed
+                                    ? 'Shown in your alerts feed and pushed to this device.'
+                                    : 'Shown in your alerts feed. Turn on push above to also get them on this device.'}
+                            </div>
+                        </div>
+                        <ToggleCard>
+                            {NOTIFICATION_TYPES.map((setting) => (
+                                <ToggleRow
+                                    key={setting.id}
+                                    label={setting.label}
+                                    sub={setting.sub}
+                                    on={!!toggles[setting.id]}
+                                    onToggle={() => toggle(setting.id)}
+                                />
+                            ))}
+                        </ToggleCard>
+                    </div>
                 </div>
             </SettingsLayout>
         </AppLayout>
