@@ -60,6 +60,7 @@ test.describe('Bureaucracy v2', () => {
         // Restore for idempotent re-runs — and await the state flip so the
         // PATCH isn't cut off by test teardown.
         await after.click();
+
         if (wasChecked) {
             await expect(after).toBeChecked();
         } else {
@@ -95,7 +96,7 @@ test.describe('Bureaucracy v2', () => {
 });
 
 test.describe('Onboarding v2', () => {
-    test('walks the four steps and previews the first tasks', async ({
+    test('walks the five steps and previews the first tasks', async ({
         page,
     }) => {
         const errors: string[] = [];
@@ -134,7 +135,16 @@ test.describe('Onboarding v2', () => {
             .selectOption({ label: 'Ehrenfeld' });
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Step 4 — plan preview with real tasks and a due date
+        // Step 4 — interests: pick the minimum three so Continue enables.
+        await expect(
+            page.getByText('What are you into?', { exact: false }),
+        ).toBeVisible();
+        await page.getByRole('button', { name: /Parks & green/ }).click();
+        await page.getByRole('button', { name: /Swimming & lakes/ }).click();
+        await page.getByRole('button', { name: /Sports & courts/ }).click();
+        await page.getByRole('button', { name: 'Continue' }).click();
+
+        // Step 5 — plan preview with real tasks and a due date
         await expect(
             page.getByText('Your Cologne plan is ready', { exact: false }),
         ).toBeVisible();
