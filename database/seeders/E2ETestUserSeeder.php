@@ -26,9 +26,12 @@ class E2ETestUserSeeder extends Seeder
         $email = (string) env('E2E_EMAIL', 'e2e@expadu.test');
         $password = (string) env('E2E_PASSWORD', 'e2e-password');
 
-        User::updateOrCreate(
-            ['email' => $email],
-            [
+        // forceFill so GUARDED columns persist too — notably email_verified_at,
+        // which is not in User::$fillable. Mass-assigning it (updateOrCreate)
+        // silently drops it, so a freshly-created user is unverified and the
+        // email-verification wall then blocks the browser suite's login.
+        User::firstOrNew(['email' => $email])
+            ->forceFill([
                 'name' => 'E2E',
                 'password' => Hash::make($password),
                 'email_verified_at' => now(),
@@ -39,7 +42,7 @@ class E2ETestUserSeeder extends Seeder
                 'arrival_date' => now()->subMonths(6)->startOfDay(),
                 'german_level' => null,
                 'city' => 'cologne',
-            ]
-        );
+            ])
+            ->save();
     }
 }
