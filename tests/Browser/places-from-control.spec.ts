@@ -52,11 +52,14 @@ test('From control shows the resolved origin and switches travel mode', async ({
 
     await page.goto('/explore');
 
-    // The bar reflects the API-resolved origin — the browsed area, not a
+    // The From pill reflects the API-resolved origin — the browsed area, not a
     // hidden home/centre.
-    await expect(page.getByText('From Ehrenfeld')).toBeVisible();
+    const fromPill = page.getByRole('button', { name: /from Ehrenfeld/i });
+    await expect(fromPill).toBeVisible();
 
-    // The travel-mode toggle is present and switches the preference.
+    // The travel-mode toggle lives inside the From popover — open it, then
+    // switch to Bike and confirm the preference is persisted.
+    await fromPill.click();
     const bike = page.getByRole('button', { name: 'Bike' });
     await expect(bike).toBeVisible();
 
