@@ -139,6 +139,128 @@ jobs:
       - name: Run Tests
         run: vendor/bin/pest --compact --parallel --exclude-group=slow
 
+  browser-test:
+    name: Browser Tests
+    runs-on: ubuntu-latest
+    # NON-BLOCKING for now: this runs the Playwright suite and uploads its
+    # report so interaction regressions are visible, but no deploy job lists it
+    # in `needs` yet — the suite still has a few drifted specs to stabilise
+    # before it can safely gate a launch-week deploy. To make it a required
+    # check, add `browser-test` to deploy-staging / deploy-production `needs`.
+    timeout-minutes: 25
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 5
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: sail
+      DB_PASSWORD: password
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      APP_URL: http://localhost:8080
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: pdo_pgsql, redis
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Install Dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          npm ci --legacy-peer-deps
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Postgres image (postgis + pgvector)
+        run: docker build -t expadu-pgsql ./docker/pgsql
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name pgsql \
+            -e POSTGRES_USER=sail \
+            -e POSTGRES_PASSWORD=password \
+            -e POSTGRES_DB=testing \
+            -p 5432:5432 \
+            expadu-pgsql
+          for i in $(seq 1 60); do
+            if docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
+              if docker exec pgsql psql -U sail -d testing -c "SELECT extname FROM pg_extension WHERE extname IN ('postgis','vector')" 2>/dev/null | grep -q vector; then
+                echo "postgres ready after ${i}s"
+                break
+              fi
+            fi
+            sleep 1
+          done
+          docker exec pgsql psql -U sail -d testing \
+            -c "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
+
+      - name: Prepare Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Migrate + seed (content + E2E user)
+        run: |
+          php artisan migrate --force --seed
+          php artisan db:seed --force --class=E2ETestUserSeeder
+
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Start app server
+        run: |
+          php artisan serve --port=8080 --no-interaction > /tmp/serve.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/login >/dev/null; then
+              echo "server up after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run browser tests
+        run: npx playwright test --project=auth --project=chromium
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   detect-changes:
     name: Detect path changes
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
