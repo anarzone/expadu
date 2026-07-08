@@ -8,6 +8,8 @@ use App\Listeners\CreateAlertFromNotification;
 use App\Models\Alert;
 use App\Models\User;
 use App\Notifications\BureaucracyDeadlineNotification;
+use App\Notifications\TransitDelayNotification;
+use App\Notifications\TransitDisruptionNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Notifications\Notification;
@@ -183,6 +185,27 @@ test('the notification path still records + tags a direct (non-context) notifica
     expect($alert->severity)->toBe('info')
         ->and($alert->category)->not->toBeNull()
         ->and($alert->lane)->toBe('posted');
+});
+
+test('a transit disruption alert deep-links to the live board, not the removed /transit page', function () {
+    // The reported bug: /transit was deleted in the v2 pivot, so tapping this
+    // alert did an Inertia visit that 404'd — surfacing a misleading "ad blocker"
+    // toast. The deep link must resolve to the live departures board.
+    $user = User::factory()->create();
+    $action = contextAction('transit_disruption', 'major', ['dashboard', 'alert_page'], ['lines' => ['7'], 'stops_affected' => []]);
+
+    app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $action));
+
+    expect(Alert::where('user_id', $user->id)->firstOrFail()->deep_link)->toBe('/timetable');
+});
+
+test('transit notifications point their url at the live /timetable route', function () {
+    $user = User::factory()->create();
+    $disruption = new TransitDisruptionNotification(['line' => '7', 'summary' => 'Signal fault']);
+    $delay = new TransitDelayNotification('7', 12, 'Neumarkt');
+
+    expect($disruption->toArray($user)['url'])->toBe('/timetable')
+        ->and($delay->toArray($user)['url'])->toBe('/timetable');
 });
 
 test('the classifier maps subtypes to the v4 taxonomy', function () {

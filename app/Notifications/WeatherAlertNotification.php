@@ -30,7 +30,7 @@ class WeatherAlertNotification extends Notification
             ->body($this->detail)
             ->action('View forecast', 'view_weather')
             ->options(['TTL' => 3600])
-            ->data(['url' => '/transit']);
+            ->data(['url' => '/timetable']);
     }
 
     /** @return array<string, mixed> */

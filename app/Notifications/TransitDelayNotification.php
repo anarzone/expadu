@@ -31,7 +31,7 @@ class TransitDelayNotification extends Notification
             ->body("Delay at {$this->stopName}. Consider alternative routes.")
             ->action('Check live status', 'view_transit')
             ->options(['TTL' => 1800])
-            ->data(['url' => '/transit']);
+            ->data(['url' => '/timetable']);
     }
 
     /** @return array<string, mixed> */
@@ -41,7 +41,7 @@ class TransitDelayNotification extends Notification
             'type' => 'transit_delay',
             'title' => "{$this->line} running {$this->delayMinutes} minutes late",
             'body' => "Delay at {$this->stopName}. Consider alternative routes.",
-            'url' => '/transit',
+            'url' => '/timetable',
         ];
     }
 }

@@ -34,7 +34,7 @@ class TransitDisruptionNotification extends Notification
             ->body($this->disruption['summary'])
             ->action('View details', 'view_transit')
             ->options(['TTL' => 3600])
-            ->data(['url' => '/transit']);
+            ->data(['url' => '/timetable']);
     }
 
     /**
@@ -48,7 +48,7 @@ class TransitDisruptionNotification extends Notification
             'body' => $this->disruption['summary'],
             'line' => $this->disruption['line'],
             'summary' => $this->disruption['summary'],
-            'url' => '/transit',
+            'url' => '/timetable',
         ];
     }
 }
