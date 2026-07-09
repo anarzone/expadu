@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Bureaucracy\BureaucracyPersonas;
 use App\Home\FeaturedEvent;
 use App\Models\NotificationPreference;
 use App\Models\UserSetting;
@@ -50,6 +51,19 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'isOnboarded' => $request->user()?->isOnboarded() ?? false,
+            // Admin-only QA tooling: the floating "become this persona"
+            // toolbar. Null for everyone else so PersonaSwitcher can gate off
+            // a single prop instead of shipping a separate admin flag.
+            'qaSwitcher' => ($request->user()?->is_admin || app()->environment('local'))
+                ? [
+                    // data_get: profile_attributes is nullable (e.g. the admin
+                    // account), so a raw ['qa_persona'] offset would warn per request.
+                    'current' => data_get($request->user()?->profile_attributes, 'qa_persona'),
+                    'personas' => collect(BureaucracyPersonas::demo())
+                        ->map(fn (array $p) => ['key' => $p['key'], 'label' => $p['label']])
+                        ->values()->all(),
+                ]
+                : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // One-shot flash messages — surfaced globally as a toast so no
             // redirect (e.g. "you're already signed in") is ever silent.

@@ -84,14 +84,6 @@ class SeedPersonasCommand extends Command
      */
     private function seedPersona(array $persona, string $password, bool $fresh): User
     {
-        // Reuse the engine's own attribute-bag builder rather than
-        // re-deriving entry_mode/housing_status/license_country/life-event
-        // dates here — it stays correct for free as BureaucracyPersonas
-        // evolves. userFor() never persists anything; only the array it
-        // computes is used below.
-        $profileAttributes = BureaucracyPersonas::userFor($persona)->profile_attributes;
-        $planned = (bool) ($persona['planned'] ?? false);
-
         $user = User::firstOrNew(['email' => "qa+{$persona['key']}@expadu.test"]);
         // email_verified_at is deliberately guarded (see database/seeders/
         // E2ETestUserSeeder.php) — updateOrCreate() silently drops it, which
@@ -102,16 +94,14 @@ class SeedPersonasCommand extends Command
             'name' => "QA {$persona['label']}",
             'password' => bcrypt($password),
             'email_verified_at' => now(),
-            'situation' => $persona['situation']->value,
-            'is_eu' => $persona['is_eu'],
-            'bureaucracy_path' => $persona['path'],
-            'arrival_date' => $planned ? null : now()->subDays(10)->toDateString(),
-            'veedel' => 'Altstadt-Nord',
+            // Reuses the same situation/is_eu/bureaucracy_path/arrival_date/
+            // veedel/profile_attributes shape PersonaController writes for
+            // the live "become this persona" switcher — one source, no drift.
+            ...BureaucracyPersonas::persistableProfile($persona),
             'city' => 'Köln',
             'german_level' => null,
             'has_deutschlandticket' => false,
             'interests' => $this->defaultInterests(),
-            'profile_attributes' => $profileAttributes,
             'onboarded_at' => now(),
         ])->save();
 
