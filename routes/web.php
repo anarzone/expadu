@@ -28,6 +28,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileAttributeController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\QA\PersonaController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\SocialLoginController;
@@ -197,6 +198,9 @@ $appRoutes = function () use ($appDomain) {
         Route::get('bureaucracy/demo', BureaucracyDemoController::class)->name('bureaucracy.demo');
         Route::post('bureaucracy/path', [BureaucracyController::class, 'setPath'])->name('bureaucracy.set-path');
         Route::post('bureaucracy/settle', [BureaucracyController::class, 'settle'])->name('bureaucracy.settle');
+        // Admin/local-only: flip the CURRENT account to a persona with real writes.
+        Route::post('qa/become/{persona}', [PersonaController::class, 'become'])->name('qa.become');
+        Route::post('qa/reset-tasks', [PersonaController::class, 'resetTasks'])->name('qa.reset-tasks');
         Route::post('profile/attributes', [ProfileAttributeController::class, 'store'])->name('profile.attributes');
         Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
         Route::post('tasks/{task}/report-outdated', [TaskController::class, 'reportOutdated'])->name('tasks.report-outdated');

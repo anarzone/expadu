@@ -8,12 +8,16 @@ use App\Models\User;
 /**
  * The canonical roster of expat personas — one per branch × relevant entry
  * mode, plus a few state showcases (planning, temporary housing). This is the
- * single source of truth shared by three consumers so they can never drift:
+ * single source of truth shared by several consumers so they can never drift:
  *   - CoverageCommand / BureaucracyCoverageTest (the invariant sweep);
- *   - BureaucracyDemoController (the in-app "view as any expat" switcher).
+ *   - BureaucracyDemoController (the in-app, read-only "view as any expat"
+ *     switcher — an in-memory User, nothing written);
+ *   - SeedPersonasCommand / QA\PersonaController (provisioning + the live
+ *     "become this persona" QA switcher — REAL writes via persistableProfile()).
  *
- * Each persona is a flat spec the engine reads through an in-memory User; no
- * row is ever written.
+ * Each persona is a flat spec. userFor() reads it through an in-memory User
+ * and never persists anything; persistableProfile() derives the same shape
+ * for callers that DO intend to write it to a real user row.
  */
 class BureaucracyPersonas
 {
@@ -94,5 +98,32 @@ class BureaucracyPersonas
             'profile_attributes' => $attributes,
             'interests' => [],
         ]);
+    }
+
+    /**
+     * The profile columns to persist onto a REAL user row for this persona —
+     * the single source both SeedPersonasCommand (provisioning) and
+     * PersonaController (the live "become this persona" QA switcher) write,
+     * so the two can never drift. Deliberately narrower than userFor(): it
+     * never touches identity columns (name, email, password, onboarded_at),
+     * only the situation/profile fields the bureaucracy + profile engines
+     * read. profile_attributes also records which persona is currently
+     * active, so the frontend switcher can show the current selection.
+     *
+     * @param  array<string, mixed>  $persona
+     * @return array<string, mixed>
+     */
+    public static function persistableProfile(array $persona): array
+    {
+        $planned = (bool) ($persona['planned'] ?? false);
+
+        return [
+            'situation' => $persona['situation']->value,
+            'is_eu' => $persona['is_eu'],
+            'bureaucracy_path' => $persona['path'],
+            'arrival_date' => $planned ? null : now()->subDays(10)->toDateString(),
+            'veedel' => 'Altstadt-Nord',
+            'profile_attributes' => [...self::userFor($persona)->profile_attributes, 'qa_persona' => $persona['key']],
+        ];
     }
 }
