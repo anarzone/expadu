@@ -1,3 +1,7 @@
+import { IconCheck, IconChevronDown, IconSearch } from '@tabler/icons-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
+
 const months = [
     'January',
     'February',
@@ -84,24 +88,11 @@ export function VeedelStep({
                             (your district)
                         </span>
                     </div>
-                    <select
+                    <VeedelPicker
+                        veedels={veedels}
                         value={veedel}
-                        onChange={(e) => onVeedelChange(e.target.value)}
-                        className="w-full rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
-                    >
-                        <option value="" disabled>
-                            Pick your neighbourhood…
-                        </option>
-                        {Object.entries(veedels).map(([bezirk, stadtteile]) => (
-                            <optgroup key={bezirk} label={bezirk}>
-                                {stadtteile.map((s) => (
-                                    <option key={s} value={s}>
-                                        {s}
-                                    </option>
-                                ))}
-                            </optgroup>
-                        ))}
-                    </select>
+                        onChange={onVeedelChange}
+                    />
                     <div className="mt-2 flex gap-2">
                         {[
                             {
@@ -281,6 +272,179 @@ export function VeedelStep({
                     </p>
                 </div>
             </div>
+        </div>
+    );
+}
+
+/**
+ * Searchable Veedel picker. Cologne has ~86 Stadtteile across 9 Bezirke — far
+ * too many for a raw <select> to scan — so this is a filterable combobox that
+ * keeps the Bezirk grouping while letting the user type to narrow it down.
+ */
+function VeedelPicker({
+    veedels,
+    value,
+    onChange,
+}: {
+    veedels: Record<string, string[]>;
+    value: string;
+    onChange: (value: string) => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Filter groups by query — a Bezirk name match keeps all of its Stadtteile,
+    // otherwise we keep the Stadtteile that match directly.
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        const groups: Array<[string, string[]]> = [];
+
+        for (const [bezirk, stadtteile] of Object.entries(veedels)) {
+            const matches =
+                q === '' || bezirk.toLowerCase().includes(q)
+                    ? stadtteile
+                    : stadtteile.filter((s) => s.toLowerCase().includes(q));
+
+            if (matches.length > 0) {
+                groups.push([bezirk, matches]);
+            }
+        }
+
+        return groups;
+    }, [veedels, query]);
+
+    const flatMatches = useMemo(
+        () => filtered.flatMap(([, stadtteile]) => stadtteile),
+        [filtered],
+    );
+
+    // Close on outside click.
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        function onDocClick(e: MouseEvent) {
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(e.target as Node)
+            ) {
+                setOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', onDocClick);
+
+        return () => document.removeEventListener('mousedown', onDocClick);
+    }, [open]);
+
+    // Focus the search field whenever the popover opens.
+    useEffect(() => {
+        if (open) {
+            inputRef.current?.focus();
+        }
+    }, [open]);
+
+    function select(v: string) {
+        onChange(v);
+        setOpen(false);
+    }
+
+    return (
+        <div ref={containerRef} className="relative">
+            <button
+                type="button"
+                onClick={() => {
+                    setQuery('');
+                    setOpen((o) => !o);
+                }}
+                className={`flex w-full items-center justify-between gap-2 rounded-[10px] border-[1.5px] bg-card px-3 py-2.5 text-left text-sm transition-colors outline-none ${
+                    open ? 'border-primary' : 'border-border'
+                }`}
+            >
+                <span
+                    className={
+                        value ? 'text-foreground' : 'text-muted-foreground'
+                    }
+                >
+                    {value || 'Pick your neighbourhood…'}
+                </span>
+                <IconChevronDown
+                    size={18}
+                    stroke={ICON_STROKE}
+                    className={`shrink-0 text-muted-foreground transition-transform ${
+                        open ? 'rotate-180' : ''
+                    }`}
+                />
+            </button>
+
+            {open && (
+                <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-[12px] border border-border bg-card shadow-lg">
+                    <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+                        <IconSearch
+                            size={16}
+                            stroke={ICON_STROKE}
+                            className="shrink-0 text-muted-foreground"
+                        />
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    setOpen(false);
+                                } else if (
+                                    e.key === 'Enter' &&
+                                    flatMatches.length > 0
+                                ) {
+                                    e.preventDefault();
+                                    select(flatMatches[0]);
+                                }
+                            }}
+                            placeholder="Search your Veedel…"
+                            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        />
+                    </div>
+                    <div className="max-h-[280px] overflow-y-auto py-1">
+                        {flatMatches.length === 0 ? (
+                            <div className="px-3 py-6 text-center text-[13px] text-muted-foreground">
+                                No Veedel matches “{query}”.
+                            </div>
+                        ) : (
+                            filtered.map(([bezirk, stadtteile]) => (
+                                <div key={bezirk}>
+                                    <div className="px-3 pt-2 pb-1 font-mono text-[10.5px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
+                                        {bezirk}
+                                    </div>
+                                    {stadtteile.map((s) => (
+                                        <button
+                                            key={s}
+                                            type="button"
+                                            onClick={() => select(s)}
+                                            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-secondary ${
+                                                value === s
+                                                    ? 'font-semibold text-primary'
+                                                    : 'text-foreground'
+                                            }`}
+                                        >
+                                            {s}
+                                            {value === s && (
+                                                <IconCheck
+                                                    size={16}
+                                                    stroke={ICON_STROKE}
+                                                    className="shrink-0 text-primary"
+                                                />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

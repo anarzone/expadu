@@ -139,13 +139,15 @@ export function ConfirmationStep({
                                 task={task}
                                 arrival={arrival}
                                 nowMs={nowMs}
+                                settled={settled}
                             />
                         ))}
                     </div>
                     {settled && (
                         <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
-                            Been in Cologne a while? These stay on your list
-                            until you tick them off — no deadlines are overdue.
+                            You've been in Cologne a while, so these are just
+                            here to tick off what you've already sorted —
+                            nothing is overdue or urgent.
                         </p>
                     )}
                 </>
@@ -165,11 +167,13 @@ function PreviewTask({
     task,
     arrival,
     nowMs,
+    settled,
 }: {
     index: number;
     task: TaskPreview;
     arrival: Date | null;
     nowMs: number;
+    settled: boolean;
 }) {
     let due: string | null = null;
 
@@ -201,7 +205,7 @@ function PreviewTask({
                 <div className="truncate text-[13.5px] font-semibold">
                     {task.title}
                 </div>
-                {task.meta && (
+                {!settled && task.meta && (
                     <div className="text-[11.5px] text-muted-foreground">
                         {task.meta}
                     </div>
