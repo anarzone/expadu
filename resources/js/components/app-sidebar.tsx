@@ -58,7 +58,6 @@ function buildNavGroups(): NavGroup[] {
                     title: 'Bureaucracy',
                     href: '/bureaucracy',
                     icon: IconFileText,
-                    badge: 3,
                 },
             ],
         },
@@ -71,9 +70,10 @@ const dropdownItems = [
 ];
 
 export function AppSidebar() {
-    const { auth, unreadAlertCount } = usePage<{
+    const { auth, unreadAlertCount, bureaucracyAttentionCount } = usePage<{
         auth: { user?: { name?: string } };
         unreadAlertCount?: number;
+        bureaucracyAttentionCount?: number;
     }>().props;
     const user = auth?.user;
     const getInitials = useInitials();
@@ -82,14 +82,23 @@ export function AppSidebar() {
 
     const navGroups = buildNavGroups();
 
-    // Set dynamic badge on Alerts nav item
+    // Live badges: unread alerts + open bureaucracy tasks. Both hide at 0.
     const navWithBadges = navGroups.map((group) => ({
         ...group,
-        items: group.items.map((item) =>
-            item.href === '/alerts' && unreadAlertCount
-                ? { ...item, badge: unreadAlertCount }
-                : item,
-        ),
+        items: group.items.map((item) => {
+            if (item.href === '/alerts') {
+                return { ...item, badge: unreadAlertCount || undefined };
+            }
+
+            if (item.href === '/bureaucracy') {
+                return {
+                    ...item,
+                    badge: bureaucracyAttentionCount || undefined,
+                };
+            }
+
+            return item;
+        }),
     }));
 
     function handleLogout() {
