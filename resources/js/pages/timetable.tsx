@@ -1010,13 +1010,16 @@ export default function Timetable() {
     // `then` re-plans an open journey from the fresh position.
     function requestDeviceLocation(
         then?: (coords: { lat: number; lng: number; name: string }) => void,
+        silent = false,
     ) {
         if (locating) {
             return;
         }
 
         if (!navigator.geolocation) {
-            flash('Location isn’t available on this device.');
+            if (!silent) {
+                flash('Location isn’t available on this device.');
+            }
 
             return;
         }
@@ -1037,6 +1040,14 @@ export default function Timetable() {
             },
             (err) => {
                 setLocating(false);
+
+                // The auto path (page open) fails quietly — an unsolicited error
+                // toast on every load would be noise. The manual dot still shows
+                // the guidance below.
+                if (silent) {
+                    return;
+                }
+
                 flash(
                     err.code === err.PERMISSION_DENIED
                         ? 'Location is blocked for this site. Allow it from the address-bar icon, then tap the dot again.'
@@ -1118,6 +1129,69 @@ export default function Timetable() {
             document.removeEventListener('visibilitychange', onVisibility);
         };
     }, [following, destination]);
+
+    // On open, when the browser has ALREADY granted location, resolve the
+    // device's position once and root everything at it — the board's current
+    // stop and (when a journey is open on the live origin) the planner's From —
+    // with no blue-dot tap or full refresh. Respects the never-prompt rule: if
+    // permission isn't granted yet we stay put and let an intentional tap own the
+    // first prompt. A short sessionStorage throttle avoids re-confirming on every
+    // quick navigation back to the page.
+    useEffect(() => {
+        if (!navigator.permissions?.query) {
+            return;
+        }
+
+        let cancelled = false;
+
+        navigator.permissions
+            .query({ name: 'geolocation' as PermissionName })
+            .then((status) => {
+                if (cancelled || status.state !== 'granted') {
+                    return;
+                }
+
+                const lastAt = Number(
+                    sessionStorage.getItem('timetableAutoLocatedAt') ?? 0,
+                );
+
+                if (Date.now() - lastAt < 5 * 60_000) {
+                    return;
+                }
+
+                sessionStorage.setItem(
+                    'timetableAutoLocatedAt',
+                    String(Date.now()),
+                );
+
+                requestDeviceLocation(
+                    ({ lat, lng, name }) =>
+                        // Re-plan an already-open journey from here — but only
+                        // when it's on the live origin, never overriding an
+                        // explicit or shared-link From.
+                        setDestination((d) =>
+                            d && d.fromLat == null
+                                ? {
+                                      ...d,
+                                      fromLat: lat,
+                                      fromLng: lng,
+                                      fromName: name,
+                                  }
+                                : d,
+                        ),
+                    true,
+                );
+            })
+            .catch(() => {
+                // Permissions API unavailable (older Safari) — stay passive; the
+                // manual dot still works.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     async function planTo(target: Destination | { query: string }) {
         if ('lat' in target) {
