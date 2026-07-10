@@ -128,11 +128,14 @@ test.describe('Onboarding v2', () => {
             .click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Step 3 — veedel + arrival
+        // Step 3 — veedel (searchable combobox) + arrival
         await page
-            .locator('select')
-            .first()
-            .selectOption({ label: 'Ehrenfeld' });
+            .getByRole('button', { name: 'Pick your neighbourhood' })
+            .click();
+        await page.getByPlaceholder('Search your Veedel').fill('Ehrenfeld');
+        await page
+            .getByRole('button', { name: 'Ehrenfeld', exact: true })
+            .click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
         // Step 4 — interests: pick the minimum three so Continue enables.
