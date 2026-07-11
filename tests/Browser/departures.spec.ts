@@ -52,7 +52,9 @@ test.describe('Departures', () => {
         expect(errors).toHaveLength(0);
     });
 
-    test('only offers mode tabs that have live departures', async ({ page }) => {
+    test('only offers mode tabs that have live departures', async ({
+        page,
+    }) => {
         await page.goto('/timetable');
         await page.waitForLoadState('networkidle');
         await page.waitForTimeout(1500);
@@ -107,5 +109,75 @@ test.describe('Departures', () => {
             'aria-label',
             /departs at \d{1,2}:\d{2}|departing now|cancelled|no departures/,
         );
+    });
+
+    // Auto-locate on open (the safe redesign): the accuracy gate is the whole
+    // safety — only a PRECISE fix roots the board, so a vague reading can never
+    // anchor the user at the wrong stop, and it never fires unless location is
+    // already granted.
+    test('auto-resolves the current location on open when the fix is precise', async ({
+        page,
+        context,
+    }) => {
+        await context.grantPermissions(['geolocation']);
+        await context.setGeolocation({
+            latitude: 50.9385,
+            longitude: 6.9595,
+            accuracy: 40,
+        });
+
+        const confirmed = page.waitForRequest(
+            (r) => r.url().includes('/api/location/confirm'),
+            { timeout: 8000 },
+        );
+
+        await page.goto('/timetable', { waitUntil: 'domcontentloaded' });
+
+        // It confirmed the device location on its own — no tap, no refresh.
+        await confirmed;
+    });
+
+    test('ignores a vague fix so it never roots at the wrong stop', async ({
+        page,
+        context,
+    }) => {
+        await context.grantPermissions(['geolocation']);
+        // 600 m accuracy — a desktop Wi-Fi/IP guess, well past the 150 m gate.
+        await context.setGeolocation({
+            latitude: 50.9385,
+            longitude: 6.9595,
+            accuracy: 600,
+        });
+
+        let confirmed = false;
+        page.on('request', (r) => {
+            if (r.url().includes('/api/location/confirm')) {
+                confirmed = true;
+            }
+        });
+
+        await page.goto('/timetable', { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(3000);
+
+        expect(confirmed).toBe(false);
+    });
+
+    test('never resolves the location when permission is not granted', async ({
+        page,
+        context,
+    }) => {
+        await context.clearPermissions();
+
+        let confirmed = false;
+        page.on('request', (r) => {
+            if (r.url().includes('/api/location/confirm')) {
+                confirmed = true;
+            }
+        });
+
+        await page.goto('/timetable', { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(3000);
+
+        expect(confirmed).toBe(false);
     });
 });

@@ -1005,6 +1005,40 @@ export default function Timetable() {
         return name;
     }
 
+    // Auto-resolve the device location on open when the browser has ALREADY
+    // granted it — no tap, no refresh. The safety is the accuracy gate: only a
+    // precise fix (≤150 m) roots the board, so a vague desktop Wi-Fi/IP reading
+    // never anchors you at the wrong stop — a wide fix is simply ignored. Silent
+    // on failure, and (via its caller) sequenced after the first board load so
+    // it never races the deferred fetch. Respects the never-prompt rule.
+    function autoLocate(): void {
+        if (!navigator.geolocation) {
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                // A wide fix would guess the wrong stop — leave the resolved
+                // location alone rather than mislead.
+                if (pos.coords.accuracy > 150) {
+                    return;
+                }
+
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+
+                void confirmLocation(lat, lng);
+                followRef.current = { lat, lng };
+                lastFollowRef.current = Date.now();
+                setFollowing(true);
+            },
+            () => {
+                // Silent — an automatic attempt never nags with an error toast.
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+        );
+    }
+
     // Resolve the device's real GPS (browser permission prompt), anchor to it,
     // and start live-following so the board tracks the user as they move.
     // `then` re-plans an open journey from the fresh position.
@@ -1119,6 +1153,62 @@ export default function Timetable() {
         };
     }, [following, destination]);
 
+    // On open, when location is ALREADY granted, root everything at the device's
+    // position once — but only AFTER the first board has loaded, so it never
+    // races the deferred fetch (the earlier regression). A sessionStorage
+    // throttle avoids re-confirming on every quick navigation back; autoLocate()
+    // itself is accuracy-gated, non-sticky and silent.
+    const autoLocatedRef = useRef(false);
+    useEffect(() => {
+        if (autoLocatedRef.current || liveBoards === undefined) {
+            return;
+        }
+
+        if (!navigator.permissions?.query) {
+            return;
+        }
+
+        let cancelled = false;
+
+        navigator.permissions
+            .query({ name: 'geolocation' as PermissionName })
+            .then((status) => {
+                if (cancelled || autoLocatedRef.current) {
+                    return;
+                }
+
+                // Attempt at most once per mount, granted or not.
+                autoLocatedRef.current = true;
+
+                if (status.state !== 'granted') {
+                    return;
+                }
+
+                const lastAt = Number(
+                    sessionStorage.getItem('timetableAutoLocatedAt') ?? 0,
+                );
+
+                if (Date.now() - lastAt < 5 * 60_000) {
+                    return;
+                }
+
+                sessionStorage.setItem(
+                    'timetableAutoLocatedAt',
+                    String(Date.now()),
+                );
+
+                autoLocate();
+            })
+            .catch(() => {
+                // Permissions API unavailable (older Safari) — stay passive.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [liveBoards]);
+
     async function planTo(target: Destination | { query: string }) {
         if ('lat' in target) {
             if (target.fromLat === null) {
@@ -1214,7 +1304,10 @@ export default function Timetable() {
                                     Departures
                                 </h1>
                                 <p className="mt-1 text-[13.5px] text-muted-foreground">
-                                    {board ? (
+                                    {liveBoards === undefined ? (
+                                        // Genuinely still loading the deferred board.
+                                        'Finding your nearest stop…'
+                                    ) : board ? (
                                         <>
                                             Live from{' '}
                                             <strong className="font-semibold text-foreground">
@@ -1230,7 +1323,9 @@ export default function Timetable() {
                                             )}
                                         </>
                                     ) : (
-                                        'Finding your nearest stop…'
+                                        // Loaded, but the nearest stop has nothing running —
+                                        // say so instead of implying we're still searching.
+                                        'No live departures near you right now'
                                     )}
                                 </p>
                             </div>
