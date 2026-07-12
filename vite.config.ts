@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/app.tsx',
                 'resources/css/marketing.css',
                 'resources/js/marketing.ts',
+                'resources/js/marketing-tools.ts',
             ],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,

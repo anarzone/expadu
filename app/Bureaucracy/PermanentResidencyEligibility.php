@@ -53,6 +53,39 @@ class PermanentResidencyEligibility
     }
 
     /**
+     * The NE tracks with their statutory thresholds — the single source for
+     * both the in-app eligibility check and the public marketing tool, so the
+     * two can never disagree on a legal figure.
+     *
+     * @return array<string, array{months: int, label: string, note: string}>
+     */
+    public static function tracks(): array
+    {
+        return [
+            'blue_card' => [
+                'months' => 21,
+                'label' => 'EU Blue Card',
+                'note' => 'Blue Card holders qualify after 21 months with B1 German (27 with A1).',
+            ],
+            'family_of_german' => [
+                'months' => 36,
+                'label' => 'Family member of a German citizen',
+                'note' => 'Family members of German citizens qualify after 3 years (§28 Abs. 2).',
+            ],
+            'skilled_worker' => [
+                'months' => 36,
+                'label' => 'Skilled worker (employment permit)',
+                'note' => 'Skilled workers qualify after 3 years — just 2 with a German degree (§18c).',
+            ],
+            'general' => [
+                'months' => 60,
+                'label' => 'General route',
+                'note' => 'The general route opens after 5 years (§9).',
+            ],
+        ];
+    }
+
+    /**
      * The track-specific NE threshold (months) + the note we surface so the
      * user can confirm the conditions date math alone cannot prove.
      *
@@ -60,11 +93,15 @@ class PermanentResidencyEligibility
      */
     private function trackThreshold(Profile $profile): array
     {
-        return match (true) {
-            ($profile->attributes['permit_track'] ?? null) === 'blue_card' => [21, 'Blue Card holders qualify after 21 months with B1 German (27 with A1).'],
-            ($profile->attributes['sponsor'] ?? null) === 'german' && ($profile->attributes['purpose'] ?? null) === 'family' => [36, 'Family members of German citizens qualify after 3 years (§28 Abs. 2).'],
-            ($profile->attributes['purpose'] ?? null) === 'employment' => [36, 'Skilled workers qualify after 3 years — just 2 with a German degree (§18c).'],
-            default => [60, 'The general route opens after 5 years (§9).'],
+        $tracks = self::tracks();
+
+        $key = match (true) {
+            ($profile->attributes['permit_track'] ?? null) === 'blue_card' => 'blue_card',
+            ($profile->attributes['sponsor'] ?? null) === 'german' && ($profile->attributes['purpose'] ?? null) === 'family' => 'family_of_german',
+            ($profile->attributes['purpose'] ?? null) === 'employment' => 'skilled_worker',
+            default => 'general',
         };
+
+        return [$tracks[$key]['months'], $tracks[$key]['note']];
     }
 }

@@ -39,6 +39,7 @@
     </script>
 
     @stack('structured-data')
+    @stack('head')
 
     @vite(['resources/css/marketing.css', 'resources/js/marketing.ts'])
 </head>
@@ -51,7 +52,7 @@
             <a href="{{ route('home') }}#paths">Your path</a>
             <a href="{{ route('home') }}#bureaucracy">Bureaucracy</a>
             <a href="{{ route('home') }}#transit">Transit</a>
-            <a href="{{ route('home') }}#tools">Free tools</a>
+            <a href="{{ route('tools.index') }}">Free tools</a>
             <a href="{{ route('home') }}#faq">FAQ</a>
         </div>
         <div class="nav-cta">
@@ -92,7 +93,7 @@
                     <a href="{{ route('home') }}#composer">Day composer</a>
                     <a href="{{ route('home') }}#bureaucracy">Bureaucracy</a>
                     <a href="{{ route('home') }}#transit">Transit</a>
-                    <a href="{{ route('home') }}#tools">Free tools</a>
+                    <a href="{{ route('tools.index') }}">Free tools</a>
                 </div>
                 <div>
                     <b>Account</b>

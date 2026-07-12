@@ -24,6 +24,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\Marketing\LandingController;
 use App\Http\Controllers\Marketing\SitemapController;
+use App\Http\Controllers\Marketing\ToolsController;
 use App\Http\Controllers\Marketing\WaitlistController;
 use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationPreferenceController;
@@ -67,6 +68,12 @@ $marketingRoutes = function () {
 
     Route::view('impressum', 'marketing.impressum')->name('impressum');
     Route::view('datenschutz', 'marketing.datenschutz')->name('datenschutz');
+
+    // Free tools — client-side calculators, constants from the app's engines.
+    Route::get('tools', [ToolsController::class, 'index'])->name('tools.index');
+    Route::get('tools/deutschlandticket-break-even', [ToolsController::class, 'dticket'])->name('tools.dticket');
+    Route::get('tools/permanent-residency-timeline', [ToolsController::class, 'residency'])->name('tools.residency');
+    Route::get('tools/citizenship-quiz', [ToolsController::class, 'citizenship'])->name('tools.citizenship');
 
     Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 

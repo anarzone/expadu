@@ -258,19 +258,19 @@
                 <span class="free">free · no signup</span>
                 <h3>Deutschlandticket break-even</h3>
                 <p>Is the D-Ticket worth it for how you actually move? Two inputs, honest verdict, 2026 Cologne tariff.</p>
-                <a href="{{ route('home') }}#tools">Coming this week →</a>
+                <a href="{{ route('tools.dticket') }}">Check your break-even →</a>
             </div>
             <div class="tool">
                 <span class="free">free · no signup</span>
                 <h3>Permanent-residency timeline</h3>
                 <p>Your earliest Niederlassungserlaubnis date — and what legally speeds it up.</p>
-                <a href="{{ route('home') }}#tools">Coming this week →</a>
+                <a href="{{ route('tools.residency') }}">See your timeline →</a>
             </div>
             <div class="tool">
                 <span class="free">free · no signup</span>
                 <h3>Citizenship quiz</h3>
-                <p>Are you on track for a German passport? Eight questions against the current rules, with sources.</p>
-                <a href="{{ route('home') }}#tools">Coming this week →</a>
+                <p>Are you on track for a German passport? Five questions against the current rules, with sources.</p>
+                <a href="{{ route('tools.citizenship') }}">Take the quiz →</a>
             </div>
         </div>
     </div>

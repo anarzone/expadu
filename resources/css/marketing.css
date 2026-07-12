@@ -1216,6 +1216,138 @@ footer.site {
     margin: 14px 0;
 }
 
+/* ── Tool pages (/tools/*) ──────────────────────────────────────── */
+.tool-shell {
+    max-width: 680px;
+    padding-top: 24px;
+}
+.tool-shell h1 {
+    font-size: clamp(1.9rem, 3.6vw, 2.5rem);
+    margin: 10px 0 8px;
+}
+.tool-form {
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.tfield label {
+    display: block;
+    font-weight: 600;
+    font-size: 14.5px;
+    margin-bottom: 6px;
+}
+.tfield label.check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2px;
+    cursor: pointer;
+}
+.tfield input[type='number'],
+.tfield input[type='month'],
+.tfield select {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    width: 100%;
+}
+.tfield input[type='checkbox'] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--primary);
+}
+.tfield small {
+    display: block;
+    color: var(--muted);
+    font-size: 12.5px;
+    margin-top: 5px;
+}
+.tool-result {
+    border: 1.5px solid var(--primary);
+    background: var(--primary-soft);
+    border-radius: 20px;
+    padding: 20px 24px;
+    margin-top: 18px;
+}
+.tool-result:empty {
+    display: none;
+}
+.tool-result .verdict {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 500;
+}
+.tool-result .verdict.good {
+    color: var(--good);
+}
+.tool-result .verdict.warn {
+    color: var(--primary-text);
+}
+.tool-result .numbers {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin: 12px 0 4px;
+}
+.tool-result .numbers span {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.tool-result .numbers b {
+    font-size: 1.15rem;
+    font-variant-numeric: tabular-nums;
+}
+.tool-result .explain {
+    font-size: 14.5px;
+    color: var(--ink);
+    margin: 8px 0 0;
+}
+.tool-foot {
+    margin-top: 22px;
+    font-size: 14px;
+    color: var(--muted);
+}
+.tool-foot .sources {
+    font-size: 12.5px;
+    border-top: 1px dashed var(--border-soft);
+    padding-top: 10px;
+}
+.tool-foot .sources a {
+    color: var(--primary-text);
+}
+.tool-cta {
+    border: 1px solid var(--border-soft);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    border-radius: 20px;
+    padding: 20px 24px;
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+.tool-cta p {
+    margin: 0;
+    font-size: 14.5px;
+    max-width: 40ch;
+}
+
 :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;

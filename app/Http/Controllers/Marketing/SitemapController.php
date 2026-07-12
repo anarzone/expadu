@@ -17,6 +17,10 @@ class SitemapController extends Controller
         $xml = Cache::remember('marketing.sitemap', now()->addHour(), function (): string {
             $urls = [
                 ['loc' => route('home'), 'priority' => '1.0'],
+                ['loc' => route('tools.index'), 'priority' => '0.8'],
+                ['loc' => route('tools.dticket'), 'priority' => '0.8'],
+                ['loc' => route('tools.residency'), 'priority' => '0.8'],
+                ['loc' => route('tools.citizenship'), 'priority' => '0.8'],
                 ['loc' => route('impressum'), 'priority' => '0.1'],
                 ['loc' => route('datenschutz'), 'priority' => '0.1'],
             ];
