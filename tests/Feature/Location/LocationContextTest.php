@@ -87,6 +87,28 @@ test('the confirmed location is the shared origin', function () {
     expect($origin->label)->toBe('Mülheim');
 });
 
+test('a newer accepted GPS ping replaces an older confirmed live fix', function () {
+    Redis::setex("confirmed_location:{$this->user->id}", 7200, json_encode([
+        'lat' => 50.97,
+        'lng' => 6.93,
+        'name' => 'Old position',
+        'at' => now()->subMinutes(10)->timestamp,
+    ]));
+
+    $freshFix = now()->addSecond();
+    Redis::zadd("location_history:{$this->user->id}", $freshFix->timestamp, json_encode([
+        'lat' => 50.995, 'lng' => 6.955, 'at' => $freshFix->toIso8601String(),
+    ]));
+
+    $origin = $this->service->context($this->user, Request::create('/api/places'));
+    $resolved = $this->service->resolve($this->user);
+
+    expect($origin->source)->toBe(LocationSource::Ping)
+        ->and($origin->lat)->toBe(50.995)
+        ->and($resolved['source'])->toBe('last_ping')
+        ->and($resolved['lat'])->toBe(50.995);
+});
+
 test('a recent accepted ping anchors the origin', function () {
     Redis::zadd("location_history:{$this->user->id}", now()->timestamp, json_encode([
         'lat' => 50.9485, 'lng' => 6.9230, 'at' => now()->toIso8601String(),

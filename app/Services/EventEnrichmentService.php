@@ -3,10 +3,15 @@
 namespace App\Services;
 
 use App\Models\Event;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EventEnrichmentService
 {
+    public function __construct(private readonly CologneServiceArea $serviceArea) {}
+
     /**
      * Enrich a single event with tags, expat relevance, and quality score.
      */
@@ -29,7 +34,7 @@ class EventEnrichmentService
             return;
         }
 
-        $query = $event->location_name ?? $event->address;
+        $query = $event->address ?: $event->location_name;
         if (! $query || in_array(mb_strtolower($query), ['cologne', 'köln', ''], true)) {
             return;
         }
@@ -41,16 +46,28 @@ class EventEnrichmentService
             $geocoder = app(GeocodingService::class);
             $results = $geocoder->search($searchQuery);
 
-            if (! empty($results) && isset($results[0]['lat'], $results[0]['lng'])) {
-                $lat = $results[0]['lat'];
-                $lng = $results[0]['lng'];
+            $result = collect($results)->first(fn (array $candidate): bool => isset($candidate['lat'], $candidate['lng'])
+                && $this->serviceArea->contains((float) $candidate['lat'], (float) $candidate['lng'])
+            );
+
+            if ($result !== null) {
+                $lat = $result['lat'];
+                $lng = $result['lng'];
                 \DB::statement(
                     'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
                     [$lng, $lat, $event->id]
                 );
+            } elseif ($results !== []) {
+                $event->needs_review = true;
             }
-        } catch (\Exception $e) {
-            // Silent fail — geocoding is best-effort
+        } catch (\Exception $exception) {
+            DB::statement('UPDATE events SET location = NULL, venue_id = NULL, needs_review = TRUE WHERE id = ?', [$event->id]);
+            Log::warning('event geocoding failed', [
+                'event_id' => $event->id,
+                'query' => $searchQuery,
+                'exception' => $exception::class,
+                'error' => $exception->getMessage(),
+            ]);
         }
     }
 
@@ -59,14 +76,27 @@ class EventEnrichmentService
      */
     public function enrichAll(int $limit = 100): int
     {
-        $events = Event::where('quality_score', '<', 0.3)
-            ->orWhereNull('tags')
+        $events = Event::query()
+            ->where('status', 'active')
+            ->where(fn (Builder $future): Builder => $future->whereNull('ends_at')->where('starts_at', '>=', now())
+                ->orWhere('ends_at', '>=', now()))
+            ->where(function (Builder $query): void {
+                $query->where('quality_score', '<', 0.3)
+                    ->orWhereNull('tags')
+                    ->orWhereNull('location');
+            })
             ->orderBy('starts_at')
-            ->limit($limit)
+            ->limit($limit * 5)
             ->get();
 
         $count = 0;
         foreach ($events as $event) {
+            if ($count >= $limit) {
+                break;
+            }
+            if (! Cache::add("events:enrichment:{$event->id}", true, now()->addHours(6))) {
+                continue;
+            }
             $this->enrichEvent($event);
             $count++;
         }
@@ -80,14 +110,16 @@ class EventEnrichmentService
     public function deduplicateEvents(): int
     {
         $duplicates = DB::table('events')
-            ->select('title', DB::raw('DATE(starts_at) as event_date'), DB::raw('MIN(id) as keep_id'), DB::raw('COUNT(*) as cnt'))
-            ->groupBy('title', DB::raw('DATE(starts_at)'))
+            ->whereNull('source_uid')
+            ->select('source', 'title', DB::raw('DATE(starts_at) as event_date'), DB::raw('MIN(id) as keep_id'), DB::raw('COUNT(*) as cnt'))
+            ->groupBy('source', 'title', DB::raw('DATE(starts_at)'))
             ->havingRaw('COUNT(*) > 1')
             ->get();
 
         $deleted = 0;
         foreach ($duplicates as $dup) {
             $deleted += Event::where('title', $dup->title)
+                ->where('source', $dup->source)
                 ->whereDate('starts_at', $dup->event_date)
                 ->where('id', '!=', $dup->keep_id)
                 ->delete();

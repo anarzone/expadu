@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
-#[Fillable(['name', 'category', 'cuisine', 'price_range', 'tags', 'description', 'address', 'lat', 'lng', 'veedel', 'park_name', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating', 'source', 'source_id', 'is_verified', 'phone', 'website', 'tip', 'photo_url', 'photo_attribution'])]
+#[Fillable(['name', 'category', 'cuisine', 'price_range', 'tags', 'description', 'address', 'lat', 'lng', 'veedel', 'park_name', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating', 'source', 'source_id', 'source_group', 'last_seen_at', 'is_active', 'is_recommendable', 'is_verified', 'phone', 'website', 'tip', 'photo_url', 'photo_attribution'])]
 class Spot extends Model
 {
     /** @use HasFactory<SpotFactory> */
@@ -31,7 +31,16 @@ class Spot extends Model
             'rating' => 'float',
             'lat' => 'float',
             'lng' => 'float',
+            'last_seen_at' => 'datetime',
+            'is_active' => 'boolean',
+            'is_recommendable' => 'boolean',
         ];
+    }
+
+    /** @param Builder<Spot> $query */
+    public function scopeRecommendationEligible(Builder $query): Builder
+    {
+        return $query->where('is_active', true)->where('is_recommendable', true);
     }
 
     /** @return HasMany<Review, $this> */

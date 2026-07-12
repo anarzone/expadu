@@ -78,6 +78,7 @@ class PlaceContextController extends Controller
     private function nearby(Spot $spot): array
     {
         $query = Spot::query()
+            ->recommendationEligible()
             ->whereKeyNot($spot->id)
             ->where('name', '!=', $spot->name)
             ->whereIn('category', SpotCategory::placesFines())

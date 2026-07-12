@@ -10,6 +10,8 @@ import {
 } from '@tabler/icons-react';
 import type { Icon as TablerIcon } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { index as eventsIndex } from '@/actions/App/Http/Controllers/Api/EventsController';
+import LocationConfirmController from '@/actions/App/Http/Controllers/Api/LocationConfirmController';
 import { EventRichDetail } from '@/components/events/event-rich-detail';
 import { RemindMeButton } from '@/components/events/remind-me-button';
 import type {
@@ -27,6 +29,7 @@ import type { Place } from '@/components/places/types';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
+import { MAX_LOCATION_ACCURACY_M } from '@/hooks/use-geolocation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
 
@@ -58,27 +61,12 @@ const EVENT_MODES: ReadonlyArray<{
     { id: 'bike', label: 'Bike', Icon: IconBike },
 ];
 
-type EventSort = 'Soonest' | 'Nearest' | 'Popular';
+type EventSort = 'Soonest' | 'Nearest' | 'Recommended';
 
-/**
- * Client reorder for the Sort control. "Soonest" is a real time sort (the
- * default the API already returns); "Nearest"/"Popular" wait on event distance
- * + popularity data, so they hold the server order for now.
- */
-function sortEvents(
-    list: EventOccurrence[],
-    sortBy: EventSort,
-): EventOccurrence[] {
-    if (sortBy !== 'Soonest') {
-        return list;
-    }
-
-    return [...list].sort(
-        (a, b) =>
-            new Date(a.occurrence_start).getTime() -
-            new Date(b.occurrence_start).getTime(),
-    );
-}
+type EventsOrigin = {
+    source: string;
+    label: string | null;
+};
 
 function occurrenceKey(o: {
     event_id?: number;
@@ -133,6 +121,17 @@ function placeMeta(place: Place): string {
         .join(' · ');
 }
 
+function eventMeta(occurrence: EventOccurrence, mode: EventMode): string {
+    const proximity =
+        occurrence.travel_min != null
+            ? `${occurrence.travel_min} min ${mode === 'walk' ? 'walk' : 'bike'}`
+            : occurrence.distance_km != null
+              ? `${occurrence.distance_km.toFixed(1)} km away`
+              : null;
+
+    return [occurrence.meta, proximity].filter(Boolean).join(' · ');
+}
+
 export default function Events() {
     const { filters, veedelOptions } = usePage<{
         filters: {
@@ -141,6 +140,8 @@ export default function Events() {
             veedel: string | null;
             free: boolean;
             venue: string | null;
+            sort: 'soonest' | 'nearest' | 'recommended';
+            mode: EventMode;
         };
         veedelOptions?: string[];
     }>().props;
@@ -154,13 +155,21 @@ export default function Events() {
 
     // v4 controls row — From popover + Sort menu (the distance recompute behind
     // From, and Nearest/Popular sort, light up once event distances land).
-    const [evMode, setEvMode] = useState<EventMode>('walk');
-    const [evSort, setEvSort] = useState<EventSort>('Soonest');
+    const [evMode, setEvMode] = useState<EventMode>(filters.mode);
+    const [evSort, setEvSort] = useState<EventSort>(
+        `${filters.sort[0].toUpperCase()}${filters.sort.slice(1)}` as EventSort,
+    );
     const [fromOpen, setFromOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
 
     const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
     const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
+    const [origin, setOrigin] = useState<EventsOrigin | null>(null);
+    const [needsLocation, setNeedsLocation] = useState(false);
+    const [usingLiveOrigin, setUsingLiveOrigin] = useState(false);
+    const [locationStatus, setLocationStatus] = useState<
+        'idle' | 'locating' | 'error'
+    >('idle');
     const [reminders, setReminders] = useState<Set<string>>(new Set());
 
     const [expandedKey, setExpandedKey] = useState<string | null>(null);
@@ -175,6 +184,8 @@ export default function Events() {
         (w: string, c: string | null, v: string | null, f: boolean) => {
             const token = ++reqRef.current;
             const params = new URLSearchParams({ window: w });
+            params.set('sort', evSort.toLowerCase());
+            params.set('mode', evMode);
 
             if (c) {
                 params.set('category', c);
@@ -192,7 +203,9 @@ export default function Events() {
                 params.set('venue', venueId);
             }
 
-            fetch(`/api/events?${params}`, { credentials: 'same-origin' })
+            fetch(eventsIndex.url({ query: Object.fromEntries(params) }), {
+                credentials: 'same-origin',
+            })
                 .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
                 .then((json) => {
                     if (token !== reqRef.current) {
@@ -200,6 +213,8 @@ export default function Events() {
                     }
 
                     setOccurrences(json.data ?? []);
+                    setOrigin(json.origin ?? null);
+                    setNeedsLocation(json.needs_location === true);
                     setExpandedKey(null);
                     setStatus('ok');
                 })
@@ -209,7 +224,7 @@ export default function Events() {
                     }
                 });
         },
-        [venueId],
+        [venueId, evSort, evMode],
     );
 
     // Fetch on filter change + keep the URL shareable
@@ -238,6 +253,14 @@ export default function Events() {
             params.set('venue', venueId);
         }
 
+        if (evSort !== 'Soonest') {
+            params.set('sort', evSort.toLowerCase());
+        }
+
+        if (evMode !== 'walk') {
+            params.set('mode', evMode);
+        }
+
         const qs = params.toString();
         // Preserve history.state — Inertia v2 stores its page snapshot
         // there; replacing it with {} breaks back/forward app-wide.
@@ -246,7 +269,73 @@ export default function Events() {
             '',
             `/events${qs ? `?${qs}` : ''}`,
         );
-    }, [window_, category, veedel, free, venueId, fetchEvents]);
+    }, [
+        window_,
+        category,
+        veedel,
+        free,
+        venueId,
+        evSort,
+        evMode,
+        usingLiveOrigin,
+        fetchEvents,
+    ]);
+
+    function locateMe() {
+        if (!navigator.geolocation) {
+            setLocationStatus('error');
+
+            return;
+        }
+
+        setLocationStatus('locating');
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                if (position.coords.accuracy > MAX_LOCATION_ACCURACY_M) {
+                    setLocationStatus('error');
+
+                    return;
+                }
+
+                const next = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+
+                try {
+                    const response = await fetch(
+                        LocationConfirmController.url(),
+                        {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN':
+                                    document
+                                        .querySelector(
+                                            'meta[name="csrf-token"]',
+                                        )
+                                        ?.getAttribute('content') ?? '',
+                            },
+                            body: JSON.stringify(next),
+                        },
+                    );
+
+                    if (!response.ok) {
+                        throw new Error('Location confirmation failed');
+                    }
+
+                    setUsingLiveOrigin(true);
+                    setLocationStatus('idle');
+                    setNeedsLocation(false);
+                } catch {
+                    setLocationStatus('error');
+                }
+            },
+            () => setLocationStatus('error'),
+            { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+        );
+    }
 
     // Back/forward re-reads the URL
     useEffect(() => {
@@ -262,6 +351,16 @@ export default function Events() {
             setVeedel(sp.get('veedel'));
             setFree(sp.get('free') === '1');
             setVenueId(sp.get('venue'));
+            const sort = sp.get('sort');
+            setEvSort(
+                sort === 'nearest'
+                    ? 'Nearest'
+                    : sort === 'recommended'
+                      ? 'Recommended'
+                      : 'Soonest',
+            );
+            const mode = sp.get('mode');
+            setEvMode(mode === 'bike' || mode === 'transit' ? mode : 'walk');
         }
         globalThis.addEventListener('popstate', onPop);
 
@@ -446,7 +545,8 @@ export default function Events() {
                                 <span className="font-medium text-[#7fb6c4]">
                                     from
                                 </span>
-                                You
+                                {origin?.label ??
+                                    (needsLocation ? 'Set location' : 'You')}
                                 <span className="text-[#9ccada]">·</span>
                                 <EvModeIcon size={13} stroke={ICON_STROKE} />
                                 <IconChevronDown size={12} stroke={2} />
@@ -462,13 +562,36 @@ export default function Events() {
                                         <div className="mb-2.5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
                                             Measure distances from
                                         </div>
-                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan bg-cyan-soft px-[11px] py-[7px] text-[12px] font-semibold text-cyan-h">
+                                        <button
+                                            type="button"
+                                            onClick={locateMe}
+                                            disabled={
+                                                locationStatus === 'locating'
+                                            }
+                                            className="inline-flex items-center gap-1.5 rounded-full border border-cyan bg-cyan-soft px-[11px] py-[7px] text-[12px] font-semibold text-cyan-h disabled:opacity-60"
+                                        >
                                             <IconMapPin
                                                 size={13}
                                                 stroke={ICON_STROKE}
                                             />
-                                            My location
-                                        </span>
+                                            {locationStatus === 'locating'
+                                                ? 'Finding you…'
+                                                : usingLiveOrigin
+                                                  ? 'Refresh my location'
+                                                  : 'Use my live location'}
+                                        </button>
+                                        {origin?.label && !usingLiveOrigin && (
+                                            <p className="mt-2 text-[11px] text-text-2">
+                                                Currently measuring from{' '}
+                                                {origin.label}.
+                                            </p>
+                                        )}
+                                        {locationStatus === 'error' && (
+                                            <p className="mt-2 text-[11px] text-primary">
+                                                Location is unavailable. Allow
+                                                location access and try again.
+                                            </p>
+                                        )}
 
                                         <div className="my-[13px] h-px bg-border" />
 
@@ -505,6 +628,12 @@ export default function Events() {
                                                 },
                                             )}
                                         </div>
+                                        {evMode === 'transit' && (
+                                            <p className="mt-2 text-[11px] text-text-2">
+                                                Open an event for a live transit
+                                                route and travel time.
+                                            </p>
+                                        )}
                                     </div>
                                 </>
                             )}
@@ -538,7 +667,7 @@ export default function Events() {
                                             [
                                                 'Soonest',
                                                 'Nearest',
-                                                'Popular',
+                                                'Recommended',
                                             ] as const
                                         ).map((opt) => {
                                             const on = evSort === opt;
@@ -611,6 +740,20 @@ export default function Events() {
                     </div>
                 )}
 
+                {status === 'ok' && needsLocation && (
+                    <div className="mb-4 rounded-2xl border border-cyan-bd bg-cyan-soft p-4 text-sm text-cyan-h">
+                        Set your location to see nearest events and travel
+                        times.
+                        <button
+                            type="button"
+                            onClick={locateMe}
+                            className="ml-2 font-semibold underline underline-offset-2"
+                        >
+                            Use my location
+                        </button>
+                    </div>
+                )}
+
                 {status === 'loading' ? (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {[1, 2, 3].map((i) => (
@@ -675,7 +818,7 @@ export default function Events() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {sortEvents(occurrences, evSort).map((occurrence) => {
+                        {occurrences.map((occurrence) => {
                             const key = occurrenceKey(occurrence);
 
                             return (
@@ -688,7 +831,7 @@ export default function Events() {
                                     title={occurrence.title}
                                     emoji={occurrence.emoji}
                                     badge={dateBadge(occurrence)}
-                                    meta={occurrence.meta}
+                                    meta={eventMeta(occurrence, evMode)}
                                     photoUrl={occurrence.photo_url}
                                     live={startsWithinFourHours(occurrence)}
                                     chips={eventChips(occurrence)}

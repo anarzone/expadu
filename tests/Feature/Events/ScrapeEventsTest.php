@@ -68,3 +68,28 @@ test('the scraper stops at the last page and does not loop forever', function ()
     expect($calls)->toBe(1)
         ->and(Event::where('source_uid', 'only')->exists())->toBeTrue();
 });
+
+test('the scraper preserves the complete German source description for translation', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $description = str_repeat('Vollständiger deutscher Absatz. ', 100);
+    $payload = koelnEvent('full-description', 'Langer Quelltext', now()->addHours(3)->toDateTimeString());
+    $payload['description'] = $description;
+
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$payload]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::where('source_uid', 'full-description')->value('description'))->toBe(trim($description));
+});
+
+test('distinct source ids with the same title and date are not globally deduplicated', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDay()->toDateTimeString();
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [
+        koelnEvent('distinct-1', 'Shared title', $start), koelnEvent('distinct-2', 'Shared title', $start),
+    ]])]);
+    $this->artisan('events:scrape')->assertSuccessful();
+    expect(Event::where('title', 'Shared title')->count())->toBe(2);
+});

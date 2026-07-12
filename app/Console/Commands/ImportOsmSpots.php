@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\Spot;
 use App\Services\OpeningHoursParser;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class ImportOsmSpots extends Command
@@ -21,10 +23,20 @@ class ImportOsmSpots extends Command
 
     public function handle(): int
     {
+        // The database column has second precision. Align the cutoff so rows
+        // seen during this same second are not immediately retired.
+        $refreshStartedAt = CarbonImmutable::now()->startOfSecond();
         $city = $this->option('city');
 
         if ($city !== 'cologne') {
             $this->error("City \"{$city}\" is not supported yet. Only \"cologne\" is available.");
+
+            return self::FAILURE;
+        }
+
+        $officialVeedels = collect(config('veedels'))->flatten()->all();
+        if (DB::table('veedels')->whereIn('name', $officialVeedels)->whereNotNull('boundary')->count() !== 86) {
+            $this->error('Official Veedel polygons are required. Run veedels:import first.');
 
             return self::FAILURE;
         }
@@ -81,6 +93,7 @@ class ImportOsmSpots extends Command
         ];
 
         $allElements = [];
+        $refreshedGroups = [];
         foreach ($queries as $category => $query) {
             $this->info("  Fetching {$category}...");
             $fetched = false;
@@ -90,11 +103,18 @@ class ImportOsmSpots extends Command
                     $response = Http::timeout(90)->get($mirror, ['data' => $query]);
 
                     if ($response->successful()) {
-                        $elements = $response->json('elements', []);
+                        $payload = $response->json();
+                        if (! is_array($payload) || isset($payload['remark']) || ! array_key_exists('elements', $payload) || ! is_array($payload['elements'])) {
+                            $this->warn("    {$category} via {$mirror}: invalid Overpass payload");
+
+                            continue;
+                        }
+                        $elements = $payload['elements'];
                         foreach ($elements as &$el) {
                             $el['_category'] = $category;
                         }
                         $allElements = array_merge($allElements, $elements);
+                        $refreshedGroups[] = $category;
                         $this->info('    Found '.count($elements)." {$category} spots");
                         $fetched = true;
                         break;
@@ -113,7 +133,7 @@ class ImportOsmSpots extends Command
             sleep(2); // Rate limit courtesy
         }
 
-        if (empty($allElements)) {
+        if ($refreshedGroups === []) {
             $this->error('No spots found from Overpass API.');
 
             return self::FAILURE;
@@ -147,18 +167,13 @@ class ImportOsmSpots extends Command
 
         $this->info('  Received '.count($elements).' elements from Overpass');
 
-        if (count($elements) === 0) {
-            $this->warn('No elements returned. The query may have timed out or returned empty.');
-
-            return self::SUCCESS;
-        }
-
         $bar = $this->output->createProgressBar(count($elements));
         $bar->setFormat('  %current%/%max% [%bar%] %percent:3s%%');
 
         $imported = 0;
         $skippedNoName = 0;
         $skippedDuplicate = 0;
+        $skippedOutside = 0;
 
         foreach ($elements as $element) {
             $bar->advance();
@@ -186,46 +201,43 @@ class ImportOsmSpots extends Command
                 continue;
             }
 
-            $keptTags = $this->keptTags($tags);
-
-            // Check for duplicates: same name within ~50m. Existing rows
-            // still get their tags backfilled — earlier imports dropped them.
-            $duplicate = Spot::where('name', $name)
-                ->whereNotNull('lat')
-                ->whereNotNull('lng')
-                ->whereRaw('ABS(lat - ?) < 0.0005 AND ABS(lng - ?) < 0.0005', [$lat, $lng])
-                ->first();
-
-            if ($duplicate) {
-                // Merge newly-whitelisted keys into rows imported before
-                // the whitelist grew (e.g. wikidata for the photo pipeline).
-                $merged = array_merge($keptTags, is_array($duplicate->tags) ? $duplicate->tags : []);
-                if ($merged !== ($duplicate->tags ?? [])) {
-                    $duplicate->update(['tags' => $merged]);
-                }
-                $skippedDuplicate++;
+            $veedel = $this->veedelContaining($lat, $lng);
+            if ($veedel === null) {
+                $skippedOutside++;
 
                 continue;
             }
 
+            $keptTags = $this->keptTags($tags);
+
             // Build address from OSM tags
             $address = $this->buildAddress($tags);
 
-            Spot::create([
+            $sourceId = ($element['type'] ?? 'node').'/'.$element['id'];
+            $existing = Spot::query()->where('source', 'osm')->where('source_id', $sourceId)->first();
+            $values = [
                 'name' => $name,
                 'category' => $category,
                 'address' => $address,
                 'lat' => $lat,
                 'lng' => $lng,
+                'veedel' => $veedel,
                 'tags' => $keptTags ?: null,
                 'opening_hours' => OpeningHoursParser::parse($tags['opening_hours'] ?? null),
-                'wifi_speed' => null,
-                'noise_level' => null,
-                'rating' => null,
-            ]);
+                'source_group' => $element['_category'],
+                'last_seen_at' => now(),
+                'is_active' => true,
+                'is_recommendable' => $this->isRecommendationDestination($category, $name),
+            ];
+
+            if ($existing !== null) {
+                $existing->update(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
+            } else {
+                Spot::query()->create(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
+            }
 
             // PostGIS `location` is synced by Spot's saved() hook.
-            $imported++;
+            $existing ? $skippedDuplicate++ : $imported++;
         }
 
         $bar->finish();
@@ -235,17 +247,48 @@ class ImportOsmSpots extends Command
         $this->info("  Imported: {$imported}");
         $this->info("  Skipped (no name): {$skippedNoName}");
         $this->info("  Skipped (duplicate): {$skippedDuplicate}");
+        $this->info("  Skipped (outside Cologne): {$skippedOutside}");
 
-        // Newly imported spots have no Veedel yet; assign it now (nearest
-        // centroid, since boundaries aren't loaded) so they appear in the
-        // Veedel-scoped Places filter immediately. Without this step the
-        // import is effectively invisible there.
-        if ($imported > 0) {
-            $this->newLine();
-            $this->call('spots:assign-veedel');
-        }
+        // A successful category refresh is also an authoritative deletion
+        // signal. Rows absent from this run remain for audit/history but stop
+        // competing in discovery and Composer immediately.
+        Spot::query()
+            ->where('source', 'osm')
+            ->whereIn('source_group', array_unique($refreshedGroups))
+            ->where(fn ($query) => $query->whereNull('last_seen_at')->orWhere('last_seen_at', '<', $refreshStartedAt))
+            ->update(['is_active' => false, 'is_recommendable' => false]);
 
         return self::SUCCESS;
+    }
+
+    private function veedelContaining(float $lat, float $lng): ?string
+    {
+        $row = DB::selectOne(
+            'SELECT name FROM veedels WHERE boundary IS NOT NULL
+             AND ST_Covers(boundary, ST_SetSRID(ST_MakePoint(?, ?), 4326)) LIMIT 1',
+            [$lng, $lat],
+        );
+
+        return $row->name ?? null;
+    }
+
+    private function isRecommendationDestination(string $category, string $name): bool
+    {
+        $microfacilities = [
+            'playground', 'pitch', 'basketball', 'tennis', 'table_tennis',
+            'boules', 'dog_park', 'bbq', 'picnic', 'skatepark',
+        ];
+
+        if (! in_array($category, $microfacilities, true)) {
+            return true;
+        }
+
+        $genericLabels = array_map(
+            fn (string $label): string => preg_quote($label, '/'),
+            array_values(self::FALLBACK_LABELS),
+        );
+
+        return preg_match('/^('.implode('|', $genericLabels).')(?:\s*·.*)?$/iu', trim($name)) !== 1;
     }
 
     /**

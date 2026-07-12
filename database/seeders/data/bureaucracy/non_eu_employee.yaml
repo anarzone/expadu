@@ -133,7 +133,7 @@ tasks:
     deadline_days: 60
     documents_required: []
     links:
-      - https://www.rundfunkbeitrag.de/en/
+      - https://www.rundfunkbeitrag.de/welcome/english
     how_to_steps:
       - title: Register at rundfunkbeitrag.de
         body: One Beitrag per household. If your flatmates already pay, you don't have to register again — just give the Beitragsnummer of one of them.

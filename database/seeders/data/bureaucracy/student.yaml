@@ -18,7 +18,7 @@ tasks:
       - Passport
       - Wohnungsgeberbestätigung (signed by landlord/dorm)
     links:
-      - https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung
+      - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:
       - title: Get a Wohnungsgeberbestätigung
         body: Your landlord (or the Studierendenwerk, if you're in a dorm) must give you this form. Without it the Bürgeramt won't proceed.
@@ -232,7 +232,7 @@ tasks:
     deadline_days: 60
     documents_required: []
     links:
-      - https://www.rundfunkbeitrag.de/en/
+      - https://www.rundfunkbeitrag.de/welcome/english
     how_to_steps:
       - title: Register or be added to flatmates' account
         body: One Beitrag per shared household. Ask flatmates for their Beitragsnummer before signing up separately.
@@ -282,7 +282,8 @@ tasks:
     depends_on: [stu.enrolment, stu.bank_account]
     description: |
       Federal student aid for low-income students, including some non-EU students with
-      certain residence titles. Up to €934/month — half grant, half interest-free loan.
+      certain residence titles. The amount depends on your housing, insurance, income,
+      and family circumstances; use the official portal for the current calculation.
     phase: settling
     urgency: low
     deadline_type: none

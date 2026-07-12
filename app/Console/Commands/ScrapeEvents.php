@@ -97,11 +97,10 @@ class ScrapeEvents extends Command
                         continue;
                     }
 
-                    if (Event::where('title', $title)->whereDate('starts_at', $startsAt->toDateString())->exists()) {
-                        continue;
-                    }
-
-                    $desc = mb_substr(strip_tags($ev['description'] ?? ''), 0, 1000);
+                    // Preserve the complete German source. The classifier uses
+                    // a bounded excerpt for categorisation and translates the
+                    // full text in ordered chunks.
+                    $desc = trim(strip_tags($ev['description'] ?? ''));
                     $venue = $ev['venue']['venue'] ?? null;
                     $address = $ev['venue']['address'] ?? null;
                     $sourceUrl = $ev['url'] ?? null;

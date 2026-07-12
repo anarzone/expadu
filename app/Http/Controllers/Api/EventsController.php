@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\TransportMode;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Services\NearbyPlaces;
+use App\Services\UserLocationService;
 use App\Support\EventOccurrencePresenter;
+use App\Transit\Dto\GeoPoint;
+use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +24,13 @@ use Illuminate\Http\Request;
  */
 class EventsController extends Controller
 {
-    public function __construct(private EventOccurrencePresenter $presenter) {}
+    private const MAX_MATRIX_DESTINATIONS = 50;
+
+    public function __construct(
+        private readonly EventOccurrencePresenter $presenter,
+        private readonly UserLocationService $locations,
+        private readonly TravelTimes $travel,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -29,6 +40,10 @@ class EventsController extends Controller
             'veedel' => ['nullable', 'string', 'max:100'],
             'free' => ['nullable', 'boolean'],
             'venue' => ['nullable', 'integer'], // venue id — the place strip deep-link
+            'sort' => ['nullable', 'in:soonest,nearest,recommended'],
+            'mode' => ['nullable', 'in:walk,bike,transit'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:lng'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat'],
         ]);
 
         [$from, $to] = $this->window($validated['window'] ?? 'today');
@@ -48,12 +63,110 @@ class EventsController extends Controller
                 ->filter(fn (array $o) => $o['event']->venue_id === (int) $venueId))
             ->values();
 
+        $origin = $this->locations->context($request->user(), $request);
+        $travelMinutes = $this->travelMinutes(
+            $occurrences->all(),
+            $origin->toGeoPoint(),
+            isset($validated['mode']) ? TransportMode::from($validated['mode']) : TransportMode::Walk,
+        );
+
+        $presented = $occurrences->map(function (array $occurrence, int $index) use ($origin, $travelMinutes): array {
+            $event = $occurrence['event'];
+            $result = $this->presenter->present($event, $occurrence['starts_at'], $occurrence['ends_at']);
+            $lat = $event->venue?->lat ?? $event->lat;
+            $lng = $event->venue?->lng ?? $event->lng;
+            $result['distance_km'] = $origin->hasOrigin() && $lat !== null && $lng !== null
+                ? round(NearbyPlaces::km($origin->lat, $origin->lng, (float) $lat, (float) $lng), 2)
+                : null;
+            $result['travel_min'] = $travelMinutes[$index] ?? null;
+            $result['_rank'] = [
+                'relevance' => $event->relevance,
+                'quality' => (float) ($event->quality_score ?? 0),
+                'starts_at' => $occurrence['starts_at']->timestamp,
+            ];
+
+            return $result;
+        });
+
+        if (($validated['sort'] ?? 'soonest') === 'nearest') {
+            $presented = $presented
+                ->sortBy(fn (array $event): float => $event['distance_km'] ?? INF)
+                ->values();
+        }
+
+        if (($validated['sort'] ?? 'soonest') === 'recommended') {
+            $presented = $presented
+                ->sort(function (array $left, array $right): int {
+                    $byRelevance = ($right['_rank']['relevance'] ?? -1) <=> ($left['_rank']['relevance'] ?? -1);
+                    if ($byRelevance !== 0) {
+                        return $byRelevance;
+                    }
+
+                    $leftProximity = $left['travel_min'] ?? (($left['distance_km'] ?? INF) * 12);
+                    $rightProximity = $right['travel_min'] ?? (($right['distance_km'] ?? INF) * 12);
+
+                    return ($leftProximity <=> $rightProximity)
+                        ?: ($left['_rank']['starts_at'] <=> $right['_rank']['starts_at'])
+                        ?: ($right['_rank']['quality'] <=> $left['_rank']['quality']);
+                })
+                ->values();
+        }
+
+        $presented = $presented->map(function (array $event): array {
+            unset($event['_rank']);
+
+            return $event;
+        });
+
         return response()->json([
             'window' => ['from' => $from->toIso8601String(), 'to' => $to->toIso8601String()],
-            'data' => $occurrences
-                ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
-                ->all(),
+            'origin' => [
+                'source' => $origin->source->value,
+                'label' => $origin->label,
+            ],
+            'needs_location' => ! $origin->hasOrigin(),
+            'data' => $presented->all(),
         ]);
+    }
+
+    /**
+     * @param  list<array{event: Event}>  $occurrences
+     * @return list<int|null>
+     */
+    private function travelMinutes(array $occurrences, ?GeoPoint $origin, TransportMode $mode): array
+    {
+        if ($origin === null || $mode === TransportMode::Transit) {
+            return array_fill(0, count($occurrences), null);
+        }
+
+        $destinations = [];
+        $destinationOffsets = [];
+        $occurrenceDestinationKeys = [];
+        foreach ($occurrences as $index => $occurrence) {
+            $event = $occurrence['event'];
+            $lat = $event->venue?->lat ?? $event->lat;
+            $lng = $event->venue?->lng ?? $event->lng;
+            if ($lat !== null && $lng !== null) {
+                $key = sprintf('%.5f,%.5f', $lat, $lng);
+                if (! array_key_exists($key, $destinationOffsets)) {
+                    if (count($destinations) >= self::MAX_MATRIX_DESTINATIONS) {
+                        continue;
+                    }
+
+                    $destinationOffsets[$key] = count($destinations);
+                    $destinations[] = new GeoPoint((float) $lat, (float) $lng);
+                }
+                $occurrenceDestinationKeys[$index] = $key;
+            }
+        }
+
+        $result = array_fill(0, count($occurrences), null);
+        $minutes = $this->travel->minutes($mode, $origin, $destinations);
+        foreach ($occurrenceDestinationKeys as $occurrenceIndex => $key) {
+            $result[$occurrenceIndex] = $minutes[$destinationOffsets[$key]] ?? null;
+        }
+
+        return $result;
     }
 
     /**

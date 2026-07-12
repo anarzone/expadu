@@ -25,5 +25,7 @@ final readonly class ScoringContext
         public array $affinity = [],
         /** Seeds the deterministic day-to-day rotation term; null disables it. */
         public ?string $rotationSeed = null,
+        /** @var array<string, float> grounded LLM preference in the 0..1 range */
+        public array $llmRankWeights = [],
     ) {}
 }

@@ -912,9 +912,33 @@ export default function Timetable() {
     // Live-follow: on once the board is rooted at the device's real location.
     // followRef holds the position the board currently reflects; the board
     // re-roots when the user moves clear of it.
-    const [following, setFollowing] = useState(false);
+    const [following, setFollowing] = useState(() =>
+        typeof window === 'undefined'
+            ? false
+            : window.sessionStorage.getItem('expadu:timetable-following') ===
+              'true',
+    );
     const followRef = useRef<{ lat: number; lng: number } | null>(null);
     const lastFollowRef = useRef(0);
+
+    useEffect(() => {
+        window.sessionStorage.setItem(
+            'expadu:timetable-following',
+            String(following),
+        );
+    }, [following]);
+
+    useEffect(() => {
+        if (!following) {
+            return;
+        }
+
+        const reloadBoards = () => router.reload({ only: ['boards'] });
+        window.addEventListener('expadu:location-stored', reloadBoards);
+
+        return () =>
+            window.removeEventListener('expadu:location-stored', reloadBoards);
+    }, [following]);
 
     // Keep the board genuinely live: re-fetch the deferred boards prop every
     // 30s (matches the server-side cache TTL). usePoll throttles in background

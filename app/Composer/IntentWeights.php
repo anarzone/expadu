@@ -64,4 +64,42 @@ class IntentWeights
             $raw,
         );
     }
+
+    /**
+     * Anonymous category-only taste vector for grounded planning. No event,
+     * place, location, or user identifiers leave this service.
+     *
+     * @return array{category_intent: array<string, float>, category_dislikes: array<string, float>}
+     */
+    public function preferenceVector(User $user): array
+    {
+        $totals = [];
+        $rows = DB::table('user_events')
+            ->where('user_id', $user->id)
+            ->whereIn('event_type', array_keys(self::SIGNAL_WEIGHTS))
+            ->where('created_at', '>=', now()->subDays(90))
+            ->get(['event_type', 'payload']);
+
+        foreach ($rows as $row) {
+            $payload = json_decode((string) $row->payload, true) ?: [];
+            $category = $payload['category'] ?? null;
+            if (! is_string($category) || $category === '') {
+                continue;
+            }
+            $totals[$category] = ($totals[$category] ?? 0.0) + self::SIGNAL_WEIGHTS[$row->event_type];
+        }
+
+        $scale = max([1.0, ...array_map('abs', $totals)]);
+        $intent = [];
+        $dislikes = [];
+        foreach ($totals as $category => $total) {
+            if ($total >= 0) {
+                $intent[$category] = round($total / $scale, 3);
+            } else {
+                $dislikes[$category] = round(abs($total) / $scale, 3);
+            }
+        }
+
+        return ['category_intent' => $intent, 'category_dislikes' => $dislikes];
+    }
 }

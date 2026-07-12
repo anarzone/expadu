@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Gtfs\GtfsStopTime;
 use App\Proto\TransitRealtime\FeedMessage;
 use App\Proto\TransitRealtime\TripDescriptor\ScheduleRelationship;
 use App\Proto\TransitRealtime\TripUpdate\StopTimeUpdate\ScheduleRelationship as StopScheduleRelationship;
@@ -240,12 +241,26 @@ class VrsRealtimeService
             return null;
         }
 
-        // Sort by sequence number and return the last known delay
+        $targetSequence = GtfsStopTime::query()
+            ->where('trip_id', $trip['trip_id'])
+            ->where('stop_id', $targetStopId)
+            ->value('stop_sequence');
+
+        if ($targetSequence === null) {
+            return null;
+        }
+
+        // Propagate only from the most recent update at or before the target.
+        // A later stop's delay must never be applied backwards along the trip.
         $sorted = $trip['stops'];
         uasort($sorted, fn ($a, $b) => ($a['sequence'] ?? 0) <=> ($b['sequence'] ?? 0));
 
         $lastDelay = null;
         foreach ($sorted as $stop) {
+            if (($stop['sequence'] ?? 0) > $targetSequence) {
+                break;
+            }
+
             if (! $stop['skipped']) {
                 $lastDelay = $stop['delay'];
             }

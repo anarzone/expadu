@@ -5,6 +5,7 @@ namespace App\Console\Commands\Bureaucracy;
 use App\Bureaucracy\PathGenerator;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
 use App\ContextEngine\Evaluators\PermanentResidencyEvaluator;
+use App\Enums\TaskStatus;
 use App\Models\User;
 use App\Profile\Applicability;
 use Illuminate\Console\Command;
@@ -47,6 +48,18 @@ class RemindCommand extends Command
                 if (! $this->option('dry-run')) {
                     $residencyEvaluator->evaluate($user, $profile);
                 }
+
+                $user->userTasks()
+                    ->where('status', TaskStatus::Done->value)
+                    ->whereNotNull('next_due_at')
+                    ->where('next_due_at', '<=', now())
+                    ->whereHas('task', fn ($query) => $query->where('recurrence_months', '>', 0))
+                    ->update([
+                        'status' => TaskStatus::NotStarted->value,
+                        'completed_at' => null,
+                        'next_due_at' => null,
+                        'snoozed_until' => null,
+                    ]);
 
                 $userTasks = $user->userTasks()->with('task')->open()->get();
                 foreach ($userTasks as $userTask) {

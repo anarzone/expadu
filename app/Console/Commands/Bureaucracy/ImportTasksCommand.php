@@ -70,15 +70,13 @@ class ImportTasksCommand extends Command
         // Parse everything first — the DAG is validated across the whole
         // catalogue before a single row is written.
         $entries = [];
-        $skippedFiles = 0;
-
         foreach ($files as $file) {
             $this->line("→ {$file}");
             $parsed = $this->parseFile($file);
             if ($parsed === null) {
-                $skippedFiles++;
+                $this->error('ABORT — catalogue parsing must succeed for every requested file');
 
-                continue;
+                return self::FAILURE;
             }
 
             $situations = is_array($parsed['situation'])
@@ -90,7 +88,10 @@ class ImportTasksCommand extends Command
             }
         }
 
-        if (! $this->validateKeys($entries) || ! $this->validateDag($entries)) {
+        if (! $this->validateRequiredFields($entries)
+            || ! $this->validateKeys($entries)
+            || ! $this->validateDag($entries)
+            || ! $this->validateFigures($entries)) {
             return self::FAILURE;
         }
 
@@ -110,7 +111,7 @@ class ImportTasksCommand extends Command
             $this->pruneStaleTasks($entries);
         }
 
-        $this->info("Done. created={$created} updated={$updated} skipped_files={$skippedFiles}");
+        $this->info("Done. created={$created} updated={$updated} skipped_files=0");
 
         return self::SUCCESS;
     }
@@ -182,6 +183,24 @@ class ImportTasksCommand extends Command
     }
 
     /**
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateRequiredFields(array $entries): bool
+    {
+        foreach ($entries as $entry) {
+            $title = $entry['data']['title'] ?? null;
+            if (! is_string($title) || trim($title) === '') {
+                $key = $entry['data']['key'] ?? '(unknown key)';
+                $this->error("  ABORT — task `{$key}` missing `title`");
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Topological validation of depends_on across the whole catalogue:
      * unknown keys and cycles abort the import.
      *
@@ -230,6 +249,52 @@ class ImportTasksCommand extends Command
             $this->error("  ABORT — dependency cycle involving: {$cycleCandidates}");
 
             return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Unknown figure placeholders are catalogue errors, not publishable copy.
+     * Validate the complete set before the first upsert so a bad later entry
+     * cannot leave a partially updated catalogue behind.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateFigures(array $entries): bool
+    {
+        foreach ($entries as $entry) {
+            if (! $this->figuresExist($entry['data'])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function figuresExist(mixed $value): bool
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if (! $this->figuresExist($item)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if (! is_string($value)) {
+            return true;
+        }
+
+        preg_match_all('/\{\{figure:([a-z0-9_]+)\}\}/', $value, $matches);
+        foreach ($matches[1] as $key) {
+            if (config("bureaucracy_figures.{$key}") === null) {
+                $this->error("  ABORT — unknown figure `{$key}`");
+
+                return false;
+            }
         }
 
         return true;

@@ -1182,7 +1182,13 @@ export function JourneyPlanner({
             credentials: 'same-origin',
             signal: controller.signal,
         })
-            .then((res) => res.json())
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error(`Journey request failed (${res.status})`);
+                }
+
+                return res.json();
+            })
             .then((json: JourneyResponse) => {
                 if (!cancelled) {
                     setData(json);

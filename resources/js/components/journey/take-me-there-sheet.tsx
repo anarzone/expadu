@@ -450,6 +450,7 @@ export function TakeMeThereSheet({
 
     useEffect(() => {
         let cancelled = false;
+        const controller = new AbortController();
         const params = new URLSearchParams({
             to_lat: String(destination.lat),
             to_lng: String(destination.lng),
@@ -470,21 +471,34 @@ export function TakeMeThereSheet({
             }
         }
 
-        fetch(`/api/journey?${params}`, { credentials: 'same-origin' })
-            .then((res) => res.json())
+        fetch(`/api/journey?${params}`, {
+            credentials: 'same-origin',
+            signal: controller.signal,
+        })
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error(`Journey request failed (${res.status})`);
+                }
+
+                return res.json();
+            })
             .then((json) => {
                 if (!cancelled) {
                     setData(json);
                 }
             })
-            .catch(() => {
-                if (!cancelled) {
+            .catch((requestError: unknown) => {
+                if (
+                    !cancelled &&
+                    (requestError as Error)?.name !== 'AbortError'
+                ) {
                     setError(true);
                 }
             });
 
         return () => {
             cancelled = true;
+            controller.abort();
         };
     }, [
         destination.lat,

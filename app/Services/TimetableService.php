@@ -38,7 +38,7 @@ class TimetableService
     public function boards(float $lat, float $lng): array
     {
         $boards = Cache::flexible(
-            sprintf('timetable:%.3f_%.3f', $lat, $lng),
+            sprintf('timetable:v2:%.3f_%.3f', $lat, $lng),
             [25, 180],
             fn () => $this->build($lat, $lng),
         );

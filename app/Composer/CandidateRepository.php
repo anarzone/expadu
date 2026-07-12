@@ -2,8 +2,10 @@
 
 namespace App\Composer;
 
+use App\Exceptions\CologneBoundaryUnavailable;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -38,12 +40,16 @@ class CandidateRepository
         'default' => 60,
     ];
 
+    public function __construct(
+        private readonly CologneServiceArea $serviceArea,
+    ) {}
+
     /**
      * @return list<Candidate>
      */
     public function candidatesFor(Constraints $constraints, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG): array
     {
-        $events = $this->eventCandidates($constraints);
+        $events = $this->eventCandidates($constraints, $originLat, $originLng);
         $spots = $this->spotCandidates($constraints->windowStart, $originLat, $originLng);
 
         // Events get a RESERVED slice, not the leftovers. At prod volume ~20
@@ -81,6 +87,8 @@ class CandidateRepository
         $ranked = DB::table('spots')
             ->select('id')
             ->selectRaw("ROW_NUMBER() OVER (PARTITION BY category ORDER BY ({$distance}), id) AS rn", NearbyPlaces::bindings($originLat, $originLng))
+            ->where('is_active', true)
+            ->where('is_recommendable', true)
             ->whereNotNull('lat')
             ->whereNotNull('lng');
 
@@ -100,7 +108,7 @@ class CandidateRepository
             ->whereIn('id', $ids)
             ->orderByRaw("({$distance}), id", NearbyPlaces::bindings($originLat, $originLng))
             ->get()
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day))
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, $originLat, $originLng))
             ->all();
     }
 
@@ -125,6 +133,7 @@ class CandidateRepository
         }
 
         return Spot::query()
+            ->recommendationEligible()
             ->whereIn('id', $spotIds)
             ->whereNotNull('lat')
             ->whereNotNull('lng')
@@ -133,7 +142,7 @@ class CandidateRepository
             ->all();
     }
 
-    private function spotToCandidate(Spot $spot, CarbonImmutable $day): Candidate
+    private function spotToCandidate(Spot $spot, CarbonImmutable $day, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG): Candidate
     {
         $category = $spot->category instanceof \BackedEnum
             ? $spot->category->value
@@ -167,6 +176,10 @@ class CandidateRepository
             isLandmark: isset($tags['wikidata']) || isset($tags['wikipedia']),
             closedToday: $closedToday,
             hoursAssumed: $hoursAssumed,
+            description: $spot->description,
+            tags: $this->textTags($tags),
+            qualityScore: $spot->rating !== null ? min(1.0, max(0.0, (float) $spot->rating / 5.0)) : null,
+            travelMinutesFromOrigin: (new TravelEstimator)->minutesBetween($originLat, $originLng, (float) $spot->lat, (float) $spot->lng),
         );
     }
 
@@ -228,39 +241,61 @@ class CandidateRepository
     /** Event categories/chips that mean an open-air thing rain should discourage. */
     private const OUTDOOR_EVENT_HINTS = ['market', 'festival', 'open_air', 'street', 'flohmarkt', 'food', 'sport', 'outdoor', 'park'];
 
-    private function eventCandidates(Constraints $constraints): array
+    private function eventCandidates(Constraints $constraints, float $originLat, float $originLng): array
     {
-        return Event::query()
-            // Only quality-gated events reach a plan — the same filter the events
-            // page uses. Without it, unvetted scraped rows landed in itineraries.
-            ->visible()
-            ->with('venue')
-            ->whereBetween('starts_at', [$constraints->windowStart, $constraints->windowEnd])
-            ->orderBy('starts_at')
-            ->limit(50)
-            ->get()
-            ->filter(fn (Event $event) => $event->lat !== null && $event->lng !== null)
-            ->map(fn (Event $event) => new Candidate(
-                id: "event:{$event->id}",
-                type: 'event',
-                name: $event->title,
-                lat: (float) $event->lat,
-                lng: (float) $event->lng,
-                veedel: $event->venue?->veedel,
-                category: (string) ($event->category ?? 'event'),
-                outdoor: $this->eventIsOutdoor($event),
-                typicalDurationMin: $event->ends_at
-                    ? max(30, (int) $event->starts_at->diffInMinutes($event->ends_at))
-                    : 120,
-                costTier: $event->is_free ? 'free' : 'normal',
-                opensAt: null,
-                closesAt: null,
-                fixedStart: CarbonImmutable::parse($event->starts_at),
-                swappable: false, // fixed-time, like appointments
-                // A curated (expat-relevant / high-quality) event is the kind of
-                // thing worth building a day around — let it win the hero role.
-                isLandmark: (bool) $event->is_curated,
+        $occurrences = Event::occurringBetween($constraints->windowStart, $constraints->windowEnd);
+        try {
+            $coordinates = $this->serviceArea->eventCoordinates(
+                $occurrences->pluck('event.id')->map(fn ($id) => (int) $id)->unique()->values()->all(),
+            );
+        } catch (CologneBoundaryUnavailable) {
+            return [];
+        }
+
+        return $occurrences
+            ->reject(fn (array $occurrence): bool => in_array('multi-day-uncertain', $occurrence['event']->tags ?? [], true))
+            ->filter(fn (array $occurrence) => $coordinates->has($occurrence['event']->id))
+            ->sortBy(fn (array $occurrence) => NearbyPlaces::km(
+                $originLat,
+                $originLng,
+                (float) $coordinates->get($occurrence['event']->id)->lat,
+                (float) $coordinates->get($occurrence['event']->id)->lng,
             ))
+            ->take(50)
+            ->map(function (array $occurrence) use ($coordinates, $originLat, $originLng): Candidate {
+                /** @var Event $event */
+                $event = $occurrence['event'];
+                $point = $coordinates->get($event->id);
+                $candidateId = $event->recurrence !== null
+                    ? "event:{$event->id}:{$occurrence['starts_at']->getTimestamp()}"
+                    : "event:{$event->id}";
+
+                return new Candidate(
+                    id: $candidateId,
+                    type: 'event',
+                    name: $event->title_en ?: $event->title,
+                    lat: (float) $point->lat,
+                    lng: (float) $point->lng,
+                    veedel: $event->venue?->veedel,
+                    category: (string) ($event->category ?? 'event'),
+                    outdoor: $this->eventIsOutdoor($event),
+                    typicalDurationMin: $occurrence['ends_at']
+                        ? max(30, (int) $occurrence['starts_at']->diffInMinutes($occurrence['ends_at']))
+                        : 120,
+                    costTier: $event->is_free ? 'free' : 'normal',
+                    opensAt: null,
+                    closesAt: null,
+                    fixedStart: $occurrence['starts_at'],
+                    swappable: false, // a selected fixed-time occurrence cannot be freely rescheduled
+                    // A curated (expat-relevant / high-quality) event is the kind of
+                    // thing worth building a day around — let it win the hero role.
+                    isLandmark: (bool) $event->is_curated,
+                    description: $event->summary_en ?: $event->description_en ?: $event->description,
+                    tags: $this->textTags([...(array) $event->tags, ...(array) $event->chips]),
+                    qualityScore: $event->quality_score,
+                    travelMinutesFromOrigin: (new TravelEstimator)->minutesBetween($originLat, $originLng, (float) $point->lat, (float) $point->lng),
+                );
+            })
             ->values()
             ->all();
     }
@@ -291,5 +326,18 @@ class CandidateRepository
             '€' => 'low',
             default => 'normal',
         };
+    }
+
+    /** @return list<string> */
+    private function textTags(array $tags): array
+    {
+        $values = array_is_list($tags) ? $tags : [...array_keys($tags), ...array_values($tags)];
+
+        return collect($values)
+            ->filter(fn (mixed $tag): bool => is_scalar($tag))
+            ->map(fn (mixed $tag): string => (string) $tag)
+            ->unique()
+            ->values()
+            ->all();
     }
 }

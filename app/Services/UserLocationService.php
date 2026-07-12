@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LocationSource;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
@@ -37,6 +38,7 @@ class UserLocationService
                 'lat' => $lat,
                 'lng' => $lng,
                 'name' => $resolved,
+                'at' => now()->timestamp,
             ], JSON_THROW_ON_ERROR),
         );
 
@@ -108,11 +110,11 @@ class UserLocationService
         }
 
         $confirmed = $this->getConfirmedLocation($user->id);
-        if ($confirmed) {
+        $ping = $this->getLastRedisPing($user->id);
+        if ($confirmed && (! $ping || $confirmed['at'] >= $ping['at'])) {
             return new LocationContext($confirmed['lat'], $confirmed['lng'], LocationSource::Confirmed, $confirmed['name'] ?: 'Your location');
         }
 
-        $ping = $this->getLastRedisPing($user->id);
         if ($ping) {
             return new LocationContext($ping['lat'], $ping['lng'], LocationSource::Ping, 'Your location');
         }
@@ -177,7 +179,7 @@ class UserLocationService
     }
 
     /**
-     * @return array{lat: float, lng: float, name: string}|null
+     * @return array{lat: float, lng: float, name: string, at: int}|null
      */
     private function getConfirmedLocation(int $userId): ?array
     {
@@ -186,7 +188,7 @@ class UserLocationService
             $data = $raw ? json_decode((string) $raw, true) : null;
 
             return is_array($data) && isset($data['lat'], $data['lng'])
-                ? ['lat' => (float) $data['lat'], 'lng' => (float) $data['lng'], 'name' => (string) ($data['name'] ?? '')]
+                ? ['lat' => (float) $data['lat'], 'lng' => (float) $data['lng'], 'name' => (string) ($data['name'] ?? ''), 'at' => (int) ($data['at'] ?? 0)]
                 : null;
         } catch (\Throwable) {
             return null;
@@ -217,7 +219,8 @@ class UserLocationService
 
         // 2. Explicit "I'm here" confirmation beats any inferred source
         $confirmed = $this->getConfirmedLocation($user->id);
-        if ($confirmed) {
+        $redisPing = $this->getLastRedisPing($user->id);
+        if ($confirmed && (! $redisPing || $confirmed['at'] >= $redisPing['at'])) {
             return [
                 'lat' => $confirmed['lat'],
                 'lng' => $confirmed['lng'],
@@ -228,7 +231,6 @@ class UserLocationService
         }
 
         // 3. Last known GPS ping from Redis (within last 30 minutes)
-        $redisPing = $this->getLastRedisPing($user->id);
         if ($redisPing) {
             $address = $this->reverseGeocode($redisPing['lat'], $redisPing['lng']) ?? 'Cologne';
 
@@ -315,7 +317,7 @@ class UserLocationService
      * departures board to the wrong station. So walk newest-first and return
      * the first *accepted* fix, skipping any tagged `rejected`.
      *
-     * @return array{lat: float, lng: float}|null
+     * @return array{lat: float, lng: float, at: int}|null
      */
     private function getLastRedisPing(int $userId): ?array
     {
@@ -341,6 +343,7 @@ class UserLocationService
                 return [
                     'lat' => (float) $data['lat'],
                     'lng' => (float) $data['lng'],
+                    'at' => $this->locationTimestamp($data['at'] ?? null),
                 ];
             }
 
@@ -348,5 +351,22 @@ class UserLocationService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function locationTimestamp(mixed $value): int
+    {
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+
+        if (is_string($value) && $value !== '') {
+            try {
+                return Carbon::parse($value)->timestamp;
+            } catch (\Throwable) {
+                return 0;
+            }
+        }
+
+        return 0;
     }
 }

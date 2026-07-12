@@ -26,6 +26,7 @@ class PlanScorer
         'affinity' => 22.0,        // the user's situation + picked interests
         'daypart' => 15.0,         // the hour shapes the pick: lunch → food, evening → bar, daylight → park
         'rotation' => 8.0,         // deterministic day-to-day variety among near-equals
+        'llm_rank' => 45.0,        // material taste judgment without erasing proximity/quality
     ];
 
     public function __construct(
@@ -103,6 +104,19 @@ class PlanScorer
         // user + plan date upstream; no seed (tests, swaps of old plans) → off.
         if ($context->rotationSeed !== null) {
             $score += self::WEIGHTS['rotation'] * $this->rotation($context->rotationSeed, $candidate->id);
+        }
+
+        // Interpret the model output as a sequence, not a timeless popularity
+        // score. After each placement the next unused ID receives the strongest
+        // preference, so the suggested day arc can evolve slot by slot.
+        $usedIds = array_fill_keys(array_map(fn (PlanSlot $slot): string => $slot->candidate->id, $placedSlots), true);
+        $remainingSequence = array_values(array_filter(
+            array_keys($context->llmRankWeights),
+            fn (string $id): bool => ! isset($usedIds[$id]),
+        ));
+        $sequenceIndex = array_search($candidate->id, $remainingSequence, true);
+        if ($sequenceIndex !== false) {
+            $score += self::WEIGHTS['llm_rank'] * max(0.0, 1.0 - $sequenceIndex / 8.0);
         }
 
         // Pinned "plan around this" picks from the home feed dominate so the

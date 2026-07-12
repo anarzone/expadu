@@ -443,6 +443,7 @@ test('the response carries the resolved origin for the From control', function (
 
 test('near mode lists places within a radius of the user, closest-first', function () {
     app(UserLocationService::class)->confirm($this->user, 50.95, 6.92, 'Here');
+    Spot::factory()->create(['name' => 'Spielplatz am Weg', 'category' => 'playground', 'lat' => 50.9501, 'lng' => 6.9201]);
     Spot::factory()->create(['name' => 'Close park', 'category' => 'park', 'lat' => 50.951, 'lng' => 6.921]);
     // Two more within 3km so the radius needn't widen past the far one.
     Spot::factory()->create(['name' => 'Close park 2', 'category' => 'park', 'lat' => 50.952, 'lng' => 6.922]);
@@ -451,7 +452,8 @@ test('near mode lists places within a radius of the user, closest-first', functi
 
     $names = collect($this->getJson('/api/places?near=1')->json('data'))->pluck('name')->all();
 
-    expect($names)->toContain('Close park');
+    expect($names[0])->toBe('Spielplatz am Weg')
+        ->and($names)->toContain('Close park');
     expect($names)->not->toContain('Far park'); // 3 nearby exist → ring stays tight, far stays out
 });
 

@@ -17,6 +17,7 @@ final readonly class Plan
         public Constraints $constraints,
         public array $slots,
         public bool $relaxed = false,
+        public bool $scheduleFeasible = true,
     ) {}
 
     /**
@@ -27,6 +28,7 @@ final readonly class Plan
         return [
             'constraints' => $this->constraints->toArray(),
             'slots' => array_map(fn (PlanSlot $slot) => $slot->toArray(), $this->slots),
+            'schedule_feasible' => $this->scheduleFeasible,
         ];
     }
 }

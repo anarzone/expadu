@@ -151,3 +151,33 @@ test('snoozed tasks are filtered by scope', function () {
 
     expect($notSnoozed)->toBe(2); // active + expired snooze
 });
+
+test('the reminder command reopens a recurring task when its next cycle is due', function () {
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'is_eu' => false,
+    ]);
+    $task = Task::factory()->create([
+        'key' => 'tax-return.recurring',
+        'situation' => ['non_eu_employee'],
+        'recurrence_months' => 12,
+    ]);
+    $userTask = UserTask::create([
+        'user_id' => $user->id,
+        'task_id' => $task->id,
+        'status' => 'done',
+        'completed_at' => now()->subYear(),
+        'next_due_at' => now()->subMinute(),
+        'is_applicable' => true,
+    ]);
+
+    $this->artisan('bureaucracy:remind', [
+        '--user' => $user->id,
+        '--dry-run' => true,
+    ])->assertSuccessful();
+
+    $userTask->refresh();
+    expect($userTask->status->value)->toBe('not_started')
+        ->and($userTask->completed_at)->toBeNull()
+        ->and($userTask->next_due_at)->toBeNull();
+});

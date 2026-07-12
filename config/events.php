@@ -35,4 +35,16 @@ return [
     */
 
     'review_confidence' => env('EVENTS_REVIEW_CONFIDENCE', 0.7),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Geocoding service area
+    |--------------------------------------------------------------------------
+    | Event-coordinate writes and audits require the complete official Cologne
+    | Stadtteil polygon set. Missing or partial boundary data fails closed.
+    */
+
+    'geocoding' => [
+        'expected_polygon_count' => 86,
+    ],
 ];

@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
 final readonly class Candidate
 {
     public function __construct(
-        public string $id,         // "spot:12" | "event:34" | "appointment:7"
+        public string $id,         // "spot:12" | "event:34[:occurrence_timestamp]" | "appointment:7"
         public string $type,       // spot | event | appointment
         public string $name,
         public float $lat,
@@ -31,6 +31,11 @@ final readonly class Candidate
         public bool $isLandmark = false,            // notable (OSM wikidata/wikipedia) → hero pick
         public bool $closedToday = false,           // real opening hours say shut on the plan's day
         public bool $hoursAssumed = false,          // opens/closes are category defaults, not verified hours
+        public ?string $description = null,
+        /** @var list<string> */
+        public array $tags = [],
+        public ?float $qualityScore = null,
+        public ?int $travelMinutesFromOrigin = null,
     ) {}
 
     public function isFixedTime(): bool

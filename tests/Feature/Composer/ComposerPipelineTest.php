@@ -445,14 +445,82 @@ function fixtureCandidates(): array
     ];
 }
 
-test('fixed-time events are anchored exactly at their start', function () {
+test('a selected public event keeps its exact start time', function () {
     $filler = new SlotFiller(new PlanScorer(new TravelEstimator), new TravelEstimator);
+    $event = makeCandidate([
+        'id' => 'event:mixer', 'type' => 'event', 'category' => 'community',
+        'outdoor' => false, 'fixedStart' => saturday('18:00'),
+        'typicalDurationMin' => 120, 'lat' => 50.9480, 'lng' => 6.9450,
+    ]);
 
-    $plan = $filler->fill(defaultConstraints(), fixtureCandidates(), neutralContext(), 50.9442, 6.9329);
+    $plan = $filler->fill(defaultConstraints(), [$event], neutralContext(), 50.9442, 6.9329);
 
     $eventSlot = collect($plan->slots)->firstWhere(fn ($s) => $s->candidate->id === 'event:mixer');
     expect($eventSlot)->not->toBeNull();
     expect($eventSlot->startAt->format('H:i'))->toBe('18:00');
+});
+
+test('a public event is optional and competes with stronger feasible recommendations', function () {
+    $constraints = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('16:00'));
+    $candidates = [
+        makeCandidate([
+            'id' => 'spot:landmark', 'category' => 'park', 'isLandmark' => true,
+            'typicalDurationMin' => 110, 'lat' => 50.9442, 'lng' => 6.9329,
+        ]),
+        makeCandidate([
+            'id' => 'event:ordinary', 'type' => 'event', 'category' => 'other',
+            'outdoor' => false, 'fixedStart' => saturday('14:00'),
+            'typicalDurationMin' => 110, 'lat' => 50.9442, 'lng' => 6.9329,
+        ]),
+    ];
+
+    $plan = filler()->fill($constraints, $candidates, neutralContext(), 50.9442, 6.9329);
+
+    expect(collect($plan->slots)->pluck('candidate.id')->all())
+        ->toBe(['spot:landmark']);
+});
+
+test('an event is rejected when the user cannot reach its fixed start', function () {
+    $constraints = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('17:00'));
+    $candidates = [
+        makeCandidate([
+            'id' => 'event:unreachable', 'type' => 'event', 'category' => 'community',
+            'outdoor' => false, 'fixedStart' => saturday('14:05'),
+            'typicalDurationMin' => 60, 'lat' => 50.9700, 'lng' => 7.0100,
+        ]),
+        makeCandidate([
+            'id' => 'spot:nearby', 'category' => 'park', 'typicalDurationMin' => 60,
+            'lat' => 50.9442, 'lng' => 6.9329,
+        ]),
+    ];
+
+    $plan = filler()->fill($constraints, $candidates, neutralContext(), 50.9442, 6.9329);
+
+    expect(collect($plan->slots)->pluck('candidate.id'))
+        ->toContain('spot:nearby')
+        ->not->toContain('event:unreachable');
+});
+
+test('an optional event is rejected when it cannot reach the next mandatory appointment', function () {
+    $constraints = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('18:00'));
+    $candidates = [
+        makeCandidate([
+            'id' => 'event:too-far-from-anchor', 'type' => 'event', 'category' => 'community',
+            'outdoor' => false, 'fixedStart' => saturday('14:00'),
+            'typicalDurationMin' => 90, 'lat' => 50.9442, 'lng' => 6.9329,
+        ]),
+        makeCandidate([
+            'id' => 'appointment:1', 'type' => 'appointment', 'category' => 'appointment',
+            'outdoor' => false, 'fixedStart' => saturday('16:00'),
+            'typicalDurationMin' => 45, 'swappable' => false, 'lat' => 50.9700, 'lng' => 7.1000,
+        ]),
+    ];
+
+    $plan = filler()->fill($constraints, $candidates, neutralContext(), 50.9442, 6.9329);
+
+    expect(collect($plan->slots)->pluck('candidate.id'))
+        ->toContain('appointment:1')
+        ->not->toContain('event:too-far-from-anchor');
 });
 
 test('slots never overlap and respect travel time', function () {
@@ -504,6 +572,66 @@ test('an appointment anchors at its time and gets a travel buffer in', function 
     expect($anchor->travelMinFromPrevious)->toBeGreaterThan(0);
 });
 
+test('a flexible pin never crowds a mandatory appointment out of the plan', function () {
+    $context = new ScoringContext(rainExpected: false, preferredAreas: [], pinnedIds: ['spot:pinned']);
+    $constraints = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('18:00'));
+    $candidates = [
+        makeCandidate([
+            'id' => 'spot:pinned', 'typicalDurationMin' => 120,
+            'lat' => 50.9442, 'lng' => 6.9329,
+        ]),
+        makeCandidate([
+            'id' => 'appointment:reserved', 'type' => 'appointment', 'category' => 'appointment',
+            'outdoor' => false, 'typicalDurationMin' => 45, 'fixedStart' => saturday('15:00'),
+            'swappable' => false, 'lat' => 50.9442, 'lng' => 6.9329,
+        ]),
+    ];
+
+    $plan = filler()->fill($constraints, $candidates, $context, 50.9442, 6.9329);
+
+    expect(collect($plan->slots)->pluck('candidate.id'))
+        ->toContain('appointment:reserved');
+});
+
+test('an unreachable pinned fixed-time event is rejected', function () {
+    $context = new ScoringContext(rainExpected: false, preferredAreas: [], pinnedIds: ['event:pinned']);
+    $constraints = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('18:00'));
+    $event = makeCandidate([
+        'id' => 'event:pinned', 'type' => 'event', 'category' => 'community',
+        'outdoor' => false, 'fixedStart' => saturday('14:05'),
+        'typicalDurationMin' => 60, 'lat' => 50.9700, 'lng' => 7.0100,
+    ]);
+
+    $plan = filler()->fill($constraints, [$event], $context, 50.9442, 6.9329);
+
+    expect($plan->slots)->toBeEmpty();
+});
+
+test('conflicting appointments remain visible and mark the schedule infeasible', function () {
+    $constraints = new Constraints(windowStart: saturday('14:00'), windowEnd: saturday('18:00'));
+    $appointments = [
+        makeCandidate([
+            'id' => 'appointment:first', 'type' => 'appointment', 'category' => 'appointment',
+            'outdoor' => false, 'fixedStart' => saturday('15:00'),
+            'typicalDurationMin' => 60, 'swappable' => false,
+            'lat' => 50.9442, 'lng' => 6.9329,
+        ]),
+        makeCandidate([
+            'id' => 'appointment:second', 'type' => 'appointment', 'category' => 'appointment',
+            'outdoor' => false, 'fixedStart' => saturday('15:30'),
+            'typicalDurationMin' => 45, 'swappable' => false,
+            'lat' => 50.9700, 'lng' => 7.0100,
+        ]),
+    ];
+
+    $plan = filler()->fill($constraints, $appointments, neutralContext(), 50.9442, 6.9329);
+
+    expect(collect($plan->slots)->pluck('candidate.id')->all())
+        ->toEqualCanonicalizing(['appointment:first', 'appointment:second'])
+        ->and($plan->scheduleFeasible)->toBeFalse()
+        ->and($plan->toArray()['schedule_feasible'])->toBeFalse();
+});
+
 test('a pinned pick is placed even when a fixed event would fill the window', function () {
     $filler = new SlotFiller(new PlanScorer(new TravelEstimator), new TravelEstimator);
     $context = new ScoringContext(rainExpected: false, preferredAreas: [], pinnedIds: ['spot:pinned']);
@@ -545,7 +673,7 @@ test('swap replaces only the target slot and freezes neighbors', function () {
     $candidates = [...fixtureCandidates(), ...$spares];
 
     $plan = $filler->fill(defaultConstraints(), $candidates, neutralContext(), 50.9442, 6.9329);
-    expect(count($plan->slots))->toBeGreaterThanOrEqual(3);
+    expect(count($plan->slots))->toBeGreaterThanOrEqual(2);
 
     // Swap the first non-fixed slot — short spares fit its gap.
     $swapIndex = null;
@@ -576,7 +704,12 @@ test('fixed-time slots refuse to swap', function () {
     $filler = new SlotFiller(new PlanScorer($travel), $travel);
     $swapper = new Swapper(new PlanScorer($travel), $travel);
 
-    $plan = $filler->fill(defaultConstraints(), fixtureCandidates(), neutralContext(), 50.9442, 6.9329);
+    $event = makeCandidate([
+        'id' => 'event:mixer', 'type' => 'event', 'category' => 'community',
+        'outdoor' => false, 'fixedStart' => saturday('18:00'),
+        'typicalDurationMin' => 120,
+    ]);
+    $plan = $filler->fill(defaultConstraints(), [$event], neutralContext(), 50.9442, 6.9329);
 
     $eventIndex = null;
     foreach ($plan->slots as $i => $slot) {
@@ -586,7 +719,7 @@ test('fixed-time slots refuse to swap', function () {
     }
     expect($eventIndex)->not->toBeNull();
 
-    expect($swapper->swap($plan, $eventIndex, fixtureCandidates(), neutralContext(), 50.9442, 6.9329))
+    expect($swapper->swap($plan, $eventIndex, [$event], neutralContext(), 50.9442, 6.9329))
         ->toBeNull();
 });
 

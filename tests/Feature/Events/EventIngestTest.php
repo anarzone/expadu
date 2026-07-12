@@ -5,6 +5,7 @@ use App\Models\Event;
 use App\Models\Spot;
 use App\Models\Venue;
 use App\Services\ClassifiesEvents;
+use App\Services\VenueResolver;
 use Illuminate\Support\Facades\DB;
 
 function fakeClassifier(array $result): object
@@ -41,6 +42,7 @@ function classification(array $overrides = []): array
         'language' => 'mixed',
         'chips' => ['English-friendly', 'free'],
         'title_en' => 'Language night',
+        'description_en' => 'A complete English translation of the source description.',
         'summary_en' => 'Our own short words. Two sentences max.',
         'tip_en' => 'Come early.',
     ], $overrides);
@@ -54,6 +56,7 @@ test('a confident classification stores every AI field once', function () {
 
     $event->refresh();
     expect($event->title_en)->toBe('Language night');
+    expect($event->description_en)->toBe('A complete English translation of the source description.');
     expect($event->summary_en)->toBe('Our own short words. Two sentences max.');
     expect($event->category)->toBe('language_exchange');
     expect($event->language)->toBe('mixed');
@@ -76,11 +79,61 @@ test('low confidence drops the chips and flags review', function () {
 
 test('an already-classified event is skipped (idempotent)', function () {
     $fake = fakeClassifier(classification());
-    $event = Event::factory()->create(['summary_en' => 'done already']);
+    $event = Event::factory()->create([
+        'title_en' => 'Done',
+        'description_en' => 'Translated already',
+        'summary_en' => 'done already',
+    ]);
 
     (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
 
     expect($fake->calls)->toBe(0);
+});
+
+test('an older classification missing the full description translation is reprocessed', function () {
+    $fake = fakeClassifier(classification());
+    $event = Event::factory()->create([
+        'title_en' => 'Old title translation',
+        'description_en' => null,
+        'summary_en' => 'Old summary',
+        'location_name' => null,
+    ]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect($fake->calls)->toBe(1)
+        ->and($event->fresh()->description_en)->toBe('A complete English translation of the source description.');
+});
+
+test('an event without a source description stores no invented description translation', function () {
+    fakeClassifier(classification(['description_en' => null]));
+    $event = Event::factory()->create([
+        'description' => null,
+        'description_en' => null,
+        'summary_en' => null,
+        'location_name' => null,
+    ]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect($event->fresh()->description)->toBeNull()
+        ->and($event->fresh()->description_en)->toBeNull()
+        ->and($event->fresh()->summary_en)->toBe('Our own short words. Two sentences max.');
+});
+
+test('classification job timeout scales for chunked full-description translation', function () {
+    $event = Event::factory()->create(['description' => str_repeat('Langer deutscher Abschnitt. ', 600)]);
+
+    expect((new ProcessEventJob($event))->timeout)->toBeGreaterThan(45);
+});
+
+test('configured default queue visibility exceeds a long translation job timeout', function () {
+    $event = Event::factory()->create(['description' => str_repeat('Langer deutscher Abschnitt. ', 2000)]);
+    $job = new ProcessEventJob($event);
+
+    expect($job->connection)->toBeNull()
+        ->and(config('queue.connections.database.retry_after'))->toBeGreaterThan($job->timeout)
+        ->and(config('queue.connections.redis.retry_after'))->toBeGreaterThan($job->timeout);
 });
 
 test('terminal classification failure flags needs_review', function () {
@@ -124,6 +177,25 @@ test('the same scraped event processed twice stays one record', function () {
 
     expect(Event::where('source', 'koeln.de')->where('source_uid', '42')->count())->toBe(1);
     expect(Venue::where('name', 'Café X')->count())->toBe(1);
+});
+
+test('scheduled enrichment keeps same-title events from different sources', function () {
+    Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'one', 'title' => 'Shared title', 'starts_at' => now()->addDay()]);
+    Event::factory()->create(['source' => 'stadt-koeln.de', 'source_uid' => 'two', 'title' => 'Shared title', 'starts_at' => now()->addDay()]);
+
+    $this->artisan('events:enrich')->assertSuccessful();
+
+    expect(Event::where('title', 'Shared title')->count())->toBe(2);
+});
+
+test('venue resolver refreshes coordinates and place link for an existing venue', function () {
+    $old = Spot::factory()->create(['name' => 'Shared Hall Old', 'lat' => 50.94, 'lng' => 6.95, 'veedel' => 'Old']);
+    $new = Spot::factory()->create(['name' => 'Shared Hall New', 'lat' => 50.96, 'lng' => 6.97, 'veedel' => 'New']);
+    $venue = app(VenueResolver::class)->resolve('Shared Hall', 'Same address', 50.94, 6.95);
+    expect($venue->place_id)->toBe($old->id);
+    $venue = app(VenueResolver::class)->resolve('Shared Hall', 'Same address', 50.96, 6.97);
+    expect($venue->lat)->toBe(50.96)->and($venue->lng)->toBe(6.97)
+        ->and($venue->place_id)->toBe($new->id)->and($venue->veedel)->toBe('New');
 });
 
 test('events:import-manual upserts the curated catalogue with recurring rules', function () {

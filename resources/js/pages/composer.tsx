@@ -169,6 +169,10 @@ function fromParams(
         };
     }
 
+    if (target?.kind === 'area') {
+        return { from_area: target.label };
+    }
+
     return {};
 }
 
@@ -533,6 +537,14 @@ export default function Composer() {
                 setWeather(json.weather ?? null);
                 setOrigin(json.origin ?? null);
 
+                if (
+                    json.origin?.source === 'none' &&
+                    fromOverrideRef.current === null &&
+                    next.areas.length === 0
+                ) {
+                    setBezirk('all');
+                }
+
                 if (json.facets) {
                     setFacets(json.facets);
                 }
@@ -879,9 +891,13 @@ export default function Composer() {
     const veedel =
         constraints?.areas?.length === 1 ? constraints.areas[0]! : null;
     const areaLabel =
-        bezirk === 'near'
-            ? 'Near you'
-            : (veedel ?? (bezirk === 'all' ? 'all Cologne' : bezirk));
+        fromOverride?.kind === 'area'
+            ? fromOverride.label
+            : origin?.area
+              ? origin.area
+              : bezirk === 'near'
+                ? 'Near you'
+                : (veedel ?? (bezirk === 'all' ? 'Any area' : bezirk));
     const originLabel = locating
         ? 'Locating…'
         : (origin?.label ?? 'Your location');
@@ -897,9 +913,12 @@ export default function Composer() {
             ? `place:${fromOverride.id}`
             : fromOverride?.kind === 'point'
               ? 'point'
-              : origin && ['live', 'confirmed', 'ping'].includes(origin.source)
-                ? 'live'
-                : null;
+              : fromOverride?.kind === 'area'
+                ? `area:${fromOverride.label}`
+                : origin &&
+                    ['live', 'confirmed', 'ping'].includes(origin.source)
+                  ? 'live'
+                  : null;
 
     const chipOptStyle = (sel: boolean, cyan: boolean) =>
         sel
@@ -1172,6 +1191,7 @@ export default function Composer() {
                                     mode={mode}
                                     locating={locating}
                                     savedPlaces={places}
+                                    areas={facets.areas}
                                     query={fromQuery}
                                     results={fromResults}
                                     selectedKey={selectedKey}

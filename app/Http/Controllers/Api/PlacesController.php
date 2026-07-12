@@ -61,6 +61,7 @@ class PlacesController extends Controller
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
         $spot->activities = $this->activitiesForParks(collect([$spot]))[$spot->name] ?? [];
         $spot->cluster_size = Spot::query()
+            ->where('is_active', true)
             ->where('name', $spot->name)
             ->where('veedel', $spot->veedel)
             ->whereRaw('round(lat::numeric, 3) = round(?::numeric, 3) and round(lng::numeric, 3) = round(?::numeric, 3)', [$spot->lat, $spot->lng])
@@ -123,6 +124,7 @@ class PlacesController extends Controller
             ->all();
 
         $query = Spot::query()
+            ->recommendationEligible()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->whereIn('category', SpotCategory::placesFines())
@@ -144,6 +146,7 @@ class PlacesController extends Controller
                         ->where('category', 'park')
                         ->whereIn('name', Spot::query()
                             ->select('park_name')
+                            ->where('is_active', true)
                             ->whereIn('category', $fines)
                             ->whereNotNull('park_name')));
             });
@@ -234,12 +237,16 @@ class PlacesController extends Controller
             $outer->orderByRaw('(veedel IS NOT DISTINCT FROM ?) desc', [$selectedVeedel]);
         }
 
-        $outer->orderByRaw("(name !~ '".self::GENERIC_NAME_REGEX."') desc");
-
-        // Closest-first only when we actually have an origin; otherwise a
-        // stable id order — no fake distance to sort by.
-        if ($origin->hasOrigin()) {
+        // "Near me" is strictly geographic. In other browse modes, named
+        // destinations still rank above commodity facilities.
+        if ($nearActive) {
             $outer->orderBy('distance_km');
+        } else {
+            $outer->orderByRaw("(name !~ '".self::GENERIC_NAME_REGEX."') desc");
+
+            if ($origin->hasOrigin()) {
+                $outer->orderBy('distance_km');
+            }
         }
 
         $paginator = $outer
@@ -313,6 +320,7 @@ class PlacesController extends Controller
 
         return DB::table('spots')
             ->whereIn('park_name', $parkNames)
+            ->where('is_active', true)
             ->whereIn('category', SpotCategory::placesFines())
             ->distinct()
             ->get(['park_name', 'category'])

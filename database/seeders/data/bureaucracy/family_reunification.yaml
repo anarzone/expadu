@@ -178,7 +178,7 @@ tasks:
     deadline_days: 60
     documents_required: []
     links:
-      - https://www.rundfunkbeitrag.de/en/
+      - https://www.rundfunkbeitrag.de/welcome/english
     how_to_steps:
       - title: Register the household at rundfunkbeitrag.de
         body: One registration per household — you don't pay extra for spouse or children.

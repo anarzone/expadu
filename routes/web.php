@@ -124,8 +124,12 @@ $appRoutes = function () use ($appDomain) {
 
         // Day Composer
         Route::get('composer', [ComposerController::class, 'page'])->name('composer');
-        Route::post('composer/parse', [ComposerController::class, 'parse'])->name('composer.parse');
-        Route::post('composer/compose', [ComposerController::class, 'compose'])->name('composer.compose');
+        Route::post('composer/parse', [ComposerController::class, 'parse'])
+            ->middleware('throttle:composer-parse')
+            ->name('composer.parse');
+        Route::post('composer/compose', [ComposerController::class, 'compose'])
+            ->middleware('throttle:composer-compose')
+            ->name('composer.compose');
         Route::post('composer/swap', [ComposerController::class, 'swap'])->name('composer.swap');
         // Pin / un-pin the composed plan to the Today screen.
         Route::post('composer/save', [ComposerController::class, 'save'])->name('composer.save');

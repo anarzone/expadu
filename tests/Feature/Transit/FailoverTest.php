@@ -93,6 +93,44 @@ test('falls back to Transitous when MOTIS fails', function () {
     expect($result->source)->toBe('transitous');
 });
 
+test('the circuit breaker fails open when Redis is unavailable', function () {
+    Redis::shouldReceive('exists')->once()->andThrow(new RuntimeException('redis unavailable'));
+    Redis::shouldReceive('incr')->once()->andThrow(new RuntimeException('redis unavailable'));
+    Redis::shouldReceive('del')->once()->andThrow(new RuntimeException('redis unavailable'));
+
+    $breaker = app(CircuitBreaker::class);
+
+    expect($breaker->isOpen('motis'))->toBeFalse();
+    $breaker->recordFailure('motis');
+    $breaker->recordSuccess('motis');
+
+    expect(true)->toBeTrue();
+});
+
+test('journey planning still reaches providers when the journey cache is unavailable', function () {
+    Http::fake(['motis.test/api/v1/plan*' => Http::response(motisPlanFixture())]);
+
+    $service = new class(app(MotisAdapter::class), app(TransitousAdapter::class), app(TriasAdapter::class), app(CircuitBreaker::class), app(NearbyStopService::class)) extends FailoverRouteService
+    {
+        protected function readJourneyCache(string $key): mixed
+        {
+            throw new RuntimeException('cache unavailable');
+        }
+
+        protected function writeJourneyCache(string $key, array $value): void
+        {
+            throw new RuntimeException('cache unavailable');
+        }
+    };
+
+    $result = $service->plan(
+        new GeoPoint(50.9513, 6.9185),
+        new GeoPoint(50.9413, 6.9583),
+    );
+
+    expect($result->source)->toBe('motis');
+});
+
 test('falls back to TRIAS after MOTIS and Transitous both fail twice', function () {
     Http::fake([
         'motis.test/*' => Http::response('down', 503),

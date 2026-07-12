@@ -8,6 +8,7 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\Contracts\EstimatesTravel;
 use App\Composer\Contracts\ParsesPrompt;
+use App\Composer\Contracts\RanksCandidates;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
@@ -40,12 +41,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Day Composer endpoints: parse (the only LLM call), compose
- * (deterministic pipeline), swap (single-slot re-score). Plan state
+ * Day Composer endpoints: parse, compose, and swap. Composition adds an
+ * optional grounded LLM preference layer, while the deterministic pipeline
+ * retains authority over facts, constraints, travel, and timing. Plan state
  * lives in Redis for 72h — the composer's whole scope.
  */
 class ComposerController extends Controller
@@ -122,17 +125,28 @@ class ComposerController extends Controller
         FeasibilityFilter $filter,
         ProfileEngine $profiles,
         IntentWeights $intents,
+        RanksCandidates $candidateRanker,
     ): JsonResponse {
+        $areas = collect(config('veedels', []))->flatten()->all();
+        $categories = [
+            ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
+            'court',
+            'culture',
+            'event',
+        ];
+
         $validated = $request->validate([
             'constraints' => ['required', 'array'],
             'constraints.window_start' => ['required', 'date'],
             'constraints.window_end' => ['required', 'date', 'after:constraints.window_start'],
             'constraints.areas' => ['array'],
+            'constraints.areas.*' => ['string', Rule::in($areas)],
             'constraints.categories' => ['array'],
-            'constraints.companions' => ['nullable', 'string'],
-            'constraints.budget' => ['nullable', 'string'],
+            'constraints.categories.*' => ['string', Rule::in($categories)],
+            'constraints.companions' => ['nullable', Rule::in(['alone', 'partner', 'friends', 'kids'])],
+            'constraints.budget' => ['nullable', Rule::in(['free', 'low', 'normal'])],
             'constraints.archetype' => ['nullable', 'string'],
-            'constraints.vibe' => ['nullable', 'string'],
+            'constraints.vibe' => ['nullable', Rule::in(['chill', 'active'])],
             'pins' => ['array'],
             'pins.*' => ['string'],
             'locked' => ['array'],
@@ -141,11 +155,11 @@ class ComposerController extends Controller
             'excluded.*' => ['string'],
             // The plan's start, read by UserLocationService::context(): an
             // explicit GPS fix or a picked Veedel ("start from Nippes").
-            'lat' => ['nullable', 'numeric'],
-            'lng' => ['nullable', 'numeric'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:lng'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat'],
             // A saved place's name (Home/Work/…) so its origin reads as that, not "Your location".
             'from_label' => ['nullable', 'string', 'max:80'],
-            'from_area' => ['nullable', 'string'],
+            'from_area' => ['nullable', 'string', Rule::in($areas)],
             // A saved place picked as the origin — coordinates resolve server-side by id.
             'from_place' => ['nullable', 'integer'],
         ]);
@@ -193,18 +207,6 @@ class ComposerController extends Controller
             ? $locations->veedelAt($originLat, $originLng)
             : null;
 
-        $context = new ScoringContext(
-            rainExpected: $this->rainExpected(),
-            preferredAreas: $constraints->areas !== []
-                ? $constraints->areas
-                : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
-            intentWeights: $intents->for($user),
-            companions: $constraints->companions,
-            pinnedIds: $pins,
-            affinity: $this->planAffinity($profile, $constraints->companions),
-            rotationSeed: $this->rotationSeed($user, $constraints),
-        );
-
         // The candidate pool, nearest-per-category to where the day starts.
         $rawPool = $candidates->candidatesFor($constraints, $originLat, $originLng);
 
@@ -218,7 +220,31 @@ class ComposerController extends Controller
         // the day has a real arc; leisure runs the feasibility gauntlet while
         // appointments and pins bypass it, and excluded picks drop out entirely.
         [$feasible, $poolRelaxed] = $this->feasiblePool($filter, $constraints, $rawPool, $soloCategory);
-        $pinned = $candidates->byIds($pins, $constraints->windowStart);
+        $rankable = collect($feasible)
+            ->reject(fn (Candidate $candidate): bool => in_array($candidate->id, $excluded, true))
+            ->values()
+            ->all();
+        $affinity = $this->planAffinity($profile, $constraints->companions);
+        $intentWeights = $intents->for($user);
+        $llmPreferences = $intents->preferenceVector($user) + [
+            'category_affinities' => $affinity,
+        ];
+        $context = new ScoringContext(
+            rainExpected: $this->rainExpected(),
+            preferredAreas: $constraints->areas !== []
+                ? $constraints->areas
+                : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
+            intentWeights: $intentWeights,
+            companions: $constraints->companions,
+            pinnedIds: $pins,
+            affinity: $affinity,
+            rotationSeed: $this->rotationSeed($user, $constraints),
+            llmRankWeights: $candidateRanker->rank($constraints, $rankable, $llmPreferences),
+        );
+        $pinned = collect([
+            ...$candidates->byIds($pins, $constraints->windowStart),
+            ...collect($rawPool)->filter(fn (Candidate $candidate): bool => in_array($candidate->id, $pins, true))->all(),
+        ])->unique(fn (Candidate $candidate): string => $candidate->id)->values()->all();
         $pool = collect([...$appointments->within($user, $constraints), ...$pinned, ...$feasible])
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
             ->unique(fn (Candidate $c) => $c->id)
@@ -528,7 +554,11 @@ class ComposerController extends Controller
         }
 
         // Re-narrate so the swapped slot (and the one after it) keep their "why".
-        $swapped = new Plan($swapped->constraints, PlanNarrator::narrate($swapped->slots, $context->rainExpected));
+        $swapped = new Plan(
+            $swapped->constraints,
+            PlanNarrator::narrate($swapped->slots, $context->rainExpected),
+            scheduleFeasible: $swapped->scheduleFeasible,
+        );
 
         $rejectedMap = $stored['rejected'] ?? [];
         $rejectedMap[$slotIndex] = $rejected;
@@ -709,6 +739,10 @@ class ComposerController extends Controller
             $notices[] = ['type' => 'info', 'text' => '✨ Few exact matches here — widened the picks so you still have a plan'];
         }
 
+        if (! $plan->scheduleFeasible) {
+            $notices[] = ['type' => 'warn', 'text' => '⚠️ Your appointments overlap or cannot be reached in time — they are all shown, but this schedule needs your attention'];
+        }
+
         foreach ($plan->slots as $slot) {
             if ($slot->candidate->isAppointment()) {
                 $notices[] = ['type' => 'info', 'text' => '🏛️ Built around your '.$slot->startAt->format('H:i').' appointment'];
@@ -822,6 +856,6 @@ class ComposerController extends Controller
             );
         }
 
-        return new Plan($constraints, $slots);
+        return new Plan($constraints, $slots, scheduleFeasible: (bool) ($stored['schedule_feasible'] ?? true));
     }
 }

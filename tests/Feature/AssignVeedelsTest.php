@@ -3,8 +3,8 @@
 use App\Models\Spot;
 use Illuminate\Support\Facades\DB;
 
-// Stadtteil polygons aren't loaded (every veedels.boundary is null), so the
-// command falls back to nearest centroid — the path exercised here and in prod.
+// The legacy centroid fallback remains available only while no polygon dataset
+// has been imported at all.
 function seedTwoVeedels(): void
 {
     DB::table('veedels')->insert([

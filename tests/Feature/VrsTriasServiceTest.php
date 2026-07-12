@@ -125,6 +125,21 @@ it('resolveStopGlobalId returns id and name', function () {
         ->and($result['name'])->toBeString();
 });
 
+it('rejects a fuzzy city-prefixed stop and retries with the exact stop name', function () {
+    Http::fake(['*apitest.vrs.de*' => Http::sequence()
+        ->push(triasNamedLocation('de:05315:15461', 'Niehl Betriebshof Nord'))
+        ->push(triasNamedLocation('de:05315:15411', 'Niehl Nord')),
+    ]);
+
+    $result = app(VrsTriasService::class)->resolveStopGlobalId('Niehl Nord');
+
+    expect($result)->toBe([
+        'id' => 'de:05315:15411',
+        'name' => 'Niehl Nord',
+    ]);
+    Http::assertSentCount(2);
+});
+
 // ── Helper functions: TRIAS XML stubs ──
 
 function triasTrip(): string
@@ -226,4 +241,13 @@ function triasLocation(): string
 </DeliveryPayload>
 </ServiceDelivery>
 </Trias>';
+}
+
+function triasNamedLocation(string $id, string $name): string
+{
+    return str_replace(
+        ['de:05315:11101', 'Köln Ehrenfeld'],
+        [$id, $name],
+        triasLocation(),
+    );
 }

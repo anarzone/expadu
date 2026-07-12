@@ -92,6 +92,6 @@ class Swapper
         $slots = $plan->slots;
         $slots[$slotIndex] = $best;
 
-        return new Plan($plan->constraints, array_values($slots));
+        return new Plan($plan->constraints, array_values($slots), scheduleFeasible: $plan->scheduleFeasible);
     }
 }

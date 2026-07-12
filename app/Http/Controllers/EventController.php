@@ -27,6 +27,12 @@ class EventController extends Controller
                 'veedel' => $request->query('veedel'),
                 'free' => $request->boolean('free'),
                 'venue' => $request->query('venue'),
+                'sort' => in_array($request->query('sort'), ['soonest', 'nearest', 'recommended'], true)
+                    ? $request->query('sort')
+                    : 'soonest',
+                'mode' => in_array($request->query('mode'), ['walk', 'bike', 'transit'], true)
+                    ? $request->query('mode')
+                    : 'walk',
             ],
             // Veedels that actually have upcoming events — the secondary filter
             'veedelOptions' => Inertia::defer(fn () => Venue::query()

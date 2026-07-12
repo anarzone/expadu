@@ -52,6 +52,13 @@ return [
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
     ],
 
+    'composer_llm' => [
+        'enabled' => env('COMPOSER_LLM_ENABLED', false),
+        'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
+        'model' => env('COMPOSER_LLM_MODEL', 'claude-sonnet-5'),
+        'timeout' => env('COMPOSER_LLM_TIMEOUT', 8),
+    ],
+
     /*
      * The composer's prompt parser. 'heuristic' (default) needs no key and
      * runs the product today; set driver to 'openai' with a key to route

@@ -118,6 +118,7 @@ class NearbyPlaces
     public function nearest(float $lat, float $lng, int $limit, ?array $categories = null, ?array $columns = null): Collection
     {
         $query = Spot::query()
+            ->recommendationEligible()
             ->when($columns !== null, fn ($q) => $q->select($columns))
             ->whereNotNull('lat')
             ->whereNotNull('lng')

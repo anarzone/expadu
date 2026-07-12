@@ -77,7 +77,41 @@ test('parse routes a place search to find', function () {
     $response->assertJsonPath('intent', 'find');
 });
 
+test('parse is rate limited per authenticated user', function () {
+    $this->actingAs(composerUser());
+
+    foreach (range(1, 10) as $attempt) {
+        $this->postJson('/composer/parse', ['text' => "free afternoon {$attempt}"])
+            ->assertOk();
+    }
+
+    $this->postJson('/composer/parse', ['text' => 'one request too many'])
+        ->assertTooManyRequests();
+});
+
 // ── compose / swap ───────────────────────────────────────────────────────
+
+test('compose rejects unknown or malformed structured constraints', function () {
+    $this->actingAs(composerUser());
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+
+    $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(4)->toIso8601String(),
+            'areas' => ['Not A Cologne Veedel'],
+            'categories' => [['nested']],
+            'companions' => 'coworkers',
+            'budget' => 'unlimited',
+        ],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors([
+            'constraints.areas.0',
+            'constraints.categories.0',
+            'constraints.companions',
+            'constraints.budget',
+        ]);
+});
 
 test('compose builds a plan from real candidates and stores it', function () {
     $user = composerUser();

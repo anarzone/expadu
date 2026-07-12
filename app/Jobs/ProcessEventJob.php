@@ -5,7 +5,9 @@ namespace App\Jobs;
 use App\Enums\EventCategory;
 use App\Models\Event;
 use App\Services\ClassifiesEvents;
+use App\Services\EventEnrichmentService;
 use App\Services\VenueResolver;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +19,7 @@ use Throwable;
  * and venue resolution with the ≤50m place link. Idempotent: an
  * already-classified event is skipped.
  */
-class ProcessEventJob implements ShouldQueue
+class ProcessEventJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -25,15 +27,28 @@ class ProcessEventJob implements ShouldQueue
 
     public int $timeout = 45;
 
+    public int $uniqueFor = 3600;
+
     public function __construct(public Event $event)
     {
-        $this->onConnection('redis');
+        $translationChunks = (int) ceil(mb_strlen((string) $event->description) / 2000);
+        $this->timeout = max(45, 30 + ($translationChunks * 35));
     }
 
     public function handle(ClassifiesEvents $classifier): void
     {
         $event = $this->event->fresh();
-        if (! $event || $event->summary_en !== null) {
+        if (! $event) {
+            return;
+        }
+
+        app(EventEnrichmentService::class)->enrichEvent($event);
+        $event->refresh();
+        $this->resolveVenue($event);
+
+        $inputHash = $this->inputHash($event);
+        if ($this->translationsAreComplete($event)
+            && ($event->classification_input_hash === null || hash_equals($event->classification_input_hash, $inputHash))) {
             return;
         }
 
@@ -46,6 +61,7 @@ class ProcessEventJob implements ShouldQueue
 
         $event->update([
             'title_en' => mb_substr($result['title_en'], 0, 500),
+            'description_en' => $result['description_en'],
             'summary_en' => mb_substr($result['summary_en'], 0, 400),
             'tip_en' => $result['tip_en'] ? mb_substr($result['tip_en'], 0, 300) : null,
             'language' => $result['language'],
@@ -53,6 +69,7 @@ class ProcessEventJob implements ShouldQueue
             'category' => (EventCategory::tryFrom($result['category']) ?? EventCategory::Other)->value,
             'relevance' => $result['relevance'],
             'needs_review' => $needsReview,
+            'classification_input_hash' => $inputHash,
         ]);
 
         $this->resolveVenue($event);
@@ -63,6 +80,28 @@ class ProcessEventJob implements ShouldQueue
             'confidence' => $result['confidence'],
             'needs_review' => $needsReview,
         ]);
+    }
+
+    public function uniqueId(): string
+    {
+        return 'event:'.$this->event->getKey();
+    }
+
+    private function inputHash(Event $event): string
+    {
+        return hash('sha256', json_encode([
+            'version' => 1, 'title' => $event->title, 'description' => $event->description,
+            'starts_at' => $event->starts_at?->toIso8601String(), 'ends_at' => $event->ends_at?->toIso8601String(),
+            'venue' => $event->location_name, 'address' => $event->address,
+            'price' => $event->price_text, 'is_free' => $event->is_free,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function translationsAreComplete(Event $event): bool
+    {
+        return $event->title_en !== null
+            && $event->summary_en !== null
+            && (blank($event->description) || $event->description_en !== null);
     }
 
     /**

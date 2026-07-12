@@ -34,7 +34,8 @@ export type GeoResult = {
 /** What the user picked as the distance origin. */
 export type FromTarget =
     | { kind: 'place'; id: number; label: string }
-    | { kind: 'point'; lat: number; lng: number; label: string };
+    | { kind: 'point'; lat: number; lng: number; label: string }
+    | { kind: 'area'; label: string };
 
 export const PLACE_MODES: ReadonlyArray<{
     id: TransportMode;
@@ -50,6 +51,7 @@ type PanelProps = {
     mode: TransportMode | null;
     locating: boolean;
     savedPlaces: SavedPlace[];
+    areas?: string[];
     query: string;
     results: GeoResult[];
     /** Which row reads as active: 'live' | `place:{id}` | 'point' | null. */
@@ -72,6 +74,7 @@ export function FromPanel({
     mode,
     locating,
     savedPlaces,
+    areas = [],
     query,
     results,
     selectedKey,
@@ -250,6 +253,43 @@ export function FromPanel({
                                                 {p.address}
                                             </span>
                                         )}
+                                    </span>
+                                    {selected && (
+                                        <IconCheck
+                                            size={16}
+                                            stroke={ICON_STROKE}
+                                            className="ml-auto shrink-0 text-cyan-h"
+                                        />
+                                    )}
+                                </button>
+                            );
+                        })}
+
+                        {areas.map((area) => {
+                            const selected = selectedKey === `area:${area}`;
+
+                            return (
+                                <button
+                                    key={area}
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() =>
+                                        onApply({ kind: 'area', label: area })
+                                    }
+                                    className={`flex items-center gap-2.5 rounded-[12px] border px-[11px] py-2 text-left transition-colors ${
+                                        selected
+                                            ? 'border-cyan bg-cyan-soft'
+                                            : 'border-border bg-card hover:border-cyan-bd'
+                                    }`}
+                                >
+                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-surface-2 text-text-2">
+                                        <IconMapPin
+                                            size={16}
+                                            stroke={ICON_STROKE}
+                                        />
+                                    </span>
+                                    <span className="text-[13px] font-medium text-foreground">
+                                        {area}
                                     </span>
                                     {selected && (
                                         <IconCheck

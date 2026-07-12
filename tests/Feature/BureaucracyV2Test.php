@@ -198,6 +198,64 @@ test('import aborts on unknown dependency key', function () {
     rmdir($dir);
 });
 
+test('import fails closed when a catalogue file is malformed', function () {
+    $dir = sys_get_temp_dir().'/bureaucracy_malformed_'.uniqid();
+    mkdir($dir);
+    $file = $dir.'/broken.yaml';
+    file_put_contents($file, "situation: [unterminated\n");
+
+    $this->artisan('bureaucracy:import-tasks', ['file' => $file])
+        ->expectsOutputToContain('YAML parse error')
+        ->assertFailed();
+
+    unlink($file);
+    rmdir($dir);
+});
+
+test('import aborts before writing when a figure placeholder is unknown', function () {
+    $dir = sys_get_temp_dir().'/bureaucracy_figure_'.uniqid();
+    mkdir($dir);
+    $file = $dir.'/broken.yaml';
+    file_put_contents($file, Yaml::dump([
+        'situation' => 'core',
+        'tasks' => [
+            ['key' => 'figure.valid', 'title' => 'Valid task'],
+            ['key' => 'figure.invalid', 'title' => 'Pay {{figure:not_configured}}'],
+        ],
+    ]));
+
+    $this->artisan('bureaucracy:import-tasks', ['file' => $file])
+        ->expectsOutputToContain('unknown figure')
+        ->assertFailed();
+
+    expect(Task::whereIn('key', ['figure.valid', 'figure.invalid'])->exists())->toBeFalse();
+
+    unlink($file);
+    rmdir($dir);
+});
+
+test('import aborts before writing when a task title is missing', function () {
+    $dir = sys_get_temp_dir().'/bureaucracy_title_'.uniqid();
+    mkdir($dir);
+    $file = $dir.'/broken.yaml';
+    file_put_contents($file, Yaml::dump([
+        'situation' => 'core',
+        'tasks' => [
+            ['key' => 'title.valid', 'title' => 'Valid task'],
+            ['key' => 'title.missing'],
+        ],
+    ]));
+
+    $this->artisan('bureaucracy:import-tasks', ['file' => $file])
+        ->expectsOutputToContain('missing `title`')
+        ->assertFailed();
+
+    expect(Task::whereIn('key', ['title.valid', 'title.missing'])->exists())->toBeFalse();
+
+    unlink($file);
+    rmdir($dir);
+});
+
 // ── Path refinement ────────────────────────────────────────────────────
 
 test('refining the path swaps in the sub-path tasks and hides untouched old-path ones', function () {

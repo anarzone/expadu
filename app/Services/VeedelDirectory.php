@@ -22,6 +22,8 @@ class VeedelDirectory
     {
         $rows = DB::table('spots')
             ->join('veedels', 'veedels.name', '=', 'spots.veedel')
+            ->where('spots.is_active', true)
+            ->where('spots.is_recommendable', true)
             ->whereIn('spots.category', SpotCategory::placesFines())
             ->groupBy('veedels.bezirk')
             ->select('veedels.bezirk as name', DB::raw('count(*) as n'))
@@ -50,6 +52,8 @@ class VeedelDirectory
     {
         return DB::table('spots')
             ->join('veedels', 'veedels.name', '=', 'spots.veedel')
+            ->where('spots.is_active', true)
+            ->where('spots.is_recommendable', true)
             ->whereIn('spots.category', SpotCategory::placesFines())
             ->distinct()
             ->orderBy('veedels.name')

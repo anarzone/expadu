@@ -22,13 +22,18 @@ class VenueResolver
             ['lat' => $lat, 'lng' => $lng],
         );
 
-        if ($venue->lat && $venue->lng && ! $venue->place_id) {
+        if ($lat !== null && $lng !== null
+            && ((float) $venue->lat !== $lat || (float) $venue->lng !== $lng)) {
+            $venue->update(['lat' => $lat, 'lng' => $lng, 'place_id' => null, 'veedel' => null]);
+        }
+
+        if ($venue->lat && $venue->lng) {
             $place = $this->placeWithin50m($venue->name, (float) $venue->lat, (float) $venue->lng);
 
             if ($place) {
                 $venue->update(['place_id' => $place->id, 'veedel' => $place->veedel]);
-            } elseif (! $venue->veedel) {
-                $venue->update(['veedel' => $this->nearestVeedel((float) $venue->lat, (float) $venue->lng)]);
+            } else {
+                $venue->update(['place_id' => null, 'veedel' => $this->nearestVeedel((float) $venue->lat, (float) $venue->lng)]);
             }
         }
 

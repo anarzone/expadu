@@ -8,9 +8,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Backfills spots.veedel. Uses polygon containment when boundaries are
- * loaded (P1); falls back to nearest centroid, which is accurate enough
- * for neighbourhood-granularity filtering.
+ * Backfills spots.veedel. Once polygons exist they are authoritative: an OSM
+ * point outside every polygon is quarantined, never nearest-centroid assigned.
  */
 class AssignVeedels extends Command
 {
@@ -30,7 +29,11 @@ class AssignVeedels extends Command
             return self::FAILURE;
         }
 
-        $hasBoundaries = (bool) DB::table('veedels')->whereNotNull('boundary')->exists();
+        $officialVeedels = collect(config('veedels'))->flatten()->all();
+        $hasBoundaries = DB::table('veedels')
+            ->whereIn('name', $officialVeedels)
+            ->whereNotNull('boundary')
+            ->count() === 86;
 
         $query = Spot::query()->whereNotNull('lat')->whereNotNull('lng');
         if (! $this->option('force')) {
@@ -43,13 +46,19 @@ class AssignVeedels extends Command
             foreach ($spots as $spot) {
                 $veedel = $hasBoundaries
                     ? $this->byPolygon($spot)
-                    : null;
-
-                $veedel ??= $this->byNearestCentroid($spot, $veedels);
+                    : $this->byNearestCentroid($spot, $veedels);
 
                 if ($veedel !== null) {
-                    $spot->update(['veedel' => $veedel]);
+                    $spot->update([
+                        'veedel' => $veedel,
+                    ]);
                     $assigned++;
+                } elseif ($hasBoundaries && in_array($spot->source, [null, 'osm'], true)) {
+                    $spot->update([
+                        'veedel' => null,
+                        'is_active' => false,
+                        'is_recommendable' => false,
+                    ]);
                 }
             }
         });
@@ -63,7 +72,7 @@ class AssignVeedels extends Command
     {
         $row = DB::selectOne(
             'SELECT name FROM veedels WHERE boundary IS NOT NULL
-             AND ST_Contains(boundary, ST_SetSRID(ST_MakePoint(?, ?), 4326)) LIMIT 1',
+             AND ST_Covers(boundary, ST_SetSRID(ST_MakePoint(?, ?), 4326)) LIMIT 1',
             [(float) $spot->lng, (float) $spot->lat],
         );
 

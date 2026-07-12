@@ -7,11 +7,9 @@ use App\Profile\Profile;
 use Carbon\CarbonImmutable;
 
 /**
- * The one and only LLM-capable seam in the composer. An implementation
- * classifies the prompt's intent and parses its payload — it NEVER picks
- * venues, generates facts, or answers questions from its own knowledge.
- * Plans come from the deterministic pipeline, answers from retrieval over
- * verified content. Implementations must never throw: on any failure they
+ * The prompt-understanding seam. An implementation classifies the prompt's
+ * intent and parses its payload; candidate judgment belongs to the separate
+ * grounded ranker. Implementations must never throw: on any failure they
  * degrade (heuristic, then profile defaults), so the box always responds.
  */
 interface ParsesPrompt

@@ -15,7 +15,7 @@ const CSRF = () =>
         ?.getAttribute('content') || '';
 
 // ── Constants ──
-const MAX_ACCURACY_M = 200; // Reject readings worse than 200m
+export const MAX_LOCATION_ACCURACY_M = 200; // Reject readings worse than 200m
 const MAX_SPEED_KMH = 150; // Reject if implied speed > 150 km/h
 const STALE_THRESHOLD_MS = 120_000; // Position is "stale" after 2 min without update
 const PING_COOLDOWN_MS = 60_000; // Min 60s between server pings
@@ -55,29 +55,36 @@ try {
 }
 
 /** Send a location ping to the server (fire-and-forget) */
-function sendPing(
+async function sendPing(
     lat: number,
     lng: number,
     accuracy: number,
     quality?: string,
     rejected?: string,
-) {
+): Promise<boolean> {
     if (!locationSharingEnabled) {
-        return;
+        return false;
     }
 
-    fetch('/api/track', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': CSRF(),
-        },
-        body: JSON.stringify({
-            event_type: 'location_ping',
-            payload: { lat, lng, accuracy, quality, rejected },
-        }),
-    }).catch(() => {});
+    try {
+        const response = await fetch('/api/track', {
+            method: 'POST',
+            keepalive: true,
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF(),
+            },
+            body: JSON.stringify({
+                event_type: 'location_ping',
+                payload: { lat, lng, accuracy, quality, rejected },
+            }),
+        });
+
+        return response.ok;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -141,8 +148,8 @@ export function useGeolocation({
         };
 
         // ── Filter 1: Reject readings with accuracy > 200m ──
-        if (raw.accuracy > MAX_ACCURACY_M) {
-            sendPing(
+        if (raw.accuracy > MAX_LOCATION_ACCURACY_M) {
+            void sendPing(
                 raw.lat,
                 raw.lng,
                 raw.accuracy,
@@ -176,7 +183,7 @@ export function useGeolocation({
 
             // If implied speed is impossibly fast, reject this reading
             if (speedKmh > MAX_SPEED_KMH && dist > 500) {
-                sendPing(
+                void sendPing(
                     raw.lat,
                     raw.lng,
                     raw.accuracy,
@@ -207,12 +214,20 @@ export function useGeolocation({
         const dist = distanceMeters(last.lat, last.lng, raw.lat, raw.lng);
 
         if (dist > PING_DISTANCE_M || elapsed > pingIntervalMs) {
-            sendPing(
+            void sendPing(
                 raw.lat,
                 raw.lng,
                 raw.accuracy,
                 classifyQuality(raw.accuracy),
-            );
+            ).then((stored) => {
+                if (stored) {
+                    window.dispatchEvent(
+                        new CustomEvent('expadu:location-stored', {
+                            detail: raw,
+                        }),
+                    );
+                }
+            });
             lastPingRef.current = {
                 lat: raw.lat,
                 lng: raw.lng,
@@ -289,12 +304,12 @@ export function useGeolocation({
         // Re-fetch with high accuracy when user returns to app
         function onVisibilityChange() {
             if (document.visibilityState === 'visible') {
-                // Reset stale timer
-                lastUpdateRef.current = Date.now();
                 fetchOnce();
             }
         }
         document.addEventListener('visibilitychange', onVisibilityChange);
+        window.addEventListener('pageshow', fetchOnce);
+        window.addEventListener('focus', fetchOnce);
 
         return () => {
             clearInterval(pingTimer);
@@ -307,6 +322,8 @@ export function useGeolocation({
                 'visibilitychange',
                 onVisibilityChange,
             );
+            window.removeEventListener('pageshow', fetchOnce);
+            window.removeEventListener('focus', fetchOnce);
 
             if (watchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(watchIdRef.current);

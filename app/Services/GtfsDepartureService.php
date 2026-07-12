@@ -29,7 +29,7 @@ class GtfsDepartureService
         $trias = $this->triasService->getDeparturesNearby($lat, $lng, $limit);
         if ($trias && ! empty($trias['departures'])) {
             // Store as fallback for when TRIAS fails (3 min TTL — keeps departure times accurate)
-            Cache::put($fallbackKey, $trias, 180);
+            Cache::put($fallbackKey, $trias + ['_cached_at' => now()->timestamp], 180);
 
             return $trias;
         }
@@ -37,7 +37,7 @@ class GtfsDepartureService
         // TRIAS failed — use last known good result if fresh enough
         $lastGood = Cache::get($fallbackKey);
         if ($lastGood) {
-            return $lastGood;
+            return $this->ageFallback($lastGood);
         }
 
         if (! $this->hasGtfsData()) {
@@ -79,12 +79,12 @@ class GtfsDepartureService
      */
     public function getDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
     {
-        $fallbackKey = "trias_last_good_{$stopName}";
+        $fallbackKey = "trias_last_good_v2_{$stopName}";
 
         // Try TRIAS first for real-time data
         $trias = $this->triasService->getDepartures($stopName, $limit);
         if ($trias && ! empty($trias['departures'])) {
-            Cache::put($fallbackKey, $trias, 300);
+            Cache::put($fallbackKey, $trias + ['_cached_at' => now()->timestamp], 300);
 
             return $trias;
         }
@@ -92,10 +92,44 @@ class GtfsDepartureService
         // TRIAS failed — use last known good result if fresh enough
         $lastGood = Cache::get($fallbackKey);
         if ($lastGood) {
-            return $lastGood;
+            return $this->ageFallback($lastGood);
         }
 
         return $this->getStaticDepartures($stopName, $limit);
+    }
+
+    /**
+     * TRIAS returns relative minutes. Re-anchor a last-good snapshot before
+     * serving it so an outage cannot make old countdowns look freshly fetched.
+     *
+     * @param  array<string, mixed>  $result
+     * @return array<string, mixed>
+     */
+    private function ageFallback(array $result): array
+    {
+        $cachedAt = (int) ($result['_cached_at'] ?? now()->timestamp);
+        unset($result['_cached_at']);
+        $elapsedMinutes = intdiv(max(0, now()->timestamp - $cachedAt), 60);
+
+        if ($elapsedMinutes === 0) {
+            return $result;
+        }
+
+        $result['departures'] = collect($result['departures'] ?? [])
+            ->map(function (array $departure) use ($elapsedMinutes): array {
+                $departure['departures'] = collect($departure['departures'] ?? [])
+                    ->map(fn (int $minutes): int => $minutes - $elapsedMinutes)
+                    ->filter(fn (int $minutes): bool => $minutes >= 0)
+                    ->values()
+                    ->all();
+
+                return $departure;
+            })
+            ->filter(fn (array $departure): bool => $departure['departures'] !== [] || ($departure['cancelled'] ?? false))
+            ->values()
+            ->all();
+
+        return $result;
     }
 
     /**

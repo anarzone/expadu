@@ -26,17 +26,16 @@ class VrsTriasService
                 return null;
             }
 
-            $cacheKey = "trias_departures_{$stopName}_{$limit}";
-
-            $cached = Cache::get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-
             try {
                 $globalId = $this->resolveStopGlobalId($stopName);
                 if (! $globalId) {
                     return null;
+                }
+
+                $cacheKey = "trias_departures_v2_{$globalId['id']}_{$limit}";
+                $cached = Cache::get($cacheKey);
+                if ($cached !== null) {
+                    return $cached;
                 }
 
                 $departures = $this->fetchStopEvents($globalId['id'], $limit);
@@ -111,7 +110,7 @@ class VrsTriasService
     {
         // Strip "Köln " prefix — we re-add it to ensure Cologne results
         $search = preg_replace('/^Köln\s+/i', '', $stopName);
-        $cacheKey = "trias_stop_id_{$search}";
+        $cacheKey = "trias_stop_id_v2_{$search}";
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
@@ -134,14 +133,12 @@ class VrsTriasService
         $refs = $parsed->xpath('//StopPlaceRef');
         $names = $parsed->xpath('//StopPlaceName/Text');
 
-        if (empty($refs) || empty($names)) {
-            return $this->resolveStopWithoutPrefix($search);
-        }
+        $result = $this->findExactStop($search, $refs, $names)
+            ?? $this->resolveStopWithoutPrefix($search);
 
-        $result = [
-            'id' => (string) $refs[0],
-            'name' => (string) $names[0],
-        ];
+        if ($result === null) {
+            return null;
+        }
 
         Cache::put($cacheKey, $result, 86400);
 
@@ -168,14 +165,34 @@ class VrsTriasService
         $refs = $parsed->xpath('//StopPlaceRef');
         $names = $parsed->xpath('//StopPlaceName/Text');
 
-        if (empty($refs) || empty($names)) {
-            return null;
+        return $this->findExactStop($search, $refs, $names);
+    }
+
+    /**
+     * @param  array<int, \SimpleXMLElement>  $refs
+     * @param  array<int, \SimpleXMLElement>  $names
+     * @return array{id: string, name: string}|null
+     */
+    private function findExactStop(string $search, array $refs, array $names): ?array
+    {
+        $expected = $this->normalizeStopName($search);
+
+        foreach ($names as $index => $name) {
+            if (! isset($refs[$index]) || $this->normalizeStopName((string) $name) !== $expected) {
+                continue;
+            }
+
+            return ['id' => (string) $refs[$index], 'name' => (string) $name];
         }
 
-        return [
-            'id' => (string) $refs[0],
-            'name' => (string) $names[0],
-        ];
+        return null;
+    }
+
+    private function normalizeStopName(string $name): string
+    {
+        $withoutCity = preg_replace('/^Köln\s+/iu', '', trim($name)) ?? trim($name);
+
+        return mb_strtolower(preg_replace('/[^\pL\pN]+/u', ' ', $withoutCity) ?? $withoutCity);
     }
 
     /**

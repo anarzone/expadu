@@ -143,17 +143,55 @@ class ImportGtfsData extends Command
 
         $this->info('  Extracted to: '.$extractDir);
 
-        // Import each file
-        foreach ($this->files as $filename => $config) {
-            $filePath = $extractDir.'/'.$filename;
+        $requiredFiles = ['stops.txt', 'routes.txt', 'trips.txt', 'stop_times.txt'];
+        $missingFiles = array_values(array_filter(
+            $requiredFiles,
+            fn (string $filename): bool => ! file_exists($extractDir.'/'.$filename),
+        ));
 
-            if (! file_exists($filePath)) {
-                $this->warn("  Skipping {$filename} — file not found in archive");
+        if ($missingFiles !== []) {
+            $this->error('Archive is missing required files: '.implode(', ', $missingFiles));
+            @unlink($zipPath);
+            $this->deleteDirectory($extractDir);
 
-                continue;
-            }
+            return self::FAILURE;
+        }
 
-            $this->importFile($filePath, $config['table'], $config['columns']);
+        if (! file_exists($extractDir.'/calendar.txt') && ! file_exists($extractDir.'/calendar_dates.txt')) {
+            $this->error('Archive is missing a service calendar source (calendar.txt or calendar_dates.txt)');
+            @unlink($zipPath);
+            $this->deleteDirectory($extractDir);
+
+            return self::FAILURE;
+        }
+
+        try {
+            // PostgreSQL TRUNCATE is transactional. Keeping every table import
+            // in one transaction preserves the previous complete feed if any
+            // chunk or later file fails.
+            DB::transaction(function () use ($extractDir): void {
+                foreach ($this->files as $filename => $config) {
+                    $filePath = $extractDir.'/'.$filename;
+
+                    if (! file_exists($filePath)) {
+                        // Optional calendar variants still replace their table:
+                        // retaining rows from the prior feed would mix service
+                        // dates with the newly imported trips.
+                        DB::table($config['table'])->truncate();
+                        $this->warn("  Cleared optional {$filename} table — file not found in archive");
+
+                        continue;
+                    }
+
+                    $this->importFile($filePath, $config['table'], $config['columns']);
+                }
+            });
+        } catch (\Throwable $exception) {
+            $this->error('GTFS import failed; previous timetable preserved: '.$exception->getMessage());
+            @unlink($zipPath);
+            $this->deleteDirectory($extractDir);
+
+            return self::FAILURE;
         }
 
         // Clean up

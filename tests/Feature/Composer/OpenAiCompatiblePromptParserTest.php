@@ -89,3 +89,38 @@ test('a provider failure degrades to the heuristic, never throws', function () {
     expect($result->intent)->toBe(PromptIntent::BureaucracyQ)
         ->and($result->source)->toBe('heuristic');
 });
+
+test('hallucinated and malformed model constraints are removed before composing', function () {
+    $now = CarbonImmutable::parse('2026-06-10 09:00', 'Europe/Berlin');
+    fakeToolCall([
+        'intent' => 'plan_day',
+        'window_start' => $now->addHours(2)->toIso8601String(),
+        'window_end' => $now->addHours(6)->toIso8601String(),
+        'areas' => ['ehrenfeld', 'Gotham', ['nested']],
+        'categories' => ['park', 'moonwalk', 42],
+        'companions' => 'coworkers',
+        'budget' => ['free'],
+    ]);
+
+    $result = llmParser()->parse('plans for later', llmProfile(), $now);
+
+    expect($result->source)->toBe('llm')
+        ->and($result->plan->areas)->toBe(['Ehrenfeld'])
+        ->and($result->plan->categories)->toBe(['park'])
+        ->and($result->plan->companions)->toBeNull()
+        ->and($result->plan->budget)->toBeNull();
+});
+
+test('an invalid model date falls back to the heuristic parser', function () {
+    $now = CarbonImmutable::parse('2026-06-10 09:00', 'Europe/Berlin');
+    fakeToolCall([
+        'intent' => 'plan_day',
+        'window_start' => 'definitely not a date',
+        'window_end' => $now->addHours(6)->toIso8601String(),
+    ]);
+
+    $result = llmParser()->parse('tomorrow afternoon in Ehrenfeld', llmProfile(), $now);
+
+    expect($result->source)->toBe('heuristic')
+        ->and($result->plan->areas)->toBe(['Ehrenfeld']);
+});

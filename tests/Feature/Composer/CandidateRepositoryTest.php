@@ -9,6 +9,21 @@ use App\Models\Spot;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
+beforeEach(function () {
+    config(['events.geocoding.expected_polygon_count' => 1]);
+    DB::table('veedels')->insert([
+        'name' => 'Composer Test Boundary',
+        'bezirk' => 'Test',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    DB::statement(<<<'SQL'
+        UPDATE veedels
+        SET boundary = ST_Multi(ST_GeomFromText('POLYGON((6.90 50.90, 7.00 50.90, 7.00 51.00, 6.90 51.00, 6.90 50.90))', 4326))
+        WHERE name = 'Composer Test Boundary'
+        SQL);
+});
+
 function spotWithHours(array $overrides): Spot
 {
     return Spot::factory()->create(array_merge([
@@ -199,4 +214,142 @@ test('only quality-gated events reach the composer; a curated outdoor event is a
     expect($m)->not->toBeNull();
     expect($m->outdoor)->toBeTrue();
     expect($m->isLandmark)->toBeTrue();
+});
+
+test('a recurring event occurrence inside the plan window reaches the composer', function () {
+    $event = Event::factory()->create([
+        'title' => 'Weekly Community Dinner',
+        'category' => 'food',
+        'is_curated' => true,
+        'relevance' => 0.9,
+        'quality_score' => 0.9,
+        'starts_at' => CarbonImmutable::parse('2026-06-01 18:00', 'Europe/Berlin'),
+        'ends_at' => CarbonImmutable::parse('2026-06-01 20:00', 'Europe/Berlin'),
+        'recurrence' => 'FREQ=WEEKLY;BYDAY=MO',
+        'recurrence_until' => CarbonImmutable::parse('2026-07-01 23:59', 'Europe/Berlin'),
+    ]);
+    DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+        [6.95, 50.94, $event->id],
+    );
+
+    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.94, 6.95))
+        ->first(fn ($candidate) => str_starts_with($candidate->id, "event:{$event->id}:"));
+
+    expect($candidate)->not->toBeNull()
+        ->and($candidate->fixedStart?->format('Y-m-d H:i'))->toBe('2026-06-15 18:00')
+        ->and($candidate->typicalDurationMin)->toBe(120);
+});
+
+test('events outside the Cologne service area never reach the composer pool', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Composer Test Köln',
+        'bezirk' => 'Test',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    DB::statement(<<<'SQL'
+        UPDATE veedels
+        SET boundary = ST_Multi(ST_GeomFromText('POLYGON((6.90 50.90, 7.00 50.90, 7.00 51.00, 6.90 51.00, 6.90 50.90))', 4326))
+        WHERE name = 'Composer Test Köln'
+        SQL);
+
+    $cologne = Event::factory()->create([
+        'title' => 'Cologne Community Night',
+        'is_curated' => true,
+        'relevance' => 0.9,
+        'quality_score' => 0.9,
+        'starts_at' => CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'),
+    ]);
+    $berlin = Event::factory()->create([
+        'title' => 'Mis-geocoded Open Air Cinema',
+        'is_curated' => true,
+        'relevance' => 0.9,
+        'quality_score' => 0.9,
+        'starts_at' => CarbonImmutable::parse('2026-06-15 13:00', 'Europe/Berlin'),
+    ]);
+
+    DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+        [6.95, 50.94, $cologne->id],
+    );
+    DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+        [13.2015024, 52.5364431, $berlin->id],
+    );
+
+    $eventIds = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.995, 6.955))
+        ->where('type', 'event')
+        ->pluck('id');
+
+    expect($eventIds)->toContain("event:{$cologne->id}")
+        ->not->toContain("event:{$berlin->id}");
+});
+
+test('a nearby coordinate outside the official Cologne polygons is excluded', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Composer Boundary Köln',
+        'bezirk' => 'Test',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    DB::statement(<<<'SQL'
+        UPDATE veedels
+        SET boundary = ST_Multi(ST_GeomFromText('POLYGON((6.90 50.90, 7.00 50.90, 7.00 51.00, 6.90 51.00, 6.90 50.90))', 4326))
+        WHERE name = 'Composer Boundary Köln'
+        SQL);
+
+    $outside = Event::factory()->create([
+        'title' => 'Nearby Hürth Event',
+        'is_curated' => true,
+        'relevance' => 0.9,
+        'quality_score' => 0.9,
+        'starts_at' => CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'),
+    ]);
+    DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+        [6.90, 50.88, $outside->id],
+    );
+
+    expect(collect(app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.94, 6.95))->pluck('id'))
+        ->not->toContain("event:{$outside->id}");
+});
+
+test('recurring occurrences have stable unique candidate ids', function () {
+    DB::table('veedels')->insert([
+        'name' => 'Composer Recurrence Köln',
+        'bezirk' => 'Test',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    DB::statement(<<<'SQL'
+        UPDATE veedels
+        SET boundary = ST_Multi(ST_GeomFromText('POLYGON((6.90 50.90, 7.00 50.90, 7.00 51.00, 6.90 51.00, 6.90 50.90))', 4326))
+        WHERE name = 'Composer Recurrence Köln'
+        SQL);
+    $event = Event::factory()->create([
+        'title' => 'Daily Festival Programme',
+        'is_curated' => true,
+        'relevance' => 0.9,
+        'quality_score' => 0.9,
+        'starts_at' => CarbonImmutable::parse('2026-06-14 14:00', 'Europe/Berlin'),
+        'ends_at' => CarbonImmutable::parse('2026-06-14 15:00', 'Europe/Berlin'),
+        'recurrence' => 'FREQ=DAILY',
+        'recurrence_until' => CarbonImmutable::parse('2026-06-16 23:59', 'Europe/Berlin'),
+    ]);
+    DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+        [6.95, 50.94, $event->id],
+    );
+    $window = new Constraints(
+        windowStart: CarbonImmutable::parse('2026-06-15 00:00', 'Europe/Berlin'),
+        windowEnd: CarbonImmutable::parse('2026-06-16 23:59', 'Europe/Berlin'),
+    );
+
+    $occurrences = collect(app(CandidateRepository::class)->candidatesFor($window, 50.94, 6.95))
+        ->where('type', 'event')
+        ->where(fn ($candidate) => str_starts_with($candidate->id, "event:{$event->id}:"));
+
+    expect($occurrences)->toHaveCount(2)
+        ->and($occurrences->pluck('id')->unique())->toHaveCount(2);
 });

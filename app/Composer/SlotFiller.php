@@ -52,66 +52,58 @@ class SlotFiller
         // the coordinates already placed under it.
         $usedNames = [];
 
-        // 0. Pinned "plan around this" picks are placed first, chained from
-        //    the origin, so the user's explicit choices win the window before
-        //    any auto-anchored event can crowd them out.
-        $pinCursor = $constraints->windowStart;
-        $pinLat = $originLat;
-        $pinLng = $originLng;
-        foreach ($feasible as $pin) {
-            if (count($slots) >= self::MAX_SLOTS_PER_DAY) {
-                break;
-            }
-            if ($pin->isFixedTime() || isset($used[$pin->id]) || ! in_array($pin->id, $context->pinnedIds, true)) {
-                continue;
-            }
+        // 0. User appointments are commitments, even when two cannot physically
+        //    coexist. Keep every one visible and mark that schedule infeasible;
+        //    never let a recommendation silently delete a commitment.
+        $appointments = array_values(array_filter($feasible, fn (Candidate $candidate) => $candidate->isAppointment()));
+        usort($appointments, fn (Candidate $a, Candidate $b) => $a->fixedStart <=> $b->fixedStart);
+        $scheduleFeasible = $this->appointmentsAreFeasible($appointments, $constraints, $originLat, $originLng);
 
-            $travelMin = $this->travel->minutesBetween($pinLat, $pinLng, $pin->lat, $pin->lng);
-            $start = $pinCursor->addMinutes($travelMin);
-            if ($pin->opensAt !== null && $pin->opensAt->greaterThan($start)) {
-                $start = $pin->opensAt;
-            }
-            $end = $start->addMinutes($pin->typicalDurationMin);
-            if ($end->greaterThan($constraints->windowEnd)) {
-                continue; // genuinely no room, even for a pin
-            }
-
-            $slots[] = new PlanSlot($pin, $start, $end, $travelMin);
-            $used[$pin->id] = true;
-            $usedNames[$this->nameKey($pin)][] = [$pin->lat, $pin->lng];
-            $pinCursor = $end;
-            $pinLat = $pin->lat;
-            $pinLng = $pin->lng;
-        }
-
-        // 1. Anchor fixed-time candidates. Appointments are sacred, so they
-        //    claim their slot before curated events; then earliest first.
-        $fixed = array_filter($feasible, fn (Candidate $c) => $c->isFixedTime());
-        usort($fixed, function (Candidate $a, Candidate $b) {
-            if ($a->isAppointment() !== $b->isAppointment()) {
-                return $a->isAppointment() ? -1 : 1;
-            }
-
-            return $a->fixedStart <=> $b->fixedStart;
-        });
-
-        foreach ($fixed as $anchor) {
+        foreach ($appointments as $anchor) {
             $start = $anchor->fixedStart;
             $end = $start->addMinutes($anchor->typicalDurationMin);
-            if ($this->overlapsAny($slots, $start, $end)) {
-                continue;
-            }
             $slots[] = new PlanSlot($anchor, $start, $end, 0);
             $used[$anchor->id] = true;
             $usedNames[$this->nameKey($anchor)][] = [$anchor->lat, $anchor->lng];
-            if (count($slots) >= self::MAX_SLOTS_PER_DAY) {
-                break;
+        }
+
+        // 1. A locked public event is mandatory only when it is genuinely
+        //    reachable between the already-reserved appointments.
+        $fixedPins = array_values(array_filter(
+            $feasible,
+            fn (Candidate $candidate) => $candidate->isFixedTime()
+                && ! $candidate->isAppointment()
+                && in_array($candidate->id, $context->pinnedIds, true),
+        ));
+        usort($fixedPins, fn (Candidate $a, Candidate $b) => $a->fixedStart <=> $b->fixedStart);
+        foreach ($fixedPins as $pin) {
+            if (! $this->fixedCandidateFits($pin, $slots, $constraints, $originLat, $originLng)) {
+                continue;
             }
+            $slots[] = new PlanSlot($pin, $pin->fixedStart, $pin->fixedStart->addMinutes($pin->typicalDurationMin), 0);
+            $used[$pin->id] = true;
+            $usedNames[$this->nameKey($pin)][] = [$pin->lat, $pin->lng];
         }
 
         usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
 
-        // 2. Fill the roles in order, left→right. Explicit roles (a category-led
+        // 2. Flexible explicit picks get first choice of the real gaps left by
+        //    appointments. If a pin cannot fit, the commitment still wins.
+        foreach ($feasible as $pin) {
+            if ($pin->isFixedTime() || isset($used[$pin->id]) || ! in_array($pin->id, $context->pinnedIds, true)) {
+                continue;
+            }
+            $slot = $this->placeFlexiblePin($pin, $slots, $constraints, $originLat, $originLng);
+            if ($slot === null) {
+                continue;
+            }
+            $slots[] = $slot;
+            $used[$pin->id] = true;
+            $usedNames[$this->nameKey($pin)][] = [$pin->lat, $pin->lng];
+            usort($slots, fn (PlanSlot $a, PlanSlot $b) => $a->startAt <=> $b->startAt);
+        }
+
+        // 3. Fill the roles in order, left→right. Explicit roles (a category-led
         //    "anchor + around it" day) win; otherwise the archetype/vibe shapes
         //    it, with Balanced — one permissive role that fills the window — the
         //    default greedy behaviour.
@@ -139,7 +131,83 @@ class SlotFiller
             $constraints,
             PlanNarrator::narrate($this->bufferAnchors(array_values($slots)), $context->rainExpected),
             $relaxed,
+            $scheduleFeasible,
         );
+    }
+
+    /** @param list<Candidate> $appointments */
+    private function appointmentsAreFeasible(array $appointments, Constraints $constraints, float $originLat, float $originLng): bool
+    {
+        $cursor = $constraints->windowStart;
+        $lat = $originLat;
+        $lng = $originLng;
+        foreach ($appointments as $appointment) {
+            $travelMin = $this->travel->minutesBetween($lat, $lng, $appointment->lat, $appointment->lng);
+            if ($cursor->addMinutes($travelMin)->greaterThan($appointment->fixedStart)) {
+                return false;
+            }
+            $cursor = $appointment->fixedStart->addMinutes($appointment->typicalDurationMin);
+            $lat = $appointment->lat;
+            $lng = $appointment->lng;
+        }
+
+        return true;
+    }
+
+    /** @param list<PlanSlot> $slots */
+    private function fixedCandidateFits(Candidate $candidate, array $slots, Constraints $constraints, float $originLat, float $originLng): bool
+    {
+        $start = $candidate->fixedStart;
+        $end = $start->addMinutes($candidate->typicalDurationMin);
+        if ($this->overlapsAny($slots, $start, $end)) {
+            return false;
+        }
+
+        $previous = collect($slots)->filter(fn (PlanSlot $slot) => $slot->endAt->lessThanOrEqualTo($start))->sortByDesc('endAt')->first();
+        $cursor = $previous?->endAt ?? $constraints->windowStart;
+        $lat = $previous?->candidate->lat ?? $originLat;
+        $lng = $previous?->candidate->lng ?? $originLng;
+        if ($cursor->addMinutes($this->travel->minutesBetween($lat, $lng, $candidate->lat, $candidate->lng))->greaterThan($start)) {
+            return false;
+        }
+
+        $next = collect($slots)->filter(fn (PlanSlot $slot) => $slot->startAt->greaterThanOrEqualTo($end))->sortBy('startAt')->first();
+
+        return $next === null || ! $end->addMinutes($this->travel->minutesBetween(
+            $candidate->lat,
+            $candidate->lng,
+            $next->candidate->lat,
+            $next->candidate->lng,
+        ))->greaterThan($next->startAt);
+    }
+
+    /** @param list<PlanSlot> $slots */
+    private function placeFlexiblePin(Candidate $pin, array $slots, Constraints $constraints, float $originLat, float $originLng): ?PlanSlot
+    {
+        $cursor = $constraints->windowStart;
+        $lat = $originLat;
+        $lng = $originLng;
+        foreach ([...$slots, null] as $next) {
+            $gapEnd = $next?->startAt ?? $constraints->windowEnd;
+            $travelMin = $this->travel->minutesBetween($lat, $lng, $pin->lat, $pin->lng);
+            $start = $cursor->addMinutes($travelMin);
+            if ($pin->opensAt !== null && $pin->opensAt->greaterThan($start)) {
+                $start = $pin->opensAt;
+            }
+            $end = $start->addMinutes($pin->typicalDurationMin);
+            $outbound = $next === null ? 0 : $this->travel->minutesBetween($pin->lat, $pin->lng, $next->candidate->lat, $next->candidate->lng);
+            if ($end->addMinutes($outbound)->lessThanOrEqualTo($gapEnd)
+                && ($pin->closesAt === null || $end->lessThanOrEqualTo($pin->closesAt))) {
+                return new PlanSlot($pin, $start, $end, $travelMin);
+            }
+            if ($next !== null && $next->endAt->greaterThan($cursor)) {
+                $cursor = $next->endAt;
+                $lat = $next->candidate->lat;
+                $lng = $next->candidate->lng;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -191,11 +259,7 @@ class SlotFiller
                     continue;
                 }
 
-                [$candidate, $travelMin] = $best;
-                $start = $cursor->addMinutes($travelMin);
-                if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
-                    $start = $candidate->opensAt;
-                }
+                [$candidate, $travelMin, $start] = $best;
                 $end = $start->addMinutes($candidate->typicalDurationMin);
 
                 $slots[] = new PlanSlot($candidate, $start, $end, $travelMin);
@@ -244,7 +308,7 @@ class SlotFiller
     }
 
     /**
-     * Best non-fixed candidate that fits between cursor and gapEnd, optionally
+     * Best optional candidate that fits between cursor and gapEnd, optionally
      * restricted to a role's categories and a single Veedel.
      *
      * @param  list<Candidate>  $feasible
@@ -252,7 +316,7 @@ class SlotFiller
      * @param  array<string, list<array{0: float, 1: float}>>  $usedNames  placed coordinates keyed by visible name
      * @param  list<PlanSlot>  $slots
      * @param  list<string>  $allowedCategories  empty = any category
-     * @return array{0: Candidate, 1: int}|null
+     * @return array{0: Candidate, 1: int, 2: CarbonImmutable}|null
      */
     private function bestFor(
         array $feasible,
@@ -272,7 +336,7 @@ class SlotFiller
         $bestScore = -INF;
 
         foreach ($feasible as $candidate) {
-            if ($candidate->isFixedTime() || isset($used[$candidate->id])) {
+            if (isset($used[$candidate->id])) {
                 continue;
             }
             // Skip a venue whose visible name is already placed nearby (one
@@ -297,9 +361,17 @@ class SlotFiller
             }
 
             $travelMin = $this->travel->minutesBetween($cursorLat, $cursorLng, $candidate->lat, $candidate->lng);
-            $start = $cursor->addMinutes($travelMin);
-            if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
-                $start = $candidate->opensAt;
+            $arrival = $cursor->addMinutes($travelMin);
+            if ($candidate->isFixedTime()) {
+                if ($arrival->greaterThan($candidate->fixedStart)) {
+                    continue;
+                }
+                $start = $candidate->fixedStart;
+            } else {
+                $start = $arrival;
+                if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
+                    $start = $candidate->opensAt;
+                }
             }
             $end = $start->addMinutes($candidate->typicalDurationMin);
 
@@ -310,10 +382,23 @@ class SlotFiller
                 continue;
             }
 
+            $nextAnchor = $this->slotStartingAt($slots, $gapEnd);
+            if ($nextAnchor !== null) {
+                $travelToAnchor = $this->travel->minutesBetween(
+                    $candidate->lat,
+                    $candidate->lng,
+                    $nextAnchor->candidate->lat,
+                    $nextAnchor->candidate->lng,
+                );
+                if ($end->addMinutes($travelToAnchor)->greaterThan($nextAnchor->startAt)) {
+                    continue;
+                }
+            }
+
             $score = $this->scorer->score($candidate, $slots, $cursor, $cursorLat, $cursorLng, $context);
             if ($score > $bestScore) {
                 $bestScore = $score;
-                $best = [$candidate, $travelMin];
+                $best = [$candidate, $travelMin, $start];
             }
         }
 
@@ -381,6 +466,20 @@ class SlotFiller
         }
 
         return $startAt;
+    }
+
+    /**
+     * @param  list<PlanSlot>  $slots
+     */
+    private function slotStartingAt(array $slots, CarbonImmutable $startAt): ?PlanSlot
+    {
+        foreach ($slots as $slot) {
+            if ($slot->startAt->equalTo($startAt)) {
+                return $slot;
+            }
+        }
+
+        return null;
     }
 
     /**

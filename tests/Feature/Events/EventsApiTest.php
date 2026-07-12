@@ -1,11 +1,14 @@
 <?php
 
+use App\Enums\TransportMode;
 use App\Models\Event;
 use App\Models\EventReminder;
 use App\Models\Spot;
 use App\Models\User;
 use App\Models\Venue;
 use App\Notifications\EventOccurrenceReminder;
+use App\Services\UserLocationService;
+use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -49,6 +52,119 @@ test('today window returns chronological occurrences with server-built meta', fu
     expect($data[1]['meta'])->toBe('Tonight 19:00–22:00 · Gilden im Zims · Altstadt-Nord');
     expect($data[1]['chips'])->toBe(['English-friendly', 'free']); // free chip derived
     expect($data[1]['category'])->toBe('language_exchange');
+});
+
+test('nearest events are ordered from the explicit live origin and expose distance', function () {
+    $near = makeVenue(['name' => 'Niehl venue', 'lat' => 50.9955, 'lng' => 6.9550, 'veedel' => 'Niehl']);
+    $far = makeVenue(['name' => 'Sülz venue', 'lat' => 50.9220, 'lng' => 6.9360, 'veedel' => 'Sülz']);
+
+    Event::factory()->create([
+        'title' => 'Far but sooner', 'starts_at' => '2026-06-12 11:00:00',
+        'recurrence' => null, 'venue_id' => $far->id,
+    ]);
+    Event::factory()->create([
+        'title' => 'Near but later', 'starts_at' => '2026-06-12 12:00:00',
+        'recurrence' => null, 'venue_id' => $near->id,
+    ]);
+
+    $data = $this->getJson('/api/events?window=today&sort=nearest&lat=50.9950&lng=6.9550')
+        ->assertOk()
+        ->json('data');
+
+    expect($data)->toHaveCount(2)
+        ->and($data[0]['title'])->toBe('Near but later')
+        ->and($data[0]['distance_km'])->toBeLessThan(0.1)
+        ->and($data[1]['title'])->toBe('Far but sooner')
+        ->and($data[1]['distance_km'])->toBeGreaterThan(5.0);
+});
+
+test('events use the canonical stored origin and selected mode for travel times', function () {
+    $user = auth()->user();
+    app(UserLocationService::class)->confirm($user, 50.9950, 6.9550, 'Niehl Nord');
+
+    $near = makeVenue(['name' => 'Niehl venue', 'lat' => 50.9955, 'lng' => 6.9550, 'veedel' => 'Niehl']);
+    $far = makeVenue(['name' => 'Sülz venue', 'lat' => 50.9220, 'lng' => 6.9360, 'veedel' => 'Sülz']);
+    Event::factory()->create(['title' => 'Near', 'starts_at' => '2026-06-12 12:00:00', 'recurrence' => null, 'venue_id' => $near->id]);
+    Event::factory()->create(['title' => 'Far', 'starts_at' => '2026-06-12 11:00:00', 'recurrence' => null, 'venue_id' => $far->id]);
+
+    $this->mock(TravelTimes::class, function ($mock): void {
+        $mock->shouldReceive('minutes')
+            ->once()
+            ->withArgs(fn ($mode, $origin, $destinations): bool => $mode === TransportMode::Bike
+                && $origin->lat === 50.995
+                && count($destinations) === 2)
+            ->andReturn([19, 4]);
+    });
+
+    $response = $this->getJson('/api/events?window=today&sort=nearest&mode=bike')->assertOk();
+
+    expect($response->json('needs_location'))->toBeFalse()
+        ->and($response->json('origin.label'))->toBe('Niehl Nord')
+        ->and($response->json('origin'))->not->toHaveKeys(['lat', 'lng'])
+        ->and($response->json('data.0.title'))->toBe('Near')
+        ->and($response->json('data.0.travel_min'))->toBe(4)
+        ->and($response->json('data.1.title'))->toBe('Far')
+        ->and($response->json('data.1.travel_min'))->toBe(19);
+});
+
+test('nearest events request reports when an origin is required', function () {
+    Event::factory()->create(['starts_at' => '2026-06-12 12:00:00', 'recurrence' => null]);
+
+    $this->getJson('/api/events?window=today&sort=nearest')
+        ->assertOk()
+        ->assertJsonPath('needs_location', true)
+        ->assertJsonPath('origin.source', 'none')
+        ->assertJsonPath('data.0.distance_km', null)
+        ->assertJsonPath('data.0.travel_min', null);
+});
+
+test('recommended sorting prioritises LLM relevance before quality fallback', function () {
+    Event::factory()->create([
+        'title' => 'LLM relevant', 'starts_at' => '2026-06-12 12:00:00',
+        'recurrence' => null, 'relevance' => 0.8, 'quality_score' => 0.5,
+    ]);
+    Event::factory()->create([
+        'title' => 'Only structurally complete', 'starts_at' => '2026-06-12 11:00:00',
+        'recurrence' => null, 'relevance' => null, 'quality_score' => 0.95,
+    ]);
+
+    $data = $this->getJson('/api/events?window=today&sort=recommended')->assertOk()->json('data');
+
+    expect($data[0]['title'])->toBe('LLM relevant')
+        ->and($data[1]['title'])->toBe('Only structurally complete');
+});
+
+test('transit cards do not expose cycling matrix times as transit times', function () {
+    $venue = makeVenue();
+    Event::factory()->create(['starts_at' => '2026-06-12 12:00:00', 'recurrence' => null, 'venue_id' => $venue->id]);
+
+    $this->mock(TravelTimes::class, function ($mock): void {
+        $mock->shouldNotReceive('minutes');
+    });
+
+    $this->getJson('/api/events?window=today&mode=transit&lat=50.9350&lng=6.9600')
+        ->assertOk()
+        ->assertJsonPath('data.0.travel_min', null);
+});
+
+test('travel matrix destinations are deduplicated', function () {
+    $venue = makeVenue();
+    Event::factory()->count(3)->create([
+        'starts_at' => '2026-06-12 12:00:00', 'recurrence' => null, 'venue_id' => $venue->id,
+    ]);
+
+    $this->mock(TravelTimes::class, function ($mock): void {
+        $mock->shouldReceive('minutes')
+            ->once()
+            ->withArgs(fn ($mode, $origin, $destinations): bool => count($destinations) === 1)
+            ->andReturn([6]);
+    });
+
+    $data = $this->getJson('/api/events?window=today&mode=walk&lat=50.9350&lng=6.9600')
+        ->assertOk()
+        ->json('data');
+
+    expect(collect($data)->pluck('travel_min')->all())->toBe([6, 6, 6]);
 });
 
 test('placeholder venue text is never shown as a venue', function () {

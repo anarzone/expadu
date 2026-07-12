@@ -9,7 +9,10 @@ test('events page renders the shell with filters from the URL', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    $response = $this->get(route('events', ['window' => 'weekend', 'category' => 'sports', 'free' => 1]));
+    $response = $this->get(route('events', [
+        'window' => 'weekend', 'category' => 'sports', 'free' => 1,
+        'sort' => 'nearest', 'mode' => 'bike',
+    ]));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -17,6 +20,8 @@ test('events page renders the shell with filters from the URL', function () {
         ->where('filters.window', 'weekend')
         ->where('filters.category', 'sports')
         ->where('filters.free', true)
+        ->where('filters.sort', 'nearest')
+        ->where('filters.mode', 'bike')
     );
 });
 

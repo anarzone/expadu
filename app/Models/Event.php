@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
-#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'price_text', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score', 'title_en', 'description_en', 'source_lang', 'is_curated', 'source_uid', 'summary_en', 'tip_en', 'language', 'chips', 'relevance', 'needs_review', 'status', 'recurrence', 'recurrence_until', 'venue_id', 'verified_at'])]
+#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'price_text', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score', 'title_en', 'description_en', 'source_lang', 'is_curated', 'source_uid', 'summary_en', 'tip_en', 'language', 'chips', 'relevance', 'needs_review', 'status', 'recurrence', 'recurrence_until', 'venue_id', 'verified_at', 'classification_input_hash'])]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */

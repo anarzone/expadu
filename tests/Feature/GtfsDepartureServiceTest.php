@@ -147,6 +147,20 @@ it('getDepartures serves fallback when TRIAS fails', function () {
     expect($result['source'])->toBe('trias_rt');
 });
 
+it('ages cached TRIAS countdowns before serving a fallback', function () {
+    $trias = Mockery::mock(VrsTriasService::class);
+    $trias->shouldReceive('getDepartures')->once()->andReturn(makeLiveResult('Ehrenfeld'));
+    makeService($trias)->getDepartures('Ehrenfeld');
+
+    $this->travel(2)->minutes();
+
+    $failedTrias = Mockery::mock(VrsTriasService::class);
+    $failedTrias->shouldReceive('getDepartures')->once()->andReturn(null);
+    $result = makeService($failedTrias)->getDepartures('Ehrenfeld');
+
+    expect($result['departures'][0]['departures'])->toBe([1, 11]);
+});
+
 it('getDepartures falls back to static when no fallback exists', function () {
     $trias = Mockery::mock(VrsTriasService::class);
     $trias->shouldReceive('getDepartures')->once()->andReturn(null);

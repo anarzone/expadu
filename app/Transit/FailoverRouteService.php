@@ -66,46 +66,77 @@ class FailoverRouteService implements RouteService
         );
 
         // Cache the ARRAY form, never the DTO — Redis deserialises cached
-        // objects to __PHP_Incomplete_Class on a hit. Reconstruct on read.
-        $cached = Cache::remember($cacheKey, 60, function () use ($from, $to, $departAt, $max, $arriveBy, $variety) {
-            $deadline = $this->now() + self::JOURNEY_BUDGET_SECONDS;
-
-            foreach (['motis' => $this->motis, 'transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
-                if ($this->breaker->isOpen($name)) {
-                    continue;
-                }
-
-                // Stop the cascade once the budget is spent: a remaining sliver
-                // isn't enough for an honest attempt, so fall through to degraded.
-                $remaining = $deadline - $this->now();
-                if ($remaining < self::MIN_ATTEMPT_SECONDS) {
-                    Log::warning('journey budget exhausted, falling through to degraded', [
-                        'tried_through' => $name, 'remaining' => round($remaining, 2),
-                    ]);
-                    break;
-                }
-
-                // Bound this provider's HTTP calls to what's left of the budget
-                // so no single slow provider can blow past it.
-                $bounded = $adapter instanceof TransitousAdapter
-                    ? $adapter->withPlanTimeout(min($remaining, 8.0))
-                    : $adapter;
-
-                try {
-                    $result = $bounded->plan($from, $to, $departAt, $max, $arriveBy, $variety);
-                    $this->breaker->recordSuccess($name);
-
-                    return $result->toArray();
-                } catch (\Throwable $e) {
-                    $this->breaker->recordFailure($name);
-                    Log::warning("transit adapter {$name} failed", ['error' => $e->getMessage()]);
-                }
+        // objects to __PHP_Incomplete_Class on a hit. Cache is an optimisation:
+        // an outage must not prevent the provider cascade from running.
+        try {
+            $cached = $this->readJourneyCache($cacheKey);
+            if (is_array($cached)) {
+                return JourneyResult::fromArray($cached);
             }
+        } catch (\Throwable $exception) {
+            Log::warning('journey cache read failed; continuing without cache', ['error' => $exception->getMessage()]);
+        }
 
-            return $this->degraded($from, $to)->toArray();
-        });
+        $cached = $this->planWithProviders($from, $to, $departAt, $max, $arriveBy, $variety);
+
+        try {
+            $this->writeJourneyCache($cacheKey, $cached);
+        } catch (\Throwable $exception) {
+            Log::warning('journey cache write failed; returning uncached result', ['error' => $exception->getMessage()]);
+        }
 
         return JourneyResult::fromArray($cached);
+    }
+
+    protected function readJourneyCache(string $key): mixed
+    {
+        return Cache::get($key);
+    }
+
+    /**
+     * @param  array<string, mixed>  $value
+     */
+    protected function writeJourneyCache(string $key, array $value): void
+    {
+        Cache::put($key, $value, 60);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function planWithProviders(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, bool $arriveBy, bool $variety): array
+    {
+        $deadline = $this->now() + self::JOURNEY_BUDGET_SECONDS;
+
+        foreach (['motis' => $this->motis, 'transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
+            if ($this->breaker->isOpen($name)) {
+                continue;
+            }
+
+            $remaining = $deadline - $this->now();
+            if ($remaining < self::MIN_ATTEMPT_SECONDS) {
+                Log::warning('journey budget exhausted, falling through to degraded', [
+                    'tried_through' => $name, 'remaining' => round($remaining, 2),
+                ]);
+                break;
+            }
+
+            $bounded = $adapter instanceof TransitousAdapter
+                ? $adapter->withPlanTimeout(min($remaining, 8.0))
+                : $adapter;
+
+            try {
+                $result = $bounded->plan($from, $to, $departAt, $max, $arriveBy, $variety);
+                $this->breaker->recordSuccess($name);
+
+                return $result->toArray();
+            } catch (\Throwable $exception) {
+                $this->breaker->recordFailure($name);
+                Log::warning("transit adapter {$name} failed", ['error' => $exception->getMessage()]);
+            }
+        }
+
+        return $this->degraded($from, $to)->toArray();
     }
 
     /**

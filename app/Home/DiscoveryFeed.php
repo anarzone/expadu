@@ -412,6 +412,7 @@ class DiscoveryFeed
         // pool, cached once for everyone.
         if ($originLat === null || $originLng === null) {
             $rows = Cache::remember(self::SCAN_CACHE_KEY, self::SCAN_TTL, fn () => Spot::query()
+                ->recommendationEligible()
                 ->select($columns)
                 ->whereNotNull('lat')
                 ->whereNotNull('lng')

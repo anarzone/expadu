@@ -25,6 +25,8 @@ export type EventOccurrence = {
     is_recurring: boolean;
     recurrence_text: string | null;
     verified: boolean;
+    distance_km: number | null;
+    travel_min: number | null;
 };
 
 export type EventReminderEntry = {

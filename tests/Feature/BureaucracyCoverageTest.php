@@ -51,3 +51,14 @@ it('keeps Gewerbeanmeldung reachable for EU and already-permitted traders', func
     expect($paths->applicability($gewerbe, $engine->build($trader(true))))->toBe(Applicability::Yes)
         ->and($paths->applicability($gewerbe, $engine->build($trader(false))))->toBe(Applicability::Yes);
 });
+
+it('does not publish known stale bureaucracy links or figures', function () {
+    $catalogue = collect(glob(database_path('seeders/data/bureaucracy/*.yaml')))
+        ->map(fn (string $file): string => file_get_contents($file))
+        ->implode("\n");
+
+    expect($catalogue)
+        ->not->toContain('stadt-koeln.de/service/produkt/anmeldung-einer-wohnung')
+        ->not->toContain('rundfunkbeitrag.de/en/')
+        ->not->toContain('Up to €934/month');
+});

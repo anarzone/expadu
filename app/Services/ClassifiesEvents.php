@@ -18,6 +18,7 @@ interface ClassifiesEvents
      *     language: string,
      *     chips: list<string>,
      *     title_en: string,
+     *     description_en: ?string,
      *     summary_en: string,
      *     tip_en: ?string,
      * }

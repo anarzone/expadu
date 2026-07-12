@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Composer\AnthropicCandidateRanker;
 use App\Composer\Contracts\ParsesPrompt;
+use App\Composer\Contracts\RanksCandidates;
 use App\Composer\HeuristicPromptParser;
 use App\Composer\OpenAiCompatiblePromptParser;
 use App\ContextEngine\Evaluators\MarketEvaluator;
@@ -24,11 +26,14 @@ use App\Services\ClassifiesEvents;
 use App\Transit\Contracts\RouteService;
 use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\ParallelTesting;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -58,6 +63,8 @@ class AppServiceProvider extends ServiceProvider
             return $heuristic;
         });
 
+        $this->app->bind(RanksCandidates::class, AnthropicCandidateRanker::class);
+
         $this->app->bind(
             ClassifiesEvents::class,
             AnthropicEventClassifier::class,
@@ -70,6 +77,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        RateLimiter::for('composer-parse', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
+        RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
+            ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
 
         Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
 

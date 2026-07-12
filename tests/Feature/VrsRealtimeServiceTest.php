@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Gtfs\GtfsStopTime;
 use App\Services\VrsRealtimeService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -99,6 +100,13 @@ it('returns cancelled status for cancelled trip', function () {
 });
 
 it('propagates delay when stop has no update', function () {
+    GtfsStopTime::create([
+        'trip_id' => 'trip-prop',
+        'stop_id' => '300',
+        'arrival_time' => '12:10:00',
+        'departure_time' => '12:10:00',
+        'stop_sequence' => 3,
+    ]);
     Cache::put('vrs_gtfsrt_trip_updates', [
         'trip-prop' => [
             'trip_id' => 'trip-prop',
@@ -118,6 +126,31 @@ it('propagates delay when stop has no update', function () {
     expect($result)->not->toBeNull()
         ->and($result['delay'])->toBe(180) // last known delay from sequence 2
         ->and($result['skipped'])->toBeFalse();
+});
+
+it('does not propagate a later stop delay backwards to an earlier target stop', function () {
+    GtfsStopTime::create([
+        'trip_id' => 'trip-mid',
+        'stop_id' => '150',
+        'arrival_time' => '12:05:00',
+        'departure_time' => '12:05:00',
+        'stop_sequence' => 2,
+    ]);
+    Cache::put('vrs_gtfsrt_trip_updates', [
+        'trip-mid' => [
+            'trip_id' => 'trip-mid',
+            'route_id' => '5',
+            'cancelled' => false,
+            'stops' => [
+                '100' => ['delay' => 120, 'skipped' => false, 'sequence' => 1],
+                '200' => ['delay' => 480, 'skipped' => false, 'sequence' => 3],
+            ],
+        ],
+    ], 30);
+
+    $result = app(VrsRealtimeService::class)->getDelayForTripAtStop('trip-mid', '150');
+
+    expect($result['delay'])->toBe(120);
 });
 
 it('gets general delay for a trip using max delay', function () {

@@ -4,6 +4,7 @@ namespace App\Composer;
 
 use App\Composer\Concerns\NormalisesConstraints;
 use App\Composer\Contracts\ParsesPrompt;
+use App\Enums\SpotCategory;
 use App\Profile\Profile;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
@@ -89,10 +90,10 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
                     plan: $this->clampConstraints(new Constraints(
                         windowStart: CarbonImmutable::parse($args['window_start'], 'Europe/Berlin'),
                         windowEnd: CarbonImmutable::parse($args['window_end'], 'Europe/Berlin'),
-                        areas: array_values((array) ($args['areas'] ?? [])),
-                        categories: array_values((array) ($args['categories'] ?? [])),
-                        companions: $args['companions'] ?? null,
-                        budget: $args['budget'] ?? null,
+                        areas: $this->normaliseAreas($args['areas'] ?? []),
+                        categories: $this->normaliseCategories($args['categories'] ?? []),
+                        companions: $this->allowedString($args['companions'] ?? null, ['alone', 'partner', 'friends', 'kids']),
+                        budget: $this->allowedString($args['budget'] ?? null, ['free', 'low', 'normal']),
                     ), $profile, $now),
                     source: 'llm',
                 );
@@ -125,5 +126,61 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
         }
 
         return $decoded;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normaliseAreas(mixed $areas): array
+    {
+        if (! is_array($areas)) {
+            return [];
+        }
+
+        $known = collect(config('veedels', []))
+            ->flatten()
+            ->filter(fn (mixed $area): bool => is_string($area))
+            ->mapWithKeys(fn (string $area): array => [mb_strtolower($area) => $area]);
+
+        return collect($areas)
+            ->filter(fn (mixed $area): bool => is_string($area))
+            ->map(fn (string $area): ?string => $known->get(mb_strtolower(trim($area))))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normaliseCategories(mixed $categories): array
+    {
+        if (! is_array($categories)) {
+            return [];
+        }
+
+        $allowed = [
+            ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
+            'court',
+            'culture',
+            'event',
+        ];
+
+        return collect($categories)
+            ->filter(fn (mixed $category): bool => is_string($category))
+            ->map(fn (string $category): string => mb_strtolower(trim($category)))
+            ->filter(fn (string $category): bool => in_array($category, $allowed, true))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<string>  $allowed
+     */
+    private function allowedString(mixed $value, array $allowed): ?string
+    {
+        return is_string($value) && in_array($value, $allowed, true) ? $value : null;
     }
 }
