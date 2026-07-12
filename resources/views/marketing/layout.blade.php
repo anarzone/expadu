@@ -53,6 +53,7 @@
             <a href="{{ route('home') }}#bureaucracy">Bureaucracy</a>
             <a href="{{ route('home') }}#transit">Transit</a>
             <a href="{{ route('tools.index') }}">Free tools</a>
+            <a href="{{ route('blog.index') }}">Blog</a>
             <a href="{{ route('home') }}#faq">FAQ</a>
         </div>
         <div class="nav-cta">
@@ -94,6 +95,7 @@
                     <a href="{{ route('home') }}#bureaucracy">Bureaucracy</a>
                     <a href="{{ route('home') }}#transit">Transit</a>
                     <a href="{{ route('tools.index') }}">Free tools</a>
+                    <a href="{{ route('blog.index') }}">Blog</a>
                 </div>
                 <div>
                     <b>Account</b>

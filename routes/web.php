@@ -22,6 +22,7 @@ use App\Http\Controllers\BureaucracyDemoController;
 use App\Http\Controllers\ComposerController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
+use App\Http\Controllers\Marketing\BlogController;
 use App\Http\Controllers\Marketing\LandingController;
 use App\Http\Controllers\Marketing\SitemapController;
 use App\Http\Controllers\Marketing\ToolsController;
@@ -74,6 +75,10 @@ $marketingRoutes = function () {
     Route::get('tools/deutschlandticket-break-even', [ToolsController::class, 'dticket'])->name('tools.dticket');
     Route::get('tools/permanent-residency-timeline', [ToolsController::class, 'residency'])->name('tools.residency');
     Route::get('tools/citizenship-quiz', [ToolsController::class, 'citizenship'])->name('tools.citizenship');
+
+    // Blog — markdown guides derived from the sourced bureaucracy catalogue.
+    Route::get('blog', [BlogController::class, 'index'])->name('blog.index');
+    Route::get('blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
     Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 
