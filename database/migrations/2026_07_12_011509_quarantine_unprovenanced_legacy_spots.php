@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -10,12 +9,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::table('spots')
-            ->whereNull('source')
-            ->update([
-                'is_active' => false,
-                'is_recommendable' => false,
-            ]);
+        // Legacy rows must remain available until a complete authoritative
+        // catalogue has actually been imported. Quarantining them during the
+        // schema deployment can otherwise empty Places before the scheduled
+        // boundary/OSM jobs have run.
     }
 
     /**

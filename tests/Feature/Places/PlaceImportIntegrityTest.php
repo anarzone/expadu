@@ -224,6 +224,42 @@ test('a partial category refresh preserves unrelated legacy rows', function () {
         ->is_recommendable->toBeTrue();
 });
 
+test('the rollout restores legacy places when no authoritative catalogue exists', function () {
+    $legacy = Spot::factory()->create([
+        'source' => null,
+        'is_active' => false,
+        'is_recommendable' => false,
+    ]);
+    $migration = require database_path('migrations/2026_07_12_212246_restore_legacy_spots_when_no_authoritative_catalogue_exists.php');
+
+    $migration->up();
+
+    expect($legacy->fresh())
+        ->is_active->toBeTrue()
+        ->is_recommendable->toBeTrue();
+});
+
+test('the rollout does not reactivate legacy places after an authoritative catalogue exists', function () {
+    $legacy = Spot::factory()->create([
+        'source' => null,
+        'is_active' => false,
+        'is_recommendable' => false,
+    ]);
+    Spot::factory()->create([
+        'source' => 'osm',
+        'source_id' => 'node/authoritative',
+        'is_active' => true,
+        'is_recommendable' => true,
+    ]);
+    $migration = require database_path('migrations/2026_07_12_212246_restore_legacy_spots_when_no_authoritative_catalogue_exists.php');
+
+    $migration->up();
+
+    expect($legacy->fresh())
+        ->is_active->toBeFalse()
+        ->is_recommendable->toBeFalse();
+});
+
 test('supplied generic dog park and skatepark labels are not destinations', function (string $only, string $name, array $tags) {
     seedTestVeedelBoundary();
     Http::fake(['*' => Http::response(['elements' => [[
