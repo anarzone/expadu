@@ -10,21 +10,21 @@ If you do one piece of paperwork in your first two weeks in Germany, it's this o
 
 You must register **within 14 days of moving in** (§ 17 Bundesmeldegesetz). The clock starts on the day you move into your place — not the day you land in Germany.
 
-Honest footnote: the law allows a fine of up to €1,000 (§ 54 BMG), but in practice Cologne tolerates delays when no appointment was available. Book the earliest slot you can get and keep the confirmation — that *is* your good faith.
+Honest footnote: the law allows a fine of up to €1,000 (§ 54 BMG), but in practice Cologne tolerates delays when no appointment was available. Book the earliest slot you can get and keep the confirmation — that _is_ your good faith.
 
 ## What you actually need
 
 Three things. Not five, not a folder — three:
 
 1. **Your passport** (and passports for every family member you're registering).
-2. **Wohnungsgeberbestätigung** — a one-page confirmation *signed by your landlord* that you've moved in. This is the one everyone gets wrong, so read the next section.
+2. **Wohnungsgeberbestätigung** — a one-page confirmation _signed by your landlord_ that you've moved in. This is the one everyone gets wrong, so read the next section.
 3. **The Anmeldung form** (Anmeldeformular) — you can fill it at the office, but bringing it filled saves time.
 
 Registering a spouse or kids too? Bring marriage and birth certificates — if they're not in German, certified translations may be requested.
 
 ## The trap: the landlord form
 
-Your **rental contract is not enough**. The Wohnungsgeberbestätigung is a separate legal document your landlord (or main tenant, if you sublet) must sign — name of the landlord, the address, your name, move-in date. Landlords are legally required to give it to you within two weeks. Ask for it *before* your appointment day, not in the hallway on the morning of.
+Your **rental contract is not enough**. The Wohnungsgeberbestätigung is a separate legal document your landlord (or main tenant, if you sublet) must sign — name of the landlord, the address, your name, move-in date. Landlords are legally required to give it to you within two weeks. Ask for it _before_ your appointment day, not in the hallway on the morning of.
 
 No signed form, no Anmeldung. That's the single most common reason people leave the Bürgeramt with nothing.
 
@@ -48,7 +48,7 @@ Then, without you doing anything:
 
 ## Moving within Cologne later?
 
-Same process, same 14-day rule — it's called an Ummeldung and needs the same landlord form for the new place. Moving *out* of Germany entirely is the only time you actively deregister (Abmeldung).
+Same process, same 14-day rule — it's called an Ummeldung and needs the same landlord form for the new place. Moving _out_ of Germany entirely is the only time you actively deregister (Abmeldung).
 
 ## Sources
 
@@ -58,4 +58,4 @@ Every claim above traces to an official page — checked July 2026:
 - [§ 17 BMG — registration duty](https://www.gesetze-im-internet.de/bmg/__17.html) · [§ 54 BMG — fines](https://www.gesetze-im-internet.de/bmg/__54.html)
 - [Bundeszentralamt für Steuern — Steuer-ID](https://www.bzst.de/DE/Privatpersonen/SteuerlicheIdentifikationsnummer/steuerlicheidentifikationsnummer_node.html)
 
-*Rules change. If you spot something outdated, the in-app version of this guide has a one-tap "report outdated" button — we re-verify against the official page.*
+_Rules change. If you spot something outdated, the in-app version of this guide has a one-tap "report outdated" button — we re-verify against the official page._

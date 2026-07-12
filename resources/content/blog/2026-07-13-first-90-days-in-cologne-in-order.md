@@ -16,7 +16,7 @@ Here's the order that works — the same one the Expadu app builds for your spec
 
 ## Days 1–14: the one hard deadline
 
-**Anmeldung — register your address.** Within 14 days of moving in, at any Kundenzentrum in the city, free of charge. You need your passport and the **Wohnungsgeberbestätigung** (a form your landlord signs — the rental contract is *not* enough). Everything else in your German life hangs off this appointment.
+**Anmeldung — register your address.** Within 14 days of moving in, at any Kundenzentrum in the city, free of charge. You need your passport and the **Wohnungsgeberbestätigung** (a form your landlord signs — the rental contract is _not_ enough). Everything else in your German life hangs off this appointment.
 
 We wrote the [full English guide to the Anmeldung](/blog/anmeldung-in-cologne-english-guide) — the 14-day rule, the landlord form trap, and how to actually find a slot.
 
@@ -49,7 +49,7 @@ You're through the paperwork phase. Now the good part of arriving somewhere: you
 
 ## The honest caveat
 
-Your situation changes this list. A student's path isn't a freelancer's; a family adds registrations and Kindergeld; the UK passport in your drawer changes the permit chapter entirely. That's exactly what Expadu does — it builds *your* checklist from *your* situation, tracks the deadlines, and tells you which office, with what documents, when.
+Your situation changes this list. A student's path isn't a freelancer's; a family adds registrations and Kindergeld; the UK passport in your drawer changes the permit chapter entirely. That's exactly what Expadu does — it builds _your_ checklist from _your_ situation, tracks the deadlines, and tells you which office, with what documents, when.
 
 ## Sources
 
