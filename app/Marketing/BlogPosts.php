@@ -23,7 +23,11 @@ class BlogPosts
      */
     public function all(): array
     {
-        return Cache::remember('marketing.blog.index', now()->addMinutes(30), function (): array {
+        // Cache SCALARS only (dates as ISO strings) — phpredis' serializer
+        // unserializes inside the extension where the autoloader can't run,
+        // so a cached Carbon comes back as an incomplete object and 500s the
+        // page. Hydrate after retrieval instead.
+        $posts = Cache::remember('marketing.blog.index', now()->addMinutes(30), function (): array {
             return collect(File::files(resource_path('content/blog')))
                 ->filter(fn ($file): bool => $file->getExtension() === 'md')
                 ->map(fn ($file): ?array => $this->parse($file->getPathname()))
@@ -32,6 +36,12 @@ class BlogPosts
                 ->values()
                 ->all();
         });
+
+        return array_map(fn (array $post): array => [
+            ...$post,
+            'published_at' => Carbon::parse($post['published_at']),
+            'updated_at' => Carbon::parse($post['updated_at']),
+        ], $posts);
     }
 
     /**
@@ -43,7 +53,7 @@ class BlogPosts
     }
 
     /**
-     * @return array{slug: string, title: string, description: string, published_at: Carbon, updated_at: Carbon, body_html: string}|null
+     * @return array{slug: string, title: string, description: string, published_at: string, updated_at: string, body_html: string}|null
      */
     private function parse(string $path): ?array
     {
@@ -75,8 +85,10 @@ class BlogPosts
             'slug' => $nameParts[2],
             'title' => $meta['title'],
             'description' => $meta['description'],
-            'published_at' => Carbon::parse($nameParts[1]),
-            'updated_at' => Carbon::parse($meta['updated'] ?? $nameParts[1]),
+            // Dates stay ISO strings here so the cached payload is scalar-only;
+            // all() hydrates them into Carbon after cache retrieval.
+            'published_at' => $nameParts[1],
+            'updated_at' => $meta['updated'] ?? $nameParts[1],
             'body_html' => Str::markdown($body, [
                 'html_input' => 'strip',
                 'allow_unsafe_links' => false,
