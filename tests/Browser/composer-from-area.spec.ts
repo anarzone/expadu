@@ -50,7 +50,7 @@ const SLOT = {
 // A compose response whose origin echoes the picked From: a resolved label
 // means the user chose a start (source 'confirmed'); no label is the honest
 // "Your location" placeholder. The search area is deliberately independent of
-// the From — it stays "all Cologne" until the user changes the area word.
+// the From — it stays "Any area" until the user changes the area word.
 function composeBody(originLabel: string | null) {
     return {
         plan: { constraints: constraints(), slots: [SLOT] },
@@ -109,10 +109,10 @@ test('the origin follows the chosen From and stays honest, never a fixed home', 
     await page.goto('/composer?prompt=' + encodeURIComponent('free afternoon'));
     await page.waitForLoadState('networkidle');
 
-    // No location yet → honest sentence words: search "all Cologne", start from
+    // No location yet → honest sentence words: search "Any area", start from
     // "Your location" — never a guessed "Around <home>".
     await expect(
-        page.getByRole('button', { name: 'all Cologne' }),
+        page.getByRole('button', { name: 'Any area' }),
     ).toBeVisible();
     await expect(
         page.getByRole('button', { name: 'Your location' }),
@@ -130,7 +130,7 @@ test('the origin follows the chosen From and stays honest, never a fixed home', 
         page.getByRole('button', { name: 'Sülz', exact: true }),
     ).toBeVisible();
     await expect(
-        page.getByRole('button', { name: 'all Cologne' }),
+        page.getByRole('button', { name: 'Any area' }),
     ).toBeVisible();
 
     expect(errors).toHaveLength(0);
