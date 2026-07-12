@@ -45,12 +45,64 @@ class TimetableService
 
         // `?? null` tolerates a stale cached build from before `rail` existed
         // during a deploy — it fills in on the next rebuild.
+        $tram = $this->adjustForAge($boards['tram']);
+        $bus = $this->adjustForAge($boards['bus']);
+
         return [
-            'all' => $this->adjustForAge($boards['all']),
-            'tram' => $this->adjustForAge($boards['tram']),
-            'bus' => $this->adjustForAge($boards['bus']),
+            // "All" folds the coord-resolved tram + bus boards into the hub
+            // board so an interchange shows every mode, not just the one its
+            // name resolves to (rail at Köln Hbf). Age-adjusted first, so the
+            // three sets of minutes share a clock and merge cleanly.
+            'all' => $this->mergeAll($this->adjustForAge($boards['all']), $tram, $bus),
+            'tram' => $tram,
+            'bus' => $bus,
             'rail' => $this->adjustForAge($boards['rail'] ?? null),
         ];
+    }
+
+    /**
+     * Fold the coord-resolved tram + bus boards into the hub board for the "All"
+     * tab. A hub NAME resolves to a single StopPlace — the rail station at Köln
+     * Hbf — so without this "All" hides the tram + bus platforms the mode tabs
+     * surface. Dedup by line + destination + type (a plain stop resolves all
+     * three inputs to the same departures), drop the direction (the rows come
+     * from different platforms, so per-stop lane grouping would be incoherent —
+     * the mode tabs keep their lanes), and order soonest-first so the board
+     * header and "next departure" logic read the imminent mode.
+     *
+     * The inputs are already age-adjusted to "now", so their minutes share a
+     * clock — the reason this merges here rather than inside the cached build().
+     *
+     * @param  array<string, mixed>|null  $all  the hub board (null = no stop nearby)
+     * @param  array<string, mixed>|null  $tram
+     * @param  array<string, mixed>|null  $bus
+     * @return array<string, mixed>|null
+     */
+    private function mergeAll(?array $all, ?array $tram, ?array $bus): ?array
+    {
+        if ($all === null) {
+            return null;
+        }
+
+        $seen = [];
+        $rows = [];
+
+        foreach (array_filter([$all, $tram, $bus]) as $board) {
+            foreach ($board['departures'] ?? [] as $dep) {
+                $key = ($dep['line'] ?? '').'|'.($dep['destination'] ?? '').'|'.($dep['type'] ?? '');
+                if (isset($seen[$key])) {
+                    continue;
+                }
+
+                $seen[$key] = true;
+                $dep['direction'] = null;
+                $rows[] = $dep;
+            }
+        }
+
+        usort($rows, fn (array $a, array $b) => ($a['minutes'][0] ?? PHP_INT_MAX) <=> ($b['minutes'][0] ?? PHP_INT_MAX));
+
+        return ['departures' => $rows] + $all;
     }
 
     /**

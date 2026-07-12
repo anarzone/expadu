@@ -113,18 +113,22 @@ test('board departures carry the GTFS direction lane and via stops', function ()
         ]);
     });
     $this->mock(GtfsDepartureService::class, function ($m) {
-        $m->shouldReceive('getDepartures')->andReturn([
+        // Direction lanes live on the *mode* boards (resolved by coordinates);
+        // the "All" tab merges platforms and drops the lane, so assert here on
+        // the tram board where the lane is the point.
+        $m->shouldReceive('getDeparturesNearby')->andReturn([
             'source' => 'trias_rt',
             'departures' => [
                 ['line' => '1', 'direction' => 'Bensberg', 'type' => 'tram', 'color' => '#E2001A', 'departures' => [3, 13], 'delay' => 0],
             ],
         ]);
+        $m->shouldReceive('getDepartures')->andReturn(['source' => 'trias_rt', 'departures' => []]);
         $m->shouldReceive('routeContext')->with('Neumarkt', '1', 'Bensberg')
             ->andReturn(['direction' => 0, 'via' => ['Heumarkt', 'Deutz/Messe']]);
     });
 
     $boards = app(TimetableService::class)->boards(50.9364, 6.9470);
-    $departure = $boards['all']['departures'][0];
+    $departure = $boards['tram']['departures'][0];
 
     expect($departure['direction'])->toBe(0);
     expect($departure['via'])->toBe(['Heumarkt', 'Deutz/Messe']);

@@ -65,6 +65,62 @@ test('an interchange surfaces tram + bus + rail, not just the rail station', fun
     expect($boards['rail']['departures'][0]['type'])->toBe('rail');
 });
 
+test('the All tab merges tram, bus and rail into one soonest-first list at a hub', function () {
+    // The hub name resolves to the rail station, so before the merge "All"
+    // showed only trains. It must now fold in the coord-resolved tram + bus and
+    // order them soonest-first across modes.
+    $this->mock(KvbApiService::class, function ($m) {
+        $m->shouldReceive('getStops')->andReturn([
+            ['id' => 1, 'name' => 'Dom/Hbf', 'area' => 'STRAB', 'lat' => 50.9418, 'lng' => 6.9576, 'lines' => ['5']],
+            ['id' => 2, 'name' => 'Breslauer Platz/Hbf', 'area' => 'BUS', 'lat' => 50.9445, 'lng' => 6.9586, 'lines' => ['132']],
+        ]);
+    });
+
+    $this->mock(GtfsDepartureService::class, function ($m) {
+        // Name → rail station; coordinates → the tram and bus platforms.
+        $m->shouldReceive('getDepartures')->andReturn([
+            'stop_name' => 'Köln Hbf', 'source' => 'trias_rt',
+            'departures' => [dep('S12', 'rail', [8], 'Hennef')],
+        ]);
+        $m->shouldReceive('getDeparturesNearby')->andReturnUsing(function (float $lat) {
+            return abs($lat - 50.9418) < 0.001
+                ? ['stop_name' => 'Dom/Hbf', 'source' => 'trias_rt', 'departures' => [dep('5', 'tram', [2], 'Heumarkt')]]
+                : ['stop_name' => 'Breslauer Platz/Hbf', 'source' => 'trias_rt', 'departures' => [dep('132', 'bus', [5], 'Zoo')]];
+        });
+        $m->shouldReceive('routeContext')->andReturn(['direction' => null, 'via' => []]);
+    });
+
+    $boards = app(TimetableService::class)->boards(50.9418, 6.9576);
+
+    $types = collect($boards['all']['departures'])->pluck('type')->all();
+    expect($types)->toContain('tram')->toContain('bus')->toContain('rail');
+    // Soonest-first across modes: the 2-min tram leads, the 8-min rail trails.
+    expect(collect($boards['all']['departures'])->pluck('line')->all())->toBe(['5', '132', 'S12']);
+    // The merged rows drop the per-platform direction so the flat list renders.
+    expect(collect($boards['all']['departures'])->pluck('direction')->unique()->all())->toBe([null]);
+});
+
+test('the All tab does not double-list a line at a plain stop', function () {
+    // At a non-interchange the hub name and the tram coordinates resolve to the
+    // same departures — the merge must dedup, not show line 12 twice.
+    $this->mock(KvbApiService::class, function ($m) {
+        $m->shouldReceive('getStops')->andReturn([
+            ['id' => 1, 'name' => 'Merkenich Mitte', 'area' => 'STRAB', 'lat' => 51.0244, 'lng' => 6.9529, 'lines' => ['12']],
+        ]);
+    });
+
+    $this->mock(GtfsDepartureService::class, function ($m) {
+        $same = ['stop_name' => 'Merkenich Mitte', 'source' => 'trias_rt', 'departures' => [dep('12', 'tram', [4, 14], 'Neumarkt')]];
+        $m->shouldReceive('getDepartures')->andReturn($same);
+        $m->shouldReceive('getDeparturesNearby')->andReturn($same);
+        $m->shouldReceive('routeContext')->andReturn(['direction' => null, 'via' => []]);
+    });
+
+    $boards = app(TimetableService::class)->boards(51.0244, 6.9529);
+
+    expect(collect($boards['all']['departures'])->pluck('line')->all())->toBe(['12']);
+});
+
 test('an off-hours board surfaces the next departure instead of showing nothing', function () {
     // At night the only departure is hours out (e.g. next tram 03:56 at 01:26 =
     // 150 min). It's beyond the 2h "catch it soon" horizon, but the board must
