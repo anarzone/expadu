@@ -73,7 +73,8 @@ export function EventRichDetail({
                     }}
                     className="-mt-1 flex w-fit cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card py-1.5 pr-3 pl-2.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-primary"
                 >
-                    📍 Happening at{' '}
+                    <IconMapPin size={14} stroke={ICON_STROKE} />
+                    Happening at{' '}
                     <b className="font-semibold text-foreground">
                         {venue.place_name}
                     </b>

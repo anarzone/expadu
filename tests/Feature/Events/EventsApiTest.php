@@ -54,6 +54,29 @@ test('today window returns chronological occurrences with server-built meta', fu
     expect($data[1]['category'])->toBe('language_exchange');
 });
 
+test('today includes events already in progress but excludes events that finished', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-06-12 20:00', 'Europe/Berlin'));
+
+    Event::factory()->create([
+        'title' => 'Still happening',
+        'starts_at' => '2026-06-12 19:00:00',
+        'ends_at' => '2026-06-12 22:00:00',
+        'recurrence' => null,
+    ]);
+    Event::factory()->create([
+        'title' => 'Already finished',
+        'starts_at' => '2026-06-12 17:00:00',
+        'ends_at' => '2026-06-12 18:00:00',
+        'recurrence' => null,
+    ]);
+
+    $response = $this->getJson('/api/events?window=today')->assertOk();
+
+    expect($response->json('window.from'))->toContain('2026-06-12T00:00:00')
+        ->and(collect($response->json('data'))->pluck('title')->all())
+        ->toBe(['Still happening']);
+});
+
 test('nearest events are ordered from the explicit live origin and expose distance', function () {
     $near = makeVenue(['name' => 'Niehl venue', 'lat' => 50.9955, 'lng' => 6.9550, 'veedel' => 'Niehl']);
     $far = makeVenue(['name' => 'Sülz venue', 'lat' => 50.9220, 'lng' => 6.9360, 'veedel' => 'Sülz']);
@@ -206,6 +229,33 @@ test('weekend window catches a weekly recurring stammtisch', function () {
     expect($data[0]['occurrence_start'])->toContain('2026-06-13T09:00');
     expect($data[0]['is_recurring'])->toBeTrue();
     expect($data[0]['recurrence_text'])->toBe('Every Saturday');
+});
+
+test('weekend means the upcoming weekend when requested on Sunday', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-06-14 12:00', 'Europe/Berlin'));
+
+    Event::factory()->create([
+        'title' => 'This Sunday',
+        'starts_at' => '2026-06-14 18:00:00',
+        'recurrence' => null,
+    ]);
+    Event::factory()->create([
+        'title' => 'Next Saturday',
+        'starts_at' => '2026-06-20 18:00:00',
+        'recurrence' => null,
+    ]);
+    Event::factory()->create([
+        'title' => 'Next Sunday',
+        'starts_at' => '2026-06-21 18:00:00',
+        'recurrence' => null,
+    ]);
+
+    $response = $this->getJson('/api/events?window=weekend')->assertOk();
+
+    expect($response->json('window.from'))->toContain('2026-06-20T00:00:00')
+        ->and($response->json('window.to'))->toContain('2026-06-21T23:59:59')
+        ->and(collect($response->json('data'))->pluck('title')->all())
+        ->toBe(['Next Saturday', 'Next Sunday']);
 });
 
 test('category, veedel and free filters compose', function () {

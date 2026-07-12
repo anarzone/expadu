@@ -1,4 +1,9 @@
-import { IconClock, IconTicket, IconTrain } from '@tabler/icons-react';
+import {
+    IconCalendarEvent,
+    IconClock,
+    IconTicket,
+    IconTrain,
+} from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { MiniMap } from '@/components/places/mini-map';
 import { PlaceFeedbackBar } from '@/components/places/place-feedback-menu';
@@ -269,7 +274,7 @@ export function PlaceRichDetail({
                     }
                     className="mt-3 flex w-fit items-center gap-1.5 rounded-full border border-border bg-card py-1.5 pr-3 pl-2.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-primary"
                 >
-                    📅{' '}
+                    <IconCalendarEvent size={14} stroke={ICON_STROKE} />
                     <b className="font-semibold text-foreground">
                         {events.count} {events.count === 1 ? 'event' : 'events'}{' '}
                         here this week

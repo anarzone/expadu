@@ -5,6 +5,7 @@ import {
     IconExternalLink,
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
 import { TaskCardFramingB } from './task-card-framing-b';
 import type { FramingBTask, TaskOffice } from './task-card-framing-b';
 
@@ -741,7 +742,7 @@ function InfoCard({
                             className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline dark:text-primary"
                         >
                             {new URL(link).hostname.replace('www.', '')}
-                            <IconExternalLink size={11} stroke={1.8} />
+                            <IconExternalLink size={11} stroke={ICON_STROKE} />
                         </a>
                     ))}
                 </div>
@@ -797,9 +798,9 @@ function CollapsibleSection({
             >
                 <span className="flex items-center gap-2 text-[13px] font-semibold text-[#18170F] dark:text-[#F6F5F1]">
                     {open ? (
-                        <IconChevronDown size={16} stroke={1.8} />
+                        <IconChevronDown size={16} stroke={ICON_STROKE} />
                     ) : (
-                        <IconChevronRight size={16} stroke={1.8} />
+                        <IconChevronRight size={16} stroke={ICON_STROKE} />
                     )}
                     {label}
                     <span className="rounded-full bg-[#EFEDE7] px-2 py-0.5 text-[11px] font-semibold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">

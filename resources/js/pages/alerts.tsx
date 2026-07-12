@@ -132,7 +132,7 @@ function AlertCard({
             <span
                 className={`flex size-[38px] shrink-0 items-center justify-center rounded-[11px] ${sev.icon}`}
             >
-                <Icon size={19} stroke={1.8} />
+                <Icon size={19} stroke={ICON_STROKE} />
             </span>
             <div className="min-w-0 flex-1 pr-5">
                 <div className="flex items-start gap-2">
@@ -180,7 +180,7 @@ function AlertCard({
                             }`}
                         >
                             {alert.action_label}
-                            <IconArrowRight size={14} stroke={2} />
+                            <IconArrowRight size={14} stroke={ICON_STROKE} />
                         </button>
                     </div>
                 )}
@@ -193,7 +193,7 @@ function AlertCard({
                 aria-label="Dismiss"
                 className="absolute top-2.5 right-2.5 flex size-[25px] items-center justify-center rounded-[7px] text-text-3 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface-2"
             >
-                <IconX size={15} stroke={2} />
+                <IconX size={15} stroke={ICON_STROKE} />
             </button>
         </div>
     );
@@ -401,7 +401,7 @@ export default function Alerts() {
                 {allCaught ? (
                     <div className="px-4 pt-14 pb-8 text-center">
                         <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
-                            <IconCheck size={26} stroke={2.2} />
+                            <IconCheck size={26} stroke={ICON_STROKE} />
                         </div>
                         <div className="font-display text-[21px] font-medium">
                             You're all caught up
@@ -476,9 +476,12 @@ export default function Alerts() {
                                 {readList.length === 1 ? 'alert' : 'alerts'}
                             </span>
                             {showRead ? (
-                                <IconChevronUp size={16} stroke={2} />
+                                <IconChevronUp size={16} stroke={ICON_STROKE} />
                             ) : (
-                                <IconChevronDown size={16} stroke={2} />
+                                <IconChevronDown
+                                    size={16}
+                                    stroke={ICON_STROKE}
+                                />
                             )}
                         </button>
                         {showRead &&

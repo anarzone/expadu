@@ -5,6 +5,7 @@ import {
     IconThumbDown,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
 
 type Props = {
     alertId: number;
@@ -62,7 +63,7 @@ export function AlertActionsMenu({ alertId, subtype, onAction }: Props) {
                 }}
                 className="rounded-md p-1 text-muted-foreground opacity-60 hover:bg-secondary hover:opacity-100 focus:opacity-100 focus:outline-none"
             >
-                <IconDotsVertical size={16} stroke={2} />
+                <IconDotsVertical size={16} stroke={ICON_STROKE} />
             </button>
 
             {open && (
@@ -86,7 +87,7 @@ export function AlertActionsMenu({ alertId, subtype, onAction }: Props) {
                     >
                         <IconBellOff
                             size={15}
-                            stroke={1.8}
+                            stroke={ICON_STROKE}
                             className="text-muted-foreground"
                         />
                         <span>Mute for 24h</span>
@@ -106,7 +107,7 @@ export function AlertActionsMenu({ alertId, subtype, onAction }: Props) {
                     >
                         <IconThumbDown
                             size={15}
-                            stroke={1.8}
+                            stroke={ICON_STROKE}
                             className="text-muted-foreground"
                         />
                         <span>Don't show again</span>

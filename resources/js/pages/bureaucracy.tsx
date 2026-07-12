@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { IconSearch, IconX } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
@@ -16,6 +17,7 @@ import type {
 import { docLabel } from '@/components/bureaucracy/task-card-framing-b';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { ICON_STROKE } from '@/constants/icons';
 import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
 
@@ -261,9 +263,11 @@ export default function Bureaucracy() {
 
                             {/* Search */}
                             <div className="mb-4 flex items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-primary focus-within:bg-white dark:border-[#3A3930] dark:bg-[#2A2920] dark:focus-within:bg-[#1E1D15]">
-                                <span className="text-[15px] text-[#AAA89F]">
-                                    🔍
-                                </span>
+                                <IconSearch
+                                    size={15}
+                                    stroke={ICON_STROKE}
+                                    className="shrink-0 text-[#AAA89F]"
+                                />
                                 <input
                                     type="text"
                                     placeholder="Search documents or tasks…"
@@ -276,9 +280,10 @@ export default function Bureaucracy() {
                                 {docSearch && (
                                     <button
                                         onClick={() => setDocSearch('')}
+                                        aria-label="Clear document search"
                                         className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]"
                                     >
-                                        ✕
+                                        <IconX size={14} stroke={ICON_STROKE} />
                                     </button>
                                 )}
                             </div>

@@ -11,6 +11,7 @@ import {
     IconShieldCheck,
 } from '@tabler/icons-react';
 import { useState } from 'react';
+import { ICON_STROKE } from '@/constants/icons';
 
 export type DocEntry =
     | string
@@ -328,7 +329,8 @@ export function TaskCardFramingB({
                         )}
                         {task.blocked && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-[#EFEDE7] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#6B6860] uppercase dark:bg-[#2A2920] dark:text-[#AAA89F]">
-                                <IconLock size={10} stroke={2} /> Blocked
+                                <IconLock size={10} stroke={ICON_STROKE} />{' '}
+                                Blocked
                             </span>
                         )}
                         {task.verified_at && (
@@ -336,7 +338,10 @@ export function TaskCardFramingB({
                                 className="inline-flex items-center gap-1 rounded-full bg-[#D4F0E6] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#0A7C52] uppercase dark:bg-[#0A7C52]/20 dark:text-[#4FB489]"
                                 title={`Verified against the official source on ${task.verified_at}`}
                             >
-                                <IconShieldCheck size={10} stroke={2} />
+                                <IconShieldCheck
+                                    size={10}
+                                    stroke={ICON_STROKE}
+                                />
                                 Verified {task.verified_at}
                             </span>
                         )}
@@ -348,16 +353,16 @@ export function TaskCardFramingB({
                     </h3>
                     {deadlineLabel && (
                         <div className="mt-1 flex items-center gap-1 text-xs text-[#6B6860] dark:text-[#AAA89F]">
-                            <IconCalendar size={12} stroke={1.8} />
+                            <IconCalendar size={12} stroke={ICON_STROKE} />
                             {deadlineLabel}
                         </div>
                     )}
                 </div>
                 <span className="mt-1 shrink-0 text-[#AAA89F]">
                     {expanded ? (
-                        <IconChevronUp size={18} stroke={1.8} />
+                        <IconChevronUp size={18} stroke={ICON_STROKE} />
                     ) : (
-                        <IconChevronDown size={18} stroke={1.8} />
+                        <IconChevronDown size={18} stroke={ICON_STROKE} />
                     )}
                 </span>
             </button>
@@ -429,7 +434,7 @@ export function TaskCardFramingB({
                         <div className="flex items-start gap-2 rounded-[9px] bg-[#FDF0D4] p-3 text-[13px] leading-relaxed text-[#7A5208] dark:bg-[#C47D0E]/15 dark:text-[#E8A958]">
                             <IconLock
                                 size={14}
-                                stroke={2}
+                                stroke={ICON_STROKE}
                                 className="mt-0.5 shrink-0"
                             />
                             <span>
@@ -501,7 +506,7 @@ export function TaskCardFramingB({
                                                     Open link
                                                     <IconExternalLink
                                                         size={11}
-                                                        stroke={1.8}
+                                                        stroke={ICON_STROKE}
                                                     />
                                                 </a>
                                             )}
@@ -515,7 +520,7 @@ export function TaskCardFramingB({
                     {task.documents_required.length > 0 && (
                         <div>
                             <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[#6B6860] uppercase dark:text-[#AAA89F]">
-                                <IconFile size={12} stroke={1.8} />
+                                <IconFile size={12} stroke={ICON_STROKE} />
                                 Documents to bring ·{' '}
                                 {
                                     task.documents_required.filter((d) =>
@@ -597,7 +602,7 @@ export function TaskCardFramingB({
                         <div className="flex items-start gap-1.5 text-[13px] text-[#6B6860] dark:text-[#AAA89F]">
                             <IconMapPin
                                 size={15}
-                                stroke={1.8}
+                                stroke={ICON_STROKE}
                                 className="mt-0.5 shrink-0"
                             />
                             <span>
@@ -621,7 +626,10 @@ export function TaskCardFramingB({
                                     className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                                 >
                                     Book appointment{' '}
-                                    <IconExternalLink size={14} stroke={1.8} />
+                                    <IconExternalLink
+                                        size={14}
+                                        stroke={ICON_STROKE}
+                                    />
                                 </a>
                             )}
                             {task.office && onTakeMeThere && (
@@ -642,7 +650,10 @@ export function TaskCardFramingB({
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-[13px] font-semibold text-primary transition-colors hover:border-primary dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-primary"
                                 >
                                     {new URL(link).hostname.replace('www.', '')}{' '}
-                                    <IconExternalLink size={12} stroke={1.8} />
+                                    <IconExternalLink
+                                        size={12}
+                                        stroke={ICON_STROKE}
+                                    />
                                 </a>
                             ))}
                         </div>
@@ -752,8 +763,8 @@ export function TaskCardFramingB({
                                 disabled={busy}
                                 className="inline-flex cursor-pointer items-center gap-1 text-xs text-[#AAA89F] hover:text-[#C47D0E] dark:text-[#6B6A60] dark:hover:text-[#E8A958]"
                             >
-                                <IconFlag size={11} stroke={2} /> Report
-                                outdated info
+                                <IconFlag size={11} stroke={ICON_STROKE} />{' '}
+                                Report outdated info
                             </button>
                         )}
                     </div>

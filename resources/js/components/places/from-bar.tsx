@@ -386,7 +386,7 @@ export function FromBar({ origin, open, onOpenChange, ...panel }: Props) {
                 {fromLabel}
                 <span className="text-[#9ccada]">·</span>
                 <FromModeIcon size={13} stroke={ICON_STROKE} />
-                <IconChevronDown size={12} stroke={2} />
+                <IconChevronDown size={12} stroke={ICON_STROKE} />
             </button>
 
             {open && (

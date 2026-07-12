@@ -369,7 +369,7 @@ function LeadCard({ tile }: { tile: Tile }) {
                             className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${style.resolve}`}
                         >
                             {resolve?.verb ?? 'Open'}
-                            <IconArrowRight size={14} stroke={2} />
+                            <IconArrowRight size={14} stroke={ICON_STROKE} />
                         </Link>
                     )}
                     {resolve?.secondary && (
@@ -412,7 +412,7 @@ function NeedCard({
                     aria-label="Mark done"
                     className={`${triageBtn} hover:text-success`}
                 >
-                    <IconCheck size={14} stroke={2.2} />
+                    <IconCheck size={14} stroke={ICON_STROKE} />
                 </button>
                 <button
                     onClick={() => onAction('snooze')}
@@ -428,7 +428,7 @@ function NeedCard({
                     aria-label="Dismiss"
                     className={`${triageBtn} hover:text-danger`}
                 >
-                    <IconX size={14} stroke={2} />
+                    <IconX size={14} stroke={ICON_STROKE} />
                 </button>
             </div>
             <span
@@ -452,7 +452,7 @@ function NeedCard({
                         className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary"
                     >
                         {resolve?.verb ?? 'Open'}
-                        <IconArrowRight size={14} stroke={2} />
+                        <IconArrowRight size={14} stroke={ICON_STROKE} />
                     </Link>
                 )}
             </div>
@@ -491,7 +491,7 @@ function AmbientRow({
                 aria-label="Dismiss"
                 className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-text-3 transition-colors hover:bg-surface-2"
             >
-                <IconX size={14} stroke={2} />
+                <IconX size={14} stroke={ICON_STROKE} />
             </button>
         </div>
     );

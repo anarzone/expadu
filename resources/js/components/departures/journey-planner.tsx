@@ -255,7 +255,7 @@ function RouteCard({
                             color: '#9a6300',
                         }}
                     >
-                        <IconAlertTriangle size={11} stroke={2.4} />
+                        <IconAlertTriangle size={11} stroke={ICON_STROKE} />
                         Delays
                     </span>
                 )}
@@ -300,7 +300,7 @@ function TightCard({
         >
             <div className="mb-3 flex items-center gap-2.5">
                 <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#ffc24d33] px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] text-[#9a6300] uppercase dark:text-[#f0b64a]">
-                    <IconRun size={12} stroke={2.4} />
+                    <IconRun size={12} stroke={ICON_STROKE} />
                     Leave now
                 </span>
                 <span className="min-w-0 truncate text-[12.5px] text-text-3">

@@ -4,6 +4,7 @@ import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { ICON_STROKE } from '@/constants/icons';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
@@ -52,7 +53,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                     aria-label="Close settings"
                     className="absolute top-0 right-0 flex size-8 cursor-pointer items-center justify-center rounded-full text-[#6B6860] transition-colors hover:bg-[#EFEDE7] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
                 >
-                    <IconX size={18} stroke={2} />
+                    <IconX size={18} stroke={ICON_STROKE} />
                 </button>
                 <Heading
                     title="Settings"

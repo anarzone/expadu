@@ -7,6 +7,7 @@ import {
     IconRefresh,
     IconStar,
     IconUser,
+    IconX,
 } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
@@ -877,6 +878,7 @@ export default function Profile() {
                                     p.category !== 'work' && (
                                         <button
                                             onClick={() => deletePlace(p.id)}
+                                            aria-label={`Delete ${p.name}`}
                                             className="cursor-pointer rounded-[9px] border border-[#FDE8E6] bg-[#FDE8E6] px-2.5 py-1 transition-all hover:bg-[#F9CCC8]"
                                             style={{
                                                 fontFamily:
@@ -886,7 +888,10 @@ export default function Profile() {
                                                 color: '#C4271A',
                                             }}
                                         >
-                                            ✕
+                                            <IconX
+                                                size={13}
+                                                stroke={ICON_STROKE}
+                                            />
                                         </button>
                                     )}
                             </div>
@@ -1127,13 +1132,10 @@ export default function Profile() {
                                                     }}
                                                 />
                                             ) : (
-                                                <span
-                                                    style={{
-                                                        fontSize: 18,
-                                                    }}
-                                                >
-                                                    📍
-                                                </span>
+                                                <IconMapPin
+                                                    size={18}
+                                                    stroke={ICON_STROKE}
+                                                />
                                             )}
                                         </button>
                                     </div>

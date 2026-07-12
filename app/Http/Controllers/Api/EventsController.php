@@ -46,9 +46,14 @@ class EventsController extends Controller
             'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat'],
         ]);
 
-        [$from, $to] = $this->window($validated['window'] ?? 'today');
+        $selectedWindow = $validated['window'] ?? 'today';
+        [$from, $to] = $this->window($selectedWindow);
 
         $occurrences = Event::occurringBetween($from, $to)
+            ->when(
+                $selectedWindow === 'today' || ($selectedWindow === 'weekend' && $from->isToday()),
+                fn ($occurrences) => $occurrences->filter($this->isCurrentOrUpcoming(...)),
+            )
             ->when($validated['category'] ?? null, function ($occurrences, $category) {
                 $accepted = $this->categoryValues($category);
 
@@ -200,13 +205,26 @@ class EventsController extends Controller
 
         return match ($window) {
             'tomorrow' => [$now->addDay()->startOfDay(), $now->addDay()->endOfDay()],
-            'weekend' => [
-                $now->isWeekend() ? $now : $now->next('Saturday')->startOfDay(),
-                ($now->isSunday() ? $now : $now->next('Sunday'))->endOfDay(),
-            ],
+            'weekend' => $now->isSaturday()
+                ? [$now->startOfDay(), $now->next('Sunday')->endOfDay()]
+                : [$now->next('Saturday')->startOfDay(), $now->next('Sunday')->endOfDay()],
             'week' => [$now, $now->addDays(7)->endOfDay()],
-            default => [$now, $now->endOfDay()],
+            default => [$now->startOfDay(), $now->endOfDay()],
         };
+    }
+
+    /**
+     * Keep an occurrence that has not started yet or is still in progress.
+     * An occurrence without an end time stops being actionable once it starts.
+     *
+     * @param  array{starts_at: CarbonImmutable, ends_at: ?CarbonImmutable}  $occurrence
+     */
+    private function isCurrentOrUpcoming(array $occurrence): bool
+    {
+        $now = CarbonImmutable::now('Europe/Berlin');
+
+        return $occurrence['starts_at']->greaterThanOrEqualTo($now)
+            || $occurrence['ends_at']?->isAfter($now) === true;
     }
 
     /**

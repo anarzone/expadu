@@ -1255,7 +1255,7 @@ export default function Composer() {
                                     }}
                                     className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3.5 py-1.5 text-[13px] font-semibold text-text-3 transition-colors hover:border-primary hover:text-primary"
                                 >
-                                    <IconPlus size={13} stroke={2.4} />
+                                    <IconPlus size={13} stroke={ICON_STROKE} />
                                     filter
                                 </button>
                             )}
@@ -1272,7 +1272,7 @@ export default function Composer() {
                                         onClick={() => setOpenToken(null)}
                                         className="flex size-6 items-center justify-center rounded-full bg-surface-2 text-text-3"
                                     >
-                                        <IconX size={13} stroke={2.4} />
+                                        <IconX size={13} stroke={ICON_STROKE} />
                                     </button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
@@ -1308,7 +1308,7 @@ export default function Composer() {
                                         onClick={() => setAddOpen(false)}
                                         className="flex size-6 items-center justify-center rounded-full bg-surface-2 text-text-3"
                                     >
-                                        <IconX size={13} stroke={2.4} />
+                                        <IconX size={13} stroke={ICON_STROKE} />
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">

@@ -290,7 +290,7 @@ export function PlacesMap({
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-card text-center">
                     <IconMapPin
                         size={28}
-                        stroke={1.6}
+                        stroke={ICON_STROKE}
                         className="text-muted-foreground"
                     />
                     <p className="text-sm text-muted-foreground">

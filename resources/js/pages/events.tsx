@@ -1,12 +1,19 @@
 import { Head, Deferred, usePage } from '@inertiajs/react';
 import {
     IconBike,
+    IconBolt,
     IconBus,
+    IconCalendarEvent,
+    IconCalendarWeek,
     IconCheck,
     IconChevronDown,
+    IconFilter,
     IconMapPin,
     IconSortDescending,
+    IconSunrise,
+    IconTicket,
     IconWalk,
+    IconX,
 } from '@tabler/icons-react';
 import type { Icon as TablerIcon } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,11 +40,11 @@ import { MAX_LOCATION_ACCURACY_M } from '@/hooks/use-geolocation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
 
-const WINDOWS: Array<{ id: string; label: string; emoji: string }> = [
-    { id: 'today', label: 'Today', emoji: '⚡' },
-    { id: 'tomorrow', label: 'Tomorrow', emoji: '🌅' },
-    { id: 'weekend', label: 'Weekend', emoji: '🎉' },
-    { id: 'week', label: 'Next week', emoji: '📅' },
+const WINDOWS: Array<{ id: string; label: string; Icon: TablerIcon }> = [
+    { id: 'today', label: 'Today', Icon: IconBolt },
+    { id: 'tomorrow', label: 'Tomorrow', Icon: IconSunrise },
+    { id: 'weekend', label: 'Weekend', Icon: IconCalendarEvent },
+    { id: 'week', label: 'Next 7 days', Icon: IconCalendarWeek },
 ];
 
 const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
@@ -161,6 +168,7 @@ export default function Events() {
     );
     const [fromOpen, setFromOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
+    const [filterOpen, setFilterOpen] = useState(false);
 
     const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
     const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
@@ -435,6 +443,31 @@ export default function Events() {
 
     const windowLabel = WINDOWS.find((w) => w.id === window_)?.label ?? 'Today';
     const railOptions = veedelOptions ?? [];
+    const activeFilterCount =
+        Number(category !== null) +
+        Number(veedel !== null) +
+        Number(free) +
+        Number(venueId !== null);
+    const emptyMessage =
+        activeFilterCount > 0
+            ? 'No events match these filters.'
+            : window_ === 'today'
+              ? "Today's events have finished — see what starts tomorrow."
+              : window_ === 'tomorrow'
+                ? 'Nothing is scheduled tomorrow — the weekend has more options.'
+                : window_ === 'weekend'
+                  ? 'No events are scheduled this weekend.'
+                  : 'No events are scheduled in the next 7 days.';
+    const emptyActionLabel =
+        activeFilterCount > 0
+            ? 'Clear filters'
+            : window_ === 'today'
+              ? 'See tomorrow'
+              : window_ === 'tomorrow'
+                ? 'See the weekend'
+                : window_ === 'weekend'
+                  ? 'See the next 7 days'
+                  : 'Try again';
     const EvModeIcon = (
         EVENT_MODES.find((m) => m.id === evMode) ?? EVENT_MODES[0]
     ).Icon;
@@ -461,75 +494,199 @@ export default function Events() {
                     </p>
                 </div>
 
-                {/* Time rail — the opener is when, not where */}
-                <div
-                    className="mb-4 flex gap-2.5 overflow-x-auto pb-1"
-                    style={{ scrollbarWidth: 'none' }}
-                >
-                    {WINDOWS.map((w) => (
-                        <button
-                            key={w.id}
-                            onClick={() => setWindow(w.id)}
-                            aria-pressed={window_ === w.id}
-                            className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[12px] border px-[17px] py-2.5 text-[14px] transition-all ${
-                                window_ === w.id
-                                    ? 'border-primary bg-primary font-semibold text-white shadow-[0_2px_9px_rgba(255,57,2,0.26)]'
-                                    : 'border-border bg-card font-medium text-text-2 hover:border-primary'
-                            }`}
-                        >
-                            {w.emoji} {w.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Category chips */}
+                {/* Time rail — styled like the Places category rail */}
                 <div
                     className="mb-4 flex gap-2 overflow-x-auto pb-1"
                     style={{ scrollbarWidth: 'none' }}
                 >
-                    {CATEGORIES.map((c) => {
-                        const on = category === c.id;
+                    {WINDOWS.map(({ id, label, Icon }) => {
+                        const on = window_ === id;
 
                         return (
                             <button
-                                key={c.id}
-                                onClick={() => setCategory(on ? null : c.id)}
+                                key={id}
+                                onClick={() => setWindow(id)}
                                 aria-pressed={on}
-                                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-[15px] py-2 text-[13px] transition-all ${
+                                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] transition-all ${
                                     on
                                         ? 'border-primary bg-primary-soft font-semibold text-primary'
                                         : 'border-border bg-card font-medium text-text-2 hover:border-primary hover:text-primary'
                                 }`}
                             >
-                                {c.emoji} {c.label}
+                                <Icon size={15} stroke={ICON_STROKE} />
+                                {label}
                             </button>
                         );
                     })}
-                    {venueId && (
-                        <button
-                            onClick={() => setVenueId(null)}
-                            title="Showing one venue — tap to clear"
-                            className="shrink-0 cursor-pointer rounded-full border border-primary bg-primary px-3 py-1.5 text-[13px] font-medium text-white"
-                        >
-                            📍 this venue ✕
-                        </button>
-                    )}
                 </div>
 
-                {/* v4 controls row — Free only (left) · From + Sort (right) */}
-                <div className="relative z-20 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <button
-                        onClick={() => setFree((f) => !f)}
-                        aria-pressed={free}
-                        className={`flex shrink-0 cursor-pointer items-center gap-1.5 self-start rounded-full border px-[15px] py-2 text-[13px] transition-all ${
-                            free
-                                ? 'border-success bg-success-soft font-semibold text-success'
-                                : 'border-border bg-card font-medium text-text-2 hover:border-success hover:text-success'
-                        }`}
-                    >
-                        <IconCheck size={14} stroke={ICON_STROKE} />
-                        Free only
-                    </button>
+                {/* Places-style toolbar — filters (left) · From + Sort (right) */}
+                <div className="relative z-20 mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                setFilterOpen((open) => !open);
+                                setFromOpen(false);
+                                setSortOpen(false);
+                            }}
+                            aria-expanded={filterOpen}
+                            className="flex w-full items-center gap-2 rounded-full border border-border bg-card px-[15px] py-[9px] text-[13.5px] font-semibold text-foreground shadow-card transition-colors hover:border-primary sm:w-auto"
+                        >
+                            <IconFilter size={15} stroke={ICON_STROKE} />
+                            <span className="font-medium text-text-2">
+                                Events in
+                            </span>
+                            {veedel ?? 'All Cologne'}
+                            {activeFilterCount > 0 && (
+                                <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                            <IconChevronDown
+                                size={13}
+                                stroke={ICON_STROKE}
+                                className="ml-auto sm:ml-0"
+                            />
+                        </button>
+
+                        {filterOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-30"
+                                    onClick={() => setFilterOpen(false)}
+                                />
+                                <div className="absolute top-12 left-0 z-40 w-[min(420px,calc(100vw-2rem))] rounded-[16px] border border-border bg-card p-4 shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
+                                    <div className="mb-[11px] font-mono text-[10.5px] tracking-[0.1em] text-text-3 uppercase">
+                                        What kind of event?
+                                    </div>
+                                    <div className="flex flex-wrap gap-[7px]">
+                                        {CATEGORIES.map((item) => {
+                                            const on = category === item.id;
+
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() =>
+                                                        setCategory(
+                                                            on ? null : item.id,
+                                                        )
+                                                    }
+                                                    aria-pressed={on}
+                                                    className={`rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
+                                                        on
+                                                            ? 'border-primary bg-primary-soft font-semibold text-primary'
+                                                            : 'border-border bg-card font-medium text-text-2 hover:border-primary'
+                                                    }`}
+                                                >
+                                                    {item.emoji} {item.label}
+                                                </button>
+                                            );
+                                        })}
+                                        <button
+                                            onClick={() =>
+                                                setFree((value) => !value)
+                                            }
+                                            aria-pressed={free}
+                                            className={`inline-flex items-center gap-1.5 rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
+                                                free
+                                                    ? 'border-success bg-success-soft font-semibold text-success'
+                                                    : 'border-border bg-card font-medium text-text-2 hover:border-success hover:text-success'
+                                            }`}
+                                        >
+                                            <IconTicket
+                                                size={14}
+                                                stroke={ICON_STROKE}
+                                            />
+                                            Free only
+                                        </button>
+                                    </div>
+
+                                    {venueId && (
+                                        <button
+                                            onClick={() => setVenueId(null)}
+                                            title="Clear venue filter"
+                                            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary-soft px-[13px] py-[7px] text-[12.5px] font-semibold text-primary"
+                                        >
+                                            <IconMapPin
+                                                size={14}
+                                                stroke={ICON_STROKE}
+                                            />
+                                            This venue
+                                            <IconX
+                                                size={13}
+                                                stroke={ICON_STROKE}
+                                            />
+                                        </button>
+                                    )}
+
+                                    <div className="my-[14px] h-px bg-border" />
+                                    <div className="mb-[11px] font-mono text-[10.5px] tracking-[0.1em] text-text-3 uppercase">
+                                        Where?
+                                    </div>
+                                    <div className="flex flex-wrap gap-[7px]">
+                                        <button
+                                            onClick={() => setVeedel(null)}
+                                            aria-pressed={veedel === null}
+                                            className={`rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
+                                                veedel === null
+                                                    ? 'border-primary bg-primary-soft font-semibold text-primary'
+                                                    : 'border-border bg-card font-medium text-text-2 hover:border-primary'
+                                            }`}
+                                        >
+                                            All Cologne
+                                        </button>
+                                        <Deferred
+                                            data="veedelOptions"
+                                            fallback={
+                                                <div className="h-8 w-24 animate-pulse rounded-full bg-secondary" />
+                                            }
+                                        >
+                                            {railOptions.map((name) => (
+                                                <button
+                                                    key={name}
+                                                    onClick={() =>
+                                                        setVeedel(
+                                                            veedel === name
+                                                                ? null
+                                                                : name,
+                                                        )
+                                                    }
+                                                    aria-pressed={
+                                                        veedel === name
+                                                    }
+                                                    className={`rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
+                                                        veedel === name
+                                                            ? 'border-primary bg-primary-soft font-semibold text-primary'
+                                                            : 'border-border bg-card font-medium text-text-2 hover:border-primary'
+                                                    }`}
+                                                >
+                                                    {name}
+                                                </button>
+                                            ))}
+                                        </Deferred>
+                                    </div>
+
+                                    {activeFilterCount > 0 && (
+                                        <button
+                                            onClick={() => {
+                                                setCategory(null);
+                                                setVeedel(null);
+                                                setFree(false);
+                                                setVenueId(null);
+                                            }}
+                                            className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary"
+                                        >
+                                            <IconX
+                                                size={14}
+                                                stroke={ICON_STROKE}
+                                            />
+                                            Clear filters
+                                        </button>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
 
                     <div className="flex flex-wrap items-center gap-2.5">
                         {/* From — cyan ("cyan locates") */}
@@ -537,6 +694,7 @@ export default function Events() {
                             <button
                                 onClick={() => {
                                     setFromOpen((o) => !o);
+                                    setFilterOpen(false);
                                     setSortOpen(false);
                                 }}
                                 className="inline-flex items-center gap-[7px] rounded-full border border-cyan-bd bg-card px-[14px] py-[9px] text-[13px] font-semibold text-cyan-h transition-colors hover:border-cyan"
@@ -549,7 +707,10 @@ export default function Events() {
                                     (needsLocation ? 'Set location' : 'You')}
                                 <span className="text-[#9ccada]">·</span>
                                 <EvModeIcon size={13} stroke={ICON_STROKE} />
-                                <IconChevronDown size={12} stroke={2} />
+                                <IconChevronDown
+                                    size={12}
+                                    stroke={ICON_STROKE}
+                                />
                             </button>
 
                             {fromOpen && (
@@ -644,6 +805,7 @@ export default function Events() {
                             <button
                                 onClick={() => {
                                     setSortOpen((o) => !o);
+                                    setFilterOpen(false);
                                     setFromOpen(false);
                                 }}
                                 className="inline-flex items-center gap-[7px] rounded-full border border-border bg-card px-[14px] py-[9px] text-[13px] font-semibold text-foreground shadow-card transition-colors hover:border-primary"
@@ -653,7 +815,10 @@ export default function Events() {
                                     stroke={ICON_STROKE}
                                 />
                                 {evSort}
-                                <IconChevronDown size={12} stroke={2} />
+                                <IconChevronDown
+                                    size={12}
+                                    stroke={ICON_STROKE}
+                                />
                             </button>
 
                             {sortOpen && (
@@ -689,7 +854,7 @@ export default function Events() {
                                                     {on && (
                                                         <IconCheck
                                                             size={14}
-                                                            stroke={2.2}
+                                                            stroke={ICON_STROKE}
                                                         />
                                                     )}
                                                 </button>
@@ -701,35 +866,6 @@ export default function Events() {
                         </div>
                     </div>
                 </div>
-
-                {/* Veedel chips — secondary filter */}
-                <Deferred data="veedelOptions" fallback={null}>
-                    {railOptions.length > 0 ? (
-                        <div
-                            className="mb-4 flex gap-2 overflow-x-auto pb-1"
-                            style={{ scrollbarWidth: 'none' }}
-                        >
-                            {railOptions.map((name) => (
-                                <button
-                                    key={name}
-                                    onClick={() =>
-                                        setVeedel(veedel === name ? null : name)
-                                    }
-                                    aria-pressed={veedel === name}
-                                    className={`shrink-0 cursor-pointer rounded-full border px-[15px] py-2 text-[13px] transition-all ${
-                                        veedel === name
-                                            ? 'border-primary bg-primary font-semibold text-white'
-                                            : 'border-border bg-card font-medium text-text-2 hover:border-primary hover:text-primary'
-                                    }`}
-                                >
-                                    {name}
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        <span />
-                    )}
-                </Deferred>
 
                 {/* Result count */}
                 {status === 'ok' && (
@@ -780,40 +916,28 @@ export default function Events() {
                 ) : occurrences.length === 0 ? (
                     <div className="rounded-2xl border border-border bg-card p-8 text-center">
                         <p className="text-sm text-muted-foreground">
-                            Quiet {windowLabel.toLowerCase()} —{' '}
-                            {window_ === 'weekend' || window_ === 'week'
-                                ? 'try the whole week.'
-                                : 'the weekend looks better.'}
+                            {emptyMessage}
                         </p>
                         <button
                             onClick={() => {
-                                setCategory(null);
-                                setFree(false);
-                                setVeedel(null);
-                                setVenueId(null);
-
-                                if (window_ === 'weekend') {
-                                    setWindow('week');
-                                } else if (window_ !== 'week') {
+                                if (activeFilterCount > 0) {
+                                    setCategory(null);
+                                    setFree(false);
+                                    setVeedel(null);
+                                    setVenueId(null);
+                                } else if (window_ === 'today') {
+                                    setWindow('tomorrow');
+                                } else if (window_ === 'tomorrow') {
                                     setWindow('weekend');
-                                } else if (
-                                    !category &&
-                                    !free &&
-                                    !veedel &&
-                                    !venueId
-                                ) {
-                                    // week + no filters: nothing would change —
-                                    // make the button an explicit retry
+                                } else if (window_ === 'weekend') {
+                                    setWindow('week');
+                                } else {
                                     fetchEvents('week', null, null, false);
                                 }
                             }}
                             className="mt-3 rounded-[9px] border border-border px-4 py-2 text-[13px] font-semibold text-primary"
                         >
-                            {window_ === 'weekend'
-                                ? 'See the whole week'
-                                : window_ === 'week'
-                                  ? 'Clear filters & retry'
-                                  : 'Jump to the weekend'}
+                            {emptyActionLabel}
                         </button>
                     </div>
                 ) : (

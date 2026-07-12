@@ -1,5 +1,14 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { IconFirstAidKit } from '@tabler/icons-react';
+import {
+    IconClock,
+    IconFirstAidKit,
+    IconMapPin,
+    IconPhone,
+    IconSearch,
+    IconShieldCheck,
+    IconWorld,
+    IconX,
+} from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { ServiceCard } from '@/components/services/service-card';
 import type { ServiceData } from '@/components/services/service-card';
@@ -175,9 +184,11 @@ export default function Services() {
                 <div className="px-6">
                     {/* Search bar */}
                     <div className="mt-3.5 mb-3 flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
-                        <span style={{ fontSize: 15, color: '#AAA89F' }}>
-                            🔍
-                        </span>
+                        <IconSearch
+                            size={15}
+                            stroke={ICON_STROKE}
+                            className="shrink-0 text-[#AAA89F]"
+                        />
                         <input
                             type="text"
                             placeholder="Search services, doctors, banks…"
@@ -192,9 +203,10 @@ export default function Services() {
                         {search && (
                             <button
                                 onClick={() => setSearch('')}
+                                aria-label="Clear service search"
                                 className="cursor-pointer border-none bg-transparent text-[13px] text-[#AAA89F]"
                             >
-                                ✕
+                                <IconX size={14} stroke={ICON_STROKE} />
                             </button>
                         )}
                     </div>
@@ -388,7 +400,7 @@ function ServiceDetailContent({ service }: { service: ServiceData }) {
             <div className="mb-4 flex flex-col gap-2">
                 {s.address && (
                     <div className="flex gap-2.5" style={{ fontSize: 13 }}>
-                        <span>📍</span>
+                        <IconMapPin size={15} stroke={ICON_STROKE} />
                         <span>
                             {s.address}
                             {s.distance ? ` · ${s.distance}` : ''}
@@ -397,23 +409,23 @@ function ServiceDetailContent({ service }: { service: ServiceData }) {
                 )}
                 {s.hours && (
                     <div className="flex gap-2.5" style={{ fontSize: 13 }}>
-                        <span>🕐</span>
+                        <IconClock size={15} stroke={ICON_STROKE} />
                         <span>{s.hours}</span>
                     </div>
                 )}
                 {s.phone && (
                     <div className="flex gap-2.5" style={{ fontSize: 13 }}>
-                        <span>📞</span>
+                        <IconPhone size={15} stroke={ICON_STROKE} />
                         <span>{s.phone}</span>
                     </div>
                 )}
                 <div className="flex gap-2.5" style={{ fontSize: 13 }}>
-                    <span>🌐</span>
+                    <IconWorld size={15} stroke={ICON_STROKE} />
                     <span>{s.languages.join(', ')}</span>
                 </div>
                 {s.insurance.length > 0 && (
                     <div className="flex gap-2.5" style={{ fontSize: 13 }}>
-                        <span>🛡️</span>
+                        <IconShieldCheck size={15} stroke={ICON_STROKE} />
                         <span>Accepts: {s.insurance.join(', ')}</span>
                     </div>
                 )}

@@ -866,7 +866,7 @@ export default function Places() {
                             {areaLabel}
                             <IconChevronDown
                                 size={13}
-                                stroke={2}
+                                stroke={ICON_STROKE}
                                 className="ml-auto sm:ml-0"
                             />
                         </button>
@@ -1025,7 +1025,10 @@ export default function Places() {
                                 {fromLabel}
                                 <span className="text-[#9ccada]">·</span>
                                 <FromModeIcon size={13} stroke={ICON_STROKE} />
-                                <IconChevronDown size={12} stroke={2} />
+                                <IconChevronDown
+                                    size={12}
+                                    stroke={ICON_STROKE}
+                                />
                             </button>
 
                             {fromPickOpen && (
@@ -1334,7 +1337,10 @@ export default function Places() {
                                     stroke={ICON_STROKE}
                                 />
                                 {sortBy}
-                                <IconChevronDown size={12} stroke={2} />
+                                <IconChevronDown
+                                    size={12}
+                                    stroke={ICON_STROKE}
+                                />
                             </button>
 
                             {sortOpen && (
@@ -1370,7 +1376,7 @@ export default function Places() {
                                                     {on && (
                                                         <IconCheck
                                                             size={14}
-                                                            stroke={2.2}
+                                                            stroke={ICON_STROKE}
                                                         />
                                                     )}
                                                 </button>

@@ -403,7 +403,7 @@ function LaneHeader({
         <div className="flex items-center gap-2.5 border-y border-[var(--bd-line)] bg-[var(--bd-panel)] px-4 py-[11px] md:px-[18px]">
             <IconArrowRight
                 size={14}
-                stroke={2.2}
+                stroke={ICON_STROKE}
                 className={`shrink-0 ${direction === 1 ? 'rotate-180' : ''}`}
                 style={{ color: direction === 0 ? '#3ddc97' : '#ffc24d' }}
             />

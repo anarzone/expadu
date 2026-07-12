@@ -162,7 +162,7 @@ export function AreaPicker({ areaLabel, open, onOpenChange, ...panel }: Props) {
                 {areaLabel}
                 <IconChevronDown
                     size={13}
-                    stroke={2}
+                    stroke={ICON_STROKE}
                     className="ml-auto sm:ml-0"
                 />
             </button>
