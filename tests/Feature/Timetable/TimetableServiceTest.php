@@ -16,6 +16,7 @@ test('boards resolve the nearest stop per mode and colour the lines', function (
         ]);
     });
     $this->mock(GtfsDepartureService::class, function ($m) {
+        // "all"/"rail" resolve by NAME (the hub name → the combined station).
         $m->shouldReceive('getDepartures')->with('Tram Stop', Mockery::any())->andReturn([
             'source' => 'trias_rt',
             'departures' => [
@@ -23,12 +24,11 @@ test('boards resolve the nearest stop per mode and colour the lines', function (
                 ['line' => '142', 'direction' => 'Ehrenfeld', 'type' => 'bus', 'color' => '#1A4CD4', 'departures' => [5], 'delay' => 0],
             ],
         ]);
-        $m->shouldReceive('getDepartures')->with('Bus Stop', Mockery::any())->andReturn([
-            'source' => 'trias_rt',
-            'departures' => [
-                ['line' => '142', 'direction' => 'Ehrenfeld', 'type' => 'bus', 'color' => '#1A4CD4', 'departures' => [4, 14], 'delay' => 2],
-            ],
-        ]);
+        // Tram + bus boards resolve by COORDINATES — the correct StopPlace per
+        // mode (the name is ambiguous at interchanges).
+        $m->shouldReceive('getDeparturesNearby')->andReturnUsing(fn (float $lat) => abs($lat - 50.9485) < 0.001
+            ? ['source' => 'trias_rt', 'departures' => [['line' => '1', 'direction' => 'Weiden West', 'type' => 'tram', 'color' => '#1A4CD4', 'departures' => [2, 12, 22], 'delay' => 0]]]
+            : ['source' => 'trias_rt', 'departures' => [['line' => '142', 'direction' => 'Ehrenfeld', 'type' => 'bus', 'color' => '#1A4CD4', 'departures' => [4, 14], 'delay' => 2]]]);
     });
 
     $boards = app(TimetableService::class)->boards(50.9485, 6.9230);
@@ -72,6 +72,7 @@ test('the tram board keeps underground Stadtbahn and a rail board surfaces train
         ]);
     });
     $this->mock(GtfsDepartureService::class, function ($m) {
+        // "all"/"rail" by NAME — the hub name resolves to the combined station.
         $m->shouldReceive('getDepartures')->andReturn([
             'source' => 'trias_rt',
             'departures' => [
@@ -79,6 +80,14 @@ test('the tram board keeps underground Stadtbahn and a rail board surfaces train
                 // VRS can report the underground stretch as "subway" — it's still a Stadtbahn.
                 ['line' => '16', 'direction' => 'Niehl', 'type' => 'subway', 'color' => '#1A4CD4', 'departures' => [4], 'delay' => 0],
                 ['line' => 'S12', 'direction' => 'Hennef', 'type' => 'rail', 'color' => '#1A4CD4', 'departures' => [6], 'delay' => 0],
+            ],
+        ]);
+        // Tram board by COORDINATES — the Stadtbahn platform (surface + underground).
+        $m->shouldReceive('getDeparturesNearby')->andReturn([
+            'source' => 'trias_rt',
+            'departures' => [
+                ['line' => '5', 'direction' => 'Ossendorf', 'type' => 'tram', 'color' => '#1A4CD4', 'departures' => [2], 'delay' => 0],
+                ['line' => '16', 'direction' => 'Niehl', 'type' => 'subway', 'color' => '#1A4CD4', 'departures' => [4], 'delay' => 0],
             ],
         ]);
         $m->shouldReceive('routeContext')->andReturn(['direction' => null, 'via' => []]);

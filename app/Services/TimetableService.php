@@ -100,48 +100,69 @@ class TimetableService
             return ['all' => null, 'tram' => null, 'bus' => null, 'rail' => null];
         }
 
-        $picks = [
-            'all' => $this->nearest($stops, $lat, $lng, null),
-            'tram' => $this->nearest($stops, $lat, $lng, 'STRAB'),
-            'bus' => $this->nearest($stops, $lat, $lng, 'BUS'),
-        ];
+        $allPick = $this->nearest($stops, $lat, $lng, null);
+        $tramPick = $this->nearest($stops, $lat, $lng, 'STRAB');
+        $busPick = $this->nearest($stops, $lat, $lng, 'BUS');
 
-        // "All" and a mode tab usually resolve to the same stop — fetch
-        // departures once per unique stop, not once per tab. Each stop is its
-        // own SWR cache entry: a user whose GPS jitters into a fresh location
-        // cell (or a different user nearby) reuses the hot stop data instead
-        // of waiting on TRIAS, and the 30s board polls double as the warmer
-        // that keeps active stops perpetually fresh in the background.
-        $departuresByStop = [];
-        foreach ($picks as $pick) {
-            $name = $pick['name'] ?? null;
-            if ($name === null || isset($departuresByStop[$name])) {
-                continue;
-            }
-
-            try {
-                // fetched_at anchors the cached minutes so any later read can
-                // shift them to true countdowns (see adjustForAge).
-                $departuresByStop[$name] = Cache::flexible(
-                    'board_stop:'.$name,
-                    [20, 300],
-                    fn () => ['fetched_at' => time()] + $this->gtfs->getDepartures($name, 20),
-                );
-            } catch (\Throwable) {
-                $departuresByStop[$name] = ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
-            }
-        }
+        // A stop NAME is ambiguous at an interchange: "Dom/Hbf" resolves in TRIAS
+        // to the Hauptbahnhof *rail* StopPlace (de:…:11201), which hides the
+        // Stadtbahn/bus platforms (de:…:11211) that share the name — so the Tram
+        // and Bus tabs came back empty at hubs. Fetch tram + bus by their precise
+        // platform COORDINATES (the correct StopPlace per mode). "all"/"rail"
+        // keep the hub NAME: rail has no KVB stop of its own and rides the
+        // station the name resolves to. Each is its own SWR cache entry, warmed
+        // by the 30s board poll.
+        $hub = $allPick ? $this->departuresByName($allPick['name']) : null;
+        $tram = $tramPick ? $this->departuresByCoords((float) $tramPick['lat'], (float) $tramPick['lng']) : null;
+        $bus = $busPick ? $this->departuresByCoords((float) $busPick['lat'], (float) $busPick['lng']) : null;
 
         return [
-            'all' => $this->board($picks['all'], $departuresByStop, null),
-            'tram' => $this->board($picks['tram'], $departuresByStop, 'tram'),
-            'bus' => $this->board($picks['bus'], $departuresByStop, 'bus'),
-            // S/RE/RB rail has no KVB stop of its own (KVB Open Data is tram +
-            // bus only), so it surfaces at the nearest combined station — ride
-            // the rail board off the "all" pick and let the tab hide itself
-            // when that stop has no trains.
-            'rail' => $this->board($picks['all'], $departuresByStop, 'rail'),
+            'all' => $this->board($allPick, $hub, null),
+            'tram' => $this->board($tramPick, $tram, 'tram'),
+            'bus' => $this->board($busPick, $bus, 'bus'),
+            'rail' => $this->board($allPick, $hub, 'rail'),
         ];
+    }
+
+    /**
+     * Departures for a NAMED stop — used for "all"/"rail" at interchanges, where
+     * the name correctly resolves to the combined station (incl. S/RE/RB).
+     * `fetched_at` anchors the cached minutes so a later read shifts them to true
+     * countdowns (see adjustForAge).
+     *
+     * @return array<string, mixed>
+     */
+    private function departuresByName(string $name): array
+    {
+        try {
+            return Cache::flexible(
+                'board_stop:'.$name,
+                [20, 300],
+                fn () => ['fetched_at' => time()] + $this->gtfs->getDepartures($name, 20),
+            );
+        } catch (\Throwable) {
+            return ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
+        }
+    }
+
+    /**
+     * Departures for a stop resolved by its precise COORDINATES — the correct
+     * StopPlace for a mode, unlike the name which collides across the tram / bus
+     * / rail stops sharing an interchange's name.
+     *
+     * @return array<string, mixed>
+     */
+    private function departuresByCoords(float $lat, float $lng): array
+    {
+        try {
+            return Cache::flexible(
+                sprintf('board_geo:%.4f_%.4f', $lat, $lng),
+                [20, 300],
+                fn () => ['fetched_at' => time()] + $this->gtfs->getDeparturesNearby($lat, $lng, 20),
+            );
+        } catch (\Throwable) {
+            return ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
+        }
     }
 
     /**
@@ -173,16 +194,16 @@ class TimetableService
 
     /**
      * @param  array<string, mixed>|null  $stop
-     * @param  array<string, array<string, mixed>>  $departuresByStop  prefetched per unique stop name
+     * @param  array<string, mixed>|null  $result  prefetched departures for this stop
      * @return array<string, mixed>|null
      */
-    private function board(?array $stop, array $departuresByStop, ?string $filterType): ?array
+    private function board(?array $stop, ?array $result, ?string $filterType): ?array
     {
         if ($stop === null) {
             return null;
         }
 
-        $result = $departuresByStop[$stop['name']] ?? ['departures' => [], 'source' => 'unavailable'];
+        $result ??= ['departures' => [], 'source' => 'unavailable'];
 
         // Cologne has no separate metro: KVB Stadtbahn runs as a street tram and
         // dives underground downtown, where VRS may report it as "metro"/subway.
@@ -194,19 +215,51 @@ class TimetableService
             default => null,
         };
 
-        $departures = collect($result['departures'] ?? [])
+        // A departure board answers "can I catch something soon?" — within a 2h
+        // horizon. But at night nothing is imminent, so if that leaves the board
+        // empty, surface the next few departures however far out ("next tram
+        // 03:56" at 01:30) rather than a dead-end "no live departures".
+        $departures = $this->mapDepartures($result, $allowedTypes, $stop, 120);
+
+        if ($departures === []) {
+            $departures = array_slice(
+                $this->mapDepartures($result, $allowedTypes, $stop, 24 * 60),
+                0,
+                4,
+            );
+        }
+
+        return [
+            'stop_name' => $stop['name'],
+            'walk_min' => max(1, (int) ceil(($stop['_km'] ?? 0) / self::WALK_KMH * 60)),
+            'source' => $result['source'] ?? 'gtfs',
+            'fetched_at' => (int) ($result['fetched_at'] ?? time()),
+            'departures' => $departures,
+        ];
+    }
+
+    /**
+     * Map a raw departure result into board rows, keeping only minutes within
+     * $maxMin. Split out so {@see self::board()} can retry with a wide horizon
+     * when the normal 2h window is empty (off-hours).
+     *
+     * @param  array<string, mixed>  $result
+     * @param  list<string>|null  $allowedTypes
+     * @param  array<string, mixed>  $stop
+     * @return array<int, array<string, mixed>>
+     */
+    private function mapDepartures(array $result, ?array $allowedTypes, array $stop, int $maxMin): array
+    {
+        return collect($result['departures'] ?? [])
             ->when($allowedTypes !== null, fn ($c) => $c->filter(fn ($d) => in_array($d['type'] ?? '', $allowedTypes, true)))
             ->map(fn ($d) => [
                 'line' => (string) ($d['line'] ?? '?'),
                 'destination' => (string) ($d['direction'] ?? ''),
                 'type' => (string) ($d['type'] ?? ''),
                 'color' => $this->color($d),
-                // A departure board answers "can I catch something soon?" —
-                // beyond a 2h horizon ("740 min") it's noise, so those rows
-                // drop off entirely.
                 'minutes' => array_values(array_filter(
                     (array) ($d['departures'] ?? []),
-                    fn ($m) => is_numeric($m) && $m <= 120,
+                    fn ($m) => is_numeric($m) && $m >= 0 && $m <= $maxMin,
                 )),
                 'delay' => (int) ($d['delay'] ?? 0),
                 'cancelled' => (bool) ($d['cancelled'] ?? false),
@@ -227,14 +280,6 @@ class TimetableService
             })
             ->values()
             ->all();
-
-        return [
-            'stop_name' => $stop['name'],
-            'walk_min' => max(1, (int) ceil(($stop['_km'] ?? 0) / self::WALK_KMH * 60)),
-            'source' => $result['source'] ?? 'gtfs',
-            'fetched_at' => (int) ($result['fetched_at'] ?? time()),
-            'departures' => $departures,
-        ];
     }
 
     /**
