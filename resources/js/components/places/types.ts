@@ -13,6 +13,8 @@ export type Place = {
     photo_url: string | null;
     photo_attribution: string | null;
     distance_min: number | null;
+    distance_mode?: 'walk' | 'bike' | 'transit' | null;
+    distance_km?: number | null;
     open_now: boolean | null;
     opening_hours_text: string | null;
     price_text: string | null;

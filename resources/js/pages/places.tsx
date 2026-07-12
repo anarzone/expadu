@@ -124,7 +124,11 @@ function placeMetaMain(place: Place): string {
 }
 
 function placeDistance(place: Place): string | null {
-    return place.distance_min != null ? `${place.distance_min} min away` : null;
+    if (place.distance_min != null && place.distance_mode) {
+        return `${place.distance_min} min by ${place.distance_mode === 'walk' ? 'foot' : place.distance_mode}`;
+    }
+
+    return place.distance_km != null ? `${place.distance_km} km away` : null;
 }
 
 /**
@@ -721,6 +725,7 @@ export default function Places() {
             fromLat: origin?.lat ?? null,
             fromLng: origin?.lng ?? null,
             fromName: origin?.label ?? null,
+            preferredMode: place.distance_mode,
         });
     }
 

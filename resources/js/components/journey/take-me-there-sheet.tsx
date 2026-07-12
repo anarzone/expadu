@@ -112,6 +112,9 @@ export type Destination = {
     fromLat?: number | null;
     fromLng?: number | null;
     fromName?: string | null;
+    /** Mode used for the caller's card time, so the sheet opens on the same
+     * route instead of silently switching the meaning of that number. */
+    preferredMode?: JourneyMode | null;
 };
 
 const CSRF = () =>
@@ -131,7 +134,7 @@ const MODE_ICON: Record<string, ComponentType<IconProps>> = {
 
 /** Top-level journey modes, in the order the selector shows them. */
 const MODE_ORDER = ['transit', 'bike', 'walk'] as const;
-type JourneyMode = (typeof MODE_ORDER)[number];
+export type JourneyMode = (typeof MODE_ORDER)[number];
 
 const MODE_META: Record<
     JourneyMode,
@@ -445,8 +448,9 @@ export function TakeMeThereSheet({
     const isMobile = useIsMobile();
     // The user's default transport mode pre-selects the sheet so it opens in the
     // mode the Places list / composer measured distances in.
-    const preferred = (usePage().props.auth.user.transport_mode ??
-        null) as JourneyMode | null;
+    const userPreferred = usePage().props.auth.user
+        .transport_mode as JourneyMode | null;
+    const preferred = destination.preferredMode ?? userPreferred ?? null;
 
     useEffect(() => {
         let cancelled = false;

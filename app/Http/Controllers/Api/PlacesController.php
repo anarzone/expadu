@@ -75,13 +75,15 @@ class PlacesController extends Controller
             ->first();
         $spot->feedback_state = $row?->state?->value;
         $spot->feedback_rating = $row?->rating;
-        $spot->travel_min = $origin->hasOrigin()
-            ? ($this->travel->minutes(
+        $travelOption = $origin->hasOrigin()
+            ? ($this->travel->placeOptions(
                 $request->user()->transport_mode,
                 $origin->toGeoPoint(),
                 [new GeoPoint((float) $spot->lat, (float) $spot->lng)],
             )[0] ?? null)
             : null;
+        $spot->travel_min = $travelOption['minutes'] ?? null;
+        $spot->travel_mode = $travelOption['mode'] ?? $request->user()->transport_mode?->value;
 
         return new PlaceResource($spot);
     }
@@ -343,7 +345,8 @@ class PlacesController extends Controller
      * Replace the haversine estimate with real one-to-many street travel
      * minutes from the origin, in the user's preferred mode (fastest realistic
      * when unset). Best-effort and order-preserving: any destination the engine
-     * can't reach stays null, and PlaceResource falls back to the heuristic.
+     * can't reach stays null, and the card shows physical distance instead of
+     * inventing a travel time.
      *
      * @param  Collection<int, Spot>  $spots
      */
@@ -354,14 +357,15 @@ class PlacesController extends Controller
         }
 
         $list = $spots->values();
-        $minutes = $this->travel->minutes(
+        $options = $this->travel->placeOptions(
             $mode,
             $origin,
             $list->map(fn (Spot $spot) => new GeoPoint((float) $spot->lat, (float) $spot->lng))->all(),
         );
 
         foreach ($list as $i => $spot) {
-            $spot->travel_min = $minutes[$i] ?? null;
+            $spot->travel_min = $options[$i]['minutes'] ?? null;
+            $spot->travel_mode = $options[$i]['mode'] ?? $mode?->value;
         }
     }
 

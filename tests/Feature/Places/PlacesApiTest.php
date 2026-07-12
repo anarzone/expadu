@@ -37,7 +37,7 @@ test('lists leisure places with the full contract shape', function () {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'photo_url', 'distance_min', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'tip', 'transit_hint', 'facts']],
+        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'tip', 'transit_hint', 'facts']],
         'meta' => ['total'],
     ]);
     // basketball rolls up to the coarse 'court' bucket but keeps its fine identity
@@ -50,20 +50,16 @@ test('lists leisure places with the full contract shape', function () {
     $response->assertJsonPath('data.0.tip_is_generic', true);
 });
 
-test('the fallback card distance tracks the transport mode (walk reads slower than bike)', function () {
-    // ~3 km north of the origin — far enough that the walk/bike estimates differ.
+test('an unavailable route shows distance instead of invented travel minutes', function () {
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.968, 'lng' => 6.921]);
     $origin = 'lat=50.941&lng=6.921';
 
     $this->user->update(['transport_mode' => 'walk']);
-    $walk = $this->getJson("/api/places?veedel=Ehrenfeld&{$origin}")->json('data.0.distance_min');
+    $place = $this->getJson("/api/places?veedel=Ehrenfeld&{$origin}")->json('data.0');
 
-    $this->user->update(['transport_mode' => 'bike']);
-    $bike = $this->getJson("/api/places?veedel=Ehrenfeld&{$origin}")->json('data.0.distance_min');
-
-    // Same straight-line distance, but the label honours the mode toggle.
-    expect($walk)->toBeGreaterThan($bike);
-    expect($bike)->toBeGreaterThan(0);
+    expect($place['distance_min'])->toBeNull()
+        ->and($place['distance_km'])->toBeGreaterThan(2.0)
+        ->and($place['distance_mode'])->toBe('walk');
 });
 
 test('an explicit From by saved-place id measures from that place', function () {
@@ -336,7 +332,8 @@ test('shows a single place with the full card contract', function () {
     $response->assertJsonPath('data.id', $spot->id);
     $response->assertJsonPath('data.category', 'court');
     $response->assertJsonPath('data.cluster_size', 2);
-    expect($response->json('data.distance_min'))->toBeGreaterThanOrEqual(1);
+    expect($response->json('data.distance_min'))->toBeNull()
+        ->and($response->json('data.distance_km'))->toBeGreaterThan(0.0);
     expect(collect($response->json('data.facts'))->pluck('label')->all())->toContain('surface');
 });
 
@@ -406,6 +403,38 @@ test('distance_min uses the real travel matrix, not the heuristic', function () 
     $data = $this->getJson('/api/places?veedel=Ehrenfeld&lat=50.948&lng=6.921')->json('data');
 
     expect($data[0]['distance_min'])->toBe(9);
+});
+
+test('no transport preference picks the fastest available direct matrix time', function () {
+    $calls = [];
+    $this->mock(RouteService::class, function ($mock) use (&$calls) {
+        $mock->shouldReceive('travelMatrix')->andReturnUsing(function ($origin, $destinations, $mode) use (&$calls) {
+            $calls[] = $mode;
+
+            return $mode === 'WALK' ? [null] : [40];
+        });
+    });
+    Spot::factory()->create(['name' => 'Across the river', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 51.0573, 'lng' => 6.9224]);
+
+    $place = $this->getJson('/api/places?veedel=Ehrenfeld&lat=51.0231&lng=6.9499')->json('data.0');
+
+    expect($place['distance_min'])->toBe(40)
+        ->and($place['distance_mode'])->toBe('bike')
+        ->and($calls)->toBe(['WALK', 'BIKE']);
+});
+
+test('transit preference does not label a bike proxy as transit time', function () {
+    $this->user->update(['transport_mode' => 'transit']);
+    $this->mock(RouteService::class, function ($mock) {
+        $mock->shouldNotReceive('travelMatrix');
+    });
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 51.0573, 'lng' => 6.9224]);
+
+    $place = $this->getJson('/api/places?veedel=Ehrenfeld&lat=51.0231&lng=6.9499')->json('data.0');
+
+    expect($place['distance_min'])->toBeNull()
+        ->and($place['distance_mode'])->toBe('transit')
+        ->and($place['distance_km'])->toBeGreaterThan(4.0);
 });
 
 test('the list measures distance in the user transport mode', function () {

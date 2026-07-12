@@ -83,3 +83,27 @@ test('no destinations means no routing call', function () {
     expect($minutes)->toBe([]);
     expect($calls)->toBe([]);
 });
+
+test('place times without a preference use the fastest real direct route', function () {
+    $calls = [];
+    $options = (new TravelTimes(recordingRoutes($calls, [
+        'WALK' => [null, 55],
+        'BIKE' => [40, 18],
+    ])))->placeOptions(null, $this->origin, $this->dests);
+
+    expect($options)->toBe([
+        ['minutes' => 40, 'mode' => 'bike'],
+        ['minutes' => 18, 'mode' => 'bike'],
+    ])->and($calls)->toBe(['WALK', 'BIKE']);
+});
+
+test('place times never present a bike proxy as transit', function () {
+    $calls = [];
+    $options = (new TravelTimes(recordingRoutes($calls, ['BIKE' => [12, 20]])))
+        ->placeOptions(TransportMode::Transit, $this->origin, $this->dests);
+
+    expect($options)->toBe([
+        ['minutes' => null, 'mode' => 'transit'],
+        ['minutes' => null, 'mode' => 'transit'],
+    ])->and($calls)->toBe([]);
+});
