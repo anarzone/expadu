@@ -22,6 +22,9 @@ use App\Http\Controllers\BureaucracyDemoController;
 use App\Http\Controllers\ComposerController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
+use App\Http\Controllers\Marketing\LandingController;
+use App\Http\Controllers\Marketing\SitemapController;
+use App\Http\Controllers\Marketing\WaitlistController;
 use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
@@ -41,7 +44,6 @@ use App\Http\Controllers\UserSettingController;
 use App\Http\Controllers\UserTaskController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,18 +60,21 @@ $appDomain = config('app.app_domain');
 $marketingDomain = config('app.marketing_domain');
 
 // ── Marketing site (expadu.com) ──────────────────────────────────────────
+// Server-rendered Blade, not Inertia: Google gets full HTML with zero
+// hydration, and the pages stay up even if the app bundle breaks.
 $marketingRoutes = function () {
-    Route::get('/', fn () => Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-        // Absolute URL to the app, resolved per request so it points at the
-        // app subdomain (app.expadu.com) even though this route lives on the
-        // marketing domain. Lets an already signed-in visitor get an
-        // "Open the app" link instead of a login button.
-        'appUrl' => route('dashboard'),
-    ]))->name('home');
+    Route::get('/', LandingController::class)->name('home');
 
-    // Marketing pages will be built here (blog, FAQ, public events, etc.)
-    // For now, only the welcome page exists. All other URLs on expadu.com return 404.
+    Route::view('impressum', 'marketing.impressum')->name('impressum');
+    Route::view('datenschutz', 'marketing.datenschutz')->name('datenschutz');
+
+    Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
+
+    // City waitlist — double opt-in: store sends a signed confirmation link.
+    Route::post('waitlist', [WaitlistController::class, 'store'])
+        ->middleware('throttle:10,1')->name('waitlist.store');
+    Route::get('waitlist/confirm/{signup}', [WaitlistController::class, 'confirm'])
+        ->middleware('signed')->name('waitlist.confirm');
 };
 
 // ── App (app.expadu.com) ─────────────────────────────────────────────────

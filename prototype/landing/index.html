@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expadu — The AI companion for your new life in Germany</title>
+<meta name="description" content="Tell it your day — it plans the rest. Bureaucracy in English with official sources, transit that knows your ticket, and an AI day composer. Built for Cologne.">
+<style>
+/* ── Fonts (self-hosted, same files as the app) ─────────────────── */
+@font-face { font-family: 'Fraunces'; font-weight: 400; font-display: swap; src: url('../../public/fonts/fraunces-400.woff2') format('woff2'); }
+@font-face { font-family: 'Fraunces'; font-weight: 500; font-display: swap; src: url('../../public/fonts/fraunces-500.woff2') format('woff2'); }
+@font-face { font-family: 'Geist'; font-weight: 400; font-display: swap; src: url('../../public/fonts/geist-400.woff2') format('woff2'); }
+@font-face { font-family: 'Geist'; font-weight: 500; font-display: swap; src: url('../../public/fonts/geist-500.woff2') format('woff2'); }
+@font-face { font-family: 'Geist'; font-weight: 600; font-display: swap; src: url('../../public/fonts/geist-600.woff2') format('woff2'); }
+@font-face { font-family: 'Geist'; font-weight: 700; font-display: swap; src: url('../../public/fonts/geist-700.woff2') format('woff2'); }
+@font-face { font-family: 'Geist Mono'; font-weight: 400; font-display: swap; src: url('../../public/fonts/geist-mono-400.woff2') format('woff2'); }
+@font-face { font-family: 'Geist Mono'; font-weight: 500; font-display: swap; src: url('../../public/fonts/geist-mono-500.woff2') format('woff2'); }
+
+/* ── v4 tokens (mirror resources/css/app.css) ───────────────────── */
+:root {
+    --bg: #faf6ee;
+    --card: #fffdf8;
+    --surface2: #f1ebdf;
+    --ink: #211d15;
+    --muted: #7a7261;
+    --primary: #ff3902;
+    --primary-text: #cf2e00;
+    --primary-soft: rgba(255, 57, 2, 0.08);
+    --good: #1a7f4e;
+    --good-soft: rgba(26, 127, 78, 0.1);
+    --border: rgba(33, 29, 21, 0.14);
+    --border-soft: rgba(33, 29, 21, 0.08);
+    --shadow: 0 1px 2px rgba(33, 29, 21, 0.04), 0 10px 30px rgba(33, 29, 21, 0.06);
+    --band-ink: #211c12;      /* dark band + flap tiles, both themes */
+    --band-text: #f7f3e9;
+    --font-display: 'Fraunces', ui-serif, Georgia, serif;
+    --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+html.dark {
+    --bg: #161208;
+    --card: #211c12;
+    --surface2: #2c2618;
+    --ink: #f7f3e9;
+    --muted: #a89e8a;
+    --primary: #ff5c33;
+    --primary-text: #ff7a55;
+    --primary-soft: rgba(255, 92, 51, 0.12);
+    --good: #4cc38a;
+    --good-soft: rgba(76, 195, 138, 0.12);
+    --border: rgba(247, 243, 233, 0.16);
+    --border-soft: rgba(247, 243, 233, 0.08);
+    --shadow: none;
+    --band-ink: #100d06;
+    --band-text: #f7f3e9;
+}
+
+/* ── Base ───────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--font-sans); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.12; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+p { margin: 0.6em 0; }
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--primary-text); }
+.sub { color: var(--muted); font-size: 1.05rem; max-width: 58ch; }
+section { padding: 88px 0; }
+.sec-head { max-width: 640px; margin-bottom: 40px; }
+.sec-head h2 { font-size: clamp(1.7rem, 3.2vw, 2.3rem); margin: 10px 0 8px; }
+
+.btn {
+    display: inline-flex; align-items: center; gap: 8px; border-radius: 12px;
+    padding: 12px 22px; font-weight: 600; font-size: 15px; text-decoration: none;
+    border: 1.5px solid transparent; cursor: pointer; font-family: var(--font-sans);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-ghost { border-color: var(--border); color: var(--ink); background: transparent; }
+.btn-ghost:hover { background: var(--surface2); }
+.btn-sm { padding: 8px 16px; font-size: 14px; }
+
+/* ── Nav ────────────────────────────────────────────────────────── */
+nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-soft);
+}
+.nav-inner { display: flex; align-items: center; gap: 28px; padding: 14px 24px; max-width: 1120px; margin: 0 auto; }
+.logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 500; font-size: 1.35rem; text-decoration: none; letter-spacing: -0.01em; }
+.logo i { width: 9px; height: 9px; border-radius: 50%; background: var(--primary); display: inline-block; }
+.nav-links { display: flex; gap: 22px; margin: 0 auto; }
+.nav-links a { text-decoration: none; font-size: 14.5px; font-weight: 500; color: var(--muted); }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.nav-cta .login { text-decoration: none; font-size: 14.5px; font-weight: 500; color: var(--ink); padding: 8px 10px; }
+#themeToggle { background: none; border: 1.5px solid var(--border); border-radius: 10px; width: 36px; height: 36px; cursor: pointer; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+@media (max-width: 860px) { .nav-links { display: none; } .nav-cta .login { display: none; } }
+
+/* ── Hero ───────────────────────────────────────────────────────── */
+.hero { padding: 72px 0 84px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 56px; align-items: center; }
+@media (max-width: 920px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+.hero h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); margin: 16px 0 14px; }
+.hero .sub { font-size: 1.12rem; }
+.hero-ctas { display: flex; gap: 12px; margin: 26px 0 20px; flex-wrap: wrap; }
+.hero-proof { display: flex; flex-wrap: wrap; gap: 7px 14px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.02em; color: var(--muted); }
+.hero-proof span::before { content: '●'; color: var(--primary); font-size: 7px; vertical-align: 2px; margin-right: 7px; }
+
+/* demo card */
+.demo {
+    background: var(--card); border: 1px solid var(--border-soft); border-radius: 20px;
+    padding: 20px; box-shadow: var(--shadow); min-height: 372px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.demo-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+.demo-label b { color: var(--primary-text); font-weight: 500; }
+.demo-input {
+    border: 1.5px solid var(--border); border-radius: 14px; background: var(--bg);
+    padding: 14px 16px; font-size: 15.5px; min-height: 52px; display: flex; align-items: center;
+}
+#demoPrompt::after { content: '▍'; color: var(--primary); margin-left: 1px; animation: caret 1s step-end infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.demo-cards { display: flex; flex-direction: column; gap: 9px; }
+.demo-card {
+    border: 1px solid var(--border-soft); background: var(--bg); border-radius: 14px;
+    padding: 11px 14px; opacity: 0; transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.demo-card.show { opacity: 1; transform: none; }
+.demo-card .band { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary-text); }
+.demo-card .t { font-weight: 600; font-size: 15px; margin-top: 1px; }
+.demo-card .m { font-size: 12.5px; color: var(--muted); }
+.demo-card .why { font-size: 12.5px; color: var(--muted); margin-top: 3px; padding-top: 5px; border-top: 1px dashed var(--border-soft); }
+.demo-card .why::before { content: '✦'; color: var(--primary); margin-right: 6px; font-size: 10px; }
+.demo-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: auto; }
+@media (prefers-reduced-motion: reduce) { #demoPrompt::after { animation: none; } .demo-card { transition: none; } }
+
+/* ── Personas ───────────────────────────────────────────────────── */
+.band-soft { background: var(--surface2); }
+.persona-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.persona-tabs button {
+    font-family: var(--font-sans); font-size: 14.5px; font-weight: 600; cursor: pointer;
+    padding: 9px 18px; border-radius: 999px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--muted);
+}
+.persona-tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.persona-card {
+    background: var(--card); border: 1px solid var(--border-soft); border-radius: 20px;
+    padding: 26px 28px; box-shadow: var(--shadow); max-width: 720px;
+}
+.ptask { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
+.ptask:last-of-type { border-bottom: none; }
+.ptask .n { font-family: var(--font-mono); font-weight: 500; color: var(--primary-text); font-size: 14px; }
+.ptask .t b { display: block; font-size: 15.5px; }
+.ptask .t span { font-size: 13.5px; color: var(--muted); }
+.deadline { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em; padding: 4px 10px; border-radius: 999px; background: var(--primary-soft); color: var(--primary-text); white-space: nowrap; }
+.deadline.calm { background: var(--surface2); color: var(--muted); }
+html.dark .deadline.calm { background: var(--bg); }
+.persona-foot { font-size: 13.5px; color: var(--muted); margin-top: 14px; }
+
+/* ── Split sections (bureaucracy / transit) ─────────────────────── */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+@media (max-width: 920px) { .split { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
+.feature-list { list-style: none; padding: 0; margin: 18px 0 0; }
+.feature-list li { padding: 9px 0 9px 30px; position: relative; font-size: 15.5px; }
+.feature-list li::before {
+    content: ''; position: absolute; left: 0; top: 14px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--good-soft);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a7f4e' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+    background-size: 10px; background-position: center; background-repeat: no-repeat;
+}
+.feature-list li b { font-weight: 600; }
+.srcbadges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+.srcbadges span { font-family: var(--font-mono); font-size: 11px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); background: var(--card); }
+
+/* phone frame */
+.phone {
+    width: min(310px, 82vw); margin: 0 auto; border-radius: 34px; overflow: hidden;
+    border: 1.5px solid var(--border); background: var(--card);
+    box-shadow: var(--shadow); position: relative; aspect-ratio: 390 / 730;
+}
+.phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.phone.dark-frame { background: #161208; border-color: rgba(247,243,233,0.14); }
+.phone-cap { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 12px; font-family: var(--font-mono); letter-spacing: 0.02em; }
+
+/* task-card mock */
+.mock-task {
+    background: var(--card); border: 1px solid var(--border-soft); border-radius: 16px;
+    padding: 16px 18px; box-shadow: var(--shadow); margin-top: 22px; max-width: 460px;
+}
+.mock-task .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.mock-task .head b { font-size: 15.5px; }
+.verified { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--good); background: var(--good-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.doc { display: flex; gap: 9px; align-items: center; font-size: 13.5px; padding: 5px 0; color: var(--muted); }
+.doc i {
+    width: 15px; height: 15px; border-radius: 5px; border: 1.5px solid var(--border); flex: none;
+}
+.doc.done { color: var(--ink); }
+.doc.done i {
+    background: var(--good); border-color: var(--good);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+    background-size: 9px; background-position: center; background-repeat: no-repeat;
+}
+.mock-task .src { font-size: 12px; color: var(--muted); border-top: 1px dashed var(--border-soft); margin-top: 8px; padding-top: 8px; }
+.mock-task .src a { color: var(--primary-text); text-decoration: none; }
+
+/* comparison table */
+.tablebox { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
+.cmp { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 14.5px; }
+.cmp th { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; text-align: left; }
+.cmp th, .cmp td { padding: 13px 18px; border-bottom: 1px solid var(--border-soft); }
+.cmp tr:last-child td { border-bottom: none; }
+.cmp td:nth-child(2), .cmp td:nth-child(3), .cmp th:nth-child(2), .cmp th:nth-child(3) { text-align: center; white-space: nowrap; }
+.cmp .yes { color: var(--good); font-weight: 700; }
+.cmp .meh { color: var(--muted); font-size: 12.5px; }
+.cmp tfoot td { font-size: 12px; color: var(--muted); border-bottom: none; }
+
+/* ── Composer steps ─────────────────────────────────────────────── */
+.steps3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 36px; }
+@media (max-width: 860px) { .steps3 { grid-template-columns: minmax(0, 1fr); } }
+.stepcard { background: var(--card); border: 1px solid var(--border-soft); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; }
+.stepcard .k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary-text); }
+.stepcard h3 { font-size: 1.15rem; }
+.stepcard p { font-size: 14px; color: var(--muted); margin: 0; }
+.sentence { background: var(--bg); border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px 16px; font-size: 15px; line-height: 1.75; }
+.sentence u { text-decoration: none; border-bottom: 2px dotted var(--primary); font-weight: 600; }
+.mini-slot { background: var(--bg); border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px 13px; }
+.mini-slot .band { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary-text); }
+.mini-slot .t { font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mini-slot .why { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.mini-slot .why::before { content: '✦'; color: var(--primary); margin-right: 5px; font-size: 9px; }
+.connector { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); text-align: center; padding: 2px 0; }
+.slot-ops { display: flex; gap: 6px; }
+.slot-ops span { font-family: var(--font-mono); font-size: 10px; border: 1px solid var(--border); border-radius: 7px; padding: 2px 7px; color: var(--muted); }
+.slot-ops .hot { color: var(--primary-text); border-color: var(--primary); }
+.takeme { font-size: 12.5px; font-weight: 600; color: var(--primary-text); }
+.honesty {
+    margin: 40px auto 0; max-width: 660px; text-align: center;
+    border: 1.5px solid var(--border); border-radius: 18px; padding: 18px 26px;
+    background: var(--card); font-size: 15px;
+}
+.honesty b { font-family: var(--font-display); font-weight: 500; }
+
+/* ── Context strip ──────────────────────────────────────────────── */
+.ctx-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 980px) { .ctx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ctx-grid { grid-template-columns: minmax(0, 1fr); } }
+.ctx { background: var(--card); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px 18px; box-shadow: var(--shadow); }
+.ctx .ic { width: 34px; height: 34px; border-radius: 11px; background: var(--primary-soft); color: var(--primary-text); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.ctx .ic svg { width: 18px; height: 18px; }
+.ctx b { font-size: 14.5px; display: block; }
+.ctx span { font-size: 13px; color: var(--muted); }
+
+/* ── Tools ──────────────────────────────────────────────────────── */
+.tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 860px) { .tool-grid { grid-template-columns: minmax(0, 1fr); } }
+.tool { background: var(--card); border: 1px solid var(--border-soft); border-radius: 20px; padding: 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.tool .free { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--good); background: var(--good-soft); border-radius: 999px; padding: 3px 10px; align-self: flex-start; }
+.tool h3 { font-size: 1.15rem; margin: 12px 0 6px; }
+.tool p { font-size: 14px; color: var(--muted); margin: 0 0 16px; }
+.tool a { margin-top: auto; font-weight: 600; font-size: 14px; color: var(--primary-text); text-decoration: none; }
+
+/* ── Trust band ─────────────────────────────────────────────────── */
+.trust { background: var(--band-ink); color: var(--band-text); border-radius: 28px; padding: 56px 40px; }
+.trust-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; text-align: center; margin-bottom: 36px; }
+@media (max-width: 720px) { .trust-grid { grid-template-columns: minmax(0, 1fr); } }
+.flap { display: inline-flex; gap: 4px; }
+.flap b {
+    font-family: var(--font-mono); font-weight: 500; font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+    background: rgba(247, 243, 233, 0.08); border: 1px solid rgba(247, 243, 233, 0.14);
+    border-radius: 8px; padding: 6px 9px; line-height: 1; position: relative;
+    font-variant-numeric: tabular-nums;
+}
+.flap b::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(22, 18, 8, 0.55); }
+.trust-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(247, 243, 233, 0.6); margin-top: 12px; }
+.trust-foot { text-align: center; font-size: 15px; color: rgba(247, 243, 233, 0.85); max-width: 54ch; margin: 0 auto; }
+.trust-badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 18px; }
+.trust-badges span { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em; border: 1px solid rgba(247, 243, 233, 0.2); border-radius: 999px; padding: 5px 12px; color: rgba(247, 243, 233, 0.7); }
+
+/* ── FAQ ────────────────────────────────────────────────────────── */
+.faq { max-width: 720px; }
+.faq details { border-bottom: 1px solid var(--border-soft); }
+.faq summary {
+    cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;
+    gap: 16px; padding: 18px 2px; font-weight: 600; font-size: 16px;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; font-family: var(--font-mono); color: var(--primary-text); font-size: 20px; transition: transform 0.2s ease; flex: none; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq .a { padding: 0 2px 18px; color: var(--muted); font-size: 15px; max-width: 60ch; }
+
+/* ── Final CTA + footer ─────────────────────────────────────────── */
+.finale { text-align: center; padding: 96px 0; }
+.finale h2 { font-size: clamp(2rem, 4.4vw, 3rem); margin-bottom: 12px; }
+footer { border-top: 1px solid var(--border-soft); padding: 44px 0 36px; }
+.foot-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (max-width: 780px) { .foot-grid { grid-template-columns: minmax(0, 1fr); } }
+.waitlist-box h3 { font-size: 1.1rem; margin-bottom: 4px; }
+.waitlist-box p { font-size: 13.5px; color: var(--muted); margin-top: 0; }
+.waitlist { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.waitlist input {
+    font-family: var(--font-sans); font-size: 14px; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: 12px; background: var(--card); color: var(--ink);
+    flex: 1 1 120px; min-width: 0;
+}
+.waitlist input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: transparent; }
+.foot-links { display: flex; gap: 36px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 780px) { .foot-links { justify-content: flex-start; } }
+.foot-links div { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.foot-links b { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.foot-links a { text-decoration: none; color: var(--ink); }
+.foot-links a:hover { color: var(--primary-text); }
+.foot-base { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 40px; font-size: 12.5px; color: var(--muted); }
+
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav>
+    <div class="nav-inner">
+        <a class="logo" href="#top"><i></i>Expadu</a>
+        <div class="nav-links">
+            <a href="#paths">Your path</a>
+            <a href="#bureaucracy">Bureaucracy</a>
+            <a href="#transit">Transit</a>
+            <a href="#tools">Free tools</a>
+            <a href="#faq">FAQ</a>
+        </div>
+        <div class="nav-cta">
+            <button id="themeToggle" aria-label="Toggle dark mode">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+            </button>
+            <a class="login" href="https://app.expadu.com/login">Log in</a>
+            <a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<header class="hero" id="top">
+    <div class="wrap hero-grid">
+        <div>
+            <span class="eyebrow">Built for Cologne · in English</span>
+            <h1>The AI companion for your new life in Germany.</h1>
+            <p class="sub">Tell it your day — it plans the rest. The paperwork, the transit, the city: sorted for your exact situation.</p>
+            <div class="hero-ctas">
+                <a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a>
+                <a class="btn btn-ghost" href="#composer">See how it works</a>
+            </div>
+            <div class="hero-proof">
+                <span>82 official-source guides</span>
+                <span>4,300+ places</span>
+                <span>700+ local events</span>
+                <span>Free during the Cologne launch</span>
+            </div>
+        </div>
+        <div class="demo" aria-label="Product demo">
+            <div class="demo-label"><b>✦</b> Ask or plan</div>
+            <div class="demo-input"><span id="demoPrompt"></span></div>
+            <div class="demo-cards" id="demoCards"></div>
+            <div class="demo-note">Tell it your day. It plans the rest. <span style="opacity:.55">· demo</span></div>
+        </div>
+    </div>
+</header>
+
+<!-- ══ PERSONAS ══ -->
+<section class="band-soft" id="paths">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="eyebrow">Your situation is the starting point</span>
+            <h2>Landing in Cologne as a…</h2>
+            <p class="sub">Different situation, different paperwork, different deadlines. Expadu builds your path — not a generic checklist.</p>
+        </div>
+        <div class="persona-tabs" role="tablist" id="personaTabs"></div>
+        <div class="persona-card" id="personaCard"></div>
+    </div>
+</section>
+
+<!-- ══ BUREAUCRACY ══ -->
+<section id="bureaucracy">
+    <div class="wrap split">
+        <div>
+            <span class="eyebrow">The part everyone dreads</span>
+            <h2 style="font-size:clamp(1.7rem,3.2vw,2.3rem);margin:10px 0 8px">German bureaucracy, decoded — in English, with sources.</h2>
+            <p class="sub">Exact documents, real fees, actual deadlines. Every claim links to the official page, dated when we last checked it.</p>
+            <ul class="feature-list">
+                <li><b>82 step-by-step guides</b> — from Anmeldung to permanent residency</li>
+                <li><b>Document checklists</b> you tick off, task by task</li>
+                <li><b>Appointment tracking</b> — with a leave-by time on the day</li>
+                <li><b>Life events</b> — new baby, graduation, new job? Your path updates itself</li>
+            </ul>
+            <div class="mock-task" aria-label="Example task card">
+                <div class="head"><b>Anmeldung — register your address</b><span class="verified">✓ source-checked</span></div>
+                <div style="font-size:13px;color:var(--muted);margin:4px 0 8px">Within 14 days of moving in · free of charge</div>
+                <div class="doc done"><i></i>Passport</div>
+                <div class="doc done"><i></i>Wohnungsgeberbestätigung (landlord form)</div>
+                <div class="doc"><i></i>Anmeldeformular — we link the exact PDF</div>
+                <div class="src">Source: <a href="#">stadt-koeln.de</a> · checked Jul 2026</div>
+            </div>
+            <div class="srcbadges"><span>stadt-koeln.de</span><span>BAMF</span><span>ELSTER</span><span>Ausländerbehörde Köln</span></div>
+        </div>
+        <div>
+            <div class="phone"><img src="assets/bureaucracy-mobile.jpg" alt="Expadu bureaucracy checklist with settlement phases"></div>
+            <div class="phone-cap">your settlement path · phases from “before you fly” to “permanent”</div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ TRANSIT ══ -->
+<section class="band-soft" id="transit">
+    <div class="wrap split">
+        <div>
+            <div class="phone dark-frame"><img src="assets/timetable-dark-mobile.jpg" alt="Expadu live departures board in dark mode"></div>
+            <div class="phone-cap">live departures · the board knows where you are</div>
+        </div>
+        <div>
+            <span class="eyebrow">Getting around</span>
+            <h2 style="font-size:clamp(1.7rem,3.2vw,2.3rem);margin:10px 0 8px">Transit that speaks newcomer.</h2>
+            <p class="sub">Journeys, departures and disruptions on live KVB/VRS data — explained in English, priced for the ticket you actually hold.</p>
+            <div class="tablebox" style="margin-top:22px">
+                <table class="cmp">
+                    <thead><tr><th>What newcomers need</th><th>Expadu</th><th>Typical transit apps</th></tr></thead>
+                    <tbody>
+                        <tr><td>Everything in English — including disruptions</td><td class="yes">✓</td><td class="meh">partly</td></tr>
+                        <tr><td>Fares that know your ticket (Deutschlandticket, SemesterTicket — 2026 tariff)</td><td class="yes">✓</td><td class="meh">—</td></tr>
+                        <tr><td>Plans around your appointments, with leave-by times</td><td class="yes">✓</td><td class="meh">—</td></tr>
+                        <tr><td>Delays shown with a way around them</td><td class="yes">✓</td><td class="meh">partly</td></tr>
+                        <tr><td>Suggestions that fit your situation</td><td class="yes">✓</td><td class="meh">—</td></tr>
+                    </tbody>
+                    <tfoot><tr><td colspan="3">Cologne + region · live KVB/VRS data</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ COMPOSER ══ -->
+<section id="composer">
+    <div class="wrap">
+        <div class="sec-head" style="text-align:center;margin-inline:auto">
+            <span class="eyebrow">The day composer</span>
+            <h2>A local friend with a plan.</h2>
+            <p class="sub" style="margin-inline:auto">Say what kind of day you want. Get a day with a shape — and reasons — not a list of pins.</p>
+        </div>
+        <div class="steps3">
+            <div class="stepcard">
+                <div class="k">1 · Say it</div>
+                <h3>Plain words in, plain words out</h3>
+                <div class="sentence">“<u>Saturday afternoon</u> around <u>Ehrenfeld</u>, for <u>family time</u> — from <u>Home</u>.”</div>
+                <p>It reads your sentence — and every word stays editable. Tap any part to change it.</p>
+            </div>
+            <div class="stepcard">
+                <div class="k">2 · Get a shaped day</div>
+                <h3>Time bands + a why for every pick</h3>
+                <div class="mini-slot">
+                    <div class="band">Afternoon</div>
+                    <div class="t">Blücherpark playground</div>
+                    <div class="why">sunny window until 17:00</div>
+                </div>
+                <div class="connector">🚶 6 min · same area</div>
+                <div class="mini-slot">
+                    <div class="band">Late afternoon</div>
+                    <div class="t">Gelato on Körnerstraße</div>
+                    <div class="why">open till 19:00 · kid-approved</div>
+                </div>
+            </div>
+            <div class="stepcard">
+                <div class="k">3 · Make it yours</div>
+                <h3>Lock it, swap it, go</h3>
+                <div class="mini-slot">
+                    <div class="band">Evening</div>
+                    <div class="t">Herbrand’s beer garden <span class="slot-ops"><span class="hot">📌 lock</span><span>↻ swap</span><span>✕</span></span></div>
+                    <div class="why">leave by 21:40 for the last direct tram</div>
+                </div>
+                <p style="margin-top:2px">Every stop has a <span class="takeme">take me there →</span> with live legs, platform and fare.</p>
+            </div>
+        </div>
+        <div class="honesty">
+            <b>AI plans your day — it never invents the facts.</b><br>
+            <span style="color:var(--muted);font-size:14px">Opening hours, fares and deadlines come from verified data. Always.</span>
+        </div>
+    </div>
+</section>
+
+<!-- ══ CONTEXT STRIP ══ -->
+<section class="band-soft" id="context">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="eyebrow">Proactive, not another map</span>
+            <h2>It watches the boring stuff, so you don’t have to.</h2>
+        </div>
+        <div class="ctx-grid">
+            <div class="ctx">
+                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+                <b>Anmeldung due in 6 days</b>
+                <span>booked yet? Here’s the office and what to bring.</span>
+            </div>
+            <div class="ctx">
+                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a4 4 0 0 1 2-7.5A5 5 0 0 1 16 6a4.5 4.5 0 0 1 3 8"/><path d="M8 19l-1 2M13 19l-1 2M18 19l-1 2"/></svg></div>
+                <b>Rain at 17:00</b>
+                <span>your plan quietly swaps the park for somewhere indoors.</span>
+            </div>
+            <div class="ctx">
+                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+                <b>Line 3 is disrupted</b>
+                <span>you get the alert in English — with a way around it.</span>
+            </div>
+            <div class="ctx">
+                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg></div>
+                <b>Tomorrow’s a holiday</b>
+                <span>shops close — better do the groceries tonight.</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ TOOLS ══ -->
+<section id="tools">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="eyebrow">Useful before you even sign up</span>
+            <h2>Free tools — no account needed.</h2>
+        </div>
+        <div class="tool-grid">
+            <div class="tool">
+                <span class="free">free · no signup</span>
+                <h3>Deutschlandticket break-even</h3>
+                <p>Is the D-Ticket worth it for how you actually move? Two inputs, honest verdict, 2026 Cologne tariff.</p>
+                <a href="#">Check your break-even →</a>
+            </div>
+            <div class="tool">
+                <span class="free">free · no signup</span>
+                <h3>Permanent-residency timeline</h3>
+                <p>Your earliest Niederlassungserlaubnis date — and what legally speeds it up.</p>
+                <a href="#">See your timeline →</a>
+            </div>
+            <div class="tool">
+                <span class="free">free · no signup</span>
+                <h3>Citizenship quiz</h3>
+                <p>Are you on track for a German passport? Eight questions against the current rules, with sources.</p>
+                <a href="#">Take the quiz →</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ TRUST ══ -->
+<section style="padding-top:0">
+    <div class="wrap">
+        <div class="trust">
+            <div class="trust-grid">
+                <div><span class="flap" data-count="82"></span><div class="trust-label">official-source guides</div></div>
+                <div><span class="flap" data-count="4,356"></span><div class="trust-label">Cologne places</div></div>
+                <div><span class="flap" data-count="745"></span><div class="trust-label">local events tracked</div></div>
+            </div>
+            <p class="trust-foot">Built in Cologne by an expat who did all of this the hard way — so you don’t have to.</p>
+            <div class="trust-badges">
+                <span>sources: stadt-koeln.de · BAMF · ELSTER</span>
+                <span>live KVB/VRS data</span>
+                <span>EU-hosted · Germany</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ FAQ ══ -->
+<section class="band-soft" id="faq">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="eyebrow">Before you ask</span>
+            <h2>Questions, answered.</h2>
+        </div>
+        <div class="faq">
+            <details open>
+                <summary>Is Expadu free?</summary>
+                <div class="a">Free during the Cologne launch. No card, no trial timer.</div>
+            </details>
+            <details>
+                <summary>Which cities does it cover?</summary>
+                <div class="a">Cologne, properly — every place, office and tram line. The free tools work Germany-wide. Somewhere else? Leave your city in the footer and you’ll know the day we arrive.</div>
+            </details>
+            <details>
+                <summary>Do I need to speak German?</summary>
+                <div class="a">No. The interface and every guide are in English. Germany will still send you letters in German — we tell you what each step means before you’re standing at the counter.</div>
+            </details>
+            <details>
+                <summary>Is the advice official?</summary>
+                <div class="a">Every fee, deadline and document list links to its official source — Stadt Köln, BAMF, ELSTER — with the date we last verified it. If something changes, you can flag it with one tap.</div>
+            </details>
+            <details>
+                <summary>Where does my data live?</summary>
+                <div class="a">On EU servers in Germany. GDPR isn’t a checkbox for us — it’s home turf.</div>
+            </details>
+            <details>
+                <summary>Is there an app?</summary>
+                <div class="a">Expadu is a web app you can install in two taps — iPhone and Android, straight from the browser. No app store detour.</div>
+            </details>
+        </div>
+    </div>
+</section>
+
+<!-- ══ FINALE ══ -->
+<section class="finale">
+    <div class="wrap">
+        <h2>Your first years in Germany, handled.</h2>
+        <p class="sub" style="margin-inline:auto">Set up your situation once. Expadu takes it from there.</p>
+        <div style="margin-top:26px"><a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a></div>
+    </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+    <div class="wrap">
+        <div class="foot-grid">
+            <div class="waitlist-box">
+                <a class="logo" href="#top" style="margin-bottom:14px"><i></i>Expadu</a>
+                <h3>Not in Cologne?</h3>
+                <p>Leave your city — you’ll know the day we arrive.</p>
+                <form class="waitlist" id="waitlistForm">
+                    <input type="text" placeholder="Your city" aria-label="Your city" required>
+                    <input type="email" placeholder="Email" aria-label="Email" required>
+                    <button class="btn btn-ghost btn-sm" type="submit" id="waitlistBtn">Notify me</button>
+                </form>
+            </div>
+            <div class="foot-links">
+                <div>
+                    <b>Product</b>
+                    <a href="#composer">Day composer</a>
+                    <a href="#bureaucracy">Bureaucracy</a>
+                    <a href="#transit">Transit</a>
+                    <a href="#tools">Free tools</a>
+                </div>
+                <div>
+                    <b>Company</b>
+                    <a href="#" title="Ships with wave A">Blog</a>
+                    <a href="https://app.expadu.com/login">Log in</a>
+                    <a href="https://app.expadu.com/register">Start free</a>
+                </div>
+                <div>
+                    <b>Legal</b>
+                    <a href="#" title="Ships with wave A">Impressum</a>
+                    <a href="#" title="Ships with wave A">Datenschutz</a>
+                </div>
+            </div>
+        </div>
+        <div class="foot-base">
+            <span>© 2026 Expadu · Made in Köln</span>
+            <span>Prototype — links marked # are placeholders</span>
+        </div>
+    </div>
+</footer>
+
+<script>
+/* ── Theme ─────────────────────────────────────────────────────── */
+(function () {
+    var saved = null;
+    try { saved = localStorage.getItem('proto-theme'); } catch (e) {}
+    var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.classList.toggle('dark', dark);
+    document.getElementById('themeToggle').addEventListener('click', function () {
+        var isDark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('proto-theme', isDark ? 'dark' : 'light'); } catch (e) {}
+    });
+})();
+
+/* ── Split-flap counters (static digits, tile styling) ─────────── */
+document.querySelectorAll('.flap').forEach(function (el) {
+    el.dataset.count.split('').forEach(function (ch) {
+        var b = document.createElement('b');
+        b.textContent = ch;
+        el.appendChild(b);
+    });
+});
+
+/* ── Persona switcher ──────────────────────────────────────────── */
+var PERSONAS = {
+    Student: {
+        note: 'SemesterTicket, blocked account, enrolment — your checklist knows student life.',
+        tasks: [
+            ['Anmeldung — register your address', 'Bürgeramt · bring the landlord form', 'within 14 days'],
+            ['Health insurance — student rate', 'about €145/mo all-in (2026)', 'before enrolment'],
+            ['Residence permit — student', 'enrolment proof + blocked account', 'before your visa ends'],
+        ],
+    },
+    Employee: {
+        note: 'Standard permit or Blue Card? Your contract decides — Expadu walks you through both.',
+        tasks: [
+            ['Anmeldung — register your address', 'everything else depends on it', 'within 14 days'],
+            ['Health insurance', 'pick a Krankenkasse — payroll needs it', 'first week'],
+            ['Residence permit — work', 'standard vs EU Blue Card (~€50.7k salary)', 'before your visa ends'],
+        ],
+    },
+    Freelancer: {
+        note: 'The self-employed path has extra steps — tax office first, then the permit.',
+        tasks: [
+            ['Anmeldung — register your address', 'needed for everything below', 'within 14 days'],
+            ['Tax registration (ELSTER)', 'Fragebogen zur steuerlichen Erfassung', 'first weeks'],
+            ['§21 self-employment permit', 'business plan + financing + insurance', 'before your visa ends'],
+        ],
+    },
+    Family: {
+        note: 'Everyone gets registered, every permit is tracked — and life events update the plan.',
+        tasks: [
+            ['Anmeldung — the whole family', 'one appointment, everyone’s passports', 'within 14 days'],
+            ['Family-reunification permits', 'marriage/birth certificates + translations', 'before visas end'],
+            ['Kindergeld + Kita place', 'Kita via LITTLE BIRD — timing matters', 'after arrival'],
+        ],
+    },
+};
+var tabsEl = document.getElementById('personaTabs');
+var cardEl = document.getElementById('personaCard');
+Object.keys(PERSONAS).forEach(function (name, i) {
+    var b = document.createElement('button');
+    b.textContent = name;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', function () {
+        tabsEl.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-selected', 'false'); });
+        b.setAttribute('aria-selected', 'true');
+        renderPersona(name);
+    });
+    tabsEl.appendChild(b);
+});
+function renderPersona(name) {
+    var p = PERSONAS[name];
+    cardEl.innerHTML =
+        '<div class="eyebrow" style="margin-bottom:6px">Your first three tasks</div>' +
+        p.tasks.map(function (t, i) {
+            return '<div class="ptask"><span class="n">0' + (i + 1) + '</span>' +
+                '<span class="t"><b>' + t[0] + '</b><span>' + t[1] + '</span></span>' +
+                '<span class="deadline' + (i > 0 ? ' calm' : '') + '">' + t[2] + '</span></div>';
+        }).join('') +
+        '<div class="persona-foot">' + p.note + ' <b style="color:var(--ink)">…and it keeps adapting — 20+ situations covered.</b></div>';
+}
+renderPersona('Student');
+
+/* ── Hero typing demo (canned data — the real app plans live) ──── */
+var SCENARIOS = [
+    {
+        prompt: 'Free Saturday afternoon with my kids',
+        cards: [
+            { band: 'Afternoon', t: 'Blücherpark playground', m: 'park & playground · 12 min away', why: 'sunny window until 17:00' },
+            { band: 'Afternoon', t: 'Kölner Zoo', m: 'family favourite · ~2h visit', why: 'open till 18:00' },
+            { band: 'Late afternoon', t: 'Gelato on Körnerstraße', m: 'wind-down · same area', why: '🚶 6 min from the park' },
+        ],
+    },
+    {
+        prompt: 'I just arrived — what do I do first?',
+        cards: [
+            { band: 'Day one', t: 'Anmeldung — register your address', m: 'Bürgeramt · we book the right office', why: '14-day rule — the clock is ticking' },
+            { band: 'This week', t: 'Health insurance', m: 'needed for work and your permit', why: 'we compare the newcomer options' },
+            { band: 'Then', t: 'Steuer-ID arrives by post', m: 'automatic after Anmeldung', why: 'don’t bin it — payroll needs it' },
+        ],
+    },
+    {
+        prompt: 'Chill evening in Ehrenfeld after work',
+        cards: [
+            { band: 'Evening', t: 'Herbrand’s beer garden', m: 'Ehrenfeld classic · 8 min walk', why: 'mild evening — outside works' },
+            { band: 'Evening', t: 'Bumann & Sohn', m: 'bar · live music some nights', why: 'open till late' },
+            { band: 'Heads-up', t: 'Leave by 21:40', m: 'last direct tram home', why: 'we watch the timetable for you' },
+        ],
+    },
+];
+(function () {
+    var promptEl = document.getElementById('demoPrompt');
+    var cardsEl = document.getElementById('demoCards');
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function renderCards(cards) {
+        cardsEl.innerHTML = cards.map(function (c) {
+            return '<div class="demo-card"><div class="band">' + c.band + '</div>' +
+                '<div class="t">' + c.t + '</div><div class="m">' + c.m + '</div>' +
+                '<div class="why">' + c.why + '</div></div>';
+        }).join('');
+        return Array.prototype.slice.call(cardsEl.children);
+    }
+
+    if (reduce) {
+        promptEl.textContent = SCENARIOS[0].prompt;
+        renderCards(SCENARIOS[0].cards).forEach(function (el) { el.classList.add('show'); });
+        return;
+    }
+
+    var si = 0;
+    function playScenario() {
+        var sc = SCENARIOS[si % SCENARIOS.length];
+        si++;
+        var i = 0;
+        promptEl.textContent = '';
+        cardsEl.innerHTML = '';
+        (function type() {
+            if (i < sc.prompt.length) {
+                promptEl.textContent += sc.prompt[i++];
+                setTimeout(type, 26 + Math.random() * 34);
+            } else {
+                setTimeout(function () {
+                    var els = renderCards(sc.cards);
+                    els.forEach(function (el, n) {
+                        setTimeout(function () { el.classList.add('show'); }, 160 + n * 240);
+                    });
+                    setTimeout(function () {
+                        els.forEach(function (el) { el.classList.remove('show'); });
+                        setTimeout(playScenario, 420);
+                    }, 4600);
+                }, 420);
+            }
+        })();
+    }
+    playScenario();
+})();
+
+/* ── Waitlist (demo only) ──────────────────────────────────────── */
+document.getElementById('waitlistForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn = document.getElementById('waitlistBtn');
+    btn.textContent = 'Saved ✓ (demo)';
+    setTimeout(function () { btn.textContent = 'Notify me'; }, 2500);
+});
+</script>
+</body>
+</html>
