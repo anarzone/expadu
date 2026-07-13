@@ -117,6 +117,15 @@
             .skip-link:focus {
                 translate: 0;
             }
+            .sr-only {
+                width: 1px;
+                height: 1px;
+                position: absolute;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                clip-path: inset(50%);
+                white-space: nowrap;
+            }
             .wrap {
                 width: var(--wrap);
                 margin-inline: auto;
@@ -336,13 +345,21 @@
                 background: var(--white);
                 padding: 9px 15px;
                 color: #4e5350;
+                cursor: pointer;
                 font-size: 14px;
                 font-weight: 600;
             }
-            .topic.active {
+            .topic:hover {
+                border-color: var(--ink);
+                color: var(--ink);
+            }
+            .topic[aria-pressed='true'] {
                 border-color: var(--ink);
                 background: var(--ink);
                 color: white;
+            }
+            [hidden] {
+                display: none !important;
             }
             .featured {
                 padding: 72px 0;
@@ -481,6 +498,9 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 border-top: 1px solid var(--line);
             }
+            .article-grid.is-single {
+                grid-template-columns: minmax(0, 1fr);
+            }
             .article-card {
                 min-height: 380px;
                 display: flex;
@@ -492,6 +512,11 @@
                 border-left: 1px solid var(--line);
                 padding-right: 0;
                 padding-left: 36px;
+            }
+            .article-grid.is-single .article-card {
+                border-left: 0;
+                padding-right: 0;
+                padding-left: 0;
             }
             .article-card h3 {
                 max-width: 520px;
@@ -781,18 +806,69 @@
                 </div>
             </header>
 
-            <nav class="topic-rail" aria-label="Guide topics">
-                <div class="wrap topics">
-                    <span class="topic active">Start here</span
-                    ><span class="topic">Paperwork</span
-                    ><span class="topic">Transit</span
-                    ><span class="topic">Money</span
-                    ><span class="topic">Cologne life</span
-                    ><span class="topic">Permits</span>
+            <section class="topic-rail" aria-label="Guide topics">
+                <div
+                    class="wrap topics"
+                    role="group"
+                    aria-label="Filter guides by topic"
+                >
+                    <button
+                        class="topic"
+                        type="button"
+                        data-topic="start"
+                        aria-pressed="true"
+                    >
+                        Start here</button
+                    ><button
+                        class="topic"
+                        type="button"
+                        data-topic="paperwork"
+                        aria-pressed="false"
+                    >
+                        Paperwork</button
+                    ><button
+                        class="topic"
+                        type="button"
+                        data-topic="transit"
+                        aria-pressed="false"
+                    >
+                        Transit</button
+                    ><button
+                        class="topic"
+                        type="button"
+                        data-topic="money"
+                        aria-pressed="false"
+                    >
+                        Money</button
+                    ><button
+                        class="topic"
+                        type="button"
+                        data-topic="cologne-life"
+                        aria-pressed="false"
+                    >
+                        Cologne life</button
+                    ><button
+                        class="topic"
+                        type="button"
+                        data-topic="permits"
+                        aria-pressed="false"
+                    >
+                        Permits
+                    </button>
                 </div>
-            </nav>
+            </section>
+            <p
+                class="sr-only"
+                id="topicStatus"
+                role="status"
+                aria-live="polite"
+            ></p>
 
-            <section class="featured">
+            <section
+                class="featured"
+                data-guide-result
+                data-topics="start paperwork"
+            >
                 <div class="wrap">
                     <a
                         class="featured-card"
@@ -833,7 +909,7 @@
                 </div>
             </section>
 
-            <section class="latest">
+            <section class="latest" id="latestGuides">
                 <div class="wrap">
                     <div class="section-head">
                         <div>
@@ -852,6 +928,8 @@
                         <a
                             class="article-card"
                             href="landing-v2-blog-first-90-days.html"
+                            data-guide-result
+                            data-topics="start cologne-life"
                             ><div class="article-meta">
                                 <span>Start here</span><span>10 min read</span>
                             </div>
@@ -864,7 +942,11 @@
                                 >Built from sourced Expadu tasks</span
                             ></a
                         >
-                        <a class="article-card" href="landing-v2-tools.html"
+                        <a
+                            class="article-card"
+                            href="landing-v2-tools.html"
+                            data-guide-result
+                            data-topics="transit money permits"
                             ><div class="article-meta">
                                 <span>Interactive</span
                                 ><span>3 free tools</span>
@@ -946,6 +1028,79 @@
                 menuToggle.setAttribute('aria-expanded', 'false');
                 document.body.classList.remove('menu-open');
             });
+
+            const topicButtons = Array.from(
+                document.querySelectorAll('.topic[data-topic]'),
+            );
+            const guideResults = Array.from(
+                document.querySelectorAll('[data-guide-result]'),
+            );
+            const latestGuides = document.getElementById('latestGuides');
+            const articleGrid = latestGuides.querySelector('.article-grid');
+            const topicStatus = document.getElementById('topicStatus');
+
+            const topicFromHash = () => {
+                const topic = window.location.hash.replace('#topic-', '');
+
+                return topicButtons.some(
+                    (button) => button.dataset.topic === topic,
+                )
+                    ? topic
+                    : 'start';
+            };
+
+            const filterGuides = (topic, updateHash = false) => {
+                const activeButton = topicButtons.find(
+                    (button) => button.dataset.topic === topic,
+                );
+
+                topicButtons.forEach((button) => {
+                    button.setAttribute(
+                        'aria-pressed',
+                        String(button === activeButton),
+                    );
+                });
+
+                guideResults.forEach((result) => {
+                    result.hidden = !result.dataset.topics
+                        .split(' ')
+                        .includes(topic);
+                });
+
+                const visibleCards = guideResults.filter(
+                    (result) =>
+                        result.classList.contains('article-card') &&
+                        !result.hidden,
+                );
+                latestGuides.hidden = visibleCards.length === 0;
+                articleGrid.classList.toggle(
+                    'is-single',
+                    visibleCards.length === 1,
+                );
+
+                const visibleCount = guideResults.filter(
+                    (result) => !result.hidden,
+                ).length;
+                topicStatus.textContent = `Showing ${visibleCount} ${
+                    visibleCount === 1 ? 'result' : 'results'
+                } for ${activeButton.textContent.trim()}.`;
+
+                const nextHash = `#topic-${topic}`;
+                if (updateHash && window.location.hash !== nextHash) {
+                    window.location.hash = nextHash;
+                }
+            };
+
+            topicButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    filterGuides(button.dataset.topic, true);
+                });
+            });
+            window.addEventListener('hashchange', () => {
+                filterGuides(topicFromHash());
+            });
+            filterGuides(topicFromHash());
+
             document
                 .getElementById('newsletterForm')
                 .addEventListener('submit', (event) => {
