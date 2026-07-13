@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="description"
+            content="Free, sourced tools for newcomers in Germany: Deutschlandticket break-even, permanent-residency timeline and citizenship readiness."
+        />
+        <title>Free tools for life in Germany — Expadu</title>
+        <link rel="icon" href="../public/favicon.svg" type="image/svg+xml" />
+        <style>
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-400.woff2') format('woff2');
+                font-weight: 400;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-600.woff2') format('woff2');
+                font-weight: 600;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-700.woff2') format('woff2');
+                font-weight: 700;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Fraunces';
+                src: url('../public/fonts/fraunces-500.woff2') format('woff2');
+                font-weight: 500;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist Mono';
+                src: url('../public/fonts/geist-mono-500.woff2') format('woff2');
+                font-weight: 500;
+                font-display: swap;
+            }
+            :root {
+                --paper: #f4f3ee;
+                --white: #fffefa;
+                --ink: #181b1c;
+                --muted: #666b68;
+                --line: rgba(24, 27, 28, 0.17);
+                --orange: #ff3d00;
+                --orange-dark: #b62900;
+                --orange-soft: #ffe0d3;
+                --cyan: #08a6c4;
+                --cyan-soft: #d8f4f8;
+                --green: #0d6b48;
+                --green-soft: #dff3e9;
+                --yellow: #ffd85c;
+                --sans: 'Geist', system-ui, sans-serif;
+                --serif: 'Fraunces', Georgia, serif;
+                --mono: 'Geist Mono', monospace;
+                --wrap: min(1180px, calc(100vw - 48px));
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                margin: 0;
+                background: var(--paper);
+                color: var(--ink);
+                font-family: var(--sans);
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+            }
+            body.menu-open {
+                overflow: hidden;
+            }
+            button,
+            input,
+            select {
+                font: inherit;
+            }
+            button,
+            a {
+                -webkit-tap-highlight-color: transparent;
+            }
+            a {
+                color: inherit;
+            }
+            h1,
+            h2,
+            h3,
+            p {
+                margin-top: 0;
+            }
+            h1,
+            h2,
+            h3 {
+                text-wrap: balance;
+            }
+            :focus-visible {
+                outline: 3px solid var(--cyan);
+                outline-offset: 3px;
+            }
+            .skip-link {
+                position: fixed;
+                left: 16px;
+                top: 16px;
+                z-index: 200;
+                translate: 0 -180%;
+                border: 2px solid var(--ink);
+                border-radius: 8px;
+                background: var(--white);
+                padding: 10px 14px;
+                font-weight: 700;
+            }
+            .skip-link:focus {
+                translate: 0;
+            }
+            .wrap {
+                width: var(--wrap);
+                margin-inline: auto;
+            }
+            .mono,
+            .eyebrow {
+                font-family: var(--mono);
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 0.11em;
+                text-transform: uppercase;
+            }
+            .eyebrow {
+                display: inline-flex;
+                align-items: center;
+                gap: 9px;
+                color: var(--orange-dark);
+            }
+            .eyebrow::before {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: currentColor;
+                content: '';
+            }
+            .btn {
+                min-height: 48px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 9px;
+                border: 1px solid transparent;
+                border-radius: 999px;
+                padding: 11px 20px;
+                font-weight: 700;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            .btn-primary {
+                background: var(--orange);
+                color: var(--ink);
+                box-shadow: 0 8px 24px rgba(255, 61, 0, 0.22);
+            }
+            .btn-line {
+                border-color: rgba(24, 27, 28, 0.3);
+                background: transparent;
+            }
+            .btn-small {
+                min-height: 40px;
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            .site-nav {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                border-bottom: 1px solid rgba(24, 27, 28, 0.1);
+                background: rgba(244, 243, 238, 0.92);
+                backdrop-filter: blur(18px);
+            }
+            .nav-inner {
+                min-height: 72px;
+                display: flex;
+                align-items: center;
+                gap: 28px;
+            }
+            .brand {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-family: var(--serif);
+                font-size: 23px;
+                text-decoration: none;
+            }
+            .brand-mark {
+                width: 14px;
+                height: 14px;
+                position: relative;
+                border-radius: 50%;
+                background: var(--orange);
+            }
+            .brand-mark::after {
+                width: 5px;
+                height: 5px;
+                position: absolute;
+                right: -3px;
+                top: -3px;
+                border: 2px solid var(--paper);
+                border-radius: 50%;
+                background: var(--cyan);
+                content: '';
+            }
+            .nav-links {
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                margin-left: auto;
+            }
+            .nav-links a {
+                color: #454947;
+                font-size: 14px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .nav-links a[aria-current='page'] {
+                color: var(--ink);
+                text-decoration: underline;
+                text-decoration-color: var(--orange);
+                text-decoration-thickness: 3px;
+                text-underline-offset: 7px;
+            }
+            .nav-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .nav-login {
+                padding: 10px 6px;
+                font-size: 14px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .menu-toggle {
+                width: 44px;
+                height: 44px;
+                display: none;
+                place-items: center;
+                border: 1px solid var(--line);
+                border-radius: 50%;
+                background: transparent;
+            }
+            .menu-toggle svg {
+                width: 20px;
+                height: 20px;
+            }
+            .tools-hero {
+                overflow: hidden;
+                border-bottom: 1px solid var(--line);
+                padding: 82px 0 72px;
+            }
+            .hero-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(360px, 0.7fr);
+                align-items: end;
+                gap: 80px;
+            }
+            .tools-hero h1 {
+                max-width: 780px;
+                margin: 20px 0 22px;
+                font-size: clamp(3.2rem, 7vw, 6.8rem);
+                letter-spacing: -0.065em;
+                line-height: 0.92;
+            }
+            .tools-hero h1 em,
+            .section-title em {
+                color: var(--orange);
+                font-family: var(--serif);
+                font-weight: 500;
+            }
+            .hero-lead {
+                max-width: 680px;
+                margin-bottom: 0;
+                color: #4f5451;
+                font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+            }
+            .promise-card {
+                position: relative;
+                overflow: hidden;
+                border: 1px solid var(--ink);
+                border-radius: 24px;
+                background: var(--ink);
+                color: white;
+                padding: 28px;
+            }
+            .promise-card::after {
+                width: 190px;
+                height: 190px;
+                position: absolute;
+                right: -65px;
+                bottom: -100px;
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                border-radius: 50%;
+                box-shadow: 0 0 0 34px rgba(255, 255, 255, 0.03);
+                content: '';
+            }
+            .promise-card strong {
+                display: block;
+                margin-bottom: 10px;
+                color: #90e6f2;
+                font-family: var(--serif);
+                font-size: 25px;
+                font-weight: 500;
+            }
+            .promise-card p {
+                max-width: 360px;
+                margin: 0;
+                color: #c7cecb;
+            }
+            .tool-map {
+                padding: 34px 0;
+            }
+            .tool-map-inner {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                border: 1px solid var(--line);
+                border-radius: 22px;
+                background: rgba(255, 254, 250, 0.55);
+            }
+            .map-link {
+                min-height: 116px;
+                display: flex;
+                align-items: center;
+                gap: 18px;
+                padding: 20px 24px;
+                text-decoration: none;
+            }
+            .map-link + .map-link {
+                border-left: 1px solid var(--line);
+            }
+            .map-number {
+                width: 44px;
+                height: 44px;
+                flex: 0 0 auto;
+                display: grid;
+                place-items: center;
+                border: 1px solid var(--ink);
+                border-radius: 50%;
+                font-family: var(--mono);
+                font-size: 12px;
+            }
+            .map-link:nth-child(2) .map-number {
+                background: var(--cyan-soft);
+                border-color: var(--cyan);
+                color: #086e82;
+            }
+            .map-link:nth-child(3) .map-number {
+                background: var(--orange-soft);
+                border-color: var(--orange);
+                color: var(--orange-dark);
+            }
+            .map-link strong,
+            .map-link span {
+                display: block;
+            }
+            .map-link strong {
+                font-size: 16px;
+            }
+            .map-link span {
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .tools-workbench {
+                padding: 28px 0 110px;
+            }
+            .tool-shell {
+                scroll-margin-top: 100px;
+                display: grid;
+                grid-template-columns: minmax(0, 0.78fr) minmax(410px, 1.22fr);
+                gap: 60px;
+                padding: 76px 0;
+                border-top: 1px solid var(--line);
+            }
+            .tool-shell:first-child {
+                border-top: 0;
+            }
+            .tool-intro {
+                align-self: start;
+                position: sticky;
+                top: 112px;
+            }
+            .tool-no {
+                width: 48px;
+                height: 48px;
+                display: grid;
+                place-items: center;
+                margin-bottom: 24px;
+                border: 1px solid var(--ink);
+                border-radius: 50%;
+                font-family: var(--mono);
+                font-size: 12px;
+            }
+            .tool-intro h2 {
+                max-width: 540px;
+                margin: 18px 0 17px;
+                font-size: clamp(2.25rem, 4vw, 4.1rem);
+                letter-spacing: -0.055em;
+                line-height: 0.98;
+            }
+            .tool-intro p {
+                max-width: 520px;
+                color: #555a57;
+                font-size: 17px;
+            }
+            .source-state {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 10px;
+                color: var(--green);
+                font-family: var(--mono);
+                font-size: 10px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            .source-state::before {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--green);
+                box-shadow: 0 0 0 4px rgba(22, 129, 88, 0.1);
+                content: '';
+            }
+            .calculator {
+                overflow: hidden;
+                border: 1px solid var(--ink);
+                border-radius: 28px;
+                background: var(--white);
+                box-shadow: 0 22px 60px rgba(24, 27, 28, 0.1);
+            }
+            .calc-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 20px;
+                border-bottom: 1px solid var(--line);
+                padding: 18px 22px;
+            }
+            .calc-head span:last-child {
+                color: var(--muted);
+            }
+            .calc-body {
+                display: grid;
+                gap: 22px;
+                padding: 28px;
+            }
+            .field {
+                display: grid;
+                gap: 8px;
+            }
+            .field label,
+            .field legend {
+                padding: 0;
+                font-weight: 700;
+            }
+            .field small {
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .field input[type='number'],
+            .field input[type='month'],
+            .field select {
+                width: 100%;
+                min-height: 52px;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                background: var(--paper);
+                color: var(--ink);
+                padding: 12px 14px;
+            }
+            .field-row {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+            }
+            .check {
+                min-height: 52px;
+                display: flex;
+                align-items: flex-start;
+                gap: 11px;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                background: var(--paper);
+                padding: 14px;
+                cursor: pointer;
+            }
+            .check input {
+                width: 20px;
+                height: 20px;
+                flex: 0 0 auto;
+                accent-color: var(--orange);
+            }
+            .result {
+                border-top: 1px solid var(--line);
+                background: var(--green-soft);
+                padding: 26px 28px 28px;
+            }
+            .result.warn {
+                background: #fff1c9;
+            }
+            .result-kicker {
+                display: block;
+                margin-bottom: 7px;
+                color: var(--green);
+                font-family: var(--mono);
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+            }
+            .result.warn .result-kicker {
+                color: #875c00;
+            }
+            .result strong {
+                display: block;
+                margin-bottom: 7px;
+                font-family: var(--serif);
+                font-size: clamp(1.55rem, 3vw, 2.25rem);
+                font-weight: 500;
+                line-height: 1.15;
+            }
+            .result p {
+                margin: 0;
+                color: #3c4843;
+            }
+            .result-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+                margin-top: 20px;
+            }
+            .result-stat {
+                border: 1px solid rgba(22, 129, 88, 0.18);
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.55);
+                padding: 13px;
+            }
+            .result-stat span,
+            .result-stat b {
+                display: block;
+            }
+            .result-stat span {
+                color: var(--muted);
+                font-size: 12px;
+            }
+            .result-stat b {
+                margin-top: 2px;
+                font-size: 18px;
+            }
+            .fact-strip {
+                border-top: 1px solid var(--line);
+                padding: 22px 28px;
+                color: #555a57;
+                font-size: 13px;
+            }
+            .fact-strip p:last-child {
+                margin-bottom: 0;
+            }
+            .fact-strip a {
+                color: #086e82;
+                font-weight: 700;
+            }
+            .truth-note {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 16px;
+                border: 1px solid var(--green);
+                border-radius: 18px;
+                background: var(--green-soft);
+                padding: 20px;
+            }
+            .truth-note svg {
+                width: 24px;
+                height: 24px;
+                color: var(--green);
+            }
+            .truth-note strong {
+                display: block;
+                margin-bottom: 4px;
+            }
+            .truth-note p {
+                margin: 0;
+                color: #45514c;
+                font-size: 14px;
+            }
+            .app-nudge {
+                overflow: hidden;
+                background: var(--ink);
+                color: white;
+                padding: 80px 0;
+            }
+            .nudge-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                align-items: center;
+                gap: 60px;
+            }
+            .app-nudge h2 {
+                max-width: 760px;
+                margin: 12px 0 15px;
+                font-size: clamp(2.4rem, 5vw, 5rem);
+                letter-spacing: -0.06em;
+                line-height: 0.95;
+            }
+            .app-nudge h2 em {
+                color: #8de4f2;
+                font-family: var(--serif);
+                font-weight: 500;
+            }
+            .app-nudge p {
+                max-width: 670px;
+                margin-bottom: 0;
+                color: #bcc4c1;
+                font-size: 17px;
+            }
+            .app-nudge .eyebrow {
+                color: #ff9d7e;
+            }
+            .site-footer {
+                border-top: 1px solid var(--line);
+                padding: 42px 0;
+            }
+            .footer-inner {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 28px;
+            }
+            .footer-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px 22px;
+            }
+            .footer-links a {
+                color: var(--muted);
+                font-size: 14px;
+                font-weight: 600;
+            }
+            @media (max-width: 900px) {
+                :root {
+                    --wrap: min(100% - 32px, 720px);
+                }
+                .nav-links {
+                    display: none;
+                    position: fixed;
+                    inset: 72px 0 auto;
+                    z-index: 90;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 0;
+                    border-bottom: 1px solid var(--line);
+                    background: var(--paper);
+                    padding: 18px 16px 24px;
+                }
+                .nav-links.open {
+                    display: flex;
+                }
+                .nav-links a {
+                    min-height: 48px;
+                    display: flex;
+                    align-items: center;
+                    padding: 8px 12px;
+                }
+                .menu-toggle {
+                    display: grid;
+                    margin-left: auto;
+                }
+                .nav-login {
+                    display: none;
+                }
+                .hero-grid,
+                .tool-shell,
+                .nudge-grid {
+                    grid-template-columns: 1fr;
+                }
+                .hero-grid {
+                    gap: 36px;
+                }
+                .tool-intro {
+                    position: static;
+                }
+                .tool-shell {
+                    gap: 32px;
+                }
+                .tool-map-inner {
+                    grid-template-columns: 1fr;
+                }
+                .map-link + .map-link {
+                    border-top: 1px solid var(--line);
+                    border-left: 0;
+                }
+                .nudge-grid .btn {
+                    justify-self: start;
+                }
+            }
+            @media (max-width: 600px) {
+                .nav-actions .btn {
+                    padding-inline: 14px;
+                }
+                .tools-hero {
+                    padding: 54px 0 48px;
+                }
+                .tools-hero h1 {
+                    font-size: clamp(3rem, 15vw, 4.6rem);
+                }
+                .promise-card {
+                    padding: 22px;
+                }
+                .map-link {
+                    min-height: 92px;
+                }
+                .tools-workbench {
+                    padding-bottom: 70px;
+                }
+                .tool-shell {
+                    padding: 56px 0;
+                }
+                .calculator {
+                    border-radius: 20px;
+                }
+                .calc-body,
+                .result,
+                .fact-strip {
+                    padding: 22px 18px;
+                }
+                .field-row,
+                .result-grid {
+                    grid-template-columns: 1fr;
+                }
+                .app-nudge {
+                    padding: 64px 0;
+                }
+                .footer-inner {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                html {
+                    scroll-behavior: auto;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
+        <nav class="site-nav" aria-label="Main navigation">
+            <div class="wrap nav-inner">
+                <a
+                    class="brand"
+                    href="landing-v2.html"
+                    aria-label="Expadu home"
+                >
+                    <span class="brand-mark" aria-hidden="true"></span>Expadu
+                </a>
+                <div class="nav-links" id="navLinks">
+                    <a href="landing-v2.html#companion">How it works</a>
+                    <a href="landing-v2.html#proof">Inside the app</a>
+                    <a href="landing-v2-tools.html" aria-current="page"
+                        >Free tools</a
+                    >
+                    <a href="landing-v2-blog.html">Guides</a>
+                </div>
+                <button
+                    class="menu-toggle"
+                    id="menuToggle"
+                    type="button"
+                    aria-controls="navLinks"
+                    aria-expanded="false"
+                    aria-label="Open navigation"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 7h16M4 12h16M4 17h16"></path>
+                    </svg>
+                </button>
+                <div class="nav-actions">
+                    <a class="nav-login" href="https://app.expadu.com/login"
+                        >Log in</a
+                    >
+                    <a
+                        class="btn btn-primary btn-small"
+                        href="https://app.expadu.com/register"
+                        >Start free <span aria-hidden="true">→</span></a
+                    >
+                </div>
+            </div>
+        </nav>
+
+        <main id="main">
+            <header class="tools-hero">
+                <div class="wrap hero-grid">
+                    <div>
+                        <span class="eyebrow"
+                            >Free · no signup · official sources</span
+                        >
+                        <h1>One question.<br /><em>A useful answer.</em></h1>
+                        <p class="hero-lead">
+                            Three small tools for the moments when generic
+                            Germany advice is not enough. Your numbers stay in
+                            this browser; every rule points back to its source.
+                        </p>
+                    </div>
+                    <aside class="promise-card">
+                        <strong>Useful before you trust us.</strong>
+                        <p>
+                            No gated results. No fake certainty. Expadu only
+                            asks you to start the app when ongoing tracking
+                            would genuinely help.
+                        </p>
+                    </aside>
+                </div>
+            </header>
+
+            <nav class="tool-map" aria-label="Choose a free tool">
+                <div class="wrap tool-map-inner">
+                    <a class="map-link" href="#dticket"
+                        ><span class="map-number">01</span
+                        ><span
+                            ><strong>D-Ticket break-even</strong
+                            ><span>Transit · about 30 seconds</span></span
+                        ></a
+                    >
+                    <a class="map-link" href="#residency"
+                        ><span class="map-number">02</span
+                        ><span
+                            ><strong>Residency timeline</strong
+                            ><span>Permit · about 45 seconds</span></span
+                        ></a
+                    >
+                    <a class="map-link" href="#citizenship"
+                        ><span class="map-number">03</span
+                        ><span
+                            ><strong>Citizenship readiness</strong
+                            ><span>Current law · about 1 minute</span></span
+                        ></a
+                    >
+                </div>
+            </nav>
+
+            <div class="wrap tools-workbench">
+                <section class="tool-shell" id="dticket">
+                    <div class="tool-intro">
+                        <span class="tool-no">01</span>
+                        <span class="eyebrow">Transit · 2026 tariff</span>
+                        <h2>
+                            Is the €63 ticket worth it for <em>your</em> week?
+                        </h2>
+                        <p>
+                            Compare the Deutschlandticket against the trips you
+                            actually take—not an imaginary daily commuter.
+                        </p>
+                        <span class="source-state"
+                            >Fare checked 17 June 2026</span
+                        >
+                    </div>
+                    <div class="calculator">
+                        <div class="calc-head">
+                            <span class="mono">Your normal week</span
+                            ><span class="mono">No data sent</span>
+                        </div>
+                        <form class="calc-body" id="dtForm">
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="dtTrips"
+                                        >Single trips per week</label
+                                    >
+                                    <input
+                                        id="dtTrips"
+                                        type="number"
+                                        min="0"
+                                        max="60"
+                                        step="1"
+                                        value="8"
+                                        inputmode="numeric"
+                                    />
+                                    <small>Count both directions.</small>
+                                </div>
+                                <div class="field">
+                                    <label for="dtFare"
+                                        >Your typical trip</label
+                                    >
+                                    <select id="dtFare">
+                                        <option value="2.9">
+                                            Up to 4 stops · €2.90
+                                        </option>
+                                        <option value="4" selected>
+                                            Within Cologne · €4.00
+                                        </option>
+                                        <option value="5.5">
+                                            Into the region · €5.50
+                                        </option>
+                                        <option value="13.9">
+                                            Across Rheinland · €13.90
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="dtSubsidy"
+                                    >Employer contribution per month</label
+                                >
+                                <input
+                                    id="dtSubsidy"
+                                    type="number"
+                                    min="0"
+                                    max="63"
+                                    step="1"
+                                    value="0"
+                                    inputmode="numeric"
+                                />
+                                <small
+                                    >Ask HR whether a JobTicket subsidy is
+                                    available.</small
+                                >
+                            </div>
+                        </form>
+                        <div
+                            class="result"
+                            id="dtResult"
+                            aria-live="polite"
+                        ></div>
+                        <div class="fact-strip">
+                            <p>
+                                <strong>Good to know:</strong> the
+                                Deutschlandticket covers local and regional
+                                public transport nationwide, but not ICE, IC or
+                                EC trains.
+                            </p>
+                            <p>
+                                Sources:
+                                <a
+                                    href="https://int.bahn.de/en/offers/regional/deutschland-ticket"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >Deutsche Bahn — Deutschlandticket</a
+                                >
+                                ·
+                                <a
+                                    href="https://www.kvb.koeln/abos-und-tickets/preise-und-preisstufen.html"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >KVB fare table</a
+                                >.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tool-shell" id="residency">
+                    <div class="tool-intro">
+                        <span class="tool-no">02</span>
+                        <span class="eyebrow">Residence · AufenthG tracks</span>
+                        <h2>When could you reach permanent residence?</h2>
+                        <p>
+                            Date math is only the first layer. This calculator
+                            shows the earliest threshold, then clearly separates
+                            the conditions it cannot verify for you.
+                        </p>
+                        <span class="source-state"
+                            >Official thresholds linked</span
+                        >
+                    </div>
+                    <div class="calculator">
+                        <div class="calc-head">
+                            <span class="mono">Your permit track</span
+                            ><span class="mono">Guide, not a decision</span>
+                        </div>
+                        <form class="calc-body" id="residencyForm">
+                            <div class="field">
+                                <label for="resTrack"
+                                    >Your current permit</label
+                                >
+                                <select id="resTrack">
+                                    <option value="blue">EU Blue Card</option>
+                                    <option value="family">
+                                        Family member of a German citizen
+                                    </option>
+                                    <option value="skilled" selected>
+                                        Skilled worker / employment permit
+                                    </option>
+                                    <option value="general">
+                                        General route
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="resSince"
+                                    >Holding this track since</label
+                                >
+                                <input
+                                    id="resSince"
+                                    type="month"
+                                    value="2024-07"
+                                    max="2026-07"
+                                />
+                            </div>
+                            <label class="check" id="resB1Wrap" hidden
+                                ><input
+                                    id="resB1"
+                                    type="checkbox"
+                                    checked
+                                /><span
+                                    ><strong>I have B1 German</strong
+                                    ><br /><small
+                                        >Blue Card: 21 months with B1, 27 months
+                                        with A1.</small
+                                    ></span
+                                ></label
+                            >
+                            <label class="check" id="resDegreeWrap"
+                                ><input id="resDegree" type="checkbox" /><span
+                                    ><strong
+                                        >My degree or vocational training is
+                                        from Germany</strong
+                                    ><br /><small
+                                        >Qualifying skilled workers may use the
+                                        24-month route.</small
+                                    ></span
+                                ></label
+                            >
+                        </form>
+                        <div
+                            class="result"
+                            id="resResult"
+                            aria-live="polite"
+                        ></div>
+                        <div class="fact-strip">
+                            <p>
+                                <strong
+                                    >The calculator does not decide
+                                    eligibility.</strong
+                                >
+                                Pension contributions, secured livelihood,
+                                housing, language, employment and other
+                                requirements still need checking for your
+                                specific route.
+                            </p>
+                            <p>
+                                Sources:
+                                <a
+                                    href="https://www.make-it-in-germany.com/en/visa-residence/types/eu-blue-card"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >Federal portal — EU Blue Card</a
+                                >
+                                ·
+                                <a
+                                    href="https://www.gesetze-im-internet.de/aufenthg_2004/__9.html"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >§9 AufenthG</a
+                                >
+                                ·
+                                <a
+                                    href="https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >§18c AufenthG</a
+                                >.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tool-shell" id="citizenship">
+                    <div class="tool-intro">
+                        <span class="tool-no">03</span>
+                        <span class="eyebrow">Citizenship · current law</span>
+                        <h2>Are you on track for a German passport?</h2>
+                        <p>
+                            A readiness check against the current five-year
+                            standard route and the separate spouse route. It
+                            never turns five answers into fake legal certainty.
+                        </p>
+                        <span class="source-state"
+                            >Updated after 30 October 2025 change</span
+                        >
+                    </div>
+                    <div class="calculator">
+                        <div class="calc-head">
+                            <span class="mono">Five checks</span
+                            ><span class="mono">Not legal advice</span>
+                        </div>
+                        <form class="calc-body" id="citizenshipForm">
+                            <div class="field">
+                                <label for="czYears"
+                                    >Years living legally in Germany</label
+                                >
+                                <input
+                                    id="czYears"
+                                    type="number"
+                                    min="0"
+                                    max="50"
+                                    step="0.5"
+                                    value="2"
+                                    inputmode="decimal"
+                                />
+                            </div>
+                            <label class="check"
+                                ><input id="czMarried" type="checkbox" /><span
+                                    ><strong
+                                        >Married to a German citizen for at
+                                        least 2 years</strong
+                                    ><br /><small
+                                        >The spouse route normally requires 3
+                                        years of residence.</small
+                                    ></span
+                                ></label
+                            >
+                            <label class="check"
+                                ><input
+                                    id="czGerman"
+                                    type="checkbox"
+                                    checked
+                                /><span
+                                    ><strong
+                                        >I can prove at least B1 German</strong
+                                    ></span
+                                ></label
+                            >
+                            <label class="check"
+                                ><input
+                                    id="czLivelihood"
+                                    type="checkbox"
+                                    checked
+                                /><span
+                                    ><strong
+                                        >I can generally support myself without
+                                        Bürgergeld or Sozialhilfe</strong
+                                    ></span
+                                ></label
+                            >
+                            <label class="check"
+                                ><input id="czTest" type="checkbox" /><span
+                                    ><strong
+                                        >I passed the naturalisation test or
+                                        meet an exemption</strong
+                                    ></span
+                                ></label
+                            >
+                        </form>
+                        <div
+                            class="result warn"
+                            id="czResult"
+                            aria-live="polite"
+                        ></div>
+                        <div class="fact-strip">
+                            <p>
+                                <strong>Important 2026 correction:</strong> the
+                                special three-year “fast track” was repealed on
+                                30 October 2025. The standard minimum is again
+                                five years; the spouse route under §9 remains
+                                separate.
+                            </p>
+                            <p>
+                                Sources:
+                                <a
+                                    href="https://www.bundesregierung.de/breg-de/service/fragen-und-anworten/kabinett-einbuerung-2350620"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >Federal Government — five-year rule</a
+                                >
+                                ·
+                                <a
+                                    href="https://www.gesetze-im-internet.de/stag/__10.html"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >§10 StAG</a
+                                >
+                                ·
+                                <a
+                                    href="https://www.gesetze-im-internet.de/stag/__9.html"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >§9 StAG</a
+                                >.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="truth-note">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="m5 12 4 4L19 6"></path>
+                        <circle cx="12" cy="12" r="9"></circle>
+                    </svg>
+                    <div>
+                        <strong>The Expadu honesty rule</strong>
+                        <p>
+                            Calculators can map your answers to official
+                            thresholds. They cannot see every exception,
+                            discretionary decision or document in your case.
+                            Where a tool cannot know, it says so.
+                        </p>
+                    </div>
+                </aside>
+            </div>
+
+            <section class="app-nudge">
+                <div class="wrap nudge-grid">
+                    <div>
+                        <span class="eyebrow">The answer is free</span>
+                        <h2>
+                            The follow-through is where <em>Expadu helps.</em>
+                        </h2>
+                        <p>
+                            Turn a date into a tracked deadline, a ticket
+                            decision into route-aware planning, and a legal
+                            threshold into a sourced personal checklist.
+                        </p>
+                    </div>
+                    <a
+                        class="btn btn-primary"
+                        href="https://app.expadu.com/register"
+                        >Start free <span aria-hidden="true">→</span></a
+                    >
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="wrap footer-inner">
+                <a class="brand" href="landing-v2.html"
+                    ><span class="brand-mark" aria-hidden="true"></span
+                    >Expadu</a
+                >
+                <div class="footer-links">
+                    <a href="landing-v2.html">Landing</a
+                    ><a href="landing-v2-tools.html">Free tools</a
+                    ><a href="landing-v2-blog.html">Guides</a
+                    ><a href="https://app.expadu.com/register">Start free</a>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            const euro = (value) =>
+                new Intl.NumberFormat('en-DE', {
+                    style: 'currency',
+                    currency: 'EUR',
+                    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+                }).format(value);
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.getElementById('navLinks');
+            menuToggle.addEventListener('click', () => {
+                const open = navLinks.classList.toggle('open');
+                menuToggle.setAttribute('aria-expanded', String(open));
+                menuToggle.setAttribute(
+                    'aria-label',
+                    open ? 'Close navigation' : 'Open navigation',
+                );
+                document.body.classList.toggle('menu-open', open);
+            });
+            navLinks.addEventListener('click', () => {
+                navLinks.classList.remove('open');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('menu-open');
+            });
+
+            const dtForm = document.getElementById('dtForm');
+            const dtResult = document.getElementById('dtResult');
+            const renderTicket = () => {
+                const trips = Math.max(
+                    0,
+                    Number(document.getElementById('dtTrips').value) || 0,
+                );
+                const fare = Number(document.getElementById('dtFare').value);
+                const subsidy = Math.min(
+                    63,
+                    Math.max(
+                        0,
+                        Number(document.getElementById('dtSubsidy').value) || 0,
+                    ),
+                );
+                const singles = trips * 4.33 * fare;
+                const ticket = 63 - subsidy;
+                const difference = Math.round(Math.abs(singles - ticket));
+                const worthIt = ticket <= singles;
+                const close =
+                    Math.abs(ticket - singles) <= Math.max(8, ticket * 0.15);
+                dtResult.classList.toggle('warn', !worthIt);
+                dtResult.innerHTML =
+                    '<span class="result-kicker">Your quick verdict</span><strong>' +
+                    (worthIt
+                        ? close
+                            ? 'A close call—choose flexibility.'
+                            : 'Yes—the ticket pays off.'
+                        : 'Not yet—single fares cost less.') +
+                    '</strong><p>' +
+                    (worthIt
+                        ? 'At this rhythm, the ticket is about <b>' +
+                          euro(difference) +
+                          ' cheaper per month</b> before any extra weekend travel.'
+                        : 'Your current trips are about <b>' +
+                          euro(difference) +
+                          ' below the ticket price per month</b>. Recheck if your routine changes.') +
+                    '</p><div class="result-grid"><div class="result-stat"><span>Estimated single fares</span><b>' +
+                    euro(Math.round(singles)) +
+                    '/mo</b></div><div class="result-stat"><span>D-Ticket after subsidy</span><b>' +
+                    euro(ticket) +
+                    '/mo</b></div></div>';
+            };
+            dtForm.addEventListener('input', renderTicket);
+            renderTicket();
+
+            const resForm = document.getElementById('residencyForm');
+            const resResult = document.getElementById('resResult');
+            const resTrack = document.getElementById('resTrack');
+            const resB1Wrap = document.getElementById('resB1Wrap');
+            const resDegreeWrap = document.getElementById('resDegreeWrap');
+            const addMonths = (value, months) => {
+                const [year, month] = value.split('-').map(Number);
+                return new Date(year, month - 1 + months, 1);
+            };
+            const renderResidency = () => {
+                const track = resTrack.value;
+                resB1Wrap.hidden = track !== 'blue';
+                resDegreeWrap.hidden = track !== 'skilled';
+                let months = { blue: 21, family: 36, skilled: 36, general: 60 }[
+                    track
+                ];
+                if (
+                    track === 'blue' &&
+                    !document.getElementById('resB1').checked
+                )
+                    months = 27;
+                if (
+                    track === 'skilled' &&
+                    document.getElementById('resDegree').checked
+                )
+                    months = 24;
+                const since = document.getElementById('resSince').value;
+                if (!since) {
+                    resResult.classList.add('warn');
+                    resResult.innerHTML =
+                        '<span class="result-kicker">Add one date</span><strong>Choose when this permit track began.</strong><p>The calculator will show the earliest statutory threshold.</p>';
+                    return;
+                }
+                const earliest = addMonths(since, months);
+                const now = new Date(2026, 6, 13);
+                const monthsLeft = Math.max(
+                    0,
+                    (earliest.getFullYear() - now.getFullYear()) * 12 +
+                        earliest.getMonth() -
+                        now.getMonth(),
+                );
+                const label = earliest.toLocaleDateString('en-DE', {
+                    month: 'long',
+                    year: 'numeric',
+                });
+                resResult.classList.toggle('warn', monthsLeft > 0);
+                resResult.innerHTML =
+                    '<span class="result-kicker">Earliest threshold</span><strong>' +
+                    (monthsLeft === 0
+                        ? 'You may already have crossed it.'
+                        : label) +
+                    '</strong><p>' +
+                    (monthsLeft === 0
+                        ? 'Your <b>' +
+                          months +
+                          '-month</b> time threshold has passed. Check every remaining condition before applying.'
+                        : 'About <b>' +
+                          monthsLeft +
+                          ' month' +
+                          (monthsLeft === 1 ? '' : 's') +
+                          '</b> remain to the <b>' +
+                          months +
+                          '-month</b> threshold. Other conditions still apply.') +
+                    '</p>';
+            };
+            resForm.addEventListener('input', renderResidency);
+            renderResidency();
+
+            const czForm = document.getElementById('citizenshipForm');
+            const czResult = document.getElementById('czResult');
+            const renderCitizenship = () => {
+                const years = Math.max(
+                    0,
+                    Number(document.getElementById('czYears').value) || 0,
+                );
+                const spouse = document.getElementById('czMarried').checked;
+                const needed = spouse ? 3 : 5;
+                const missing = [];
+                if (!document.getElementById('czGerman').checked)
+                    missing.push('B1 German evidence');
+                if (!document.getElementById('czLivelihood').checked)
+                    missing.push('the livelihood condition');
+                if (!document.getElementById('czTest').checked)
+                    missing.push('the naturalisation test or an exemption');
+                const yearsLeft = Math.max(0, needed - years);
+                const readyOnAnswers = yearsLeft === 0 && missing.length === 0;
+                czResult.classList.toggle('warn', !readyOnAnswers);
+                czResult.innerHTML =
+                    '<span class="result-kicker">Readiness snapshot</span><strong>' +
+                    (readyOnAnswers
+                        ? 'On these answers, the main boxes are checked.'
+                        : yearsLeft === 0
+                          ? 'Residence time reached; some boxes remain.'
+                          : 'You are building toward the ' +
+                            needed +
+                            '-year mark.') +
+                    '</strong><p>' +
+                    (yearsLeft > 0
+                        ? 'About <b>' +
+                          yearsLeft +
+                          ' more year' +
+                          (yearsLeft === 1 ? '' : 's') +
+                          '</b> of residence ' +
+                          (yearsLeft === 1 ? 'remains' : 'remain') +
+                          ' on this route. '
+                        : 'The stated residence threshold is reached. ') +
+                    (missing.length
+                        ? 'Still to verify: <b>' + missing.join(', ') + '</b>.'
+                        : 'An authority must still assess the full application and any exceptions.') +
+                    '</p>';
+            };
+            czForm.addEventListener('input', renderCitizenship);
+            renderCitizenship();
+        </script>
+    </body>
+</html>

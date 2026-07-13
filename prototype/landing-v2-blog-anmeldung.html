@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="description"
+            content="How to register your address in Cologne: the 14-day rule, required documents, landlord confirmation and official sources."
+        />
+        <title>Anmeldung in Cologne: the complete English guide — Expadu</title>
+        <link rel="icon" href="../public/favicon.svg" type="image/svg+xml" />
+        <style>
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-400.woff2') format('woff2');
+                font-weight: 400;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-600.woff2') format('woff2');
+                font-weight: 600;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-700.woff2') format('woff2');
+                font-weight: 700;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Fraunces';
+                src: url('../public/fonts/fraunces-500.woff2') format('woff2');
+                font-weight: 500;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist Mono';
+                src: url('../public/fonts/geist-mono-500.woff2') format('woff2');
+                font-weight: 500;
+                font-display: swap;
+            }
+            :root {
+                --paper: #f4f3ee;
+                --white: #fffefa;
+                --ink: #181b1c;
+                --muted: #666b68;
+                --line: rgba(24, 27, 28, 0.17);
+                --orange: #ff3d00;
+                --orange-dark: #b62900;
+                --orange-soft: #ffe0d3;
+                --cyan: #08a6c4;
+                --cyan-soft: #d8f4f8;
+                --green: #0d6b48;
+                --green-soft: #dff3e9;
+                --yellow: #ffd85c;
+                --sans: 'Geist', system-ui, sans-serif;
+                --serif: 'Fraunces', Georgia, serif;
+                --mono: 'Geist Mono', monospace;
+                --wrap: min(1180px, calc(100vw - 48px));
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                margin: 0;
+                background: var(--paper);
+                color: var(--ink);
+                font-family: var(--sans);
+                line-height: 1.6;
+                -webkit-font-smoothing: antialiased;
+            }
+            body.menu-open {
+                overflow: hidden;
+            }
+            button,
+            a {
+                -webkit-tap-highlight-color: transparent;
+            }
+            button {
+                font: inherit;
+            }
+            a {
+                color: inherit;
+            }
+            h1,
+            h2,
+            h3,
+            p {
+                margin-top: 0;
+            }
+            h1,
+            h2,
+            h3 {
+                text-wrap: balance;
+            }
+            :focus-visible {
+                outline: 3px solid var(--cyan);
+                outline-offset: 3px;
+            }
+            .skip-link {
+                position: fixed;
+                left: 16px;
+                top: 16px;
+                z-index: 200;
+                translate: 0 -180%;
+                border: 2px solid var(--ink);
+                border-radius: 8px;
+                background: var(--white);
+                padding: 10px 14px;
+                font-weight: 700;
+            }
+            .skip-link:focus {
+                translate: 0;
+            }
+            .wrap {
+                width: var(--wrap);
+                margin-inline: auto;
+            }
+            .mono,
+            .eyebrow {
+                font-family: var(--mono);
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 0.11em;
+                text-transform: uppercase;
+            }
+            .eyebrow {
+                display: inline-flex;
+                align-items: center;
+                gap: 9px;
+                color: var(--orange-dark);
+            }
+            .eyebrow::before {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: currentColor;
+                content: '';
+            }
+            .btn {
+                min-height: 48px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 9px;
+                border: 1px solid transparent;
+                border-radius: 999px;
+                padding: 11px 20px;
+                font-weight: 700;
+                text-decoration: none;
+            }
+            .btn-primary {
+                background: var(--orange);
+                color: var(--ink);
+                box-shadow: 0 8px 24px rgba(255, 61, 0, 0.22);
+            }
+            .btn-small {
+                min-height: 40px;
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            .site-nav {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                border-bottom: 1px solid rgba(24, 27, 28, 0.1);
+                background: rgba(244, 243, 238, 0.92);
+                backdrop-filter: blur(18px);
+            }
+            .nav-inner {
+                min-height: 72px;
+                display: flex;
+                align-items: center;
+                gap: 28px;
+            }
+            .brand {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-family: var(--serif);
+                font-size: 23px;
+                text-decoration: none;
+            }
+            .brand-mark {
+                width: 14px;
+                height: 14px;
+                position: relative;
+                border-radius: 50%;
+                background: var(--orange);
+            }
+            .brand-mark::after {
+                width: 5px;
+                height: 5px;
+                position: absolute;
+                right: -3px;
+                top: -3px;
+                border: 2px solid var(--paper);
+                border-radius: 50%;
+                background: var(--cyan);
+                content: '';
+            }
+            .nav-links {
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                margin-left: auto;
+            }
+            .nav-links a {
+                color: #454947;
+                font-size: 14px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .nav-links a[aria-current='page'] {
+                color: var(--ink);
+                text-decoration: underline;
+                text-decoration-color: var(--orange);
+                text-decoration-thickness: 3px;
+                text-underline-offset: 7px;
+            }
+            .nav-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .nav-login {
+                padding: 10px 6px;
+                font-size: 14px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .menu-toggle {
+                width: 44px;
+                height: 44px;
+                display: none;
+                place-items: center;
+                border: 1px solid var(--line);
+                border-radius: 50%;
+                background: transparent;
+            }
+            .menu-toggle svg {
+                width: 20px;
+                height: 20px;
+            }
+            .article-hero {
+                overflow: hidden;
+                border-bottom: 1px solid var(--line);
+                padding: 68px 0 62px;
+            }
+            .breadcrumb {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 42px;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .breadcrumb a {
+                font-weight: 600;
+            }
+            .article-hero h1 {
+                max-width: 1000px;
+                margin: 18px 0 24px;
+                font-size: clamp(3rem, 7vw, 7rem);
+                letter-spacing: -0.067em;
+                line-height: 0.92;
+            }
+            .dek {
+                max-width: 810px;
+                margin-bottom: 28px;
+                color: #4f5451;
+                font-family: var(--serif);
+                font-size: clamp(1.25rem, 2.2vw, 1.7rem);
+                line-height: 1.45;
+            }
+            .byline {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 9px 22px;
+                color: var(--muted);
+                font-family: var(--mono);
+                font-size: 10px;
+                letter-spacing: 0.07em;
+                text-transform: uppercase;
+            }
+            .byline .checked {
+                color: var(--green);
+            }
+            .article-layout {
+                display: grid;
+                grid-template-columns: 220px minmax(0, 720px) minmax(220px, 1fr);
+                gap: 48px;
+                padding: 66px 0 100px;
+            }
+            .toc,
+            .source-panel {
+                align-self: start;
+                position: sticky;
+                top: 110px;
+            }
+            .toc strong,
+            .source-panel strong {
+                display: block;
+                margin-bottom: 14px;
+                font-family: var(--mono);
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+            }
+            .toc a {
+                min-height: 38px;
+                display: flex;
+                align-items: center;
+                border-left: 1px solid var(--line);
+                padding: 7px 0 7px 14px;
+                color: var(--muted);
+                font-size: 13px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .toc a:hover {
+                border-color: var(--orange);
+                color: var(--ink);
+            }
+            .source-panel {
+                border: 1px solid var(--line);
+                border-radius: 16px;
+                background: var(--white);
+                padding: 18px;
+            }
+            .source-panel p {
+                margin-bottom: 12px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .source-panel a {
+                display: block;
+                margin-top: 10px;
+                color: #086e82;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .article-body {
+                min-width: 0;
+                font-size: 18px;
+                line-height: 1.75;
+            }
+            .article-body > p:first-child {
+                font-size: 21px;
+                line-height: 1.65;
+            }
+            .article-body h2 {
+                scroll-margin-top: 105px;
+                margin: 68px 0 20px;
+                font-size: clamp(2rem, 4vw, 3.4rem);
+                letter-spacing: -0.05em;
+                line-height: 1;
+            }
+            .article-body h2:first-of-type {
+                margin-top: 54px;
+            }
+            .article-body h3 {
+                margin: 34px 0 12px;
+                font-size: 23px;
+            }
+            .article-body a {
+                color: #086e82;
+                font-weight: 700;
+                text-underline-offset: 3px;
+            }
+            .article-body .btn-primary {
+                color: var(--ink);
+            }
+            .article-body li {
+                margin: 10px 0;
+                padding-left: 6px;
+            }
+            .article-body strong {
+                font-weight: 700;
+            }
+            .fact {
+                margin: 30px 0;
+                border-left: 5px solid var(--orange);
+                background: var(--orange-soft);
+                padding: 20px 22px;
+            }
+            .fact.cyan {
+                border-color: var(--cyan);
+                background: var(--cyan-soft);
+            }
+            .fact strong {
+                display: block;
+                margin-bottom: 4px;
+            }
+            .fact p {
+                margin: 0;
+            }
+            .checklist {
+                margin: 28px 0;
+                border: 1px solid var(--ink);
+                border-radius: 20px;
+                background: var(--white);
+            }
+            .checklist-head {
+                border-bottom: 1px solid var(--line);
+                padding: 16px 20px;
+                font-family: var(--mono);
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+            }
+            .check-item {
+                display: grid;
+                grid-template-columns: 28px 1fr;
+                gap: 12px;
+                border-bottom: 1px solid var(--line);
+                padding: 16px 20px;
+            }
+            .check-item:last-child {
+                border-bottom: 0;
+            }
+            .check-dot {
+                width: 22px;
+                height: 22px;
+                display: grid;
+                place-items: center;
+                border: 1px solid var(--green);
+                border-radius: 50%;
+                color: var(--green);
+                font-size: 12px;
+            }
+            .next-card {
+                margin-top: 76px;
+                border: 1px solid var(--ink);
+                border-radius: 24px;
+                background: var(--ink);
+                color: white;
+                padding: 30px;
+            }
+            .next-card .eyebrow {
+                color: #8de4f2;
+            }
+            .next-card h2 {
+                margin: 18px 0 12px;
+                font-size: clamp(2rem, 4vw, 3rem);
+            }
+            .next-card p {
+                color: #bdc5c2;
+            }
+            .next-card .btn {
+                margin-top: 8px;
+            }
+            .site-footer {
+                border-top: 1px solid var(--line);
+                padding: 42px 0;
+            }
+            .footer-inner {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 28px;
+            }
+            .footer-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px 22px;
+            }
+            .footer-links a {
+                color: var(--muted);
+                font-size: 14px;
+                font-weight: 600;
+            }
+            @media (max-width: 1050px) {
+                .article-layout {
+                    grid-template-columns: minmax(0, 720px) minmax(220px, 1fr);
+                }
+                .toc {
+                    display: none;
+                }
+            }
+            @media (max-width: 800px) {
+                :root {
+                    --wrap: min(100% - 32px, 720px);
+                }
+                .nav-links {
+                    display: none;
+                    position: fixed;
+                    inset: 72px 0 auto;
+                    z-index: 90;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 0;
+                    border-bottom: 1px solid var(--line);
+                    background: var(--paper);
+                    padding: 18px 16px 24px;
+                }
+                .nav-links.open {
+                    display: flex;
+                }
+                .nav-links a {
+                    min-height: 48px;
+                    display: flex;
+                    align-items: center;
+                    padding: 8px 12px;
+                }
+                .menu-toggle {
+                    display: grid;
+                    margin-left: auto;
+                }
+                .nav-login {
+                    display: none;
+                }
+                .article-layout {
+                    grid-template-columns: 1fr;
+                }
+                .source-panel {
+                    position: static;
+                    order: 2;
+                }
+            }
+            @media (max-width: 600px) {
+                .nav-actions .btn {
+                    padding-inline: 14px;
+                }
+                .article-hero {
+                    padding: 42px 0 48px;
+                }
+                .breadcrumb {
+                    margin-bottom: 30px;
+                }
+                .article-hero h1 {
+                    font-size: clamp(3rem, 15vw, 4.7rem);
+                }
+                .article-layout {
+                    gap: 38px;
+                    padding: 48px 0 72px;
+                }
+                .article-body {
+                    font-size: 17px;
+                }
+                .footer-inner {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                html {
+                    scroll-behavior: auto;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
+        <nav class="site-nav" aria-label="Main navigation">
+            <div class="wrap nav-inner">
+                <a class="brand" href="landing-v2.html" aria-label="Expadu home"
+                    ><span class="brand-mark" aria-hidden="true"></span
+                    >Expadu</a
+                >
+                <div class="nav-links" id="navLinks">
+                    <a href="landing-v2.html#companion">How it works</a
+                    ><a href="landing-v2.html#proof">Inside the app</a
+                    ><a href="landing-v2-tools.html">Free tools</a
+                    ><a href="landing-v2-blog.html" aria-current="page"
+                        >Guides</a
+                    >
+                </div>
+                <button
+                    class="menu-toggle"
+                    id="menuToggle"
+                    type="button"
+                    aria-controls="navLinks"
+                    aria-expanded="false"
+                    aria-label="Open navigation"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 7h16M4 12h16M4 17h16"></path>
+                    </svg>
+                </button>
+                <div class="nav-actions">
+                    <a class="nav-login" href="https://app.expadu.com/login"
+                        >Log in</a
+                    ><a
+                        class="btn btn-primary btn-small"
+                        href="https://app.expadu.com/register"
+                        >Start free <span aria-hidden="true">→</span></a
+                    >
+                </div>
+            </div>
+        </nav>
+
+        <main id="main">
+            <header class="article-hero">
+                <div class="wrap">
+                    <nav class="breadcrumb" aria-label="Breadcrumb">
+                        <a href="landing-v2-blog.html">Guides</a
+                        ><span aria-hidden="true">/</span><span>Paperwork</span>
+                    </nav>
+                    <span class="eyebrow">The complete English guide</span>
+                    <h1>Anmeldung in Cologne.</h1>
+                    <p class="dek">
+                        The 14-day rule, the landlord form everyone forgets,
+                        exactly what to bring—and what your registration unlocks
+                        next.
+                    </p>
+                    <div class="byline">
+                        <span>8 min read</span
+                        ><span>By Anar · expat in Cologne</span
+                        ><span class="checked"
+                            >Official sources checked 13 July 2026</span
+                        >
+                    </div>
+                </div>
+            </header>
+
+            <div class="wrap article-layout">
+                <nav class="toc" aria-label="On this page">
+                    <strong>On this page</strong><a href="#rule">The rule</a
+                    ><a href="#bring">What to bring</a
+                    ><a href="#landlord">The landlord form</a
+                    ><a href="#appointment">The appointment</a
+                    ><a href="#after">What happens after</a
+                    ><a href="#moving">Moving later</a>
+                </nav>
+
+                <article class="article-body">
+                    <p>
+                        If you do one piece of paperwork in your first two weeks
+                        in Germany, make it this one.
+                        <strong>Anmeldung</strong> means registering the address
+                        where you live. It creates the official address record
+                        that many later steps depend on.
+                    </p>
+
+                    <h2 id="rule">The rule: 14 days after moving in</h2>
+                    <p>
+                        German registration law says you should register within
+                        <strong>two weeks of moving into the home</strong>. The
+                        clock starts on the move-in date—not the date your
+                        flight landed.
+                    </p>
+                    <div class="fact">
+                        <strong
+                            >No appointment available within 14 days?</strong
+                        >
+                        <p>
+                            Book the earliest appointment you can and keep the
+                            confirmation. The statute sets the deadline; the
+                            city controls appointment capacity. This guide
+                            cannot promise how an individual delay will be
+                            treated.
+                        </p>
+                    </div>
+                    <p>
+                        The law allows administrative fines for registration
+                        violations. That is a reason to act promptly, not a
+                        reason to panic or rely on internet stories about what
+                        “usually” happens.
+                    </p>
+
+                    <h2 id="bring">What to bring</h2>
+                    <p>
+                        For a straightforward address registration, start with
+                        this compact set:
+                    </p>
+                    <div class="checklist">
+                        <div class="checklist-head">Appointment checklist</div>
+                        <div class="check-item">
+                            <span class="check-dot">✓</span
+                            ><span
+                                ><strong
+                                    >Passport or recognised identity
+                                    document</strong
+                                ><br />For every person being registered.</span
+                            >
+                        </div>
+                        <div class="check-item">
+                            <span class="check-dot">✓</span
+                            ><span
+                                ><strong>Wohnungsgeberbestätigung</strong
+                                ><br />The separate move-in confirmation signed
+                                by the housing provider.</span
+                            >
+                        </div>
+                        <div class="check-item">
+                            <span class="check-dot">✓</span
+                            ><span
+                                ><strong
+                                    >Completed registration form, if
+                                    requested</strong
+                                ><br />Check Cologne's current service page
+                                before the appointment.</span
+                            >
+                        </div>
+                    </div>
+                    <p>
+                        If you register family members, the office can require
+                        additional civil-status documents. Check the official
+                        service page for your situation and bring originals
+                        where required.
+                    </p>
+
+                    <h2 id="landlord">
+                        The trap: your rental contract is not the landlord form
+                    </h2>
+                    <p>
+                        The <strong>Wohnungsgeberbestätigung</strong> is a
+                        separate legal confirmation of move-in. It normally
+                        states the housing provider, address, names of the
+                        people moving in and the move-in date.
+                    </p>
+                    <div class="fact cyan">
+                        <strong>Ask before appointment day.</strong>
+                        <p>
+                            If you sublet, the “housing provider” may be the
+                            main tenant rather than the property owner. What
+                            matters is a valid confirmation from the person
+                            providing the home.
+                        </p>
+                    </div>
+                    <p>
+                        A rental contract can help explain the arrangement, but
+                        it does not replace the required confirmation. Missing
+                        this paper is one of the most avoidable ways to leave
+                        without completing the registration.
+                    </p>
+
+                    <h2 id="appointment">
+                        Booking and attending the appointment
+                    </h2>
+                    <p>
+                        Cologne handles address registration through its
+                        Kundenzentren. Use the city's
+                        <a
+                            href="https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung"
+                            target="_blank"
+                            rel="noopener"
+                            >official Anmeldung service page</a
+                        >
+                        to check the current process, forms and booking link.
+                    </p>
+                    <ul>
+                        <li>
+                            Look across the city's available Kundenzentren
+                            rather than assuming only your neighbourhood office
+                            can help.
+                        </li>
+                        <li>
+                            Recheck availability if the calendar is full;
+                            cancelled appointments can reappear.
+                        </li>
+                        <li>
+                            Read the booking confirmation before you travel. It
+                            is the current instruction for your appointment.
+                        </li>
+                    </ul>
+                    <p>
+                        Address registration itself is listed by Cologne as
+                        free. Ask for and keep the confirmation produced at the
+                        appointment.
+                    </p>
+
+                    <h2 id="after">What happens after</h2>
+                    <p>
+                        Your <strong>Meldebestätigung</strong> proves the
+                        registration. Store it somewhere you can retrieve it;
+                        employers, authorities and service providers may ask for
+                        address evidence.
+                    </p>
+                    <p>
+                        After a first registration in Germany, the Federal
+                        Central Tax Office generally sends your
+                        <strong>tax identification number</strong> to the
+                        registered address. If you already had a tax ID, you
+                        keep the same number for life.
+                    </p>
+                    <div class="fact">
+                        <strong>Do not bin official-looking mail.</strong>
+                        <p>
+                            German administrative letters are not designed like
+                            welcome packs. Open and translate them before
+                            deciding they are irrelevant.
+                        </p>
+                    </div>
+
+                    <h2 id="moving">Moving again later</h2>
+                    <p>
+                        A move to another German address triggers another
+                        registration at the new address. You normally deregister
+                        actively when leaving Germany without moving into
+                        another home in Germany—not for an ordinary move from
+                        one Cologne flat to another.
+                    </p>
+
+                    <section class="next-card">
+                        <span class="eyebrow">Next guide</span>
+                        <h2>Now put the rest in order.</h2>
+                        <p>
+                            See the dependency chain for health insurance, tax
+                            ID, permits, banking and the quiet obligations in
+                            your first three months.
+                        </p>
+                        <a
+                            class="btn btn-primary"
+                            href="landing-v2-blog-first-90-days.html"
+                            >Your first 90 days
+                            <span aria-hidden="true">→</span></a
+                        >
+                    </section>
+                </article>
+
+                <aside class="source-panel">
+                    <strong>Source ledger</strong>
+                    <p>
+                        Claims on this page were checked against primary public
+                        sources in July 2026.
+                    </p>
+                    <a
+                        href="https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung"
+                        target="_blank"
+                        rel="noopener"
+                        >Stadt Köln · Anmeldung</a
+                    ><a
+                        href="https://www.gesetze-im-internet.de/bmg/__17.html"
+                        target="_blank"
+                        rel="noopener"
+                        >§17 BMG · Registration</a
+                    ><a
+                        href="https://www.gesetze-im-internet.de/bmg/__19.html"
+                        target="_blank"
+                        rel="noopener"
+                        >§19 BMG · Housing provider</a
+                    ><a
+                        href="https://www.bzst.de/DE/Privatpersonen/SteuerlicheIdentifikationsnummer/steuerlicheidentifikationsnummer_node.html"
+                        target="_blank"
+                        rel="noopener"
+                        >BZSt · Tax ID</a
+                    >
+                </aside>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="wrap footer-inner">
+                <a class="brand" href="landing-v2.html"
+                    ><span class="brand-mark" aria-hidden="true"></span
+                    >Expadu</a
+                >
+                <div class="footer-links">
+                    <a href="landing-v2.html">Landing</a
+                    ><a href="landing-v2-tools.html">Free tools</a
+                    ><a href="landing-v2-blog.html">All guides</a
+                    ><a href="https://app.expadu.com/register">Start free</a>
+                </div>
+            </div>
+        </footer>
+        <script>
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.getElementById('navLinks');
+            menuToggle.addEventListener('click', () => {
+                const open = navLinks.classList.toggle('open');
+                menuToggle.setAttribute('aria-expanded', String(open));
+                menuToggle.setAttribute(
+                    'aria-label',
+                    open ? 'Close navigation' : 'Open navigation',
+                );
+                document.body.classList.toggle('menu-open', open);
+            });
+            navLinks.addEventListener('click', () => {
+                navLinks.classList.remove('open');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('menu-open');
+            });
+        </script>
+    </body>
+</html>

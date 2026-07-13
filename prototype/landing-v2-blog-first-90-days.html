@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="description"
+            content="A source-checked, ordered checklist for your first 90 days in Cologne: before you fly, registration, insurance, tax ID, permits and everyday obligations."
+        />
+        <title>Your first 90 days in Cologne, in order — Expadu</title>
+        <link rel="icon" href="../public/favicon.svg" type="image/svg+xml" />
+        <style>
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-400.woff2') format('woff2');
+                font-weight: 400;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-600.woff2') format('woff2');
+                font-weight: 600;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist';
+                src: url('../public/fonts/geist-700.woff2') format('woff2');
+                font-weight: 700;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Fraunces';
+                src: url('../public/fonts/fraunces-500.woff2') format('woff2');
+                font-weight: 500;
+                font-display: swap;
+            }
+            @font-face {
+                font-family: 'Geist Mono';
+                src: url('../public/fonts/geist-mono-500.woff2') format('woff2');
+                font-weight: 500;
+                font-display: swap;
+            }
+            :root {
+                --paper: #f4f3ee;
+                --white: #fffefa;
+                --ink: #181b1c;
+                --muted: #666b68;
+                --line: rgba(24, 27, 28, 0.17);
+                --orange: #ff3d00;
+                --orange-dark: #b62900;
+                --orange-soft: #ffe0d3;
+                --cyan: #08a6c4;
+                --cyan-soft: #d8f4f8;
+                --green: #0d6b48;
+                --green-soft: #dff3e9;
+                --yellow: #ffd85c;
+                --sans: 'Geist', system-ui, sans-serif;
+                --serif: 'Fraunces', Georgia, serif;
+                --mono: 'Geist Mono', monospace;
+                --wrap: min(1180px, calc(100vw - 48px));
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                margin: 0;
+                background: var(--paper);
+                color: var(--ink);
+                font-family: var(--sans);
+                line-height: 1.6;
+                -webkit-font-smoothing: antialiased;
+            }
+            body.menu-open {
+                overflow: hidden;
+            }
+            button,
+            a {
+                -webkit-tap-highlight-color: transparent;
+            }
+            button {
+                font: inherit;
+            }
+            a {
+                color: inherit;
+            }
+            h1,
+            h2,
+            h3,
+            p {
+                margin-top: 0;
+            }
+            h1,
+            h2,
+            h3 {
+                text-wrap: balance;
+            }
+            :focus-visible {
+                outline: 3px solid var(--cyan);
+                outline-offset: 3px;
+            }
+            .skip-link {
+                position: fixed;
+                left: 16px;
+                top: 16px;
+                z-index: 200;
+                translate: 0 -180%;
+                border: 2px solid var(--ink);
+                border-radius: 8px;
+                background: var(--white);
+                padding: 10px 14px;
+                font-weight: 700;
+            }
+            .skip-link:focus {
+                translate: 0;
+            }
+            .wrap {
+                width: var(--wrap);
+                margin-inline: auto;
+            }
+            .mono,
+            .eyebrow {
+                font-family: var(--mono);
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 0.11em;
+                text-transform: uppercase;
+            }
+            .eyebrow {
+                display: inline-flex;
+                align-items: center;
+                gap: 9px;
+                color: var(--orange-dark);
+            }
+            .eyebrow::before {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: currentColor;
+                content: '';
+            }
+            .btn {
+                min-height: 48px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 9px;
+                border: 1px solid transparent;
+                border-radius: 999px;
+                padding: 11px 20px;
+                font-weight: 700;
+                text-decoration: none;
+            }
+            .btn-primary {
+                background: var(--orange);
+                color: var(--ink);
+                box-shadow: 0 8px 24px rgba(255, 61, 0, 0.22);
+            }
+            .btn-small {
+                min-height: 40px;
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            .site-nav {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                border-bottom: 1px solid rgba(24, 27, 28, 0.1);
+                background: rgba(244, 243, 238, 0.92);
+                backdrop-filter: blur(18px);
+            }
+            .nav-inner {
+                min-height: 72px;
+                display: flex;
+                align-items: center;
+                gap: 28px;
+            }
+            .brand {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-family: var(--serif);
+                font-size: 23px;
+                text-decoration: none;
+            }
+            .brand-mark {
+                width: 14px;
+                height: 14px;
+                position: relative;
+                border-radius: 50%;
+                background: var(--orange);
+            }
+            .brand-mark::after {
+                width: 5px;
+                height: 5px;
+                position: absolute;
+                right: -3px;
+                top: -3px;
+                border: 2px solid var(--paper);
+                border-radius: 50%;
+                background: var(--cyan);
+                content: '';
+            }
+            .nav-links {
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                margin-left: auto;
+            }
+            .nav-links a {
+                color: #454947;
+                font-size: 14px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .nav-links a[aria-current='page'] {
+                color: var(--ink);
+                text-decoration: underline;
+                text-decoration-color: var(--orange);
+                text-decoration-thickness: 3px;
+                text-underline-offset: 7px;
+            }
+            .nav-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .nav-login {
+                padding: 10px 6px;
+                font-size: 14px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .menu-toggle {
+                width: 44px;
+                height: 44px;
+                display: none;
+                place-items: center;
+                border: 1px solid var(--line);
+                border-radius: 50%;
+                background: transparent;
+            }
+            .menu-toggle svg {
+                width: 20px;
+                height: 20px;
+            }
+            .article-hero {
+                overflow: hidden;
+                border-bottom: 1px solid var(--line);
+                padding: 68px 0 62px;
+            }
+            .breadcrumb {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 42px;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .breadcrumb a {
+                font-weight: 600;
+            }
+            .article-hero h1 {
+                max-width: 1080px;
+                margin: 18px 0 24px;
+                font-size: clamp(3rem, 7vw, 7rem);
+                letter-spacing: -0.067em;
+                line-height: 0.92;
+            }
+            .article-hero h1 em {
+                color: var(--orange);
+                font-family: var(--serif);
+                font-weight: 500;
+            }
+            .dek {
+                max-width: 820px;
+                margin-bottom: 28px;
+                color: #4f5451;
+                font-family: var(--serif);
+                font-size: clamp(1.25rem, 2.2vw, 1.7rem);
+                line-height: 1.45;
+            }
+            .byline {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 9px 22px;
+                color: var(--muted);
+                font-family: var(--mono);
+                font-size: 10px;
+                letter-spacing: 0.07em;
+                text-transform: uppercase;
+            }
+            .byline .checked {
+                color: var(--green);
+            }
+            .article-layout {
+                display: grid;
+                grid-template-columns: 220px minmax(0, 720px) minmax(220px, 1fr);
+                gap: 48px;
+                padding: 66px 0 100px;
+            }
+            .toc,
+            .source-panel {
+                align-self: start;
+                position: sticky;
+                top: 110px;
+            }
+            .toc strong,
+            .source-panel strong {
+                display: block;
+                margin-bottom: 14px;
+                font-family: var(--mono);
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+            }
+            .toc a {
+                min-height: 38px;
+                display: flex;
+                align-items: center;
+                border-left: 1px solid var(--line);
+                padding: 7px 0 7px 14px;
+                color: var(--muted);
+                font-size: 13px;
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .toc a:hover {
+                border-color: var(--orange);
+                color: var(--ink);
+            }
+            .source-panel {
+                border: 1px solid var(--line);
+                border-radius: 16px;
+                background: var(--white);
+                padding: 18px;
+            }
+            .source-panel p {
+                margin-bottom: 12px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .source-panel a {
+                display: block;
+                margin-top: 10px;
+                color: #086e82;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .article-body {
+                min-width: 0;
+                font-size: 18px;
+                line-height: 1.75;
+            }
+            .article-body > p:first-child {
+                font-size: 21px;
+                line-height: 1.65;
+            }
+            .article-body h2 {
+                scroll-margin-top: 105px;
+                margin: 68px 0 20px;
+                font-size: clamp(2rem, 4vw, 3.4rem);
+                letter-spacing: -0.05em;
+                line-height: 1;
+            }
+            .article-body h2:first-of-type {
+                margin-top: 54px;
+            }
+            .article-body h3 {
+                margin: 34px 0 12px;
+                font-size: 23px;
+            }
+            .article-body a {
+                color: #086e82;
+                font-weight: 700;
+                text-underline-offset: 3px;
+            }
+            .article-body .btn-primary {
+                color: var(--ink);
+            }
+            .article-body li {
+                margin: 10px 0;
+                padding-left: 6px;
+            }
+            .fact {
+                margin: 30px 0;
+                border-left: 5px solid var(--orange);
+                background: var(--orange-soft);
+                padding: 20px 22px;
+            }
+            .fact.cyan {
+                border-color: var(--cyan);
+                background: var(--cyan-soft);
+            }
+            .fact strong {
+                display: block;
+                margin-bottom: 4px;
+            }
+            .fact p {
+                margin: 0;
+            }
+            .timeline {
+                margin: 34px 0;
+                border-block: 1px solid var(--ink);
+            }
+            .timeline-row {
+                display: grid;
+                grid-template-columns: 130px 1fr;
+                gap: 22px;
+                border-bottom: 1px solid var(--line);
+                padding: 20px 0;
+            }
+            .timeline-row:last-child {
+                border-bottom: 0;
+            }
+            .timeline-row > strong {
+                color: var(--orange-dark);
+                font-family: var(--mono);
+                font-size: 11px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            .timeline-row p {
+                margin: 0;
+            }
+            .next-card {
+                margin-top: 76px;
+                border: 1px solid var(--ink);
+                border-radius: 24px;
+                background: var(--ink);
+                color: white;
+                padding: 30px;
+            }
+            .next-card .eyebrow {
+                color: #8de4f2;
+            }
+            .next-card h2 {
+                margin: 18px 0 12px;
+                font-size: clamp(2rem, 4vw, 3rem);
+            }
+            .next-card p {
+                color: #bdc5c2;
+            }
+            .next-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 18px;
+            }
+            .next-actions .btn:last-child {
+                border-color: rgba(255, 255, 255, 0.35);
+                color: white;
+            }
+            .site-footer {
+                border-top: 1px solid var(--line);
+                padding: 42px 0;
+            }
+            .footer-inner {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 28px;
+            }
+            .footer-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px 22px;
+            }
+            .footer-links a {
+                color: var(--muted);
+                font-size: 14px;
+                font-weight: 600;
+            }
+            @media (max-width: 1050px) {
+                .article-layout {
+                    grid-template-columns: minmax(0, 720px) minmax(220px, 1fr);
+                }
+                .toc {
+                    display: none;
+                }
+            }
+            @media (max-width: 800px) {
+                :root {
+                    --wrap: min(100% - 32px, 720px);
+                }
+                .nav-links {
+                    display: none;
+                    position: fixed;
+                    inset: 72px 0 auto;
+                    z-index: 90;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 0;
+                    border-bottom: 1px solid var(--line);
+                    background: var(--paper);
+                    padding: 18px 16px 24px;
+                }
+                .nav-links.open {
+                    display: flex;
+                }
+                .nav-links a {
+                    min-height: 48px;
+                    display: flex;
+                    align-items: center;
+                    padding: 8px 12px;
+                }
+                .menu-toggle {
+                    display: grid;
+                    margin-left: auto;
+                }
+                .nav-login {
+                    display: none;
+                }
+                .article-layout {
+                    grid-template-columns: 1fr;
+                }
+                .source-panel {
+                    position: static;
+                    order: 2;
+                }
+            }
+            @media (max-width: 600px) {
+                .nav-actions .btn {
+                    padding-inline: 14px;
+                }
+                .article-hero {
+                    padding: 42px 0 48px;
+                }
+                .breadcrumb {
+                    margin-bottom: 30px;
+                }
+                .article-hero h1 {
+                    font-size: clamp(3rem, 15vw, 4.7rem);
+                }
+                .article-layout {
+                    gap: 38px;
+                    padding: 48px 0 72px;
+                }
+                .article-body {
+                    font-size: 17px;
+                }
+                .timeline-row {
+                    grid-template-columns: 1fr;
+                    gap: 6px;
+                }
+                .footer-inner {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                html {
+                    scroll-behavior: auto;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
+        <nav class="site-nav" aria-label="Main navigation">
+            <div class="wrap nav-inner">
+                <a class="brand" href="landing-v2.html" aria-label="Expadu home"
+                    ><span class="brand-mark" aria-hidden="true"></span
+                    >Expadu</a
+                >
+                <div class="nav-links" id="navLinks">
+                    <a href="landing-v2.html#companion">How it works</a
+                    ><a href="landing-v2.html#proof">Inside the app</a
+                    ><a href="landing-v2-tools.html">Free tools</a
+                    ><a href="landing-v2-blog.html" aria-current="page"
+                        >Guides</a
+                    >
+                </div>
+                <button
+                    class="menu-toggle"
+                    id="menuToggle"
+                    type="button"
+                    aria-controls="navLinks"
+                    aria-expanded="false"
+                    aria-label="Open navigation"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 7h16M4 12h16M4 17h16"></path>
+                    </svg>
+                </button>
+                <div class="nav-actions">
+                    <a class="nav-login" href="https://app.expadu.com/login"
+                        >Log in</a
+                    ><a
+                        class="btn btn-primary btn-small"
+                        href="https://app.expadu.com/register"
+                        >Start free <span aria-hidden="true">→</span></a
+                    >
+                </div>
+            </div>
+        </nav>
+
+        <main id="main">
+            <header class="article-hero">
+                <div class="wrap">
+                    <nav class="breadcrumb" aria-label="Breadcrumb">
+                        <a href="landing-v2-blog.html">Guides</a
+                        ><span aria-hidden="true">/</span
+                        ><span>Start here</span>
+                    </nav>
+                    <span class="eyebrow">The ordered newcomer checklist</span>
+                    <h1>Your first 90 days in Cologne, <em>in order.</em></h1>
+                    <p class="dek">
+                        German paperwork is a dependency chain. This is the
+                        sequence that keeps one missing document from blocking
+                        the next three steps.
+                    </p>
+                    <div class="byline">
+                        <span>10 min read</span
+                        ><span>By Anar · expat in Cologne</span
+                        ><span class="checked"
+                            >Official sources checked 13 July 2026</span
+                        >
+                    </div>
+                </div>
+            </header>
+
+            <div class="wrap article-layout">
+                <nav class="toc" aria-label="On this page">
+                    <strong>On this page</strong
+                    ><a href="#before">Before you fly</a
+                    ><a href="#days-1-14">Days 1–14</a
+                    ><a href="#weeks-1-3">Weeks 1–3</a
+                    ><a href="#weeks-2-8">Weeks 2–8</a
+                    ><a href="#months-1-3">Months 1–3</a
+                    ><a href="#after">After 90 days</a>
+                </nav>
+
+                <article class="article-body">
+                    <p>
+                        Most newcomer checklists are a pile of tasks. But the
+                        order matters: your registered address drives official
+                        mail; health-insurance evidence matters for work, study
+                        and many residence routes; permit timing depends on your
+                        current status.
+                    </p>
+                    <div class="timeline" aria-label="First 90 days overview">
+                        <div class="timeline-row">
+                            <strong>Before travel</strong>
+                            <p>
+                                Secure identity and civil-status documents,
+                                translations where needed, and an address you
+                                can actually register.
+                            </p>
+                        </div>
+                        <div class="timeline-row">
+                            <strong>Days 1–14</strong>
+                            <p>
+                                Register your address and protect the documents
+                                produced by the appointment.
+                            </p>
+                        </div>
+                        <div class="timeline-row">
+                            <strong>Weeks 1–8</strong>
+                            <p>
+                                Connect health insurance, tax, banking and any
+                                necessary residence application.
+                            </p>
+                        </div>
+                        <div class="timeline-row">
+                            <strong>Months 1–3</strong>
+                            <p>
+                                Handle household obligations, insurance
+                                decisions and the transit setup that fits your
+                                routine.
+                            </p>
+                        </div>
+                    </div>
+
+                    <h2 id="before">Before you fly</h2>
+                    <ul>
+                        <li>
+                            <strong>Check passport validity.</strong> A short
+                            remaining validity can limit the period of a visa or
+                            residence document.
+                        </li>
+                        <li>
+                            <strong
+                                >Bring the originals that are hard to
+                                replace.</strong
+                            >
+                            Depending on your route: birth and marriage
+                            certificates, qualifications, admission or
+                            employment documents, and financial evidence.
+                        </li>
+                        <li>
+                            <strong
+                                >Check translation and legalisation
+                                requirements.</strong
+                            >
+                            Do not assume an English original is accepted for
+                            every procedure.
+                        </li>
+                        <li>
+                            <strong>Line up a registrable address.</strong> A
+                            signed lease alone is not the same as the
+                            Wohnungsgeberbestätigung needed for Anmeldung.
+                        </li>
+                    </ul>
+                    <div class="fact">
+                        <strong
+                            >Your situation changes the document pack.</strong
+                        >
+                        <p>
+                            A student, employee, EU citizen, Blue Card holder
+                            and accompanying family do not share one universal
+                            checklist. Use the authority page for your exact
+                            route.
+                        </p>
+                    </div>
+
+                    <h2 id="days-1-14">Days 1–14: register the address</h2>
+                    <p>
+                        Register after moving into the home. You normally need
+                        identity documents and the separate confirmation from
+                        the housing provider. Cologne's service page is the
+                        current source for booking, forms and local
+                        requirements.
+                    </p>
+                    <p>
+                        Read our
+                        <a href="landing-v2-blog-anmeldung.html"
+                            >complete English Anmeldung guide</a
+                        >
+                        before the appointment. It covers the landlord-form trap
+                        and what to keep afterwards.
+                    </p>
+                    <div class="fact cyan">
+                        <strong>The dependency this unlocks</strong>
+                        <p>
+                            Your registered address becomes the delivery point
+                            for official mail, including the tax identification
+                            number after a first registration in Germany.
+                        </p>
+                    </div>
+
+                    <h2 id="weeks-1-3">Weeks 1–3: health, tax and money</h2>
+                    <h3>1. Make your health-insurance status explicit</h3>
+                    <p>
+                        Health insurance is mandatory in Germany, but the right
+                        path depends on whether you are employed, studying,
+                        self-employed, privately insured or covered through
+                        family. Ask the insurer for the evidence your employer,
+                        university or authority needs.
+                    </p>
+                    <h3>2. Watch for your tax ID</h3>
+                    <p>
+                        After your first registration, the Federal Central Tax
+                        Office sends the tax ID to your registered address. You
+                        keep this number for life. If it does not arrive, use
+                        the BZSt process rather than applying for a “new”
+                        number.
+                    </p>
+                    <h3>3. Choose banking for the life you actually have</h3>
+                    <p>
+                        Account-opening requirements vary by bank. Compare
+                        identity checks, fees, cash access, language support and
+                        whether your employer or landlord needs a particular
+                        account function. Do not let an influencer's referral
+                        code choose your financial setup.
+                    </p>
+
+                    <h2 id="weeks-2-8">
+                        Weeks 2–8: residence status, if you need it
+                    </h2>
+                    <p>
+                        EU/EEA citizens do not need a German residence permit
+                        for free-movement residence. Other newcomers should work
+                        backwards from the expiry and conditions of their
+                        current visa or status.
+                    </p>
+                    <ul>
+                        <li>
+                            Identify the exact route—employment, EU Blue Card,
+                            study, family or self-employment.
+                        </li>
+                        <li>
+                            Use Cologne's official immigration-office
+                            instructions for the correct application channel and
+                            document list.
+                        </li>
+                        <li>
+                            Submit in time. Do not assume a distant appointment
+                            date and a submitted application are legally the
+                            same thing.
+                        </li>
+                        <li>
+                            Keep proof of submission and read any interim
+                            document for its precise work and travel conditions.
+                        </li>
+                    </ul>
+                    <p>
+                        For orientation: the 2026 EU Blue Card salary thresholds
+                        are route-specific and updated annually. Use the
+                        <a
+                            href="https://www.make-it-in-germany.com/en/visa-residence/types/eu-blue-card"
+                            target="_blank"
+                            rel="noopener"
+                            >current federal portal</a
+                        >, not an old blog screenshot.
+                    </p>
+
+                    <h2 id="months-1-3">Months 1–3: the quiet obligations</h2>
+                    <h3>Broadcast contribution</h3>
+                    <p>
+                        The Rundfunkbeitrag is organised per dwelling, not per
+                        person. When a household member already pays, you
+                        normally provide that contribution number rather than
+                        creating a second payment. Check the current official
+                        amount and rules directly.
+                    </p>
+                    <h3>Personal liability insurance</h3>
+                    <p>
+                        Private Haftpflicht is not generally mandatory, but it
+                        covers a category of everyday liability risk that can
+                        become expensive quickly. Compare exclusions, coverage
+                        limits and whether partners or children are included.
+                    </p>
+                    <h3>Transit</h3>
+                    <p>
+                        The Deutschlandticket costs €63 per month in 2026 and
+                        covers participating local and regional public transport
+                        nationwide—not long-distance ICE, IC or EC services. Use
+                        the
+                        <a href="landing-v2-tools.html#dticket"
+                            >local break-even calculator</a
+                        >
+                        with your real weekly trips.
+                    </p>
+
+                    <h2 id="after">After 90 days: build the longer plan</h2>
+                    <p>
+                        Once the urgent dependencies are stable, record the
+                        dates that matter later: passport expiry, permit expiry,
+                        qualification milestones and the start of a residence
+                        track. The permanent-residence threshold differs by
+                        route.
+                    </p>
+                    <p>
+                        Our
+                        <a href="landing-v2-tools.html#residency"
+                            >permanent-residence timeline</a
+                        >
+                        gives you the date math and, just as importantly, shows
+                        what the calculator cannot verify.
+                    </p>
+                    <div class="fact">
+                        <strong>The honest caveat</strong>
+                        <p>
+                            This order is a framework, not your personal legal
+                            decision tree. Family, citizenship, employment,
+                            benefits, previous residence and the exact permit
+                            can move or add steps.
+                        </p>
+                    </div>
+
+                    <section class="next-card">
+                        <span class="eyebrow">Turn the guide into a plan</span>
+                        <h2>Your circumstances should change the checklist.</h2>
+                        <p>
+                            Expadu connects the official rules to your
+                            situation, records the dates and keeps the next
+                            action visible.
+                        </p>
+                        <div class="next-actions">
+                            <a
+                                class="btn btn-primary"
+                                href="https://app.expadu.com/register"
+                                >Start free <span aria-hidden="true">→</span></a
+                            ><a class="btn" href="landing-v2-tools.html"
+                                >Use the free tools</a
+                            >
+                        </div>
+                    </section>
+                </article>
+
+                <aside class="source-panel">
+                    <strong>Source ledger</strong>
+                    <p>
+                        Claims on this page were checked against primary public
+                        sources in July 2026.
+                    </p>
+                    <a
+                        href="https://www.stadt-koeln.de/service/"
+                        target="_blank"
+                        rel="noopener"
+                        >Stadt Köln · Service portal</a
+                    ><a
+                        href="https://www.gesetze-im-internet.de/bmg/__17.html"
+                        target="_blank"
+                        rel="noopener"
+                        >§17 BMG · Registration</a
+                    ><a
+                        href="https://www.bzst.de/DE/Privatpersonen/SteuerlicheIdentifikationsnummer/steuerlicheidentifikationsnummer_node.html"
+                        target="_blank"
+                        rel="noopener"
+                        >BZSt · Tax ID</a
+                    ><a
+                        href="https://www.make-it-in-germany.com/en/visa-residence"
+                        target="_blank"
+                        rel="noopener"
+                        >Federal portal · Residence</a
+                    ><a
+                        href="https://www.rundfunkbeitrag.de/"
+                        target="_blank"
+                        rel="noopener"
+                        >Rundfunkbeitrag</a
+                    ><a
+                        href="https://int.bahn.de/en/offers/regional/deutschland-ticket"
+                        target="_blank"
+                        rel="noopener"
+                        >Deutsche Bahn · D-Ticket</a
+                    >
+                </aside>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="wrap footer-inner">
+                <a class="brand" href="landing-v2.html"
+                    ><span class="brand-mark" aria-hidden="true"></span
+                    >Expadu</a
+                >
+                <div class="footer-links">
+                    <a href="landing-v2.html">Landing</a
+                    ><a href="landing-v2-tools.html">Free tools</a
+                    ><a href="landing-v2-blog.html">All guides</a
+                    ><a href="https://app.expadu.com/register">Start free</a>
+                </div>
+            </div>
+        </footer>
+        <script>
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.getElementById('navLinks');
+            menuToggle.addEventListener('click', () => {
+                const open = navLinks.classList.toggle('open');
+                menuToggle.setAttribute('aria-expanded', String(open));
+                menuToggle.setAttribute(
+                    'aria-label',
+                    open ? 'Close navigation' : 'Open navigation',
+                );
+                document.body.classList.toggle('menu-open', open);
+            });
+            navLinks.addEventListener('click', () => {
+                navLinks.classList.remove('open');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('menu-open');
+            });
+        </script>
+    </body>
+</html>
