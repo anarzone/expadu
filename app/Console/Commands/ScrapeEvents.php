@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ProcessEventJob;
+use App\Media\CaptureMediaCandidate;
+use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -16,7 +18,7 @@ class ScrapeEvents extends Command
 
     protected $description = 'Scrape events from external sources and create Event records';
 
-    public function handle(): int
+    public function handle(CaptureMediaCandidate $captureMediaCandidate): int
     {
         $systemUser = User::where('email', 'system@expadu.com')->first();
         if (! $systemUser) {
@@ -30,7 +32,7 @@ class ScrapeEvents extends Command
         // Recurring community events live in the manual source now
         // (events:import-manual) as single RRULE records — the old
         // per-week duplicate templates are gone.
-        $koelnCount = $this->scrapeKoelnDe($systemUser->id);
+        $koelnCount = $this->scrapeKoelnDe($systemUser->id, $captureMediaCandidate);
         $created += $koelnCount;
         $this->info("koeln.de events: {$koelnCount} created");
 
@@ -46,7 +48,7 @@ class ScrapeEvents extends Command
      * Fetch events from koeln.de via their Tribe Events REST API, paging
      * through the full window (the first page of 50 only spans a few days).
      */
-    protected function scrapeKoelnDe(int $organiserId): int
+    protected function scrapeKoelnDe(int $organiserId, CaptureMediaCandidate $captureMediaCandidate): int
     {
         $created = 0;
         $page = 1;
@@ -93,7 +95,12 @@ class ScrapeEvents extends Command
                     // Dedupe on the source's own id when it has one; fall
                     // back to title+date for sources without stable ids.
                     $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
-                    if ($sourceUid && Event::where('source', 'koeln.de')->where('source_uid', $sourceUid)->exists()) {
+                    $existingEvent = $sourceUid
+                        ? Event::query()->where('source', 'koeln.de')->where('source_uid', $sourceUid)->first()
+                        : null;
+                    if ($existingEvent !== null) {
+                        $this->captureKoelnImage($existingEvent, $ev, $captureMediaCandidate);
+
                         continue;
                     }
 
@@ -147,6 +154,8 @@ class ScrapeEvents extends Command
                         'quality_score' => $qualityScore,
                     ]);
 
+                    $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
+
                     ProcessEventJob::dispatch($event);
 
                     $created++;
@@ -159,6 +168,43 @@ class ScrapeEvents extends Command
         }
 
         return $created;
+    }
+
+    /** @param array<string, mixed> $sourceEvent */
+    private function captureKoelnImage(
+        Event $event,
+        array $sourceEvent,
+        CaptureMediaCandidate $captureMediaCandidate,
+    ): void {
+        $image = $sourceEvent['image'] ?? null;
+        if (! is_array($image) || ! is_string($image['url'] ?? null)) {
+            return;
+        }
+
+        $remoteUrl = preg_replace('/^http:\/\//i', 'https://', trim($image['url']));
+        if ($remoteUrl === '') {
+            return;
+        }
+
+        try {
+            $captureMediaCandidate->execute($event, new MediaCandidate(
+                provider: 'koeln-de',
+                remoteUrl: $remoteUrl,
+                providerAssetId: isset($image['id']) ? (string) $image['id'] : null,
+                sourcePageUrl: $event->source_url,
+                role: 'poster',
+                priority: 20,
+                isPrimary: true,
+                width: filter_var($image['width'] ?? null, FILTER_VALIDATE_INT) ?: null,
+                height: filter_var($image['height'] ?? null, FILTER_VALIDATE_INT) ?: null,
+            ));
+        } catch (\Throwable $exception) {
+            Log::warning('events:scrape — koeln.de media candidate was skipped', [
+                'event_id' => $event->id,
+                'remote_url' => $remoteUrl,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\EventCategory;
+use App\Media\PublishedMediaSelector;
 use App\Models\Event;
 use Carbon\CarbonImmutable;
 
@@ -13,6 +14,8 @@ use Carbon\CarbonImmutable;
  */
 class EventOccurrencePresenter
 {
+    public function __construct(private readonly PublishedMediaSelector $mediaSelector) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -21,6 +24,12 @@ class EventOccurrencePresenter
         $category = EventCategory::fromLegacy($event->category);
         $venue = $event->venue;
         $venueName = $this->venueName($venue->name ?? $event->location_name);
+        $media = $this->mediaSelector->select($event, 'poster')
+            ?? $this->mediaSelector->select($event, 'hero')
+            ?? ($venue ? $this->mediaSelector->select($venue, 'hero') : null)
+            ?? ($venue?->place ? $this->mediaSelector->select($venue->place, 'hero') : null);
+        $allowLegacyPlaceMedia = $venue?->place !== null
+            && ! $this->mediaSelector->hasManagedMedia($venue->place);
 
         return [
             'id' => $event->id,
@@ -31,9 +40,10 @@ class EventOccurrencePresenter
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
             'meta' => $this->meta($startsAt, $endsAt, $venueName, $venue?->veedel),
-            // The venue's place photo richens the card (Commons, credited)
-            'photo_url' => $venue?->place?->photo_url,
-            'photo_attribution' => $venue?->place?->photo_attribution,
+            'photo_url' => $media?->remote_url ?? ($allowLegacyPlaceMedia ? $venue->place->photo_url : null),
+            'photo_attribution' => $media?->attribution ?? ($allowLegacyPlaceMedia ? $venue->place->photo_attribution : null),
+            'photo_source_url' => $media?->source_page_url,
+            'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
             'tip' => $event->tip_en,
             'summary' => $event->summary_en ?: ($event->description_en ?: null),

@@ -53,6 +53,7 @@ class PlacesController extends Controller
      */
     public function show(Request $request, Spot $spot): PlaceResource
     {
+        $spot->loadMissing('mediaAttachments.mediaAsset');
         $origin = $this->locations->context($request->user(), $request);
 
         $spot->distance_km = $origin->hasOrigin()
@@ -254,6 +255,8 @@ class PlacesController extends Controller
         $paginator = $outer
             ->orderBy('id')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
+
+        $paginator->getCollection()->loadMissing('mediaAttachments.mediaAsset');
 
         $activities = $this->activitiesForParks($paginator->getCollection());
         $stopHints = $this->stopHintsForPage($paginator->getCollection());

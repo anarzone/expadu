@@ -1,8 +1,11 @@
 <?php
 
+use App\Jobs\ValidateMediaAssetJob;
+use App\Models\MediaAsset;
 use App\Models\Spot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 function seedTestVeedelBoundary(): void
 {
@@ -146,6 +149,40 @@ test('bare microfacilities remain stored but are not recommendation destinations
     expect(Spot::query()->where('source_id', 'node/20')->first())
         ->is_recommendable->toBeFalse()
         ->is_active->toBeTrue();
+});
+
+test('osm import captures exact Commons and source image tags with rights pending', function () {
+    seedTestVeedelBoundary();
+    Queue::fake();
+    Http::fake([
+        '*' => Http::response(['elements' => [[
+            'type' => 'node',
+            'id' => 4242,
+            'lat' => 50.951,
+            'lon' => 6.951,
+            'tags' => [
+                'name' => 'Park with source media',
+                'wikimedia_commons' => 'File:Stadtwald_Koeln.jpg',
+                'image' => 'https://images.example.org/osm/park.jpg',
+            ],
+        ]]]),
+    ]);
+
+    $this->artisan('osm:import --only=park')->assertSuccessful();
+
+    $spot = Spot::query()->where('source_id', 'node/4242')->sole();
+    $commons = MediaAsset::query()->where('provider', 'wikimedia-commons')->sole();
+    $sourceImage = MediaAsset::query()->where('provider', 'osm-image')->sole();
+
+    expect($commons->provider_asset_id)->toBe('File:Stadtwald_Koeln.jpg')
+        ->and($commons->remote_url)->toBe('https://commons.wikimedia.org/wiki/Special:FilePath/Stadtwald_Koeln.jpg')
+        ->and($commons->source_page_url)->toBe('https://commons.wikimedia.org/wiki/File:Stadtwald_Koeln.jpg')
+        ->and($commons->rights_status)->toBe('pending')
+        ->and($sourceImage->remote_url)->toBe('https://images.example.org/osm/park.jpg')
+        ->and($sourceImage->rights_status)->toBe('pending')
+        ->and($spot->mediaAttachments()->count())->toBe(2);
+
+    Queue::assertNotPushed(ValidateMediaAssetJob::class);
 });
 
 test('legacy rows are quarantined and authoritative osm rows are rebuilt independently', function () {

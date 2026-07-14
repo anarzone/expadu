@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\SpotCategory;
+use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,6 +38,9 @@ class PlaceResource extends JsonResource
     {
         $fine = $this->categoryEnum();
         $coarse = $fine?->coarse() ?? 'park';
+        $mediaSelector = app(PublishedMediaSelector::class);
+        $media = $mediaSelector->select($this->resource, 'hero');
+        $allowLegacyMedia = ! $mediaSelector->hasManagedMedia($this->resource);
 
         return [
             'id' => $this->id,
@@ -48,8 +52,10 @@ class PlaceResource extends JsonResource
             'park' => $this->park_name,
             'lat' => (float) $this->lat,
             'lng' => (float) $this->lng,
-            'photo_url' => $this->photo_url,
-            'photo_attribution' => $this->photo_attribution,
+            'photo_url' => $media?->remote_url ?? ($allowLegacyMedia ? $this->photo_url : null),
+            'photo_attribution' => $media?->attribution ?? ($allowLegacyMedia ? $this->photo_attribution : null),
+            'photo_source_url' => $media?->source_page_url,
+            'photo_license_url' => $media?->license_url,
             'distance_min' => $this->travel_min !== null ? (int) $this->travel_min : null,
             'distance_mode' => $this->travel_mode ?? $request->user()?->transport_mode?->value,
             'distance_km' => $this->distance_km !== null ? round((float) $this->distance_km, 1) : null,

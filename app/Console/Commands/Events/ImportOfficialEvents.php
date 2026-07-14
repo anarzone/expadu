@@ -4,6 +4,8 @@ namespace App\Console\Commands\Events;
 
 use App\Enums\EventCategory;
 use App\Jobs\ProcessEventJob;
+use App\Media\CaptureMediaCandidate;
+use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\CologneServiceArea;
@@ -26,7 +28,7 @@ class ImportOfficialEvents extends Command
 
     protected $description = 'Import the official Stadt Köln open-data event feed';
 
-    public function handle(CologneServiceArea $serviceArea): int
+    public function handle(CologneServiceArea $serviceArea, CaptureMediaCandidate $captureMediaCandidate): int
     {
         $organiserId = User::query()->where('email', 'system@expadu.com')->value('id');
         if ($organiserId === null) {
@@ -88,7 +90,7 @@ class ImportOfficialEvents extends Command
             }
 
             try {
-                $this->importRecord($record, (int) $organiserId, $serviceArea, $metrics);
+                $this->importRecord($record, (int) $organiserId, $serviceArea, $captureMediaCandidate, $metrics);
             } catch (Throwable $exception) {
                 $metrics['skipped']++;
                 Log::warning('Official Cologne event record was skipped', [
@@ -135,8 +137,13 @@ class ImportOfficialEvents extends Command
      * @param  array<string, mixed>  $record
      * @param  array{created: int, updated: int, unchanged: int, skipped: int, invalid_coordinates: int}  $metrics
      */
-    private function importRecord(array $record, int $organiserId, CologneServiceArea $serviceArea, array &$metrics): void
-    {
+    private function importRecord(
+        array $record,
+        int $organiserId,
+        CologneServiceArea $serviceArea,
+        CaptureMediaCandidate $captureMediaCandidate,
+        array &$metrics,
+    ): void {
         [$startsAt, $endsAt] = $this->parseSchedule($record);
         $isMultiDay = ! $startsAt->isSameDay($endsAt);
         $recurrenceUntil = $isMultiDay ? $endsAt->copy()->endOfDay() : null;
@@ -225,12 +232,47 @@ class ImportOfficialEvents extends Command
         }
 
         $this->storeTrustedCoordinates($event, $record, $serviceArea, $metrics);
+        $this->captureTeaserImage($event, $record, $captureMediaCandidate);
 
         if ($contentChanged) {
             ProcessEventJob::dispatch($event);
         }
 
         $metrics[$isNew ? 'created' : ($contentChanged ? 'updated' : 'unchanged')]++;
+    }
+
+    /** @param array<string, mixed> $record */
+    private function captureTeaserImage(
+        Event $event,
+        array $record,
+        CaptureMediaCandidate $captureMediaCandidate,
+    ): void {
+        $teaserImage = trim((string) ($record['teaserbild'] ?? ''));
+        if ($teaserImage === '') {
+            return;
+        }
+
+        $remoteUrl = str_starts_with($teaserImage, '/')
+            ? 'https://www.stadt-koeln.de'.$teaserImage
+            : $this->httpsUrl($teaserImage);
+
+        try {
+            $captureMediaCandidate->execute($event, new MediaCandidate(
+                provider: 'stadt-koeln',
+                remoteUrl: $remoteUrl,
+                providerAssetId: parse_url($remoteUrl, PHP_URL_PATH) ?: $teaserImage,
+                sourcePageUrl: $event->source_url,
+                role: 'poster',
+                priority: 10,
+                isPrimary: true,
+            ));
+        } catch (Throwable $exception) {
+            Log::warning('Official Cologne event media candidate was skipped', [
+                'event_id' => $event->id,
+                'remote_url' => $remoteUrl,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**

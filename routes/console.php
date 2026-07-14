@@ -51,10 +51,9 @@ Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 // into scope.
 // Schedule::command('restaurants:scrape')->dailyAt('04:00')->withoutOverlapping();
 
-// Place photos from Wikimedia (wikidata/wikipedia links + Commons geosearch) —
-// weekly, so newly imported spots pick up an openly-licensed photo where one
-// exists. Idempotent: only fills spots that still have no photo.
-Schedule::command('spots:fetch-photos')->weeklyOn(0, '04:30')->withoutOverlapping();
+// Resolve and license-check media after Monday's authoritative OSM refresh so
+// new and updated place references are enriched in the same ingestion cycle.
+Schedule::command('spots:fetch-photos')->weeklyOn(1, '05:30')->withoutOverlapping()->onOneServer();
 
 // External API health monitoring — every 5 minutes
 Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping();

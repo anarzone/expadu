@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 
 #[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'price_text', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score', 'title_en', 'description_en', 'source_lang', 'is_curated', 'source_uid', 'summary_en', 'tip_en', 'language', 'chips', 'relevance', 'needs_review', 'status', 'recurrence', 'recurrence_until', 'venue_id', 'verified_at', 'classification_input_hash'])]
@@ -20,6 +21,13 @@ class Event extends Model
     use HasFactory;
 
     protected $table = 'events';
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Event $event): void {
+            $event->mediaAttachments()->delete();
+        });
+    }
 
     /**
      * @return array<string, string>
@@ -81,7 +89,11 @@ class Event extends Model
 
         $candidates = static::query()
             ->visible()
-            ->with('venue.place')
+            ->with([
+                'mediaAttachments.mediaAsset',
+                'venue.mediaAttachments.mediaAsset',
+                'venue.place.mediaAttachments.mediaAsset',
+            ])
             ->where(fn (Builder $q) => $q
                 // one-off events inside the window…
                 ->where(fn (Builder $oneOff) => $oneOff
@@ -175,5 +187,11 @@ class Event extends Model
         return $this->belongsToMany(User::class, 'event_attendees')
             ->withPivot('joined_at', 'reminded_at')
             ->withTimestamps();
+    }
+
+    /** @return MorphMany<MediaAttachment, $this> */
+    public function mediaAttachments(): MorphMany
+    {
+        return $this->morphMany(MediaAttachment::class, 'mediable');
     }
 }

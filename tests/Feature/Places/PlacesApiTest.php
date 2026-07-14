@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MediaAsset;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -48,6 +49,62 @@ test('lists leisure places with the full contract shape', function () {
     $response->assertJsonPath('data.0.price_text', 'free');
     // no per-place tip stored → the category fallback is marked generic
     $response->assertJsonPath('data.0.tip_is_generic', true);
+});
+
+test('place cards expose only approved active media and prefer it over legacy columns', function () {
+    $spot = Spot::factory()->create([
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'photo_url' => 'https://legacy.example/old.jpg',
+        'photo_attribution' => 'Legacy credit',
+    ]);
+    $pending = MediaAsset::factory()->create(['remote_url' => 'https://source.example/pending.jpg']);
+    $approved = MediaAsset::factory()->approved()->create([
+        'remote_url' => 'https://upload.wikimedia.org/place.jpg',
+        'attribution' => 'Approved Commons credit',
+        'source_page_url' => 'https://commons.wikimedia.org/wiki/File:Place.jpg',
+    ]);
+    $spot->mediaAttachments()->create([
+        'media_asset_id' => $pending->id,
+        'role' => 'hero',
+        'priority' => 1,
+        'is_primary' => true,
+    ]);
+    $spot->mediaAttachments()->create([
+        'media_asset_id' => $approved->id,
+        'role' => 'hero',
+        'priority' => 2,
+    ]);
+
+    $place = $this->getJson('/api/places')->assertOk()->json('data.0');
+
+    expect($place['photo_url'])->toBe('https://upload.wikimedia.org/place.jpg')
+        ->and($place['photo_attribution'])->toBe('Approved Commons credit')
+        ->and($place['photo_source_url'])->toBe('https://commons.wikimedia.org/wiki/File:Place.jpg')
+        ->and($place['photo_license_url'])->toBe('https://creativecommons.org/licenses/by/4.0/');
+});
+
+test('managed pending media cannot fall through to legacy photo columns', function () {
+    $spot = Spot::factory()->create([
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'photo_url' => 'https://legacy.example/unsafe-bypass.jpg',
+        'photo_attribution' => 'Legacy credit',
+    ]);
+    $spot->mediaAttachments()->create([
+        'media_asset_id' => MediaAsset::factory()->create()->id,
+        'role' => 'hero',
+        'is_primary' => true,
+    ]);
+
+    $place = $this->getJson('/api/places')->assertOk()->json('data.0');
+
+    expect($place['photo_url'])->toBeNull()
+        ->and($place['photo_attribution'])->toBeNull();
 });
 
 test('an unavailable route shows distance instead of invented travel minutes', function () {

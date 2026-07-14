@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
 #[Fillable(['name', 'category', 'cuisine', 'price_range', 'tags', 'description', 'address', 'lat', 'lng', 'veedel', 'park_name', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating', 'source', 'source_id', 'source_group', 'last_seen_at', 'is_active', 'is_recommendable', 'is_verified', 'phone', 'website', 'tip', 'photo_url', 'photo_attribution'])]
@@ -49,6 +50,12 @@ class Spot extends Model
         return $this->hasMany(Review::class);
     }
 
+    /** @return MorphMany<MediaAttachment, $this> */
+    public function mediaAttachments(): MorphMany
+    {
+        return $this->morphMany(MediaAttachment::class, 'mediable');
+    }
+
     /** Recalculate average rating from reviews */
     public function updateRating(): void
     {
@@ -77,6 +84,10 @@ class Spot extends Model
      */
     protected static function booted(): void
     {
+        static::deleting(function (Spot $spot): void {
+            $spot->mediaAttachments()->delete();
+        });
+
         static::saved(function (Spot $spot) {
             $latChanged = $spot->wasChanged('lat') || $spot->wasChanged('lng') || $spot->wasRecentlyCreated;
             if ($latChanged && $spot->lat !== null && $spot->lng !== null) {

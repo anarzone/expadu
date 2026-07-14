@@ -3,6 +3,7 @@
 use App\Enums\TransportMode;
 use App\Models\Event;
 use App\Models\EventReminder;
+use App\Models\MediaAsset;
 use App\Models\Spot;
 use App\Models\User;
 use App\Models\Venue;
@@ -215,6 +216,46 @@ test('the venue\'s place photo richens the card', function () {
 
     expect($data[0]['photo_url'])->toContain('Volksgarten.jpg');
     expect($data[0]['photo_attribution'])->toContain('CC BY-SA');
+});
+
+test('an approved event poster takes precedence while pending media stays private', function () {
+    $place = Spot::factory()->create([
+        'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Fallback.jpg?width=800',
+        'photo_attribution' => 'Fallback credit',
+    ]);
+    $venue = makeVenue(['place_id' => $place->id]);
+    $event = Event::factory()->create([
+        'starts_at' => '2026-06-12 12:00:00',
+        'recurrence' => null,
+        'venue_id' => $venue->id,
+    ]);
+    $pending = MediaAsset::factory()->create([
+        'remote_url' => 'https://www.koeln.de/pending.jpg',
+        'attribution' => 'Pending credit',
+    ]);
+    $approved = MediaAsset::factory()->approved()->create([
+        'remote_url' => 'https://upload.wikimedia.org/approved.jpg',
+        'attribution' => 'Approved credit',
+        'source_page_url' => 'https://commons.wikimedia.org/wiki/File:Approved.jpg',
+    ]);
+    $event->mediaAttachments()->create([
+        'media_asset_id' => $pending->id,
+        'role' => 'poster',
+        'priority' => 1,
+        'is_primary' => true,
+    ]);
+    $event->mediaAttachments()->create([
+        'media_asset_id' => $approved->id,
+        'role' => 'poster',
+        'priority' => 2,
+    ]);
+
+    $data = $this->getJson('/api/events?window=today')->assertOk()->json('data.0');
+
+    expect($data['photo_url'])->toBe('https://upload.wikimedia.org/approved.jpg')
+        ->and($data['photo_attribution'])->toBe('Approved credit')
+        ->and($data['photo_source_url'])->toBe('https://commons.wikimedia.org/wiki/File:Approved.jpg')
+        ->and($data['photo_license_url'])->toBe('https://creativecommons.org/licenses/by/4.0/');
 });
 
 test('weekend window catches a weekly recurring stammtisch', function () {

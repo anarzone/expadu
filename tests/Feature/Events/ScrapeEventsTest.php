@@ -1,6 +1,9 @@
 <?php
 
+use App\Jobs\ValidateMediaAssetJob;
+use App\Media\CaptureMediaCandidate;
 use App\Models\Event;
+use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -81,6 +84,57 @@ test('the scraper preserves the complete German source description for translati
     $this->artisan('events:scrape')->assertSuccessful();
 
     expect(Event::where('source_uid', 'full-description')->value('description'))->toBe(trim($description));
+});
+
+test('the scraper captures koeln.de event images as rights-pending media candidates', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $payload = koelnEvent('with-image', 'Event with a poster', now()->addHours(3)->toDateTimeString());
+    $payload['image'] = [
+        'id' => 4242,
+        'url' => 'https://www.koeln.de/wp-content/uploads/event-poster.jpg',
+        'width' => 1200,
+        'height' => 800,
+    ];
+
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$payload]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    $event = Event::query()->where('source_uid', 'with-image')->sole();
+    $asset = MediaAsset::query()->sole();
+    $attachment = $event->mediaAttachments()->sole();
+
+    expect($asset->provider)->toBe('koeln-de')
+        ->and($asset->provider_asset_id)->toBe('4242')
+        ->and($asset->remote_url)->toBe('https://www.koeln.de/wp-content/uploads/event-poster.jpg')
+        ->and($asset->source_page_url)->toBe($event->source_url)
+        ->and($asset->rights_status)->toBe('pending')
+        ->and($asset->width)->toBe(1200)
+        ->and($asset->height)->toBe(800)
+        ->and($attachment->role)->toBe('poster')
+        ->and($attachment->is_primary)->toBeTrue();
+
+    Queue::assertPushed(
+        ValidateMediaAssetJob::class,
+        fn (ValidateMediaAssetJob $job): bool => $job->asset->is($asset),
+    );
+});
+
+test('media capture failures never discard a koeln.de event', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $capture = Mockery::mock(CaptureMediaCandidate::class);
+    $capture->shouldReceive('execute')->once()->andThrow(new RuntimeException('media storage unavailable'));
+    app()->instance(CaptureMediaCandidate::class, $capture);
+    $payload = koelnEvent('media-failure', 'Still import me', now()->addHours(3)->toDateTimeString());
+    $payload['image'] = ['url' => 'https://www.koeln.de/wp-content/uploads/event.jpg'];
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$payload]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::query()->where('source_uid', 'media-failure')->exists())->toBeTrue()
+        ->and(MediaAsset::query()->count())->toBe(0);
 });
 
 test('distinct source ids with the same title and date are not globally deduplicated', function () {

@@ -20,6 +20,7 @@ use App\Events\Context\ScoredActionInserted;
 use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
+use App\Jobs\ValidateMediaAssetJob;
 use App\Listeners\CreateAlertFromNotification;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
@@ -82,6 +83,8 @@ class AppServiceProvider extends ServiceProvider
             ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
+        RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
+            ->by('media-validation:'.$job->asset->provider));
 
         Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
 

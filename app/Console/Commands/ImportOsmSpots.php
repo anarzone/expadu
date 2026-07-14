@@ -2,12 +2,16 @@
 
 namespace App\Console\Commands;
 
+use App\Media\CaptureMediaCandidate;
+use App\Media\MediaCandidate;
 use App\Models\Spot;
 use App\Services\OpeningHoursParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ImportOsmSpots extends Command
 {
@@ -21,7 +25,7 @@ class ImportOsmSpots extends Command
      */
     protected $description = 'Import cafes, coworking spaces, and libraries from OpenStreetMap via Overpass API';
 
-    public function handle(): int
+    public function handle(CaptureMediaCandidate $captureMediaCandidate): int
     {
         // The database column has second precision. Align the cutoff so rows
         // seen during this same second are not immediately retired.
@@ -232,9 +236,12 @@ class ImportOsmSpots extends Command
 
             if ($existing !== null) {
                 $existing->update(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
+                $spot = $existing;
             } else {
-                Spot::query()->create(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
+                $spot = Spot::query()->create(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
             }
+
+            $this->captureSourceMedia($spot, $tags, $sourceId, $captureMediaCandidate);
 
             // PostGIS `location` is synced by Spot's saved() hook.
             $existing ? $skippedDuplicate++ : $imported++;
@@ -259,6 +266,59 @@ class ImportOsmSpots extends Command
             ->update(['is_active' => false, 'is_recommendable' => false]);
 
         return self::SUCCESS;
+    }
+
+    /** @param array<string, mixed> $tags */
+    private function captureSourceMedia(
+        Spot $spot,
+        array $tags,
+        string $sourceId,
+        CaptureMediaCandidate $captureMediaCandidate,
+    ): void {
+        $sourcePageUrl = 'https://www.openstreetmap.org/'.$sourceId;
+        $commonsReference = trim((string) ($tags['wikimedia_commons'] ?? ''));
+        $hasCommonsFile = preg_match('/^File:(?<filename>.+)$/iu', $commonsReference, $match) === 1;
+
+        try {
+            if ($hasCommonsFile) {
+                $filename = str_replace(' ', '_', trim($match['filename']));
+                $providerAssetId = 'File:'.$filename;
+                $encodedFilename = str_replace('%2F', '/', rawurlencode($filename));
+                $encodedProviderId = str_replace(['%3A', '%2F'], [':', '/'], rawurlencode($providerAssetId));
+
+                $captureMediaCandidate->execute($spot, new MediaCandidate(
+                    provider: 'wikimedia-commons',
+                    remoteUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/'.$encodedFilename,
+                    providerAssetId: $providerAssetId,
+                    sourcePageUrl: 'https://commons.wikimedia.org/wiki/'.$encodedProviderId,
+                    role: 'hero',
+                    priority: 20,
+                    isPrimary: true,
+                    metadata: ['discovered_via' => $sourcePageUrl],
+                    shouldValidate: false,
+                ));
+            }
+
+            $sourceImage = preg_replace('/^http:\/\//i', 'https://', trim((string) ($tags['image'] ?? '')));
+            if ($sourceImage !== '') {
+                $captureMediaCandidate->execute($spot, new MediaCandidate(
+                    provider: 'osm-image',
+                    remoteUrl: $sourceImage,
+                    sourcePageUrl: $sourcePageUrl,
+                    role: 'hero',
+                    priority: 30,
+                    isPrimary: ! $hasCommonsFile,
+                    metadata: ['discovered_via' => $sourcePageUrl],
+                    shouldValidate: false,
+                ));
+            }
+        } catch (Throwable $exception) {
+            Log::warning('OSM source media candidate was skipped', [
+                'spot_id' => $spot->id,
+                'source_id' => $sourceId,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     private function veedelContaining(float $lat, float $lng): ?string

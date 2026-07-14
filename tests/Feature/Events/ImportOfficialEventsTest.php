@@ -1,7 +1,10 @@
 <?php
 
 use App\Jobs\ProcessEventJob;
+use App\Jobs\ValidateMediaAssetJob;
+use App\Media\CaptureMediaCandidate;
 use App\Models\Event;
+use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\CologneServiceArea;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +66,60 @@ test('official Cologne events are imported with German source copy and queued fo
         ->and($event->lng)->toBe(6.956424);
 
     Queue::assertPushed(fn (ProcessEventJob $job): bool => $job->event->is($event));
+});
+
+test('official event teaser images are captured as rights-pending media candidates', function () {
+    app()->instance(CologneServiceArea::class, Mockery::mock(CologneServiceArea::class));
+    Http::fake([
+        'www.stadt-koeln.de/*' => Http::response([
+            'success' => true,
+            'items' => [officialEvent([
+                'latitude' => null,
+                'longitude' => null,
+                'teaserbild' => '/mediaasset/bilder/veranstaltungen/mint-workshop.jpg',
+            ])],
+        ]),
+    ]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+
+    $event = Event::query()->where('source', 'stadt-koeln.de')->sole();
+    $asset = MediaAsset::query()->sole();
+    $attachment = $event->mediaAttachments()->sole();
+
+    expect($asset->provider)->toBe('stadt-koeln')
+        ->and($asset->remote_url)->toBe('https://www.stadt-koeln.de/mediaasset/bilder/veranstaltungen/mint-workshop.jpg')
+        ->and($asset->source_page_url)->toBe($event->source_url)
+        ->and($asset->rights_status)->toBe('pending')
+        ->and($attachment->role)->toBe('poster')
+        ->and($attachment->is_primary)->toBeTrue();
+
+    Queue::assertPushed(
+        ValidateMediaAssetJob::class,
+        fn (ValidateMediaAssetJob $job): bool => $job->asset->is($asset),
+    );
+});
+
+test('media capture failures never discard an official event', function () {
+    app()->instance(CologneServiceArea::class, Mockery::mock(CologneServiceArea::class));
+    $capture = Mockery::mock(CaptureMediaCandidate::class);
+    $capture->shouldReceive('execute')->once()->andThrow(new RuntimeException('media storage unavailable'));
+    app()->instance(CaptureMediaCandidate::class, $capture);
+    Http::fake([
+        'www.stadt-koeln.de/*' => Http::response([
+            'success' => true,
+            'items' => [officialEvent([
+                'latitude' => null,
+                'longitude' => null,
+                'teaserbild' => '/mediaasset/poster.jpg',
+            ])],
+        ]),
+    ]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+
+    expect(Event::query()->where('source_uid', '40506')->exists())->toBeTrue()
+        ->and(MediaAsset::query()->count())->toBe(0);
 });
 
 test('common single-time syntax gets a conservative default duration', function () {
