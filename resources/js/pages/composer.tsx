@@ -1444,7 +1444,7 @@ export default function Composer() {
                                             </span>
                                         </div>
                                         <div className="p-[18px]">
-                                            <h3 className="font-display text-[23px] leading-[1.05] font-semibold tracking-[-0.015em]">
+                                            <h3 className="font-display text-[23px] leading-[1.05] font-medium tracking-[-0.015em]">
                                                 {slot.name}
                                             </h3>
                                             {slot.why && (
@@ -1525,7 +1525,7 @@ export default function Composer() {
                                                 {slotEmoji(slot)}
                                             </span>
                                             <div className="min-w-0 flex-1">
-                                                <div className="font-display text-[17px] leading-[1.1] font-semibold">
+                                                <div className="font-display text-[17px] leading-[1.1] font-medium">
                                                     {slot.name}
                                                 </div>
                                                 {slot.why && (
@@ -1650,7 +1650,7 @@ export default function Composer() {
                                                         {slotEmoji(slot)}
                                                     </span>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="font-display text-[17px] leading-[1.1] font-semibold">
+                                                        <div className="font-display text-[17px] leading-[1.1] font-medium">
                                                             {slot.name}
                                                         </div>
                                                         {slot.why && (

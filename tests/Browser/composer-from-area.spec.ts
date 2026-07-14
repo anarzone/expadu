@@ -111,9 +111,7 @@ test('the origin follows the chosen From and stays honest, never a fixed home', 
 
     // No location yet → honest sentence words: search "Any area", start from
     // "Your location" — never a guessed "Around <home>".
-    await expect(
-        page.getByRole('button', { name: 'Any area' }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Any area' })).toBeVisible();
     await expect(
         page.getByRole('button', { name: 'Your location' }),
     ).toBeVisible();
@@ -129,9 +127,11 @@ test('the origin follows the chosen From and stays honest, never a fixed home', 
     await expect(
         page.getByRole('button', { name: 'Sülz', exact: true }),
     ).toBeVisible();
-    await expect(
-        page.getByRole('button', { name: 'Any area' }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Any area' })).toBeVisible();
+
+    const recommendationTitle = page.getByText('Nordpark', { exact: true });
+    await expect(recommendationTitle).toHaveCSS('font-family', /Fraunces/);
+    await expect(recommendationTitle).toHaveCSS('font-weight', '500');
 
     expect(errors).toHaveLength(0);
 
