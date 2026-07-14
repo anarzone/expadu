@@ -26,6 +26,12 @@
                 <a href="{{ route('tools.residency') }}">See your timeline →</a>
             </div>
             <div class="tool">
+                <span class="free">salary · 2026 tables</span>
+                <h3>Netto-brutto calculator</h3>
+                <p>What's actually left of your gross salary? Income tax, Soli, church tax and all four insurances — every constant sourced.</p>
+                <a href="{{ route('tools.netto') }}">Calculate your net →</a>
+            </div>
+            <div class="tool">
                 <span class="free">citizenship · StAG</span>
                 <h3>Citizenship quiz</h3>
                 <p>Are you on track for a German passport under the 2024 rules? Five questions, sourced answers.</p>

@@ -361,3 +361,190 @@ const param = (key: string): string | null =>
     form.addEventListener('input', render);
     render();
 })();
+
+/* ── Netto-brutto (2026 tables, sourced in config/lohnrechner.php) ── */
+(() => {
+    const form = document.getElementById('tool-netto');
+    const result = document.getElementById('nb-result');
+    const data = readData<{
+        tariff: {
+            basic_allowance: number;
+            zone2_end: number;
+            zone2: { a: number; b: number };
+            zone3_end: number;
+            zone3: { a: number; b: number; c: number };
+            zone4_end: number;
+            zone4: { rate: number; c: number };
+            zone5: { rate: number; c: number };
+        };
+        soli: {
+            free_limit_single: number;
+            rate: number;
+            mitigation_rate: number;
+        };
+        social: {
+            bbg_health_year: number;
+            bbg_pension_year: number;
+            health_general: number;
+            health_zusatz_avg: number;
+            care_total: number;
+            care_childless_surcharge: number;
+            pension_total: number;
+            unemployment_total: number;
+        };
+        allowances: { employee_lump_sum: number; special_expenses: number };
+        church_rates: { default: number; by_bw: number };
+    }>();
+
+    if (!form || !result || !data) {
+        return;
+    }
+
+    const gross = document.getElementById('nb-gross') as HTMLInputElement;
+    const cls = document.getElementById('nb-class') as HTMLSelectElement;
+    const church = document.getElementById('nb-church') as HTMLInputElement;
+    const byBw = document.getElementById('nb-bybw') as HTMLInputElement;
+    const churchState = document.getElementById(
+        'nb-church-state',
+    ) as HTMLElement;
+    const kids = document.getElementById('nb-kids') as HTMLInputElement;
+
+    /* §32a EStG tariff — zone continuity verified against the statute. */
+    const incomeTax = (zvE: number): number => {
+        const t = data.tariff;
+        const x = Math.floor(zvE);
+
+        if (x <= t.basic_allowance) {
+            return 0;
+        }
+
+        if (x <= t.zone2_end) {
+            const y = (x - t.basic_allowance) / 10000;
+
+            return Math.floor((t.zone2.a * y + t.zone2.b) * y);
+        }
+
+        if (x <= t.zone3_end) {
+            const z = (x - t.zone2_end) / 10000;
+
+            return Math.floor((t.zone3.a * z + t.zone3.b) * z + t.zone3.c);
+        }
+
+        if (x <= t.zone4_end) {
+            return Math.floor(t.zone4.rate * x - t.zone4.c);
+        }
+
+        return Math.floor(t.zone5.rate * x - t.zone5.c);
+    };
+
+    const restore = (): void => {
+        if (param('gross')) {
+            gross.value = param('gross') ?? gross.value;
+        }
+
+        if (param('class')) {
+            cls.value = param('class') ?? cls.value;
+        }
+
+        church.checked = param('church') === '1';
+        byBw.checked = param('bybw') === '1';
+        kids.checked = param('kids') === '1';
+    };
+
+    const row = (
+        label: string,
+        yearEur: number,
+        share: number,
+        kind: string,
+    ): string =>
+        `<div class="nb-row"><span>${label}</span><b>−${euro(Math.round(yearEur / 12))}</b>` +
+        `<i class="nb-bar"><i class="${kind}" style="width:${Math.min(100, share * 100).toFixed(1)}%"></i></i></div>`;
+
+    const render = (): void => {
+        churchState.hidden = !church.checked;
+
+        const grossYear = Math.max(0, Number(gross.value) || 0) * 12;
+
+        if (grossYear === 0) {
+            result.innerHTML = `<p class="explain">Enter your monthly gross above — the breakdown appears here.</p>`;
+
+            return;
+        }
+
+        const s = data.social;
+        const kvBase = Math.min(grossYear, s.bbg_health_year);
+        const rvBase = Math.min(grossYear, s.bbg_pension_year);
+        const kv = (kvBase * (s.health_general + s.health_zusatz_avg)) / 2;
+        const pv =
+            kvBase *
+            (s.care_total / 2 +
+                (kids.checked ? 0 : s.care_childless_surcharge));
+        const rv = (rvBase * s.pension_total) / 2;
+        const av = (rvBase * s.unemployment_total) / 2;
+
+        // Simplified Vorsorgepauschale: pension + health + care employee shares
+        // (not unemployment), plus the standard lump sums.
+        const taxable = Math.max(
+            0,
+            grossYear -
+                (kv + pv + rv) -
+                data.allowances.employee_lump_sum -
+                data.allowances.special_expenses,
+        );
+
+        const splitting = cls.value === '3';
+        const tax = splitting ? 2 * incomeTax(taxable / 2) : incomeTax(taxable);
+
+        const soliLimit = data.soli.free_limit_single * (splitting ? 2 : 1);
+        const soli =
+            tax <= soliLimit
+                ? 0
+                : Math.min(
+                      tax * data.soli.rate,
+                      (tax - soliLimit) * data.soli.mitigation_rate,
+                  );
+
+        const churchTax = church.checked
+            ? tax *
+              (byBw.checked
+                  ? data.church_rates.by_bw
+                  : data.church_rates.default)
+            : 0;
+
+        const deductions = kv + pv + rv + av + tax + soli + churchTax;
+        const netYear = grossYear - deductions;
+        const employerYear =
+            (kvBase * (s.health_general + s.health_zusatz_avg)) / 2 +
+            (kvBase * s.care_total) / 2 +
+            rv +
+            av;
+
+        result.innerHTML =
+            `<div class="verdict good">${euro(Math.round(netYear / 12))} net per month</div>` +
+            `<p class="explain">${euro(Math.round(netYear))} a year — ${((netYear / grossYear) * 100).toFixed(0)}% of your gross.</p>` +
+            `<div class="nb-rows">` +
+            row('Income tax', tax, tax / grossYear, 'tax') +
+            (soli > 0
+                ? row('Solidarity surcharge', soli, soli / grossYear, 'tax')
+                : '') +
+            (churchTax > 0
+                ? row('Church tax', churchTax, churchTax / grossYear, 'tax')
+                : '') +
+            row('Health insurance', kv, kv / grossYear, 'si') +
+            row('Care insurance', pv, pv / grossYear, 'si') +
+            row('Pension', rv, rv / grossYear, 'si') +
+            row('Unemployment', av, av / grossYear, 'si') +
+            `</div>` +
+            `<p class="explain">Your employer additionally pays ≈ <b>${euro(Math.round(employerYear / 12))}/mo</b> on top — your pension and health are double-funded.</p>`;
+
+        syncParam('gross', gross.value);
+        syncParam('class', cls.value);
+        syncParam('church', church.checked ? '1' : '0');
+        syncParam('bybw', byBw.checked ? '1' : '0');
+        syncParam('kids', kids.checked ? '1' : '0');
+    };
+
+    restore();
+    form.addEventListener('input', render);
+    render();
+})();

@@ -48,3 +48,22 @@ test('the sitemap includes the tool pages', function () {
     $response->assertSee(route('tools.residency'), escape: false);
     $response->assertSee(route('tools.citizenship'), escape: false);
 });
+
+test('the netto-brutto tool ships the sourced 2026 constants', function () {
+    $response = $this->get('/tools/netto-brutto-calculator');
+
+    $response->assertOk();
+    // The tariff and ceilings come from config/lohnrechner.php — verified
+    // against §32a EStG and the official Rechengrößen; the page must carry
+    // the same numbers plus their sources.
+    $response->assertSee((string) config('lohnrechner.tariff.basic_allowance'), escape: false);
+    $response->assertSee((string) config('lohnrechner.social.bbg_pension_year'), escape: false);
+    $response->assertSee(config('lohnrechner.source_tariff'));
+    $response->assertSee(config('lohnrechner.verified_at'));
+    $response->assertSee('An honest estimate, not your payslip.');
+});
+
+test('the tools hub and sitemap include the netto-brutto tool', function () {
+    $this->get('/tools')->assertOk()->assertSee('Netto-brutto calculator');
+    $this->get('/sitemap.xml')->assertOk()->assertSee(route('tools.netto'), escape: false);
+});

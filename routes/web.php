@@ -75,6 +75,7 @@ $marketingRoutes = function () {
     Route::get('tools/deutschlandticket-break-even', [ToolsController::class, 'dticket'])->name('tools.dticket');
     Route::get('tools/permanent-residency-timeline', [ToolsController::class, 'residency'])->name('tools.residency');
     Route::get('tools/citizenship-quiz', [ToolsController::class, 'citizenship'])->name('tools.citizenship');
+    Route::get('tools/netto-brutto-calculator', [ToolsController::class, 'nettoBrutto'])->name('tools.netto');
 
     // Blog — markdown guides derived from the sourced bureaucracy catalogue.
     Route::get('blog', [BlogController::class, 'index'])->name('blog.index');

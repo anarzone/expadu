@@ -272,6 +272,12 @@
                 <p>Are you on track for a German passport? Five questions against the current rules, with sources.</p>
                 <a href="{{ route('tools.citizenship') }}">Take the quiz →</a>
             </div>
+            <div class="tool">
+                <span class="free">free · no signup</span>
+                <h3>Netto-brutto calculator</h3>
+                <p>Gross to net with the 2026 tax and insurance tables — see what actually lands in your account.</p>
+                <a href="{{ route('tools.netto') }}">Calculate your net →</a>
+            </div>
         </div>
     </div>
 </section>

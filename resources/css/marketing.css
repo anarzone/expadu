@@ -914,7 +914,7 @@ html.dark .deadline.calm {
 /* ── Tools ──────────────────────────────────────────────────────── */
 .tool-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 18px;
 }
 @media (max-width: 860px) {
@@ -1488,6 +1488,43 @@ footer.site {
 .mpick-grid button:disabled {
     opacity: 0.3;
     cursor: default;
+}
+
+/* ── Netto-brutto breakdown ─────────────────────────────────────── */
+.nb-rows {
+    margin: 14px 0 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.nb-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    font-size: 13.5px;
+}
+.nb-row b {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.nb-bar {
+    display: block;
+    height: 8px;
+    border-radius: 99px;
+    background: var(--surface2);
+    overflow: hidden;
+}
+.nb-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 99px;
+}
+.nb-bar .tax {
+    background: var(--primary);
+}
+.nb-bar .si {
+    background: #05badd;
 }
 
 :focus-visible {

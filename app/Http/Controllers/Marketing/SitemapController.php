@@ -24,6 +24,7 @@ class SitemapController extends Controller
                 ['loc' => route('tools.dticket'), 'priority' => '0.8'],
                 ['loc' => route('tools.residency'), 'priority' => '0.8'],
                 ['loc' => route('tools.citizenship'), 'priority' => '0.8'],
+                ['loc' => route('tools.netto'), 'priority' => '0.8'],
                 ['loc' => route('blog.index'), 'priority' => '0.7'],
                 ['loc' => route('impressum'), 'priority' => '0.1'],
                 ['loc' => route('datenschutz'), 'priority' => '0.1'],

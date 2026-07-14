@@ -53,6 +53,17 @@ class ToolsController extends Controller
         ]);
     }
 
+    public function nettoBrutto(): View
+    {
+        return view('marketing.tools.netto-brutto', [
+            'year' => config('lohnrechner.year'),
+            'verifiedAt' => config('lohnrechner.verified_at'),
+            'sourceTariff' => config('lohnrechner.source_tariff'),
+            'sourceSv' => config('lohnrechner.source_sv'),
+            'toolData' => config('lohnrechner'),
+        ]);
+    }
+
     public function citizenship(): View
     {
         return view('marketing.tools.citizenship', [
