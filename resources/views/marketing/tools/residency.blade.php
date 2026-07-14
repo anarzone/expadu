@@ -40,8 +40,19 @@
                 </select>
             </div>
             <div class="tfield">
-                <label for="ne-since">Holding it since</label>
-                <input type="month" id="ne-since" max="{{ now()->format('Y-m') }}">
+                <label id="ne-since-label">Holding it since</label>
+                {{-- Custom month picker: the native month input renders browser
+                     UI that clashes with the brand. Hidden input keeps the
+                     YYYY-MM contract with marketing-tools.ts. --}}
+                <div class="mpick" role="group" aria-labelledby="ne-since-label">
+                    <div class="mpick-year">
+                        <button type="button" id="ne-yprev" aria-label="Earlier year">‹</button>
+                        <b id="ne-year">{{ now()->year }}</b>
+                        <button type="button" id="ne-ynext" aria-label="Later year">›</button>
+                    </div>
+                    <div class="mpick-grid" id="ne-months"></div>
+                </div>
+                <input type="hidden" id="ne-since" value="">
             </div>
             <div class="tfield" id="ne-b1-field" hidden>
                 <label class="check"><input type="checkbox" id="ne-b1" checked> I have B1 German</label>

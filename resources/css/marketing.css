@@ -1417,6 +1417,79 @@ footer.site {
     font-style: italic;
 }
 
+/* ── Month picker (tools) ───────────────────────────────────────── */
+.mpick {
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg);
+    padding: 12px 14px;
+}
+.mpick-year {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.mpick-year b {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+}
+.mpick-year button {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+.mpick-year button:hover:not(:disabled) {
+    background: var(--surface2);
+    color: var(--ink);
+}
+.mpick-year button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.mpick-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+}
+@media (max-width: 560px) {
+    .mpick-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+.mpick-grid button {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+.mpick-grid button:hover:not(:disabled) {
+    background: var(--surface2);
+}
+.mpick-grid button[aria-pressed='true'] {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary-text);
+}
+.mpick-grid button:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
 :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;

@@ -142,6 +142,72 @@ const param = (key: string): string | null =>
         'ne-degree-field',
     ) as HTMLElement;
 
+    /* Custom month picker — the native month input pops browser-styled UI
+       that clashes with the brand. Chips write YYYY-MM into the hidden
+       #ne-since input, keeping the contract with render() and the URL. */
+    const yearEl = document.getElementById('ne-year') as HTMLElement;
+    const yPrev = document.getElementById('ne-yprev') as HTMLButtonElement;
+    const yNext = document.getElementById('ne-ynext') as HTMLButtonElement;
+    const monthGrid = document.getElementById('ne-months') as HTMLElement;
+    const MONTHS = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+    ];
+    const nowYear = new Date().getFullYear();
+    const nowMonth = new Date().getMonth();
+    const minYear = nowYear - 20;
+    let pickYear = nowYear;
+
+    const renderPicker = (): void => {
+        yearEl.textContent = String(pickYear);
+        yPrev.disabled = pickYear <= minYear;
+        yNext.disabled = pickYear >= nowYear;
+        monthGrid.innerHTML = '';
+        MONTHS.forEach((name, i) => {
+            const value = pickYear + '-' + String(i + 1).padStart(2, '0');
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.textContent = name;
+            chip.disabled = pickYear === nowYear && i > nowMonth;
+            chip.setAttribute('aria-pressed', String(since.value === value));
+            chip.addEventListener('click', () => {
+                since.value = value;
+                since.dispatchEvent(new Event('input', { bubbles: true }));
+                renderPicker();
+            });
+            monthGrid.appendChild(chip);
+        });
+    };
+
+    const syncPicker = (): void => {
+        const parts = /^(\d{4})-\d{2}$/.exec(since.value);
+
+        if (parts) {
+            pickYear = Math.min(nowYear, Math.max(minYear, Number(parts[1])));
+        }
+
+        renderPicker();
+    };
+
+    yPrev.addEventListener('click', () => {
+        pickYear = Math.max(minYear, pickYear - 1);
+        renderPicker();
+    });
+    yNext.addEventListener('click', () => {
+        pickYear = Math.min(nowYear, pickYear + 1);
+        renderPicker();
+    });
+
     const restore = (): void => {
         if (
             param('track') &&
@@ -209,6 +275,7 @@ const param = (key: string): string | null =>
     };
 
     restore();
+    syncPicker();
     form.addEventListener('input', render);
     render();
 })();
