@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Netto-brutto calculator 2026 — Expadu (prototype)</title>
+<link rel="stylesheet" href="./proto.css?v=4">
+<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
+</head>
+<body>
+<nav><div class="nav-inner">
+    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
+    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html">Free tools</a><a href="./blog.html">Blog</a></div>
+    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+    <span class="eyebrow">Free tool · full 2026 payroll math</span>
+    <h1>What's actually left of your German salary?</h1>
+    <p class="sub">All six tax classes, every Bundesland, church tax, children, statutory or private insurance — the same formulas payroll uses, every constant sourced below.</p>
+
+    <form class="tool-form" id="f" onsubmit="return false">
+        <div class="tfield">
+            <label for="gross">Gross salary (€)</label>
+            <div class="tf2">
+                <input type="number" id="gross" min="0" step="50" value="4000" inputmode="numeric">
+                <div class="chips-row" id="period">
+                    <button type="button" data-v="m" aria-pressed="true">per month</button>
+                    <button type="button" data-v="y" aria-pressed="false">per year</button>
+                </div>
+            </div>
+            <div class="slider-row" style="margin-top:12px"><input type="range" id="grossR" min="1000" max="15000" step="50" value="4000" aria-label="Gross salary slider"></div>
+        </div>
+
+        <div class="tfield">
+            <label>Tax class</label>
+            <div class="chips-row" id="cls">
+                <button type="button" data-v="1" aria-pressed="true">I</button>
+                <button type="button" data-v="2" aria-pressed="false">II</button>
+                <button type="button" data-v="3" aria-pressed="false">III</button>
+                <button type="button" data-v="4" aria-pressed="false">IV</button>
+                <button type="button" data-v="5" aria-pressed="false">V</button>
+                <button type="button" data-v="6" aria-pressed="false">VI</button>
+            </div>
+            <small id="clsHint"></small>
+        </div>
+
+        <div class="tf2">
+            <div class="tfield">
+                <label for="land">Federal state</label>
+                <select id="land">
+                    <option value="BW">Baden-Württemberg</option>
+                    <option value="BY">Bavaria (Bayern)</option>
+                    <option value="BE">Berlin</option>
+                    <option value="BB">Brandenburg</option>
+                    <option value="HB">Bremen</option>
+                    <option value="HH">Hamburg</option>
+                    <option value="HE">Hesse (Hessen)</option>
+                    <option value="MV">Mecklenburg-Vorpommern</option>
+                    <option value="NI">Lower Saxony (Niedersachsen)</option>
+                    <option value="NW" selected>North Rhine-Westphalia</option>
+                    <option value="RP">Rhineland-Palatinate</option>
+                    <option value="SL">Saarland</option>
+                    <option value="SN">Saxony (Sachsen)</option>
+                    <option value="ST">Saxony-Anhalt</option>
+                    <option value="SH">Schleswig-Holstein</option>
+                    <option value="TH">Thuringia (Thüringen)</option>
+                </select>
+                <small>Sets the church-tax rate (8% in BY/BW) and Saxony's care-insurance split.</small>
+            </div>
+            <div class="tfield">
+                <label>Membership &amp; family</label>
+                <label class="check"><input type="checkbox" id="church"> Church member</label>
+                <label class="check" style="margin-top:8px"><input type="checkbox" id="kids"> I have children</label>
+                <small>Without children (age 23+), care insurance adds 0.6%.</small>
+            </div>
+        </div>
+
+        <div class="tf2" id="kidsFields" hidden>
+            <div class="tfield">
+                <label for="kfb">Child allowance counters</label>
+                <select id="kfb">
+                    <option value="0.5">0.5</option><option value="1" selected>1.0</option><option value="1.5">1.5</option>
+                    <option value="2">2.0</option><option value="2.5">2.5</option><option value="3">3.0</option>
+                    <option value="4">4.0</option><option value="5">5.0</option><option value="6">6.0</option>
+                </select>
+                <small>Kinderfreibeträge on your tax record — lower church tax + Soli (classes I–IV).</small>
+            </div>
+            <div class="tfield">
+                <label for="kidsU25">Children under 25</label>
+                <input type="number" id="kidsU25" min="0" max="10" step="1" value="1">
+                <small>From the 2nd child under 25, care insurance drops 0.25% each (up to the 5th).</small>
+            </div>
+        </div>
+
+        <div class="tfield">
+            <label>Health insurance</label>
+            <div class="chips-row" id="kvType">
+                <button type="button" data-v="g" aria-pressed="true">Statutory (GKV)</button>
+                <button type="button" data-v="p" aria-pressed="false">Private (PKV)</button>
+            </div>
+        </div>
+        <div class="tf2" id="gkvFields">
+            <div class="tfield">
+                <label for="zusatz">Your fund's Zusatzbeitrag (%)</label>
+                <input type="number" id="zusatz" min="0" max="5" step="0.1" value="2.9">
+                <small>2026 average: 2.9%. Check your Krankenkasse — it varies 1–4%.</small>
+            </div>
+        </div>
+        <div class="tf2" id="pkvFields" hidden>
+            <div class="tfield">
+                <label for="prem">Monthly premium (€, incl. care)</label>
+                <input type="number" id="prem" min="0" step="10" value="450">
+            </div>
+            <div class="tfield">
+                <label>Employer subsidy</label>
+                <label class="check"><input type="checkbox" id="subs" checked> Employer pays half (capped)</label>
+                <small>2026 cap: about €613/month at the statutory maximum.</small>
+            </div>
+        </div>
+
+        <details class="more">
+            <summary>More options</summary>
+            <div class="inner">
+                <div class="tf2">
+                    <div class="tfield">
+                        <label for="benefit">Non-cash benefit (€/month)</label>
+                        <input type="number" id="benefit" min="0" step="10" value="0">
+                        <small>Company car, job ticket above the limit — taxed but not paid out.</small>
+                    </div>
+                    <div class="tfield">
+                        <label for="freib">Registered tax allowance (€/year)</label>
+                        <input type="number" id="freib" min="0" step="100" value="0">
+                        <small>A Freibetrag from the Lohnsteuer-Ermäßigung procedure, if you have one.</small>
+                    </div>
+                </div>
+                <div class="tf2">
+                    <div class="tfield"><label class="check"><input type="checkbox" id="rvOn" checked> Statutory pension insurance</label></div>
+                    <div class="tfield"><label class="check"><input type="checkbox" id="avOn" checked> Unemployment insurance</label></div>
+                </div>
+            </div>
+        </details>
+    </form>
+
+    <div class="tool-result" id="out" aria-live="polite"></div>
+
+    <div class="tool-foot">
+        <p><b>An honest estimate, not your payslip.</b> Assumes you're under 64 and no IV-with-factor; class II uses the one-child base relief; for private insurance the full premium is treated as basic cover. Payroll's day-exact algorithm may differ by a few euros.</p>
+        <p class="sources">Sources, verified 16 Jul 2026: <a href="https://www.gesetze-im-internet.de/estg/__32a.html" target="_blank" rel="noopener">§32a EStG</a> (tariff) · <a href="https://www.gesetze-im-internet.de/estg/__39b.html" target="_blank" rel="noopener">§39b EStG</a> (classes V/VI, allowances) · <a href="https://www.gesetze-im-internet.de/estg/__32.html" target="_blank" rel="noopener">§32(6)</a> + <a href="https://www.gesetze-im-internet.de/estg/__24b.html" target="_blank" rel="noopener">§24b EStG</a> (children, single parents) · <a href="https://www.gesetze-im-internet.de/sgb_11/__55.html" target="_blank" rel="noopener">§55</a>/<a href="https://www.gesetze-im-internet.de/sgb_11/__58.html" target="_blank" rel="noopener">§58 SGB XI</a> (care insurance) · <a href="https://www.bundesregierung.de/breg-de/aktuelles/beitragsgemessungsgrenzen-2386514" target="_blank" rel="noopener">Beitragsbemessungsgrenzen 2026</a> · wage tax cross-checked to the cent against the official <a href="https://www.bmf-steuerrechner.de" target="_blank" rel="noopener">BMF calculator</a> · runs entirely in your browser.</p>
+    </div>
+    <div class="tool-cta"><p>Salary sorted? Expadu handles <b>everything else about arriving</b>.</p><a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a></div>
+</div></div>
+
+<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./tools.html" style="color:var(--muted)">← all tools</a></span></div></footer>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});
+
+/* 2026 constants — verified against the statutes linked in the footer (2026-07-16).
+   Income-tax tariff + BBGs mirror config/lohnrechner.php. */
+var C={
+  gfb:12348, z2e:17799, z2a:914.51, z2b:1400, z3e:69878, z3a:173.10, z3b:2397, z3c:1034.87,
+  z4e:277825, z4r:.42, z4c:11135.63, z5r:.45, z5c:19470.38,
+  v56:{w1:14071, w2:34939, w3:222260},            // §39b(2) S.7 boundaries for classes V/VI
+  wk:1230, sa:36, entl2:4260,                     // employee lump sum (I–V), special expenses (I–V), §24b class II
+  kfbFull:9756,                                   // §32(6): (3,414 + 1,464) × 2 per full counter
+  vspMinRate:.12, vspMinCap:1900, vspMinCap3:3000,// Mindestvorsorgepauschale
+  soliFree:20350, soliR:.055, soliM:.119,
+  bbgKv:69750, bbgRv:101400,
+  kv:.146, kvErm:.140, pv:.036, pvKidless:.006, pvKidDisc:.0025, pvSaxonyShift:.005,
+  rv:.186, av:.026
+};
+var CH8={BW:1,BY:1};
+var CLS_HINT={
+  1:'Single, divorced or widowed — the default class.',
+  2:'Single parent — includes the €4,260 relief amount (§24b).',
+  3:'Married, the (much) higher earner — spouse takes V. Splitting tariff.',
+  4:'Married, both earning similarly — each taxed like class I.',
+  5:'Married, the lower earner — the allowances sit with your spouse in III.',
+  6:'Second job — no allowances at all, every euro is taxed.'
+};
+
+function tarif(z){var x=Math.floor(z);if(x<=C.gfb)return 0;if(x<=C.z2e){var y=(x-C.gfb)/1e4;return Math.floor((C.z2a*y+C.z2b)*y);}if(x<=C.z3e){var w=(x-C.z2e)/1e4;return Math.floor((C.z3a*w+C.z3b)*w+C.z3c);}if(x<=C.z4e)return Math.floor(C.z4r*x-C.z4c);return Math.floor(C.z5r*x-C.z5c);}
+
+/* Annual wage tax by class — §39b(2): splitting for III, the doubled-difference
+   formula with 14%-floor and 42%-corridor for V/VI, plain tariff otherwise. */
+function taxByClass(x,cls){
+  x=Math.floor(Math.max(0,x));
+  if(cls===3)return 2*tarif(Math.floor(x/2));
+  if(cls===5||cls===6){
+    var up=function(zx){zx=Math.floor(zx);return Math.max(2*(tarif(zx*1.25)-tarif(zx*.75)),Math.floor(zx*.14));};
+    if(x>C.v56.w2){var st=up(C.v56.w2)+(x-C.v56.w2)*C.z4r;if(x>C.v56.w3)st+=(x-C.v56.w3)*(C.z5r-C.z4r);return Math.floor(st);}
+    var s=up(x);
+    if(x>C.v56.w1)s=Math.min(s,up(C.v56.w1)+Math.floor((x-C.v56.w1)*C.z4r));
+    return s;
+  }
+  return tarif(x);
+}
+
+var euro=function(n){return '€'+Math.round(n).toLocaleString('en-US');};
+var state={period:'m',cls:1,kvType:'g',view:'m'};
+
+function chips(id,key,cb){document.querySelectorAll('#'+id+' button').forEach(function(b){b.addEventListener('click',function(){state[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;document.querySelectorAll('#'+id+' button').forEach(function(x){x.setAttribute('aria-pressed',x===b);});if(cb)cb();render();});});}
+chips('cls','cls');
+chips('kvType','kvType');
+chips('period','period',function(){
+  var g=document.getElementById('gross'),r=document.getElementById('grossR');
+  if(state.period==='y'){g.value=Math.round(+g.value*12);r.min=12000;r.max=180000;r.step=500;}
+  else{g.value=Math.round(+g.value/12/50)*50;r.min=1000;r.max=15000;r.step=50;}
+  r.value=g.value;
+});
+document.getElementById('grossR').addEventListener('input',function(){document.getElementById('gross').value=this.value;});
+document.getElementById('gross').addEventListener('input',function(){document.getElementById('grossR').value=this.value;});
+
+function row(l,y,share,kind,div){return '<div class="nb-row"><span>'+l+'</span><b>−'+euro(y/div)+'</b><i class="nb-bar"><i class="'+kind+'" style="width:'+Math.min(100,share*100).toFixed(1)+'%"></i></i></div>';}
+
+function render(){
+  var n=function(id){return Math.max(0,+document.getElementById(id).value||0);};
+  var on=function(id){return document.getElementById(id).checked;};
+  var cls=state.cls, land=document.getElementById('land').value, sax=land==='SN';
+  var hasKids=on('kids'), church=on('church');
+  document.getElementById('kidsFields').hidden=!hasKids;
+  document.getElementById('gkvFields').hidden=state.kvType!=='g';
+  document.getElementById('pkvFields').hidden=state.kvType!=='p';
+  document.getElementById('clsHint').textContent=CLS_HINT[cls];
+
+  var cashY=state.period==='m'?n('gross')*12:n('gross');
+  var benefitY=n('benefit')*12, totalY=cashY+benefitY;
+  if(totalY<=0){document.getElementById('out').innerHTML='<p class="explain">Enter your gross salary — the full breakdown appears here.</p>';return;}
+  var z=n('zusatz')/100, rvOn=on('rvOn'), avOn=on('avOn');
+  var kvBase=Math.min(totalY,C.bbgKv), rvBase=Math.min(totalY,C.bbgRv);
+
+  // Employee social insurance
+  var kvEmp=0,pvEmp=0,pkvOut=0,subsY=0,pvEmpr=kvBase*(C.pv/2-(sax?C.pvSaxonyShift:0)),kvEmpr=0;
+  if(state.kvType==='g'){
+    kvEmp=kvBase*(C.kv+z)/2; kvEmpr=kvBase*(C.kv+z)/2;
+    var pvRate=C.pv/2+(sax?C.pvSaxonyShift:0)
+      +(hasKids?0:C.pvKidless)
+      -(hasKids?C.pvKidDisc*Math.min(Math.max(n('kidsU25')-1,0),4):0);
+    pvEmp=kvBase*Math.max(0,pvRate);
+  }else{
+    var premM=n('prem');
+    var capM=C.bbgKv/12*((C.kv+z)/2)+C.bbgKv/12*(C.pv/2-(sax?C.pvSaxonyShift:0));
+    var subsM=on('subs')?Math.min(premM/2,capM):0;
+    subsY=subsM*12; pkvOut=(premM-subsM)*12; pvEmpr=0;
+  }
+  var rvEmp=rvOn?rvBase*C.rv/2:0, avEmp=avOn?rvBase*C.av/2:0;
+
+  // Vorsorgepauschale (§39b(2) S.5 Nr.3): pension part + health/care part with the 12% floor.
+  // The deductible health part uses the ermäßigter Satz (14.0% → employee 7.0% + Zusatz/2, §243 SGB V),
+  // not the 7.3% actually withheld — confirmed to the cent against the official BMF calculator.
+  var mvp=Math.min(totalY*C.vspMinRate,cls===3?C.vspMinCap3:C.vspMinCap);
+  var vspKvPv=state.kvType==='g'?Math.max(kvBase*(C.kvErm+z)/2+pvEmp,mvp):Math.max(pkvOut,mvp);
+  var vsp=(rvOn?rvBase*C.rv/2:0)+vspKvPv;
+
+  // Taxable wage per class
+  var pausch=cls===6?0:C.wk+C.sa;
+  var zvE=totalY-pausch-vsp-(cls===2?C.entl2:0)-n('freib');
+  var tax=taxByClass(zvE,cls);
+
+  // Church tax + Soli run on the tax recomputed with child allowances (classes I–IV)
+  var kfbY=(hasKids&&cls<=4)?(+document.getElementById('kfb').value)*C.kfbFull:0;
+  var taxAnnex=kfbY>0?taxByClass(zvE-kfbY,cls):tax;
+  var soliLim=C.soliFree*(cls===3?2:1);
+  var soli=taxAnnex<=soliLim?0:Math.min(taxAnnex*C.soliR,(taxAnnex-soliLim)*C.soliM);
+  var ct=church?taxAnnex*(CH8[land]?.08:.09):0;
+
+  var si=kvEmp+pvEmp+rvEmp+avEmp;
+  var taxes=tax+soli+ct;
+  var netY=totalY-si-taxes-pkvOut-benefitY;
+  var erY=totalY+(state.kvType==='g'?kvEmpr:subsY)+(state.kvType==='g'?pvEmpr:0)+(rvOn?rvBase*C.rv/2:0)+(avOn?rvBase*C.av/2:0);
+
+  var div=state.view==='m'?12:1, unit=state.view==='m'?' per month':' per year';
+  var alt=state.view==='m'?euro(netY)+' a year':euro(netY/12)+' a month';
+  document.getElementById('out').innerHTML=
+    '<div class="nb-head"><div class="verdict good">'+euro(netY/div)+' net'+unit+'</div>'+
+    '<div class="mini-chips" id="view"><button type="button" data-v="m" aria-pressed="'+(state.view==='m')+'">monthly</button><button type="button" data-v="y" aria-pressed="'+(state.view==='y')+'">yearly</button></div></div>'+
+    '<p class="explain">'+alt+' — you keep <b>'+Math.round(netY/totalY*100)+'%</b> of your gross.</p>'+
+    '<div class="stat-chips"><span>taxes '+(taxes/totalY*100).toFixed(1)+'%</span><span>social security '+((si+pkvOut)/totalY*100).toFixed(1)+'%</span>'+(benefitY>0?'<span>incl. '+euro(benefitY/div)+' non-cash</span>':'')+'</div>'+
+    '<div class="nb-group">Taxes</div><div class="nb-rows">'+
+      row('Income tax',tax,tax/totalY,'tax',div)+
+      (soli>0?row('Solidarity surcharge',soli,soli/totalY,'tax',div):'')+
+      (ct>0?row('Church tax ('+(CH8[land]?'8':'9')+'%)',ct,ct/totalY,'tax',div):'')+
+    '</div><div class="nb-group">Social security</div><div class="nb-rows">'+
+      (state.kvType==='g'
+        ?row('Health insurance',kvEmp,kvEmp/totalY,'si',div)+row('Care insurance',pvEmp,pvEmp/totalY,'si',div)
+        :row('Private health (after subsidy)',pkvOut,pkvOut/totalY,'si',div))+
+      (rvEmp>0?row('Pension',rvEmp,rvEmp/totalY,'si',div):'')+
+      (avEmp>0?row('Unemployment',avEmp,avEmp/totalY,'si',div):'')+
+    '</div>'+
+    '<p class="explain emp-line">Your employer actually pays <b>'+euro(erY/div)+unit+'</b> — '+euro((erY-totalY)/div)+' in contributions on top of your gross.</p>';
+  document.querySelectorAll('#view button').forEach(function(b){b.addEventListener('click',function(){state.view=b.dataset.v;render();});});
+}
+document.getElementById('f').addEventListener('input',render);
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Citizenship quiz — Expadu (prototype)</title>
+<link rel="stylesheet" href="./proto.css?v=4">
+<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
+</head>
+<body>
+<nav><div class="nav-inner">
+    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
+    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html">Free tools</a><a href="./blog.html">Blog</a></div>
+    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+    <span class="eyebrow">Free tool · StAG, 2024 reform</span>
+    <h1>Are you on track for a German passport?</h1>
+    <p class="sub">Five questions against the current rules — since 2024 you generally keep your original citizenship.</p>
+
+    <div class="tool-form" id="quiz">
+        <div class="quiz-prog"><i id="prog" style="width:20%"></i></div>
+
+        <div class="quiz-step on" data-s="0">
+            <div class="quiz-q">How many years have you lived legally in Germany?</div>
+            <div class="quiz-opts">
+                <button data-k="years" data-v="1">Under 3 years</button>
+                <button data-k="years" data-v="3">3 – 4 years</button>
+                <button data-k="years" data-v="5">5 years or more</button>
+            </div>
+        </div>
+        <div class="quiz-step" data-s="1">
+            <div class="quiz-q">Are you married to a German citizen (2+ years)?</div>
+            <div class="quiz-opts">
+                <button data-k="married" data-v="1">Yes</button>
+                <button data-k="married" data-v="0">No</button>
+            </div>
+        </div>
+        <div class="quiz-step" data-s="2">
+            <div class="quiz-q">Your German level?</div>
+            <div class="quiz-opts">
+                <button data-k="german" data-v="none">Below B1 (yet)</button>
+                <button data-k="german" data-v="b1">B1 certified</button>
+                <button data-k="german" data-v="c1">C1 certified</button>
+            </div>
+        </div>
+        <div class="quiz-step" data-s="3">
+            <div class="quiz-q">Do you support yourself without basic benefits?</div>
+            <div class="quiz-opts">
+                <button data-k="livelihood" data-v="1">Yes</button>
+                <button data-k="livelihood" data-v="0">Not fully</button>
+            </div>
+        </div>
+        <div class="quiz-step" data-s="4">
+            <div class="quiz-q">Naturalisation test?</div>
+            <div class="quiz-opts">
+                <button data-k="test" data-v="1">Passed</button>
+                <button data-k="test" data-v="0">Not yet (33 questions, bookable at the VHS)</button>
+            </div>
+        </div>
+        <button class="quiz-back" id="back" hidden>← back</button>
+    </div>
+
+    <div class="tool-result" id="out" aria-live="polite"></div>
+
+    <div class="tool-foot">
+        <p><b>A guide, not legal advice.</b> The 3-year fast track additionally needs special integration achievements only the Behörde can assess; convictions block naturalisation.</p>
+        <p class="sources">Sources: <a href="https://www.gesetze-im-internet.de/stag/__10.html" target="_blank" rel="noopener">§10 StAG</a> · <a href="https://www.gesetze-im-internet.de/stag/__9.html" target="_blank" rel="noopener">§9 StAG (spouses)</a> · BAMF naturalisation test.</p>
+    </div>
+    <div class="tool-cta"><p>Expadu tracks the whole road there — permits, deadlines, paperwork, in English.</p><a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a></div>
+</div></div>
+
+<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./tools.html" style="color:var(--muted)">← all tools</a></span></div></footer>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});
+var A={}, step=0, STEPS=5;
+var steps=document.querySelectorAll('.quiz-step');
+function show(n){
+  step=n;
+  steps.forEach(function(s){s.classList.toggle('on',+s.dataset.s===n);});
+  document.getElementById('prog').style.width=((n+1)/STEPS*100)+'%';
+  document.getElementById('back').hidden=n===0;
+  if(n<STEPS) document.getElementById('out').innerHTML='';
+}
+document.querySelectorAll('.quiz-opts button').forEach(function(b){
+  b.addEventListener('click',function(){
+    A[b.dataset.k]=b.dataset.v;
+    if(step<STEPS-1){show(step+1);} else {verdict();}
+  });
+});
+document.getElementById('back').addEventListener('click',function(){show(Math.max(0,step-1));});
+function verdict(){
+  document.getElementById('prog').style.width='100%';
+  var years=+A.years, track, need;
+  if(A.married==='1'){track='the spouse route (§9 StAG)';need=3;}
+  else if(A.german==='c1'){track='the fast track (§10 Abs. 3) — if the Behörde accepts your integration record';need=3;}
+  else{track='the standard route (§10 StAG)';need=5;}
+  var missing=[];
+  if(A.german==='none')missing.push('B1 German certificate');
+  if(A.test==='0')missing.push('naturalisation test');
+  if(A.livelihood==='0')missing.push('secured livelihood');
+  var short=Math.max(0,need-years);
+  var ok=short===0&&missing.length===0;
+  document.getElementById('out').innerHTML=
+    '<div class="verdict '+(ok?'good':'warn')+'">'+(ok?'On paper, you can apply.':short===0?'Residence time: done. A few boxes left.':'Not yet — but the path is clear.')+'</div>'+
+    '<p class="explain">'+(short===0?'Your residence time already meets <b>'+track+'</b>.':'You reach <b>'+track+'</b> in about <b>'+short+' more year'+(short===1?'':'s')+'</b> ('+need+' total).')+'</p>'+
+    (missing.length?'<p class="explain">Still needed: <b>'+missing.join('</b> · <b>')+'</b>.</p>':'')+
+    '<p class="explain">Since the 2024 reform you generally <b>keep your original citizenship</b>.</p>'+
+    '<p class="explain"><button class="quiz-back" style="margin-top:4px" onclick="location.reload()">↺ start over</button></p>';
+}
+</script>
+</body>
+</html>

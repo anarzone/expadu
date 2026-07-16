@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free tools — Expadu (prototype)</title>
+<link rel="stylesheet" href="./proto.css?v=4">
+<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
+</head>
+<body>
+<nav><div class="nav-inner">
+    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
+    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html" style="color:var(--ink)">Free tools</a><a href="./blog.html">Blog</a></div>
+    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
+</div></nav>
+
+<div class="page"><div class="wrap-wide">
+    <span class="eyebrow">Free · no signup · official sources</span>
+    <h1>Tools for your life in Germany.</h1>
+    <p class="sub" style="max-width:56ch">Each one answers a real newcomer question in under a minute — with the source for every number.</p>
+    <div class="tool-grid">
+        <a class="tool" href="./tool-netto.html">
+            <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h9"/></svg></div>
+            <h3>Netto-brutto calculator</h3><p>The full 2026 payroll math — all six tax classes, church, kids, statutory or private insurance.</p>
+            <span class="go">Calculate your net →</span>
+        </a>
+        <a class="tool" href="./tool-dticket.html">
+            <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M8 21h8M12 18v3M8 7h8M8 11h5"/></svg></div>
+            <h3>Deutschlandticket break-even</h3><p>Is €63/month worth it for how you actually move? Honest verdict, 2026 Cologne tariff.</p>
+            <span class="go">Check yours →</span>
+        </a>
+        <a class="tool" href="./tool-residency.html">
+            <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+            <h3>Permanent-residency timeline</h3><p>Your earliest Niederlassungserlaubnis date — and what legally speeds it up.</p>
+            <span class="go">See your date →</span>
+        </a>
+        <a class="tool" href="./tool-citizenship.html">
+            <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15V8l8-4 8 4v7"/><path d="M8 21v-6a4 4 0 0 1 8 0v6"/></svg></div>
+            <h3>Citizenship quiz</h3><p>On track for a German passport under the 2024 rules? Five questions, sourced.</p>
+            <span class="go">Take the quiz →</span>
+        </a>
+    </div>
+</div></div>
+
+<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./v2.html" style="color:var(--muted)">← back to the landing</a></span></div></footer>
+<script>document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});</script>
+</body>
+</html>

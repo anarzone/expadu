@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blog — Expadu (prototype)</title>
+<link rel="stylesheet" href="./proto.css?v=4">
+<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
+</head>
+<body>
+<nav><div class="nav-inner">
+    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
+    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html">Free tools</a><a href="./blog.html" style="color:var(--ink)">Blog</a></div>
+    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
+</div></nav>
+
+<div class="page"><div class="wrap" style="max-width:760px">
+    <span class="eyebrow">The Expadu blog</span>
+    <h1>Germany, explained in English.</h1>
+    <p class="sub">Written from the same sourced catalogue that powers the app — every fee, deadline and document links to the official page.</p>
+
+    <a class="post-card" href="./blog-post.html">
+        <span class="post-date">13 Jul 2026</span>
+        <h3>Anmeldung in Cologne: the complete English guide (2026)</h3>
+        <p>The 14-day rule, the exact documents, the landlord form everyone forgets, and what happens after — every claim linked to the official source.</p>
+        <span class="post-more">Read the guide →</span>
+    </a>
+    <a class="post-card" href="./blog-post-90days.html">
+        <span class="post-date">13 Jul 2026</span>
+        <h3>Your first 90 days in Cologne, in order</h3>
+        <p>The newcomer checklist that actually has an order — before you fly, the first 14 days, and the first three months. With the real deadlines.</p>
+        <span class="post-more">Read the guide →</span>
+    </a>
+    <div class="post-card" style="opacity:.55">
+        <span class="post-date">Coming next</span>
+        <h3>EU Blue Card vs standard work permit in 2026</h3>
+        <p>The €50.7k threshold, what your contract decides, and which is faster to permanent residency.</p>
+    </div>
+</div></div>
+
+<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./v2.html" style="color:var(--muted)">← back to the landing</a></span></div></footer>
+<script>document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Permanent-residency timeline — Expadu (prototype)</title>
+<link rel="stylesheet" href="./proto.css?v=4">
+<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
+</head>
+<body>
+<nav><div class="nav-inner">
+    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
+    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html">Free tools</a><a href="./blog.html">Blog</a></div>
+    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+    <span class="eyebrow">Free tool · AufenthG tracks</span>
+    <h1>When can you get permanent residency?</h1>
+    <p class="sub">The Niederlassungserlaubnis ends visa renewals for good. Watch your timeline fill up.</p>
+
+    <form class="tool-form" id="f" onsubmit="return false">
+        <div class="tfield">
+            <label>Your permit</label>
+            <div class="chips-row" id="track">
+                <button type="button" data-m="21" data-k="bc" aria-pressed="false">EU Blue Card</button>
+                <button type="button" data-m="36" data-k="sw" aria-pressed="true">Skilled worker</button>
+                <button type="button" data-m="36" data-k="fam" aria-pressed="false">Family of a German</button>
+                <button type="button" data-m="60" data-k="gen" aria-pressed="false">General route</button>
+            </div>
+        </div>
+        <div class="tfield">
+            <label>Holding it since</label>
+            <div class="mpick">
+                <div class="mpick-year"><button type="button" id="yp">‹</button><b id="yv">2024</b><button type="button" id="yn">›</button></div>
+                <div class="mpick-grid" id="mg"></div>
+            </div>
+        </div>
+        <div class="tfield" id="b1F" hidden><label class="check"><input type="checkbox" id="b1" checked> I have B1 German</label><small>Blue Card: 21 months with B1, 27 with A1.</small></div>
+        <div class="tfield" id="degF" hidden><label class="check"><input type="checkbox" id="deg"> German university degree</label><small>Skilled workers with a German degree: 2 years (§18c).</small></div>
+    </form>
+
+    <div class="tool-result" id="out" aria-live="polite"></div>
+
+    <div class="tool-foot">
+        <p><b>Date math is the easy part.</b> The Ausländerbehörde also wants pension contributions, secured livelihood, B1 (track-dependent) and adequate housing.</p>
+        <p class="sources">Thresholds: §9 / §18c / §28 AufenthG, <a href="https://www.gesetze-im-internet.de/aufenthg_2004/__9.html" target="_blank" rel="noopener">gesetze-im-internet.de</a> · same engine as the Expadu app.</p>
+    </div>
+    <div class="tool-cta"><p>Expadu <b>counts this down for you</b> — and tells you the moment you cross the bar.</p><a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a></div>
+</div></div>
+
+<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./tools.html" style="color:var(--muted)">← all tools</a></span></div></footer>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var nowY=new Date().getFullYear(), nowM=new Date().getMonth(), minY=nowY-20;
+var pickY=nowY, since='', months=36, trackKey='sw';
+var yv=document.getElementById('yv'), mg=document.getElementById('mg');
+function grid(){
+  yv.textContent=pickY;
+  document.getElementById('yp').disabled=pickY<=minY;
+  document.getElementById('yn').disabled=pickY>=nowY;
+  mg.innerHTML='';
+  MON.forEach(function(n,i){
+    var v=pickY+'-'+String(i+1).padStart(2,'0');
+    var b=document.createElement('button'); b.type='button'; b.textContent=n;
+    b.disabled=(pickY===nowY&&i>nowM);
+    b.setAttribute('aria-pressed',String(since===v));
+    b.addEventListener('click',function(){since=v;grid();render();});
+    mg.appendChild(b);
+  });
+}
+document.getElementById('yp').addEventListener('click',function(){pickY=Math.max(minY,pickY-1);grid();});
+document.getElementById('yn').addEventListener('click',function(){pickY=Math.min(nowY,pickY+1);grid();});
+document.querySelectorAll('#track button').forEach(function(b){b.addEventListener('click',function(){
+  months=+b.dataset.m; trackKey=b.dataset.k;
+  document.querySelectorAll('#track button').forEach(function(x){x.setAttribute('aria-pressed',x===b);});
+  render();});});
+function effMonths(){
+  if(trackKey==='bc') return document.getElementById('b1').checked?21:27;
+  if(trackKey==='sw'&&document.getElementById('deg').checked) return 24;
+  return months;
+}
+function render(){
+  document.getElementById('b1F').hidden=trackKey!=='bc';
+  document.getElementById('degF').hidden=trackKey!=='sw';
+  var out=document.getElementById('out');
+  if(!since){out.innerHTML='<p class="explain">Pick your permit and the month you\'ve held it since — your timeline appears here.</p>';return;}
+  var m=effMonths(), p=since.split('-'), start=new Date(+p[0],+p[1]-1,1);
+  var end=new Date(+p[0],+p[1]-1+m,1), now=new Date();
+  var total=end-start, done=Math.min(Math.max(now-start,0),total), pct=total>0?done/total*100:100;
+  var left=(end.getFullYear()-now.getFullYear())*12+(end.getMonth()-now.getMonth());
+  var lbl=end.toLocaleDateString('en-DE',{month:'long',year:'numeric'});
+  var startLbl=start.toLocaleDateString('en-DE',{month:'short',year:'numeric'});
+  out.innerHTML=(left<=0
+    ?'<div class="verdict good">You may already qualify 🎉</div><p class="explain">Your '+m+'-month mark passed in <b>'+lbl+'</b>.</p>'
+    :'<div class="verdict good">Earliest application: <b>'+lbl+'</b></div><p class="explain">That\'s in about <b>'+left+' month'+(left===1?'':'s')+'</b> — you\'re <b>'+Math.round(pct)+'%</b> of the way there.</p>')+
+    '<div class="tl"><div class="tl-track"><div class="tl-fill" style="width:'+Math.min(100,pct).toFixed(1)+'%"></div><div class="tl-now" style="left:'+Math.min(100,pct).toFixed(1)+'%"></div></div>'+
+    '<div class="tl-labels"><span>'+startLbl+'</span><span>'+m+' months</span><span>'+lbl+'</span></div></div>';
+}
+document.getElementById('f').addEventListener('input',render);
+grid(); render();
+</script>
+</body>
+</html>

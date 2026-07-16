@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deutschlandticket break-even — Expadu (prototype)</title>
+<link rel="stylesheet" href="./proto.css?v=4">
+<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
+</head>
+<body>
+<nav><div class="nav-inner">
+    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
+    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html">Free tools</a><a href="./blog.html">Blog</a></div>
+    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
+</div></nav>
+
+<div class="page"><div class="wrap">
+    <span class="eyebrow">Free tool · Cologne 2026 tariff</span>
+    <h1>Is the Deutschlandticket worth it for you?</h1>
+    <p class="sub">€63/month, all local transit in Germany. Drag how often you actually ride.</p>
+
+    <form class="tool-form" id="f" onsubmit="return false">
+        <div class="tfield">
+            <label>Single trips per week <small style="display:inline;color:var(--muted);font-weight:400">(a commute is usually 10)</small></label>
+            <div class="slider-row"><input type="range" id="trips" min="0" max="30" step="1" value="8"><output id="tripsOut">8 trips</output></div>
+        </div>
+        <div class="tfield">
+            <label>Your typical trip</label>
+            <div class="chips-row" id="fare">
+                <button type="button" data-v="2.90" aria-pressed="false">Kurzstrecke €2.90</button>
+                <button type="button" data-v="4.00" aria-pressed="true">Within Köln €4.00</button>
+                <button type="button" data-v="5.50" aria-pressed="false">Region €5.50</button>
+            </div>
+        </div>
+        <div class="tfield">
+            <label>Employer contribution (€/month)</label>
+            <div class="slider-row"><input type="range" id="sub" min="0" max="63" step="1" value="0"><output id="subOut">€0</output></div>
+        </div>
+    </form>
+
+    <div class="tool-result" id="out" aria-live="polite"></div>
+
+    <div class="tool-foot">
+        <p><b>Good to know:</b> with eezy.nrw you never pay more than €63/month anyway — the D-Ticket buys simplicity and Germany-wide validity (no IC/ICE).</p>
+        <p class="sources">Fares: <a href="https://www.kvb.koeln/abos-und-tickets/preise-und-preisstufen.html" target="_blank" rel="noopener">KVB price table</a> (Rheinlandtarif) · verified 2026-06-17 · runs in your browser.</p>
+    </div>
+    <div class="tool-cta"><p>Expadu shows a <b>covered-by-your-ticket</b> badge on every route it plans.</p><a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a></div>
+</div></div>
+
+<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./tools.html" style="color:var(--muted)">← all tools</a></span></div></footer>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});
+var DT=63, CAP=63, fare=4.00;
+var euro=function(n){return '€'+Math.round(n).toLocaleString('en-US');};
+document.querySelectorAll('#fare button').forEach(function(b){b.addEventListener('click',function(){fare=+b.dataset.v;document.querySelectorAll('#fare button').forEach(function(x){x.setAttribute('aria-pressed',x===b);});render();});});
+function render(){
+  var t=+document.getElementById('trips').value, sub=+document.getElementById('sub').value;
+  document.getElementById('tripsOut').textContent=t+' trips';
+  document.getElementById('subOut').textContent=euro(sub);
+  var raw=t*4.33*fare, payg=Math.min(raw,CAP), ticket=DT-sub;
+  var save=(payg-ticket)*12, max=Math.max(payg,ticket,1);
+  var verdict, tone;
+  if(ticket<=payg*0.85||raw>=CAP){verdict='Yes — get the ticket.';tone='good';}
+  else if(ticket<=payg*1.15){verdict='A toss-up — take it for the freedom.';tone='good';}
+  else{verdict='Not yet — pay per ride.';tone='warn';}
+  document.getElementById('out').innerHTML=
+    '<div class="verdict '+tone+'">'+verdict+'</div>'+
+    '<div class="cmp-bars">'+
+    '<div class="cmp-bar a"><span><span>Pay-as-you-go (eezy-capped)</span><b>'+euro(payg)+'/mo</b></span><i><b style="width:'+(payg/max*100).toFixed(1)+'%"></b></i></div>'+
+    '<div class="cmp-bar b"><span><span>Deutschlandticket'+(sub>0?' after employer share':'')+'</span><b>'+euro(ticket)+'/mo</b></span><i><b style="width:'+(ticket/max*100).toFixed(1)+'%"></b></i></div>'+
+    '</div>'+
+    '<p class="explain">'+(save>0?'That\'s about <b>'+euro(save)+' saved per year</b> — plus every bus and regional train in Germany.':'Your break-even is <b>'+Math.ceil(ticket/fare)+' trips a month</b> (~'+Math.ceil(ticket/fare/4.33)+' a week) at this fare.')+'</p>';
+}
+document.getElementById('f').addEventListener('input',render);
+render();
+</script>
+</body>
+</html>
