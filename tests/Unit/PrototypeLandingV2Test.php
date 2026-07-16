@@ -47,5 +47,6 @@ it('keeps each local landing destination available', function (string $file) {
     'tool-residency.html',
     'tool-citizenship.html',
     'tool-netto.html',
+    'guide.css',
     'proto.css',
 ]);

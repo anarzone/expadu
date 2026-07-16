@@ -1,70 +1,490 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Your first 90 days in Cologne, in order — Expadu (prototype)</title>
-<link rel="stylesheet" href="./proto.css?v=4">
-<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
-</head>
-<body>
-<nav><div class="nav-inner">
-    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
-    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html">Free tools</a><a href="./blog.html">Blog</a></div>
-    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
-</div></nav>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="description"
+            content="A source-checked, ordered checklist for your first 90 days in Cologne."
+        />
+        <title>Your first 90 days in Cologne, in order — Expadu</title>
+        <link rel="stylesheet" href="./guide.css?v=4" />
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+            <div class="nav-inner">
+                <a class="logo" href="./v2.html#top" aria-label="Expadu home">
+                    <svg viewBox="0 0 100 100" aria-hidden="true">
+                        <g transform="translate(2.45,2.05)">
+                            <circle
+                                cx="20.5"
+                                cy="50"
+                                r="6"
+                                fill="var(--cyan)"
+                            />
+                            <rect
+                                class="stem"
+                                x="30"
+                                y="24"
+                                width="13"
+                                height="52"
+                                rx="6"
+                            />
+                            <rect
+                                x="46"
+                                y="24"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-7 46 30)"
+                            />
+                            <rect
+                                x="46"
+                                y="43.5"
+                                width="25"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-4 46 50)"
+                            />
+                            <rect
+                                x="46"
+                                y="63"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-2 46 69)"
+                            />
+                        </g>
+                    </svg>
+                    Expadu
+                </a>
+                <div class="nav-links">
+                    <a href="./v2.html#demo">How it works</a>
+                    <a href="./v2.html#bureaucracy">Paperwork</a>
+                    <a href="./v2.html#transit">Transit</a>
+                    <a href="./tools.html">Free tools</a>
+                    <a href="./blog.html" aria-current="page">Guides</a>
+                    <a href="./v2.html#faq">FAQ</a>
+                </div>
+                <div class="nav-cta">
+                    <button
+                        id="menuBtn"
+                        type="button"
+                        aria-label="Menu"
+                        aria-expanded="false"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                        >
+                            <path d="M4 7h16M4 12h16M4 17h16" />
+                        </svg>
+                    </button>
+                    <button
+                        id="themeToggle"
+                        type="button"
+                        aria-label="Toggle dark mode"
+                    >
+                        <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                        >
+                            <path
+                                d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"
+                            />
+                        </svg>
+                    </button>
+                    <a class="login" href="https://app.expadu.com/login"
+                        >Log in</a
+                    >
+                    <a
+                        class="btn btn-primary btn-small"
+                        href="https://app.expadu.com/register"
+                        >Start free</a
+                    >
+                </div>
+            </div>
+        </nav>
 
-<article class="page prose"><div class="wrap" style="max-width:720px">
-    <span class="eyebrow">Guide</span>
-    <h1>Your first 90 days in Cologne, in order (2026)</h1>
-    <p class="meta">Published 13 July 2026 · by Anar — an expat in Cologne who did all of this the hard way</p>
+        <main id="main">
+            <header class="article-hero">
+                <div class="wrap">
+                    <nav class="breadcrumb" aria-label="Breadcrumb">
+                        <a href="./blog.html">Guides</a
+                        ><span aria-hidden="true">/</span
+                        ><span>Start here</span>
+                    </nav>
+                    <span class="eyebrow">The ordered newcomer checklist</span>
+                    <h1>Your first 90 days in Cologne, <em>in order.</em></h1>
+                    <p class="dek">
+                        German paperwork is a dependency chain. This is the
+                        sequence that keeps one missing document from blocking
+                        the next three steps.
+                    </p>
+                    <div class="byline">
+                        <span>10 min read</span
+                        ><span>By Anar · expat in Cologne</span
+                        ><span class="checked"
+                            >Official sources checked 13 July 2026</span
+                        >
+                    </div>
+                </div>
+            </header>
 
-    <p>Most newcomer checklists are a pile of tasks with no sequence. But German bureaucracy is a <b>dependency chain</b>: no bank account without an address registration, no tax ID without the registration, no permit appointment without insurance. Do things in the wrong order and you wait twice.</p>
+            <div class="wrap article-layout">
+                <nav class="toc" aria-label="On this page">
+                    <strong>On this page</strong>
+                    <a href="#before">Before you fly</a>
+                    <a href="#days-1-14">Days 1–14</a>
+                    <a href="#weeks-1-3">Weeks 1–3</a>
+                    <a href="#weeks-2-8">Weeks 2–8</a>
+                    <a href="#months-1-3">Months 1–3</a>
+                    <a href="#after">After 90 days</a>
+                </nav>
 
-    <h2>Before you fly</h2>
-    <ul>
-        <li><b>Passport validity</b> — permits are capped at your passport's expiry. If it expires within a year, renew before you leave.</li>
-        <li><b>Documents that must travel with you:</b> birth certificate, marriage certificate if applicable, degree certificates, and (non-EU students) proof of your blocked account. Certified translations are dramatically easier to arrange from home.</li>
-        <li><b>Line up a first address.</b> A sublet works — what matters is a landlord willing to sign the registration form.</li>
-    </ul>
+                <article class="article-body">
+                    <p>
+                        Most newcomer checklists are a pile of tasks. But the
+                        order matters: your registered address drives official
+                        mail; health-insurance evidence matters for work, study
+                        and many residence routes; permit timing depends on your
+                        current status.
+                    </p>
 
-    <h2>Days 1–14: the one hard deadline</h2>
-    <p><b>Anmeldung — register your address.</b> Within 14 days of moving in, at any Kundenzentrum in the city, free of charge. You need your passport and the <b>Wohnungsgeberbestätigung</b> — a form your landlord signs; the rental contract is <i>not</i> enough. Everything else in your German life hangs off this appointment.</p>
-    <p>We wrote the <a href="./blog-post.html">full English guide to the Anmeldung</a> — the 14-day rule, the landlord-form trap, and how to actually find a slot.</p>
+                    <div class="timeline" aria-label="First 90 days overview">
+                        <div class="timeline-row">
+                            <strong>Before travel</strong>
+                            <p>
+                                Secure identity and civil-status documents,
+                                translations where needed, and an address you
+                                can actually register.
+                            </p>
+                        </div>
+                        <div class="timeline-row">
+                            <strong>Days 1–14</strong>
+                            <p>
+                                Register your address and protect the documents
+                                produced by the appointment.
+                            </p>
+                        </div>
+                        <div class="timeline-row">
+                            <strong>Weeks 1–8</strong>
+                            <p>
+                                Connect health insurance, tax, banking and any
+                                necessary residence application.
+                            </p>
+                        </div>
+                        <div class="timeline-row">
+                            <strong>Months 1–3</strong>
+                            <p>
+                                Handle household obligations, insurance
+                                decisions and the transit setup that fits your
+                                routine.
+                            </p>
+                        </div>
+                    </div>
 
-    <h2>Weeks 1–3: the money-and-health layer</h2>
-    <ol>
-        <li><b>Health insurance.</b> Legally required, and payroll (or the university) asks for it in week one. Employees: pick a public Krankenkasse and give the name to HR. Students: the discounted rate is about <b>€145/month all-in (2026)</b>. Freelancers: you self-register — and the public-vs-private choice is sticky, so decide deliberately.</li>
-        <li><b>Your Steuer-ID arrives by post</b> 2–4 weeks after Anmeldung, automatically. It looks like junk mail. It is not junk mail. No Steuer-ID at payroll time = maximum tax class until it arrives.</li>
-        <li><b>Bank account.</b> With your Meldebescheinigung and passport, any bank or neobank works. Rent, insurance and salary all want a European IBAN.</li>
-    </ol>
+                    <h2 id="before">Before you fly</h2>
+                    <ul>
+                        <li>
+                            <strong>Check passport validity.</strong> A short
+                            remaining validity can limit the period of a visa or
+                            residence document.
+                        </li>
+                        <li>
+                            <strong
+                                >Bring the originals that are hard to
+                                replace.</strong
+                            >
+                            Depending on your route: birth and marriage
+                            certificates, qualifications, admission or
+                            employment documents, and financial evidence.
+                        </li>
+                        <li>
+                            <strong
+                                >Check translation and legalisation
+                                requirements.</strong
+                            >
+                            Do not assume an English original is accepted for
+                            every procedure.
+                        </li>
+                        <li>
+                            <strong>Line up a registrable address.</strong> A
+                            signed lease alone is not the same as the
+                            Wohnungsgeberbestätigung needed for Anmeldung.
+                        </li>
+                    </ul>
+                    <div class="fact">
+                        <strong
+                            >Your situation changes the document pack.</strong
+                        >
+                        <p>
+                            A student, employee, EU citizen, Blue Card holder
+                            and accompanying family do not share one universal
+                            checklist. Use the authority page for your exact
+                            route.
+                        </p>
+                    </div>
 
-    <h2>Weeks 2–8: your permit, if you need one</h2>
-    <p>EU citizens: skip ahead — no permit needed. Everyone else: Cologne's <b>Ausländerbehörde</b> books out weeks ahead, so apply well before your visa runs out. Which permit depends on your situation: standard work permit or <b>EU Blue Card</b> (salary threshold around €50.7k in 2026, lower in shortage jobs), student permit, family reunification, or the §21 self-employment route.</p>
-    <ul>
-        <li>Submitting <b>before your visa expires</b> protects your status while you wait (you may get a Fiktionsbescheinigung as proof).</li>
-        <li>Your appointment date can be months out — that's normal, and legal, as long as you applied in time.</li>
-    </ul>
+                    <h2 id="days-1-14">Days 1–14: register the address</h2>
+                    <p>
+                        Register after moving into the home. You normally need
+                        identity documents and the separate confirmation from
+                        the housing provider. Cologne's service page is the
+                        current source for booking, forms and local
+                        requirements.
+                    </p>
+                    <p>
+                        Read our
+                        <a href="./blog-post.html"
+                            >complete English Anmeldung guide</a
+                        >
+                        before the appointment. It covers the landlord-form trap
+                        and what to keep afterwards.
+                    </p>
+                    <div class="fact cyan">
+                        <strong>The dependency this unlocks</strong>
+                        <p>
+                            Your registered address becomes the delivery point
+                            for official mail, including the tax identification
+                            number after a first registration in Germany.
+                        </p>
+                    </div>
 
-    <h2>Month 1–3: the quiet obligations</h2>
-    <ul>
-        <li><b>Rundfunkbeitrag</b> (broadcast fee): <b>€18.36/month, one per household</b> — it finds your mailbox automatically after Anmeldung. If a flatmate already pays, register that instead of paying twice.</li>
-        <li><b>Haftpflichtversicherung</b> (personal liability insurance): not mandatory, but ~€5/month — and if you break someone's €2,000 e-bike, you'll agree it was worth it.</li>
-        <li><b>Transit ticket.</b> Riding more than about 4 times a week? The €63 Deutschlandticket beats paying per ride — <a href="./tool-dticket.html">check your own break-even</a> with Cologne's 2026 fares.</li>
-    </ul>
+                    <h2 id="weeks-1-3">Weeks 1–3: health, tax and money</h2>
+                    <h3>1. Make your health-insurance status explicit</h3>
+                    <p>
+                        Health insurance is mandatory in Germany, but the right
+                        path depends on whether you are employed, studying,
+                        self-employed, privately insured or covered through
+                        family. Ask the insurer for the evidence your employer,
+                        university or authority needs.
+                    </p>
+                    <h3>2. Watch for your tax ID</h3>
+                    <p>
+                        After your first registration, the Federal Central Tax
+                        Office sends the tax ID to your registered address. You
+                        keep this number for life. If it does not arrive, use
+                        the BZSt process rather than applying for a “new”
+                        number.
+                    </p>
+                    <h3>3. Choose banking for the life you actually have</h3>
+                    <p>
+                        Account-opening requirements vary by bank. Compare
+                        identity checks, fees, cash access, language support and
+                        whether your employer or landlord needs a particular
+                        account function.
+                    </p>
 
-    <h2>After 90 days: lift your head</h2>
-    <p>You're through the paperwork phase. Now the good part: your Veedel, the Rhine in the evening, third places that aren't a chain café. And a long-game marker worth knowing early — permanent residency has a fixed timeline per permit type. <a href="./tool-residency.html">See your earliest date</a>.</p>
+                    <h2 id="weeks-2-8">
+                        Weeks 2–8: residence status, if you need it
+                    </h2>
+                    <p>
+                        EU/EEA citizens do not need a German residence permit
+                        for free-movement residence. Other newcomers should work
+                        backwards from the expiry and conditions of their
+                        current visa or status.
+                    </p>
+                    <ul>
+                        <li>
+                            Identify the exact route—employment, EU Blue Card,
+                            study, family or self-employment.
+                        </li>
+                        <li>
+                            Use Cologne's official immigration-office
+                            instructions for the correct application channel and
+                            document list.
+                        </li>
+                        <li>Submit in time and keep proof of submission.</li>
+                        <li>
+                            Read any interim document for its precise work and
+                            travel conditions.
+                        </li>
+                    </ul>
 
-    <h2>The honest caveat</h2>
-    <p>Your situation changes this list. A student's path isn't a freelancer's; a family adds registrations and Kindergeld; the passport in your drawer changes the permit chapter entirely. That's exactly what Expadu does — it builds <i>your</i> checklist from <i>your</i> situation, tracks the deadlines, and tells you which office, with what documents, when.</p>
+                    <h2 id="months-1-3">Months 1–3: the quiet obligations</h2>
+                    <h3>Broadcast contribution</h3>
+                    <p>
+                        The Rundfunkbeitrag is organised per dwelling, not per
+                        person. When a household member already pays, you
+                        normally provide that contribution number rather than
+                        creating a second payment.
+                    </p>
+                    <h3>Personal liability insurance</h3>
+                    <p>
+                        Private Haftpflicht is not generally mandatory, but it
+                        covers a category of everyday liability risk that can
+                        become expensive quickly. Compare exclusions, coverage
+                        limits and whether partners or children are included.
+                    </p>
+                    <h3>Transit</h3>
+                    <p>
+                        The Deutschlandticket costs €63 per month in 2026 and
+                        covers participating local and regional public transport
+                        nationwide—not long-distance ICE, IC or EC services. Use
+                        the
+                        <a href="./tool-dticket.html">break-even calculator</a>
+                        with your real weekly trips.
+                    </p>
 
-    <h2>Sources</h2>
-    <p style="font-size:13.5px;color:var(--muted)">Checked July 2026: <a href="https://www.stadt-koeln.de/service/" target="_blank" rel="noopener">Stadt Köln service portal</a> · <a href="https://www.gesetze-im-internet.de/bmg/__17.html" target="_blank" rel="noopener">§ 17 BMG</a> · <a href="https://www.rundfunkbeitrag.de" target="_blank" rel="noopener">Rundfunkbeitrag</a> · <a href="https://www.make-it-in-germany.com/en/visa-residence/types/eu-blue-card" target="_blank" rel="noopener">Make it in Germany — EU Blue Card</a> · <a href="https://www.kvb.koeln/abos-und-tickets/preise-und-preisstufen.html" target="_blank" rel="noopener">KVB price table</a></p>
+                    <h2 id="after">After 90 days: build the longer plan</h2>
+                    <p>
+                        Once the urgent dependencies are stable, record the
+                        dates that matter later: passport expiry, permit expiry,
+                        qualification milestones and the start of a residence
+                        track. The permanent-residence threshold differs by
+                        route.
+                    </p>
+                    <p>
+                        Our
+                        <a href="./tool-residency.html"
+                            >permanent-residence timeline</a
+                        >
+                        gives you the date math and, just as importantly, shows
+                        what the calculator cannot verify.
+                    </p>
+                    <div class="fact">
+                        <strong>The honest caveat</strong>
+                        <p>
+                            This order is a framework, not your personal legal
+                            decision tree. Family, citizenship, employment,
+                            benefits, previous residence and the exact permit
+                            can move or add steps.
+                        </p>
+                    </div>
 
-    <div class="tool-cta" style="margin-top:36px"><p>Expadu turns guides like this into <b>your personal checklist</b> — deadlines tracked, documents ticked off, offices booked.</p><a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a></div>
-</div></article>
+                    <section class="next-card">
+                        <span class="eyebrow">Turn the guide into a plan</span>
+                        <h2>Your circumstances should change the checklist.</h2>
+                        <p>
+                            Expadu connects the official rules to your
+                            situation, records the dates and keeps the next
+                            action visible.
+                        </p>
+                        <div class="next-actions">
+                            <a
+                                class="btn btn-primary"
+                                href="https://app.expadu.com/register"
+                                >Start free <span aria-hidden="true">→</span></a
+                            ><a class="btn btn-secondary" href="./tools.html"
+                                >Use the free tools</a
+                            >
+                        </div>
+                    </section>
+                </article>
 
-<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./blog.html" style="color:var(--muted)">← all guides</a></span></div></footer>
-<script>document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});</script>
-</body>
+                <aside class="source-panel" aria-label="Source ledger">
+                    <strong>Source ledger</strong>
+                    <p>
+                        Claims on this page were checked against primary public
+                        sources in July 2026.
+                    </p>
+                    <a
+                        href="https://www.stadt-koeln.de/service/"
+                        target="_blank"
+                        rel="noopener"
+                        >Stadt Köln · Service portal</a
+                    >
+                    <a
+                        href="https://www.gesetze-im-internet.de/bmg/__17.html"
+                        target="_blank"
+                        rel="noopener"
+                        >§17 BMG · Registration</a
+                    >
+                    <a
+                        href="https://www.bzst.de/DE/Privatpersonen/SteuerlicheIdentifikationsnummer/steuerlicheidentifikationsnummer_node.html"
+                        target="_blank"
+                        rel="noopener"
+                        >BZSt · Tax ID</a
+                    >
+                    <a
+                        href="https://www.make-it-in-germany.com/en/visa-residence"
+                        target="_blank"
+                        rel="noopener"
+                        >Federal portal · Residence</a
+                    >
+                    <a
+                        href="https://www.rundfunkbeitrag.de/"
+                        target="_blank"
+                        rel="noopener"
+                        >Rundfunkbeitrag</a
+                    >
+                    <a
+                        href="https://int.bahn.de/en/offers/regional/deutschland-ticket"
+                        target="_blank"
+                        rel="noopener"
+                        >Deutsche Bahn · D-Ticket</a
+                    >
+                </aside>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="wrap footer-inner">
+                <a class="logo footer-brand" href="./v2.html#top">Expadu</a>
+                <div class="footer-links">
+                    <a href="./v2.html">Landing</a
+                    ><a href="./tools.html">Free tools</a
+                    ><a href="./blog.html">All guides</a
+                    ><a href="https://app.expadu.com/register">Start free</a>
+                </div>
+            </div>
+        </footer>
+        <script>
+            (function () {
+                var saved = null;
+                try {
+                    saved = localStorage.getItem('expadu-marketing-theme');
+                } catch (error) {}
+                document.documentElement.classList.toggle(
+                    'dark',
+                    saved
+                        ? saved === 'dark'
+                        : matchMedia('(prefers-color-scheme: dark)').matches,
+                );
+                document
+                    .getElementById('themeToggle')
+                    .addEventListener('click', function () {
+                        var dark =
+                            document.documentElement.classList.toggle('dark');
+                        try {
+                            localStorage.setItem(
+                                'expadu-marketing-theme',
+                                dark ? 'dark' : 'light',
+                            );
+                        } catch (error) {}
+                    });
+            })();
+            (function () {
+                var button = document.getElementById('menuBtn');
+                var nav = document.getElementById('siteNav');
+                button.addEventListener('click', function () {
+                    var open = nav.classList.toggle('menu-open');
+                    button.setAttribute('aria-expanded', String(open));
+                });
+                document
+                    .querySelectorAll('.nav-links a')
+                    .forEach(function (link) {
+                        link.addEventListener('click', function () {
+                            nav.classList.remove('menu-open');
+                            button.setAttribute('aria-expanded', 'false');
+                        });
+                    });
+            })();
+        </script>
+    </body>
 </html>

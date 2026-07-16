@@ -1,7 +1,11 @@
 /* Shared prototype styles — v2 design language (tools + blog pages). */
+@font-face { font-family:'Fraunces'; font-weight:400; font-display:swap; src:url('../../public/fonts/fraunces-400.woff2') format('woff2'); }
 @font-face { font-family:'Fraunces'; font-weight:500; font-display:swap; src:url('../../public/fonts/fraunces-500.woff2') format('woff2'); }
 @font-face { font-family:'Geist'; font-weight:400; font-display:swap; src:url('../../public/fonts/geist-400.woff2') format('woff2'); }
+@font-face { font-family:'Geist'; font-weight:500; font-display:swap; src:url('../../public/fonts/geist-500.woff2') format('woff2'); }
 @font-face { font-family:'Geist'; font-weight:600; font-display:swap; src:url('../../public/fonts/geist-600.woff2') format('woff2'); }
+@font-face { font-family:'Geist'; font-weight:700; font-display:swap; src:url('../../public/fonts/geist-700.woff2') format('woff2'); }
+@font-face { font-family:'Geist Mono'; font-weight:400; font-display:swap; src:url('../../public/fonts/geist-mono-400.woff2') format('woff2'); }
 @font-face { font-family:'Geist Mono'; font-weight:500; font-display:swap; src:url('../../public/fonts/geist-mono-500.woff2') format('woff2'); }
 
 :root {

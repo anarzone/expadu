@@ -1,55 +1,453 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Anmeldung in Cologne: the complete English guide — Expadu (prototype)</title>
-<link rel="stylesheet" href="./proto.css?v=4">
-<script>(function(){var s=null;try{s=localStorage.getItem('expadu-marketing-theme');}catch(e){}document.documentElement.classList.toggle('dark',s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches);})();</script>
-</head>
-<body>
-<nav><div class="nav-inner">
-    <a class="logo" href="./v2.html"><svg viewBox="0 0 100 100"><g transform="translate(2.45,2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect class="stem" x="30" y="24" width="13" height="52" rx="6"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
-    <div class="nav-links"><a href="./v2.html">Landing</a><a href="./tools.html">Free tools</a><a href="./blog.html">Blog</a></div>
-    <div class="nav-cta"><button id="themeToggle" aria-label="Toggle dark mode"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button><a class="btn btn-primary btn-sm" href="https://app.expadu.com/register">Start free</a></div>
-</div></nav>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="description"
+            content="A source-checked English guide to registering your address in Cologne."
+        />
+        <title>Anmeldung in Cologne: the complete English guide — Expadu</title>
+        <link rel="stylesheet" href="./guide.css?v=4" />
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+            <div class="nav-inner">
+                <a class="logo" href="./v2.html#top" aria-label="Expadu home">
+                    <svg viewBox="0 0 100 100" aria-hidden="true">
+                        <g transform="translate(2.45,2.05)">
+                            <circle
+                                cx="20.5"
+                                cy="50"
+                                r="6"
+                                fill="var(--cyan)"
+                            />
+                            <rect
+                                class="stem"
+                                x="30"
+                                y="24"
+                                width="13"
+                                height="52"
+                                rx="6"
+                            />
+                            <rect
+                                x="46"
+                                y="24"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-7 46 30)"
+                            />
+                            <rect
+                                x="46"
+                                y="43.5"
+                                width="25"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-4 46 50)"
+                            />
+                            <rect
+                                x="46"
+                                y="63"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-2 46 69)"
+                            />
+                        </g>
+                    </svg>
+                    Expadu
+                </a>
+                <div class="nav-links">
+                    <a href="./v2.html#demo">How it works</a>
+                    <a href="./v2.html#bureaucracy">Paperwork</a>
+                    <a href="./v2.html#transit">Transit</a>
+                    <a href="./tools.html">Free tools</a>
+                    <a href="./blog.html" aria-current="page">Guides</a>
+                    <a href="./v2.html#faq">FAQ</a>
+                </div>
+                <div class="nav-cta">
+                    <button
+                        id="menuBtn"
+                        type="button"
+                        aria-label="Menu"
+                        aria-expanded="false"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                        >
+                            <path d="M4 7h16M4 12h16M4 17h16" />
+                        </svg>
+                    </button>
+                    <button
+                        id="themeToggle"
+                        type="button"
+                        aria-label="Toggle dark mode"
+                    >
+                        <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                        >
+                            <path
+                                d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"
+                            />
+                        </svg>
+                    </button>
+                    <a class="login" href="https://app.expadu.com/login"
+                        >Log in</a
+                    >
+                    <a
+                        class="btn btn-primary btn-small"
+                        href="https://app.expadu.com/register"
+                        >Start free</a
+                    >
+                </div>
+            </div>
+        </nav>
 
-<article class="page prose"><div class="wrap" style="max-width:720px">
-    <span class="eyebrow">Guide</span>
-    <h1>Anmeldung in Cologne: the complete English guide (2026)</h1>
-    <p class="meta">Published 13 July 2026 · by Anar — an expat in Cologne who did all of this the hard way</p>
+        <main id="main">
+            <header class="article-hero">
+                <div class="wrap">
+                    <nav class="breadcrumb" aria-label="Breadcrumb">
+                        <a href="./blog.html">Guides</a
+                        ><span aria-hidden="true">/</span><span>Paperwork</span>
+                    </nav>
+                    <span class="eyebrow">The complete English guide</span>
+                    <h1>Anmeldung <em>in Cologne.</em></h1>
+                    <p class="dek">
+                        The 14-day rule, the landlord form everyone forgets,
+                        exactly what to bring—and what your registration unlocks
+                        next.
+                    </p>
+                    <div class="byline">
+                        <span>8 min read</span
+                        ><span>By Anar · expat in Cologne</span
+                        ><span class="checked"
+                            >Official sources checked 13 July 2026</span
+                        >
+                    </div>
+                </div>
+            </header>
 
-    <p>If you do one piece of paperwork in your first two weeks in Germany, it's this one. The <b>Anmeldung</b> — registering your address — is the key that unlocks everything else: your tax ID, your bank account, your residence permit appointment, even your library card.</p>
+            <div class="wrap article-layout">
+                <nav class="toc" aria-label="On this page">
+                    <strong>On this page</strong>
+                    <a href="#rule">The rule</a>
+                    <a href="#bring">What to bring</a>
+                    <a href="#landlord">The landlord form</a>
+                    <a href="#appointment">The appointment</a>
+                    <a href="#after">What happens after</a>
+                    <a href="#moving">Moving later</a>
+                </nav>
 
-    <h2>The rule</h2>
-    <p>You must register <b>within 14 days of moving in</b> (§ 17 Bundesmeldegesetz). The clock starts on the day you move into your place — not the day you land in Germany.</p>
-    <p>Honest footnote: the law allows a fine of up to €1,000 (§ 54 BMG), but in practice Cologne tolerates delays when no appointment was available. Book the earliest slot you can get and keep the confirmation — that <i>is</i> your good faith.</p>
+                <article class="article-body">
+                    <p>
+                        If you do one piece of paperwork in your first two weeks
+                        in Germany, make it this one.
+                        <strong>Anmeldung</strong> means registering the address
+                        where you live. It creates the official address record
+                        that many later steps depend on.
+                    </p>
 
-    <h2>What you actually need</h2>
-    <ol>
-        <li><b>Your passport</b> (and passports for every family member you're registering).</li>
-        <li><b>Wohnungsgeberbestätigung</b> — a one-page confirmation <i>signed by your landlord</i> that you've moved in. This is the one everyone gets wrong.</li>
-        <li><b>The Anmeldung form</b> — you can fill it at the office, but bringing it filled saves time.</li>
-    </ol>
+                    <h2 id="rule">The rule: 14 days after moving in</h2>
+                    <p>
+                        German registration law says you should register within
+                        <strong>two weeks of moving into the home</strong>. The
+                        clock starts on the move-in date—not the date your
+                        flight landed.
+                    </p>
+                    <div class="fact">
+                        <strong
+                            >No appointment available within 14 days?</strong
+                        >
+                        <p>
+                            Book the earliest appointment you can and keep the
+                            confirmation. The statute sets the deadline; the
+                            city controls appointment capacity. This guide
+                            cannot promise how an individual delay will be
+                            treated.
+                        </p>
+                    </div>
+                    <p>
+                        The law allows administrative fines for registration
+                        violations. That is a reason to act promptly, not a
+                        reason to panic or rely on internet stories about what
+                        “usually” happens.
+                    </p>
 
-    <h2>The trap: the landlord form</h2>
-    <p>Your <b>rental contract is not enough</b>. The Wohnungsgeberbestätigung is a separate legal document your landlord (or main tenant, if you sublet) must sign. Ask for it <i>before</i> your appointment day, not in the hallway on the morning of. No signed form, no Anmeldung — that's the single most common reason people leave the Bürgeramt with nothing.</p>
+                    <h2 id="bring">What to bring</h2>
+                    <p>
+                        For a straightforward address registration, start with
+                        this compact set:
+                    </p>
+                    <div class="checklist">
+                        <div class="checklist-head">Appointment checklist</div>
+                        <div class="check-item">
+                            <span class="check-dot">✓</span
+                            ><span
+                                ><strong
+                                    >Passport or recognised identity
+                                    document</strong
+                                ><br />For every person being registered.</span
+                            >
+                        </div>
+                        <div class="check-item">
+                            <span class="check-dot">✓</span
+                            ><span
+                                ><strong>Wohnungsgeberbestätigung</strong
+                                ><br />The separate move-in confirmation signed
+                                by the housing provider.</span
+                            >
+                        </div>
+                        <div class="check-item">
+                            <span class="check-dot">✓</span
+                            ><span
+                                ><strong
+                                    >Completed registration form, if
+                                    requested</strong
+                                ><br />Check Cologne's current service page
+                                before the appointment.</span
+                            >
+                        </div>
+                    </div>
+                    <p>
+                        If you register family members, the office can require
+                        additional civil-status documents. Check the official
+                        service page for your situation and bring originals
+                        where required.
+                    </p>
 
-    <h2>Booking the appointment</h2>
-    <ul>
-        <li>You can book <b>any Kundenzentrum in the city</b>, not just your district — Kalk or Chorweiler often have slots weeks before Innenstadt.</li>
-        <li>New slots appear <b>every morning</b>; cancellations pop up all day. Book at <a href="https://termine.stadt-koeln.de" target="_blank" rel="noopener">termine.stadt-koeln.de</a>. Ten minutes, free of charge.</li>
-    </ul>
+                    <h2 id="landlord">
+                        The trap: your rental contract is not the landlord form
+                    </h2>
+                    <p>
+                        The <strong>Wohnungsgeberbestätigung</strong> is a
+                        separate legal confirmation of move-in. It normally
+                        states the housing provider, address, names of the
+                        people moving in and the move-in date.
+                    </p>
+                    <div class="fact cyan">
+                        <strong>Ask before appointment day.</strong>
+                        <p>
+                            If you sublet, the “housing provider” may be the
+                            main tenant rather than the property owner. What
+                            matters is a valid confirmation from the person
+                            providing the home.
+                        </p>
+                    </div>
+                    <p>
+                        A rental contract can help explain the arrangement, but
+                        it does not replace the required confirmation. Missing
+                        this paper is one of the most avoidable ways to leave
+                        without completing the registration.
+                    </p>
 
-    <h2>What happens after</h2>
-    <p>Walk out with your <b>Meldebescheinigung</b> — the bank and your employer will want it. Then, without you doing anything, your <b>Steuer-ID arrives by post within 2–4 weeks</b>. It looks like junk mail. <b>Do not bin it</b> — without it payroll taxes you at the maximum rate until it shows up.</p>
+                    <h2 id="appointment">
+                        Booking and attending the appointment
+                    </h2>
+                    <p>
+                        Cologne handles address registration through its
+                        Kundenzentren. Use the city's
+                        <a
+                            href="https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung"
+                            target="_blank"
+                            rel="noopener"
+                            >official Anmeldung service page</a
+                        >
+                        to check the current process, forms and booking link.
+                    </p>
+                    <ul>
+                        <li>
+                            Look across the city's available Kundenzentren
+                            rather than assuming only your neighbourhood office
+                            can help.
+                        </li>
+                        <li>
+                            Keep the booking confirmation if the earliest
+                            available appointment falls after the statutory
+                            window.
+                        </li>
+                        <li>
+                            Bring the original documents the city asks for, not
+                            only phone photos.
+                        </li>
+                        <li>
+                            Ask for help before the appointment if your names,
+                            family status or documents do not fit the standard
+                            case.
+                        </li>
+                    </ul>
 
-    <h2>Sources</h2>
-    <p style="font-size:13.5px;color:var(--muted)">Checked July 2026: <a href="https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung" target="_blank" rel="noopener">Stadt Köln — Anmeldung</a> · <a href="https://www.gesetze-im-internet.de/bmg/__17.html" target="_blank" rel="noopener">§ 17 BMG</a> · <a href="https://www.bzst.de" target="_blank" rel="noopener">BZSt — Steuer-ID</a></p>
+                    <h2 id="after">What happens after registration</h2>
+                    <p>
+                        You receive proof of registration. Keep it accessible:
+                        banks, employers and authorities can ask for it. After a
+                        first registration in Germany, the Federal Central Tax
+                        Office normally sends your tax identification number to
+                        the registered address.
+                    </p>
+                    <div class="fact">
+                        <strong>Do not discard official-looking post.</strong>
+                        <p>
+                            Your tax ID is permanent. If the letter does not
+                            arrive, use the BZSt retrieval process rather than
+                            requesting a different number.
+                        </p>
+                    </div>
+                    <p>
+                        Registration can also trigger contact about the
+                        household broadcast contribution. It is organised per
+                        dwelling, so check whether someone in your household
+                        already pays before creating a second contribution
+                        account.
+                    </p>
 
-    <div class="tool-cta" style="margin-top:36px"><p>Expadu turns guides like this into <b>your personal checklist</b> — deadlines tracked, documents ticked off, offices booked.</p><a class="btn btn-primary" href="https://app.expadu.com/register">Start free</a></div>
-</div></article>
+                    <h2 id="moving">If you move again</h2>
+                    <p>
+                        Register the new address after moving. Within Germany,
+                        the new registration generally updates the old address
+                        record; you do not normally complete a separate
+                        deregistration for the previous German home.
+                    </p>
+                    <p>
+                        Deregistration is relevant in specific cases, especially
+                        when leaving Germany without taking another residence in
+                        the country. Use the official city guidance for your
+                        exact situation.
+                    </p>
 
-<footer><div class="wrap-wide foot-base"><span>© 2026 Expadu · prototype</span><span><a href="./blog.html" style="color:var(--muted)">← all guides</a></span></div></footer>
-<script>document.getElementById('themeToggle').addEventListener('click',function(){var v=document.documentElement.classList.toggle('dark');try{localStorage.setItem('expadu-marketing-theme',v?'dark':'light');}catch(e){}});</script>
-</body>
+                    <section class="next-card">
+                        <span class="eyebrow">What comes next</span>
+                        <h2>
+                            The registration is one dependency, not the whole
+                            plan.
+                        </h2>
+                        <p>
+                            Expadu keeps the documents, dates and next actions
+                            together so the letter in your mailbox does not
+                            become another mystery task.
+                        </p>
+                        <div class="next-actions">
+                            <a
+                                class="btn btn-primary"
+                                href="https://app.expadu.com/register"
+                                >Start free <span aria-hidden="true">→</span></a
+                            ><a
+                                class="btn btn-secondary"
+                                href="./blog-post-90days.html"
+                                >See the first 90 days</a
+                            >
+                        </div>
+                    </section>
+                </article>
+
+                <aside class="source-panel" aria-label="Source ledger">
+                    <strong>Source ledger</strong>
+                    <p>
+                        Claims on this page were checked against primary public
+                        sources in July 2026.
+                    </p>
+                    <a
+                        href="https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung"
+                        target="_blank"
+                        rel="noopener"
+                        >Stadt Köln · Anmeldung</a
+                    >
+                    <a
+                        href="https://www.gesetze-im-internet.de/bmg/__17.html"
+                        target="_blank"
+                        rel="noopener"
+                        >§17 BMG · Registration</a
+                    >
+                    <a
+                        href="https://www.gesetze-im-internet.de/bmg/__19.html"
+                        target="_blank"
+                        rel="noopener"
+                        >§19 BMG · Housing provider</a
+                    >
+                    <a
+                        href="https://www.bzst.de/DE/Privatpersonen/SteuerlicheIdentifikationsnummer/steuerlicheidentifikationsnummer_node.html"
+                        target="_blank"
+                        rel="noopener"
+                        >BZSt · Tax ID</a
+                    >
+                    <a
+                        href="https://www.rundfunkbeitrag.de/"
+                        target="_blank"
+                        rel="noopener"
+                        >Rundfunkbeitrag</a
+                    >
+                </aside>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="wrap footer-inner">
+                <a class="logo footer-brand" href="./v2.html#top">Expadu</a>
+                <div class="footer-links">
+                    <a href="./v2.html">Landing</a
+                    ><a href="./tools.html">Free tools</a
+                    ><a href="./blog.html">All guides</a
+                    ><a href="https://app.expadu.com/register">Start free</a>
+                </div>
+            </div>
+        </footer>
+        <script>
+            (function () {
+                var saved = null;
+                try {
+                    saved = localStorage.getItem('expadu-marketing-theme');
+                } catch (error) {}
+                document.documentElement.classList.toggle(
+                    'dark',
+                    saved
+                        ? saved === 'dark'
+                        : matchMedia('(prefers-color-scheme: dark)').matches,
+                );
+                document
+                    .getElementById('themeToggle')
+                    .addEventListener('click', function () {
+                        var dark =
+                            document.documentElement.classList.toggle('dark');
+                        try {
+                            localStorage.setItem(
+                                'expadu-marketing-theme',
+                                dark ? 'dark' : 'light',
+                            );
+                        } catch (error) {}
+                    });
+            })();
+            (function () {
+                var button = document.getElementById('menuBtn');
+                var nav = document.getElementById('siteNav');
+                button.addEventListener('click', function () {
+                    var open = nav.classList.toggle('menu-open');
+                    button.setAttribute('aria-expanded', String(open));
+                });
+                document
+                    .querySelectorAll('.nav-links a')
+                    .forEach(function (link) {
+                        link.addEventListener('click', function () {
+                            nav.classList.remove('menu-open');
+                            button.setAttribute('aria-expanded', 'false');
+                        });
+                    });
+            })();
+        </script>
+    </body>
 </html>
