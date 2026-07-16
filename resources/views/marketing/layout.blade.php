@@ -42,21 +42,36 @@
     @stack('head')
 
     @vite(['resources/css/marketing.css', 'resources/js/marketing.ts'])
+    @stack('styles')
 </head>
-<body>
+<body class="@yield('body_class')">
 
 <nav class="site">
     <div class="nav-inner">
-        <a class="logo" href="{{ route('home') }}"><i></i>Expadu</a>
+        <a class="logo" href="{{ route('home') }}" aria-label="Expadu home">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+                <g transform="translate(2.45,2.05)">
+                    <circle cx="20.5" cy="50" r="6" fill="var(--cyan, #05badd)"/>
+                    <rect class="stem" x="30" y="24" width="13" height="52" rx="6"/>
+                    <rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/>
+                    <rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/>
+                    <rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/>
+                </g>
+            </svg>
+            Expadu
+        </a>
         <div class="nav-links">
-            <a href="{{ route('home') }}#paths">Your path</a>
-            <a href="{{ route('home') }}#bureaucracy">Bureaucracy</a>
+            <a href="{{ route('home') }}#demo">How it works</a>
+            <a href="{{ route('home') }}#bureaucracy">Paperwork</a>
             <a href="{{ route('home') }}#transit">Transit</a>
             <a href="{{ route('tools.index') }}">Free tools</a>
-            <a href="{{ route('blog.index') }}">Blog</a>
+            <a href="{{ route('blog.index') }}">Guides</a>
             <a href="{{ route('home') }}#faq">FAQ</a>
         </div>
         <div class="nav-cta">
+            <button id="menuBtn" type="button" aria-label="Open menu" aria-expanded="false">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
             <button id="themeToggle" aria-label="Toggle dark mode">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
             </button>
@@ -76,7 +91,18 @@
     <div class="wrap">
         <div class="foot-grid">
             <div class="waitlist-box">
-                <a class="logo" href="{{ route('home') }}" style="margin-bottom:14px"><i></i>Expadu</a>
+                <a class="logo footer-logo" href="{{ route('home') }}" aria-label="Expadu home">
+                    <svg viewBox="0 0 100 100" aria-hidden="true">
+                        <g transform="translate(2.45,2.05)">
+                            <circle cx="20.5" cy="50" r="6" fill="var(--cyan, #05badd)"/>
+                            <rect class="stem" x="30" y="24" width="13" height="52" rx="6"/>
+                            <rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/>
+                            <rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/>
+                            <rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/>
+                        </g>
+                    </svg>
+                    Expadu
+                </a>
                 <h3>Not in Cologne?</h3>
                 <p>Leave your city — you’ll know the day we arrive.</p>
                 <form class="waitlist" id="waitlistForm" method="POST" action="{{ route('waitlist.store') }}">
@@ -91,11 +117,11 @@
             <div class="foot-links">
                 <div>
                     <b>Product</b>
-                    <a href="{{ route('home') }}#composer">Day composer</a>
+                    <a href="{{ route('home') }}#demo">Day composer</a>
                     <a href="{{ route('home') }}#bureaucracy">Bureaucracy</a>
                     <a href="{{ route('home') }}#transit">Transit</a>
                     <a href="{{ route('tools.index') }}">Free tools</a>
-                    <a href="{{ route('blog.index') }}">Blog</a>
+                    <a href="{{ route('blog.index') }}">Guides</a>
                 </div>
                 <div>
                     <b>Account</b>
@@ -120,5 +146,6 @@
     </div>
 </footer>
 
+@stack('scripts')
 </body>
 </html>

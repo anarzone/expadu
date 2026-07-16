@@ -3,19 +3,47 @@
 use App\Models\Spot;
 use App\Models\User;
 
-test('the landing page renders server-side with live counts and a signup CTA', function () {
+test('the landing page renders the approved newcomer narrative with live proof', function () {
     Spot::factory()->count(3)->create();
 
     $response = $this->get('/');
 
     $response->assertOk();
-    $response->assertSee('The AI companion for your new life in Germany.');
-    // Live count from the database, not a hardcoded claim.
+    $response->assertSee('Tell Expadu your day. It plans the rest.');
+    $response->assertSee('Your situation, deadlines, ticket, weather and location become one useful next step');
     $response->assertSee('official-source guides');
+    $response->assertSee('3 places');
     $response->assertSee('Start free');
-    // Legal pages are linked from every marketing page.
+    $response->assertSee('AI plans the shape. Verified data supplies the facts.');
+    $response->assertSee(route('tools.index'), escape: false);
+    $response->assertSee(route('blog.index'), escape: false);
     $response->assertSee(route('impressum'));
     $response->assertSee(route('datenschutz'));
+});
+
+test('the landing page server-renders every interactive product proof surface', function () {
+    $response = $this->get('/');
+
+    $response->assertOk();
+    $response->assertSee('id="marketing-demo-data"', escape: false);
+    $response->assertSee('id="personaRow"', escape: false);
+    $response->assertSee('id="chipRow"', escape: false);
+    $response->assertSee('id="plan"', escape: false);
+    $response->assertSee('id="docList"', escape: false);
+    $response->assertSee('id="board"', escape: false);
+    $response->assertSee('Demo data.', escape: false);
+});
+
+test('the landing page links its free tools and cornerstone guides through named routes', function () {
+    $response = $this->get('/');
+
+    $response->assertOk();
+    $response->assertSee(route('tools.dticket'), escape: false);
+    $response->assertSee(route('tools.residency'), escape: false);
+    $response->assertSee(route('tools.citizenship'), escape: false);
+    $response->assertSee(route('tools.netto'), escape: false);
+    $response->assertSee(route('blog.show', 'anmeldung-in-cologne-english-guide'), escape: false);
+    $response->assertSee(route('blog.show', 'first-90-days-in-cologne-in-order'), escape: false);
 });
 
 test('a signed-in visitor gets an app link instead of login CTAs', function () {

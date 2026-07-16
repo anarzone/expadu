@@ -236,12 +236,13 @@ nav.site {
     text-decoration: none;
     letter-spacing: -0.01em;
 }
-.logo i {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--primary);
-    display: inline-block;
+.logo svg {
+    width: 30px;
+    height: 30px;
+    flex: none;
+}
+.logo .stem {
+    fill: var(--ink);
 }
 .nav-links {
     display: flex;
@@ -282,12 +283,66 @@ nav.site {
     align-items: center;
     justify-content: center;
 }
+#menuBtn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    color: var(--muted);
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+}
 @media (max-width: 860px) {
+    #menuBtn {
+        display: flex;
+    }
     .nav-links {
         display: none;
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 16px;
+        left: 16px;
+        flex-direction: column;
+        gap: 2px;
+        padding: 10px;
+        margin: 0;
+        background: var(--card);
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        box-shadow: 0 14px 44px rgba(33, 29, 21, 0.18);
+    }
+    nav.site.menu-open .nav-links {
+        display: flex;
+    }
+    .nav-links a {
+        padding: 11px 14px;
+        color: var(--ink);
+        border-radius: 10px;
+    }
+    .nav-links a:hover {
+        background: var(--surface2);
     }
     .nav-cta .login {
         display: none;
+    }
+}
+@media (max-width: 480px) {
+    .nav-inner {
+        gap: 12px;
+        padding-inline: 14px;
+    }
+    .logo {
+        font-size: 1.2rem;
+    }
+    .nav-cta {
+        gap: 6px;
+    }
+    .nav-cta .btn-sm {
+        padding-inline: 12px;
     }
 }
 
@@ -1086,6 +1141,9 @@ html.dark .deadline.calm {
 footer.site {
     border-top: 1px solid var(--border-soft);
     padding: 44px 0 36px;
+}
+.footer-logo {
+    margin-bottom: 14px;
 }
 .foot-grid {
     display: grid;

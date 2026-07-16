@@ -35,6 +35,42 @@ type DemoScenario = { prompt: string; cards: DemoCard[] };
     });
 })();
 
+/* ── Mobile navigation ─────────────────────────────────────────── */
+(() => {
+    const navigation = document.querySelector<HTMLElement>('nav.site');
+    const menuButton = document.getElementById('menuBtn');
+
+    if (!navigation || !(menuButton instanceof HTMLButtonElement)) {
+        return;
+    }
+
+    const closeMenu = (): void => {
+        navigation.classList.remove('menu-open');
+        menuButton.setAttribute('aria-expanded', 'false');
+    };
+
+    menuButton.addEventListener('click', () => {
+        const isOpen = navigation.classList.toggle('menu-open');
+        menuButton.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    navigation
+        .querySelectorAll<HTMLAnchorElement>('.nav-links a')
+        .forEach((link) => {
+            link.addEventListener('click', closeMenu);
+        });
+
+    document.addEventListener('click', (event) => {
+        if (
+            navigation.classList.contains('menu-open') &&
+            event.target instanceof Node &&
+            !navigation.contains(event.target)
+        ) {
+            closeMenu();
+        }
+    });
+})();
+
 /* ── Persona tabs (cards are server-rendered; we only toggle) ───── */
 (() => {
     const tabs = Array.from(

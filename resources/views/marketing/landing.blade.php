@@ -1,6 +1,17 @@
 @extends('marketing.layout')
 
+@section('title', 'Expadu — Tell it your day. It plans the rest.')
+@section('meta_description', 'Expadu turns your situation, deadlines, ticket, weather and location into one useful plan for life in Germany. Built for Cologne, in English.')
 @section('canonical', route('home'))
+@section('body_class', 'landing-v2')
+
+@push('styles')
+    @vite('resources/css/marketing-landing.css')
+@endpush
+
+@push('scripts')
+    @vite('resources/js/marketing-landing.ts')
+@endpush
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
@@ -39,285 +50,247 @@
 @endpush
 
 @section('content')
-
-{{-- ══ HERO ══ --}}
 <header class="hero" id="top">
-    <div class="wrap hero-grid">
-        <div>
-            <span class="eyebrow">Built for Cologne · in English</span>
-            <h1>The AI companion for your new life in Germany.</h1>
-            <p class="sub">Tell it your day — it plans the rest. The paperwork, the transit, the city: sorted for your exact situation.</p>
-            <div class="hero-ctas">
+    <div class="wrap">
+        <span class="eyebrow">Cologne first · built in English</span>
+        <h1>Tell Expadu your day. It plans the rest.</h1>
+        <p class="sub">Your situation, deadlines, ticket, weather and location become one useful next step — not another generic checklist.</p>
+        <div class="hero-ctas">
+            @auth
+                <a class="btn btn-primary" href="{{ route('dashboard') }}">Open the app →</a>
+            @else
                 <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
-                <a class="btn btn-ghost" href="#composer">See how it works</a>
-            </div>
-            <div class="hero-proof">
-                <span>{{ $stats['guides'] }} official-source guides</span>
-                <span>{{ $stats['places_label'] }} places</span>
-                <span>{{ $stats['events_label'] }} local events</span>
-                <span>Free during the Cologne launch</span>
-            </div>
+            @endauth
+            <a class="btn btn-ghost" href="#demo">Play with the demo ↓</a>
         </div>
-        <div class="demo" aria-label="Product demo">
-            <div class="demo-label"><b>✦</b> Ask or plan</div>
-            <div class="demo-input"><span id="demoPrompt">{{ $demoScenarios[0]['prompt'] }}</span></div>
-            <div class="demo-cards" id="demoCards">
-                {{-- Scenario 1 server-rendered: readable without JavaScript; the demo loop takes over when it runs --}}
-                @foreach ($demoScenarios[0]['cards'] as $card)
-                    <div class="demo-card show">
-                        <div class="band">{{ $card['band'] }}</div>
-                        <div class="t">{{ $card['t'] }}</div>
-                        <div class="m">{{ $card['m'] }}</div>
-                        <div class="why">{{ $card['why'] }}</div>
-                    </div>
-                @endforeach
-            </div>
-            <div class="demo-note">Tell it your day. It plans the rest. <span style="opacity:.55">· demo</span></div>
+        <div class="hero-proof">
+            <span>{{ $stats['guides'] }} official-source guides</span>
+            <span>{{ $stats['places_label'] }} places</span>
+            <span>{{ $stats['events_label'] }} local events</span>
+            <span>Free during the Cologne launch</span>
         </div>
     </div>
 </header>
 
-<script type="application/json" id="demo-data">@json($demoScenarios)</script>
-
-{{-- ══ PERSONAS ══ --}}
-<section class="band-soft" id="paths">
+<div class="demo-stage" id="demo">
     <div class="wrap">
-        <div class="sec-head">
-            <span class="eyebrow">Your situation is the starting point</span>
-            <h2>Landing in Cologne as a…</h2>
-            <p class="sub">Different situation, different paperwork, different deadlines. Expadu builds your path — not a generic checklist.</p>
-        </div>
-        <div class="persona-tabs" role="tablist" id="personaTabs">
-            @foreach ($personas as $name => $persona)
-                <button role="tab" data-persona="{{ $name }}" aria-selected="{{ $loop->first ? 'true' : 'false' }}">{{ $name }}</button>
-            @endforeach
-        </div>
-        @foreach ($personas as $name => $persona)
-            <div class="persona-card" data-persona-card="{{ $name }}" @unless ($loop->first) hidden @endunless>
-                <div class="eyebrow" style="margin-bottom:6px">Your first three tasks</div>
-                @foreach ($persona['tasks'] as $task)
-                    <div class="ptask">
-                        <span class="n">0{{ $loop->iteration }}</span>
-                        <span class="t"><b>{{ $task['title'] }}</b><span>{{ $task['meta'] }}</span></span>
-                        <span class="deadline{{ $loop->first ? '' : ' calm' }}">{{ $task['deadline'] }}</span>
-                    </div>
+        <div class="demo" aria-label="Interactive Expadu plan demo">
+            <div class="demo-top">
+                <span class="demo-label"><b>✦</b> Ask or plan — live demo</span>
+                <div class="wx" role="group" aria-label="Demo weather">
+                    <button id="wxSun" type="button" aria-pressed="true">☀︎ clear</button>
+                    <button id="wxRain" type="button" aria-pressed="false">🌧 rain later</button>
+                </div>
+            </div>
+            <div class="personas" id="personaRow">
+                <span>I'm a…</span>
+                @foreach ($personas as $name => $persona)
+                    <button type="button" data-persona="{{ $name }}" aria-pressed="{{ $name === 'Employee' ? 'true' : 'false' }}">{{ $name }}</button>
                 @endforeach
-                <div class="persona-foot">{{ $persona['note'] }} <b style="color:var(--ink)">…and it keeps adapting — 20+ situations covered.</b></div>
             </div>
-        @endforeach
+            <div class="chips" id="chipRow">
+                @foreach ($personas['Employee']['chips'] as $scenarioKey)
+                    <button type="button" data-scenario="{{ $scenarioKey }}">“{{ $demoScenarios[$scenarioKey]['label'] }}”</button>
+                @endforeach
+            </div>
+            <div class="demo-input"><span id="dPrompt">{{ $demoScenarios['arrived']['label'] }}</span></div>
+            <div class="plan" id="plan">
+                @foreach ($demoScenarios['arrived']['cards'] as $card)
+                    @unless ($loop->first)
+                        <div class="conn in">🚶 {{ [6, 4][$loop->index - 1] ?? 5 }} min · chained for you</div>
+                    @endunless
+                    <article class="pcard in">
+                        <div class="band">{{ $card['band'] }}</div>
+                        <div class="t">
+                            <span>{{ $card['title'] }}</span>
+                            <span class="ops" aria-label="Edit this recommendation">
+                                <button class="lock" type="button" title="Lock recommendation">📌</button>
+                                <button class="swap" type="button" title="Swap recommendation">↻</button>
+                                <button class="remove" type="button" title="Remove recommendation">✕</button>
+                            </span>
+                        </div>
+                        <div class="m">{{ $card['meta'] }}</div>
+                        <div class="why">{{ $card['why'] }}</div>
+                    </article>
+                @endforeach
+            </div>
+            <div class="demo-note">Demo data. The real app plans from {{ $stats['places_label'] }} Cologne places — and never invents an opening hour, fare or deadline.</div>
+        </div>
     </div>
-</section>
+</div>
 
-{{-- ══ BUREAUCRACY ══ --}}
-<section id="bureaucracy">
+<script type="application/json" id="marketing-demo-data">{!! json_encode([
+    'scenarios' => $demoScenarios,
+    'personas' => $personas,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+
+<section class="block band-soft" id="bureaucracy">
     <div class="wrap split">
-        <div>
+        <div class="reveal">
             <span class="eyebrow">The part everyone dreads</span>
-            <h2>German bureaucracy, decoded — in English, with sources.</h2>
-            <p class="sub">Exact documents, real fees, actual deadlines. Every claim links to the official page, dated when we last checked it.</p>
-            <ul class="feature-list">
-                <li><b>{{ $stats['guides'] }} step-by-step guides</b> — from Anmeldung to permanent residency</li>
-                <li><b>Document checklists</b> you tick off, task by task</li>
-                <li><b>Appointment tracking</b> — with a leave-by time on the day</li>
-                <li><b>Life events</b> — new baby, graduation, new job? Your path updates itself</li>
+            <h2 class="section-heading">German bureaucracy, decoded — in English, with sources.</h2>
+            <p class="section-sub">Your situation builds the checklist. Every fee, deadline and document links to the official page.</p>
+            <ul class="mini-feats">
+                <li><b>{{ $stats['guides'] }} guides</b> — Anmeldung to permanent residency</li>
+                <li><b>Deadlines tracked</b> — with a leave-by time on the day</li>
+                <li><b>Life events</b> — new baby, new job? The path updates itself</li>
             </ul>
-            <div class="mock-task" aria-label="Example task card">
-                <div class="head"><b>Anmeldung — register your address</b><span class="verified">✓ source-checked</span></div>
-                <div style="font-size:13px;color:var(--muted);margin:4px 0 8px">Within 14 days of moving in · free of charge</div>
-                <div class="doc done"><i></i>Passport</div>
-                <div class="doc done"><i></i>Wohnungsgeberbestätigung (landlord form)</div>
-                <div class="doc"><i></i>Anmeldeformular — we link the exact PDF</div>
-                <div class="src">Source: <a href="https://www.stadt-koeln.de" rel="noopener" target="_blank">stadt-koeln.de</a> · checked Jul 2026</div>
-            </div>
-            <div class="srcbadges"><span>stadt-koeln.de</span><span>BAMF</span><span>ELSTER</span><span>Ausländerbehörde Köln</span></div>
         </div>
-        <div>
-            <div class="phone"><img src="{{ asset('marketing/bureaucracy-mobile.jpg') }}" alt="Expadu bureaucracy checklist with settlement phases" loading="lazy" width="390" height="730"></div>
-            <div class="phone-cap">your settlement path · phases from “before you fly” to “permanent”</div>
-        </div>
-    </div>
-</section>
-
-{{-- ══ TRANSIT ══ --}}
-<section class="band-soft" id="transit">
-    <div class="wrap split">
-        <div>
-            <div class="phone dark-frame"><img src="{{ asset('marketing/timetable-dark-mobile.jpg') }}" alt="Expadu live departures board in dark mode" loading="lazy" width="390" height="730"></div>
-            <div class="phone-cap">live departures · the board knows where you are</div>
-        </div>
-        <div>
-            <span class="eyebrow">Getting around</span>
-            <h2>Transit that speaks newcomer.</h2>
-            <p class="sub">Journeys, departures and disruptions on live KVB/VRS data — explained in English, priced for the ticket you actually hold.</p>
-            <div class="tablebox" style="margin-top:22px">
-                <table class="cmp">
-                    <thead><tr><th scope="col">What newcomers need</th><th scope="col">Expadu</th><th scope="col">Typical transit apps</th></tr></thead>
-                    <tbody>
-                        <tr><td>Everything in English — including disruptions</td><td class="yes">✓</td><td class="meh">partly</td></tr>
-                        <tr><td>Fares that know your ticket (Deutschlandticket, SemesterTicket — 2026 tariff)</td><td class="yes">✓</td><td class="meh">—</td></tr>
-                        <tr><td>Plans around your appointments, with leave-by times</td><td class="yes">✓</td><td class="meh">—</td></tr>
-                        <tr><td>Delays shown with a way around them</td><td class="yes">✓</td><td class="meh">partly</td></tr>
-                        <tr><td>Suggestions that fit your situation</td><td class="yes">✓</td><td class="meh">—</td></tr>
-                    </tbody>
-                    <tfoot><tr><td colspan="3">Cologne + region · live KVB/VRS data</td></tr></tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- ══ COMPOSER ══ --}}
-<section id="composer">
-    <div class="wrap">
-        <div class="sec-head" style="text-align:center;margin-inline:auto">
-            <span class="eyebrow">The day composer</span>
-            <h2>A local friend with a plan.</h2>
-            <p class="sub" style="margin-inline:auto">Say what kind of day you want. Get a day with a shape — and reasons — not a list of pins.</p>
-        </div>
-        <div class="steps3">
-            <div class="stepcard">
-                <div class="k">1 · Say it</div>
-                <h3>Plain words in, plain words out</h3>
-                <div class="sentence">“<u>Saturday afternoon</u> around <u>Ehrenfeld</u>, for <u>family time</u> — from <u>Home</u>.”</div>
-                <p>It reads your sentence — and every word stays editable. Tap any part to change it.</p>
-            </div>
-            <div class="stepcard">
-                <div class="k">2 · Get a shaped day</div>
-                <h3>Time bands + a why for every pick</h3>
-                <div class="mini-slot">
-                    <div class="band">Afternoon</div>
-                    <div class="t">Blücherpark playground</div>
-                    <div class="why">sunny window until 17:00</div>
+        <div class="reveal">
+            <div class="check-app" id="checkApp">
+                <span class="try-hint">↓ try it — tick the documents</span>
+                <div class="phases" aria-label="Settlement phases">
+                    <div class="phase done"><i></i><b>Before fly</b></div>
+                    <div class="phase now"><i></i><b>First 14 days</b></div>
+                    <div class="phase"><i></i><b>First 90</b></div>
+                    <div class="phase"><i></i><b>Settled</b></div>
+                    <div class="phase"><i></i><b>Permanent</b></div>
                 </div>
-                <div class="connector">🚶 6 min · same area</div>
-                <div class="mini-slot">
-                    <div class="band">Late afternoon</div>
-                    <div class="t">Gelato on Körnerstraße</div>
-                    <div class="why">open till 19:00 · kid-approved</div>
+                <div class="task-head">
+                    <b id="taskTitle">{{ $personas['Employee']['task']['title'] }}</b>
+                    <span class="pill" id="taskDl">{{ $personas['Employee']['task']['deadline'] }}</span>
                 </div>
-            </div>
-            <div class="stepcard">
-                <div class="k">3 · Make it yours</div>
-                <h3>Lock it, swap it, go</h3>
-                <div class="mini-slot">
-                    <div class="band">Evening</div>
-                    <div class="t">Herbrand’s beer garden <span class="slot-ops"><span class="hot">📌 lock</span><span>↻ swap</span><span>✕</span></span></div>
-                    <div class="why">leave by 21:40 for the last direct tram</div>
+                <div class="task-meta" id="taskMeta">{{ $personas['Employee']['task']['meta'] }}</div>
+                <div id="docList">
+                    @foreach ($personas['Employee']['task']['documents'] as $document)
+                        <div class="doc" role="checkbox" tabindex="0" aria-checked="false"><i></i>{{ $document }}</div>
+                    @endforeach
                 </div>
-                <p style="margin-top:2px">Every stop has a <span class="takeme">take me there →</span> with live legs, platform and fare.</p>
-            </div>
-        </div>
-        <div class="honesty">
-            <b>AI plans your day — it never invents the facts.</b><br>
-            <span style="color:var(--muted);font-size:14px">Opening hours, fares and deadlines come from verified data. Always.</span>
-        </div>
-    </div>
-</section>
-
-{{-- ══ CONTEXT STRIP ══ --}}
-<section class="band-soft" id="context">
-    <div class="wrap">
-        <div class="sec-head">
-            <span class="eyebrow">Proactive, not another map</span>
-            <h2>It watches the boring stuff, so you don’t have to.</h2>
-        </div>
-        <div class="ctx-grid">
-            <div class="ctx">
-                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
-                <b>Anmeldung due in 6 days</b>
-                <span>booked yet? Here’s the office and what to bring.</span>
-            </div>
-            <div class="ctx">
-                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a4 4 0 0 1 2-7.5A5 5 0 0 1 16 6a4.5 4.5 0 0 1 3 8"/><path d="M8 19l-1 2M13 19l-1 2M18 19l-1 2"/></svg></div>
-                <b>Rain at 17:00</b>
-                <span>your plan quietly swaps the park for somewhere indoors.</span>
-            </div>
-            <div class="ctx">
-                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
-                <b>Line 3 is disrupted</b>
-                <span>you get the alert in English — with a way around it.</span>
-            </div>
-            <div class="ctx">
-                <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg></div>
-                <b>Tomorrow’s a holiday</b>
-                <span>shops close — better do the groceries tonight.</span>
+                <div class="prog" aria-hidden="true"><i id="progBar"></i></div>
+                <div class="check-src">
+                    <span>Source: <a href="https://www.stadt-koeln.de/service/produkt/anmeldung-einer-wohnung" target="_blank" rel="noopener">stadt-koeln.de</a> · checked Jul 2026</span>
+                    <span class="ok">✓ source-checked</span>
+                </div>
+                <div class="next-teaser" id="nextTeaser"></div>
             </div>
         </div>
     </div>
 </section>
 
-{{-- ══ TOOLS ══ --}}
-<section id="tools">
+<section class="band-dark" id="transit">
     <div class="wrap">
-        <div class="sec-head">
+        <span class="eyebrow">Getting around</span>
+        <h2 class="section-heading">Transit that speaks newcomer.</h2>
+        <p class="sub">Live KVB/VRS data, explained in English. Tap the delayed line in this demo.</p>
+        <div class="board reveal" id="board">
+            <div class="board-head"><span>KVB · Bf Ehrenfeld</span><span class="live">Demo · live format</span></div>
+        </div>
+        <div class="board-claims reveal">
+            <span>everything in English — including disruptions</span>
+            <span>fares that know your Deutschlandticket</span>
+            <span>leave-by times on every plan</span>
+        </div>
+        <details class="reveal">
+            <summary>How that compares to typical transit apps ▾</summary>
+            <table class="cmp">
+                <thead><tr><th scope="col">What newcomers need</th><th scope="col">Expadu</th><th scope="col">Typical apps</th></tr></thead>
+                <tbody>
+                    <tr><td>Everything in English — including disruptions</td><td class="yes">✓</td><td class="meh">partly</td></tr>
+                    <tr><td>Fares that know your ticket (D-Ticket, SemesterTicket)</td><td class="yes">✓</td><td class="meh">—</td></tr>
+                    <tr><td>Plans around appointments, with leave-by times</td><td class="yes">✓</td><td class="meh">—</td></tr>
+                    <tr><td>Delays shown with a way around them</td><td class="yes">✓</td><td class="meh">partly</td></tr>
+                    <tr><td>Suggestions that fit your situation</td><td class="yes">✓</td><td class="meh">—</td></tr>
+                </tbody>
+            </table>
+        </details>
+    </div>
+</section>
+
+<section class="block numbers">
+    <div class="wrap reveal">
+        <div class="num-grid">
+            <div><span class="flapnum" data-number="{{ $stats['guides'] }}">@foreach (str_split((string) $stats['guides']) as $character)<b>{{ $character }}</b>@endforeach</span><div class="num-label">official-source guides</div></div>
+            <div><span class="flapnum" data-number="{{ $stats['places'] }}">@foreach (str_split((string) $stats['places']) as $character)<b>{{ $character }}</b>@endforeach</span><div class="num-label">Cologne places</div></div>
+            <div><span class="flapnum" data-number="{{ $stats['events'] }}">@foreach (str_split((string) $stats['events']) as $character)<b>{{ $character }}</b>@endforeach</span><div class="num-label">local events tracked</div></div>
+        </div>
+        <div class="founder-story">
+            <div class="founder-copy">
+                <span class="eyebrow">Why Expadu exists</span>
+                <h2>Built in Cologne by an expat who had to figure it out first.</h2>
+                <p>Expadu started with the scattered official pages, missed context and German-only notices that make a new country feel harder than it is. We turn them into one plan — and show where every fact came from.</p>
+            </div>
+            <div class="trust-list">
+                <div class="trust-item"><b>AI plans the shape. Verified data supplies the facts.</b><span>No invented fees, opening hours or deadlines.</span></div>
+                <div class="trust-item"><b>Official source and checked date shown</b><span>You can inspect the evidence behind important claims.</span></div>
+                <div class="trust-sources">stadt-koeln.de · BAMF · ELSTER<br>live KVB/VRS data · EU-hosted</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="block band-soft" id="tools">
+    <div class="wrap">
+        <div class="head-sm reveal">
             <span class="eyebrow">Useful before you even sign up</span>
             <h2>Free tools — no account needed.</h2>
         </div>
-        <div class="tool-grid">
-            <div class="tool">
-                <span class="free">free · no signup</span>
+        <div class="tool-grid reveal">
+            <a class="tool" href="{{ route('tools.dticket') }}">
+                <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M8 21h8M12 18v3M8 7h8M8 11h5"/></svg></div>
                 <h3>Deutschlandticket break-even</h3>
-                <p>Is the D-Ticket worth it for how you actually move? Two inputs, honest verdict, 2026 Cologne tariff.</p>
-                <a href="{{ route('tools.dticket') }}">Check your break-even →</a>
-            </div>
-            <div class="tool">
-                <span class="free">free · no signup</span>
+                <p>Is €63/month worth it for how you actually move? Honest verdict, 2026 tariff.</p>
+                <span class="go">Check yours →</span> <span class="free">· free</span>
+            </a>
+            <a class="tool" href="{{ route('tools.residency') }}">
+                <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
                 <h3>Permanent-residency timeline</h3>
-                <p>Your earliest Niederlassungserlaubnis date — and what legally speeds it up.</p>
-                <a href="{{ route('tools.residency') }}">See your timeline →</a>
-            </div>
-            <div class="tool">
-                <span class="free">free · no signup</span>
+                <p>Your earliest Niederlassungserlaubnis date — and what can legally speed it up.</p>
+                <span class="go">See your date →</span> <span class="free">· free</span>
+            </a>
+            <a class="tool" href="{{ route('tools.citizenship') }}">
+                <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15V8l8-4 8 4v7"/><path d="M8 21v-6a4 4 0 0 1 8 0v6"/></svg></div>
                 <h3>Citizenship quiz</h3>
-                <p>Are you on track for a German passport? Five questions against the current rules, with sources.</p>
-                <a href="{{ route('tools.citizenship') }}">Take the quiz →</a>
-            </div>
-            <div class="tool">
-                <span class="free">free · no signup</span>
+                <p>Are you on track for a German passport under the current rules? Five questions, sourced.</p>
+                <span class="go">Take the quiz →</span> <span class="free">· free</span>
+            </a>
+            <a class="tool" href="{{ route('tools.netto') }}">
+                <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h9"/></svg></div>
                 <h3>Netto-brutto calculator</h3>
-                <p>Gross to net with the 2026 tax and insurance tables — see what actually lands in your account.</p>
-                <a href="{{ route('tools.netto') }}">Calculate your net →</a>
+                <p>All six tax classes, church, children, private or statutory — see what actually lands in your account.</p>
+                <span class="go">Calculate your net →</span> <span class="free">· free</span>
+            </a>
+        </div>
+        <p class="tools-all reveal"><a href="{{ route('tools.index') }}">Every tool also lives on its own page →</a></p>
+    </div>
+</section>
+
+<section class="block" id="guides">
+    <div class="wrap">
+        <div class="guide-head reveal">
+            <div class="head-sm">
+                <span class="eyebrow">The Expadu field guide</span>
+                <h2>Practical English guides, checked against official sources.</h2>
+                <p class="sub">Start with the two sequences that remove the most uncertainty from your first months.</p>
             </div>
+            <a href="{{ route('blog.index') }}">Explore every guide →</a>
+        </div>
+        <div class="guide-grid reveal">
+            <a class="guide-card" href="{{ route('blog.show', 'anmeldung-in-cologne-english-guide') }}">
+                <div class="guide-copy">
+                    <span class="guide-meta">Paperwork · 8 min read</span>
+                    <h3>Anmeldung in Cologne, in English.</h3>
+                    <p>The 14-day rule, exact documents, landlord form and what happens after the appointment.</p>
+                    <span class="guide-link">Read the complete guide →</span>
+                </div>
+                <div class="guide-art" aria-hidden="true"><div class="guide-mark">Source<br>checked<br>Jul 2026</div></div>
+            </a>
+            <a class="guide-card" href="{{ route('blog.show', 'first-90-days-in-cologne-in-order') }}">
+                <div class="guide-copy">
+                    <span class="guide-meta">Start here · 10 min read</span>
+                    <h3>Your first 90 days in Cologne, in order.</h3>
+                    <p>What depends on what — from an address and insurance to banking, tax and residence tasks.</p>
+                    <span class="guide-link">Follow the sequence →</span>
+                </div>
+                <div class="guide-art" aria-hidden="true"><div class="guide-mark">01→90</div></div>
+            </a>
         </div>
     </div>
 </section>
 
-{{-- ══ TRUST ══ --}}
-<section style="padding-top:0">
+<section class="block" id="faq">
     <div class="wrap">
-        <div class="trust">
-            <div class="trust-grid">
-                <div>
-                    <span class="flap">@foreach (str_split((string) $stats['guides']) as $char)<b>{{ $char }}</b>@endforeach</span>
-                    <div class="trust-label">official-source guides</div>
-                </div>
-                <div>
-                    <span class="flap">@foreach (str_split(number_format($stats['places'])) as $char)<b>{{ $char }}</b>@endforeach</span>
-                    <div class="trust-label">Cologne places</div>
-                </div>
-                <div>
-                    <span class="flap">@foreach (str_split(number_format($stats['events'])) as $char)<b>{{ $char }}</b>@endforeach</span>
-                    <div class="trust-label">local events tracked</div>
-                </div>
-            </div>
-            <p class="trust-foot">Built in Cologne by an expat who did all of this the hard way — so you don’t have to.</p>
-            <div class="trust-badges">
-                <span>sources: stadt-koeln.de · BAMF · ELSTER</span>
-                <span>live KVB/VRS data</span>
-                <span>EU-hosted · Germany</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- ══ FAQ ══ --}}
-<section class="band-soft" id="faq">
-    <div class="wrap">
-        <div class="sec-head">
-            <span class="eyebrow">Before you ask</span>
-            <h2>Questions, answered.</h2>
-        </div>
-        <div class="faq">
+        <div class="head-sm reveal"><h2>Questions, answered.</h2></div>
+        <div class="faq reveal">
             @foreach ($faqs as $faq)
                 <details @if ($loop->first) open @endif>
                     <summary>{{ $faq['q'] }}</summary>
@@ -328,13 +301,17 @@
     </div>
 </section>
 
-{{-- ══ FINALE ══ --}}
 <section class="finale">
-    <div class="wrap">
+    <div class="wrap reveal">
         <h2>Your first years in Germany, handled.</h2>
-        <p class="sub" style="margin-inline:auto">Set up your situation once. Expadu takes it from there.</p>
-        <div style="margin-top:26px"><a class="btn btn-primary" href="{{ route('register') }}">Start free</a></div>
+        <p class="sub">Set up your situation once. Expadu takes it from there.</p>
+        <div class="hero-ctas">
+            @auth
+                <a class="btn btn-primary" href="{{ route('dashboard') }}">Open the app →</a>
+            @else
+                <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            @endauth
+        </div>
     </div>
 </section>
-
 @endsection
