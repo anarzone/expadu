@@ -60,6 +60,8 @@ class ToolsController extends Controller
             'verifiedAt' => config('lohnrechner.verified_at'),
             'sourceTariff' => config('lohnrechner.source_tariff'),
             'sourceSv' => config('lohnrechner.source_sv'),
+            'source39b' => config('lohnrechner.source_39b'),
+            'sourceCare' => config('lohnrechner.source_care'),
             'toolData' => config('lohnrechner'),
         ]);
     }

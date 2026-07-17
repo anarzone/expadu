@@ -1,7 +1,7 @@
 @extends('marketing.layout')
 
 @section('title', 'Permanent residency (Niederlassungserlaubnis) timeline calculator — Expadu')
-@section('meta_description', 'When can you get German permanent residency? Your earliest Niederlassungserlaubnis date on your track — Blue Card, skilled worker, family or general (§9 AufenthG).')
+@section('meta_description', 'When can you get German permanent residency? Watch your timeline fill up — Blue Card, skilled worker, family or general track (§9/§18c/§28 AufenthG).')
 @section('canonical', route('tools.residency'))
 @section('waitlist_source', 'tool-residency')
 
@@ -26,53 +26,49 @@
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · AufenthG tracks</span>
         <h1>When can you get permanent residency?</h1>
-        <p class="sub">The Niederlassungserlaubnis ends visa renewals for good. Your earliest application date depends on which track you're on.</p>
+        <p class="sub">The Niederlassungserlaubnis ends visa renewals for good. Watch your timeline fill up.</p>
 
         <script type="application/json" id="tool-data">@json($toolData)</script>
 
         <form class="tool-form" id="tool-residency">
             <div class="tfield">
-                <label for="ne-track">Your permit</label>
-                <select id="ne-track">
+                <label>Your permit</label>
+                <div class="chips-row" id="ne-track">
                     @foreach ($tracks as $key => $track)
-                        <option value="{{ $key }}" @if ($key === 'skilled_worker') selected @endif>{{ $track['label'] }}</option>
+                        <button type="button" data-v="{{ $key }}" data-months="{{ $track['months'] }}" aria-pressed="{{ $key === 'skilled_worker' ? 'true' : 'false' }}">{{ $track['label'] }}</button>
                     @endforeach
-                </select>
+                </div>
+                <small id="ne-trackNote"></small>
             </div>
             <div class="tfield">
                 <label id="ne-since-label">Holding it since</label>
-                {{-- Custom month picker: the native month input renders browser
-                     UI that clashes with the brand. Hidden input keeps the
-                     YYYY-MM contract with marketing-tools.ts. --}}
-                <div class="mpick" role="group" aria-labelledby="ne-since-label">
-                    <div class="mpick-year">
-                        <button type="button" id="ne-yprev" aria-label="Earlier year">‹</button>
-                        <b id="ne-year">{{ now()->year }}</b>
-                        <button type="button" id="ne-ynext" aria-label="Later year">›</button>
-                    </div>
-                    <div class="mpick-grid" id="ne-months"></div>
-                </div>
+                {{-- Custom month picker — the native month input clashes with the
+                     brand. The hidden input keeps the YYYY-MM contract. --}}
                 <input type="hidden" id="ne-since" value="">
+                <div class="mpick" role="group" aria-labelledby="ne-since-label">
+                    <div class="mpick-year"><button type="button" id="ne-yearPrev" aria-label="Previous year">‹</button><b id="ne-yearVal">2024</b><button type="button" id="ne-yearNext" aria-label="Next year">›</button></div>
+                    <div class="mpick-grid" id="ne-monthGrid"></div>
+                </div>
             </div>
-            <div class="tfield" id="ne-b1-field" hidden>
+            <div class="tfield" id="ne-b1Field" hidden>
                 <label class="check"><input type="checkbox" id="ne-b1" checked> I have B1 German</label>
-                <small>Blue Card: 21 months with B1, 27 months with A1.</small>
+                <small>Blue Card: 21 months with B1, 27 with A1.</small>
             </div>
-            <div class="tfield" id="ne-degree-field" hidden>
-                <label class="check"><input type="checkbox" id="ne-degree"> My degree is from a German university</label>
-                <small>Skilled workers with a German degree qualify after 2 years (§18c).</small>
+            <div class="tfield" id="ne-degField" hidden>
+                <label class="check"><input type="checkbox" id="ne-deg"> German university degree</label>
+                <small>Skilled workers with a German degree: 2 years (§18c).</small>
             </div>
         </form>
 
         <div class="tool-result" id="ne-result" aria-live="polite"></div>
 
         <div class="tool-foot">
-            <p><b>Date math is the easy part.</b> The Ausländerbehörde will also want: pension contributions for the qualifying period, a secured livelihood, B1 German (track-dependent), and adequate housing. This tool tells you when — the checklist in the app tells you what.</p>
-            <p class="sources">Thresholds: §9 / §18c / §28 AufenthG, <a href="https://www.gesetze-im-internet.de/aufenthg_2004/__9.html" rel="noopener" target="_blank">gesetze-im-internet.de</a> · same engine as the Expadu app · calculations happen in your browser.</p>
+            <p><b>Date math is the easy part.</b> The Ausländerbehörde also wants pension contributions, secured livelihood, B1 German (track-dependent) and adequate housing — Expadu tracks those for you.</p>
+            <p class="sources">Thresholds: §9 / §18c / §28 AufenthG, <a href="https://www.gesetze-im-internet.de/aufenthg_2004/__9.html" rel="noopener" target="_blank">gesetze-im-internet.de</a> · the same engine the Expadu app uses.</p>
         </div>
 
         <div class="tool-cta">
-            <p>Expadu <b>counts this down for you</b> — and tells you the moment you cross the bar, with the documents to bring.</p>
+            <p>Expadu <b>counts this down for you</b> — and tells you the moment you cross the bar.</p>
             <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
         </div>
     </div>

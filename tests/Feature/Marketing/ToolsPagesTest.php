@@ -63,6 +63,21 @@ test('the netto-brutto tool ships the sourced 2026 constants', function () {
     $response->assertSee('An honest estimate, not your payslip.');
 });
 
+test('the netto-brutto tool covers all six tax classes with the §39b parameters', function () {
+    $response = $this->get('/tools/netto-brutto-calculator');
+
+    $response->assertOk();
+    // The full engine needs the classes V/VI corridor and the ermäßigter
+    // KV rate for the Vorsorgepauschale — both live in the injected config
+    // and were cross-checked against the official BMF calculator.
+    $response->assertSee((string) config('lohnrechner.wage_tax.v56.w2'), escape: false);
+    $response->assertSee((string) config('lohnrechner.wage_tax.child_allowance_full'), escape: false);
+    $response->assertSee(config('lohnrechner.source_39b'));
+    $response->assertSee('BMF calculator');
+    $response->assertSee('Federal state');
+    $response->assertSee('Private (PKV)');
+});
+
 test('the tools hub and sitemap include the netto-brutto tool', function () {
     $this->get('/tools')->assertOk()->assertSee('Netto-brutto calculator');
     $this->get('/sitemap.xml')->assertOk()->assertSee(route('tools.netto'), escape: false);
