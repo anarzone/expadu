@@ -34,6 +34,20 @@ test('the landing page server-renders every interactive product proof surface', 
     $response->assertSee('Demo data.', escape: false);
 });
 
+test('landing content stays visible when reveal animations are unavailable', function () {
+    $css = file_get_contents(resource_path('css/marketing-landing.css'));
+    $script = file_get_contents(resource_path('js/marketing-landing.ts'));
+
+    expect($css)
+        ->toMatch('/\.landing-v2 \.reveal\s*\{[^}]*opacity:\s*1;/s')
+        ->toMatch('/\.landing-v2\.reveal-enabled \.reveal\s*\{[^}]*opacity:\s*0;/s')
+        ->and($script)
+        ->toContain("if (!('IntersectionObserver' in window))")
+        ->toContain("document.body.classList.add('reveal-enabled')")
+        ->toContain('window.setTimeout')
+        ->toContain("revealElements.forEach((element) => element.classList.add('in'))");
+});
+
 test('the landing page links its free tools and cornerstone guides through named routes', function () {
     $response = $this->get('/');
 

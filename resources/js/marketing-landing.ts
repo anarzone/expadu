@@ -540,6 +540,10 @@ const demoData = getDemoData();
 
 /* ── Count-up and reveal effects ───────────────────────────────── */
 (() => {
+    if (!('IntersectionObserver' in window)) {
+        return;
+    }
+
     const renderNumber = (element: HTMLElement, value: number): void => {
         element.replaceChildren();
         Array.from(String(value)).forEach((character) => {
@@ -588,8 +592,6 @@ const demoData = getDemoData();
     const revealElements = document.querySelectorAll<HTMLElement>('.reveal');
 
     if (reducedMotion) {
-        revealElements.forEach((element) => element.classList.add('in'));
-
         return;
     }
 
@@ -604,5 +606,11 @@ const demoData = getDemoData();
         },
         { threshold: 0.12 },
     );
+
+    document.body.classList.add('reveal-enabled');
     revealElements.forEach((element) => revealObserver.observe(element));
+
+    window.setTimeout(() => {
+        revealElements.forEach((element) => element.classList.add('in'));
+    }, 1500);
 })();
