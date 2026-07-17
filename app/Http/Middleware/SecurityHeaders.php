@@ -32,13 +32,17 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'geolocation=(self), camera=(), microphone=(), payment=()');
 
         if ($nonce !== null) {
+            // Vite assets are served from the APP_URL host (the app subdomain),
+            // so the marketing origin must allow that host explicitly.
+            $assetHost = $this->assetHost($request);
+
             $response->headers->set('Content-Security-Policy', implode('; ', [
                 "default-src 'self'",
-                "script-src 'self' 'nonce-{$nonce}'",
-                "style-src 'self' 'unsafe-inline'",
-                "img-src 'self' data:",
-                "font-src 'self'",
-                "connect-src 'self'",
+                trim("script-src 'self' {$assetHost} 'nonce-{$nonce}'"),
+                trim("style-src 'self' {$assetHost} 'unsafe-inline'"),
+                trim("img-src 'self' {$assetHost} data:"),
+                trim("font-src 'self' {$assetHost}"),
+                trim("connect-src 'self' {$assetHost}"),
                 "object-src 'none'",
                 "frame-ancestors 'self'",
                 "base-uri 'self'",
@@ -47,6 +51,21 @@ class SecurityHeaders
         }
 
         return $response;
+    }
+
+    /**
+     * The origin our built assets load from (empty when it matches the
+     * request host, so the directive collapses to 'self').
+     */
+    private function assetHost(Request $request): string
+    {
+        $appUrlHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        if (! is_string($appUrlHost) || $appUrlHost === '' || $appUrlHost === $request->getHost()) {
+            return '';
+        }
+
+        return 'https://'.$appUrlHost;
     }
 
     /**

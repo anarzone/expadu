@@ -11,7 +11,7 @@ test('every response carries the baseline security headers', function () {
 });
 
 test('the marketing domain gets a nonce-based content security policy', function () {
-    config(['app.marketing_domain' => 'marketing.test']);
+    config(['app.marketing_domain' => 'marketing.test', 'app.url' => 'https://app.marketing.test']);
 
     $response = $this->get('http://marketing.test/');
 
@@ -20,7 +20,9 @@ test('the marketing domain gets a nonce-based content security policy', function
     expect($csp)->not->toBeNull()
         ->and($csp)->toContain("default-src 'self'")
         ->and($csp)->toContain('nonce-')
-        ->and($csp)->toContain("frame-ancestors 'self'");
+        ->and($csp)->toContain("frame-ancestors 'self'")
+        // Built assets load from the APP_URL host — the policy must allow it.
+        ->and($csp)->toContain("script-src 'self' https://app.marketing.test");
 
     // The inline theme script must carry the same nonce the header declares.
     preg_match('/nonce-([A-Za-z0-9]+)/', (string) $csp, $matches);
