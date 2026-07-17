@@ -8,7 +8,7 @@
 <section>
     <div class="wrap" style="max-width:760px">
         <div class="sec-head">
-            <span class="eyebrow">The Expadu blog</span>
+            <span class="eyebrow">The Expadu guides</span>
             <h2 style="font-size:clamp(1.9rem,3.6vw,2.6rem)">Germany, explained in English.</h2>
             <p class="sub">Written from the same sourced catalogue that powers the app — every fee, deadline and document links to the official page.</p>
         </div>

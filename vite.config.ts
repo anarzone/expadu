@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/app.tsx',
                 'resources/css/marketing.css',
                 'resources/css/marketing-landing.css',
+                'resources/css/marketing-guide.css',
                 'resources/js/marketing.ts',
                 'resources/js/marketing-landing.ts',
                 'resources/js/marketing-tools.ts',
