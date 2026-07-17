@@ -62,7 +62,7 @@
 @endsection
 
 @push('scripts')
-    <script>
+    <script @if (! empty($cspNonce)) nonce="{{ $cspNonce }}" @endif>
         (function () {
             var body = document.querySelector('.article-body');
             var toc = document.getElementById('article-toc');

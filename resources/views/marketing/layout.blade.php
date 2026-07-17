@@ -29,7 +29,7 @@
     <link rel="preload" href="/fonts/geist-600.woff2" as="font" type="font/woff2" crossorigin>
 
     {{-- Theme before first paint — avoids a light flash for dark-mode visitors --}}
-    <script>
+    <script @if (! empty($cspNonce)) nonce="{{ $cspNonce }}" @endif>
         (function () {
             var saved = null;
             try { saved = localStorage.getItem('expadu-marketing-theme'); } catch (e) {}
