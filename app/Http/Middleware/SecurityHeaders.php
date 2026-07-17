@@ -22,6 +22,13 @@ class SecurityHeaders
 
         if ($nonce !== null) {
             view()->share('cspNonce', $nonce);
+
+            // URL::forceRootUrl pins generated URLs to APP_URL (the app
+            // subdomain), which makes Vite bundles cross-origin here — and
+            // cross-origin module scripts need CORS headers nginx doesn't
+            // send for /build. Root assets at the marketing origin instead;
+            // route() URLs keep the forced app root for auth links.
+            config(['app.asset_url' => $request->getSchemeAndHttpHost()]);
         }
 
         $response = $next($request);

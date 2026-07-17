@@ -27,6 +27,10 @@ test('the marketing domain gets a nonce-based content security policy', function
     // The inline theme script must carry the same nonce the header declares.
     preg_match('/nonce-([A-Za-z0-9]+)/', (string) $csp, $matches);
     $response->assertSee('nonce="'.$matches[1].'"', escape: false);
+
+    // Assets must load same-origin on the marketing host — cross-origin
+    // module scripts from the app subdomain die without CORS headers.
+    $response->assertDontSee('https://app.marketing.test/build', escape: false);
 });
 
 test('non-marketing hosts get no CSP header', function () {
