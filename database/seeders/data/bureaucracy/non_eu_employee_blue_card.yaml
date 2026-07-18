@@ -18,7 +18,9 @@ tasks:
       recent graduates, and IT specialists with 3 years' experience in the last 7 (no
       degree needed for the IT route). Success bonuses and fully variable pay do NOT
       count towards the threshold. File the online Erstantrag now — the appointment
-      wait starts at submission, not when your folder is complete.
+      wait starts at submission, not when your folder is complete. Your filing
+      window: visa-free entrants must apply within 90 days of arrival; if you entered
+      on a D visa, the real deadline is your visa's expiry date.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
@@ -81,17 +83,35 @@ tasks:
 
   - title: 'Blue Card fast track: permanent residency in 21–27 months'
     key: bc.ne_fast_track
-    type: info
     depends_on: []
+    verified_at: 2026-07-18
     description: |
       Blue Card holders qualify for the Niederlassungserlaubnis (permanent residency)
       after just 21 months with B1 German — or 27 months with A1. That's years earlier
       than any other path. Keep your pension contributions running and book a German
       course early; the language certificate is usually the only missing piece when the
-      window opens.
+      window opens. Applying works like your other permits: submit digitally, then the
+      Ausländeramt sends a Termineinladung (appointment invitation) once it can issue
+      the permit — the invitation letter states the final document list. The
+      Niederlassungserlaubnis fee on Cologne's skilled-worker and general NE pages is
+      €113.
     phase: ongoing
     urgency: low
     deadline_type: none
-    documents_required: []
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Valid national passport + digital biometric photo
+      - label: German certificate — B1 for the 21-month track, A1 for 27 months
+      - label: Current pension record (Versicherungsverlauf)
+        note: Request it from the Deutsche Rentenversicherung early — it proves your contribution months.
+      - label: Employment contract + recent payslips
+      - label: Mietvertrag + proof of current housing costs
     links:
+      - https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-fachkraefte
+      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
+    how_to_steps:
+      - title: Submit digitally when your window opens
+        body: File the online application; the invitation to appear follows once the office can issue the permit. Bring the originals then.
+      - title: Ask about Daueraufenthalt-EU at the appointment
+        body: Same requirements, adds EU-wide mobility — if you might leave Germany one day, request that variant instead.

@@ -97,16 +97,18 @@ tasks:
     depends_on: []
     description: |
       If you invite visa-required family or friends for a Schengen visit, the consulate
-      usually wants a Verpflichtungserklärung — a formal financial sponsorship you sign
-      at the Ausländeramt (~€29). You vouch for their costs during the stay. Book it a
-      few weeks before they apply for the visa, and bring your passport, residence
-      document and income proof.
+      usually wants a Verpflichtungserklärung — a formal financial sponsorship you file
+      at the Ausländeramt (€29 per declaration). You vouch for their costs during the
+      stay. File it at least 3 months before their visa appointment (by post, online
+      contact form, or in person Tue/Thu mornings); it's recognized for up to 6 months
+      after issue. Income proof: last 3 payslips + bank statements (self-employed: tax
+      assessment or Steuerberater certification instead).
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
-      - https://www.stadt-koeln.de/service/produkte/00342/index.html
+      - https://www.stadt-koeln.de/service/produkte/00962/index.html
 
   - title: 'Fiktionsbescheinigung: what that bridging paper really permits'
     key: shared.fiktionsbescheinigung
@@ -145,7 +147,7 @@ tasks:
     deadline_type: none
     documents_required: []
     links:
-      - https://www.stadt-koeln.de/politik-und-verwaltung/auslaenderamt
+      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html
 
   - title: 'The long game: permanent residency and citizenship'
     key: shared.long_game
@@ -169,7 +171,7 @@ tasks:
     deadline_type: none
     documents_required: []
     links:
-      - https://www.stadt-koeln.de/service/produkte/01008/index.html
+      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis
 
   - title: 'Foreign professional qualification? Get it recognized'
     key: shared.recognition
@@ -210,7 +212,7 @@ tasks:
     deadline_type: none
     documents_required: []
     links:
-      - https://www.stadt-koeln.de/politik-und-verwaltung/auslaenderamt
+      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html
 
   - title: 'A child born in Germany: check citizenship first'
     key: shared.child_born
@@ -258,4 +260,4 @@ tasks:
     documents_required: []
     links:
       - https://www.make-it-in-germany.com/en/
-      - https://www.stadt-koeln.de/politik-und-verwaltung/auslaenderamt
+      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html

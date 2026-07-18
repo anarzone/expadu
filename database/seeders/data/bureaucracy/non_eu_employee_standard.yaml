@@ -15,7 +15,9 @@ tasks:
       file it the moment your Anmeldung is done, before your documents are complete:
       the wait for the appointment invitation runs 6–12 weeks and it only starts when
       you submit. The Bundesagentur für Arbeit approval is handled internally between
-      the authorities meanwhile.
+      the authorities meanwhile. Your filing window: visa-free entrants must apply
+      within 90 days of arrival; if you entered on a D visa, the real deadline is your
+      visa's expiry date.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
@@ -73,19 +75,34 @@ tasks:
       - title: Pay the fee at the appointment
         body: The work-permission check itself is free; the electronic residence card (eAT) costs about €100 on first issue (renewals €93–96). You'll get a Fiktionsbescheinigung as a bridge; the eAT card arrives by post 4–8 weeks later.
 
-  - title: 'Renewals: check permanent residency first'
+  - title: 'After 3 years: permanent residency instead of another renewal (§18c)'
     key: nee.ne_check
-    type: info
     depends_on: []
+    verified_at: 2026-07-18
     description: |
-      After 3 years on a skilled-worker permit (§18a/b) — or just 2 with a German degree
-      — you may qualify for the Niederlassungserlaubnis (permanent residency) instead of
-      another €93–96 renewal. Cologne's counters only mention this if you ask. Conditions:
-      pension contributions for the qualifying period, secured livelihood, B1 German.
-      When a renewal comes due, check NE eligibility before paying for a renewal.
+      After 3 years on a skilled-worker permit (§18a/b) — or just 2 with a degree
+      earned in Germany — you can apply for the Niederlassungserlaubnis (permanent
+      residency) instead of paying another €93–96 renewal. Cologne's counters only
+      mention this if you ask. Requirements per the city's skilled-worker NE page:
+      36 months of pension contributions (24 with the German degree), B1 German, and
+      secured livelihood. Fee: €113 (Turkish citizens with association rights €22.80
+      under 24 / €37 from 24). Submit digitally; the Ausländeramt sends a
+      Termineinladung once it can issue the permit — the invitation states the final
+      document list.
     phase: ongoing
     urgency: low
     deadline_type: none
-    documents_required: []
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Valid national passport + digital biometric photo
+      - label: B1 German certificate
+      - label: Current pension record (Versicherungsverlauf)
+        note: 36 contribution months — 24 if your degree is from a German university. Request it from the Deutsche Rentenversicherung early.
+      - label: Employment contract + recent payslips
     links:
-      - https://www.stadt-koeln.de/service/produkte/01008/index.html
+      - https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-fachkraefte
+    how_to_steps:
+      - title: Check eligibility before every renewal
+        body: When a renewal comes due, run the numbers first — qualifying for the permanent permit costs €113 once instead of €93–96 every extension.
+      - title: Ask about Daueraufenthalt-EU at the appointment
+        body: Same requirements, adds EU-wide mobility — if you might leave Germany one day, request that variant instead.

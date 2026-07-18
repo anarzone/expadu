@@ -16,7 +16,9 @@ tasks:
       the family's main residence is in Germany, the livelihood is fully secured
       without Bürgergeld, and the joining spouse has German A1. Exception worth
       knowing: spouses of Blue Card holders need no A1 and can work immediately.
-      File the online Erstantrag as soon as the family's Anmeldung is done.
+      File the online Erstantrag as soon as the family's Anmeldung is done. Your
+      filing window: visa-free entrants must apply within 90 days of arrival; if you
+      entered on a D visa, the real deadline is your visa's expiry date.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
@@ -34,6 +36,8 @@ tasks:
     how_to_steps:
       - title: Confirm the sponsor's permit covers family reunification
         body: Skilled-worker permits (§18a/b) and the Blue Card qualify; some short-term titles don't. If the sponsor holds a Blue Card, the spouse skips the A1 requirement entirely and gets immediate unrestricted work access.
+      - title: Sponsor's Blue Card still in process? Ask before relying on the exemption
+        body: The A1 waiver and immediate work access are stated for spouses of Blue Card HOLDERS. If your spouse has only just filed their Blue Card application, ask the Ausländerbehörde whether the exemption already applies to you — and have an A1 certificate ready in case it doesn't. Don't delay your own filing to wait for their card; your window runs independently.
       - title: File the online Erstantrag now
         body: One application starts the process for the family — the invitation wait runs while you assemble the originals.
         link: https://www.stadt-koeln.de/service/produkte/20335/index.html
@@ -41,7 +45,7 @@ tasks:
   - title: Attend the family's permit appointment with the originals
     key: fam.residence_permits
     depends_on: [fam.submit_application, fam.health_insurance]
-    verified_at: 2026-06-11
+    verified_at: 2026-07-18
     description: |
       After the online application, the Ausländerbehörde invites the family to an
       appointment — everyone appears, originals in hand. Assemble the checklist below
@@ -73,3 +77,41 @@ tasks:
         body: Mention you're bringing dependents when the invitation comes — they'll allocate enough time instead of a 20-minute slot.
       - title: Bring originals AND certified translations
         body: For non-German documents you need the original + apostille + a sworn German translation. The Ausländerbehörde keeps copies but checks the originals.
+      - title: Pay the fee at the appointment
+        body: 'First issue €100 per adult (under 18: €50); renewals €93 / €46.50. Turkish citizens with association rights pay €22.80 (under 24) / €37 (from 24). Fee-free when income consists solely of social benefits (SGB II/XII or AsylbLG).'
+
+  - title: 'The long game: permanent residency after 5 years (§9)'
+    key: fam.ne_apply
+    depends_on: []
+    verified_at: 2026-07-18
+    description: |
+      Family-permit holders reach the general Niederlassungserlaubnis (permanent
+      residency) after 5 years of holding a residence permit. Requirements per
+      Cologne's official page: secured livelihood without Bürgergeld, 60 months of
+      pension contributions (in a marriage the working spouse's contributions can
+      fulfil this for both partners), B1 German, the "Leben in Deutschland" test (or
+      a German school qualification), health insurance, and sufficient housing —
+      12 m² per person aged 6+, 10 m² per child under 6. Fee: €113 (Turkish citizens
+      with association rights: €27.60 under 24 / €46 from 24). Submit digitally,
+      then attend the mandatory in-person appointment at the Bezirksausländeramt.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    booking_service_key: auslaenderbehoerde
+    documents_required:
+      - label: Valid national passport + digital biometric photo
+      - label: B1 German certificate
+      - label: '"Leben in Deutschland" test result — or a German school qualification'
+        note: The Integrationskurs final exam covers both the B1 and the civics requirement in one go.
+      - label: Current pension record (Versicherungsverlauf)
+        note: 60 months of mandatory or voluntary contributions — in a marriage the working spouse's record can count for both partners.
+      - label: Employment contract + last 3 payslips (working family members)
+      - label: Mietvertrag + proof of current housing costs
+      - label: Proof of health insurance
+    links:
+      - https://www.stadt-koeln.de/service/produkt/allgemeine-niederlassungserlaubnis
+    how_to_steps:
+      - title: Check the faster tracks first
+        body: Holding your own skilled-worker permit cuts the wait to 3 years (2 with a German degree), and family members of German citizens qualify after 3 — the § printed on your permit card decides which track is yours. The 5-year general track is the default when no faster one fits.
+      - title: Ask about Daueraufenthalt-EU at the appointment
+        body: Same requirements, adds EU-wide mobility — if you might move within the EU one day, request that variant instead.
