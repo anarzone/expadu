@@ -67,7 +67,7 @@
             <span>{{ $stats['guides'] }} official-source guides</span>
             <span>{{ $stats['places_label'] }} places</span>
             <span>{{ $stats['events_label'] }} local events</span>
-            <span>Free during the Cologne launch</span>
+            <span>Free — no card needed</span>
         </div>
     </div>
 </header>

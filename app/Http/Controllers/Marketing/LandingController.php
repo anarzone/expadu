@@ -181,7 +181,7 @@ class LandingController extends Controller
     private function faqs(): array
     {
         return [
-            ['q' => 'Is Expadu free?', 'a' => 'Free during the Cologne launch. No card, no trial timer.'],
+            ['q' => 'Is Expadu free?', 'a' => 'Yes — free. No card, no trial timer.'],
             ['q' => 'Which cities does it cover?', 'a' => 'Cologne, properly — every place, office and tram line. The free tools work Germany-wide. Somewhere else? Leave your city in the footer and you’ll know the day we arrive.'],
             ['q' => 'Do I need to speak German?', 'a' => 'No. The interface and every guide are in English. Germany will still send you letters in German — we tell you what each step means before you’re standing at the counter.'],
             ['q' => 'Is the advice official?', 'a' => 'Every fee, deadline and document list links to its official source — Stadt Köln, BAMF, ELSTER — with the date we last verified it. If something changes, you can flag it with one tap.'],
