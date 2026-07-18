@@ -6,6 +6,7 @@ use App\Bureaucracy\PathGenerator;
 use App\Composer\IntentWeights;
 use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
+use App\Enums\TransportMode;
 use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\EventReminder;
@@ -113,6 +114,15 @@ class HomeFeed
         if (! $context->hasOrigin()) {
             return $rails;
         }
+
+        // The one-to-many street matrix cannot calculate a transit journey.
+        // Do not fill that gap with a straight-line transit guess: it can say
+        // "13 min away" while a real departure takes an hour. A card simply
+        // omits the duration until the user opens Take me there.
+        if ($user->transport_mode === TransportMode::Transit) {
+            return $rails;
+        }
+
         $originLat = $context->originLat;
         $originLng = $context->originLng;
 

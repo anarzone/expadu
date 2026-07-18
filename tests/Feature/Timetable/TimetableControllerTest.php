@@ -77,6 +77,33 @@ test('the departures page requires authentication', function () {
     $this->get(route('timetable'))->assertRedirect(route('login'));
 });
 
+test('departures never use a saved home or city centre when no location is known', function () {
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Home',
+        'category' => 'home',
+        'lat' => 50.9484,
+        'lng' => 6.9599,
+    ]);
+    $this->mock(TimetableService::class, function ($mock) {
+        $mock->shouldReceive('boards')->never();
+    });
+
+    $this->actingAs($user)
+        ->get(route('timetable'))
+        ->assertInertia(fn ($page) => $page
+            ->component('timetable')
+            ->where('locationRequired', true)
+            ->loadDeferredProps(fn ($reload) => $reload
+                ->where('boards.all', null)
+                ->where('boards.tram', null)
+                ->where('boards.bus', null)
+                ->where('boards.rail', null)
+            )
+        );
+});
+
 test('building the board logs a departure debug entry with the location source', function () {
     $this->mock(TimetableService::class, function ($m) {
         $m->shouldReceive('boards')->andReturn([

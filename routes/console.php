@@ -56,7 +56,7 @@ Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 Schedule::command('spots:fetch-photos')->weeklyOn(1, '05:30')->withoutOverlapping()->onOneServer();
 
 // External API health monitoring — every 5 minutes
-Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
 // GTFS static timetable refresh — VRS updates weekly
 Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();

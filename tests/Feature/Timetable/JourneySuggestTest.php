@@ -16,9 +16,16 @@ test('suggest mixes saved places first with geocoder stations and addresses', fu
         'lat' => 50.94,
         'lng' => 6.95,
     ]);
+    UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Home',
+        'category' => 'home',
+        'lat' => 50.9513,
+        'lng' => 6.9185,
+    ]);
 
     $this->mock(RouteService::class, function ($mock) {
-        $mock->shouldReceive('geocode')->once()->andReturn([
+        $mock->shouldReceive('geocode')->once()->with('vita', Mockery::on(fn ($bias) => $bias === null))->andReturn([
             new Place('Köln Vitalisstr. Nord', new GeoPoint(50.9512, 6.8947), stopId: 'de:vrs:1', kind: 'stop', area: 'Bickendorf · Köln'),
             new Place('Vitalisstraße 204', new GeoPoint(50.9530, 6.8926), kind: 'address', area: 'Bickendorf · Köln'),
         ]);

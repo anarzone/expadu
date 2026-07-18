@@ -437,7 +437,7 @@ export function TakeMeThereSheet({
     onClose: () => void;
 }) {
     const [data, setData] = useState<JourneyResponse | null>(null);
-    const [error, setError] = useState(false);
+    const [error, setError] = useState<'location' | 'request' | null>(null);
     const [fromOverride, setFromOverride] = useState<{
         lat: number;
         lng: number;
@@ -479,15 +479,22 @@ export function TakeMeThereSheet({
             credentials: 'same-origin',
             signal: controller.signal,
         })
-            .then((res) => {
+            .then(async (res) => {
                 if (!res.ok) {
-                    throw new Error(`Journey request failed (${res.status})`);
+                    const payload = await res.json().catch(() => null);
+                    const responseError = new Error(
+                        `Journey request failed (${res.status})`,
+                    ) as Error & { code?: string };
+                    responseError.code = payload?.code;
+
+                    throw responseError;
                 }
 
                 return res.json();
             })
             .then((json) => {
                 if (!cancelled) {
+                    setError(null);
                     setData(json);
                 }
             })
@@ -496,7 +503,12 @@ export function TakeMeThereSheet({
                     !cancelled &&
                     (requestError as Error)?.name !== 'AbortError'
                 ) {
-                    setError(true);
+                    setError(
+                        (requestError as { code?: string })?.code ===
+                            'location_required'
+                            ? 'location'
+                            : 'request',
+                    );
                 }
             });
 
@@ -521,6 +533,7 @@ export function TakeMeThereSheet({
             return;
         }
 
+        setError(null);
         setConfirming(true);
 
         navigator.geolocation.getCurrentPosition(
@@ -539,7 +552,7 @@ export function TakeMeThereSheet({
 
                 setConfirming(false);
                 setData(null); // back to the loading skeleton while replanning
-                setError(false);
+                setError(null);
                 setMode(null); // let the new plan re-pick its best default mode
                 setFromOverride({ lat, lng });
             },
@@ -636,7 +649,7 @@ export function TakeMeThereSheet({
             )}
 
             {/* Loading */}
-            {!data && !error && (
+            {!data && error === null && (
                 <div className="flex flex-col gap-2.5">
                     <div className="h-12 w-2/3 animate-pulse rounded-lg bg-secondary" />
                     {[1, 2, 3].map((i) => (
@@ -648,7 +661,21 @@ export function TakeMeThereSheet({
                 </div>
             )}
 
-            {error && (
+            {error === 'location' && (
+                <div className="rounded-[9px] border border-cyan/30 bg-cyan/10 p-4 text-center text-sm text-foreground">
+                    <p>We need your location before we can plan this route.</p>
+                    <button
+                        type="button"
+                        onClick={confirmHere}
+                        disabled={confirming}
+                        className="mt-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
+                    >
+                        {confirming ? 'Locating…' : 'Use my location'}
+                    </button>
+                </div>
+            )}
+
+            {error === 'request' && (
                 <div className="rounded-[9px] bg-danger-soft p-4 text-center text-sm text-danger">
                     Could not load the journey. Try again in a moment.
                 </div>
@@ -657,7 +684,7 @@ export function TakeMeThereSheet({
             {/* Loaded, no transit route: walkable when genuinely close, else an
                 honest "no direct transit" with the real distance + maps handoff. */}
             {data &&
-                !error &&
+                error === null &&
                 !journey &&
                 data.source !== 'degraded' &&
                 (straightKm != null && straightKm > 2 ? (

@@ -46,7 +46,7 @@ test('returns a journey with journey-aware Rheinlandtarif fare advice', function
     ]);
 
     $this->actingAs($student);
-    $response = $this->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583&to_name=B%C3%BCrgeramt');
+    $response = $this->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583&to_name=B%C3%BCrgeramt&from_lat=50.9513&from_lng=6.9185');
 
     $response->assertOk();
     $response->assertJsonPath('to.name', 'Bürgeramt');
@@ -93,7 +93,7 @@ test('a Deutschlandticket holder sees the trip as covered', function () {
     ]);
 
     $this->actingAs($holder);
-    $response = $this->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583');
+    $response = $this->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583&from_lat=50.9513&from_lng=6.9185');
 
     $response->assertOk();
     $response->assertJsonPath('ticket.covered_by_deutschlandticket', true);
@@ -106,4 +106,20 @@ test('validates destination coordinates', function () {
 
     $this->getJson('/api/journey?to_lat=999&to_lng=6.95')
         ->assertUnprocessable();
+});
+
+test('requires an explicit or confirmed location instead of routing from home', function () {
+    $user = User::factory()->onboarded()->create();
+    UserPlace::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Home',
+        'category' => 'home',
+        'lat' => 50.9513,
+        'lng' => 6.9185,
+    ]);
+
+    $this->actingAs($user)
+        ->getJson('/api/journey?to_lat=50.9413&to_lng=6.9583')
+        ->assertUnprocessable()
+        ->assertJsonPath('code', 'location_required');
 });

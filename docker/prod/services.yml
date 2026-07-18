@@ -40,21 +40,6 @@ services:
       timeout: 5s
     restart: unless-stopped
 
-  valhalla:
-    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
-    container_name: expadu-valhalla
-    volumes:
-      - valhalla-data:/custom_files
-    environment:
-      - use_tiles_ignore_pbf=True
-      - force_rebuild=False
-      - serve_tiles=True
-      - build_elevation=False
-      - build_admins=False
-    networks:
-      - expadu
-    restart: unless-stopped
-
 networks:
   expadu:
     name: expadu
@@ -64,6 +49,4 @@ volumes:
   pgsql-data:
     driver: local
   redis-data:
-    driver: local
-  valhalla-data:
     driver: local

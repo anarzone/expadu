@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\ProcessEventJob;
 use App\Jobs\ValidateMediaAssetJob;
 use App\Media\CaptureMediaCandidate;
 use App\Models\Event;
@@ -146,4 +147,63 @@ test('distinct source ids with the same title and date are not globally deduplic
     ]])]);
     $this->artisan('events:scrape')->assertSuccessful();
     expect(Event::where('title', 'Shared title')->count())->toBe(2);
+});
+
+test('the scraper refreshes changed koeln.de records and queues a new enrichment', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    $event = Event::factory()->create([
+        'source' => 'koeln.de',
+        'source_uid' => 'changed-source',
+        'title' => 'Old source title',
+        'description' => 'Old German description.',
+        'title_en' => 'Old English title',
+        'description_en' => 'Old English description',
+        'summary_en' => 'Old English summary',
+        'tip_en' => 'Old English tip',
+        'chips' => ['old chip'],
+        'relevance' => 0.9,
+        'classification_input_hash' => 'outdated-input',
+        'language' => 'en',
+        'location_name' => 'Old venue',
+    ]);
+    $payload = koelnEvent('changed-source', 'Updated source title', now()->addDays(3)->setTime(19, 0)->toDateTimeString());
+    $payload['description'] = 'Aktualisierte deutsche Beschreibung mit wichtigen neuen Informationen.';
+    $payload['venue'] = ['venue' => 'Neue Halle', 'address' => 'Neue Straße 12'];
+    $payload['end_date'] = now()->addDays(3)->setTime(21, 30)->toDateTimeString();
+    $payload['cost'] = '12 €';
+    Queue::fake();
+
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$payload]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($event->fresh())
+        ->title->toBe('Updated source title')
+        ->description->toBe('Aktualisierte deutsche Beschreibung mit wichtigen neuen Informationen.')
+        ->location_name->toBe('Neue Halle')
+        ->address->toBe('Neue Straße 12')
+        ->price->toBe('12.00')
+        ->title_en->toBeNull()
+        ->description_en->toBeNull()
+        ->summary_en->toBeNull()
+        ->tip_en->toBeNull()
+        ->chips->toBeNull()
+        ->relevance->toBeNull()
+        ->classification_input_hash->toBeNull();
+
+    Queue::assertPushed(ProcessEventJob::class, fn (ProcessEventJob $job): bool => $job->event->is($event));
+});
+
+test('the scraper does not re-enrich an unchanged koeln.de record', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    $payload = koelnEvent('unchanged-source', 'Same source title', now()->addDays(2)->setTime(18, 0)->toDateTimeString());
+
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$payload]])]);
+    Queue::fake();
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    Queue::fake();
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    Queue::assertNothingPushed();
 });

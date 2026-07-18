@@ -46,13 +46,13 @@ test('no preference defaults to the walk matrix (what the From control shows)', 
     expect($calls)->toBe(['WALK']); // bike never queried
 });
 
-test('transit preference uses bike as the at-a-glance street proxy', function () {
+test('transit preference never uses a cycling proxy as a journey time', function () {
     $calls = [];
     $minutes = (new TravelTimes(recordingRoutes($calls, ['BIKE' => [5, 20]])))
         ->minutes(TransportMode::Transit, $this->origin, $this->dests);
 
-    expect($minutes)->toBe([5, 20]);
-    expect($calls)->toBe(['BIKE']);
+    expect($minutes)->toBe([null, null]);
+    expect($calls)->toBe([]);
 });
 
 test('walk preference uses only the walk matrix', function () {

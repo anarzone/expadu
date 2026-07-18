@@ -26,7 +26,8 @@ class CheckApiHealth extends Command
         $this->check('Geocoding (Photon)', fn () => $this->checkPhoton());
         $this->check('Rhine Level (WSV)', fn () => $this->checkRhine());
         $this->check('Resend (Email)', fn () => $this->checkResend());
-        $this->check('Valhalla (Routing)', fn () => $this->checkValhalla());
+        $this->check('MOTIS (Routing)', fn () => $this->checkMotis());
+        $this->check('Transitous (Routing Failover)', fn () => $this->checkTransitous());
 
         $this->table(
             ['Service', 'Status', 'Time', 'Detail'],
@@ -186,16 +187,33 @@ class CheckApiHealth extends Command
         return 'API key valid';
     }
 
-    private function checkValhalla(): string
+    private function checkMotis(): string
     {
-        $url = config('services.valhalla.url');
-        if (! $url) {
+        return $this->checkRoutingGeocoder((string) config('services.motis.url'), 'MOTIS');
+    }
+
+    private function checkTransitous(): string
+    {
+        return $this->checkRoutingGeocoder((string) config('services.transitous.url'), 'Transitous');
+    }
+
+    private function checkRoutingGeocoder(string $url, string $provider): string
+    {
+        if ($url === '') {
             throw new \RuntimeException('Not configured');
         }
 
-        $response = Http::timeout(3)->get($url.'/status');
+        // Both routing adapters expose this lightweight MOTIS endpoint. It
+        // proves the geocoder is reachable without creating a synthetic trip.
+        $response = Http::timeout(3)
+            ->connectTimeout(2)
+            ->get(rtrim($url, '/').'/api/v1/geocode', [
+                'text' => 'Köln Neumarkt',
+                'language' => 'de',
+            ]);
+
         throw_unless($response->successful(), new \RuntimeException('HTTP '.$response->status()));
 
-        return 'OK';
+        return $provider.' geocoder reachable';
     }
 }

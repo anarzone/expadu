@@ -2,6 +2,7 @@
 
 use App\Composer\IntentWeights;
 use App\Enums\LocationSource;
+use App\Enums\TransportMode;
 use App\Home\HomeFeed;
 use App\Models\Event;
 use App\Models\EventReminder;
@@ -301,6 +302,26 @@ test('rail place cards carry real travel minutes when the user has an origin', f
     $card = $rails->flatMap(fn ($rail) => $rail['cards'])->firstWhere('name', 'Stadtgarten');
 
     expect($card['travel_min'])->toBe(9);
+});
+
+test('rail cards never show a straight-line proxy when the user prefers transit', function () {
+    $user = homeFeedUser();
+    $user->update(['transport_mode' => TransportMode::Transit]);
+    Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.9485, 'lng' => 6.9330]);
+
+    $this->mock(UserLocationService::class, function ($mock) {
+        $mock->shouldReceive('context')->andReturn(new LocationContext(
+            lat: 50.94, lng: 6.95, source: LocationSource::Live, label: 'Your location',
+        ));
+    });
+    $this->mock(TravelTimes::class, function ($mock) {
+        $mock->shouldReceive('minutes')->never();
+    });
+
+    $rails = collect(app(HomeFeed::class)->rails($user));
+    $card = $rails->flatMap(fn ($rail) => $rail['cards'])->firstWhere('name', 'Stadtgarten');
+
+    expect($card['travel_min'] ?? null)->toBeNull();
 });
 
 test('a routing outage degrades to a straight-line estimate, exactly like Places', function () {

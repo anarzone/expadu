@@ -17,10 +17,6 @@ use Illuminate\Support\Facades\Redis;
  * and take-me-there so they never disagree: explicit From (live coords /
  * picked area) → confirmed "I'm here" → recent ping → browsed-area centroid →
  * none. It never falls back to home/work or a guessed city centre.
- *
- * {@see self::resolve()} is the older, fuller-detail variant (carries a
- * reverse-geocoded name) still used by the Inertia share + timetable; it keeps
- * the legacy home/centre fallback and is being retired.
  */
 class UserLocationService
 {
@@ -193,78 +189,6 @@ class UserLocationService
         } catch (\Throwable) {
             return null;
         }
-    }
-
-    /**
-     * Resolve the user's best known location.
-     *
-     * @return array{lat: float, lng: float, source: string, name: string, address: string}
-     */
-    public function resolve(User $user, ?Request $request = null): array
-    {
-        // 1. GPS from request params (frontend sends lat/lng when GPS available)
-        if ($request && $request->has('lat') && $request->has('lng')) {
-            $lat = (float) $request->query('lat');
-            $lng = (float) $request->query('lng');
-            $address = $this->reverseGeocode($lat, $lng) ?? 'Cologne';
-
-            return [
-                'lat' => $lat,
-                'lng' => $lng,
-                'source' => 'gps',
-                'name' => $address,
-                'address' => $address,
-            ];
-        }
-
-        // 2. Explicit "I'm here" confirmation beats any inferred source
-        $confirmed = $this->getConfirmedLocation($user->id);
-        $redisPing = $this->getLastRedisPing($user->id);
-        if ($confirmed && (! $redisPing || $confirmed['at'] >= $redisPing['at'])) {
-            return [
-                'lat' => $confirmed['lat'],
-                'lng' => $confirmed['lng'],
-                'source' => 'confirmed',
-                'name' => $confirmed['name'],
-                'address' => $confirmed['name'],
-            ];
-        }
-
-        // 3. Last known GPS ping from Redis (within last 30 minutes)
-        if ($redisPing) {
-            $address = $this->reverseGeocode($redisPing['lat'], $redisPing['lng']) ?? 'Cologne';
-
-            return [
-                'lat' => $redisPing['lat'],
-                'lng' => $redisPing['lng'],
-                'source' => 'last_ping',
-                'name' => $address,
-                'address' => $address,
-            ];
-        }
-
-        // 4. Home place
-        $home = $user->places()->where('category', 'home')->first()
-            ?? $user->places()->orderBy('sort_order')->first();
-
-        if ($home && $home->lat && $home->lng) {
-            return [
-                'lat' => (float) $home->lat,
-                'lng' => (float) $home->lng,
-                'source' => 'home',
-                'name' => $home->name ?? 'Home',
-                'address' => $home->address ?? 'Cologne',
-            ];
-        }
-
-        // 4. Default: central Cologne
-        return [
-            'lat' => 50.9375,
-            'lng' => 6.9603,
-            'source' => 'default',
-            'name' => 'Cologne',
-            'address' => 'Cologne, Germany',
-        ];
     }
 
     /**

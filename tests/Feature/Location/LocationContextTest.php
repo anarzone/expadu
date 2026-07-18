@@ -101,12 +101,10 @@ test('a newer accepted GPS ping replaces an older confirmed live fix', function 
     ]));
 
     $origin = $this->service->context($this->user, Request::create('/api/places'));
-    $resolved = $this->service->resolve($this->user);
 
     expect($origin->source)->toBe(LocationSource::Ping)
         ->and($origin->lat)->toBe(50.995)
-        ->and($resolved['source'])->toBe('last_ping')
-        ->and($resolved['lat'])->toBe(50.995);
+        ->and($origin->label)->toBe('Your location');
 });
 
 test('a recent accepted ping anchors the origin', function () {

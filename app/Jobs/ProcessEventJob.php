@@ -23,6 +23,8 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
+    private const MAX_TIMEOUT_SECONDS = 900;
+
     public int $tries = 2; // malformed output → one retry, then needs_review
 
     public int $timeout = 45;
@@ -32,7 +34,7 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
     public function __construct(public Event $event)
     {
         $translationChunks = (int) ceil(mb_strlen((string) $event->description) / 2000);
-        $this->timeout = max(45, 30 + ($translationChunks * 35));
+        $this->timeout = min(self::MAX_TIMEOUT_SECONDS, max(45, 30 + ($translationChunks * 35)));
     }
 
     public function handle(ClassifiesEvents $classifier): void

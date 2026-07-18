@@ -18,8 +18,9 @@ use Illuminate\Http\Request;
 /**
  * "Take me there" — the only journey-planning surface in v2. Every entity
  * (office, place, event) opens this with a destination; origin comes from the
- * shared resolver (UserLocationService::context — live / confirmed / ping),
- * with a last-resort fallback when nothing is known. The response carries
+ * shared resolver (UserLocationService::context — live / confirmed / ping).
+ * If no origin is known, the client is asked to obtain one rather than being
+ * routed from a guessed home or city centre. The response carries
  * journey-aware Rheinlandtarif fare advice (FareAdvisor) and disruptions
  * filtered to the journey's lines.
  */
@@ -55,8 +56,8 @@ class TakeMeThereController extends Controller
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
             'to_lng' => ['required', 'numeric', 'between:-180,180'],
             'to_name' => ['nullable', 'string', 'max:200'],
-            'from_lat' => ['nullable', 'numeric', 'between:-90,90'],
-            'from_lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'from_lat' => ['nullable', 'required_with:from_lng', 'numeric', 'between:-90,90'],
+            'from_lng' => ['nullable', 'required_with:from_lat', 'numeric', 'between:-180,180'],
             'from_name' => ['nullable', 'string', 'max:120'],
             // Plan for later / by a deadline: an ISO time and whether it's the
             // arrival ("arrive by") rather than the departure ("depart at").
@@ -78,19 +79,17 @@ class TakeMeThereController extends Controller
             $locations = app(UserLocationService::class);
             $origin = $locations->context($user, $request);
 
-            if ($origin->hasOrigin()) {
-                // Same origin the Places list measured from → the sheet headline
-                // and the card "min away" agree by construction.
-                $from = new GeoPoint((float) $origin->lat, (float) $origin->lng);
-                $fromName = $origin->label ?? 'Your location';
-            } else {
-                // Nothing known and no explicit origin passed — last resort so
-                // the journey still renders. The From control (later slice)
-                // makes this path rare by always passing an origin.
-                $resolved = $locations->resolve($user, $request);
-                $from = new GeoPoint((float) $resolved['lat'], (float) $resolved['lng']);
-                $fromName = (string) ($resolved['name'] ?? 'Your location');
+            if (! $origin->hasOrigin()) {
+                return response()->json([
+                    'code' => 'location_required',
+                    'message' => 'Set your location before planning this journey.',
+                ], 422);
             }
+
+            // Same origin the Places list measured from → the sheet headline
+            // and the card "min away" agree by construction.
+            $from = new GeoPoint((float) $origin->lat, (float) $origin->lng);
+            $fromName = $origin->label ?? 'Your location';
         }
 
         $to = new GeoPoint((float) $validated['to_lat'], (float) $validated['to_lng']);

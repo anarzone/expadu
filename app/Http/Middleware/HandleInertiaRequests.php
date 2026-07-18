@@ -87,14 +87,22 @@ class HandleInertiaRequests extends Middleware
             // progress" banner and lets Departures reopen the journey. Cheap
             // indexed lookup; present on first paint so the banner never flickers.
             'activeTrip' => fn () => $request->user()?->activeTrip?->toShared(),
-            // User location — cached per request to avoid redundant places queries
+            // User location — only a real, confirmed or recently accepted
+            // origin is shared. Never invent a home or city-centre position.
             'userLocation' => function () use ($request) {
                 $user = $request->user();
                 if (! $user) {
                     return null;
                 }
 
-                return app(UserLocationService::class)->resolve($user, $request);
+                $location = app(UserLocationService::class)->context($user, $request);
+
+                return $location->hasOrigin() ? [
+                    'lat' => $location->lat,
+                    'lng' => $location->lng,
+                    'source' => $location->source->value,
+                    'name' => $location->label,
+                ] : null;
             },
             // Right-panel city widgets. Deferred (never block first paint) and
             // shared so every page that shows the RightPanel — Today, Composer,

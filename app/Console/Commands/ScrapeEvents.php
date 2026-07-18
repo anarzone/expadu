@@ -98,67 +98,60 @@ class ScrapeEvents extends Command
                     $existingEvent = $sourceUid
                         ? Event::query()->where('source', 'koeln.de')->where('source_uid', $sourceUid)->first()
                         : null;
-                    if ($existingEvent !== null) {
-                        $this->captureKoelnImage($existingEvent, $ev, $captureMediaCandidate);
+                    $event = $existingEvent ?? new Event([
+                        'source' => 'koeln.de',
+                        'source_uid' => $sourceUid,
+                    ]);
+                    $isNew = ! $event->exists;
+                    $attributes = $this->koelnAttributes($ev, $title, $startsAt, $organiserId);
+                    $copyChanged = ! $isNew
+                        && ($event->title !== $attributes['title'] || $event->description !== $attributes['description']);
+                    $classifierInputChanged = ! $isNew && ($copyChanged
+                        || ! $event->starts_at?->equalTo($attributes['starts_at'])
+                        || ! $event->ends_at?->equalTo($attributes['ends_at'])
+                        || $event->location_name !== $attributes['location_name']
+                        || $event->address !== $attributes['address']
+                        || $event->price_text !== $attributes['price_text']
+                        || $event->is_free !== $attributes['is_free']);
+                    $venueChanged = ! $isNew
+                        && ($event->location_name !== $attributes['location_name'] || $event->address !== $attributes['address']);
 
-                        continue;
+                    $event->fill($attributes);
+
+                    if ($copyChanged) {
+                        $event->fill([
+                            'title_en' => null,
+                            'description_en' => null,
+                            'language' => null,
+                        ]);
                     }
 
-                    // Preserve the complete German source. The classifier uses
-                    // a bounded excerpt for categorisation and translates the
-                    // full text in ordered chunks.
-                    $desc = trim(strip_tags($ev['description'] ?? ''));
-                    $venue = $ev['venue']['venue'] ?? null;
-                    $address = $ev['venue']['address'] ?? null;
-                    $sourceUrl = $ev['url'] ?? null;
+                    if ($classifierInputChanged) {
+                        $event->fill([
+                            'summary_en' => null,
+                            'tip_en' => null,
+                            'chips' => null,
+                            'relevance' => null,
+                            'classification_input_hash' => null,
+                        ]);
+                    }
 
-                    // Prefer source categories over keyword guessing
-                    $sourceCategories = array_map(
-                        fn ($c) => $c['name'] ?? '',
-                        $ev['categories'] ?? [],
-                    );
-                    $category = $this->mapSourceCategory($sourceCategories)
-                        ?? $this->categoriseEvent($title, $desc);
+                    if ($venueChanged) {
+                        $event->venue_id = null;
+                    }
 
-                    // Store source category names as tags for future LLM enrichment context
-                    $sourceTags = array_values(array_filter($sourceCategories));
-
-                    [$isFree, $price, $priceText] = $this->parseCost($ev['cost'] ?? null);
-
-                    $qualityScore = $this->computeInitialQuality([
-                        'venue' => $venue,
-                        'address' => $address,
-                        'description' => $desc,
-                        'starts_at' => $startsAt,
-                        'source_url' => $sourceUrl,
-                        'price_known' => $isFree !== null,
-                    ]);
-
-                    $event = Event::create([
-                        'title' => mb_substr($title, 0, 255),
-                        'emoji' => $this->categoryEmoji($category),
-                        'category' => $category,
-                        'description' => $desc ?: null,
-                        'starts_at' => $startsAt,
-                        'ends_at' => isset($ev['end_date']) ? Carbon::parse($ev['end_date']) : $startsAt->copy()->addHours(2),
-                        'location_name' => $venue ? html_entity_decode($venue, ENT_QUOTES, 'UTF-8') : null,
-                        'address' => $address ? html_entity_decode($address, ENT_QUOTES, 'UTF-8') : null,
-                        'is_free' => $isFree ?? false,
-                        'price' => $price,
-                        'price_text' => $priceText,
-                        'source' => 'koeln.de',
-                        'source_url' => $sourceUrl,
-                        'source_uid' => $sourceUid,
-                        'tags' => $sourceTags ?: null,
-                        'organiser_id' => $organiserId,
-                        'quality_score' => $qualityScore,
-                    ]);
+                    $sourceChanged = $event->isDirty();
+                    $event->save();
 
                     $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
 
-                    ProcessEventJob::dispatch($event);
+                    if ($isNew || $classifierInputChanged) {
+                        ProcessEventJob::dispatch($event);
+                    }
 
-                    $created++;
+                    if ($isNew || $sourceChanged) {
+                        $created++;
+                    }
                 }
 
                 $page++;
@@ -168,6 +161,61 @@ class ScrapeEvents extends Command
         }
 
         return $created;
+    }
+
+    /**
+     * Normalize one koeln.de record before deciding whether it changed.
+     *
+     * @param  array<string, mixed>  $sourceEvent
+     * @return array<string, mixed>
+     */
+    private function koelnAttributes(array $sourceEvent, string $title, Carbon $startsAt, int $organiserId): array
+    {
+        // Preserve the complete German source. The classifier uses a bounded
+        // excerpt for categorisation and translates the full text in chunks.
+        $description = trim(strip_tags((string) ($sourceEvent['description'] ?? '')));
+        $venue = $sourceEvent['venue']['venue'] ?? null;
+        $address = $sourceEvent['venue']['address'] ?? null;
+        $sourceUrl = $sourceEvent['url'] ?? null;
+        $sourceCategories = array_map(
+            fn ($category) => is_array($category) ? (string) ($category['name'] ?? '') : '',
+            is_array($sourceEvent['categories'] ?? null) ? $sourceEvent['categories'] : [],
+        );
+        $category = $this->mapSourceCategory($sourceCategories)
+            ?? $this->categoriseEvent($title, $description);
+        [$isFree, $price, $priceText] = $this->parseCost(
+            is_string($sourceEvent['cost'] ?? null) ? $sourceEvent['cost'] : null,
+        );
+        $locationName = is_string($venue) ? html_entity_decode($venue, ENT_QUOTES, 'UTF-8') : null;
+        $locationAddress = is_string($address) ? html_entity_decode($address, ENT_QUOTES, 'UTF-8') : null;
+
+        return [
+            'title' => mb_substr($title, 0, 255),
+            'emoji' => $this->categoryEmoji($category),
+            'category' => $category,
+            'description' => $description ?: null,
+            'source_lang' => 'de',
+            'starts_at' => $startsAt,
+            'ends_at' => isset($sourceEvent['end_date']) ? Carbon::parse($sourceEvent['end_date']) : $startsAt->copy()->addHours(2),
+            'location_name' => $locationName,
+            'address' => $locationAddress,
+            'is_free' => $isFree ?? false,
+            'price' => $price,
+            'price_text' => $priceText,
+            'source_url' => is_string($sourceUrl) ? $sourceUrl : null,
+            'tags' => array_values(array_filter($sourceCategories)) ?: null,
+            'organiser_id' => $organiserId,
+            'quality_score' => $this->computeInitialQuality([
+                'venue' => $locationName,
+                'address' => $locationAddress,
+                'description' => $description,
+                'starts_at' => $startsAt,
+                'source_url' => is_string($sourceUrl) ? $sourceUrl : null,
+                'price_known' => $isFree !== null,
+            ]),
+            'status' => 'active',
+            'verified_at' => now(),
+        ];
     }
 
     /** @param array<string, mixed> $sourceEvent */

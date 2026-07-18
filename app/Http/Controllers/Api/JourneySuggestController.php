@@ -7,7 +7,6 @@ use App\Models\JourneyRecent;
 use App\Models\UserPlace;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
-use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Place;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,8 +37,7 @@ class JourneySuggestController extends Controller
             return response()->json($this->defaults($user->id, $validated['role'] ?? 'destination'));
         }
 
-        $location = app(UserLocationService::class)->resolve($user, $request);
-        $bias = new GeoPoint((float) $location['lat'], (float) $location['lng']);
+        $bias = app(UserLocationService::class)->context($user, $request)->toGeoPoint();
 
         // The user's own vocabulary ("Home", "Gym") outranks the city.
         $saved = $user->places()

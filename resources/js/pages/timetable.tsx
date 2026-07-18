@@ -547,7 +547,15 @@ function BoardSkeleton() {
     );
 }
 
-function EmptyBoard({ mode }: { mode: Mode }) {
+function EmptyBoard({
+    mode,
+    locationRequired,
+    onUseCurrentLocation,
+}: {
+    mode: Mode;
+    locationRequired: boolean;
+    onUseCurrentLocation: () => void;
+}) {
     const what =
         mode === 'tram'
             ? 'trams'
@@ -559,7 +567,20 @@ function EmptyBoard({ mode }: { mode: Mode }) {
 
     return (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            No live {what} for your nearest stop right now.
+            {locationRequired ? (
+                <>
+                    <p>Use your location to see live departures near you.</p>
+                    <button
+                        type="button"
+                        onClick={onUseCurrentLocation}
+                        className="mt-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover"
+                    >
+                        Use my location
+                    </button>
+                </>
+            ) : (
+                <>No live {what} for your nearest stop right now.</>
+            )}
         </div>
     );
 }
@@ -855,6 +876,7 @@ function destinationMatchesTrip(
 export default function Timetable() {
     const page = usePage<{
         boards?: Boards;
+        locationRequired?: boolean;
         savedPlaces?: SavedPlace[];
         recentDestinations?: RecentDestination[];
         activeDisruptions?: DisruptionItem[];
@@ -862,6 +884,7 @@ export default function Timetable() {
     }>();
     const {
         boards,
+        locationRequired = false,
         savedPlaces = [],
         recentDestinations = [],
         activeDisruptions = [],
@@ -1346,6 +1369,8 @@ export default function Timetable() {
                                                 </>
                                             )}
                                         </>
+                                    ) : locationRequired ? (
+                                        'Use your location to see nearby live departures'
                                     ) : (
                                         // Loaded, but the nearest stop has nothing running —
                                         // say so instead of implying we're still searching.
@@ -1406,7 +1431,13 @@ export default function Timetable() {
                                 {board && board.departures.length > 0 ? (
                                     <DepartureBoard board={board} />
                                 ) : (
-                                    <EmptyBoard mode={mode} />
+                                    <EmptyBoard
+                                        mode={mode}
+                                        locationRequired={locationRequired}
+                                        onUseCurrentLocation={
+                                            requestDeviceLocation
+                                        }
+                                    />
                                 )}
                                 {alt && <AltCard alt={alt} />}
                                 <PlannedDisruptions

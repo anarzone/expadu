@@ -127,6 +127,12 @@ test('classification job timeout scales for chunked full-description translation
     expect((new ProcessEventJob($event))->timeout)->toBeGreaterThan(45);
 });
 
+test('classification timeout stays below the queue visibility window for unbounded source text', function () {
+    $event = Event::factory()->create(['description' => str_repeat('Sehr langer deutscher Abschnitt. ', 50000)]);
+
+    expect((new ProcessEventJob($event))->timeout)->toBeLessThan(3600);
+});
+
 test('configured default queue visibility exceeds a long translation job timeout', function () {
     $event = Event::factory()->create(['description' => str_repeat('Langer deutscher Abschnitt. ', 2000)]);
     $job = new ProcessEventJob($event);
