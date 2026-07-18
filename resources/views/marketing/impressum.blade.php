@@ -15,12 +15,6 @@
         Köln, Deutschland
     </p>
 
-    <div class="todo-box">
-        <b>Before public launch:</b> a ladungsfähige Anschrift (serviceable postal address — a
-        registered virtual-office address works) and a monitored contact e-mail must be added
-        here. § 5 DDG requires both; a P.O. box is not sufficient.
-    </div>
-
     <h2>Kontakt / Contact</h2>
     <p>E-Mail: hello@expadu.com</p>
 
