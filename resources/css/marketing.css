@@ -1888,3 +1888,19 @@ details.more .inner {
     text-transform: uppercase;
     cursor: pointer;
 }
+
+/* Buttons rendered inside prose/article text containers keep button
+   colors — container link styling must not repaint them. */
+.prose a.btn,
+.article-body a.btn {
+    text-decoration: none;
+    font-weight: 600;
+}
+.prose a.btn-primary,
+.article-body a.btn-primary {
+    color: #fff;
+}
+.prose a.btn-ghost,
+.article-body a.btn-ghost {
+    color: var(--ink);
+}
