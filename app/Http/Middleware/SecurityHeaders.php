@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -28,7 +29,10 @@ class SecurityHeaders
             // cross-origin module scripts need CORS headers nginx doesn't
             // send for /build. Root assets at the marketing origin instead;
             // route() URLs keep the forced app root for auth links.
-            config(['app.asset_url' => $request->getSchemeAndHttpHost()]);
+            // useAssetOrigin mutates the live UrlGenerator: in production the
+            // forceRootUrl call has already instantiated it at boot, so a
+            // config('app.asset_url') write after boot is ignored.
+            URL::useAssetOrigin($request->getSchemeAndHttpHost());
         }
 
         $response = $next($request);

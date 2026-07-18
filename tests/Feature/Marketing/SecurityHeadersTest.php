@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\URL;
+
 test('every response carries the baseline security headers', function () {
     $response = $this->get('/');
 
@@ -30,6 +32,20 @@ test('the marketing domain gets a nonce-based content security policy', function
 
     // Assets must load same-origin on the marketing host — cross-origin
     // module scripts from the app subdomain die without CORS headers.
+    $response->assertDontSee('https://app.marketing.test/build', escape: false);
+});
+
+test('assets stay same-origin even when the root URL is forced (production boot path)', function () {
+    config(['app.marketing_domain' => 'marketing.test', 'app.url' => 'https://app.marketing.test']);
+
+    // In production AppServiceProvider forces the root URL at boot, which
+    // instantiates the UrlGenerator early — a config('app.asset_url') write
+    // in middleware is ignored after that. Reproduce it explicitly.
+    URL::forceRootUrl('https://app.marketing.test');
+
+    $response = $this->get('http://marketing.test/');
+
+    $response->assertOk();
     $response->assertDontSee('https://app.marketing.test/build', escape: false);
 });
 
