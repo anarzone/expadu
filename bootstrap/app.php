@@ -11,6 +11,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
@@ -49,6 +50,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
             EnsureUserIsOnboarded::class,
             SetCacheHeaders::class,
+            // Web-wide per-user/IP ceiling (see AppServiceProvider limiters);
+            // sits after StartSession so the authenticated user is resolvable.
+            'throttle:global',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -65,5 +69,23 @@ return Application::configure(basePath: dirname(__DIR__))
             AuthenticationException::class,
             ValidationException::class,
             TokenMismatchException::class,
+            ThrottleRequestsException::class,
         ]);
+
+        // A throttled Inertia form post would otherwise surface as the scary
+        // "something blocked the response" toast (the modal catch-all). Send
+        // the user back with a plain flash toast instead; bots and plain
+        // HTTP clients keep the default 429 + Retry-After response.
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->header('X-Inertia') && ! $request->isMethodSafe()) {
+                $seconds = (int) ($e->getHeaders()['Retry-After'] ?? 60);
+
+                return back(fallback: '/')->with(
+                    'error',
+                    "Too many requests — please wait {$seconds} seconds and try again.",
+                );
+            }
+
+            return null;
+        });
     })->create();

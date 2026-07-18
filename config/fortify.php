@@ -101,7 +101,10 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    // fortify-forms is a shared per-IP budget across every Fortify POST
+    // (register, forgot/reset password, 2FA…) — safe methods are exempt.
+    // Defined in AppServiceProvider::configureRateLimiting().
+    'middleware' => ['web', 'throttle:fortify-forms'],
 
     /*
     |--------------------------------------------------------------------------

@@ -92,7 +92,7 @@ $marketingRoutes = function () {
 
 // ── App (app.expadu.com) ─────────────────────────────────────────────────
 // Social login — responds on all domains (same as Fortify login/register)
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', 'throttle:social'])->group(function () {
     Route::get('auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])->name('social.redirect');
     Route::get('auth/{provider}/callback', [SocialLoginController::class, 'callback'])->name('social.callback');
 });
@@ -103,12 +103,15 @@ $appRoutes = function () use ($appDomain) {
         Route::get('/', fn () => redirect('/dashboard'));
     }
 
-    Route::middleware(['auth', 'verified'])->group(function () {
-        // APIs
-        Route::get('api/geocode', GeocodeController::class)->name('api.geocode');
-        Route::get('api/reverse-geocode', ReverseGeocodeController::class)->name('api.reverse-geocode');
-        Route::get('api/stops', StopSearchController::class)->name('api.stops');
-        Route::get('api/spots', SpotSearchController::class)->name('api.spots');
+    // throttle:app-writes caps every mutation in the group per user; GETs are
+    // exempt inside the limiter, so pages and polling stay unthrottled here.
+    Route::middleware(['auth', 'verified', 'throttle:app-writes'])->group(function () {
+        // APIs — typeahead/geocoding lookups hit MOTIS/Photon per request,
+        // so they carry their own per-user budget on top.
+        Route::get('api/geocode', GeocodeController::class)->middleware('throttle:search')->name('api.geocode');
+        Route::get('api/reverse-geocode', ReverseGeocodeController::class)->middleware('throttle:search')->name('api.reverse-geocode');
+        Route::get('api/stops', StopSearchController::class)->middleware('throttle:search')->name('api.stops');
+        Route::get('api/spots', SpotSearchController::class)->middleware('throttle:search')->name('api.spots');
         Route::get('api/places', [PlacesController::class, 'index'])->name('api.places');
         Route::get('api/places/{spot}/context', PlaceContextController::class)->name('api.places.context');
         Route::get('api/places/{spot}/events', [EventsController::class, 'place'])->name('api.places.events');
@@ -123,8 +126,8 @@ $appRoutes = function () use ($appDomain) {
         Route::post('api/tiles/triage', [TileTriageController::class, 'store'])->name('api.tiles.triage');
         Route::post('api/tiles/triage/undo', [TileTriageController::class, 'undo'])->name('api.tiles.triage.undo');
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
-        Route::get('api/journey', TakeMeThereController::class)->name('api.journey');
-        Route::get('api/journey/suggest', JourneySuggestController::class)->name('api.journey.suggest');
+        Route::get('api/journey', TakeMeThereController::class)->middleware('throttle:journey')->name('api.journey');
+        Route::get('api/journey/suggest', JourneySuggestController::class)->middleware('throttle:search')->name('api.journey.suggest');
         // Live trip session — persists the chosen journey across screens/closes.
         Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.start');
         Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
@@ -203,9 +206,10 @@ $appRoutes = function () use ($appDomain) {
         Route::get('user-settings', [UserSettingController::class, 'show'])->name('user-settings.show');
         Route::put('user-settings', [UserSettingController::class, 'update'])->name('user-settings.update');
 
-        // Spot reviews
+        // Spot reviews — public-facing content, so the tight ugc budget
+        // stacks under the group-wide app-writes one.
         Route::get('explore/{spot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');
-        Route::post('explore/{spot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+        Route::post('explore/{spot}/reviews', [ReviewController::class, 'store'])->middleware('throttle:ugc')->name('reviews.store');
 
         // Slot monitoring
 
