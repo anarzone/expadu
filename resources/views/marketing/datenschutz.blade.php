@@ -46,9 +46,9 @@
     <h2>5. Transactional e-mail</h2>
     <p>
         Account e-mails (address verification, password resets) and waitlist confirmations are
-        delivered through Brevo (Sendinblue SAS, France), an EU-based e-mail provider acting as our
-        processor. Your e-mail address is shared with Brevo only for the purpose of delivering the
-        message.
+        delivered through Resend (Resend, Inc.) acting as our processor; our sending domain is
+        configured to Resend's EU region, so delivery is processed on servers in the EU (Ireland).
+        Your e-mail address is shared with Resend only for the purpose of delivering the message.
     </p>
 
     <h2>6. The Expadu app</h2>
