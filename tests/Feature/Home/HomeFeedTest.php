@@ -6,6 +6,7 @@ use App\Enums\TransportMode;
 use App\Home\HomeFeed;
 use App\Models\Event;
 use App\Models\EventReminder;
+use App\Models\MediaAsset;
 use App\Models\Spot;
 use App\Models\Task;
 use App\Models\User;
@@ -119,6 +120,38 @@ test('a distant event stays a rail and earns no urgent tile', function () {
     $tonight = collect($feed->rails($user))->firstWhere('key', 'tonight');
     expect($tonight)->not->toBeNull();
     expect(collect($tonight['cards'])->pluck('name'))->toContain('Evening Jazz');
+});
+
+test('tonight rail cards carry the real event category and rights-approved media only', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-06-15 14:00', 'Europe/Berlin'));
+    $user = homeFeedUser();
+    Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
+
+    $jazz = eventAtTonight('Evening Jazz', now()->addHours(5));
+    $jazz->update(['category' => 'culture']);
+    $pending = MediaAsset::factory()->create(['remote_url' => 'https://www.stadt-koeln.de/quarantined.jpg']);
+    $approved = MediaAsset::factory()->approved()->create([
+        'remote_url' => 'https://upload.wikimedia.org/approved.jpg',
+        'attribution' => 'Approved credit',
+    ]);
+    $jazz->mediaAttachments()->create(['media_asset_id' => $pending->id, 'role' => 'poster', 'priority' => 1, 'is_primary' => true]);
+    $jazz->mediaAttachments()->create(['media_asset_id' => $approved->id, 'role' => 'poster', 'priority' => 2]);
+
+    $bare = eventAtTonight('Random Meetup', now()->addHours(4));
+    $bare->update(['category' => 'sports']);
+
+    $cards = collect(collect(app(HomeFeed::class)->rails($user))->firstWhere('key', 'tonight')['cards']);
+
+    $jazzCard = $cards->firstWhere('name', 'Evening Jazz');
+    expect($jazzCard['kind'])->toBe('event')
+        ->and($jazzCard['category'])->toBe('culture')
+        // The quarantined stadt-koeln image never leaks — only approved media shows.
+        ->and($jazzCard['photo_url'])->toBe('https://upload.wikimedia.org/approved.jpg')
+        ->and($jazzCard['photo_attribution'])->toBe('Approved credit');
+
+    $bareCard = $cards->firstWhere('name', 'Random Meetup');
+    expect($bareCard['category'])->toBe('sports')
+        ->and($bareCard['photo_url'])->toBeNull();
 });
 
 test('only still-applicable open tasks reach the urgent tile and paperwork rail', function () {

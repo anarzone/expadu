@@ -3,6 +3,7 @@
 namespace App\Home;
 
 use App\Composer\CategoryAppeal;
+use App\Enums\EventCategory;
 use App\Enums\SpotFeedbackState;
 use App\Models\Event;
 use App\Models\Spot;
@@ -11,6 +12,7 @@ use App\Models\UserTask;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Services\NearbyPlaces;
+use App\Support\EventOccurrencePresenter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -52,7 +54,10 @@ class DiscoveryFeed
      */
     private const HOME_RADIUS_KM = 2.5;
 
-    public function __construct(private readonly NearbyPlaces $nearby) {}
+    public function __construct(
+        private readonly NearbyPlaces $nearby,
+        private readonly EventOccurrencePresenter $eventPresenter,
+    ) {}
 
     /**
      * @return list<array<string, mixed>>
@@ -327,19 +332,25 @@ class DiscoveryFeed
         }
 
         return $this->rail('tonight', 'Tonight in Cologne', 'in your window', '/events',
-            $events->map(fn (Event $e) => [
-                'id' => "event:{$e->id}",
-                'name' => $e->title,
-                'veedel' => $e->location_name,
-                'category' => 'event',
-                'cost' => $e->is_free ? 'free' : null,
-                'lat' => (float) $e->lat,
-                'lng' => (float) $e->lng,
-                'is_new' => false,
-                'kind' => 'event',
-                'href' => null,
-                'reason' => $e->starts_at->format('H:i'),
-            ])->all());
+            $events->map(function (Event $e) {
+                $photo = $this->eventPresenter->photo($e);
+
+                return [
+                    'id' => "event:{$e->id}",
+                    'name' => $e->title,
+                    'veedel' => $e->location_name,
+                    'category' => EventCategory::fromLegacy($e->category)->value,
+                    'cost' => $e->is_free ? 'free' : null,
+                    'lat' => (float) $e->lat,
+                    'lng' => (float) $e->lng,
+                    'is_new' => false,
+                    'kind' => 'event',
+                    'href' => null,
+                    'reason' => $e->starts_at->format('H:i'),
+                    'photo_url' => $photo['url'],
+                    'photo_attribution' => $photo['attribution'],
+                ];
+            })->all());
     }
 
     private function paperworkRail(HomeContext $context): ?array

@@ -27,6 +27,7 @@ import type { IconProps } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 import { useRef, useState } from 'react';
 import { PushPromptCard } from '@/components/cards/push-prompt-card';
+import { eventIllustrationKey } from '@/components/events/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { categoryEmoji } from '@/components/places/category-illustration';
@@ -1290,7 +1291,13 @@ export default function Dashboard() {
                                         <ContentCard
                                             key={card.id}
                                             variant="rail"
-                                            coarse={card.category}
+                                            coarse={
+                                                card.kind === 'event'
+                                                    ? eventIllustrationKey(
+                                                          card.category,
+                                                      )
+                                                    : card.category
+                                            }
                                             title={card.name}
                                             meta={
                                                 [card.veedel, card.cost]

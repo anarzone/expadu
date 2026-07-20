@@ -184,6 +184,12 @@ const VISUALS: Record<string, Visual> = {
         Icon: IconCalendarEvent,
         tint: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
     },
+    // Safety net for cached home-feed payloads that predate per-category
+    // event cards and still say category "event".
+    event: {
+        Icon: IconCalendarEvent,
+        tint: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
+    },
     veedel: {
         Icon: IconMapPin,
         tint: 'bg-accent-soft text-primary',
@@ -261,6 +267,12 @@ const CATEGORY_EMOJI: Record<string, string> = {
     boules: '🎱',
     event: '🎟️',
     language: '🗣️',
+    language_exchange: '🗣️',
+    stammtisch: '🍻',
+    intl_meetup: '🌍',
+    party: '🎉',
+    sports: '⚽',
+    other: '🎟️',
     appointment: '🏛️',
     task: '📋',
 };

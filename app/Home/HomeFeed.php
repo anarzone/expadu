@@ -201,6 +201,11 @@ class HomeFeed
             ->whereDate('starts_at', today())
             ->where('starts_at', '>', now())
             ->whereNotNull('location')
+            ->with([
+                'mediaAttachments.mediaAsset',
+                'venue.mediaAttachments.mediaAsset',
+                'venue.place.mediaAttachments.mediaAsset',
+            ])
             ->orderByDesc('is_curated')
             ->orderBy('starts_at')
             ->limit(20)

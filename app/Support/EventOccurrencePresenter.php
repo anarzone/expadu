@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\EventCategory;
 use App\Media\PublishedMediaSelector;
 use App\Models\Event;
+use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
 
 /**
@@ -24,12 +25,8 @@ class EventOccurrencePresenter
         $category = EventCategory::fromLegacy($event->category);
         $venue = $event->venue;
         $venueName = $this->venueName($venue->name ?? $event->location_name);
-        $media = $this->mediaSelector->select($event, 'poster')
-            ?? $this->mediaSelector->select($event, 'hero')
-            ?? ($venue ? $this->mediaSelector->select($venue, 'hero') : null)
-            ?? ($venue?->place ? $this->mediaSelector->select($venue->place, 'hero') : null);
-        $allowLegacyPlaceMedia = $venue?->place !== null
-            && ! $this->mediaSelector->hasManagedMedia($venue->place);
+        $media = $this->selectMedia($event);
+        $allowLegacyPlaceMedia = $this->allowLegacyPlaceMedia($event);
 
         return [
             'id' => $event->id,
@@ -62,6 +59,43 @@ class EventOccurrencePresenter
             'recurrence_text' => $this->recurrenceText($event),
             'verified' => $event->verified_at !== null,
         ];
+    }
+
+    /**
+     * The displayable photo for an event card — same rights-gated cascade as
+     * the full contract (event poster → event hero → venue → place, then the
+     * legacy place photo only where no managed media exists), so lighter
+     * surfaces (the Today "Tonight" rail) can never show an image the events
+     * page would refuse.
+     *
+     * @return array{url: string|null, attribution: string|null}
+     */
+    public function photo(Event $event): array
+    {
+        $media = $this->selectMedia($event);
+        $place = $this->allowLegacyPlaceMedia($event) ? $event->venue?->place : null;
+
+        return [
+            'url' => $media?->remote_url ?? $place?->photo_url,
+            'attribution' => $media?->attribution ?? $place?->photo_attribution,
+        ];
+    }
+
+    private function selectMedia(Event $event): ?MediaAsset
+    {
+        $venue = $event->venue;
+
+        return $this->mediaSelector->select($event, 'poster')
+            ?? $this->mediaSelector->select($event, 'hero')
+            ?? ($venue ? $this->mediaSelector->select($venue, 'hero') : null)
+            ?? ($venue?->place ? $this->mediaSelector->select($venue->place, 'hero') : null);
+    }
+
+    private function allowLegacyPlaceMedia(Event $event): bool
+    {
+        $place = $event->venue?->place;
+
+        return $place !== null && ! $this->mediaSelector->hasManagedMedia($place);
     }
 
     public function meta(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt, ?string $venueName, ?string $veedel): string
