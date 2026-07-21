@@ -4,6 +4,8 @@ namespace App\Console\Commands\Events;
 
 use App\Models\Event;
 use App\Models\Venue;
+use App\Services\CologneServiceArea;
+use App\Services\GeocodingService;
 use App\Services\VenueResolver;
 use Illuminate\Console\Command;
 
@@ -17,7 +19,9 @@ use Illuminate\Console\Command;
  */
 class LinkEventVenues extends Command
 {
-    protected $signature = 'events:link-venues {--limit=1000 : Max events to link per run}';
+    protected $signature = 'events:link-venues
+        {--limit=1000 : Max events to link per run}
+        {--geocode=60 : Max venue geocoding lookups per run (0 = skip)}';
 
     protected $description = 'Link venue-less events to venues by location name (heals pre-classification-failure orphans)';
 
@@ -53,6 +57,8 @@ class LinkEventVenues extends Command
 
         $this->info('Healed coordinates for '.$this->healCoordinates($venues).' venue(s).');
 
+        $this->info('Geocoded '.$this->geocodeVenues($venues).' venue(s).');
+
         return self::SUCCESS;
     }
 
@@ -86,5 +92,52 @@ class LinkEventVenues extends Command
             });
 
         return $healed;
+    }
+
+    /**
+     * Last resort for venues whose events carry no coordinates either
+     * (the ingest-era enrichment never geocoded them): geocode the venue
+     * itself — address first, name as fallback — accepting only results
+     * inside the Cologne service area, same guard as the event path.
+     */
+    private function geocodeVenues(VenueResolver $venues): int
+    {
+        $limit = (int) $this->option('geocode');
+        if ($limit <= 0) {
+            return 0;
+        }
+
+        $geocoder = app(GeocodingService::class);
+        $serviceArea = app(CologneServiceArea::class);
+        $geocoded = 0;
+
+        Venue::query()
+            ->whereNull('lat')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->each(function (Venue $venue) use ($venues, $geocoder, $serviceArea, &$geocoded) {
+                $query = trim((string) ($venue->address_text ?: $venue->name));
+                if ($query === '') {
+                    return;
+                }
+
+                try {
+                    $results = $geocoder->search("{$query}, Köln");
+                    $hit = collect($results)->first(fn (array $candidate): bool => isset($candidate['lat'], $candidate['lng'])
+                        && $serviceArea->contains((float) $candidate['lat'], (float) $candidate['lng']));
+
+                    if ($hit !== null) {
+                        $venues->resolve($venue->name, $venue->address_text, (float) $hit['lat'], (float) $hit['lng']);
+                        $geocoded++;
+                    }
+                } catch (\Throwable $e) {
+                    $this->warn("  geocode venue {$venue->id}: {$e->getMessage()}");
+                }
+
+                usleep(300_000); // stay polite to the public photon instance
+            });
+
+        return $geocoded;
     }
 }
