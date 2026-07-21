@@ -2,6 +2,7 @@
 
 use App\Models\Event;
 use App\Models\Venue;
+use Illuminate\Support\Facades\DB;
 
 test('links venue-less events to an existing venue by name and address', function () {
     $venue = Venue::create([
@@ -19,6 +20,26 @@ test('links venue-less events to an existing venue by name and address', functio
     $this->artisan('events:link-venues')->assertSuccessful();
 
     expect($event->fresh()->venue_id)->toBe($venue->id);
+});
+
+test('a coordinate-less venue borrows trusted coordinates from its own events', function () {
+    $venue = Venue::create([
+        'name' => 'Flora und Botanischer Garten',
+        'address_text' => 'Am Botanischen Garten 1a',
+        'lat' => null,
+        'lng' => null,
+    ]);
+    $event = Event::factory()->create(['venue_id' => $venue->id, 'location_name' => 'Flora und Botanischer Garten']);
+    DB::statement(
+        'UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+        [6.9731, 50.9585, $event->id],
+    );
+
+    $this->artisan('events:link-venues')->assertSuccessful();
+
+    $venue->refresh();
+    expect((float) $venue->lat)->toEqualWithDelta(50.9585, 0.0001)
+        ->and((float) $venue->lng)->toEqualWithDelta(6.9731, 0.0001);
 });
 
 test('creates the venue when none exists yet and leaves nameless events alone', function () {
