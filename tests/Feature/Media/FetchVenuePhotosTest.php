@@ -143,6 +143,59 @@ test('saves nothing when neither wikidata verifies nor geosearch matches the nam
     expect($venue->fresh()->mediaAttachments()->count())->toBe(0);
 });
 
+test('a locative phrase in the venue name never matches a neighbouring building', function () {
+    // Real prod case: VHS Studienhaus am Neumarkt sits NEXT TO Neumarkt 21 —
+    // "Neumarkt" is where the venue is, not what it is, so a photo of the
+    // neighbour must not pass the name gate.
+    $venue = photoVenue(['name' => 'VHS Studienhaus am Neumarkt']);
+
+    Http::fake(function ($request) {
+        $url = $request->url();
+
+        if (str_contains($url, 'wbsearchentities')) {
+            return Http::response(['search' => []]);
+        }
+
+        return Http::response(['query' => ['pages' => [
+            '1' => ['title' => 'File:Wohn- und Geschäftshaus Neumarkt 21-3850.jpg', 'index' => 1, 'imageinfo' => [['mediatype' => 'BITMAP']]],
+        ]]]);
+    });
+
+    $this->artisan('venues:fetch-photos')->assertSuccessful();
+
+    expect($venue->fresh()->mediaAttachments()->count())->toBe(0);
+});
+
+test('stripping the locative phrase keeps matching on the identity part of the name', function () {
+    $venue = photoVenue(['name' => 'Gilden im Zims']);
+
+    Http::fake(function ($request) {
+        $url = $request->url();
+
+        if (str_contains($url, 'wbsearchentities')) {
+            return Http::response(['search' => []]);
+        }
+
+        if (str_contains($url, 'geosearch')) {
+            return Http::response(['query' => ['pages' => [
+                '1' => ['title' => 'File:Gilden im Zims Heumarkt 77 Köln.jpg', 'index' => 1, 'imageinfo' => [['mediatype' => 'BITMAP']]],
+            ]]]);
+        }
+
+        return Http::response(['query' => ['pages' => [
+            '9' => [
+                'title' => 'File:Gilden im Zims Heumarkt 77 Köln.jpg',
+                'imageinfo' => [venueCommonsInfo('Foto Fan', 'CC BY 4.0')],
+            ],
+        ]]]);
+    });
+
+    $this->artisan('venues:fetch-photos')->assertSuccessful();
+
+    $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
+    expect($media?->remote_url)->toContain('Gilden_im_Zims');
+});
+
 test('an event with no own media inherits the venue commons photo through the api', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-12 10:00', 'Europe/Berlin'));
     $this->actingAs(User::factory()->onboarded()->create());

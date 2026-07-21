@@ -66,7 +66,7 @@ class FetchVenuePhotos extends Command
             $file = $this->resolver->geoSearchFile(
                 (float) $venue->lat,
                 (float) $venue->lng,
-                (string) $venue->name,
+                $this->identityName((string) $venue->name),
                 fn (string $error) => $this->warn("  geosearch failed for venue {$venue->id}: {$error}"),
             );
             if ($file !== null) {
@@ -165,6 +165,26 @@ class FetchVenuePhotos extends Command
         }
 
         return $files;
+    }
+
+    /**
+     * The identity part of a venue name, for geosearch name-matching only.
+     * German venue names often end in a locative phrase — "Studienhaus am
+     * Neumarkt", "Bürgerhaus an der Severinstraße" — and the place word
+     * ("Neumarkt") appears in MANY nearby Commons filenames, so it must not
+     * count as evidence that a photo shows THIS building. Wikidata search
+     * keeps the full name (labels contain the phrase); only the token gate
+     * uses the stripped form.
+     */
+    private function identityName(string $name): string
+    {
+        $stripped = preg_replace(
+            '/\s+(?:am|an der|an dem|auf dem|auf der|im|in der|beim|bei der|zum|zur)\s+\p{Lu}.*$/u',
+            '',
+            $name,
+        );
+
+        return trim((string) $stripped) !== '' ? trim((string) $stripped) : $name;
     }
 
     /**
