@@ -55,6 +55,10 @@ Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 // new and updated place references are enriched in the same ingestion cycle.
 Schedule::command('spots:fetch-photos')->weeklyOn(1, '05:30')->withoutOverlapping()->onOneServer();
 
+// Venue photos ride the same weekly cycle, after the events scrapers have
+// created any new venues — events inherit these via the media cascade.
+Schedule::command('venues:fetch-photos')->weeklyOn(1, '06:00')->withoutOverlapping()->onOneServer();
+
 // External API health monitoring — every 5 minutes
 Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
