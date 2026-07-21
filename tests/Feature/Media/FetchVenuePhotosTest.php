@@ -5,6 +5,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Models\Venue;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /** @return array<string, mixed> */
@@ -194,6 +195,57 @@ test('stripping the locative phrase keeps matching on the identity part of the n
 
     $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
     expect($media?->remote_url)->toContain('Gilden_im_Zims');
+});
+
+test('district and building-type words never count as name evidence', function () {
+    // Real staging cases: 'Stadtteilbibliothek Ehrenfeld' matched a HOSPITAL in
+    // Ehrenfeld (district token), 'Rautenstrauch-Joest-Museum' matched the
+    // Museum Schnütgen next door (type token 'museum').
+    DB::table('veedels')->insert([
+        'name' => 'Ehrenfeld', 'bezirk' => 'Ehrenfeld',
+    ]);
+    $library = photoVenue(['name' => 'Stadtteilbibliothek Ehrenfeld']);
+    $rjm = photoVenue(['name' => 'Rautenstrauch-Joest-Museum', 'lat' => 50.935, 'lng' => 6.951]);
+
+    Http::fake(function ($request) {
+        $url = $request->url();
+
+        if (str_contains($url, 'wbsearchentities')) {
+            return Http::response(['search' => []]);
+        }
+
+        return Http::response(['query' => ['pages' => [
+            '1' => ['title' => 'File:St Franziskus-Hospital, Köln-Ehrenfeld-1642.jpg', 'index' => 1, 'imageinfo' => [['mediatype' => 'BITMAP']]],
+            '2' => ['title' => 'File:Museum Schnütgen, Köln - Kugelpanorama.jpg', 'index' => 2, 'imageinfo' => [['mediatype' => 'BITMAP']]],
+        ]]]);
+    });
+
+    $this->artisan('venues:fetch-photos')->assertSuccessful();
+
+    expect($library->fresh()->mediaAttachments()->count())->toBe(0)
+        ->and($rjm->fresh()->mediaAttachments()->count())->toBe(0);
+});
+
+test('parenthetical clarifiers in the venue name are not identity evidence', function () {
+    // 'Kunst- und Museumsbibliothek (Lesesaal Museum Ludwig)' must not adopt a
+    // random photo geotagged at Museum Ludwig just because of 'Ludwig'.
+    $venue = photoVenue(['name' => 'Kunst- und Museumsbibliothek (Lesesaal Museum Ludwig)']);
+
+    Http::fake(function ($request) {
+        $url = $request->url();
+
+        if (str_contains($url, 'wbsearchentities')) {
+            return Http::response(['search' => []]);
+        }
+
+        return Http::response(['query' => ['pages' => [
+            '1' => ['title' => 'File:Vertragsunterzeichnung Peter und Irene Ludwig Stiftung.jpg', 'index' => 1, 'imageinfo' => [['mediatype' => 'BITMAP']]],
+        ]]]);
+    });
+
+    $this->artisan('venues:fetch-photos')->assertSuccessful();
+
+    expect($venue->fresh()->mediaAttachments()->count())->toBe(0);
 });
 
 test('an event with no own media inherits the venue commons photo through the api', function () {

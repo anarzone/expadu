@@ -25,8 +25,11 @@ class CommonsPhotoResolver
     /**
      * Nearest geotagged Commons files around a coordinate, name-verified.
      * Returns null when nothing both near AND matching the name exists.
+     *
+     * @param  list<string>  $extraStopWords  caller-specific generic words that
+     *                                        must not count as name evidence
      */
-    public function geoSearchFile(float $lat, float $lng, string $name, ?callable $onError = null): ?string
+    public function geoSearchFile(float $lat, float $lng, string $name, ?callable $onError = null, array $extraStopWords = []): ?string
     {
         try {
             $pages = Http::withUserAgent(self::USER_AGENT)->timeout(20)
@@ -50,7 +53,7 @@ class CommonsPhotoResolver
             return null;
         }
 
-        return $this->pickGeoFile($pages ?? [], $name);
+        return $this->pickGeoFile($pages ?? [], $name, $extraStopWords);
     }
 
     /**
@@ -62,10 +65,11 @@ class CommonsPhotoResolver
      * precision. Geosearch orders pages by distance via `index`.
      *
      * @param  array<int|string, array<string, mixed>>  $pages
+     * @param  list<string>  $extraStopWords
      */
-    public function pickGeoFile(array $pages, string $placeName): ?string
+    public function pickGeoFile(array $pages, string $placeName, array $extraStopWords = []): ?string
     {
-        $tokens = $this->nameTokens($placeName);
+        $tokens = $this->nameTokens($placeName, $extraStopWords);
         if ($tokens === []) {
             return null; // nothing distinctive to verify against → don't guess
         }
@@ -108,11 +112,15 @@ class CommonsPhotoResolver
      * Distinctive words from a place name to verify a candidate photo against
      * — long enough not to be generic, with bare type words dropped.
      *
+     * @param  list<string>  $extraStopWords
      * @return list<string>
      */
-    public function nameTokens(string $name): array
+    public function nameTokens(string $name, array $extraStopWords = []): array
     {
-        $stop = ['park', 'köln', 'koeln', 'cologne', 'platz', 'garten', 'der', 'die', 'das', 'und'];
+        $stop = array_merge(
+            ['park', 'köln', 'koeln', 'kölner', 'koelner', 'cologne', 'platz', 'garten', 'der', 'die', 'das', 'und'],
+            array_map(mb_strtolower(...), $extraStopWords),
+        );
         $tokens = preg_split('/[^\p{L}]+/u', mb_strtolower($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
         return array_values(array_filter(

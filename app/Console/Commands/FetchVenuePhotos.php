@@ -7,6 +7,7 @@ use App\Media\CommonsPhotoResolver;
 use App\Models\Venue;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -35,6 +36,20 @@ class FetchVenuePhotos extends Command
      */
     private const ENTITY_MAX_DISTANCE_M = 500;
 
+    /**
+     * Building-type words say what KIND of place a venue is, not WHICH one —
+     * "Museum" in "Rautenstrauch-Joest-Museum" must not match the Museum
+     * Schnütgen next door. District names (from the veedels table) are added
+     * at runtime for the same reason: "Ehrenfeld" locates a venue, it doesn't
+     * identify it.
+     */
+    private const TYPE_STOP_WORDS = [
+        'museum', 'bibliothek', 'stadtbibliothek', 'stadtteilbibliothek',
+        'theater', 'kirche', 'schule', 'halle', 'stadthalle', 'turnhalle',
+        'sporthalle', 'zentrum', 'bürgerzentrum', 'bürgerhaus', 'arena',
+        'stadion', 'bahnhof', 'hospital', 'krankenhaus', 'rathaus', 'kapelle',
+    ];
+
     public function __construct(private readonly CommonsPhotoResolver $resolver)
     {
         parent::__construct();
@@ -59,6 +74,8 @@ class FetchVenuePhotos extends Command
         $files = $this->filesFromWikidataSearch($venues);
         $this->info('Wikidata (coordinate-verified): '.count($files).' file(s).');
 
+        $stopWords = $this->venueStopWords();
+
         foreach ($venues as $venue) {
             if (isset($files[$venue->id])) {
                 continue;
@@ -68,6 +85,7 @@ class FetchVenuePhotos extends Command
                 (float) $venue->lng,
                 $this->identityName((string) $venue->name),
                 fn (string $error) => $this->warn("  geosearch failed for venue {$venue->id}: {$error}"),
+                $stopWords,
             );
             if ($file !== null) {
                 $files[$venue->id] = $file;
@@ -178,13 +196,34 @@ class FetchVenuePhotos extends Command
      */
     private function identityName(string $name): string
     {
+        // Parentheticals are clarifiers ("(Lesesaal Museum Ludwig)"), not the
+        // venue's own name — a photo matching only them is the OTHER place.
+        $stripped = preg_replace('/\s*\([^)]*\)/u', '', $name);
         $stripped = preg_replace(
             '/\s+(?:am|an der|an dem|auf dem|auf der|im|in der|beim|bei der|zum|zur)\s+\p{Lu}.*$/u',
             '',
-            $name,
+            (string) $stripped,
         );
 
         return trim((string) $stripped) !== '' ? trim((string) $stripped) : $name;
+    }
+
+    /**
+     * Generic words that locate or classify a venue without identifying it:
+     * the fixed building-type list plus every Veedel name (split on the
+     * compound separators, so "Bocklemünd/Mengenich" stops both parts).
+     *
+     * @return list<string>
+     */
+    private function venueStopWords(): array
+    {
+        $districts = DB::table('veedels')
+            ->pluck('name')
+            ->flatMap(fn ($name) => preg_split('/[\/\-\s]+/u', mb_strtolower((string) $name)) ?: [])
+            ->filter()
+            ->all();
+
+        return array_values(array_unique(array_merge(self::TYPE_STOP_WORDS, $districts)));
     }
 
     /**
