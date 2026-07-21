@@ -20,6 +20,10 @@ Schedule::command('events:curate')->hourly()->withoutOverlapping();
 Schedule::command('events:expire')->dailyAt('03:30')->withoutOverlapping();
 Schedule::command('events:import-manual')->weeklyOn(1, '04:00')->withoutOverlapping()->onOneServer();
 Schedule::command('events:backfill-translations --limit=200 --per-minute=30')->hourly()->withoutOverlapping()->onOneServer();
+// Venue links are made inside ProcessEventJob, but a classification failure
+// there must never leave events venue-less (and photo-less) forever — this
+// sweep catches any orphans the job missed.
+Schedule::command('events:link-venues')->hourly()->withoutOverlapping()->onOneServer();
 Schedule::command('events:source-health --json --max-age=36')->everySixHours()->withoutOverlapping()->onOneServer();
 Schedule::command('events:send-occurrence-reminders')->everyFiveMinutes()->withoutOverlapping();
 
