@@ -55,9 +55,8 @@ test('the bottom sheet never exceeds the 92dvh cap', async ({ page }) => {
 
     await page.goto('/explore');
 
-    // Open the card, then its full detail (the mobile bottom sheet).
+    // Opening a card now goes directly to the full mobile detail sheet.
     await page.getByText('Stadtgarten').first().click();
-    await page.getByRole('button', { name: /Details/ }).click();
 
     const sheet = page.locator('[data-bottom-sheet]');
     await expect(sheet).toBeVisible();
@@ -65,7 +64,9 @@ test('the bottom sheet never exceeds the 92dvh cap', async ({ page }) => {
 
     // Default rest: a backdrop peek shows (sheet shorter than the viewport).
     const viewportH = await page.evaluate(() => window.innerHeight);
-    const restH = await sheet.evaluate((el) => el.getBoundingClientRect().height);
+    const restH = await sheet.evaluate(
+        (el) => el.getBoundingClientRect().height,
+    );
     expect(restH).toBeLessThan(viewportH * 0.8);
 
     // Force a huge height — the max-h-[92dvh] cap must still clamp it, so the
