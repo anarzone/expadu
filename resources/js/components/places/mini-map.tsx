@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { loadBasemap } from '@/lib/basemap';
 
 /**
  * Static mini-map snippet for the place detail — answers "where exactly
@@ -26,32 +27,17 @@ export function MiniMap({
         let map: { remove: () => void } | null = null;
         let cancelled = false;
 
-        Promise.all([
-            import('maplibre-gl'),
-            // The stylesheet ships with the chunk; required for canvas sizing
-            import('maplibre-gl/dist/maplibre-gl.css'),
-        ])
-            .then(([maplibre]) => {
+        loadBasemap()
+            .then((basemap) => {
                 if (cancelled || !containerRef.current) {
                     return;
                 }
 
-                map = new maplibre.Map({
+                map = new basemap.maplibregl.Map({
                     container: containerRef.current,
-                    style: {
-                        version: 8,
-                        sources: {
-                            osm: {
-                                type: 'raster',
-                                tiles: [
-                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                ],
-                                tileSize: 256,
-                                attribution: '© OpenStreetMap',
-                            },
-                        },
-                        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
-                    },
+                    style: basemap.style(
+                        document.documentElement.classList.contains('dark'),
+                    ),
                     center: [lng, lat],
                     zoom: 15,
                     interactive: false,

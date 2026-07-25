@@ -28,7 +28,6 @@ import type {
     PlacesOrigin,
     TransportMode,
 } from '@/components/places/from-control';
-import { PlaceDetail } from '@/components/places/place-detail';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { PlacesMap } from '@/components/places/places-map';
@@ -213,7 +212,6 @@ export default function Places() {
     const [nearbyIncluded, setNearbyIncluded] = useState(false);
     const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
 
-    const [expandedId, setExpandedId] = useState<number | null>(null);
     const [detail, setDetail] = useState<Place | null>(null);
     const [richPlace, setRichPlace] = useState<Place | null>(null);
     // Breadcrumb of places hopped through via nearby chips ("← back")
@@ -327,10 +325,6 @@ export default function Places() {
                     setOrigin(json.origin ?? null);
                     setNeedsLocation(json.needs_location === true);
                     setPage(p);
-
-                    if (!append) {
-                        setExpandedId(null);
-                    }
 
                     setStatus('ok');
                 })
@@ -683,10 +677,11 @@ export default function Places() {
     }
 
     function openPlace(place: Place) {
+        setHopStack([]);
+
         if (isMobile) {
-            setExpandedId((id) => (id === place.id ? null : place.id));
+            setRichPlace(place);
         } else {
-            setHopStack([]);
             setDetail(place);
         }
     }
@@ -1506,29 +1501,9 @@ export default function Places() {
                                                     rating,
                                                 ),
                                         }}
-                                        expanded={
-                                            isMobile && expandedId === place.id
-                                        }
                                         onActivate={() => openPlace(place)}
                                         action={takeMeThereButton(place)}
-                                    >
-                                        {isMobile ? (
-                                            <div className="border-t border-border px-4 py-4">
-                                                <PlaceDetail place={place} />
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setHopStack([]);
-                                                        setRichPlace(place);
-                                                    }}
-                                                    className="mt-3 block min-h-11 w-full rounded-[9px] border border-border py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:border-primary"
-                                                >
-                                                    Details — map, facts &
-                                                    nearby
-                                                </button>
-                                            </div>
-                                        ) : undefined}
-                                    </ContentCard>
+                                    />
                                 ))}
                         </div>
 

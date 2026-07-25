@@ -28,13 +28,10 @@ import type {
 import { eventIllustrationKey } from '@/components/events/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import { CategoryIllustration } from '@/components/places/category-illustration';
 import { ContentCard } from '@/components/places/content-card';
 import type { CardChip } from '@/components/places/content-card';
-import { PlaceRichDetail } from '@/components/places/place-rich-detail';
+import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import type { Place } from '@/components/places/types';
-import { BottomSheet } from '@/components/sheets/bottom-sheet';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
 import { MAX_LOCATION_ACCURACY_M } from '@/hooks/use-geolocation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -180,7 +177,6 @@ export default function Events() {
     >('idle');
     const [reminders, setReminders] = useState<Set<string>>(new Set());
 
-    const [expandedKey, setExpandedKey] = useState<string | null>(null);
     const [detail, setDetail] = useState<EventOccurrence | null>(null);
     const [placeDetail, setPlaceDetail] = useState<Place | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
@@ -223,7 +219,6 @@ export default function Events() {
                     setOccurrences(json.data ?? []);
                     setOrigin(json.origin ?? null);
                     setNeedsLocation(json.needs_location === true);
-                    setExpandedKey(null);
                     setStatus('ok');
                 })
                 .catch(() => {
@@ -392,12 +387,7 @@ export default function Events() {
     }, []);
 
     function openOccurrence(occurrence: EventOccurrence) {
-        if (isMobile) {
-            const key = occurrenceKey(occurrence);
-            setExpandedKey((k) => (k === key ? null : key));
-        } else {
-            setDetail(occurrence);
-        }
+        setDetail(occurrence);
     }
 
     function takeMeThere(occurrence: EventOccurrence) {
@@ -420,7 +410,6 @@ export default function Events() {
             .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
             .then((json) => {
                 setDetail(null);
-                setExpandedKey(null);
                 setPlaceDetail(json.data);
             })
             .catch(() => {});
@@ -471,14 +460,6 @@ export default function Events() {
     const EvModeIcon = (
         EVENT_MODES.find((m) => m.id === evMode) ?? EVENT_MODES[0]
     ).Icon;
-
-    const detailBody = (occurrence: EventOccurrence) => (
-        <EventRichDetail
-            occurrence={occurrence}
-            onNavigate={() => takeMeThere(occurrence)}
-            onOpenPlace={openPlace}
-        />
-    );
 
     return (
         <AppLayout fullWidth>
@@ -965,7 +946,6 @@ export default function Events() {
                                             : occurrence.summary
                                     }
                                     tip={occurrence.tip}
-                                    expanded={isMobile && expandedKey === key}
                                     onActivate={() =>
                                         openOccurrence(occurrence)
                                     }
@@ -992,115 +972,38 @@ export default function Events() {
                                             → Take me there
                                         </button>
                                     }
-                                >
-                                    {isMobile ? (
-                                        <div className="border-t border-border px-4 py-4">
-                                            {detailBody(occurrence)}
-                                        </div>
-                                    ) : undefined}
-                                </ContentCard>
+                                />
                             );
                         })}
                     </div>
                 )}
             </div>
 
-            {/* Desktop detail — traditional centered modal */}
-            <Dialog
-                open={!isMobile && detail !== null && destination === null}
-                onOpenChange={(open) => !open && setDetail(null)}
-            >
-                {detail && (
-                    <DialogContent
-                        aria-describedby={undefined}
-                        className="gap-0 overflow-hidden p-0 sm:max-w-md"
-                    >
-                        <DialogTitle className="sr-only">
-                            {detail.title}
-                        </DialogTitle>
-                        {detail.photo_url ? (
-                            <div className="relative">
-                                <img
-                                    src={detail.photo_url}
-                                    alt={detail.title}
-                                    className="h-32 w-full object-cover"
-                                />
-                                {detail.photo_attribution && (
-                                    <span className="absolute right-1.5 bottom-1.5 max-w-[85%] truncate rounded bg-black/55 px-1.5 py-0.5 text-[9px] text-white/85">
-                                        {detail.photo_attribution}
-                                    </span>
-                                )}
-                            </div>
-                        ) : (
-                            <CategoryIllustration
-                                coarse={eventIllustrationKey(detail.category)}
-                                className="h-24 w-full"
-                                iconSize={34}
-                            />
-                        )}
-                        <div className="max-h-[72vh] overflow-y-auto p-5">
-                            <div className="mb-3 flex items-start gap-2.5">
-                                <span className="text-2xl leading-tight">
-                                    {detail.emoji}
-                                </span>
-                                <div className="min-w-0">
-                                    <h2 className="font-display text-xl leading-tight font-medium">
-                                        {detail.title}
-                                    </h2>
-                                    <div className="mt-0.5 text-[13px] text-muted-foreground">
-                                        {detail.meta}
-                                    </div>
-                                </div>
-                            </div>
-                            {detailBody(detail)}
-                        </div>
-                    </DialogContent>
-                )}
-            </Dialog>
+            {detail && !destination && (
+                <EventRichDetail
+                    occurrence={detail}
+                    isMobile={isMobile}
+                    breadcrumb={windowLabel}
+                    onClose={() => setDetail(null)}
+                    onNavigate={() => takeMeThere(detail)}
+                    onOpenPlace={openPlace}
+                />
+            )}
 
             {/* The linked place — same rich detail as the Places page */}
-            {placeDetail && !isMobile && !destination && (
-                <Dialog
-                    open
-                    onOpenChange={(open) => !open && setPlaceDetail(null)}
-                >
-                    <DialogContent
-                        aria-describedby={undefined}
-                        className="gap-0 overflow-hidden p-0 sm:max-w-md"
-                    >
-                        <DialogTitle className="sr-only">
-                            {placeDetail.name}
-                        </DialogTitle>
-                        <div className="max-h-[80vh] overflow-y-auto p-5">
-                            <PlaceRichDetail
-                                place={placeDetail}
-                                meta={placeMeta(placeDetail)}
-                                onNavigate={(target) => {
-                                    setDestination({
-                                        ...target,
-                                        backLabel: placeDetail.name,
-                                    });
-                                }}
-                            />
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            )}
-            {placeDetail && isMobile && !destination && (
-                <BottomSheet open onClose={() => setPlaceDetail(null)}>
-                    <div className="pb-24">
-                        <PlaceRichDetail
-                            place={placeDetail}
-                            meta={placeMeta(placeDetail)}
-                            onNavigate={(target) => {
-                                setDestination({
-                                    ...target,
-                                    backLabel: placeDetail.name,
-                                });
-                            }}
-                        />
-                    </div>
-                </BottomSheet>
+            {placeDetail && !destination && (
+                <PlaceDetailModal
+                    place={placeDetail}
+                    isMobile={isMobile}
+                    meta={placeMeta(placeDetail)}
+                    onClose={() => setPlaceDetail(null)}
+                    onNavigate={(target) => {
+                        setDestination({
+                            ...target,
+                            backLabel: placeDetail.name,
+                        });
+                    }}
+                />
             )}
 
             {destination && (
