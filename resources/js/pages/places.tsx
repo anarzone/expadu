@@ -716,6 +716,7 @@ export default function Places() {
     function takeMeThere(place: Place) {
         setDestination({
             name: place.name,
+            backLabel: place.name,
             emoji: placeEmoji(place),
             lat: place.lat,
             lng: place.lng,
@@ -1550,7 +1551,7 @@ export default function Places() {
             </div>
 
             {/* Desktop detail — shared modal (photo/illustration hero) */}
-            {!isMobile && detail && (
+            {!isMobile && detail && !destination && (
                 <PlaceDetailModal
                     place={detail}
                     isMobile={false}
@@ -1566,12 +1567,11 @@ export default function Places() {
                         setHopStack([]);
                     }}
                     onNavigate={(target) => {
-                        setDetail(null);
-                        setHopStack([]);
                         // Route from the active "From", so directions start where
                         // the card's "N min away" was measured — not live GPS.
                         setDestination({
                             ...target,
+                            backLabel: detail.name,
                             fromLat: origin?.lat ?? null,
                             fromLng: origin?.lng ?? null,
                             fromName: origin?.label ?? null,
@@ -1584,7 +1584,7 @@ export default function Places() {
             )}
 
             {/* Mobile full detail — shared modal renders a bottom sheet */}
-            {isMobile && richPlace && (
+            {isMobile && richPlace && !destination && (
                 <PlaceDetailModal
                     place={richPlace}
                     isMobile
@@ -1603,12 +1603,11 @@ export default function Places() {
                         setHopStack([]);
                     }}
                     onNavigate={(target) => {
-                        setRichPlace(null);
-                        setHopStack([]);
                         // Route from the active "From", so directions start where
                         // the card's "N min away" was measured — not live GPS.
                         setDestination({
                             ...target,
+                            backLabel: richPlace.name,
                             fromLat: origin?.lat ?? null,
                             fromLng: origin?.lng ?? null,
                             fromName: origin?.label ?? null,
@@ -1623,7 +1622,13 @@ export default function Places() {
             {destination && (
                 <TakeMeThereSheet
                     destination={destination}
-                    onClose={() => setDestination(null)}
+                    onBack={() => setDestination(null)}
+                    onClose={() => {
+                        setDestination(null);
+                        setDetail(null);
+                        setRichPlace(null);
+                        setHopStack([]);
+                    }}
                 />
             )}
 

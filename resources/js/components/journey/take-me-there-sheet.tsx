@@ -1,27 +1,40 @@
 import { usePage } from '@inertiajs/react';
 import {
     IconAlertTriangle,
+    IconArrowLeft,
     IconBike,
     IconBolt,
     IconBus,
     IconCircleCheck,
-    IconClock,
-    IconList,
-    IconMap,
     IconMapPin,
     IconSailboat,
     IconTicket,
     IconTrain,
     IconWalk,
+    IconX,
 } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
+import TakeMeThereController from '@/actions/App/Http/Controllers/Api/TakeMeThereController';
 import { JourneyMap } from '@/components/journey/journey-map';
+import {
+    JourneySchedulePicker,
+    scheduleDefault,
+    toLocalDateTime,
+} from '@/components/journey/journey-schedule-picker';
+import type { JourneyPlanningMode } from '@/components/journey/journey-schedule-picker';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { ICON_STROKE } from '@/constants/icons';
+import { useActiveTrip } from '@/hooks/use-active-trip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 /** A station ridden through on a transit leg (name + scheduled arrival). */
 export type IntermediateStop = {
@@ -101,6 +114,8 @@ export type FareAdvice = {
 
 export type Destination = {
     name: string;
+    /** Item title shown in the return action (an event can navigate to a venue). */
+    backLabel?: string;
     emoji?: string;
     lat: number;
     lng: number;
@@ -349,92 +364,141 @@ function FareCard({ fare }: { fare: FareAdvice }) {
     );
 }
 
-function ViewToggle({
-    view,
-    onChange,
+function RouteOption({
+    journey,
+    active,
+    onSelect,
 }: {
-    view: 'list' | 'map';
-    onChange: (next: 'list' | 'map') => void;
+    journey: Journey;
+    active: boolean;
+    onSelect: () => void;
 }) {
-    return (
-        <div className="mb-3 inline-flex gap-0.5 rounded-full bg-secondary p-0.5">
-            {(['list', 'map'] as const).map((value) => {
-                const Icon = value === 'list' ? IconList : IconMap;
-                const active = view === value;
+    const { label, icon: Icon } = MODE_META[journey.mode];
+    const purpose =
+        journey.mode === 'transit'
+            ? 'Best fit'
+            : journey.mode === 'bike'
+              ? 'Fastest'
+              : 'Simplest';
+    const headline =
+        journey.mode === 'transit'
+            ? transitHeadline(journey)
+            : journey.mode === 'bike'
+              ? 'Bike direct'
+              : 'Walk the whole way';
+    const detail =
+        journey.mode === 'transit'
+            ? [
+                  `${walkMinutes(journey)} min walk`,
+                  journey.transfers === 0
+                      ? 'No changes'
+                      : `${journey.transfers} change${journey.transfers === 1 ? '' : 's'}`,
+              ].join(' · ')
+            : journey.mode === 'bike'
+              ? 'Direct route · no timetable'
+              : 'Direct route · outdoors';
 
-                return (
-                    <button
-                        key={value}
-                        type="button"
-                        onClick={() => onChange(value)}
-                        aria-pressed={active}
-                        className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12.5px] font-semibold capitalize transition-colors ${
-                            active
-                                ? 'bg-card text-foreground shadow-sm'
-                                : 'text-muted-foreground'
-                        }`}
-                    >
-                        <Icon size={14} stroke={ICON_STROKE} />
-                        {value}
-                    </button>
-                );
-            })}
-        </div>
+    return (
+        <button
+            type="button"
+            aria-label={`${purpose} ${label} ${formatDuration(journey.duration_min)}`}
+            aria-pressed={active}
+            onClick={onSelect}
+            className={cn(
+                'group relative grid w-full grid-cols-[52px_1fr_auto] items-center gap-4 overflow-hidden rounded-[18px] border bg-card px-4 py-4 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                active
+                    ? 'border-primary shadow-[inset_5px_0_0_var(--primary)]'
+                    : 'border-border hover:-translate-y-0.5 hover:border-foreground/35 hover:shadow-sm',
+            )}
+        >
+            <span
+                className={cn(
+                    'grid size-12 place-items-center rounded-[14px] text-base font-bold',
+                    journey.mode === 'transit'
+                        ? 'bg-primary text-primary-foreground'
+                        : journey.mode === 'bike'
+                          ? 'bg-cyan text-white'
+                          : 'bg-secondary text-muted-foreground',
+                )}
+            >
+                {journey.mode === 'transit' ? (
+                    firstTransitLine(journey) || (
+                        <Icon size={21} stroke={ICON_STROKE} />
+                    )
+                ) : (
+                    <Icon size={21} stroke={ICON_STROKE} />
+                )}
+            </span>
+            <span className="min-w-0">
+                <span className="mb-1 block font-mono text-[10px] font-bold tracking-[0.13em] text-primary uppercase">
+                    {purpose}
+                </span>
+                <span className="block truncate text-base font-bold">
+                    {headline}
+                </span>
+                <span className="mt-1 block truncate font-mono text-[11px] text-muted-foreground">
+                    {detail}
+                </span>
+            </span>
+            <span className="text-right">
+                <span className="block font-mono text-lg font-bold">
+                    {formatDuration(journey.duration_min)}
+                </span>
+                <span className="mt-1 block font-mono text-[10px] font-semibold text-muted-foreground">
+                    {journey.mode === 'transit'
+                        ? `leave ${journey.depart_time}`
+                        : 'leave when ready'}
+                </span>
+            </span>
+            {active && (
+                <IconCircleCheck
+                    size={22}
+                    stroke={ICON_STROKE}
+                    className="absolute top-2.5 right-2.5 text-primary"
+                />
+            )}
+        </button>
     );
 }
 
-/**
- * Transit / Bike / Walk segments, each showing that mode's travel time so the
- * trade-off is visible at a glance. Only rendered when more than one mode came
- * back; the active segment is the one whose journey is on screen.
- */
-function ModeSelector({
-    modes,
-    active,
-    onChange,
-}: {
-    modes: Array<{ mode: JourneyMode; journey: Journey }>;
-    active: JourneyMode;
-    onChange: (next: JourneyMode) => void;
-}) {
+function firstTransitLine(journey: Journey): string | null {
     return (
-        <div className="mb-4 flex gap-1.5">
-            {modes.map(({ mode, journey }) => {
-                const { label, icon: Icon } = MODE_META[mode];
-                const isActive = mode === active;
-
-                return (
-                    <button
-                        key={mode}
-                        type="button"
-                        onClick={() => onChange(mode)}
-                        aria-pressed={isActive}
-                        className={`flex flex-1 flex-col items-center gap-0.5 rounded-[12px] border py-2 transition-colors ${
-                            isActive
-                                ? 'border-primary bg-accent-soft text-primary'
-                                : 'border-border text-muted-foreground hover:bg-secondary'
-                        }`}
-                    >
-                        <Icon size={18} stroke={ICON_STROKE} />
-                        <span className="text-[11px] font-semibold">
-                            {label}
-                        </span>
-                        <span className="font-mono text-[12px] font-medium text-foreground">
-                            {formatDuration(journey.duration_min)}
-                        </span>
-                    </button>
-                );
-            })}
-        </div>
+        journey.legs.find(
+            (leg) =>
+                leg.mode !== 'walk' && leg.mode !== 'bike' && leg.line != null,
+        )?.line ?? null
     );
+}
+
+function transitHeadline(journey: Journey): string {
+    const leg = journey.legs.find(
+        (candidate) =>
+            candidate.mode !== 'walk' &&
+            candidate.mode !== 'bike' &&
+            candidate.line,
+    );
+
+    if (!leg) {
+        return 'Public transport';
+    }
+
+    return `${leg.line} to ${leg.to.name || 'your stop'}`;
+}
+
+function walkMinutes(journey: Journey): number {
+    return journey.legs
+        .filter((leg) => leg.mode === 'walk')
+        .reduce((total, leg) => total + leg.duration_min, 0);
 }
 
 export function TakeMeThereSheet({
     destination,
     onClose,
+    onBack,
 }: {
     destination: Destination;
     onClose: () => void;
+    onBack?: () => void;
 }) {
     const [data, setData] = useState<JourneyResponse | null>(null);
     const [error, setError] = useState<'location' | 'request' | null>(null);
@@ -443,9 +507,15 @@ export function TakeMeThereSheet({
         lng: number;
     } | null>(null);
     const [confirming, setConfirming] = useState(false);
-    const [view, setView] = useState<'list' | 'map'>('list');
     const [mode, setMode] = useState<JourneyMode | null>(null);
+    const [planningMode, setPlanningMode] = useState<JourneyPlanningMode>(
+        destination.arriveBy ? 'arrive' : 'now',
+    );
+    const [scheduledAt, setScheduledAt] = useState(() =>
+        scheduleDefault(destination.arriveBy),
+    );
     const isMobile = useIsMobile();
+    const { start, busy: startingTrip } = useActiveTrip();
     // The user's default transport mode pre-selects the sheet so it opens in the
     // mode the Places list / composer measured distances in.
     const userPreferred = usePage().props.auth.user
@@ -455,27 +525,32 @@ export function TakeMeThereSheet({
     useEffect(() => {
         let cancelled = false;
         const controller = new AbortController();
-        const params = new URLSearchParams({
+        const query: Record<string, string | number> = {
             to_lat: String(destination.lat),
             to_lng: String(destination.lng),
             to_name: destination.name,
-        });
+        };
 
         if (fromOverride) {
-            params.set('from_lat', String(fromOverride.lat));
-            params.set('from_lng', String(fromOverride.lng));
+            query.from_lat = String(fromOverride.lat);
+            query.from_lng = String(fromOverride.lng);
         } else if (destination.fromLat != null && destination.fromLng != null) {
             // Start from the origin the caller already measured from, so the
             // sheet's times match the card's "X min away".
-            params.set('from_lat', String(destination.fromLat));
-            params.set('from_lng', String(destination.fromLng));
+            query.from_lat = String(destination.fromLat);
+            query.from_lng = String(destination.fromLng);
 
             if (destination.fromName) {
-                params.set('from_name', destination.fromName);
+                query.from_name = destination.fromName;
             }
         }
 
-        fetch(`/api/journey?${params}`, {
+        if (planningMode !== 'now') {
+            query.depart_at = toLocalDateTime(scheduledAt);
+            query.arrive_by = planningMode === 'arrive' ? 1 : 0;
+        }
+
+        fetch(TakeMeThereController.url({ query }), {
             credentials: 'same-origin',
             signal: controller.signal,
         })
@@ -524,6 +599,8 @@ export function TakeMeThereSheet({
         destination.fromLng,
         destination.fromName,
         fromOverride,
+        planningMode,
+        scheduledAt,
     ]);
 
     // "I'm here →" — confirm the user's real position as the journey
@@ -587,204 +664,182 @@ export function TakeMeThereSheet({
     // honestly — a 5 km cross-Rhine place isn't "an easy walk".
     const straightKm = data?.from ? haversineKm(data.from, destination) : null;
 
-    const body = (
-        <div className="pb-4" data-journey-sheet>
-            {/* Destination header */}
-            <div className="mb-4 flex items-center gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-2xl">
-                    {destination.emoji ?? '📍'}
-                </div>
-                <div className="min-w-0">
-                    <div className="font-display text-lg font-medium">
-                        {destination.name}
+    const title = journey
+        ? planningMode === 'arrive'
+            ? `Arrive by ${timeLabel(scheduledAt)}.`
+            : planningMode === 'later'
+              ? `Leave at ${timeLabel(scheduledAt)}.`
+              : `Leave at ${journey.depart_time}.`
+        : planningMode === 'arrive'
+          ? `Arrive by ${timeLabel(scheduledAt)}.`
+          : planningMode === 'later'
+            ? `Leave at ${timeLabel(scheduledAt)}.`
+            : 'Finding the best way.';
+    const tripSummary = journey
+        ? `${dayLabel(planningMode === 'now' ? new Date() : scheduledAt)} · ${destination.name} around ${journey.arrive_time}`
+        : destination.name;
+
+    async function startSelectedTrip(): Promise<void> {
+        if (!journey || !data?.from) {
+            return;
+        }
+
+        await start(
+            journey,
+            {
+                name: destination.name,
+                lat: destination.lat,
+                lng: destination.lng,
+                emoji: destination.emoji,
+            },
+            data.from,
+        );
+        onClose();
+    }
+
+    const planner = (
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="px-5 pt-5 sm:px-7 sm:pt-7">
+                <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <div className="font-mono text-[11px] font-bold tracking-[0.15em] text-primary uppercase">
+                            Trip options · live data
+                        </div>
+                        <h2 className="mt-2 font-display text-[clamp(2.2rem,4vw,3.6rem)] leading-[0.95] font-medium tracking-[-0.035em]">
+                            {title}
+                        </h2>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            {tripSummary}
+                        </p>
                     </div>
-                    {destination.address && (
-                        <div className="truncate text-[13px] text-muted-foreground">
-                            {destination.address}
+                    {data?.ticket?.covered_by_deutschlandticket && (
+                        <div className="rounded-[13px] bg-success-soft px-4 py-3 font-mono text-xs font-bold tracking-[0.08em] text-success uppercase">
+                            ✓ Your ticket covers it
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Timed destination — what the journey must beat */}
-            {destination.arriveBy && (
-                <div className="mb-3 flex items-center gap-1.5 rounded-[9px] bg-warn-soft px-3 py-2 text-[13px] font-medium text-warn">
-                    <IconClock
-                        size={15}
-                        stroke={ICON_STROKE}
-                        className="shrink-0"
-                    />
-                    Starts at{' '}
-                    {new Date(destination.arriveBy).toLocaleTimeString(
-                        'en-GB',
-                        { hour: '2-digit', minute: '2-digit' },
-                    )}
-                </div>
-            )}
-
-            {/* Origin chip — confirm "I'm here" to replan from your real position */}
-            {data?.from && (
-                <div className="mb-4 flex items-center justify-between gap-2 rounded-full border border-border bg-card py-1.5 pr-1.5 pl-3.5">
-                    <span className="flex items-center gap-1.5 truncate text-[13px] text-muted-foreground">
-                        <IconMapPin
-                            size={14}
-                            stroke={ICON_STROKE}
-                            className="shrink-0"
-                        />
-                        Starting from{' '}
-                        <b className="font-semibold text-foreground">
-                            {fromOverride ? 'Your location' : data.from.name}
-                        </b>
-                    </span>
-                    {!fromOverride && (
-                        <button
-                            onClick={confirmHere}
-                            disabled={confirming}
-                            className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
-                        >
-                            {confirming ? 'Locating…' : "I'm here →"}
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* Loading */}
-            {!data && error === null && (
-                <div className="flex flex-col gap-2.5">
-                    <div className="h-12 w-2/3 animate-pulse rounded-lg bg-secondary" />
-                    {[1, 2, 3].map((i) => (
-                        <div
-                            key={i}
-                            className="h-10 animate-pulse rounded-lg bg-secondary"
-                        />
-                    ))}
-                </div>
-            )}
-
-            {error === 'location' && (
-                <div className="rounded-[9px] border border-cyan/30 bg-cyan/10 p-4 text-center text-sm text-foreground">
-                    <p>We need your location before we can plan this route.</p>
-                    <button
-                        type="button"
-                        onClick={confirmHere}
-                        disabled={confirming}
-                        className="mt-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
-                    >
-                        {confirming ? 'Locating…' : 'Use my location'}
-                    </button>
-                </div>
-            )}
-
-            {error === 'request' && (
-                <div className="rounded-[9px] bg-danger-soft p-4 text-center text-sm text-danger">
-                    Could not load the journey. Try again in a moment.
-                </div>
-            )}
-
-            {/* Loaded, no transit route: walkable when genuinely close, else an
-                honest "no direct transit" with the real distance + maps handoff. */}
-            {data &&
-                error === null &&
-                !journey &&
-                data.source !== 'degraded' &&
-                (straightKm != null && straightKm > 2 ? (
-                    <div className="rounded-[9px] bg-secondary px-4 py-3.5 text-sm text-muted-foreground">
-                        <div className="flex items-start gap-2">
-                            <IconBolt
-                                size={16}
-                                stroke={ICON_STROKE}
-                                className="mt-px shrink-0"
-                            />
-                            <span>
-                                No transit or cycling route found — it's about{' '}
-                                {Math.round(straightKm)} km away, past easy
-                                reach.
-                            </span>
-                        </div>
-                        <a
-                            href={`https://www.google.com/maps/dir/?api=1&origin=${data.from!.lat},${data.from!.lng}&destination=${destination.lat},${destination.lng}&travelmode=transit`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2.5 inline-block rounded-[9px] border border-border bg-card px-3 py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
-                        >
-                            Open in Google Maps
-                        </a>
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-center gap-2 rounded-[9px] bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
-                        <IconWalk
-                            size={16}
-                            stroke={ICON_STROKE}
-                            className="shrink-0"
-                        />
-                        It's close — easy to walk or cycle. No transit needed.
-                    </div>
-                ))}
-
-            {/* Live journey */}
-            {journey && effectiveMode && (
-                <>
-                    {availableModes.length > 1 && (
-                        <ModeSelector
-                            modes={availableModes}
-                            active={effectiveMode}
-                            onChange={setMode}
-                        />
-                    )}
-
-                    <div className="mb-3">
-                        {effectiveMode === 'transit' ? (
-                            <>
-                                <div className="font-display text-xl font-medium">
-                                    Leave by {journey.depart_time}
-                                </div>
-                                <div className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-                                    arrive {journey.arrive_time} ·{' '}
-                                    {journey.duration_min} min
-                                    {journey.transfers > 0 &&
-                                        ` · ${journey.transfers} transfer${journey.transfers > 1 ? 's' : ''}`}
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="font-display text-xl font-medium">
-                                    {formatDuration(journey.duration_min)}{' '}
-                                    {effectiveMode === 'bike'
-                                        ? 'by bike'
-                                        : 'on foot'}
-                                </div>
-                                <div className="mt-0.5 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-                                    direct route · leave when you like
-                                </div>
-                            </>
+                {data?.from && (
+                    <div className="mb-5 flex items-center gap-2 text-xs text-muted-foreground">
+                        <IconMapPin size={14} stroke={ICON_STROKE} />
+                        <span>
+                            From{' '}
+                            <strong className="font-semibold text-foreground">
+                                {fromOverride
+                                    ? 'Your location'
+                                    : data.from.name}
+                            </strong>
+                        </span>
+                        {!fromOverride && (
+                            <button
+                                type="button"
+                                onClick={confirmHere}
+                                disabled={confirming}
+                                className="font-semibold text-primary hover:underline disabled:opacity-60"
+                            >
+                                {confirming ? 'Locating…' : 'Use live location'}
+                            </button>
                         )}
                     </div>
+                )}
 
-                    {hasGeometry && (
-                        <ViewToggle view={view} onChange={setView} />
-                    )}
+                <JourneySchedulePicker
+                    mode={planningMode}
+                    scheduledAt={scheduledAt}
+                    onModeChange={(next) => {
+                        setData(null);
+                        setError(null);
+                        setPlanningMode(next);
+                        setMode(null);
+                    }}
+                    onScheduleChange={(next) => {
+                        setData(null);
+                        setError(null);
+                        setScheduledAt(next);
+                        setMode(null);
+                    }}
+                />
+            </div>
 
-                    {view === 'map' && hasGeometry ? (
-                        <div className="mb-3">
-                            <JourneyMap
-                                key={`${effectiveMode},${destination.lat},${destination.lng},${journey.depart_time}`}
-                                legs={journey.legs}
-                                origin={data?.from ?? null}
-                                destination={{
-                                    lat: destination.lat,
-                                    lng: destination.lng,
-                                    name: destination.name,
-                                }}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 sm:px-7">
+                {!data && error === null && (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((item) => (
+                            <div
+                                key={item}
+                                className="h-24 animate-pulse rounded-[18px] bg-secondary"
                             />
+                        ))}
+                    </div>
+                )}
+
+                {error === 'location' && (
+                    <div className="rounded-[16px] border border-cyan/30 bg-cyan/10 p-5 text-sm">
+                        <p>
+                            We need your starting point before we can plan this
+                            route.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={confirmHere}
+                            disabled={confirming}
+                            className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                        >
+                            {confirming ? 'Locating…' : 'Use my location'}
+                        </button>
+                    </div>
+                )}
+
+                {error === 'request' && (
+                    <div className="rounded-[16px] bg-danger-soft p-5 text-sm text-danger">
+                        Could not load the journey. Try again in a moment.
+                    </div>
+                )}
+
+                {data &&
+                    error === null &&
+                    !journey &&
+                    data.source !== 'degraded' &&
+                    (straightKm != null && straightKm > 2 ? (
+                        <div className="rounded-[16px] bg-secondary p-5 text-sm text-muted-foreground">
+                            No usable route was returned. The destination is
+                            about {Math.round(straightKm)} km away.
                         </div>
                     ) : (
-                        <div className="mb-3">
-                            {journey.legs.map((leg, i) => (
+                        <div className="rounded-[16px] bg-secondary p-5 text-sm text-muted-foreground">
+                            It is close enough to walk or cycle; no transit is
+                            needed.
+                        </div>
+                    ))}
+
+                {journey && effectiveMode && (
+                    <>
+                        <div className="space-y-2.5">
+                            {availableModes.map((option) => (
+                                <RouteOption
+                                    key={option.mode}
+                                    journey={option.journey}
+                                    active={effectiveMode === option.mode}
+                                    onSelect={() => setMode(option.mode)}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="mt-5 rounded-[18px] border border-border p-4">
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="text-sm font-bold">
+                                    Route details
+                                </h3>
+                                <span className="font-mono text-[10px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+                                    Arrive {journey.arrive_time}
+                                </span>
+                            </div>
+                            {journey.legs.map((leg, index) => (
                                 <LegRow
-                                    key={i}
+                                    key={`${leg.mode}-${leg.depart_at}-${index}`}
                                     leg={leg}
                                     originName={
-                                        i === 0
+                                        index === 0
                                             ? ((fromOverride
                                                   ? 'your location'
                                                   : data?.from?.name) ??
@@ -792,104 +847,138 @@ export function TakeMeThereSheet({
                                             : undefined
                                     }
                                     destinationName={
-                                        i === journey.legs.length - 1
+                                        index === journey.legs.length - 1
                                             ? destination.name
                                             : undefined
                                     }
                                 />
                             ))}
                         </div>
-                    )}
 
-                    {effectiveMode === 'transit' && data?.ticket && (
-                        <FareCard fare={data.ticket} />
-                    )}
-
-                    {effectiveMode === 'transit' &&
-                        (data?.disruptions ?? []).length > 0 && (
-                            <div className="mt-3 flex items-start gap-2 rounded-[9px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
-                                <IconAlertTriangle
-                                    size={15}
-                                    stroke={ICON_STROKE}
-                                    className="mt-px shrink-0"
+                        {isMobile && hasGeometry && (
+                            <div className="mt-4">
+                                <JourneyMap
+                                    key={`${effectiveMode}-${journey.depart_at}`}
+                                    legs={journey.legs}
+                                    origin={data?.from ?? null}
+                                    destination={{
+                                        lat: destination.lat,
+                                        lng: destination.lng,
+                                        name: destination.name,
+                                    }}
                                 />
-                                <span>{data!.disruptions[0].title}</span>
                             </div>
                         )}
-                </>
-            )}
 
-            {/* Degraded: nearest-stop departures + deep links */}
-            {data?.source === 'degraded' && (
-                <div>
-                    <div className="mb-2 flex items-start gap-2 rounded-[9px] bg-secondary px-3 py-2.5 text-[13px] text-muted-foreground">
-                        <IconBolt
-                            size={15}
-                            stroke={ICON_STROKE}
-                            className="mt-px shrink-0"
-                        />
-                        <span>
-                            Live routing unavailable — next departures from{' '}
-                            {data.degraded?.nearest_stop
-                                ? `your nearest stop, ${data.degraded.nearest_stop.name}${
-                                      data.degraded.nearest_stop.walk_min
-                                          ? ` (${data.degraded.nearest_stop.walk_min} min walk)`
-                                          : ''
-                                  }`
-                                : 'stops near you'}
-                            .
-                        </span>
-                    </div>
-                    <div className="mb-3 overflow-hidden rounded-[14px] border border-border">
-                        {(data.degraded?.departures ?? []).map((dep, i) => (
-                            <div
-                                key={`${dep.line}-${i}`}
-                                className="flex items-center gap-3 border-b border-border px-3.5 py-2.5 last:border-b-0"
-                            >
-                                <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-primary px-1.5 text-xs font-bold text-white">
-                                    {dep.line}
-                                </span>
-                                <span className="min-w-0 flex-1 truncate text-sm">
-                                    {dep.direction}
-                                </span>
-                                <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                                    {(dep.departures ?? [])
-                                        .slice(0, 2)
-                                        .map((m) => `${m}'`)
-                                        .join(' · ')}
-                                </span>
+                        {effectiveMode === 'transit' && data?.ticket && (
+                            <div className="mt-4">
+                                <FareCard fare={data.ticket} />
                             </div>
-                        ))}
+                        )}
+
+                        {effectiveMode === 'transit' &&
+                            (data?.disruptions ?? []).length > 0 && (
+                                <div className="mt-3 flex items-start gap-2 rounded-[13px] bg-warn-soft px-3 py-2.5 text-[13px] text-warn">
+                                    <IconAlertTriangle
+                                        size={15}
+                                        stroke={ICON_STROKE}
+                                        className="mt-px shrink-0"
+                                    />
+                                    <span>{data!.disruptions[0].title}</span>
+                                </div>
+                            )}
+                    </>
+                )}
+
+                {data?.source === 'degraded' && (
+                    <div className="rounded-[16px] bg-secondary p-5 text-sm text-muted-foreground">
+                        <div className="mb-3 flex items-start gap-2">
+                            <IconBolt size={16} stroke={ICON_STROKE} />
+                            Live routing is temporarily unavailable. Use the
+                            fallback planner for this trip.
+                        </div>
+                        <div className="flex gap-2">
+                            <a
+                                href={data.degraded?.deep_links.google}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-full border border-border bg-card px-4 py-2 font-semibold text-primary"
+                            >
+                                Google Maps
+                            </a>
+                            <a
+                                href={data.degraded?.deep_links.kvb}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-full border border-border bg-card px-4 py-2 font-semibold text-primary"
+                            >
+                                KVB
+                            </a>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <a
-                            href={data.degraded?.deep_links.google}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 rounded-[9px] border border-border bg-card py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
-                        >
-                            Open in Google Maps
-                        </a>
-                        <a
-                            href={data.degraded?.deep_links.kvb}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 rounded-[9px] border border-border bg-card py-2.5 text-center text-[13px] font-semibold text-primary transition-colors hover:bg-secondary"
-                        >
-                            Open in KVB
-                        </a>
+                )}
+            </div>
+
+            {journey && data && (
+                <div className="grid gap-3 border-t border-border bg-card px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-7">
+                    <div className="text-sm text-muted-foreground">
+                        {effectiveMode === 'transit' &&
+                        data.ticket?.covered_by_deutschlandticket ? (
+                            <>
+                                <strong className="text-success">
+                                    Deutschlandticket active.
+                                </strong>{' '}
+                                Live delays stay connected to this trip.
+                            </>
+                        ) : effectiveMode === 'transit' && data.ticket ? (
+                            <>
+                                <strong className="text-foreground">
+                                    {data.ticket.label}
+                                </strong>{' '}
+                                {data.ticket.price_eur != null &&
+                                    `· ${eur(data.ticket.price_eur)}`}
+                            </>
+                        ) : (
+                            'Direct route — no public-transport ticket needed.'
+                        )}
                     </div>
+                    <button
+                        type="button"
+                        onClick={startSelectedTrip}
+                        disabled={startingTrip}
+                        className="min-h-12 rounded-[14px] bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_8px_24px_color-mix(in_srgb,var(--primary)_22%,transparent)] transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                    >
+                        {startingTrip
+                            ? 'Saving trip…'
+                            : planningMode === 'now'
+                              ? `Start this trip · ${journey.depart_time}`
+                              : `Keep this trip ready · ${journey.depart_time}`}
+                    </button>
                 </div>
             )}
         </div>
     );
 
-    // Mobile: bottom sheet. Desktop: traditional centered modal
-    // (close via overlay click or the X), per the app-wide modal rule.
     if (isMobile) {
         return (
             <BottomSheet open onClose={onClose}>
-                {body}
+                <div data-journey-sheet>
+                    <div className="mb-4 flex items-center justify-between">
+                        <button
+                            type="button"
+                            aria-label={`Back to ${destination.backLabel ?? destination.name}`}
+                            onClick={onBack ?? onClose}
+                            className="inline-flex min-w-0 items-center gap-2 rounded-full px-1 py-2 text-sm font-semibold hover:text-primary"
+                        >
+                            <IconArrowLeft size={18} stroke={ICON_STROKE} />
+                            <span className="truncate">
+                                Back to{' '}
+                                {destination.backLabel ?? destination.name}
+                            </span>
+                        </button>
+                    </div>
+                    {planner}
+                </div>
             </BottomSheet>
         );
     }
@@ -905,13 +994,90 @@ export function TakeMeThereSheet({
         >
             <DialogContent
                 aria-describedby={undefined}
-                className="gap-0 p-0 sm:max-w-md"
+                showClose={false}
+                className="h-[min(860px,calc(100dvh-3rem))] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-[26px] border-border bg-card p-0 sm:max-w-[1180px]"
+                data-journey-sheet
             >
                 <DialogTitle className="sr-only">
-                    {destination.name}
+                    Journey to {destination.name}
                 </DialogTitle>
-                <div className="max-h-[80vh] overflow-y-auto p-5">{body}</div>
+                <header className="flex min-h-18 items-center justify-between gap-4 border-b border-border px-5 sm:px-7">
+                    <button
+                        type="button"
+                        aria-label={`Back to ${destination.backLabel ?? destination.name}`}
+                        onClick={onBack ?? onClose}
+                        className="group inline-flex min-w-0 items-center gap-2 rounded-full px-2 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    >
+                        <IconArrowLeft
+                            size={19}
+                            stroke={ICON_STROKE}
+                            className="shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5"
+                        />
+                        <span className="truncate">
+                            Back to {destination.backLabel ?? destination.name}
+                        </span>
+                    </button>
+                    <DialogClose asChild>
+                        <button
+                            type="button"
+                            aria-label="Close journey planner"
+                            className="grid size-11 shrink-0 place-items-center rounded-[14px] border border-border text-foreground transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                            <IconX size={22} stroke={ICON_STROKE} />
+                        </button>
+                    </DialogClose>
+                </header>
+                <div className="grid min-h-0 flex-1 grid-cols-[1.04fr_.96fr]">
+                    {planner}
+                    <aside className="relative min-h-0 border-l border-border bg-secondary">
+                        {journey && hasGeometry ? (
+                            <JourneyMap
+                                key={`${effectiveMode}-${journey.depart_at}-${planningMode}`}
+                                legs={journey.legs}
+                                origin={data?.from ?? null}
+                                destination={{
+                                    lat: destination.lat,
+                                    lng: destination.lng,
+                                    name: destination.name,
+                                }}
+                                className="h-full min-h-0 rounded-none border-0"
+                            />
+                        ) : (
+                            <div className="grid h-full place-items-center px-8 text-center text-sm text-muted-foreground">
+                                {error
+                                    ? 'The map will return with the next available route.'
+                                    : 'Drawing the live route…'}
+                            </div>
+                        )}
+                    </aside>
+                </div>
             </DialogContent>
         </Dialog>
     );
+}
+
+function timeLabel(date: Date): string {
+    return date.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    });
+}
+
+function dayLabel(date: Date): string {
+    const now = new Date();
+
+    if (
+        date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth() &&
+        date.getDate() === now.getDate()
+    ) {
+        return 'Today';
+    }
+
+    return date.toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+    });
 }

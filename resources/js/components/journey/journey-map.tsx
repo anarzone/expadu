@@ -6,6 +6,7 @@ import type {
 import { useEffect, useRef, useState } from 'react';
 import { loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
+import { cn } from '@/lib/utils';
 
 type Leg = {
     mode: string;
@@ -26,10 +27,12 @@ export function JourneyMap({
     legs,
     origin,
     destination,
+    className,
 }: {
     legs: Leg[];
     origin: Point | null;
     destination: Point;
+    className?: string;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MaplibreMap | null>(null);
@@ -118,11 +121,20 @@ export function JourneyMap({
     }, []);
 
     return (
-        <div className="relative h-[230px] overflow-hidden rounded-[14px] border border-border bg-secondary">
+        <div
+            className={cn(
+                'relative h-[230px] overflow-hidden rounded-[14px] border border-border bg-secondary',
+                className,
+            )}
+        >
             <div ref={containerRef} className="h-full w-full" />
 
             {status === 'loading' && (
-                <div className="absolute inset-0 animate-pulse bg-secondary" />
+                <div className="absolute inset-0 grid place-items-center bg-secondary">
+                    <span className="animate-pulse rounded-full border border-border bg-card/85 px-3 py-1.5 font-mono text-[10px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                        Drawing live route…
+                    </span>
+                </div>
             )}
 
             {status === 'error' && (

@@ -405,9 +405,9 @@ export default function Events() {
             return;
         }
 
-        setDetail(null);
         setDestination({
             name: occurrence.venue.name ?? occurrence.title,
+            backLabel: occurrence.title,
             emoji: occurrence.emoji,
             lat: occurrence.venue.lat,
             lng: occurrence.venue.lng,
@@ -1007,7 +1007,7 @@ export default function Events() {
 
             {/* Desktop detail — traditional centered modal */}
             <Dialog
-                open={!isMobile && detail !== null}
+                open={!isMobile && detail !== null && destination === null}
                 onOpenChange={(open) => !open && setDetail(null)}
             >
                 {detail && (
@@ -1059,7 +1059,7 @@ export default function Events() {
             </Dialog>
 
             {/* The linked place — same rich detail as the Places page */}
-            {placeDetail && !isMobile && (
+            {placeDetail && !isMobile && !destination && (
                 <Dialog
                     open
                     onOpenChange={(open) => !open && setPlaceDetail(null)}
@@ -1076,23 +1076,27 @@ export default function Events() {
                                 place={placeDetail}
                                 meta={placeMeta(placeDetail)}
                                 onNavigate={(target) => {
-                                    setPlaceDetail(null);
-                                    setDestination(target);
+                                    setDestination({
+                                        ...target,
+                                        backLabel: placeDetail.name,
+                                    });
                                 }}
                             />
                         </div>
                     </DialogContent>
                 </Dialog>
             )}
-            {placeDetail && isMobile && (
+            {placeDetail && isMobile && !destination && (
                 <BottomSheet open onClose={() => setPlaceDetail(null)}>
                     <div className="pb-24">
                         <PlaceRichDetail
                             place={placeDetail}
                             meta={placeMeta(placeDetail)}
                             onNavigate={(target) => {
-                                setPlaceDetail(null);
-                                setDestination(target);
+                                setDestination({
+                                    ...target,
+                                    backLabel: placeDetail.name,
+                                });
                             }}
                         />
                     </div>
@@ -1102,7 +1106,12 @@ export default function Events() {
             {destination && (
                 <TakeMeThereSheet
                     destination={destination}
-                    onClose={() => setDestination(null)}
+                    onBack={() => setDestination(null)}
+                    onClose={() => {
+                        setDestination(null);
+                        setDetail(null);
+                        setPlaceDetail(null);
+                    }}
                 />
             )}
         </AppLayout>

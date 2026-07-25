@@ -118,19 +118,22 @@ const LISTING = {
 // requests bypass page.route — block it so the deterministic mock below applies.
 test.use({ serviceWorkers: 'block' });
 
-test.describe('Take me there — multi-modal selector', () => {
-    test('shows transit/bike/walk, defaults to transit, and switches mode', async ({
+test.describe('Take me there — integrated journey planner', () => {
+    test('shows the full planner, switches routes, and replans for arrival and departure times', async ({
         page,
     }) => {
         const errors: string[] = [];
+        const journeyRequests: URL[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
 
         await page.route(/\/api\/places\?/, (route) =>
             route.fulfill({ json: LISTING }),
         );
-        await page.route(/\/api\/journey/, (route) =>
-            route.fulfill({ json: JOURNEY }),
-        );
+        await page.route(/\/api\/journey/, (route) => {
+            journeyRequests.push(new URL(route.request().url()));
+
+            return route.fulfill({ json: JOURNEY });
+        });
 
         await page.goto('/explore');
         await page.waitForLoadState('networkidle');
@@ -153,30 +156,82 @@ test.describe('Take me there — multi-modal selector', () => {
         // desktop Dialog) doesn't aria-hide, so an unscoped query matches both.
         const sheet = page.locator('[data-journey-sheet]');
 
-        // All three modes appear, each with its travel time.
-        const transit = sheet.getByRole('button', { name: /Transit/ });
-        const bike = sheet.getByRole('button', { name: /Bike/ });
-        const walk = sheet.getByRole('button', { name: /Walk/ });
+        // This is one integrated journey workspace, not the old nested mini
+        // modal. Its breadcrumb returns to the place detail.
+        await expect(
+            sheet.getByRole('button', { name: 'Back to Museum Ludwig' }),
+        ).toBeVisible();
+        await expect(sheet.getByText('Trip options · live data')).toBeVisible();
+        await expect(
+            sheet.getByRole('button', { name: 'Leave now' }),
+        ).toBeVisible();
+        await expect(
+            sheet.getByRole('button', { name: 'Arrive by' }),
+        ).toBeVisible();
+        await expect(
+            sheet.getByRole('button', { name: 'Leave later' }),
+        ).toBeVisible();
+
+        // All three route choices appear together, each with a useful reason.
+        const transit = sheet.getByRole('button', {
+            name: /Best fit.*Transit.*18 min/i,
+        });
+        const bike = sheet.getByRole('button', {
+            name: /Fastest.*Bike.*41 min/i,
+        });
+        const walk = sheet.getByRole('button', {
+            name: /Simplest.*Walk.*1 h 35 min/i,
+        });
         await expect(transit).toBeVisible();
-        await expect(bike).toContainText('41 min');
-        await expect(walk).toContainText('1 h 35 min');
+        await expect(bike).toBeVisible();
+        await expect(walk).toBeVisible();
 
-        // Defaults to transit: leave-by header + the Rheinlandtarif ticket.
-        await expect(sheet.getByText('Leave by 14:30')).toBeVisible();
-        await expect(sheet.getByText('VRS EinzelTicket')).toBeVisible();
+        // Defaults to transit: journey summary + the Rheinlandtarif ticket.
+        await expect(sheet.getByText('Leave at 14:30.')).toBeVisible();
+        await expect(sheet.getByText('VRS EinzelTicket').first()).toBeVisible();
 
-        // Switch to bike → mode-aware header, and no ticket (direct = free).
+        // Switch route → the active route drives the map/details and ticket.
         await bike.click();
-        await expect(sheet.getByText('41 min by bike')).toBeVisible();
+        await expect(bike).toHaveAttribute('aria-pressed', 'true');
         await expect(sheet.getByText('VRS EinzelTicket')).toHaveCount(0);
-        // The direct leg reads as a real step — "Cycle to <destination>" — not a
-        // bare "Cycle" (its MOTIS START/END endpoints come back nameless).
         await expect(sheet.getByText(/Cycle to \S/)).toBeVisible();
 
-        // Switch to walk → on-foot header + a named walk step.
         await walk.click();
-        await expect(sheet.getByText('1 h 35 min on foot')).toBeVisible();
+        await expect(walk).toHaveAttribute('aria-pressed', 'true');
         await expect(sheet.getByText(/Walk to \S/)).toBeVisible();
+
+        // Timing tabs are functional. They replan through the existing API
+        // using the chosen local date/time and the correct arrival/departure
+        // semantics.
+        await sheet.getByRole('button', { name: 'Arrive by' }).click();
+        await expect(sheet.getByLabel('Calendar')).toBeVisible();
+        await expect(sheet.getByRole('button', { name: 'Done' })).toBeVisible();
+        await expect
+            .poll(() =>
+                journeyRequests.some(
+                    (url) =>
+                        url.searchParams.get('arrive_by') === '1' &&
+                        url.searchParams.has('depart_at'),
+                ),
+            )
+            .toBe(true);
+        await sheet.getByRole('button', { name: 'Done' }).click();
+
+        await sheet.getByRole('button', { name: 'Leave later' }).click();
+        await expect
+            .poll(() =>
+                journeyRequests.some(
+                    (url) =>
+                        url.searchParams.get('arrive_by') === '0' &&
+                        url.searchParams.has('depart_at'),
+                ),
+            )
+            .toBe(true);
+
+        await sheet
+            .getByRole('button', { name: 'Back to Museum Ludwig' })
+            .click();
+        await expect(sheet).toHaveCount(0);
 
         expect(errors).toHaveLength(0);
     });
