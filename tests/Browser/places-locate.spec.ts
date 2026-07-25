@@ -1,15 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { test, expect } from '@playwright/test';
-
-// The vector basemap needs HTTP range requests, which `artisan serve` doesn't
-// provide locally — so serve byte ranges of the on-disk pmtiles ourselves and
-// the map renders exactly as it does in production. The file is a gitignored
-// ~50MB asset (present locally + on the server, absent in CI): read it lazily
-// and skip the map tests when it's missing, rather than crashing the whole
-// suite at import time.
-const PMTILES_PATH = resolve('public/maps/cologne.pmtiles');
-const PMTILES = existsSync(PMTILES_PATH) ? readFileSync(PMTILES_PATH) : null;
 
 // Pretend the device is up in the north (Merkenich-ish) — well away from the
 // central-Cologne places, so "flew to the user" (dot centred) is clearly
@@ -21,45 +10,34 @@ test.use({
 
 test.describe('Places map — locate me', () => {
     test.beforeEach(async ({ page }) => {
-        test.skip(
-            !PMTILES,
-            'basemap public/maps/cologne.pmtiles is not provisioned (e.g. CI)',
+        // Keep browser tests deterministic without depending on a live tile
+        // provider. The request itself proves the production-safe hosted style
+        // is used instead of the gitignored PMTiles file that broke deploys.
+        await page.route(
+            'https://tiles.openfreemap.org/styles/**',
+            async (route) => {
+                await route.fulfill({
+                    json: {
+                        version: 8,
+                        sources: {},
+                        layers: [
+                            {
+                                id: 'background',
+                                type: 'background',
+                                paint: {
+                                    'background-color': '#eae7df',
+                                },
+                            },
+                        ],
+                    },
+                });
+            },
         );
 
         await page.route('**/maps/cologne.pmtiles*', async (route) => {
-            if (!PMTILES) {
-                await route.continue();
-
-                return;
-            }
-
-            const range = route.request().headers()['range'];
-
-            if (!range) {
-                await route.fulfill({
-                    status: 200,
-                    headers: {
-                        'Accept-Ranges': 'bytes',
-                        'Content-Type': 'application/octet-stream',
-                    },
-                    body: PMTILES,
-                });
-
-                return;
-            }
-
-            const m = /bytes=(\d+)-(\d*)/.exec(range);
-            const start = m ? Number(m[1]) : 0;
-            const end = m && m[2] ? Number(m[2]) : PMTILES.length - 1;
-
             await route.fulfill({
-                status: 206,
-                headers: {
-                    'Accept-Ranges': 'bytes',
-                    'Content-Range': `bytes ${start}-${end}/${PMTILES.length}`,
-                    'Content-Type': 'application/octet-stream',
-                },
-                body: PMTILES.subarray(start, end + 1),
+                status: 404,
+                body: 'The deploy must not depend on this ignored asset.',
             });
         });
     });

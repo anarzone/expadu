@@ -40,7 +40,7 @@ storage/certs/
 
 /.claude/worktrees
 
-# Vector basemap tiles — large static artifact, transferred to the server, not committed
+# Legacy/local PMTiles experiments — production maps use OpenFreeMap styles
 public/maps/*.pmtiles
 
 # Playwright local screenshot artifacts

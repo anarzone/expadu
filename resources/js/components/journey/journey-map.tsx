@@ -66,17 +66,25 @@ export function JourneyMap({
                     attributionControl: { compact: true },
                 });
                 mapRef.current = map;
+                let mapLoaded = false;
 
                 // Style layers are wiped by setStyle, so (re)apply on every
                 // style load — DOM markers below persist on their own.
                 const applyRoute = () => applyJourney(map, geojsonRef.current);
                 map.on('style.load', applyRoute);
 
+                map.on('error', () => {
+                    if (!cancelled && !mapLoaded) {
+                        setStatus('error');
+                    }
+                });
+
                 map.on('load', () => {
                     if (cancelled) {
                         return;
                     }
 
+                    mapLoaded = true;
                     addEndpointMarkers(bm, map, origin, destination);
                     fitToJourney(
                         bm,

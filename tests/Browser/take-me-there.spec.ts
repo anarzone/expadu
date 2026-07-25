@@ -134,6 +134,26 @@ test.describe('Take me there — integrated journey planner', () => {
 
             return route.fulfill({ json: JOURNEY });
         });
+        await page.route(
+            'https://tiles.openfreemap.org/styles/**',
+            async (route) => {
+                await route.fulfill({
+                    json: {
+                        version: 8,
+                        sources: {},
+                        layers: [
+                            {
+                                id: 'background',
+                                type: 'background',
+                                paint: {
+                                    'background-color': '#eae7df',
+                                },
+                            },
+                        ],
+                    },
+                });
+            },
+        );
 
         await page.goto('/explore');
         await page.waitForLoadState('networkidle');
@@ -171,6 +191,9 @@ test.describe('Take me there — integrated journey planner', () => {
         await expect(
             sheet.getByRole('button', { name: 'Leave later' }),
         ).toBeVisible();
+        await expect(sheet.locator('.maplibregl-map canvas')).toBeVisible({
+            timeout: 20_000,
+        });
 
         // All three route choices appear together, each with a useful reason.
         const transit = sheet.getByRole('button', {

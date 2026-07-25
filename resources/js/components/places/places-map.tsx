@@ -8,9 +8,9 @@ import type { Place } from './types';
 
 /**
  * The Places "map view" — the current result set as accent pins on the
- * self-hosted Protomaps vector basemap (see {@link loadBasemap}). Tapping a
- * pin floats a card with a "Take me there" entry point; the basemap follows
- * the app's light/dark class.
+ * OpenFreeMap vector basemap (see {@link loadBasemap}). Tapping a pin floats a
+ * card with a "Take me there" entry point; the basemap follows the app's
+ * light/dark class.
  */
 export function PlacesMap({
     places,
@@ -67,8 +67,8 @@ export function PlacesMap({
             ? (places.find((p) => p.id === selectedId) ?? null)
             : null;
 
-    // Boot the map once. MapLibre, the pmtiles protocol and the theme load
-    // lazily; the basemap then tracks the app's .dark class.
+    // Boot the map once. MapLibre and the hosted style load lazily; the
+    // basemap then tracks the app's .dark class.
     useEffect(() => {
         let cancelled = false;
         let observer: MutationObserver | null = null;
@@ -95,8 +95,16 @@ export function PlacesMap({
                     'top-right',
                 );
                 mapRef.current = map;
+                let mapLoaded = false;
+
+                map.on('error', () => {
+                    if (!cancelled && !mapLoaded) {
+                        setStatus('error');
+                    }
+                });
                 map.on('load', () => {
                     if (!cancelled) {
+                        mapLoaded = true;
                         setStatus('ready');
                     }
                 });
