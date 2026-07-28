@@ -41,6 +41,9 @@ class PlacesController extends Controller
 
     private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park', 'culture'];
 
+    /** Named areas that represent their contained facilities as activities. */
+    private const DESTINATION_CATEGORIES = ['park', 'sports_centre'];
+
     /**
      * Synthesised names from the OSM import — commodity facilities, not
      * destinations. They rank below named venues in the list.
@@ -60,7 +63,7 @@ class PlacesController extends Controller
             ? NearbyPlaces::km($origin->lat, $origin->lng, (float) $spot->lat, (float) $spot->lng)
             : null;
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
-        $spot->activities = $this->activitiesForParks(collect([$spot]))[$spot->name] ?? [];
+        $spot->activities = $this->activitiesForDestinations(collect([$spot]))[$spot->id] ?? [];
         $spot->cluster_size = Spot::query()
             ->where('is_active', true)
             ->where('name', $spot->name)
@@ -133,31 +136,44 @@ class PlacesController extends Controller
             ->whereIn('category', SpotCategory::placesFines())
             ->when($notInterestedIds !== [], fn ($q) => $q->whereNotIn('id', $notInterestedIds));
 
-        // Venue-first: facilities inside a park collapse into the park's
-        // card (its activity chips), so only the park itself and
-        // standalone places are list entries.
+        // Venue-first: facilities inside a mapped park or sports centre
+        // collapse into the parent card (its activity chips). A facility with
+        // no trusted containing area remains independently discoverable.
         if (! empty($validated['category']) && $validated['category'] !== 'park') {
             $fines = SpotCategory::finesForCoarse($validated['category']);
+            $facilityFines = array_values(array_diff($fines, ['sports_centre']));
 
             // An activity filter matches standalone facilities of that
-            // kind AND the parks that contain such a facility.
-            $query->where(function ($q) use ($fines) {
+            // kind AND destination cards that contain such a facility.
+            $query->where(function ($q) use ($facilityFines) {
                 $q->where(fn ($standalone) => $standalone
-                    ->whereIn('category', $fines)
+                    ->whereIn('category', $facilityFines)
+                    ->whereNull('parent_spot_id')
                     ->whereNull('park_name'))
-                    ->orWhere(fn ($venue) => $venue
+                    ->orWhereIn('id', Spot::query()
+                        ->select('parent_spot_id')
+                        ->where('is_active', true)
+                        ->whereIn('category', $facilityFines)
+                        ->whereNotNull('parent_spot_id'))
+                    // Legacy park_name records remain grouped during the
+                    // relation backfill, so the rollout never reintroduces
+                    // duplicate facility cards.
+                    ->orWhere(fn ($legacyPark) => $legacyPark
                         ->where('category', 'park')
                         ->whereIn('name', Spot::query()
                             ->select('park_name')
                             ->where('is_active', true)
-                            ->whereIn('category', $fines)
+                            ->whereIn('category', $facilityFines)
+                            ->whereNull('parent_spot_id')
                             ->whereNotNull('park_name')));
             });
         } elseif (! empty($validated['category'])) {
             $query->whereIn('category', SpotCategory::finesForCoarse('park'))
+                ->whereNull('parent_spot_id')
                 ->whereNull('park_name');
         } else {
-            $query->whereNull('park_name');
+            $query->whereNull('parent_spot_id')
+                ->whereNull('park_name');
         }
 
         $nearbyIncluded = false;
@@ -258,12 +274,12 @@ class PlacesController extends Controller
 
         $paginator->getCollection()->loadMissing('mediaAttachments.mediaAsset');
 
-        $activities = $this->activitiesForParks($paginator->getCollection());
+        $activities = $this->activitiesForDestinations($paginator->getCollection());
         $stopHints = $this->stopHintsForPage($paginator->getCollection());
 
         $paginator->getCollection()->transform(function (Spot $spot) use ($activities, $stopHints, $feedback) {
             $spot->transit_hint = $stopHints[$spot->id] ?? null;
-            $spot->activities = $activities[$spot->name] ?? [];
+            $spot->activities = $activities[$spot->id] ?? [];
             $row = $feedback->get($spot->id);
             $spot->feedback_state = $row?->state?->value;
             $spot->feedback_rating = $row?->rating;
@@ -306,41 +322,74 @@ class PlacesController extends Controller
      * ("show all") when fewer than $min matches exist anywhere.
      *
     /**
-     * What you can do in each park on this page — the distinct facility
-     * kinds inside it, as ready-to-render chips.
+     * What you can do in each destination on this page — the distinct
+     * facility kinds inside it, as ready-to-render chips. Existing park-name
+     * containment remains a temporary fallback while its stable parent IDs
+     * are backfilled by the area importer.
      *
      * @param  Collection<int, Spot>  $places
-     * @return array<string, list<array{emoji: string, label: string}>>
+     * @return array<int, list<array{emoji: string, label: string}>>
      */
-    private function activitiesForParks($places): array
+    private function activitiesForDestinations($places): array
     {
-        $parkNames = $places
-            ->filter(fn (Spot $spot) => $spot->getRawOriginal('category') === 'park')
-            ->pluck('name')
-            ->all();
-
-        if ($parkNames === []) {
+        $destinations = $places
+            ->filter(fn (Spot $spot) => in_array($spot->getRawOriginal('category'), self::DESTINATION_CATEGORIES, true));
+        if ($destinations->isEmpty()) {
             return [];
         }
 
-        return DB::table('spots')
-            ->whereIn('park_name', $parkNames)
+        $activities = DB::table('spots')
+            ->whereIn('parent_spot_id', $destinations->pluck('id'))
+            ->where('is_active', true)
+            ->whereIn('category', SpotCategory::placesFines())
+            ->distinct()
+            ->get(['parent_spot_id', 'category'])
+            ->groupBy('parent_spot_id')
+            ->map(fn (Collection $rows) => $this->activityChips($rows))
+            ->all();
+
+        $legacyParks = $destinations
+            ->filter(fn (Spot $spot) => $spot->getRawOriginal('category') === 'park')
+            ->filter(fn (Spot $spot) => ! array_key_exists($spot->id, $activities))
+            ->keyBy('name');
+        if ($legacyParks->isEmpty()) {
+            return $activities;
+        }
+
+        $legacyActivities = DB::table('spots')
+            ->whereIn('park_name', $legacyParks->keys())
+            ->whereNull('parent_spot_id')
             ->where('is_active', true)
             ->whereIn('category', SpotCategory::placesFines())
             ->distinct()
             ->get(['park_name', 'category'])
-            ->groupBy('park_name')
-            ->map(fn ($group) => $group
-                ->map(fn ($row) => SpotCategory::tryFrom($row->category))
-                ->filter()
-                ->unique()
-                ->sortBy(fn (SpotCategory $category) => $category->value)
-                ->map(fn (SpotCategory $category) => [
-                    'emoji' => $category->emoji(),
-                    'label' => $category->label(),
-                ])
-                ->values()
-                ->all())
+            ->groupBy('park_name');
+
+        foreach ($legacyParks as $parkName => $park) {
+            if (isset($legacyActivities[$parkName])) {
+                $activities[$park->id] = $this->activityChips($legacyActivities[$parkName]);
+            }
+        }
+
+        return $activities;
+    }
+
+    /**
+     * @param  Collection<int, object{category: string}>  $rows
+     * @return list<array{emoji: string, label: string}>
+     */
+    private function activityChips(Collection $rows): array
+    {
+        return $rows
+            ->map(fn (object $row) => SpotCategory::tryFrom($row->category))
+            ->filter()
+            ->unique()
+            ->sortBy(fn (SpotCategory $category) => $category->value)
+            ->map(fn (SpotCategory $category) => [
+                'emoji' => $category->emoji(),
+                'label' => $category->label(),
+            ])
+            ->values()
             ->all();
     }
 

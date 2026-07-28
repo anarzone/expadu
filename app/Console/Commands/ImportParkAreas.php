@@ -8,17 +8,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Imports Cologne park polygons from OSM and stamps every leisure
- * facility with the park that contains it (ST_Contains, smallest park
- * wins for nested areas). Simple park ways become exact polygons;
- * multipolygon relations fall back to the convex hull of their member
- * geometry — slightly generous, but right for "is this in the park?".
+ * Imports mapped Cologne destination areas from OSM and stamps each contained
+ * leisure facility with a stable parent spot. Parks and named sports centres
+ * become one destination; their pitches/courts remain activities, never cards.
  */
 class ImportParkAreas extends Command
 {
     protected $signature = 'parks:import-areas';
 
-    protected $description = 'Import OSM park polygons and assign spots.park_name by containment';
+    protected $description = 'Import OSM destination areas and assign contained spots by geometry';
 
     private const MIRRORS = [
         'https://overpass.kumi.systems/api/interpreter',
@@ -29,7 +27,7 @@ class ImportParkAreas extends Command
     public function handle(): int
     {
         $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
-        $query = "[out:json][timeout:60];nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});out geom;";
+        $query = "[out:json][timeout:60];(nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"name\"][\"sport\"~\"soccer|football|basketball|tennis|table_tennis|multi\"]({$bbox}););out geom;";
 
         $elements = $this->fetch($query);
         if ($elements === null) {
@@ -44,7 +42,8 @@ class ImportParkAreas extends Command
         foreach ($elements as $element) {
             $name = $element['tags']['name'] ?? null;
             $osmId = $element['id'] ?? null;
-            if (! $name || ! $osmId) {
+            $type = $element['type'] ?? null;
+            if (! $name || ! $osmId || ! in_array($type, ['way', 'relation'], true)) {
                 $skipped++;
 
                 continue;
@@ -53,7 +52,11 @@ class ImportParkAreas extends Command
             // OSM ways and relations are separate id spaces — encode the
             // type into the stored id (…1 = way, …2 = relation) so an id
             // clash can't overwrite the other's polygon.
-            $osmId = $osmId * 10 + (($element['type'] ?? null) === 'relation' ? 2 : 1);
+            $osmId = $osmId * 10 + ($type === 'relation' ? 2 : 1);
+            $sourceId = "{$type}/{$element['id']}";
+            $kind = ($element['tags']['leisure'] ?? null) === 'sports_centre'
+                ? 'sports_centre'
+                : 'park';
 
             $wkt = $this->toWkt($element);
             if ($wkt === null) {
@@ -62,20 +65,26 @@ class ImportParkAreas extends Command
                 continue;
             }
 
+            $parentSpotId = DB::table('spots')
+                ->where('source', 'osm')
+                ->where('source_id', $sourceId)
+                ->value('id');
+
             DB::statement(
-                'INSERT INTO park_areas (name, osm_id, boundary, created_at, updated_at)
-                 VALUES (?, ?, ST_MakeValid('.$wkt['expr'].'), now(), now())
+                'INSERT INTO park_areas (name, osm_id, kind, source_id, parent_spot_id, boundary, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ST_MakeValid('.$wkt['expr'].'), now(), now())
                  ON CONFLICT (osm_id) DO UPDATE
-                 SET name = EXCLUDED.name, boundary = EXCLUDED.boundary, updated_at = now()',
-                [$name, $osmId, $wkt['wkt']],
+                 SET name = EXCLUDED.name, kind = EXCLUDED.kind, source_id = EXCLUDED.source_id,
+                     parent_spot_id = EXCLUDED.parent_spot_id, boundary = EXCLUDED.boundary, updated_at = now()',
+                [$name, $osmId, $kind, $sourceId, $parentSpotId, $wkt['wkt']],
             );
             $imported++;
         }
 
-        $this->info("Park areas: {$imported} imported/updated, {$skipped} skipped.");
+        $this->info("Destination areas: {$imported} imported/updated, {$skipped} skipped.");
 
-        $assigned = $this->assignParks();
-        $this->info("Facilities inside a park: {$assigned}.");
+        $assigned = $this->assignDestinations();
+        $this->info("Facilities inside a destination: {$assigned}.");
 
         return self::SUCCESS;
     }
@@ -154,27 +163,44 @@ class ImportParkAreas extends Command
     }
 
     /**
-     * Stamp every non-park leisure facility with its containing park
-     * (smallest containing area wins); clears the name where no park
-     * contains the spot, so re-runs stay correct.
+     * Stamp every eligible facility with its smallest containing destination.
+     * The direct parent ID is stable if a park name changes; park_name remains
+     * populated as a legacy display fallback until all existing data has been
+     * refreshed through this importer.
      */
-    private function assignParks(): int
+    private function assignDestinations(): int
     {
         $fines = collect(SpotCategory::placesFines())
-            ->reject(fn (string $category) => $category === 'park')
+            ->reject(fn (string $category) => in_array($category, ['park', 'sports_centre'], true))
             ->map(fn (string $category) => "'{$category}'")
             ->implode(', ');
 
         DB::statement(
-            "UPDATE spots SET park_name = (
-                SELECT pa.name FROM park_areas pa
-                WHERE ST_Contains(pa.boundary, spots.location::geometry)
-                ORDER BY ST_Area(pa.boundary) ASC
-                LIMIT 1
-            )
-            WHERE spots.category IN ({$fines}) AND spots.location IS NOT NULL",
+            "UPDATE spots SET parent_spot_id = NULL, park_name = NULL
+             WHERE category IN ({$fines}) AND location IS NOT NULL",
         );
 
-        return DB::table('spots')->whereNotNull('park_name')->count();
+        DB::statement(
+            "UPDATE spots AS child
+             SET parent_spot_id = destination.parent_spot_id,
+                 park_name = destination.name
+             FROM (
+                 SELECT candidate.id, area.parent_spot_id, area.name
+                 FROM spots AS candidate
+                 CROSS JOIN LATERAL (
+                     SELECT parent_spot_id, name
+                     FROM park_areas
+                     WHERE parent_spot_id IS NOT NULL
+                       AND ST_Covers(boundary, candidate.location::geometry)
+                     ORDER BY ST_Area(boundary) ASC
+                     LIMIT 1
+                 ) AS area
+                 WHERE candidate.category IN ({$fines})
+                   AND candidate.location IS NOT NULL
+             ) AS destination
+             WHERE child.id = destination.id",
+        );
+
+        return DB::table('spots')->whereNotNull('parent_spot_id')->count();
     }
 }

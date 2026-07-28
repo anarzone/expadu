@@ -18,7 +18,7 @@ test('bbq keeps its own grill identity, distinct from picnic', function () {
 
 test('finesForSelector expands a coarse bucket to its whole family', function () {
     expect(SpotCategory::finesForSelector('court'))
-        ->toEqualCanonicalizing(['basketball', 'tennis', 'table_tennis', 'boules', 'skatepark']);
+        ->toEqualCanonicalizing(['basketball', 'tennis', 'table_tennis', 'boules', 'skatepark', 'sports_centre']);
     expect(SpotCategory::finesForSelector('culture'))
         ->toEqualCanonicalizing(['museum', 'gallery', 'attraction', 'zoo']);
 });

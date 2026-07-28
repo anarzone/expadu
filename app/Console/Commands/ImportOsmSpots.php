@@ -60,6 +60,10 @@ class ImportOsmSpots extends Command
             // the full set fine within the bumped timeout.
             'playground' => "[out:json][timeout:60];nwr[\"leisure\"=\"playground\"]({$bbox});out center;",
             'pitch' => "[out:json][timeout:60];nwr[\"leisure\"=\"pitch\"][\"sport\"~\"soccer|basketball|tennis|table_tennis|boules|skateboard|multi\"]({$bbox});out center;",
+            // Named complexes are destinations in their own right. Their
+            // contained courts/pitches are attached by parks:import-areas,
+            // never by a proximity guess.
+            'sports_centre' => "[out:json][timeout:60];nwr[\"leisure\"=\"sports_centre\"][\"name\"][\"sport\"~\"soccer|football|basketball|tennis|table_tennis|multi\"]({$bbox});out center;",
             'dog_park' => "[out:json][timeout:40];nwr[\"leisure\"=\"dog_park\"]({$bbox});out center;",
             'bbq' => "[out:json][timeout:40];nwr[\"amenity\"=\"bbq\"]({$bbox});out center;",
             // Picnic spots: tables (often inside parks → activity chips) and
@@ -405,6 +409,10 @@ class ImportOsmSpots extends Command
                 str_contains($tags['sport'] ?? '', 'skateboard') => 'skatepark',
                 default => 'pitch',
             };
+        }
+
+        if ($hint === 'sports_centre') {
+            return 'sports_centre';
         }
 
         return $hint;

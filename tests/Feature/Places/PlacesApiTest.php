@@ -335,6 +335,83 @@ test('an activity filter returns parks containing it plus standalone facilities'
     expect($standalone)->not->toBeNull();
 });
 
+test('facilities inside a mapped sports centre collapse into one destination card', function () {
+    $complex = Spot::factory()->create([
+        'name' => 'Sportanlage Nippes',
+        'category' => 'sports_centre',
+        'veedel' => 'Nippes',
+        'lat' => 50.964,
+        'lng' => 6.954,
+    ]);
+    Spot::factory()->create([
+        'name' => 'Tennisplatz',
+        'category' => 'tennis',
+        'parent_spot_id' => $complex->id,
+        'veedel' => 'Nippes',
+        'lat' => 50.9642,
+        'lng' => 6.9541,
+    ]);
+    Spot::factory()->create([
+        'name' => 'Bolzplatz',
+        'category' => 'pitch',
+        'parent_spot_id' => $complex->id,
+        'veedel' => 'Nippes',
+        'lat' => 50.9643,
+        'lng' => 6.9542,
+    ]);
+    Spot::factory()->create([
+        'name' => 'Tennisclub Süd',
+        'category' => 'tennis',
+        'veedel' => 'Rodenkirchen',
+        'lat' => 50.889,
+        'lng' => 6.996,
+    ]);
+
+    $all = collect($this->getJson('/api/places')->json('data'));
+    $complexCard = $all->firstWhere('name', 'Sportanlage Nippes');
+
+    expect($complexCard)->not->toBeNull();
+    expect($complexCard['open_now'])->toBeNull()
+        ->and($complexCard['price_text'])->toBeNull();
+    expect($all->pluck('name')->all())->not->toContain('Tennisplatz', 'Bolzplatz');
+    expect(collect($complexCard['activities'])->pluck('label')->all())
+        ->toBe(['Pitch', 'Tennis court']);
+
+    $pitchResults = collect($this->getJson('/api/places?category=pitch')->json('data'));
+    expect($pitchResults->pluck('name')->all())->toContain('Sportanlage Nippes');
+    expect($pitchResults->pluck('name')->all())->not->toContain('Bolzplatz');
+
+    $courtResults = collect($this->getJson('/api/places?category=court')->json('data'));
+    expect($courtResults->pluck('name')->all())->toContain('Sportanlage Nippes', 'Tennisclub Süd');
+    expect($courtResults->pluck('name')->all())->not->toContain('Tennisplatz');
+});
+
+test('a mapped sports centre context lists only its contained facilities', function () {
+    $complex = Spot::factory()->create([
+        'name' => 'Sportanlage Nippes',
+        'category' => 'sports_centre',
+        'lat' => 50.964,
+        'lng' => 6.954,
+    ]);
+    $containedCourt = Spot::factory()->create([
+        'name' => 'Tennisplatz',
+        'category' => 'tennis',
+        'parent_spot_id' => $complex->id,
+        'lat' => 50.969,
+        'lng' => 6.954,
+    ]);
+    Spot::factory()->create([
+        'name' => 'Nearby but separate court',
+        'category' => 'basketball',
+        'lat' => 50.9642,
+        'lng' => 6.9541,
+    ]);
+
+    $nearby = collect($this->getJson("/api/places/{$complex->id}/context")->json('nearby'));
+
+    expect($nearby->pluck('id')->all())->toBe([$containedCourt->id]);
+});
+
 test('culture places are listed with the culture coarse bucket', function () {
     Spot::factory()->create(['name' => 'Museum Ludwig', 'category' => 'museum', 'veedel' => 'Altstadt-Nord', 'lat' => 50.9403, 'lng' => 6.9602, 'tags' => ['fee' => 'no']]);
 

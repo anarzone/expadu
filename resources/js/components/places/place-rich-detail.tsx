@@ -437,8 +437,8 @@ export function PlaceRichDetail({
             {context && context.nearby.length > 0 && (
                 <div className="mx-5 mt-5 shrink-0 sm:mx-6">
                     <div className="font-mono text-[10px] font-semibold tracking-[0.1em] text-text-3 uppercase">
-                        {place.category === 'park'
-                            ? 'What is around the park'
+                        {place.activities.length > 0
+                            ? 'What is at this place'
                             : 'Nearby, after your visit'}
                     </div>
                     <div className="mt-2">

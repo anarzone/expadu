@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
-#[Fillable(['name', 'category', 'cuisine', 'price_range', 'tags', 'description', 'address', 'lat', 'lng', 'veedel', 'park_name', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating', 'source', 'source_id', 'source_group', 'last_seen_at', 'is_active', 'is_recommendable', 'is_verified', 'phone', 'website', 'tip', 'photo_url', 'photo_attribution'])]
+#[Fillable(['name', 'category', 'cuisine', 'price_range', 'tags', 'description', 'address', 'lat', 'lng', 'veedel', 'park_name', 'parent_spot_id', 'wifi_speed', 'noise_level', 'time_limit_mins', 'opening_hours', 'rating', 'source', 'source_id', 'source_group', 'last_seen_at', 'is_active', 'is_recommendable', 'is_verified', 'phone', 'website', 'tip', 'photo_url', 'photo_attribution'])]
 class Spot extends Model
 {
     /** @use HasFactory<SpotFactory> */
@@ -48,6 +49,18 @@ class Spot extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    /** @return BelongsTo<Spot, $this> */
+    public function parentSpot(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_spot_id');
+    }
+
+    /** @return HasMany<Spot, $this> */
+    public function containedSpots(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_spot_id');
     }
 
     /** @return MorphMany<MediaAttachment, $this> */

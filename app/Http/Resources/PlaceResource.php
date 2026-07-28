@@ -85,6 +85,13 @@ class PlaceResource extends JsonResource
 
     private function resolveOpenNow(string $coarse): ?bool
     {
+        // A named sports centre may be indoor, paid, or have restricted
+        // opening hours. Its child court category must never manufacture a
+        // free/open claim for the whole destination.
+        if ($this->categoryEnum() === SpotCategory::SportsCentre) {
+            return null;
+        }
+
         // Free public outdoor spots are open-access; pools/indoor vary → unknown.
         return in_array($coarse, self::FREE_OUTDOOR, true) ? true : null;
     }
@@ -99,6 +106,10 @@ class PlaceResource extends JsonResource
             return (string) $tags['opening_hours'];
         }
 
+        if ($this->categoryEnum() === SpotCategory::SportsCentre) {
+            return null;
+        }
+
         if (in_array($coarse, self::FREE_OUTDOOR, true)) {
             return 'Open access';
         }
@@ -108,6 +119,10 @@ class PlaceResource extends JsonResource
 
     private function resolvePriceText(string $coarse): ?string
     {
+        if ($this->categoryEnum() === SpotCategory::SportsCentre) {
+            return null;
+        }
+
         if (in_array($coarse, self::FREE_OUTDOOR, true)) {
             return 'free';
         }

@@ -6,6 +6,7 @@ enum SpotCategory: string
 {
     // v2 physical-leisure categories — the primary Places content
     case Park = 'park';
+    case SportsCentre = 'sports_centre';
     case Playground = 'playground';
     case Pitch = 'pitch';
     case Basketball = 'basketball';
@@ -51,6 +52,7 @@ enum SpotCategory: string
     {
         return match ($this) {
             self::Park => '🌳',
+            self::SportsCentre => '🏟️',
             self::Playground => '🛝',
             self::Pitch => '⚽',
             self::Basketball => '🏀',
@@ -82,6 +84,7 @@ enum SpotCategory: string
     {
         return match ($this) {
             self::Park => 'Park',
+            self::SportsCentre => 'Sports centre',
             self::Playground => 'Playground',
             self::Pitch => 'Pitch',
             self::Basketball => 'Basketball court',
@@ -118,7 +121,7 @@ enum SpotCategory: string
         return match ($this) {
             self::Park, self::Viewpoint, self::Bbq, self::Picnic => 'park',
             self::Pitch => 'pitch',
-            self::Basketball, self::Tennis, self::TableTennis, self::Boules, self::Skatepark => 'court',
+            self::SportsCentre, self::Basketball, self::Tennis, self::TableTennis, self::Boules, self::Skatepark => 'court',
             self::Swimming, self::Lake => 'swimming',
             self::Playground => 'playground',
             self::DogPark => 'dog_park',

@@ -68,8 +68,8 @@ class PlaceContextController extends Controller
     }
 
     /**
-     * Other places around this one — facilities sharing the same park
-     * when there is one ("Also in Blücherpark"), otherwise anything
+     * Other places around this one — facilities sharing the same mapped
+     * destination when there is one, otherwise anything
      * within ~300m. Excludes the place itself and its own same-name
      * cluster siblings (those are the "×N here" chip).
      *
@@ -90,12 +90,25 @@ class PlaceContextController extends Controller
             [$spot->lat, $spot->lng, $spot->lat],
         );
 
-        if ($spot->getRawOriginal('category') === 'park') {
-            // A park's "around here" is what's inside it.
-            $query->where('park_name', $spot->name);
+        if (in_array($spot->getRawOriginal('category'), ['park', 'sports_centre'], true)) {
+            // A destination's "around here" is what is contained inside it.
+            $query->where(function ($contained) use ($spot) {
+                $contained->where('parent_spot_id', $spot->id);
+
+                if ($spot->getRawOriginal('category') === 'park') {
+                    // Compatibility while legacy park_name rows await their
+                    // next source-backed containment refresh.
+                    $contained->orWhere(fn ($legacy) => $legacy
+                        ->whereNull('parent_spot_id')
+                        ->where('park_name', $spot->name));
+                }
+            });
+        } elseif ($spot->parent_spot_id) {
+            // Same mapped destination = same venue, however large it is.
+            $query->where('parent_spot_id', $spot->parent_spot_id);
         } elseif ($spot->park_name) {
-            // Same park = same venue, however large the park is.
-            $query->where('park_name', $spot->park_name);
+            // Legacy fallback during parent-ID rollout.
+            $query->whereNull('parent_spot_id')->where('park_name', $spot->park_name);
         } else {
             $query->whereRaw(
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
@@ -103,7 +116,9 @@ class PlaceContextController extends Controller
             );
         }
 
-        $limit = $spot->getRawOriginal('category') === 'park' ? 8 : self::NEARBY_LIMIT;
+        $limit = in_array($spot->getRawOriginal('category'), ['park', 'sports_centre'], true)
+            ? 8
+            : self::NEARBY_LIMIT;
 
         $rows = $query
             ->orderBy('km')

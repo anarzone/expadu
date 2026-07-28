@@ -29,4 +29,5 @@ test('the pitch query refines basketball and soccer by sport', function () {
     expect($resolve->invoke($cmd, ['sport' => 'basketball'], 'pitch'))->toBe('basketball');
     expect($resolve->invoke($cmd, ['sport' => 'soccer'], 'pitch'))->toBe('pitch');
     expect($resolve->invoke($cmd, ['sport' => 'multi'], 'pitch'))->toBe('pitch');
+    expect($resolve->invoke($cmd, ['sport' => 'tennis'], 'sports_centre'))->toBe('sports_centre');
 });

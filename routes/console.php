@@ -31,7 +31,10 @@ Schedule::command('events:send-occurrence-reminders')->everyFiveMinutes()->witho
 // catalogue so outside-city rows can never be assigned to a nearby Veedel.
 Schedule::command('veedels:import')->monthlyOn(1, '02:00')->withoutOverlapping()->onOneServer();
 Schedule::command('spots:assign-veedel --force')->monthlyOn(1, '02:30')->withoutOverlapping()->onOneServer();
-Schedule::command('osm:import')->weeklyOn(1, '03:30')->withoutOverlapping()->onOneServer();
+// Keep source import, geometry containment, and readable facility names in
+// one ordered run. Separate schedules can overlap and leak micro-facilities
+// back into Places before their parent destination is assigned.
+Schedule::command('app:refresh-places-catalogue')->weeklyOn(1, '03:30')->withoutOverlapping()->onOneServer();
 
 // Transit delay alerts — check every 15 min, only notify for >10 min delays
 Schedule::command('transit:check-delays')->everyFifteenMinutes()->withoutOverlapping();
