@@ -4,6 +4,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserTask;
+use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Yaml\Yaml;
 
 // ── Dependency blocking ────────────────────────────────────────────────
@@ -489,4 +490,308 @@ test('import sets verified_at only from YAML', function () {
 
     unlink($file);
     rmdir($dir);
+});
+
+// ── Rule source approval ───────────────────────────────────────────────
+
+/**
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function task3ApprovedTask(string $key, array $overrides = []): array
+{
+    return array_replace([
+        'key' => $key,
+        'title' => 'Approved bureaucracy rule',
+        'jurisdiction' => 'de-nrw-cologne',
+        'review_status' => 'approved',
+        'reviewed_by' => 'expadu_content_owner',
+        'content_version' => '2026-08-03.1',
+        'source_verification' => 'dual_source',
+        'verified_at' => '2026-08-03',
+        'legal_sources' => [
+            [
+                'kind' => 'primary',
+                'label' => '§ 18g AufenthG',
+                'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+            ],
+            [
+                'kind' => 'implementation',
+                'label' => 'Stadt Köln',
+                'url' => 'https://www.stadt-koeln.de/service/produkte/20321/index.html',
+            ],
+        ],
+    ], $overrides);
+}
+
+/**
+ * @param  list<array<string, mixed>>  $tasks
+ * @return array{directory: string, file: string}
+ */
+function task3WriteCatalogue(array $tasks): array
+{
+    $directory = sys_get_temp_dir().'/bureaucracy_sources_'.uniqid();
+    mkdir($directory);
+    $file = $directory.'/catalogue.yaml';
+    file_put_contents($file, Yaml::dump([
+        'situation' => 'core',
+        'tasks' => $tasks,
+    ], 8, 2));
+
+    return ['directory' => $directory, 'file' => $file];
+}
+
+/** @param array{directory: string, file: string} $catalogue */
+function task3DeleteCatalogue(array $catalogue): void
+{
+    if (is_file($catalogue['file'])) {
+        unlink($catalogue['file']);
+    }
+
+    if (is_dir($catalogue['directory'])) {
+        rmdir($catalogue['directory']);
+    }
+}
+
+test('tasks without source approval metadata remain legacy and non-authoritative', function () {
+    $catalogue = task3WriteCatalogue([
+        ['key' => 'source.legacy', 'title' => 'Legacy task'],
+    ]);
+
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertSuccessful();
+
+        expect(Task::where('key', 'source.legacy')->value('review_status'))->toBe('legacy')
+            ->and(Task::query()->authoritative()->where('key', 'source.legacy')->exists())->toBeFalse();
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+});
+
+test('invalid review status aborts the whole import', function () {
+    $catalogue = task3WriteCatalogue([
+        ['key' => 'source.valid-legacy', 'title' => 'Valid legacy task'],
+        ['key' => 'source.invalid-status', 'title' => 'Invalid status', 'review_status' => 'reviewed'],
+    ]);
+
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])
+            ->expectsOutputToContain('review_status')
+            ->assertFailed();
+
+        expect(Task::whereIn('key', ['source.valid-legacy', 'source.invalid-status'])->exists())->toBeFalse();
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+});
+
+test('approved rules missing required source metadata abort before any write', function (string $missing) {
+    $invalid = task3ApprovedTask('source.invalid');
+
+    if ($missing === 'primary source') {
+        $invalid['legal_sources'] = [
+            [
+                'kind' => 'implementation',
+                'label' => 'Stadt Köln',
+                'url' => 'https://www.stadt-koeln.de/service/produkte/20321/index.html',
+            ],
+        ];
+    } else {
+        unset($invalid[$missing]);
+    }
+
+    $catalogue = task3WriteCatalogue([
+        task3ApprovedTask('source.valid'),
+        $invalid,
+    ]);
+
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertFailed();
+
+        expect(Task::whereIn('key', ['source.valid', 'source.invalid'])->exists())->toBeFalse();
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+})->with([
+    'jurisdiction' => 'jurisdiction',
+    'content version' => 'content_version',
+    'reviewer' => 'reviewed_by',
+    'verification date' => 'verified_at',
+    'verification method' => 'source_verification',
+    'primary legal source' => 'primary source',
+]);
+
+test('primary sources use a strict HTTPS host allowlist', function (array $source, bool $accepted) {
+    $task = task3ApprovedTask('source.primary-host', [
+        'source_verification' => 'single_source_approved',
+        'single_source_approved' => true,
+        'legal_sources' => [$source],
+    ]);
+    $catalogue = task3WriteCatalogue([$task]);
+
+    try {
+        $exitCode = Artisan::call('bureaucracy:import-tasks', ['file' => $catalogue['file']]);
+        $this->assertSame($accepted ? 0 : 1, $exitCode, Artisan::output());
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+})->with([
+    'Gesetze im Internet' => [[
+        'kind' => 'primary',
+        'label' => 'AufenthG',
+        'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+    ], true],
+    'EUR-Lex subdomain' => [[
+        'kind' => 'primary',
+        'label' => 'EU law',
+        'url' => 'https://legal.eur-lex.europa.eu/example',
+    ], true],
+    'Federal Law Gazette' => [[
+        'kind' => 'primary',
+        'label' => 'Bundesgesetzblatt',
+        'url' => 'https://www.recht.bund.de/example',
+    ], true],
+    'HTTP is rejected' => [[
+        'kind' => 'primary',
+        'label' => 'Insecure law page',
+        'url' => 'http://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+    ], false],
+    'suffix lookalike is rejected' => [[
+        'kind' => 'primary',
+        'label' => 'Lookalike',
+        'url' => 'https://gesetze-im-internet.de.example.com/law',
+    ], false],
+    'arbitrary host is rejected' => [[
+        'kind' => 'primary',
+        'label' => 'Blog',
+        'url' => 'https://example.com/law',
+    ], false],
+    'blank label is rejected' => [[
+        'kind' => 'primary',
+        'label' => '  ',
+        'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+    ], false],
+]);
+
+test('dual-source approval uses a strict implementation host allowlist', function (string $url, bool $accepted) {
+    $task = task3ApprovedTask('source.implementation-host');
+    $task['legal_sources'][1]['url'] = $url;
+    $catalogue = task3WriteCatalogue([$task]);
+
+    try {
+        $exitCode = Artisan::call('bureaucracy:import-tasks', ['file' => $catalogue['file']]);
+        $this->assertSame($accepted ? 0 : 1, $exitCode, Artisan::output());
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+})->with([
+    'Stadt Köln' => ['https://www.stadt-koeln.de/service/produkte/20321/index.html', true],
+    'BAMF' => ['https://www.bamf.de/example', true],
+    'Make it in Germany' => ['https://www.make-it-in-germany.com/en/example', true],
+    'arbitrary de host' => ['https://example.de/immigration', false],
+    'implementation lookalike' => ['https://bamf.de.example.com/immigration', false],
+]);
+
+test('verification mode requirements cannot be satisfied by ordinary links', function (array $overrides, bool $accepted) {
+    $task = task3ApprovedTask('source.verification-mode', $overrides);
+    $catalogue = task3WriteCatalogue([$task]);
+
+    try {
+        $exitCode = Artisan::call('bureaucracy:import-tasks', ['file' => $catalogue['file']]);
+        $this->assertSame($accepted ? 0 : 1, $exitCode, Artisan::output());
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+})->with([
+    'dual source without implementation' => [[
+        'legal_sources' => [[
+            'kind' => 'primary',
+            'label' => 'AufenthG',
+            'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+        ]],
+        'links' => ['https://www.stadt-koeln.de/service/produkte/20321/index.html'],
+    ], false],
+    'single source without explicit approval' => [[
+        'source_verification' => 'single_source_approved',
+        'legal_sources' => [[
+            'kind' => 'primary',
+            'label' => 'AufenthG',
+            'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+        ]],
+    ], false],
+    'single source with explicit approval' => [[
+        'source_verification' => 'single_source_approved',
+        'single_source_approved' => true,
+        'legal_sources' => [[
+            'kind' => 'primary',
+            'label' => 'AufenthG',
+            'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+        ]],
+    ], true],
+]);
+
+test('approved metadata is persisted with the correct default review schedule', function () {
+    $catalogue = task3WriteCatalogue([
+        task3ApprovedTask('source.stable'),
+        task3ApprovedTask('source.figure', [
+            'description' => 'Threshold: {{figure:blue_card_salary}}',
+        ]),
+        task3ApprovedTask('source.explicit-volatile', [
+            'review_interval_days' => 90,
+        ]),
+    ]);
+
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertSuccessful();
+
+        $stable = Task::where('key', 'source.stable')->firstOrFail();
+        $figure = Task::where('key', 'source.figure')->firstOrFail();
+        $explicit = Task::where('key', 'source.explicit-volatile')->firstOrFail();
+
+        expect($stable->jurisdiction)->toBe('de-nrw-cologne')
+            ->and($stable->review_status)->toBe('approved')
+            ->and($stable->reviewed_by)->toBe('expadu_content_owner')
+            ->and($stable->content_version)->toBe('2026-08-03.1')
+            ->and($stable->source_verification)->toBe('dual_source')
+            ->and($stable->legal_sources)->toHaveCount(2)
+            ->and($stable->review_due_at?->toDateString())->toBe('2027-08-03')
+            ->and($figure->review_due_at?->toDateString())->toBe('2026-11-01')
+            ->and($explicit->review_due_at?->toDateString())->toBe('2026-11-01');
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+});
+
+test('invalid review intervals fail and reimports recompute review due dates', function () {
+    $invalidCatalogue = task3WriteCatalogue([
+        task3ApprovedTask('source.bad-interval', ['review_interval_days' => 180]),
+    ]);
+
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $invalidCatalogue['file']])->assertFailed();
+        expect(Task::where('key', 'source.bad-interval')->exists())->toBeFalse();
+    } finally {
+        task3DeleteCatalogue($invalidCatalogue);
+    }
+
+    $catalogue = task3WriteCatalogue([task3ApprovedTask('source.recomputed')]);
+
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertSuccessful();
+        expect(Task::where('key', 'source.recomputed')->firstOrFail()->review_due_at?->toDateString())
+            ->toBe('2027-08-03');
+
+        file_put_contents($catalogue['file'], Yaml::dump([
+            'situation' => 'core',
+            'tasks' => [task3ApprovedTask('source.recomputed', [
+                'description' => 'Threshold: {{figure:blue_card_salary}}',
+            ])],
+        ], 8, 2));
+
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertSuccessful();
+        expect(Task::where('key', 'source.recomputed')->firstOrFail()->review_due_at?->toDateString())
+            ->toBe('2026-11-01');
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
 });

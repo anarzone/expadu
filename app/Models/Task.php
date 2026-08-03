@@ -8,12 +8,13 @@ use App\Profile\ProfileEngine;
 use Carbon\Carbon;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['key', 'type', 'title', 'description', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'trigger_event', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published'])]
+#[Fillable(['key', 'type', 'title', 'description', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'trigger_event', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published', 'jurisdiction', 'legal_sources', 'review_status', 'source_verification', 'reviewed_by', 'content_version', 'effective_from', 'effective_to', 'review_due_at', 'conflicts_with', 'coverage_scope', 'deadline_fact_key'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -32,11 +33,46 @@ class Task extends Model
             'links' => 'array',
             'documents_required' => 'array',
             'how_to_steps' => 'array',
+            'legal_sources' => 'array',
+            'conflicts_with' => 'array',
             'deadline_type' => DeadlineType::class,
             'urgency' => Urgency::class,
             'verified_at' => 'datetime',
+            'effective_from' => 'date',
+            'effective_to' => 'date',
+            'review_due_at' => 'date',
             'is_published' => 'boolean',
         ];
+    }
+
+    /**
+     * Restrict deterministic matching to reviewed rules whose approval window
+     * is still current. The importer and coverage gate enforce source details.
+     */
+    public function scopeAuthoritative(Builder $query): Builder
+    {
+        $today = today()->toDateString();
+
+        return $query
+            ->where('is_published', true)
+            ->where('review_status', 'approved')
+            ->whereNotNull('jurisdiction')
+            ->where('jurisdiction', '<>', '')
+            ->whereNotNull('content_version')
+            ->where('content_version', '<>', '')
+            ->whereNotNull('reviewed_by')
+            ->where('reviewed_by', '<>', '')
+            ->whereNotNull('verified_at')
+            ->whereNotNull('legal_sources')
+            ->whereJsonLength('legal_sources', '>', 0)
+            ->whereIn('source_verification', ['dual_source', 'single_source_approved'])
+            ->whereDate('review_due_at', '>=', $today)
+            ->where(function (Builder $builder) use ($today): void {
+                $builder->whereNull('effective_from')->orWhereDate('effective_from', '<=', $today);
+            })
+            ->where(function (Builder $builder) use ($today): void {
+                $builder->whereNull('effective_to')->orWhereDate('effective_to', '>=', $today);
+            });
     }
 
     /**

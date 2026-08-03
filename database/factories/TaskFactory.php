@@ -20,6 +20,8 @@ class TaskFactory extends Factory
             'urgency' => fake()->randomElement(['critical', 'high', 'medium', 'low']),
             'links' => null,
             'documents_required' => null,
+            'review_status' => 'legacy',
+            'coverage_scope' => 'case',
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Bureaucracy;
 
+use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
 use App\Models\Task;
@@ -37,6 +38,15 @@ use Symfony\Component\Yaml\Yaml;
  *       eu_filter: null               # eu_only | non_eu_only | null (both)
  *       depends_on: []                # task keys that must be done first
  *       verified_at: 2026-06-10       # HUMAN-set date, omit if unverified
+ *       review_status: approved       # legacy (default) never matches authoritatively
+ *       jurisdiction: de-nrw-cologne
+ *       reviewed_by: expadu_content_owner
+ *       content_version: 2026-08-03.1
+ *       source_verification: dual_source
+ *       review_interval_days: 90      # forms/fees; stable rules default to 365
+ *       legal_sources:                # ordinary `links` never verify a rule
+ *         - {kind: primary, label: Federal law, url: https://...}
+ *         - {kind: implementation, label: Authority guidance, url: https://...}
  *       is_published: true
  *       description: ...
  *       phase: arrival
@@ -57,6 +67,11 @@ class ImportTasksCommand extends Command
     protected $signature = 'bureaucracy:import-tasks {file? : Specific YAML file (default: import all)} {--dry-run : Show what would change without writing} {--prune : Delete tasks whose key left the catalogue (full imports only)}';
 
     protected $description = 'Upsert bureaucracy tasks from authored YAML files';
+
+    public function __construct(private RuleSourcePolicy $sourcePolicy)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -91,7 +106,8 @@ class ImportTasksCommand extends Command
         if (! $this->validateRequiredFields($entries)
             || ! $this->validateKeys($entries)
             || ! $this->validateDag($entries)
-            || ! $this->validateFigures($entries)) {
+            || ! $this->validateFigures($entries)
+            || ! $this->validateSourceApproval($entries)) {
             return self::FAILURE;
         }
 
@@ -272,6 +288,28 @@ class ImportTasksCommand extends Command
         return true;
     }
 
+    /**
+     * Source approval is validated for the complete catalogue before the first
+     * upsert. A malformed approved rule must never partially publish siblings.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateSourceApproval(array $entries): bool
+    {
+        $valid = true;
+
+        foreach ($entries as $entry) {
+            $key = $entry['data']['key'] ?? '(unknown key)';
+
+            foreach ($this->sourcePolicy->importErrors($entry['data']) as $error) {
+                $this->error("  ABORT — task `{$key}` source approval: {$error}");
+                $valid = false;
+            }
+        }
+
+        return $valid;
+    }
+
     private function figuresExist(mixed $value): bool
     {
         if (is_array($value)) {
@@ -400,6 +438,18 @@ class ImportTasksCommand extends Command
             'booking_service_key' => $data['booking_service_key'] ?? null,
             // Human-verified only: the importer copies the YAML value verbatim.
             'verified_at' => $data['verified_at'] ?? null,
+            'jurisdiction' => $data['jurisdiction'] ?? null,
+            'legal_sources' => $data['legal_sources'] ?? null,
+            'review_status' => $data['review_status'] ?? RuleSourcePolicy::Legacy,
+            'source_verification' => $data['source_verification'] ?? null,
+            'reviewed_by' => $data['reviewed_by'] ?? null,
+            'content_version' => $data['content_version'] ?? null,
+            'effective_from' => $data['effective_from'] ?? null,
+            'effective_to' => $data['effective_to'] ?? null,
+            'review_due_at' => $this->sourcePolicy->reviewDueAt($data)?->toDateString(),
+            'conflicts_with' => array_values((array) ($data['conflicts_with'] ?? [])),
+            'coverage_scope' => $data['coverage_scope'] ?? 'case',
+            'deadline_fact_key' => $data['deadline_fact_key'] ?? null,
             'is_published' => (bool) ($data['is_published'] ?? true),
         ];
 

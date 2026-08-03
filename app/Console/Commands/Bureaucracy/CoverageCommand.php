@@ -4,6 +4,7 @@ namespace App\Console\Commands\Bureaucracy;
 
 use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\PathGenerator;
+use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\Situation;
 use App\Models\Task;
 use App\Profile\Applicability;
@@ -41,8 +42,11 @@ class CoverageCommand extends Command
      */
     private Collection $tasks;
 
-    public function __construct(private ProfileEngine $engine, private PathGenerator $paths)
-    {
+    public function __construct(
+        private ProfileEngine $engine,
+        private PathGenerator $paths,
+        private RuleSourcePolicy $sourcePolicy,
+    ) {
         parent::__construct();
     }
 
@@ -60,6 +64,12 @@ class CoverageCommand extends Command
         $reachable = [];   // task key => true (applicable to at least one persona)
         $askable = [];     // task key => true (surfaced as a teaser to at least one persona)
         $violations = [];  // list<string> human-readable invariant failures
+
+        foreach ($this->tasks as $key => $task) {
+            foreach ($this->sourcePolicy->persistedErrors($task) as $error) {
+                $violations[] = "SOURCE REVIEW — `{$key}`: {$error}.";
+            }
+        }
 
         $rows = [];
         foreach ($this->personas() as $persona) {
