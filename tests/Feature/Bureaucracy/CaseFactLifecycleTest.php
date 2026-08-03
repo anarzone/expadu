@@ -337,3 +337,88 @@ test('a reconfirm_at in the past makes a fact unavailable for high-impact matchi
     expect(caseFactStore()->confirmedFact($case, 'citizenship_group', false))->not->toBeNull();
     expect(caseFactStore()->confirmedFact($case, 'citizenship_group'))->toBeNull();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Task 2 integrity amendments
+|--------------------------------------------------------------------------
+*/
+
+test('an invalid explicit legacy enum throws DomainException and atomically leaves no case or fact rows', function () {
+    $user = bureaucracyUser([], ['entry_mode' => 'invalid_value']);
+    $factCount = BureaucracyCaseFact::count();
+
+    expect(fn () => legacyFactBootstrapper()->bootstrap($user))
+        ->toThrow(DomainException::class);
+
+    expect(BureaucracyCase::where('user_id', $user->id)->count())->toBe(0);
+    expect(BureaucracyCaseFact::count())->toBe($factCount);
+});
+
+test('bootstrap does not re-create or resurrect a legacy fact whose row has been lifecycle-expired to stale', function () {
+    $user = bureaucracyUser();
+    $case = legacyFactBootstrapper()->bootstrap($user);
+    $legacy = caseFactStore()->confirmedFact($case, 'citizenship_group');
+    expect($legacy)->not->toBeNull();
+
+    // Later lifecycle expiry: the confirmed legacy row is transitioned out of
+    // confirmed without being removed.
+    $legacy->update(['state' => 'stale']);
+
+    $again = legacyFactBootstrapper()->bootstrap($user);
+    expect($again->id)->toBe($case->id);
+
+    $rows = BureaucracyCaseFact::where('case_id', $case->id)
+        ->where('key', 'citizenship_group')
+        ->get();
+
+    // No second row is created and no confirmed legacy value is resurrected.
+    expect($rows->count())->toBe(1);
+    expect($rows->first()->state)->toBe('stale');
+    expect($rows->pluck('state'))->not->toContain('confirmed');
+});
+
+test('confirmCandidate uses the persisted candidate case, ignoring an unsaved case_id mutation to another case', function () {
+    $caseA = legacyFactBootstrapper()->bootstrap(bureaucracyUser());
+    $caseB = legacyFactBootstrapper()->bootstrap(bureaucracyUser());
+
+    $candidate = caseFactStore()->recordCandidate($caseA, 'citizenship_group', 'eu', 'onboarding_checklist');
+    $candidate->case_id = $caseB->id; // unsaved in-memory mutation only
+
+    $conflict = caseFactStore()->confirmCandidate($candidate);
+
+    expect($conflict)->toBeInstanceOf(BureaucracyFactConflict::class);
+    expect($conflict->case_id)->toBe($caseA->id);
+    expect($candidate->fresh()->case_id)->toBe($caseA->id);
+
+    // Both facts referenced by the conflict belong to persisted case A, and no
+    // conflict is attached to B.
+    expect(BureaucracyCaseFact::find($conflict->candidate_fact_id)->case_id)->toBe($caseA->id);
+    expect(BureaucracyCaseFact::find($conflict->existing_fact_id)->case_id)->toBe($caseA->id);
+    expect(BureaucracyFactConflict::where('case_id', $caseB->id)->count())->toBe(0);
+});
+
+test('resolveConflict uses the persisted conflict case, leaving a mutated unsaved case untouched', function () {
+    $caseA = legacyFactBootstrapper()->bootstrap(bureaucracyUser());
+    $caseB = legacyFactBootstrapper()->bootstrap(bureaucracyUser());
+    expect($caseA->fresh()->fact_version)->toBe(1);
+    expect($caseB->fresh()->fact_version)->toBe(1);
+
+    $existing = caseFactStore()->confirmedFact($caseA, 'citizenship_group');
+    $candidate = caseFactStore()->recordCandidate($caseA, 'citizenship_group', 'eu', 'onboarding_checklist');
+    $conflict = caseFactStore()->confirmCandidate($candidate);
+    expect($conflict)->not->toBeNull();
+
+    $conflict->case_id = $caseB->id; // unsaved in-memory mutation only
+
+    $resolved = caseFactStore()->resolveConflict($conflict, $candidate);
+
+    expect($resolved->id)->toBe($candidate->id);
+    expect($candidate->fresh()->state)->toBe('confirmed');
+    expect($existing->fresh()->state)->toBe('superseded');
+
+    // Only persisted case A resolves and bumps its version; B stays untouched.
+    expect(BureaucracyFactConflict::find($conflict->id)->case_id)->toBe($caseA->id);
+    expect($caseA->fresh()->fact_version)->toBe(2);
+    expect($caseB->fresh()->fact_version)->toBe(1);
+});

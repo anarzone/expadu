@@ -44,14 +44,13 @@ final class CaseFactStore
 
                 $normalizedValue = $this->registry->definition($key)->normalize($value);
 
-                $existingFact = BureaucracyCaseFact::query()
+                $existingHistory = BureaucracyCaseFact::query()
                     ->where('case_id', $lockedCase->getKey())
                     ->where('key', $key)
-                    ->where('state', 'confirmed')
                     ->lockForUpdate()
                     ->first();
 
-                if ($existingFact !== null) {
+                if ($existingHistory !== null) {
                     continue;
                 }
 
@@ -122,8 +121,12 @@ final class CaseFactStore
     public function confirmCandidate(BureaucracyCaseFact $candidate): ?BureaucracyFactConflict
     {
         return DB::transaction(function () use ($candidate): ?BureaucracyFactConflict {
+            $persistedCaseId = (int) BureaucracyCaseFact::query()
+                ->whereKey($candidate->getKey())
+                ->valueOrFail('case_id');
+
             $lockedCase = BureaucracyCase::query()
-                ->whereKey($candidate->case_id)
+                ->whereKey($persistedCaseId)
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -131,6 +134,10 @@ final class CaseFactStore
                 ->whereKey($candidate->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ((int) $lockedCandidate->case_id !== $persistedCaseId) {
+                throw new DomainException('The candidate fact changed cases while confirmation was in progress.');
+            }
 
             if ($lockedCandidate->state === 'confirmed') {
                 return null;
@@ -192,8 +199,12 @@ final class CaseFactStore
         BureaucracyCaseFact $chosenFact,
     ): BureaucracyCaseFact {
         return DB::transaction(function () use ($conflict, $chosenFact): BureaucracyCaseFact {
+            $persistedCaseId = (int) BureaucracyFactConflict::query()
+                ->whereKey($conflict->getKey())
+                ->valueOrFail('case_id');
+
             $lockedCase = BureaucracyCase::query()
-                ->whereKey($conflict->case_id)
+                ->whereKey($persistedCaseId)
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -201,6 +212,10 @@ final class CaseFactStore
                 ->whereKey($conflict->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ((int) $lockedConflict->case_id !== $persistedCaseId) {
+                throw new DomainException('The fact conflict changed cases while resolution was in progress.');
+            }
 
             if ($lockedConflict->status === 'resolved') {
                 return BureaucracyCaseFact::query()->findOrFail($lockedConflict->resolved_fact_id);
