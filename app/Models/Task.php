@@ -124,11 +124,29 @@ class Task extends Model
      */
     public function computeDeadlineFor(User $user, ?array $attributes = null): ?Carbon
     {
-        if (! $this->deadline_days || $this->deadline_type === DeadlineType::None) {
+        if ($this->deadline_type === DeadlineType::None) {
             return null;
         }
 
         $attributes ??= app(ProfileEngine::class)->build($user)->attributes;
+
+        if ($this->deadline_type === DeadlineType::FactDate) {
+            $factDate = is_string($this->deadline_fact_key)
+                ? ($attributes[$this->deadline_fact_key] ?? null)
+                : null;
+
+            if (! is_string($factDate) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $factDate) !== 1) {
+                return null;
+            }
+
+            $deadline = Carbon::createFromFormat('!Y-m-d', $factDate);
+
+            return $deadline->format('Y-m-d') === $factDate ? $deadline : null;
+        }
+
+        if (! $this->deadline_days) {
+            return null;
+        }
 
         return match ($this->deadline_type) {
             DeadlineType::DaysSinceArrival => $user->arrival_date

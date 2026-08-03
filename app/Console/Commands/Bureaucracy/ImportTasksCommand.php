@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands\Bureaucracy;
 
+use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
 use App\Models\Task;
 use App\Profile\ProfileEngine;
+use DomainException;
 use Illuminate\Console\Command;
 use Symfony\Component\Yaml\Yaml;
 
@@ -68,8 +70,10 @@ class ImportTasksCommand extends Command
 
     protected $description = 'Upsert bureaucracy tasks from authored YAML files';
 
-    public function __construct(private RuleSourcePolicy $sourcePolicy)
-    {
+    public function __construct(
+        private RuleSourcePolicy $sourcePolicy,
+        private FactRegistry $factRegistry,
+    ) {
         parent::__construct();
     }
 
@@ -107,6 +111,7 @@ class ImportTasksCommand extends Command
             || ! $this->validateKeys($entries)
             || ! $this->validateDag($entries)
             || ! $this->validateFigures($entries)
+            || ! $this->validateRuleConditions($entries)
             || ! $this->validateSourceApproval($entries)) {
             return self::FAILURE;
         }
@@ -303,6 +308,70 @@ class ImportTasksCommand extends Command
 
             foreach ($this->sourcePolicy->importErrors($entry['data']) as $error) {
                 $this->error("  ABORT — task `{$key}` source approval: {$error}");
+                $valid = false;
+            }
+        }
+
+        return $valid;
+    }
+
+    /**
+     * Approved authored conditions may only use registered facts and operands
+     * valid for those facts. Branch predicates compiled from `situation` are
+     * trusted application code and remain backward compatible.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateRuleConditions(array $entries): bool
+    {
+        $valid = true;
+
+        foreach ($entries as $entry) {
+            $data = $entry['data'];
+            $key = $data['key'] ?? '(unknown key)';
+
+            if (($data['review_status'] ?? RuleSourcePolicy::Legacy) === RuleSourcePolicy::Approved
+                && array_key_exists('applies_if', $data)) {
+                $conditions = $data['applies_if'];
+
+                if (! is_array($conditions) || ($conditions !== [] && array_is_list($conditions))) {
+                    $this->error("  ABORT — task `{$key}` applies_if must be a keyed fact mapping");
+                    $valid = false;
+                } else {
+                    foreach ($conditions as $factKey => $condition) {
+                        try {
+                            if (! is_string($factKey) || trim($factKey) === '') {
+                                throw new DomainException('Condition fact key must be a non-empty string.');
+                            }
+
+                            $this->factRegistry->validateConditionOperand($factKey, $condition);
+                        } catch (DomainException $exception) {
+                            $this->error("  ABORT — task `{$key}` condition: {$exception->getMessage()}");
+                            $valid = false;
+                        }
+                    }
+                }
+            }
+
+            $deadlineType = strtolower(str_replace('-', '_', (string) ($data['deadline_type'] ?? 'none')));
+            $deadlineFactKey = $data['deadline_fact_key'] ?? null;
+
+            if ($deadlineType === DeadlineType::FactDate->value) {
+                if (! is_string($deadlineFactKey) || trim($deadlineFactKey) === '') {
+                    $this->error("  ABORT — task `{$key}` fact_date deadline requires deadline_fact_key");
+                    $valid = false;
+
+                    continue;
+                }
+
+                try {
+                    $this->factRegistry->validateDeadlineFact($deadlineFactKey);
+                } catch (DomainException $exception) {
+                    $this->error("  ABORT — task `{$key}` deadline: {$exception->getMessage()}");
+                    $valid = false;
+                }
+            } elseif ($deadlineFactKey !== null) {
+                $this->error("  ABORT — task `{$key}` deadline_fact_key requires deadline_type fact_date");
                 $valid = false;
             }
         }
@@ -573,6 +642,7 @@ class ImportTasksCommand extends Command
             'days_since_move_in' => DeadlineType::DaysSinceMoveIn->value,
             'permit_window' => DeadlineType::PermitWindow->value,
             'days_since_event' => DeadlineType::DaysSinceEvent->value,
+            'fact_date' => DeadlineType::FactDate->value,
             default => DeadlineType::None->value,
         };
     }

@@ -26,6 +26,12 @@ enum DeadlineType: string
      */
     case DaysSinceEvent = 'days_since_event';
 
+    /**
+     * The deadline is the exact value of Task::deadline_fact_key. This is
+     * used for visa/title expiries where adding an invented offset is unsafe.
+     */
+    case FactDate = 'fact_date';
+
     case FixedDate = 'fixed_date';
     case None = 'none';
 }

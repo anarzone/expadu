@@ -45,6 +45,82 @@ final class FactRegistry
     }
 
     /**
+     * Validate one authored rule condition against the canonical fact type.
+     * Legacy list membership remains supported alongside explicit operators.
+     */
+    public function validateConditionOperand(string $key, mixed $condition): void
+    {
+        $definition = $this->definition($key);
+
+        if ($condition === null) {
+            throw new DomainException("Condition for fact [{$key}] cannot be null.");
+        }
+
+        if (! is_array($condition)) {
+            $this->validateConditionValue($definition, $condition);
+
+            return;
+        }
+
+        if (array_is_list($condition)) {
+            if ($condition === []) {
+                throw new DomainException("Membership condition for fact [{$key}] cannot be empty.");
+            }
+
+            foreach ($condition as $value) {
+                $this->validateConditionValue($definition, $value);
+            }
+
+            return;
+        }
+
+        if (count($condition) !== 1) {
+            throw new DomainException("Operator condition for fact [{$key}] must contain exactly one operator.");
+        }
+
+        $operator = array_key_first($condition);
+        $operand = $condition[$operator];
+
+        if (! is_string($operator) || ! in_array($operator, ['gte', 'lte', 'in', 'present'], true)) {
+            throw new DomainException("Condition for fact [{$key}] uses an unsupported operator.");
+        }
+
+        if ($operator === 'present') {
+            if (! is_bool($operand)) {
+                throw new DomainException("The present operator for fact [{$key}] requires a boolean.");
+            }
+
+            return;
+        }
+
+        if ($operator === 'in') {
+            if (! is_array($operand) || ! array_is_list($operand) || $operand === []) {
+                throw new DomainException("The in operator for fact [{$key}] requires a non-empty list.");
+            }
+
+            foreach ($operand as $value) {
+                $this->validateConditionValue($definition, $value);
+            }
+
+            return;
+        }
+
+        if ($definition->type !== 'integer' || ! is_int($operand)) {
+            throw new DomainException("The {$operator} operator for fact [{$key}] requires an integer fact and operand.");
+        }
+    }
+
+    /**
+     * Require a registered fact whose value can safely anchor a date.
+     */
+    public function validateDeadlineFact(string $key): void
+    {
+        if ($this->definition($key)->type !== 'date') {
+            throw new DomainException("Deadline fact [{$key}] must be a registered date fact.");
+        }
+    }
+
+    /**
      * @return Collection<string, FactDefinition>
      */
     private function load(string $path): Collection
@@ -191,6 +267,29 @@ final class FactRegistry
         if (! $isValid) {
             throw new DomainException("Fact [{$key}] has an invalid default value.");
         }
+    }
+
+    private function validateConditionValue(FactDefinition $definition, mixed $value): void
+    {
+        $valid = match ($definition->type) {
+            'enum' => is_string($value) && in_array($value, $definition->options, true),
+            'date' => is_string($value) && $this->isIsoDate($value),
+            'integer' => is_int($value),
+            'boolean' => is_bool($value),
+        };
+
+        if (! $valid) {
+            throw new DomainException("Condition value for fact [{$definition->key}] does not match its registered type or options.");
+        }
+    }
+
+    private function isIsoDate(string $value): bool
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches) !== 1) {
+            return false;
+        }
+
+        return checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
     }
 
     /**

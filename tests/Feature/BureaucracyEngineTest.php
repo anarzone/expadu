@@ -14,6 +14,15 @@ dataset('applicability', [
     'scalar equality fails' => [[['purpose' => 'study']], ['purpose' => 'employment'], Applicability::No],
     'list membership matches' => [[['purpose' => ['digital_nomad', 'other']]], ['purpose' => 'other'], Applicability::Yes],
     'list membership fails' => [[['purpose' => ['digital_nomad', 'other']]], ['purpose' => 'study'], Applicability::No],
+    'gte matches its boundary' => [[['blue_card_qualifying_months' => ['gte' => 20]]], ['blue_card_qualifying_months' => 20], Applicability::Yes],
+    'gte rejects a lower value' => [[['blue_card_qualifying_months' => ['gte' => 20]]], ['blue_card_qualifying_months' => 19], Applicability::No],
+    'lte matches its boundary' => [[['blue_card_qualifying_months' => ['lte' => 27]]], ['blue_card_qualifying_months' => 27], Applicability::Yes],
+    'in operator matches strictly' => [[['german_level' => ['in' => ['b1', 'b2', 'c1', 'c2']]]], ['german_level' => 'b1'], Applicability::Yes],
+    'present true matches non-null' => [[['residence_title_expires_at' => ['present' => true]]], ['residence_title_expires_at' => '2027-01-01'], Applicability::Yes],
+    'present true rejects null' => [[['residence_title_expires_at' => ['present' => true]]], ['residence_title_expires_at' => null], Applicability::No],
+    'present false matches null' => [[['residence_title_expires_at' => ['present' => false]]], ['residence_title_expires_at' => null], Applicability::Yes],
+    'missing value stays unknown for comparisons' => [[['blue_card_qualifying_months' => ['gte' => 20]]], [], Applicability::Unknown],
+    'numeric comparison rejects a non-numeric actual value' => [[['blue_card_qualifying_months' => ['gte' => 20]]], ['blue_card_qualifying_months' => 'twenty'], Applicability::No],
     'AND within group fails on one condition' => [
         [['purpose' => 'employment', 'citizenship_group' => 'eu']],
         ['purpose' => 'employment', 'citizenship_group' => 'non_eu'],
@@ -44,6 +53,26 @@ dataset('applicability', [
 test('applies_if evaluation is tri-state', function (?array $appliesIf, array $attributes, Applicability $expected) {
     expect(Applicability::evaluate($appliesIf, $attributes))->toBe($expected);
 })->with('applicability');
+
+test('unknown operator conditions expose the registered fact key', function () {
+    $conditions = [['blue_card_qualifying_months' => ['gte' => 20]]];
+
+    expect(Applicability::unknownAttributes($conditions, []))
+        ->toBe(['blue_card_qualifying_months']);
+});
+
+test('malformed operator conditions fail explicitly', function (mixed $condition) {
+    Applicability::evaluate([['blue_card_qualifying_months' => $condition]], [
+        'blue_card_qualifying_months' => 22,
+    ]);
+})->with([
+    'explicit null' => null,
+    'unsupported operator' => [['gt' => 20]],
+    'multiple operators' => [['gte' => 20, 'lte' => 27]],
+    'non-numeric comparison operand' => [['gte' => 'twenty']],
+    'non-list in operand' => [['in' => 'b1']],
+    'non-boolean present operand' => [['present' => 1]],
+])->throws(DomainException::class);
 
 // ── Table-driven path fixtures over the REAL catalogue ─────────────────
 // One fixture per case: profile → keys that must be visible / absent.
@@ -203,6 +232,40 @@ test('the attribute endpoint rejects unknown attributes and values', function ()
 });
 
 // ── Deadline anchors ───────────────────────────────────────────────────
+
+test('fact-date deadlines use the exact registered fact date and pause when it is missing', function () {
+    $user = User::factory()->onboarded()->create();
+    $renewal = Task::factory()->create([
+        'deadline_type' => 'fact_date',
+        'deadline_days' => null,
+        'deadline_fact_key' => 'residence_title_expires_at',
+    ]);
+
+    expect($renewal->computeDeadlineFor($user, [
+        'residence_title_expires_at' => '2027-03-18',
+    ])?->toDateString())->toBe('2027-03-18')
+        ->and($renewal->computeDeadlineFor($user, []))->toBeNull()
+        ->and($renewal->computeDeadlineFor($user, [
+            'residence_title_expires_at' => '2027-02-31',
+        ]))->toBeNull();
+});
+
+test('D-visa application deadlines still use visa expiry exactly', function () {
+    $user = User::factory()->onboarded()->create(['arrival_date' => '2026-08-01']);
+    $application = Task::factory()->create([
+        'deadline_type' => 'permit_window',
+        'deadline_days' => 90,
+    ]);
+
+    expect($application->computeDeadlineFor($user, [
+        'entry_mode' => 'd_visa',
+        'visa_expires_at' => '2026-12-14',
+    ])?->toDateString())->toBe('2026-12-14')
+        ->and($application->computeDeadlineFor($user, [
+            'entry_mode' => 'd_visa',
+            'visa_expires_at' => null,
+        ]))->toBeNull();
+});
 
 test('temporary housing pauses the Anmeldung deadline instead of going overdue', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();

@@ -1,9 +1,12 @@
 <?php
 
 use App\Enums\Situation;
+use App\Models\Task;
 use App\Models\User;
 use App\Profile\ProfileEngine;
 use App\Profile\TicketAdvice;
+use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Yaml\Yaml;
 
 dataset('branches', [
     'non-EU employee' => ['non_eu_employee', null, 'non_eu_employee', false],
@@ -112,3 +115,149 @@ test('days since arrival computes from arrival date', function () {
 
     expect(app(ProfileEngine::class)->build($user)->daysSinceArrival())->toBe(9);
 });
+
+/**
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function task4ApprovedRule(string $key, array $overrides = []): array
+{
+    return array_replace([
+        'key' => $key,
+        'title' => 'Approved conditional rule',
+        'jurisdiction' => 'de-nrw-cologne',
+        'review_status' => 'approved',
+        'reviewed_by' => 'expadu_content_owner',
+        'content_version' => '2026-08-04.1',
+        'source_verification' => 'dual_source',
+        'verified_at' => '2026-08-04',
+        'legal_sources' => [
+            [
+                'kind' => 'primary',
+                'label' => 'AufenthG',
+                'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+            ],
+            [
+                'kind' => 'implementation',
+                'label' => 'Stadt Köln',
+                'url' => 'https://www.stadt-koeln.de/service/produkte/20321/index.html',
+            ],
+        ],
+    ], $overrides);
+}
+
+/**
+ * @param  list<array<string, mixed>>  $tasks
+ * @return array{directory: string, file: string}
+ */
+function task4WriteCatalogue(array $tasks): array
+{
+    $directory = sys_get_temp_dir().'/bureaucracy_operators_'.uniqid();
+    mkdir($directory);
+    $file = $directory.'/catalogue.yaml';
+    file_put_contents($file, Yaml::dump([
+        'situation' => 'core',
+        'tasks' => $tasks,
+    ], 8, 2));
+
+    return ['directory' => $directory, 'file' => $file];
+}
+
+/** @param array{directory: string, file: string} $catalogue */
+function task4DeleteCatalogue(array $catalogue): void
+{
+    if (is_file($catalogue['file'])) {
+        unlink($catalogue['file']);
+    }
+
+    if (is_dir($catalogue['directory'])) {
+        rmdir($catalogue['directory']);
+    }
+}
+
+test('approved imports accept registered condition operators and fact-date deadlines', function () {
+    $catalogue = task4WriteCatalogue([
+        task4ApprovedRule('operator.gte', ['applies_if' => ['blue_card_qualifying_months' => ['gte' => 20]]]),
+        task4ApprovedRule('operator.lte', ['applies_if' => ['blue_card_qualifying_months' => ['lte' => 27]]]),
+        task4ApprovedRule('operator.in', ['applies_if' => ['german_level' => ['in' => ['b1', 'b2', 'c1', 'c2']]]]),
+        task4ApprovedRule('operator.present', ['applies_if' => ['residence_title_expires_at' => ['present' => true]]]),
+        task4ApprovedRule('operator.scalar', ['applies_if' => ['case_goal' => 'blue_card']]),
+        task4ApprovedRule('operator.legacy-list', ['applies_if' => ['case_goal' => ['blue_card', 'renew_current_title']]]),
+        task4ApprovedRule('deadline.fact-date', [
+            'deadline_type' => 'fact_date',
+            'deadline_fact_key' => 'residence_title_expires_at',
+        ]),
+    ]);
+
+    try {
+        $exitCode = Artisan::call('bureaucracy:import-tasks', ['file' => $catalogue['file']]);
+
+        $this->assertSame(0, $exitCode, Artisan::output());
+        expect(Task::whereIn('key', [
+            'operator.gte',
+            'operator.lte',
+            'operator.in',
+            'operator.present',
+            'operator.scalar',
+            'operator.legacy-list',
+            'deadline.fact-date',
+        ])->count())->toBe(7)
+            ->and(Task::where('key', 'deadline.fact-date')->firstOrFail()->deadline_type->value)->toBe('fact_date')
+            ->and(Task::where('key', 'deadline.fact-date')->value('deadline_fact_key'))
+            ->toBe('residence_title_expires_at');
+    } finally {
+        task4DeleteCatalogue($catalogue);
+    }
+});
+
+test('approved imports reject malformed or unregistered condition operands atomically', function (array $condition) {
+    $catalogue = task4WriteCatalogue([
+        task4ApprovedRule('operator.valid-sibling'),
+        task4ApprovedRule('operator.invalid', ['applies_if' => $condition]),
+    ]);
+
+    try {
+        $exitCode = Artisan::call('bureaucracy:import-tasks', ['file' => $catalogue['file']]);
+
+        expect($exitCode)->toBe(1)
+            ->and(Task::whereIn('key', ['operator.valid-sibling', 'operator.invalid'])->exists())->toBeFalse();
+    } finally {
+        task4DeleteCatalogue($catalogue);
+    }
+})->with([
+    'explicit null' => [['case_goal' => null]],
+    'unknown fact' => [['unregistered_fact' => 'anything']],
+    'invalid scalar enum value' => [['case_goal' => 'not_a_goal']],
+    'invalid in enum value' => [['german_level' => ['in' => ['b1', 'native']]]],
+    'invalid date value' => [['family_residence_permit_held_since' => '2026-02-31']],
+    'multiple operators' => [['blue_card_qualifying_months' => ['gte' => 20, 'lte' => 27]]],
+    'unsupported operator' => [['blue_card_qualifying_months' => ['gt' => 20]]],
+    'comparison on enum fact' => [['german_level' => ['gte' => 20]]],
+    'non-integer comparison operand' => [['weekly_work_hours' => ['gte' => '20']]],
+    'non-boolean present operand' => [['residence_title_expires_at' => ['present' => 1]]],
+]);
+
+test('fact-date imports require a registered date fact', function (?string $factKey) {
+    $task = task4ApprovedRule('deadline.invalid-fact', [
+        'deadline_type' => 'fact_date',
+    ]);
+
+    if ($factKey !== null) {
+        $task['deadline_fact_key'] = $factKey;
+    }
+
+    $catalogue = task4WriteCatalogue([$task]);
+
+    try {
+        $exitCode = Artisan::call('bureaucracy:import-tasks', ['file' => $catalogue['file']]);
+
+        expect($exitCode)->toBe(1)
+            ->and(Task::where('key', 'deadline.invalid-fact')->exists())->toBeFalse();
+    } finally {
+        task4DeleteCatalogue($catalogue);
+    }
+})->with([
+    'missing key' => null,
+    'unknown key' => 'unknown_date',
+    'non-date fact' => 'german_level',
+]);
