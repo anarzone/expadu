@@ -89,6 +89,12 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return $this->onboarded_at !== null;
     }
 
+    /** @return HasOne<BureaucracyCase, $this> */
+    public function bureaucracyCase(): HasOne
+    {
+        return $this->hasOne(BureaucracyCase::class);
+    }
+
     /** @return HasMany<UserPlace, $this> */
     public function places(): HasMany
     {
