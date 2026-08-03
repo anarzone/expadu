@@ -4,6 +4,7 @@ namespace App\Http\Controllers\QA;
 
 use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\PathGenerator;
+use App\Bureaucracy\QA\ScenarioFactSynchronizer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class PersonaController extends Controller
 
         $user = $request->user();
         $user->forceFill(BureaucracyPersonas::persistableProfile($match))->save();
+        app(ScenarioFactSynchronizer::class)->sync($user, $match);
 
         // Mirrors OnboardingController::complete() — the rest of the app
         // (commute tiles, "take me there") assumes Home + Work exist.

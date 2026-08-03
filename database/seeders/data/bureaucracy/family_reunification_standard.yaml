@@ -115,3 +115,192 @@ tasks:
         body: Holding your own skilled-worker permit cuts the wait to 3 years (2 with a German degree), and family members of German citizens qualify after 3 — the § printed on your permit card decides which track is yours. The 5-year general track is the default when no faster one fits.
       - title: Ask about Daueraufenthalt-EU at the appointment
         body: Same requirements, adds EU-wide mobility — if you might move within the EU one day, request that variant instead.
+
+  - title: Prepare the joining spouse's first residence application
+    key: case.family.first_permit.prepare
+    description: |
+      Prepare and file the joining spouse's own residence application before the
+      national D visa expires. Use the Cologne family-reunification checklist for the
+      passport, visa, marriage evidence, housing and livelihood evidence, and other
+      requested documents. A sponsor whose Blue Card is still pending needs a separate
+      authority check; do not assume that holder-specific exceptions already apply.
+    phase: arrival
+    urgency: critical
+    deadline_type: fact_date
+    deadline_fact_key: visa_expires_at
+    applies_if:
+      current_residence_title: national_d_visa
+      case_goal: family_reunification_permit
+      sponsor_current_title: {in: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_18c, other]}
+      entry_mode: d_visa
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__30.html
+      - https://www.stadt-koeln.de/service/produkte/20335/index.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
+      - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+
+  - title: Confirm which sponsor rules apply while the Blue Card is pending
+    key: case.family.first_permit.sponsor_pending_review
+    type: info
+    description: |
+      The sponsor's Blue Card application is still pending. Cologne's holder-specific
+      family guidance should not be treated as an issuance promise before the sponsor's
+      status is confirmed. Provide the household livelihood information, file the
+      spouse's application on time, and ask the authority which requirements apply to
+      the pending sponsor status.
+    phase: waiting
+    urgency: critical
+    deadline_type: none
+    applies_if:
+      current_residence_title: national_d_visa
+      case_goal: family_reunification_permit
+      sponsor_current_title: blue_card_pending
+      livelihood_secured: {in: ['yes', 'no', unsure]}
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__30.html
+      - https://www.stadt-koeln.de/service/produkte/20335/index.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
+      - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+
+  - title: Renew the family permit before it expires
+    key: case.family.renew.continuing_household
+    conflicts_with: [case.family.independent_after_separation]
+    description: |
+      Because the marital household continues, prepare the family-permit renewal and
+      file it before the current residence title expires. Section 30(3) says the permit
+      may be extended while the marital household continues; it is not an automatic
+      entitlement to approval. A timely application can preserve the existing title's
+      effect while the authority decides, subject to §81 and its exceptions.
+    phase: arrival
+    urgency: critical
+    deadline_type: fact_date
+    deadline_fact_key: residence_title_expires_at
+    applies_if:
+      current_residence_title: family_reunification
+      case_goal: renew_current_title
+      marital_household_continues: true
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__30.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
+      - https://www.stadt-koeln.de/service/produkte/20335/index.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
+      - {kind: primary, label: '§81 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+
+  - title: Review the special settlement option for spouses of §18c holders
+    key: case.family.settlement.spouse_18c_option
+    type: info
+    description: |
+      Section 9(3a) creates a conditional settlement-permit route for a spouse living
+      in a marital household with a person who holds a settlement permit under §18c.
+      Your recorded facts cover the three-year residence-permit period, at least 20
+      working hours, B1 German, livelihood, housing, and legal/social knowledge. The
+      authority must verify all referenced §9 conditions, including public-safety,
+      employment-permission and professional-licence checks; this card is not an
+      eligibility decision.
+    phase: options
+    urgency: medium
+    deadline_type: none
+    applies_if:
+      current_residence_title: family_reunification
+      case_goal: {in: [settlement_permit, renew_current_title]}
+      sponsor_current_title: settlement_permit_18c
+      family_residence_permit_held_since: {at_least_months_ago: 36}
+      marital_household_continues: true
+      weekly_work_hours: {gte: 20}
+      livelihood_secured: 'yes'
+      housing_sufficient: 'yes'
+      legal_social_knowledge_proved: 'yes'
+      german_level: {in: [b1, b2, c1, c2]}
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__9.html
+      - https://www.make-it-in-germany.com/de/visum-aufenthalt/dauerhaft-in-deutschland/niederlassungserlaubnis
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§9(3a) AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
+      - {kind: implementation, label: 'Make it in Germany · settlement permit', url: 'https://www.make-it-in-germany.com/de/visum-aufenthalt/dauerhaft-in-deutschland/niederlassungserlaubnis'}
+
+  - title: Track the general five-year settlement route
+    key: case.family.settlement.general_coming_up
+    type: info
+    description: |
+      Your family residence permit is between three and five years old, so the general
+      §9 route is coming up but is not yet established by duration alone. The usual
+      route requires five years with a residence permit plus the other statutory
+      checks, including livelihood, 60 months of pension contributions where required,
+      B1 German, legal/social knowledge, and sufficient housing. Confirm the complete
+      list with Cologne before applying.
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    applies_if:
+      current_residence_title: family_reunification
+      case_goal: {in: [renew_current_title, understand_options]}
+      family_residence_permit_held_since: {months_ago_between: [36, 59]}
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__9.html
+      - https://www.stadt-koeln.de/service/produkte/20356/index.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§9 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
+      - {kind: implementation, label: 'Stadt Köln · general settlement permit', url: 'https://www.stadt-koeln.de/service/produkte/20356/index.html'}
+
+  - title: Review an independent residence right after separation
+    key: case.family.independent_after_separation
+    type: info
+    conflicts_with: [case.family.renew.continuing_household]
+    description: |
+      If the marital household has ended, §31—not the continuing-household renewal
+      rule—may apply. The authority must verify whether the marital household lawfully
+      existed in Germany for the required period, whether the sponsor died, or whether
+      a statutory hardship exception applies. Do not infer this from the age of the
+      current permit alone; obtain case-specific advice before relying on §31.
+    phase: options
+    urgency: high
+    deadline_type: none
+    applies_if:
+      current_residence_title: family_reunification
+      case_goal: {in: [renew_current_title, understand_options]}
+      marital_household_continues: false
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__31.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: single_source_approved
+    single_source_approved: true
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§31 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__31.html'}

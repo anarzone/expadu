@@ -115,3 +115,122 @@ tasks:
         body: File the online application; the invitation to appear follows once the office can issue the permit. Bring the originals then.
       - title: Ask about Daueraufenthalt-EU at the appointment
         body: Same requirements, adds EU-wide mobility — if you might leave Germany one day, request that variant instead.
+
+  - title: Prepare the evidence for your first Blue Card application
+    key: case.bc.first_application.prepare
+    description: |
+      You currently hold a national D visa and want to change to an EU Blue Card.
+      Prepare the passport, employment contract or binding offer, qualification
+      evidence, health-insurance evidence, and any professional licence the Cologne
+      authority requests. The job offer must cover at least six months and the
+      statutory Blue Card conditions still have to be checked. This is preparation,
+      not a prediction that the application will be approved.
+    phase: arrival
+    urgency: critical
+    deadline_type: fact_date
+    deadline_fact_key: visa_expires_at
+    applies_if:
+      current_residence_title: national_d_visa
+      case_goal: blue_card
+      entry_mode: d_visa
+    documents_required:
+      - Valid passport and national D visa
+      - Employment contract or binding job offer covering at least six months
+      - Qualification evidence and recognition evidence where required
+      - Health-insurance evidence
+      - Professional licence for a regulated profession, where applicable
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20321/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+
+  - title: Submit the Blue Card application before your D visa expires
+    key: case.bc.first_application.submit
+    description: |
+      File the Cologne online residence application before the expiry date shown on
+      your national D visa. Keep the submission confirmation and continue checking
+      official messages for requests or an appointment. The authority decides whether
+      every requirement in §18g is met; Expadu does not decide eligibility.
+    phase: first_30_days
+    urgency: critical
+    deadline_type: fact_date
+    deadline_fact_key: visa_expires_at
+    applies_if:
+      current_residence_title: national_d_visa
+      case_goal: blue_card
+      entry_mode: d_visa
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20321/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+
+  - title: Track the 21-month Blue Card settlement route
+    key: case.bc.settlement.track_21_months
+    type: info
+    description: |
+      With B1 German and 12 documented qualifying months, you are not yet eligible
+      under the 21-month Blue Card route. Keep tracking complete months of qualifying
+      employment and pension or equivalent contributions. At 21 months, the authority
+      must still verify the remaining conditions referenced by §18c(2), including the
+      applicable §9 checks. Time in Germany alone is not the statutory counter.
+    phase: ongoing
+    urgency: medium
+    deadline_type: none
+    applies_if:
+      current_residence_title: blue_card
+      case_goal: settlement_permit
+      blue_card_qualifying_months: {in: [12, 13, 14, 15, 16, 17, 18, 19, 20]}
+      german_level: {in: [b1, b2, c1, c2]}
+    links:
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html
+      - https://www.stadt-koeln.de/service/produkte/20321/index.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+
+  - title: Verify an unrecognized title against the official source
+    key: case.bc.verify_status_source
+    type: info
+    coverage_scope: universal
+    description: |
+      Expadu does not have a reviewed case rule for every residence title. Check the
+      exact legal basis printed on the card or visa and confirm the route with the
+      Cologne immigration authority before acting. General information shown here is
+      not an eligibility decision.
+    phase: options
+    urgency: high
+    deadline_type: none
+    links:
+      - https://www.stadt-koeln.de/service/produkte/20321/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}

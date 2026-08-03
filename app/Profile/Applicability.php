@@ -2,7 +2,9 @@
 
 namespace App\Profile;
 
+use Carbon\CarbonImmutable;
 use DomainException;
+use Throwable;
 
 /**
  * Tri-state task applicability. Unknown means the verdict hinges on an
@@ -130,7 +132,7 @@ enum Applicability
         $operator = array_key_first($expected);
         $operand = $expected[$operator];
 
-        if (! is_string($operator) || ! in_array($operator, ['gte', 'lte', 'in', 'present'], true)) {
+        if (! is_string($operator) || ! in_array($operator, ['gte', 'lte', 'in', 'present', 'at_least_months_ago', 'months_ago_between'], true)) {
             throw new DomainException('Applicability condition uses an unsupported operator.');
         }
 
@@ -154,6 +156,42 @@ enum Applicability
             return in_array($actual, $operand, true) ? self::Yes : self::No;
         }
 
+        if ($operator === 'at_least_months_ago') {
+            if (! is_int($operand) || $operand < 0) {
+                throw new DomainException('The at_least_months_ago applicability operator requires a non-negative integer operand.');
+            }
+
+            return self::evaluateDateAge($actual, $operand);
+        }
+
+        if ($operator === 'months_ago_between') {
+            if (! is_array($operand)
+                || ! array_is_list($operand)
+                || count($operand) !== 2
+                || ! is_int($operand[0])
+                || ! is_int($operand[1])
+                || $operand[0] < 0
+                || $operand[0] > $operand[1]) {
+                throw new DomainException('The months_ago_between applicability operator requires an ascending pair of non-negative integers.');
+            }
+
+            if ($actual === null) {
+                return self::Unknown;
+            }
+
+            $date = self::dateValue($actual);
+
+            if ($date === null) {
+                return self::No;
+            }
+
+            $today = CarbonImmutable::today(config('app.timezone'));
+            $matches = $date->lessThanOrEqualTo($today->subMonthsNoOverflow($operand[0]))
+                && $date->greaterThan($today->subMonthsNoOverflow($operand[1] + 1));
+
+            return $matches ? self::Yes : self::No;
+        }
+
         if (! is_int($operand) && ! is_float($operand)) {
             throw new DomainException("The {$operator} applicability operator requires a numeric operand.");
         }
@@ -171,5 +209,37 @@ enum Applicability
             : $actual <= $operand;
 
         return $matches ? self::Yes : self::No;
+    }
+
+    private static function evaluateDateAge(mixed $actual, int $months): self
+    {
+        if ($actual === null) {
+            return self::Unknown;
+        }
+
+        $date = self::dateValue($actual);
+
+        if ($date === null) {
+            return self::No;
+        }
+
+        return $date->lessThanOrEqualTo(CarbonImmutable::today(config('app.timezone'))->subMonthsNoOverflow($months))
+            ? self::Yes
+            : self::No;
+    }
+
+    private static function dateValue(mixed $value): ?CarbonImmutable
+    {
+        if (! is_string($value) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            return null;
+        }
+
+        try {
+            $date = CarbonImmutable::createFromFormat('!Y-m-d', $value);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $date->format('Y-m-d') === $value ? $date : null;
     }
 }

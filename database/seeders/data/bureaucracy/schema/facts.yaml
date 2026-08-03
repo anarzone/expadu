@@ -17,7 +17,7 @@ residence_title_expires_at:
 
 case_goal:
   type: enum
-  options: [blue_card, renew_current_title, settlement_permit, understand_options]
+  options: [blue_card, family_reunification_permit, renew_current_title, settlement_permit, understand_options]
   question: What do you want to do next with your residence status?
   why: This keeps the checklist focused on your next real decision.
   sensitivity: normal

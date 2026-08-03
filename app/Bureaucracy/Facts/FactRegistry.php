@@ -81,7 +81,7 @@ final class FactRegistry
         $operator = array_key_first($condition);
         $operand = $condition[$operator];
 
-        if (! is_string($operator) || ! in_array($operator, ['gte', 'lte', 'in', 'present'], true)) {
+        if (! is_string($operator) || ! in_array($operator, ['gte', 'lte', 'in', 'present', 'at_least_months_ago', 'months_ago_between'], true)) {
             throw new DomainException("Condition for fact [{$key}] uses an unsupported operator.");
         }
 
@@ -100,6 +100,29 @@ final class FactRegistry
 
             foreach ($operand as $value) {
                 $this->validateConditionValue($definition, $value);
+            }
+
+            return;
+        }
+
+        if ($operator === 'at_least_months_ago') {
+            if ($definition->type !== 'date' || ! is_int($operand) || $operand < 0) {
+                throw new DomainException("The at_least_months_ago operator for fact [{$key}] requires a date fact and non-negative integer operand.");
+            }
+
+            return;
+        }
+
+        if ($operator === 'months_ago_between') {
+            if ($definition->type !== 'date'
+                || ! is_array($operand)
+                || ! array_is_list($operand)
+                || count($operand) !== 2
+                || ! is_int($operand[0])
+                || ! is_int($operand[1])
+                || $operand[0] < 0
+                || $operand[0] > $operand[1]) {
+                throw new DomainException("The months_ago_between operator for fact [{$key}] requires a date fact and an ascending pair of non-negative integers.");
             }
 
             return;

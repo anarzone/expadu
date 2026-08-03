@@ -65,7 +65,132 @@ class BureaucracyPersonas
             ['key' => 'foreign-licence', 'label' => 'EU employee · foreign driving licence', 'situation' => Situation::EuEmployee, 'is_eu' => true, 'path' => null, 'entry_mode' => 'has_permit', 'license' => 'other'],
         ];
 
-        return [...self::coverage(), ...$showcases];
+        return [...self::coverage(), ...$showcases, ...self::caseScenarios()];
+    }
+
+    /**
+     * Legally investigated QA scenarios. These are simulations, not generic
+     * coverage personas: their confirmed facts reproduce the exact branches
+     * in the reviewed case corpus.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function caseScenarios(): array
+    {
+        return [
+            [
+                'key' => 'case-blue-card-first',
+                'label' => 'Case · D-visa worker applying for Blue Card',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee_blue_card',
+                'entry_mode' => 'd_visa',
+                'facts' => [
+                    'current_residence_title' => 'national_d_visa',
+                    'case_goal' => 'blue_card',
+                    'entry_mode' => 'd_visa',
+                    'visa_expires_at' => '2026-10-01',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
+                    'permit_track' => 'blue_card',
+                ],
+            ],
+            [
+                'key' => 'case-family-sponsor-pending',
+                'label' => 'Case · Joining spouse · sponsor Blue Card pending',
+                'situation' => Situation::FamilyReunification,
+                'is_eu' => false,
+                'path' => null,
+                'entry_mode' => 'd_visa',
+                'facts' => [
+                    'current_residence_title' => 'national_d_visa',
+                    'case_goal' => 'family_reunification_permit',
+                    'sponsor_current_title' => 'blue_card_pending',
+                    'entry_mode' => 'd_visa',
+                    'visa_expires_at' => '2026-10-01',
+                    'marital_household_continues' => true,
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'family',
+                ],
+            ],
+            [
+                'key' => 'case-blue-card-b1-12',
+                'label' => 'Case · Blue Card · B1 · 12 qualifying months',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee_blue_card',
+                'entry_mode' => 'has_permit',
+                'facts' => [
+                    'current_residence_title' => 'blue_card',
+                    'case_goal' => 'settlement_permit',
+                    'blue_card_qualifying_months' => 12,
+                    'german_level' => 'b1',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
+                    'permit_track' => 'blue_card',
+                ],
+            ],
+            [
+                'key' => 'case-spouse-18c-three-years',
+                'label' => 'Case · Spouse of §18c holder · three years',
+                'situation' => Situation::FamilyReunification,
+                'is_eu' => false,
+                'path' => null,
+                'entry_mode' => 'has_permit',
+                'facts' => [
+                    'current_residence_title' => 'family_reunification',
+                    'case_goal' => 'settlement_permit',
+                    'sponsor_current_title' => 'settlement_permit_18c',
+                    'family_residence_permit_held_since' => '2023-08-03',
+                    'marital_household_continues' => true,
+                    'weekly_work_hours' => 25,
+                    'livelihood_secured' => 'yes',
+                    'housing_sufficient' => 'yes',
+                    'legal_social_knowledge_proved' => 'yes',
+                    'german_level' => 'b1',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'family',
+                ],
+            ],
+            [
+                'key' => 'case-family-renewal-four-years',
+                'label' => 'Case · Family permit renewal · almost four years',
+                'situation' => Situation::FamilyReunification,
+                'is_eu' => false,
+                'path' => null,
+                'entry_mode' => 'has_permit',
+                'facts' => [
+                    'current_residence_title' => 'family_reunification',
+                    'case_goal' => 'renew_current_title',
+                    'sponsor_current_title' => 'settlement_permit_18c',
+                    'family_residence_permit_held_since' => '2022-09-01',
+                    'marital_household_continues' => true,
+                    'weekly_work_hours' => 25,
+                    'livelihood_secured' => 'yes',
+                    'housing_sufficient' => 'yes',
+                    'legal_social_knowledge_proved' => 'yes',
+                    'german_level' => 'b1',
+                    'residence_title_expires_at' => '2026-09-01',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'family',
+                ],
+            ],
+            [
+                'key' => 'case-unsupported-title',
+                'label' => 'Case · Unsupported current residence title',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee_blue_card',
+                'entry_mode' => 'has_permit',
+                'facts' => [
+                    'current_residence_title' => 'other',
+                    'case_goal' => 'understand_options',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
+                    'permit_track' => 'blue_card',
+                ],
+            ],
+        ];
     }
 
     /**

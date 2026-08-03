@@ -274,6 +274,12 @@ class CoverageCommand extends Command
         // question for its waited-on attribute would be silently hidden.
         $orphanTeasers = [];
         foreach (array_keys($askable) as $key) {
+            // Approved case rules use FactRegistry + QuestionSelector, not the
+            // legacy ProfileEngine teaser map audited by this command.
+            if ($this->tasks[$key]->review_status === RuleSourcePolicy::Approved) {
+                continue;
+            }
+
             $unknownAttrs = Applicability::unknownAttributes($this->tasks[$key]->applies_if, []);
             foreach ($unknownAttrs as $attr) {
                 if (! isset(ProfileEngine::TEASER_QUESTIONS[$attr]) && ! isset($reachable[$key])) {

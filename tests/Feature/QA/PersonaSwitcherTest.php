@@ -32,6 +32,23 @@ test('becoming a planning persona leaves the arrival date empty', function () {
     expect($admin->refresh()->arrival_date)->toBeNull();
 });
 
+test('becoming a case persona synchronizes confirmed facts and switching away retires them', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $admin = User::factory()->onboarded()->create(['is_admin' => true]);
+    $this->actingAs($admin);
+
+    $this->post(route('qa.become', ['persona' => 'case-family-renewal-four-years']))->assertRedirect();
+
+    $case = $admin->refresh()->bureaucracyCase;
+    expect($case)->not->toBeNull()
+        ->and($case->facts()->where('state', 'confirmed')->where('source', 'qa_scenario:case-family-renewal-four-years')->exists())->toBeTrue();
+
+    $this->post(route('qa.become', ['persona' => 'neu-student']))->assertRedirect();
+
+    expect($case->facts()->where('state', 'confirmed')->where('source', 'like', 'qa_scenario:%')->exists())->toBeFalse();
+});
+
 test('a non-admin cannot become a persona', function () {
     $user = User::factory()->onboarded()->create(['is_admin' => false]);
     $this->actingAs($user);

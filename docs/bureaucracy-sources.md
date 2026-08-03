@@ -134,6 +134,30 @@ WITHOUT the badge. ⚠ items ship with "typical requirements" framing.
 - Au pair/WHV/language-course/training-search/researchers/ICT personas get the routing
   card (shared.other_permits) only — no full paths until those personas exist in onboarding.
 
+---
+
+# 2026-08-03 — Investigated residence-case rules
+
+The following rules were reviewed as small, atomic claims. They are the only rules
+used by the deterministic case matcher for the six investigated simulations. Legacy
+checklist cards remain available to the existing journey UI but are not treated as
+authoritative case decisions.
+
+| Rule keys | Reviewed boundary | Primary law | Cologne/federal implementation |
+|---|---|---|---|
+| `case.bc.first_application.prepare`, `case.bc.first_application.submit` | National D-visa holder preparing and filing a first EU Blue Card application; deadline comes from the recorded visa expiry. No approval prediction and no salary number is hard-coded. | [§18g AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html) | [Stadt Köln · EU Blue Card](https://www.stadt-koeln.de/service/produkte/20321/index.html) |
+| `case.bc.settlement.track_21_months` | A B1 Blue Card holder with 12–20 documented qualifying months is tracked as “coming up,” explicitly not yet eligible. Remaining §9 checks stay with the authority. | [§18c AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html) | [Stadt Köln · EU Blue Card](https://www.stadt-koeln.de/service/produkte/20321/index.html) |
+| `case.family.register_address` | Address registration within two weeks of moving into the dwelling; shown only for the investigated arrival case. | [§17 BMG](https://www.gesetze-im-internet.de/bmg/__17.html) | [Stadt Köln · Anmeldung](https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1) |
+| `case.family.first_permit.prepare`, `case.family.first_permit.sponsor_pending_review` | Joining spouse on a D visa. A sponsor’s pending Blue Card is an unresolved branch, not a holder-status exception or issuance promise. | [§30 AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__30.html) | [Stadt Köln · family reunification](https://www.stadt-koeln.de/service/produkte/20335/index.html) |
+| `case.family.renew.continuing_household` | Continuing marital household: renewal may be possible under §30(3); timely filing is tracked against the recorded permit expiry and §81 is described with its limits. | [§30](https://www.gesetze-im-internet.de/aufenthg_2004/__30.html), [§81 AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__81.html) | [Stadt Köln · family reunification](https://www.stadt-koeln.de/service/produkte/20335/index.html) |
+| `case.family.settlement.spouse_18c_option` | Conditional §9(3a) option only when the recorded three-year, household, 20-hour, B1 and referenced §9 facts match. Still not an eligibility decision. | [§9(3a) AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__9.html) | [Make it in Germany · settlement permit](https://www.make-it-in-germany.com/de/visum-aufenthalt/dauerhaft-in-deutschland/niederlassungserlaubnis) |
+| `case.family.settlement.general_coming_up` | General five-year route is “coming up” at 36–59 complete months; duration alone never produces eligibility. | [§9 AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__9.html) | [Stadt Köln · general settlement permit](https://www.stadt-koeln.de/service/produkte/20356/index.html) |
+| `case.family.independent_after_separation` | §31 is shown only after the household is reported ended. The app does not infer the statutory marital-household period from permit age. | [§31 AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__31.html) | Single-source publication explicitly approved; case-specific authority/lawyer review is required. |
+
+All cards remain guidance and can be incomplete or wrong; the product must tell users
+to verify the current official source or competent authority before relying on it. Unsupported
+titles remain `not_covered`; universal guidance never changes that state to `matched`.
+
 ## Path-refinement model
 `users.bureaucracy_path` + ProfileEngine::PATH_OPTIONS map sub-paths:
 non_eu_employee → standard | blue_card | chancenkarte; family_reunification →

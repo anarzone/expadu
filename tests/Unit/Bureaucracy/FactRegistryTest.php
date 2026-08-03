@@ -116,7 +116,7 @@ test('the case goal enum registers its canonical route options', function () {
     $registry = new FactRegistry(bureaucracyCataloguePath());
     $definition = $registry->definition('case_goal');
 
-    expect($definition->options)->toBe(['blue_card', 'renew_current_title', 'settlement_permit', 'understand_options']);
+    expect($definition->options)->toBe(['blue_card', 'family_reunification_permit', 'renew_current_title', 'settlement_permit', 'understand_options']);
 });
 
 /*

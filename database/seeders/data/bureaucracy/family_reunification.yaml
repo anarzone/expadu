@@ -209,3 +209,31 @@ tasks:
         body: Volkshochschule (VHS), language schools, and community providers all run BAMF-certified courses. Search by postcode on the BAMF website.
       - title: Apply for the Berechtigungsschein
         body: This entitles you to the subsidised rate (~€2.29/lesson vs. full price ~€4.40). Apply at BAMF; takes 4–6 weeks.
+
+  - title: Register the joining spouse's address
+    key: case.family.register_address
+    description: |
+      Register the spouse's Cologne address within two weeks after moving into the
+      dwelling. Bring the passport and the landlord's Wohnungsgeberbestätigung; the
+      Cologne page lists the additional documents required for people arriving from
+      abroad. This deadline is tied to moving into the dwelling, not visa issuance.
+    phase: arrival
+    urgency: critical
+    deadline_type: days_since_move_in
+    deadline_days: 14
+    applies_if:
+      current_residence_title: national_d_visa
+      entry_mode: d_visa
+    booking_service_key: anmeldung
+    links:
+      - https://www.gesetze-im-internet.de/bmg/__17.html
+      - https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-03.1
+    source_verification: dual_source
+    verified_at: '2026-08-03'
+    legal_sources:
+      - {kind: primary, label: '§17 BMG', url: 'https://www.gesetze-im-internet.de/bmg/__17.html'}
+      - {kind: implementation, label: 'Stadt Köln · Anmeldung', url: 'https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1'}

@@ -181,6 +181,8 @@ test('approved imports accept registered condition operators and fact-date deadl
         task4ApprovedRule('operator.lte', ['applies_if' => ['blue_card_qualifying_months' => ['lte' => 27]]]),
         task4ApprovedRule('operator.in', ['applies_if' => ['german_level' => ['in' => ['b1', 'b2', 'c1', 'c2']]]]),
         task4ApprovedRule('operator.present', ['applies_if' => ['residence_title_expires_at' => ['present' => true]]]),
+        task4ApprovedRule('operator.at-least-months-ago', ['applies_if' => ['family_residence_permit_held_since' => ['at_least_months_ago' => 36]]]),
+        task4ApprovedRule('operator.months-ago-between', ['applies_if' => ['family_residence_permit_held_since' => ['months_ago_between' => [36, 59]]]]),
         task4ApprovedRule('operator.scalar', ['applies_if' => ['case_goal' => 'blue_card']]),
         task4ApprovedRule('operator.legacy-list', ['applies_if' => ['case_goal' => ['blue_card', 'renew_current_title']]]),
         task4ApprovedRule('deadline.fact-date', [
@@ -198,10 +200,12 @@ test('approved imports accept registered condition operators and fact-date deadl
             'operator.lte',
             'operator.in',
             'operator.present',
+            'operator.at-least-months-ago',
+            'operator.months-ago-between',
             'operator.scalar',
             'operator.legacy-list',
             'deadline.fact-date',
-        ])->count())->toBe(7)
+        ])->count())->toBe(9)
             ->and(Task::where('key', 'deadline.fact-date')->firstOrFail()->deadline_type->value)->toBe('fact_date')
             ->and(Task::where('key', 'deadline.fact-date')->value('deadline_fact_key'))
             ->toBe('residence_title_expires_at');
@@ -235,6 +239,10 @@ test('approved imports reject malformed or unregistered condition operands atomi
     'comparison on enum fact' => [['german_level' => ['gte' => 20]]],
     'non-integer comparison operand' => [['weekly_work_hours' => ['gte' => '20']]],
     'non-boolean present operand' => [['residence_title_expires_at' => ['present' => 1]]],
+    'date age operator on an integer fact' => [['weekly_work_hours' => ['at_least_months_ago' => 36]]],
+    'negative date age' => [['family_residence_permit_held_since' => ['at_least_months_ago' => -1]]],
+    'descending date age range' => [['family_residence_permit_held_since' => ['months_ago_between' => [60, 36]]]],
+    'short date age range' => [['family_residence_permit_held_since' => ['months_ago_between' => [36]]]],
 ]);
 
 test('fact-date imports require a registered date fact', function (?string $factKey) {

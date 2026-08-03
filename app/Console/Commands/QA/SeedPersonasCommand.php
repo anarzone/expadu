@@ -4,6 +4,7 @@ namespace App\Console\Commands\QA;
 
 use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\PathGenerator;
+use App\Bureaucracy\QA\ScenarioFactSynchronizer;
 use App\Enums\Situation;
 use App\Models\User;
 use App\Profile\Interest;
@@ -42,8 +43,10 @@ class SeedPersonasCommand extends Command
      */
     private const ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'app.staging.expadu.com'];
 
-    public function __construct(private PathGenerator $paths)
-    {
+    public function __construct(
+        private PathGenerator $paths,
+        private ScenarioFactSynchronizer $scenarioFacts,
+    ) {
         parent::__construct();
     }
 
@@ -106,6 +109,7 @@ class SeedPersonasCommand extends Command
         ])->save();
 
         $this->ensurePlaces($user);
+        $this->scenarioFacts->sync($user, $persona);
 
         if ($fresh) {
             $user->userTasks()->delete();

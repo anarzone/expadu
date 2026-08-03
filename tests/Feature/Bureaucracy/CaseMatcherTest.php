@@ -126,6 +126,65 @@ test('an unresolved approved case rule produces needs information with its regis
         ->and($result->missingFactKeys)->toBe(['case_goal']);
 });
 
+test('unresolved high impact branches keep safe matches visible without claiming full coverage', function () {
+    task5MatcherRule('case.safe-registration', [['purpose' => 'family']]);
+    task5MatcherRule('case.sponsor-dependent', [[
+        'purpose' => 'family',
+        'sponsor_current_title' => 'blue_card',
+    ]]);
+
+    $case = task5MatcherCase(['purpose' => 'family']);
+    $result = app(CaseMatcher::class)->match($case);
+    $sections = app(CasePlanComposer::class)->compose($case, $result);
+
+    expect($result->coverageState)->toBe(BureaucracyCoverageState::NeedsInformation)
+        ->and($result->safeRuleKeys)->toBe(['case.safe-registration'])
+        ->and(collect($sections['do_now'])->pluck('key')->all())->toBe(['case.safe-registration'])
+        ->and(collect($sections['information_needed'])->pluck('key')->all())->toBe(['case.sponsor-dependent']);
+});
+
+test('matcher accepts exact trusted predicates compiled from a persona branch', function () {
+    task5MatcherRule('case.family-branch', [[
+        'purpose' => 'family',
+        'sponsor' => 'non_eu',
+        'case_goal' => 'renew_current_title',
+    ]]);
+
+    $result = app(CaseMatcher::class)->match(task5MatcherCase([
+        'case_goal' => 'renew_current_title',
+    ], [
+        'situation' => 'family_reunification',
+    ]));
+
+    expect($result->coverageState)->toBe(BureaucracyCoverageState::Matched)
+        ->and($result->matchedRuleKeys)->toBe(['case.family-branch']);
+});
+
+test('composer routes informational phases and exposes fact-date deadlines', function () {
+    task5MatcherRule('case.timeline', [['case_goal' => 'settlement_permit']], [
+        'type' => 'info',
+        'phase' => 'ongoing',
+    ]);
+    task5MatcherRule('case.pending', [['case_goal' => 'settlement_permit']], [
+        'type' => 'info',
+        'phase' => 'waiting',
+    ]);
+    task5MatcherRule('case.renew', [['case_goal' => 'settlement_permit']], [
+        'deadline_type' => 'fact_date',
+        'deadline_fact_key' => 'residence_title_expires_at',
+    ]);
+
+    $case = task5MatcherCase([
+        'case_goal' => 'settlement_permit',
+        'residence_title_expires_at' => '2026-09-01',
+    ]);
+    $sections = app(CasePlanComposer::class)->compose($case, app(CaseMatcher::class)->match($case));
+
+    expect(collect($sections['coming_up'])->pluck('key')->all())->toBe(['case.timeline'])
+        ->and(collect($sections['waiting'])->pluck('key')->all())->toBe(['case.pending'])
+        ->and(collect($sections['do_now'])->firstWhere('key', 'case.renew')['deadline'])->toBe('2026-09-01');
+});
+
 test('universal guidance cannot turn an unsupported case into matched', function () {
     task5MatcherRule('case.blue-card', [[
         'current_residence_title' => 'blue_card',

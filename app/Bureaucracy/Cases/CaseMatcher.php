@@ -84,8 +84,8 @@ final class CaseMatcher
 
         $coverageState = match (true) {
             $conflictPairs !== [] => BureaucracyCoverageState::Conflict,
-            $matched !== [] => BureaucracyCoverageState::Matched,
             $unknown !== [] => BureaucracyCoverageState::NeedsInformation,
+            $matched !== [] => BureaucracyCoverageState::Matched,
             default => BureaucracyCoverageState::NotCovered,
         };
 
@@ -177,7 +177,13 @@ final class CaseMatcher
                         return false;
                     }
 
-                    $this->factRegistry->validateConditionOperand($key, $condition);
+                    try {
+                        $this->factRegistry->validateConditionOperand($key, $condition);
+                    } catch (DomainException $exception) {
+                        if (! $this->isTrustedBranchPredicate($key, $condition)) {
+                            throw $exception;
+                        }
+                    }
                 }
             }
         } catch (DomainException) {
@@ -196,6 +202,17 @@ final class CaseMatcher
         } catch (DomainException) {
             return false;
         }
+    }
+
+    private function isTrustedBranchPredicate(string $key, mixed $condition): bool
+    {
+        foreach (ProfileEngine::BRANCH_PREDICATES as $predicate) {
+            if (array_key_exists($key, $predicate) && $predicate[$key] === $condition) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

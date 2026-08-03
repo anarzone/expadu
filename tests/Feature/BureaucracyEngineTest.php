@@ -23,6 +23,10 @@ dataset('applicability', [
     'present false matches null' => [[['residence_title_expires_at' => ['present' => false]]], ['residence_title_expires_at' => null], Applicability::Yes],
     'missing value stays unknown for comparisons' => [[['blue_card_qualifying_months' => ['gte' => 20]]], [], Applicability::Unknown],
     'numeric comparison rejects a non-numeric actual value' => [[['blue_card_qualifying_months' => ['gte' => 20]]], ['blue_card_qualifying_months' => 'twenty'], Applicability::No],
+    'date age matches an exact month boundary' => [[['family_residence_permit_held_since' => ['at_least_months_ago' => 36]]], ['family_residence_permit_held_since' => '2023-08-03'], Applicability::Yes],
+    'date age rejects one day before the month boundary' => [[['family_residence_permit_held_since' => ['at_least_months_ago' => 36]]], ['family_residence_permit_held_since' => '2023-08-04'], Applicability::No],
+    'date age range matches a four year old permit' => [[['family_residence_permit_held_since' => ['months_ago_between' => [36, 59]]]], ['family_residence_permit_held_since' => '2022-09-01'], Applicability::Yes],
+    'date age range excludes a permit at the five year boundary' => [[['family_residence_permit_held_since' => ['months_ago_between' => [36, 59]]]], ['family_residence_permit_held_since' => '2021-08-03'], Applicability::No],
     'AND within group fails on one condition' => [
         [['purpose' => 'employment', 'citizenship_group' => 'eu']],
         ['purpose' => 'employment', 'citizenship_group' => 'non_eu'],
@@ -51,6 +55,8 @@ dataset('applicability', [
 ]);
 
 test('applies_if evaluation is tri-state', function (?array $appliesIf, array $attributes, Applicability $expected) {
+    $this->travelTo('2026-08-03 10:00:00');
+
     expect(Applicability::evaluate($appliesIf, $attributes))->toBe($expected);
 })->with('applicability');
 
@@ -72,6 +78,8 @@ test('malformed operator conditions fail explicitly', function (mixed $condition
     'non-numeric comparison operand' => [['gte' => 'twenty']],
     'non-list in operand' => [['in' => 'b1']],
     'non-boolean present operand' => [['present' => 1]],
+    'invalid date age operand' => [['at_least_months_ago' => -1]],
+    'invalid date age range' => [['months_ago_between' => [60, 36]]],
 ])->throws(DomainException::class);
 
 // ── Table-driven path fixtures over the REAL catalogue ─────────────────

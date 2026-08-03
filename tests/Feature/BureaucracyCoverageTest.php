@@ -1,5 +1,6 @@
 <?php
 
+use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\PathGenerator;
 use App\Models\Task;
 use App\Models\User;
@@ -23,8 +24,10 @@ use Illuminate\Support\Facades\Artisan;
 it('yields a complete, gap-free path for every persona', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
-    $this->artisan('bureaucracy:coverage', ['--full' => true, '--fail-on-gap' => true])
-        ->assertExitCode(0);
+    $exitCode = Artisan::call('bureaucracy:coverage', ['--full' => true, '--fail-on-gap' => true]);
+
+    expect($exitCode)->toBe(0)
+        ->and(Artisan::output())->toContain('✓ No gaps.');
 });
 
 /**
@@ -62,6 +65,36 @@ it('does not publish known stale bureaucracy links or figures', function () {
         ->not->toContain('stadt-koeln.de/service/produkt/anmeldung-einer-wohnung')
         ->not->toContain('rundfunkbeitrag.de/en/')
         ->not->toContain('Up to €934/month');
+});
+
+it('keeps every investigated case rule authoritative and every scenario in the QA roster', function () {
+    $this->travelTo('2026-08-03 10:00:00');
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $expectedRuleKeys = [
+        'case.bc.first_application.prepare',
+        'case.bc.first_application.submit',
+        'case.bc.settlement.track_21_months',
+        'case.bc.verify_status_source',
+        'case.family.first_permit.prepare',
+        'case.family.first_permit.sponsor_pending_review',
+        'case.family.independent_after_separation',
+        'case.family.register_address',
+        'case.family.renew.continuing_household',
+        'case.family.settlement.general_coming_up',
+        'case.family.settlement.spouse_18c_option',
+    ];
+
+    expect(Task::query()->authoritative()->whereIn('key', $expectedRuleKeys)->orderBy('key')->pluck('key')->all())
+        ->toBe($expectedRuleKeys)
+        ->and(collect(BureaucracyPersonas::caseScenarios())->pluck('key')->all())->toBe([
+            'case-blue-card-first',
+            'case-family-sponsor-pending',
+            'case-blue-card-b1-12',
+            'case-spouse-18c-three-years',
+            'case-family-renewal-four-years',
+            'case-unsupported-title',
+        ]);
 });
 
 /**

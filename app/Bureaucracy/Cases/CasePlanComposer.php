@@ -2,12 +2,14 @@
 
 namespace App\Bureaucracy\Cases;
 
+use App\Bureaucracy\Facts\CaseFactStore;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\BureaucracyCoverageState;
 use App\Enums\TaskStatus;
 use App\Models\BureaucracyCase;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\UserTask;
 use Illuminate\Support\Collection;
 
@@ -27,6 +29,7 @@ final class CasePlanComposer
 
     public function __construct(
         private FactRegistry $factRegistry,
+        private CaseFactStore $factStore,
         private RuleSourcePolicy $sourcePolicy,
     ) {}
 
@@ -36,6 +39,7 @@ final class CasePlanComposer
     public function compose(BureaucracyCase $case, CaseMatchResult $result): array
     {
         $sections = array_fill_keys(self::SectionKeys, []);
+        $user = $case->user()->firstOrFail();
         $visibleKeys = array_values(array_unique([
             ...$result->safeRuleKeys,
             ...$result->universalRuleKeys,
@@ -69,7 +73,7 @@ final class CasePlanComposer
 
             $userTask = $userTasks->get($task->id);
             $section = $this->sectionFor($task, $userTask, $doneKeys);
-            $sections[$section][] = $this->taskItem($task);
+            $sections[$section][] = $this->taskItem($case, $user, $task);
         }
 
         foreach ($result->unknownRuleKeys as $key) {
@@ -92,7 +96,7 @@ final class CasePlanComposer
             }
 
             $sections['information_needed'][] = [
-                ...$this->taskItem($task),
+                ...$this->taskItem($case, $user, $task),
                 'missing_fact_keys' => $missingFacts,
                 'questions' => $questions,
             ];
@@ -145,7 +149,11 @@ final class CasePlanComposer
         }
 
         if ($task->isInfo()) {
-            return 'options';
+            return match ($task->phase) {
+                'ongoing' => 'coming_up',
+                'waiting' => 'waiting',
+                default => 'options',
+            };
         }
 
         return match ($task->phase) {
@@ -174,8 +182,15 @@ final class CasePlanComposer
     /**
      * @return array<string, mixed>
      */
-    private function taskItem(Task $task): array
+    private function taskItem(BureaucracyCase $case, User $user, Task $task): array
     {
+        $attributes = null;
+
+        if ($task->deadline_type?->value === 'fact_date' && is_string($task->deadline_fact_key)) {
+            $fact = $this->factStore->confirmedFact($case, $task->deadline_fact_key);
+            $attributes = [$task->deadline_fact_key => $fact?->value];
+        }
+
         return [
             'key' => $task->key,
             'content_version' => $task->content_version,
@@ -185,6 +200,7 @@ final class CasePlanComposer
             'phase' => $task->phase,
             'urgency' => $task->urgency?->value,
             'depends_on' => $task->depends_on ?? [],
+            'deadline' => $task->computeDeadlineFor($user, $attributes)?->toDateString(),
         ];
     }
 }
