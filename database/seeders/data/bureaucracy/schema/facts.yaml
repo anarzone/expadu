@@ -1,0 +1,146 @@
+current_residence_title:
+  type: enum
+  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_18c, other]
+  question: Which German visa or residence title do you currently hold?
+  why: Your current title changes the application route and which deadline applies.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 180
+
+residence_title_expires_at:
+  type: date
+  question: When does your current visa or residence permit expire?
+  why: We use this date to warn you before your current permission ends.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 180
+
+case_goal:
+  type: enum
+  options: [blue_card, renew_current_title, settlement_permit, understand_options]
+  question: What do you want to do next with your residence status?
+  why: This keeps the checklist focused on your next real decision.
+  sensitivity: normal
+  priority: 90
+  reconfirm_after_days: 180
+
+sponsor_current_title:
+  type: enum
+  options: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_18c, other]
+  question: Which German residence status does your spouse currently have?
+  why: Family-reunification and settlement options depend on the sponsor's current title.
+  sensitivity: high
+  priority: 95
+  reconfirm_after_days: 180
+
+blue_card_qualifying_months:
+  type: integer
+  question: How many complete months of qualifying Blue Card employment and pension or equivalent contributions can you document?
+  why: The 21- and 27-month settlement routes count qualifying months, not simply time in Germany.
+  sensitivity: high
+  priority: 90
+  reconfirm_after_days: 30
+
+family_residence_permit_held_since:
+  type: date
+  question: Since when have you continuously held your family-reunification residence permit?
+  why: Several renewal and settlement routes use the duration of this permit.
+  sensitivity: high
+  priority: 85
+  reconfirm_after_days: 180
+
+marital_household_continues:
+  type: boolean
+  question: Do you and your spouse still live together as a married household in Germany?
+  why: Continuing family residence and an independent residence right follow different rules.
+  sensitivity: high
+  priority: 95
+  reconfirm_after_days: 180
+
+weekly_work_hours:
+  type: integer
+  question: How many hours per week do you currently work?
+  why: One spouse settlement route requires at least 20 hours of work per week.
+  sensitivity: normal
+  priority: 80
+  reconfirm_after_days: 90
+
+livelihood_secured:
+  type: enum
+  options: ['yes', 'no', unsure]
+  question: Is your household livelihood currently secured without Bürgergeld or Sozialhilfe?
+  why: Residence and settlement routes can depend on secured livelihood.
+  sensitivity: high
+  priority: 75
+  reconfirm_after_days: 90
+
+housing_sufficient:
+  type: enum
+  options: ['yes', 'no', unsure]
+  question: Do you believe your household has sufficient living space for everyone registered there?
+  why: The authority checks sufficient housing for several settlement routes.
+  sensitivity: normal
+  priority: 60
+  reconfirm_after_days: 180
+
+legal_social_knowledge_proved:
+  type: enum
+  options: ['yes', 'no', unsure]
+  question: Can you prove basic knowledge of Germany's legal and social system, for example with Leben in Deutschland?
+  why: This is one of the statutory settlement-permit checks.
+  sensitivity: normal
+  priority: 55
+  reconfirm_after_days: 365
+
+entry_mode:
+  type: enum
+  options: [d_visa, visa_free, has_permit]
+  question: How did you enter Germany for your current stay?
+  why: Your entry mode determines which residence deadline applies.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 180
+
+visa_expires_at:
+  type: date
+  question: When does your entry visa expire?
+  why: We use this date to calculate your residence-application deadline.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 180
+
+german_level:
+  type: enum
+  options: [none, a1, a2, b1, b2, c1, c2]
+  question: What is your current German level?
+  why: Language requirements and faster settlement routes depend on your documented level.
+  sensitivity: normal
+  priority: 70
+  reconfirm_after_days: 180
+
+citizenship_group:
+  type: enum
+  options: [eu, non_eu]
+  question: Which citizenship group applies to you?
+  why: EU and non-EU citizens follow different residence procedures.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 365
+
+purpose:
+  type: enum
+  options: [employment, study, freelance, family, digital_nomad, other]
+  question: What is the main purpose of your stay in Germany?
+  why: Your purpose determines which residence route and checklist apply.
+  sensitivity: normal
+  priority: 100
+  reconfirm_after_days: 180
+
+permit_track:
+  type: enum
+  options: [standard, blue_card, chancenkarte]
+  question: Which employment residence track are you following?
+  why: Standard work permits, Blue Cards, and Chancenkarte cases have different requirements.
+  sensitivity: high
+  priority: 95
+  reconfirm_after_days: 180
