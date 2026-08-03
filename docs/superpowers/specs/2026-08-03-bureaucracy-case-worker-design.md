@@ -1,7 +1,7 @@
 # Bureaucracy Case Worker — Product and Architecture Design
 
 **Date:** 2026-08-03
-**Status:** Approved concept; written specification awaiting user review
+**Status:** Approved for implementation
 **Scope:** Expadu onboarding, bureaucracy case clarification, verified-rule matching, personalized plans, and uncovered-case reporting
 
 ## 1. Decision
