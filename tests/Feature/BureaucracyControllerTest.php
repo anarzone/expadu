@@ -1,7 +1,12 @@
 <?php
 
+use App\Enums\TaskStatus;
+use App\Models\BureaucracyCase;
+use App\Models\BureaucracyCaseFact;
+use App\Models\BureaucracyFactConflict;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\UserTask;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -94,6 +99,7 @@ test('live bureaucracy page exposes a source-backed verified case plan', functio
             ->where('casePlan.sections.do_now.0.verified_at', '2026-08-03')
             ->where('casePlan.sections.do_now.0.status', 'not_started')
             ->where('casePlan.sections.do_now.0.documents_required.0', 'Valid passport')
+            ->where('casePlan.sections.do_now.0.documents_checked', [])
             ->where('casePlan.next_question', null)
             ->has('casePlan.generated_at')
             ->etc());
@@ -132,5 +138,81 @@ test('live bureaucracy page exposes one server-issued clarification question', f
                 ->missing('case_id')
                 ->missing('fact_key')
                 ->missing('source'))
+            ->etc());
+});
+
+test('live bureaucracy page exposes one sanitized conflict choice and no competing question', function () {
+    bureaucracyControllerApprovedRule('case.conflict-route', [['case_goal' => 'blue_card']]);
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'other',
+        'is_eu' => false,
+        'german_level' => null,
+        'profile_attributes' => [],
+    ]);
+    $case = BureaucracyCase::factory()->for($user)->create();
+    $existing = BureaucracyCaseFact::factory()->for($case, 'case')->create([
+        'key' => 'case_goal',
+        'value' => 'blue_card',
+        'state' => 'confirmed',
+        'reconfirm_at' => now()->subDay(),
+    ]);
+    $candidate = BureaucracyCaseFact::factory()->for($case, 'case')->candidate()->create([
+        'key' => 'case_goal',
+        'value' => 'settlement_permit',
+    ]);
+    BureaucracyFactConflict::factory()->for($case, 'case')->create([
+        'fact_key' => 'case_goal',
+        'existing_fact_id' => $existing->id,
+        'candidate_fact_id' => $candidate->id,
+        'status' => 'unresolved',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('bureaucracy'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('casePlan.coverage_state', 'conflict')
+            ->where('casePlan.next_question', null)
+            ->has('casePlan.active_conflict', fn (Assert $conflict) => $conflict
+                ->has('id')
+                ->where('question', 'What do you want to do next with your residence status?')
+                ->where('options.0.choice', 'existing')
+                ->where('options.0.label', 'EU Blue Card')
+                ->where('options.0.context', 'Previously confirmed')
+                ->where('options.1.choice', 'candidate')
+                ->where('options.1.label', 'Apply for a settlement permit')
+                ->where('options.1.context', 'New answer')
+                ->missing('fact_key')
+                ->missing('existing_fact_id')
+                ->missing('candidate_fact_id'))
+            ->etc());
+});
+
+test('an inapplicable historical task is presented as a fresh applicable step', function () {
+    $task = bureaucracyControllerApprovedRule('case.reappeared', [['case_goal' => 'blue_card']]);
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'other',
+        'is_eu' => false,
+        'german_level' => null,
+        'profile_attributes' => [],
+    ]);
+    $case = BureaucracyCase::factory()->for($user)->create();
+    BureaucracyCaseFact::factory()->for($case, 'case')->create([
+        'key' => 'case_goal',
+        'value' => 'blue_card',
+        'state' => 'confirmed',
+    ]);
+    UserTask::factory()->for($user)->for($task)->create([
+        'status' => TaskStatus::Submitted,
+        'is_applicable' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('bureaucracy'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('casePlan.sections.do_now.0.key', 'case.reappeared')
+            ->where('casePlan.sections.do_now.0.status', 'not_started')
+            ->where('casePlan.sections.waiting', [])
             ->etc());
 });

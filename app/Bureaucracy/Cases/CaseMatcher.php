@@ -7,6 +7,7 @@ use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\BureaucracyCoverageState;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
+use App\Models\BureaucracyFactConflict;
 use App\Models\Task;
 use App\Profile\Applicability;
 use App\Profile\ProfileEngine;
@@ -82,7 +83,12 @@ final class CaseMatcher
         $missingFacts = array_values(array_unique(array_merge(...array_values($missingFactsByRule) ?: [[]])));
         sort($missingFacts, SORT_STRING);
 
+        $hasUnresolvedFactConflict = BureaucracyFactConflict::query()
+            ->where('case_id', $case->getKey())
+            ->where('status', 'unresolved')
+            ->exists();
         $coverageState = match (true) {
+            $hasUnresolvedFactConflict => BureaucracyCoverageState::Conflict,
             $conflictPairs !== [] => BureaucracyCoverageState::Conflict,
             $unknown !== [] => BureaucracyCoverageState::NeedsInformation,
             $matched !== [] => BureaucracyCoverageState::Matched,

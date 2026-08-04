@@ -1,6 +1,7 @@
 import { IconCalendarPlus, IconPhone, IconWorld } from '@tabler/icons-react';
 import type { IconProps } from '@tabler/icons-react';
 import type { ComponentType, ReactNode } from 'react';
+import type { CasePlan } from '@/components/bureaucracy/case-plan-types';
 import type { Buckets } from '@/components/bureaucracy/checklist-framing-b';
 import { ICON_STROKE } from '@/constants/icons';
 
@@ -54,7 +55,69 @@ function deadlineTag(days: number | null): string {
     return `${days} days`;
 }
 
-export function BureaucracyRightPanel({ tasks }: { tasks: Buckets }) {
+type RightPanelDeadline = {
+    key: string;
+    title: string;
+    deadline: string;
+    tag: string;
+    tone: string;
+};
+
+function verifiedPlanDeadlines(plan: CasePlan): RightPanelDeadline[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return Object.entries(plan.sections)
+        .flatMap(([section, entries]) =>
+            section === 'information_needed' || section === 'not_covered'
+                ? []
+                : entries,
+        )
+        .filter(
+            (item) =>
+                item.key &&
+                item.title &&
+                item.deadline &&
+                item.status !== 'done',
+        )
+        .map((item) => {
+            const deadline = item.deadline as string;
+            const due = new Date(`${deadline}T00:00:00`);
+            const days = Math.round(
+                (due.getTime() - today.getTime()) / 86_400_000,
+            );
+            const tier =
+                days < 0
+                    ? 'overdue'
+                    : days <= 7
+                      ? 'critical'
+                      : days <= 30
+                        ? 'urgent'
+                        : 'on_track';
+
+            return {
+                key: item.key as string,
+                title: item.title as string,
+                deadline,
+                tag: deadlineTag(days),
+                tone: TIER_STYLES[tier],
+            };
+        })
+        .sort(
+            (left, right) =>
+                new Date(left.deadline).getTime() -
+                new Date(right.deadline).getTime(),
+        )
+        .slice(0, 3);
+}
+
+export function BureaucracyRightPanel({
+    tasks,
+    casePlan,
+}: {
+    tasks: Buckets;
+    casePlan?: CasePlan | null;
+}) {
     // The user's real next deadlines — closest first, max three.
     const upcoming = [...(tasks?.active ?? []), ...(tasks?.upcoming ?? [])]
         .filter(
@@ -67,6 +130,7 @@ export function BureaucracyRightPanel({ tasks }: { tasks: Buckets }) {
         )
         .sort((a, b) => (a.days_remaining ?? 0) - (b.days_remaining ?? 0))
         .slice(0, 3);
+    const caseDeadlines = casePlan ? verifiedPlanDeadlines(casePlan) : [];
 
     return (
         <>
@@ -96,7 +160,38 @@ export function BureaucracyRightPanel({ tasks }: { tasks: Buckets }) {
             </RpBlock>
 
             {/* The user's actual upcoming deadlines */}
-            {upcoming.length > 0 && (
+            {casePlan && caseDeadlines.length > 0 && (
+                <RpBlock title="Your verified deadlines">
+                    {caseDeadlines.map((deadline) => (
+                        <div
+                            key={deadline.key}
+                            className="flex items-start gap-2.5 border-b border-[#E2DFD6] px-[15px] py-[11px] last:border-b-0 dark:border-[#3A3930]"
+                        >
+                            <div className="min-w-0 flex-1">
+                                <div className="text-xs leading-4 font-semibold text-[#18170F] dark:text-[#F6F5F1]">
+                                    {deadline.title}
+                                </div>
+                                <div className="mt-0.5 text-[11px] text-[#6B6860] dark:text-[#AAA89F]">
+                                    check or act by{' '}
+                                    {new Date(
+                                        `${deadline.deadline}T00:00:00`,
+                                    ).toLocaleDateString('en-GB', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                    })}
+                                </div>
+                            </div>
+                            <span
+                                className={`mt-px shrink-0 rounded-[20px] px-1.5 py-0.5 text-[9px] font-bold tracking-[0.04em] uppercase ${deadline.tone}`}
+                            >
+                                {deadline.tag}
+                            </span>
+                        </div>
+                    ))}
+                </RpBlock>
+            )}
+
+            {!casePlan && upcoming.length > 0 && (
                 <RpBlock title="Your next deadlines">
                     {upcoming.map((t) => (
                         <div

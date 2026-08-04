@@ -89,23 +89,24 @@ final class CasePlanComposer
             foreach ($missingFacts as $factKey) {
                 $definition = $this->factRegistry->definition($factKey);
                 $questions[] = [
-                    'fact_key' => $factKey,
                     'question' => $definition->question,
                     'why' => $definition->why,
                 ];
             }
 
             $sections['information_needed'][] = [
-                ...$this->taskItem($case, $user, $task),
-                'missing_fact_keys' => $missingFacts,
+                'kind' => 'information_needed',
                 'questions' => $questions,
             ];
         }
 
-        if ($result->coverageState === BureaucracyCoverageState::NotCovered) {
+        if (in_array($result->coverageState, [
+            BureaucracyCoverageState::NotCovered,
+            BureaucracyCoverageState::Conflict,
+        ], true)) {
             $sections['not_covered'][] = [
                 'kind' => 'coverage_notice',
-                'coverage_state' => BureaucracyCoverageState::NotCovered->value,
+                'coverage_state' => $result->coverageState->value,
             ];
         }
 
@@ -140,6 +141,10 @@ final class CasePlanComposer
      */
     private function sectionFor(Task $task, ?UserTask $userTask, Collection $doneKeys): string
     {
+        if ($userTask instanceof UserTask && ! $userTask->is_applicable) {
+            $userTask = null;
+        }
+
         if ($userTask?->status === TaskStatus::Done) {
             return 'current_status';
         }

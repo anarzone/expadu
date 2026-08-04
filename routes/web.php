@@ -17,8 +17,10 @@ use App\Http\Controllers\Api\TakeMeThereController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\Api\TripController;
+use App\Http\Controllers\BureaucracyCaseConflictController;
 use App\Http\Controllers\BureaucracyCaseQuestionController;
 use App\Http\Controllers\BureaucracyCaseTaskController;
+use App\Http\Controllers\BureaucracyCaseTaskDocumentsController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\BureaucracyDemoController;
 use App\Http\Controllers\ComposerController;
@@ -224,8 +226,12 @@ $appRoutes = function () use ($appDomain) {
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
         Route::post('bureaucracy/case/questions/{question}', BureaucracyCaseQuestionController::class)
             ->name('bureaucracy.case-question.answer');
+        Route::patch('bureaucracy/case/conflicts/{conflict}', BureaucracyCaseConflictController::class)
+            ->name('bureaucracy.case-conflict.resolve');
         Route::patch('bureaucracy/case/tasks/{task:key}', BureaucracyCaseTaskController::class)
             ->name('bureaucracy.case-task.update');
+        Route::patch('bureaucracy/case/tasks/{task:key}/documents', BureaucracyCaseTaskDocumentsController::class)
+            ->name('bureaucracy.case-task.documents.update');
         // Admin/local-only: view the real bureaucracy page as any synthetic persona.
         Route::get('bureaucracy/demo', BureaucracyDemoController::class)->name('bureaucracy.demo');
         Route::post('bureaucracy/path', [BureaucracyController::class, 'setPath'])->name('bureaucracy.set-path');

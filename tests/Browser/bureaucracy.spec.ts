@@ -1,97 +1,148 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-// Session is injected via storageState from global-setup.ts — the e2e user
-// is a non-EU employee (path refinement applies) with no path chosen yet.
+async function switchPersona(
+    page: Page,
+    persona: string,
+    resetTasks = false,
+): Promise<void> {
+    await page.goto('/bureaucracy');
+    await page.waitForLoadState('networkidle');
 
-test.describe('Bureaucracy v2', () => {
-    test('renders without JS errors', async ({ page }) => {
+    const opener = page.getByTitle('Open the QA persona switcher');
+
+    if (await opener.isVisible()) {
+        await opener.click();
+    }
+
+    const select = page.getByTitle(
+        'Switch the current account to a different persona',
+    );
+
+    if ((await select.inputValue()) !== persona) {
+        await select.selectOption(persona);
+        await page.waitForLoadState('networkidle');
+    }
+
+    if (resetTasks) {
+        await page.getByRole('button', { name: 'Reset tasks' }).click();
+        await page.waitForLoadState('networkidle');
+    }
+}
+
+test.describe('Verified bureaucracy case plan', () => {
+    test('renders the source-backed plan without JS errors', async ({
+        page,
+    }) => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
 
-        await page.goto('/bureaucracy');
-        await page.waitForLoadState('networkidle');
+        await switchPersona(page, 'case-blue-card-first', true);
 
         expect(errors).toHaveLength(0);
         await expect(
-            page.getByText('Your settlement checklist', { exact: false }),
+            page.getByRole('heading', { name: 'Your verified plan' }),
         ).toBeVisible();
+        await expect(
+            page.getByText('Expadu can make mistakes', { exact: false }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: /Do now/ }),
+        ).toBeVisible();
+
+        await page
+            .getByRole('button', { name: /Official sources & verification/ })
+            .first()
+            .click();
+        await expect(page.getByText(/Verified on/).first()).toBeVisible();
     });
 
-    test('shows the path refinement banner with the permit options', async ({
+    test('asks one bounded structured question when information is missing', async ({
         page,
     }) => {
-        await page.goto('/bureaucracy');
-        await page.waitForLoadState('networkidle');
+        await switchPersona(page, 'neu-bluecard');
 
         await expect(
-            page.getByText('One question to sharpen your checklist', {
-                exact: false,
+            page.getByRole('heading', {
+                name: 'One detail will improve your plan',
             }),
         ).toBeVisible();
         await expect(
-            page.getByRole('button', { name: 'EU Blue Card' }),
+            page.getByRole('button', { name: "I don't know" }),
         ).toBeVisible();
         await expect(
-            page.getByRole('button', { name: 'Standard work permit' }),
+            page.getByRole('button', { name: 'Skip for now' }),
         ).toBeVisible();
+        await expect(page.locator('textarea')).toHaveCount(0);
     });
 
-    test('document checklist persists a checked document', async ({ page }) => {
-        await page.goto('/bureaucracy');
+    test('derives verified deadlines and documents from the active case plan', async ({
+        page,
+    }, testInfo) => {
+        await switchPersona(page, 'case-blue-card-first', true);
+
+        if (testInfo.project.name === 'chromium') {
+            const rightPanel = page
+                .locator('aside')
+                .filter({ hasText: 'Your verified deadlines' });
+
+            await expect(
+                rightPanel.getByText('Your verified deadlines'),
+            ).toBeVisible();
+            await expect(
+                rightPanel.getByText('check or act by 1 Oct').first(),
+            ).toBeVisible();
+        }
+
+        await page.getByRole('button', { name: 'Documents' }).click();
+        await expect(
+            page.getByText('Valid passport and national D visa', {
+                exact: true,
+            }),
+        ).toBeVisible();
+
+        await page.getByRole('button', { name: 'Checklist' }).click();
+        const passport = page.getByRole('checkbox', {
+            name: 'Mark as ready: Valid passport and national D visa',
+        });
+        await expect(passport).toBeVisible();
+        await passport.click();
         await page.waitForLoadState('networkidle');
 
-        // The first active card is expanded by default and carries the
-        // Anmeldung document list.
-        const counter = page
-            .getByText(/of \d+ ready/, { exact: false })
-            .first();
-        await expect(counter).toBeVisible();
-
-        const firstDoc = page.locator('input[type="checkbox"]').first();
-        const wasChecked = await firstDoc.isChecked();
-        await firstDoc.click();
-
-        // Reload — the state must come back from the server.
         await page.reload();
         await page.waitForLoadState('networkidle');
-        const after = page.locator('input[type="checkbox"]').first();
-        expect(await after.isChecked()).toBe(!wasChecked);
-
-        // Restore for idempotent re-runs — and await the state flip so the
-        // PATCH isn't cut off by test teardown.
-        await after.click();
-
-        if (wasChecked) {
-            await expect(after).toBeChecked();
-        } else {
-            await expect(after).not.toBeChecked();
-        }
-    });
-
-    test('good-to-know lane opens with info cards', async ({ page }) => {
-        await page.goto('/bureaucracy');
-        await page.waitForLoadState('networkidle');
-
-        await page.getByRole('button', { name: /Good to know/ }).click();
-        await expect(
-            page.getByText('good to know', { exact: false }).first(),
-        ).toBeVisible();
-    });
-
-    test('phases roadmap and the licence teaser render', async ({ page }) => {
-        await page.goto('/bureaucracy');
-        await page.waitForLoadState('networkidle');
-
-        // Roadmap strip
-        await expect(page.getByText('First 90 days')).toBeVisible();
-
-        // The e2e user never answered the licence question — teaser shows
-        // (if a previous run answered it, the teaser is legitimately gone).
-        const teaser = page.getByText('Might apply to you', { exact: false });
-        const drivingTask = page.getByText('Sort out your driving licence', {
-            exact: false,
+        const persistedPassport = page.getByRole('checkbox', {
+            name: 'Mark as not ready: Valid passport and national D visa',
         });
-        await expect(teaser.or(drivingTask).first()).toBeVisible();
+        await expect(persistedPassport).toHaveAttribute('aria-checked', 'true');
+        await persistedPassport.click();
+        await page.waitForLoadState('networkidle');
+    });
+
+    test('verified task progress persists and can be reopened', async ({
+        page,
+    }) => {
+        await switchPersona(page, 'case-blue-card-first', true);
+
+        const doNow = page
+            .locator('section')
+            .filter({ has: page.getByRole('heading', { name: /Do now/ }) });
+        const markDone = doNow
+            .getByRole('button', { name: 'Mark done' })
+            .first();
+        await expect(markDone).toBeVisible();
+        await markDone.click();
+        await page.waitForLoadState('networkidle');
+
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+        const reopen = page
+            .getByRole('button', { name: 'Reopen task' })
+            .first();
+        await expect(reopen).toBeVisible();
+
+        await reopen.click();
+        await page.waitForLoadState('networkidle');
     });
 });
 

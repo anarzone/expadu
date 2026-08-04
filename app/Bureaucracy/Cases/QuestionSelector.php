@@ -7,6 +7,7 @@ use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\TaskStatus;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseQuestion;
+use App\Models\BureaucracyFactConflict;
 use App\Models\Task;
 use App\Models\UserTask;
 use DomainException;
@@ -22,6 +23,7 @@ final class QuestionSelector
     public function __construct(
         private FactRegistry $factRegistry,
         private RuleSourcePolicy $sourcePolicy,
+        private CaseMatcher $caseMatcher,
     ) {}
 
     /**
@@ -29,7 +31,12 @@ final class QuestionSelector
      */
     public function rankedFactKeys(BureaucracyCase $case, CaseMatchResult $result): array
     {
+        $conflictedKeys = BureaucracyFactConflict::query()
+            ->where('case_id', $case->getKey())
+            ->where('status', 'unresolved')
+            ->pluck('fact_key');
         $definitions = collect($result->missingFactKeys)
+            ->reject(fn (string $key): bool => $conflictedKeys->contains($key))
             ->mapWithKeys(function (string $key): array {
                 try {
                     return [$key => $this->factRegistry->definition($key)];
@@ -92,28 +99,23 @@ final class QuestionSelector
         return array_column($ranked, 'key');
     }
 
-    public function select(BureaucracyCase $case, CaseMatchResult $result): ?BureaucracyCaseQuestion
-    {
-        return DB::transaction(function () use ($case, $result): ?BureaucracyCaseQuestion {
+    public function select(
+        BureaucracyCase $case,
+        ?CaseMatchResult $_previousResult = null,
+    ): ?BureaucracyCaseQuestion {
+        return DB::transaction(function () use ($case): ?BureaucracyCaseQuestion {
             $lockedCase = BureaucracyCase::query()
                 ->whereKey($case->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
+            $result = $this->caseMatcher->match($lockedCase);
             $rankedKeys = $this->rankedFactKeys($lockedCase, $result);
 
             if ($rankedKeys === []) {
                 return null;
             }
 
-            $unanswered = BureaucracyCaseQuestion::query()
-                ->where('case_id', $lockedCase->getKey())
-                ->whereNull('answered_at')
-                ->whereIn('fact_key', $rankedKeys)
-                ->orderByDesc('asked_at')
-                ->lockForUpdate()
-                ->get()
-                ->sortBy(fn (BureaucracyCaseQuestion $question): int => array_search($question->fact_key, $rankedKeys, true))
-                ->first();
+            $unanswered = $this->currentForRankedKeys($lockedCase, $rankedKeys, true);
 
             if ($unanswered instanceof BureaucracyCaseQuestion) {
                 return $unanswered;
@@ -149,6 +151,16 @@ final class QuestionSelector
         });
     }
 
+    public function current(
+        BureaucracyCase $case,
+        CaseMatchResult $result,
+        bool $lockForUpdate = false,
+    ): ?BureaucracyCaseQuestion {
+        $rankedKeys = $this->rankedFactKeys($case, $result);
+
+        return $this->currentForRankedKeys($case, $rankedKeys, $lockForUpdate);
+    }
+
     /**
      * @return Collection<int, string>
      */
@@ -163,6 +175,30 @@ final class QuestionSelector
             ->pluck('task.key')
             ->filter(fn (mixed $key): bool => is_string($key))
             ->values();
+    }
+
+    /**
+     * @param  list<string>  $rankedKeys
+     */
+    private function currentForRankedKeys(
+        BureaucracyCase $case,
+        array $rankedKeys,
+        bool $lockForUpdate,
+    ): ?BureaucracyCaseQuestion {
+        if ($rankedKeys === []) {
+            return null;
+        }
+
+        return BureaucracyCaseQuestion::query()
+            ->where('case_id', $case->getKey())
+            ->whereNull('answered_at')
+            ->whereIn('fact_key', $rankedKeys)
+            ->orderByDesc('asked_at')
+            ->orderByDesc('id')
+            ->when($lockForUpdate, fn ($query) => $query->lockForUpdate())
+            ->get()
+            ->sortBy(fn (BureaucracyCaseQuestion $question): int => array_search($question->fact_key, $rankedKeys, true))
+            ->first();
     }
 
     /**

@@ -3,13 +3,14 @@
 namespace App\Bureaucracy\Cases;
 
 use App\Bureaucracy\Facts\LegacyFactBootstrapper;
+use App\Models\BureaucracyCase;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 final class CurrentCasePlan
 {
     public function __construct(
         private LegacyFactBootstrapper $factBootstrapper,
-        private CaseMatcher $caseMatcher,
         private PlanSnapshotStore $snapshotStore,
         private QuestionSelector $questionSelector,
         private CasePlanPresenter $presenter,
@@ -21,10 +22,16 @@ final class CurrentCasePlan
     public function for(User $user): array
     {
         $case = $this->factBootstrapper->bootstrap($user);
-        $match = $this->caseMatcher->match($case);
-        $snapshot = $this->snapshotStore->store($case);
-        $question = $this->questionSelector->select($case, $match);
 
-        return $this->presenter->present($case, $snapshot, $question);
+        return DB::transaction(function () use ($case): array {
+            $lockedCase = BureaucracyCase::query()
+                ->whereKey($case->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+            $snapshot = $this->snapshotStore->store($lockedCase);
+            $question = $this->questionSelector->select($lockedCase);
+
+            return $this->presenter->present($lockedCase, $snapshot, $question);
+        });
     }
 }

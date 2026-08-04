@@ -1,7 +1,13 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { IconSearch, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
+import type {
+    CasePlan,
+    CasePlanItem,
+} from '@/components/bureaucracy/case-plan-types';
+import { documentLabel } from '@/components/bureaucracy/case-plan-types';
+import { CasePlanView } from '@/components/bureaucracy/case-plan-view';
 import { ChecklistFramingB } from '@/components/bureaucracy/checklist-framing-b';
 import type {
     Buckets,
@@ -71,6 +77,48 @@ function deriveDocuments(buckets: Buckets): DerivedDoc[] {
     return [...map.values()].sort((a, b) => b.tasks.length - a.tasks.length);
 }
 
+function deriveCasePlanDocuments(plan: CasePlan): DerivedDoc[] {
+    const map = new Map<string, DerivedDoc>();
+    const items = Object.entries(plan.sections).flatMap(([section, entries]) =>
+        section === 'information_needed' || section === 'not_covered'
+            ? []
+            : entries,
+    ) as CasePlanItem[];
+
+    for (const task of items) {
+        if (!task.title) {
+            continue;
+        }
+
+        for (const document of task.documents_required ?? []) {
+            const label = documentLabel(document);
+            const note =
+                typeof document === 'string' ? null : (document.note ?? null);
+            const warn =
+                typeof document !== 'string' && document.tone === 'warn';
+            const entry = map.get(label) ?? {
+                label,
+                note,
+                warn,
+                tasks: [],
+            };
+
+            entry.note = entry.note ?? note;
+            entry.warn = entry.warn || warn;
+            entry.tasks.push({
+                title: task.title,
+                checked: (task.documents_checked ?? []).includes(label),
+                done: task.status === 'done',
+            });
+            map.set(label, entry);
+        }
+    }
+
+    return [...map.values()].sort((left, right) =>
+        left.label.localeCompare(right.label),
+    );
+}
+
 const TABS = [
     { id: 'checklist', label: 'Checklist' },
     { id: 'documents', label: 'Documents' },
@@ -91,6 +139,7 @@ export default function Bureaucracy() {
         eligibility,
         settledSuggestion,
         progress,
+        casePlan,
         preview,
     } = usePage<{
         situation: string | null;
@@ -102,6 +151,7 @@ export default function Bureaucracy() {
         eligibility: Eligibility | null;
         settledSuggestion?: boolean;
         progress: { done: number; total: number; percent: number };
+        casePlan?: CasePlan | null;
         // Present only on the admin/local demo route — drives the read-only
         // persona switcher; absent on the live page.
         preview?: {
@@ -149,10 +199,11 @@ export default function Bureaucracy() {
         }
     }
 
-    const derivedDocs = useMemo(
-        () => deriveDocuments(taskBuckets),
-        [taskBuckets],
-    );
+    const derivedDocs = useMemo(() => {
+        return casePlan
+            ? deriveCasePlanDocuments(casePlan)
+            : deriveDocuments(taskBuckets);
+    }, [casePlan, taskBuckets]);
 
     const filteredDocs = useMemo(() => {
         const q = docSearch.toLowerCase().trim();
@@ -172,7 +223,12 @@ export default function Bureaucracy() {
     return (
         <AppLayout
             breadcrumbs={[{ title: 'Bureaucracy', href: '/bureaucracy' }]}
-            rightPanel={<BureaucracyRightPanel tasks={taskBuckets} />}
+            rightPanel={
+                <BureaucracyRightPanel
+                    tasks={taskBuckets}
+                    casePlan={casePlan ?? null}
+                />
+            }
             showBack
         >
             <Head title="Bureaucracy" />
@@ -224,25 +280,42 @@ export default function Bureaucracy() {
                     </div>
                 </div>
 
+                <div className="flex items-start gap-2 border-b border-[#E4DFD3] bg-[#FFF8E8] px-6 py-2.5 text-[11px] leading-[1.45] text-[#705A2D] dark:border-[#3A3930] dark:bg-[#282318] dark:text-[#D8C395]">
+                    <IconAlertTriangle
+                        size={14}
+                        stroke={ICON_STROKE}
+                        className="mt-px shrink-0"
+                    />
+                    <p>
+                        <strong>Expadu can make mistakes.</strong> These are
+                        informational recommendations, not an authority decision
+                        or legal advice. Double-check important actions with the
+                        linked official source or responsible authority.
+                    </p>
+                </div>
+
                 {/* Demo mode is look-only: block every mutating action (they
                     would otherwise POST as the admin's own account). */}
                 <div className={preview ? 'pointer-events-none' : ''}>
                     {/* ════ CHECKLIST TAB ════ */}
-                    {activeTab === 'checklist' && (
-                        <ChecklistFramingB
-                            situation={situation}
-                            progress={progress}
-                            tasks={taskBuckets}
-                            path={path}
-                            teasers={teasers ?? []}
-                            phases={phases ?? null}
-                            lifeEvents={lifeEvents ?? {}}
-                            eligibility={eligibility ?? null}
-                            settledSuggestion={settledSuggestion ?? false}
-                            focusTaskId={focusTaskId}
-                            onTakeMeThere={takeMeThereToOffice}
-                        />
-                    )}
+                    {activeTab === 'checklist' &&
+                        (casePlan ? (
+                            <CasePlanView plan={casePlan} />
+                        ) : (
+                            <ChecklistFramingB
+                                situation={situation}
+                                progress={progress}
+                                tasks={taskBuckets}
+                                path={path}
+                                teasers={teasers ?? []}
+                                phases={phases ?? null}
+                                lifeEvents={lifeEvents ?? {}}
+                                eligibility={eligibility ?? null}
+                                settledSuggestion={settledSuggestion ?? false}
+                                focusTaskId={focusTaskId}
+                                onTakeMeThere={takeMeThereToOffice}
+                            />
+                        ))}
 
                     {/* ════ DOCUMENTS TAB — derived from the user's path ════ */}
                     {activeTab === 'documents' && (

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedCaseFactValue;
 use Database\Factories\BureaucracyCaseFactFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,13 +27,19 @@ class BureaucracyCaseFact extends Model
         'superseded_at',
     ];
 
+    /** @var list<string> */
+    protected $hidden = [
+        'value',
+        'encrypted_value',
+    ];
+
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
-            'value' => 'array',
+            'value' => EncryptedCaseFactValue::class,
             'confirmed_at' => 'datetime',
             'reconfirm_at' => 'datetime',
             'superseded_at' => 'datetime',

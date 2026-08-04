@@ -1,10 +1,27 @@
 <?php
 
+use App\Bureaucracy\Cases\CaseMatcher;
+use App\Bureaucracy\Cases\PlanSnapshotStore;
+use App\Bureaucracy\Cases\QuestionSelector;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
 use App\Models\BureaucracyCaseQuestion;
 use App\Models\BureaucracyFactConflict;
+use App\Models\Task;
 use App\Models\User;
+
+/**
+ * @return array<string, mixed>
+ */
+function caseQuestionCondition(string $factKey): array
+{
+    return [$factKey => match ($factKey) {
+        'residence_title_expires_at' => '2026-10-01',
+        'blue_card_qualifying_months' => 12,
+        'marital_household_continues' => true,
+        default => 'settlement_permit',
+    }];
+}
 
 /**
  * @return array{0: User, 1: BureaucracyCase, 2: BureaucracyCaseQuestion}
@@ -18,14 +35,45 @@ function caseQuestionFixture(string $factKey = 'case_goal'): array
         'profile_attributes' => [],
     ]);
     $case = BureaucracyCase::factory()->for($user)->create();
-    $question = BureaucracyCaseQuestion::factory()->create([
-        'case_id' => $case->id,
-        'fact_key' => $factKey,
-        'attempt' => 1,
-        'asked_at' => now(),
-        'answered_at' => null,
-        'outcome' => null,
+    Task::factory()->create([
+        'key' => "case.question.{$factKey}",
+        'title' => 'Verified question-gated task',
+        'type' => 'task',
+        'situation' => ['core'],
+        'applies_if' => [caseQuestionCondition($factKey)],
+        'phase' => 'arrival',
+        'depends_on' => [],
+        'deadline_type' => 'none',
+        'deadline_days' => null,
+        'urgency' => 'high',
+        'is_published' => true,
+        'jurisdiction' => 'de-nrw-cologne',
+        'legal_sources' => [
+            [
+                'kind' => 'primary',
+                'label' => 'Residence Act',
+                'url' => 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
+            ],
+            [
+                'kind' => 'implementation',
+                'label' => 'Stadt Köln',
+                'url' => 'https://www.stadt-koeln.de/service/produkte/20321/index.html',
+            ],
+        ],
+        'review_status' => 'approved',
+        'source_verification' => 'dual_source',
+        'reviewed_by' => 'expadu_content_owner',
+        'content_version' => '2026-08-03.1',
+        'verified_at' => '2026-08-03',
+        'review_due_at' => '2027-08-03',
+        'conflicts_with' => [],
+        'coverage_scope' => 'case',
     ]);
+    $match = app(CaseMatcher::class)->match($case);
+    app(PlanSnapshotStore::class)->store($case);
+    $question = app(QuestionSelector::class)->select($case, $match);
+
+    expect($question)->toBeInstanceOf(BureaucracyCaseQuestion::class);
 
     return [$user, $case, $question];
 }
@@ -105,7 +153,27 @@ test('submitting the same answered question twice is idempotent', function () {
         ->and($case->fresh()->fact_version)->toBe(2);
 });
 
-test('a conflicting answer is retained for review and never overwrites the confirmed fact', function () {
+test('an answered question rejects a different replay value', function () {
+    [$user, $case, $question] = caseQuestionFixture();
+
+    $this->actingAs($user)
+        ->post(route('bureaucracy.case-question.answer', $question), [
+            'value' => 'settlement_permit',
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($user)
+        ->post(route('bureaucracy.case-question.answer', $question), [
+            'value' => 'blue_card',
+        ])
+        ->assertForbidden();
+
+    expect(BureaucracyCaseFact::where('case_id', $case->id)->where('key', 'case_goal')->count())->toBe(1)
+        ->and(BureaucracyCaseFact::where('case_id', $case->id)->where('key', 'case_goal')->first()->value)
+        ->toBe('settlement_permit');
+});
+
+test('a stale question cannot conflict with or overwrite a newly confirmed fact', function () {
     [$user, $case, $question] = caseQuestionFixture();
     $existing = BureaucracyCaseFact::factory()->create([
         'case_id' => $case->id,
@@ -121,14 +189,12 @@ test('a conflicting answer is retained for review and never overwrites the confi
         ->post(route('bureaucracy.case-question.answer', $question), [
             'value' => 'settlement_permit',
         ])
-        ->assertSessionHasErrors('value');
+        ->assertForbidden();
 
     expect($existing->fresh()->state)->toBe('confirmed')
         ->and($existing->fresh()->value)->toBe('blue_card')
-        ->and(BureaucracyCaseFact::where('case_id', $case->id)->where('state', 'candidate')->value('value'))
-        ->toBe('settlement_permit')
         ->and(BureaucracyFactConflict::where('case_id', $case->id)->where('status', 'unresolved')->count())
-        ->toBe(1)
-        ->and($question->fresh()->outcome)->toBe('conflict')
+        ->toBe(0)
+        ->and($question->fresh()->answered_at)->toBeNull()
         ->and($case->fresh()->fact_version)->toBe(1);
 });

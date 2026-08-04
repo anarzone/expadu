@@ -7,6 +7,7 @@ use App\Bureaucracy\Facts\FactRegistry;
 use App\Enums\TaskStatus;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseQuestion;
+use App\Models\BureaucracyFactConflict;
 use App\Models\BureaucracyPlanSnapshot;
 use App\Models\UserTask;
 use Illuminate\Support\Collection;
@@ -55,6 +56,7 @@ final class CasePlanPresenter
             'generated_at' => $snapshot->generated_at?->toIso8601String(),
             'reassessment_at' => $snapshot->reassessment_at?->toIso8601String(),
             'sections' => $sections,
+            'active_conflict' => $this->activeConflict($case),
             'next_question' => $this->question($question),
         ];
     }
@@ -92,6 +94,10 @@ final class CasePlanPresenter
      */
     private function withTaskState(array $item, Collection $taskStates): array
     {
+        if (($item['type'] ?? null) === 'info') {
+            return $item;
+        }
+
         $key = $item['key'] ?? null;
 
         if (! is_string($key)) {
@@ -99,6 +105,10 @@ final class CasePlanPresenter
         }
 
         $userTask = $taskStates->get($key);
+
+        if ($userTask instanceof UserTask && ! $userTask->is_applicable) {
+            $userTask = null;
+        }
         $status = $userTask?->status ?? TaskStatus::NotStarted;
 
         return [
@@ -106,6 +116,7 @@ final class CasePlanPresenter
             'status' => $status->value,
             'status_label' => $status->label(),
             'completed_at' => $userTask?->completed_at?->toIso8601String(),
+            'documents_checked' => $userTask?->documents_checked ?? [],
         ];
     }
 
@@ -135,6 +146,58 @@ final class CasePlanPresenter
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function activeConflict(BureaucracyCase $case): ?array
+    {
+        $conflict = BureaucracyFactConflict::query()
+            ->where('case_id', $case->getKey())
+            ->where('status', 'unresolved')
+            ->with(['existingFact', 'candidateFact'])
+            ->oldest('created_at')
+            ->oldest('id')
+            ->first();
+
+        if (! $conflict instanceof BureaucracyFactConflict
+            || $conflict->existingFact === null
+            || $conflict->candidateFact === null) {
+            return null;
+        }
+
+        $definition = $this->factRegistry->definition($conflict->fact_key);
+
+        return [
+            'id' => $conflict->getKey(),
+            'question' => $definition->question,
+            'options' => [
+                [
+                    'choice' => 'existing',
+                    'label' => $this->factValueLabel($definition, $conflict->existingFact->value),
+                    'context' => 'Previously confirmed',
+                ],
+                [
+                    'choice' => 'candidate',
+                    'label' => $this->factValueLabel($definition, $conflict->candidateFact->value),
+                    'context' => 'New answer',
+                ],
+            ],
+        ];
+    }
+
+    private function factValueLabel(FactDefinition $definition, mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if ($definition->type === 'enum' && is_string($value)) {
+            return $this->optionLabel($definition, $value);
+        }
+
+        return is_scalar($value) ? (string) $value : 'Unrecognized answer';
     }
 
     private function optionLabel(FactDefinition $definition, string $value): string

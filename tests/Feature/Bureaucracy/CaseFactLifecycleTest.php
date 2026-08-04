@@ -7,6 +7,7 @@ use App\Models\BureaucracyCaseFact;
 use App\Models\BureaucracyFactConflict;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 /*
@@ -421,4 +422,21 @@ test('resolveConflict uses the persisted conflict case, leaving a mutated unsave
     expect(BureaucracyFactConflict::find($conflict->id)->case_id)->toBe($caseA->id);
     expect($caseA->fresh()->fact_version)->toBe(2);
     expect($caseB->fresh()->fact_version)->toBe(1);
+});
+
+test('case fact values are encrypted at rest and remain transparent through the model', function () {
+    $case = legacyFactBootstrapper()->bootstrap(bureaucracyUser());
+    $fact = BureaucracyCaseFact::query()
+        ->where('case_id', $case->id)
+        ->where('key', 'german_level')
+        ->sole();
+    $raw = DB::table('bureaucracy_case_facts')->where('id', $fact->id)->first();
+
+    expect($fact->value)->toBe('b1')
+        ->and((string) $raw->value)->not->toContain('b1')
+        ->and((string) $raw->value)->toContain('protected')
+        ->and($raw->encrypted_value)->toBeString()
+        ->and($raw->encrypted_value)->not->toBe('"b1"')
+        ->and(Crypt::decryptString($raw->encrypted_value))->toBe('"b1"')
+        ->and($fact->toArray())->not->toHaveKeys(['value', 'encrypted_value']);
 });

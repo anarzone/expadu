@@ -140,7 +140,13 @@ test('unresolved high impact branches keep safe matches visible without claiming
     expect($result->coverageState)->toBe(BureaucracyCoverageState::NeedsInformation)
         ->and($result->safeRuleKeys)->toBe(['case.safe-registration'])
         ->and(collect($sections['do_now'])->pluck('key')->all())->toBe(['case.safe-registration'])
-        ->and(collect($sections['information_needed'])->pluck('key')->all())->toBe(['case.sponsor-dependent']);
+        ->and($sections['information_needed'])->toBe([[
+            'kind' => 'information_needed',
+            'questions' => [[
+                'question' => 'Which German residence status does your spouse currently have?',
+                'why' => "Family-reunification and settlement options depend on the sponsor's current title.",
+            ]],
+        ]]);
 });
 
 test('matcher accepts exact trusted predicates compiled from a persona branch', function () {
@@ -228,6 +234,10 @@ test('conflicting matches are quarantined while independent safe rules remain co
     expect($result->coverageState)->toBe(BureaucracyCoverageState::Conflict)
         ->and($result->conflictPairs)->toBe([['case.route-a', 'case.route-b']])
         ->and($result->safeRuleKeys)->toBe(['case.safe-registration'])
+        ->and($sections['not_covered'])->toBe([[
+            'kind' => 'coverage_notice',
+            'coverage_state' => 'conflict',
+        ]])
         ->and(array_keys($sections))->toBe([
             'current_status',
             'do_now',

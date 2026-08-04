@@ -102,6 +102,45 @@ test('a task outside the users active verified snapshot cannot be changed', func
         ->and(UserTask::where('user_id', $user->id)->where('task_id', $visible->id)->exists())->toBeFalse();
 });
 
+test('a stale verified snapshot cannot authorize task progression', function () {
+    $task = caseTaskApprovedRule('case.visible', [['case_goal' => 'blue_card']]);
+    [$user, $case] = caseTaskUser();
+    app(PlanSnapshotStore::class)->store($case);
+    $case->increment('fact_version');
+
+    $this->actingAs($user)
+        ->patch(route('bureaucracy.case-task.update', ['task' => $task->key]), [
+            'status' => 'done',
+        ])
+        ->assertForbidden();
+
+    expect(UserTask::where('user_id', $user->id)->where('task_id', $task->id)->exists())->toBeFalse();
+});
+
+test('blocked dependencies and informational rules cannot be progressed', function () {
+    $dependency = caseTaskApprovedRule('case.dependency', [['case_goal' => 'blue_card']]);
+    $blocked = caseTaskApprovedRule('case.blocked', [['case_goal' => 'blue_card']], [
+        'depends_on' => [$dependency->key],
+    ]);
+    $information = caseTaskApprovedRule('case.information', [['case_goal' => 'blue_card']], [
+        'type' => 'info',
+        'phase' => 'options',
+    ]);
+    [$user, $case] = caseTaskUser();
+    app(PlanSnapshotStore::class)->store($case);
+
+    foreach ([$blocked, $information] as $task) {
+        $this->actingAs($user)
+            ->patch(route('bureaucracy.case-task.update', ['task' => $task->key]), [
+                'status' => 'done',
+            ])
+            ->assertForbidden();
+    }
+
+    expect(UserTask::where('user_id', $user->id)->whereIn('task_id', [$blocked->id, $information->id])->exists())
+        ->toBeFalse();
+});
+
 test('verified case tasks use the existing done and reopen lifecycle', function () {
     $this->travelTo('2026-08-04 10:00:00');
     $task = caseTaskApprovedRule('case.visible', [['case_goal' => 'blue_card']]);
@@ -122,6 +161,8 @@ test('verified case tasks use the existing done and reopen lifecycle', function 
     expect($userTask->status)->toBe(TaskStatus::Done)
         ->and($userTask->completed_at?->toIso8601String())->toBe(now()->toIso8601String());
 
+    app(PlanSnapshotStore::class)->store($case);
+
     $this->actingAs($user)
         ->patch(route('bureaucracy.case-task.update', ['task' => $task->key]), [
             'status' => 'in_progress',
@@ -131,6 +172,25 @@ test('verified case tasks use the existing done and reopen lifecycle', function 
     expect($userTask->fresh()->status)->toBe(TaskStatus::InProgress)
         ->and($userTask->fresh()->completed_at)->toBeNull()
         ->and($userTask->fresh()->next_due_at)->toBeNull();
+});
+
+test('progressing a currently verified task restores applicability', function () {
+    $task = caseTaskApprovedRule('case.visible', [['case_goal' => 'blue_card']]);
+    [$user, $case] = caseTaskUser();
+    app(PlanSnapshotStore::class)->store($case);
+    $userTask = UserTask::factory()->for($user)->for($task)->create([
+        'is_applicable' => false,
+        'status' => TaskStatus::NotStarted,
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('bureaucracy.case-task.update', ['task' => $task->key]), [
+            'status' => 'done',
+        ])
+        ->assertRedirect();
+
+    expect($userTask->fresh()->is_applicable)->toBeTrue()
+        ->and($userTask->fresh()->status)->toBe(TaskStatus::Done);
 });
 
 test('completing a verified dependency moves the dependent task out of waiting', function () {
@@ -169,4 +229,80 @@ test('case task progression rejects invalid lifecycle values', function () {
         ->assertSessionHasErrors('status');
 
     expect(UserTask::where('user_id', $user->id)->where('task_id', $task->id)->exists())->toBeFalse();
+});
+
+test('reopening a dependency immediately invalidates the dependent task snapshot', function () {
+    $dependency = caseTaskApprovedRule('case.dependency', [['case_goal' => 'blue_card']]);
+    $dependent = caseTaskApprovedRule('case.dependent', [['case_goal' => 'blue_card']], [
+        'depends_on' => [$dependency->key],
+    ]);
+    [$user, $case] = caseTaskUser();
+    UserTask::factory()->for($user)->for($dependency)->create([
+        'status' => TaskStatus::Done,
+        'is_applicable' => true,
+        'completed_at' => now(),
+    ]);
+    app(PlanSnapshotStore::class)->store($case);
+
+    $this->actingAs($user)
+        ->patch(route('bureaucracy.case-task.update', ['task' => $dependency->key]), [
+            'status' => 'not_started',
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($user)
+        ->patch(route('bureaucracy.case-task.update', ['task' => $dependent->key]), [
+            'status' => 'done',
+        ])
+        ->assertForbidden();
+
+    expect(UserTask::where('user_id', $user->id)->where('task_id', $dependent->id)->exists())->toBeFalse();
+});
+
+test('document checks are persisted only for authored documents on a verified task', function () {
+    $task = caseTaskApprovedRule('case.documents', [['case_goal' => 'blue_card']], [
+        'documents_required' => [
+            'Valid passport',
+            ['label' => 'Employment contract', 'note' => 'Bring the current signed version.'],
+        ],
+    ]);
+    [$user, $case] = caseTaskUser();
+    UserTask::factory()->for($user)->for($task)->create([
+        'status' => TaskStatus::Submitted,
+        'is_applicable' => false,
+        'documents_checked' => [],
+    ]);
+    app(PlanSnapshotStore::class)->store($case);
+
+    $this->actingAs($user)
+        ->patch(route('bureaucracy.case-task.documents.update', ['task' => $task->key]), [
+            'documents_checked' => ['Employment contract', 'Invented document'],
+        ])
+        ->assertRedirect();
+
+    $userTask = UserTask::query()
+        ->where('user_id', $user->id)
+        ->where('task_id', $task->id)
+        ->sole();
+
+    expect($userTask->documents_checked)->toBe(['Employment contract'])
+        ->and($userTask->is_applicable)->toBeTrue()
+        ->and($userTask->status)->toBe(TaskStatus::NotStarted);
+});
+
+test('documents cannot be changed for a task outside the active verified snapshot', function () {
+    caseTaskApprovedRule('case.visible-documents', [['case_goal' => 'blue_card']]);
+    $unrelated = caseTaskApprovedRule('case.hidden-documents', [['case_goal' => 'settlement_permit']], [
+        'documents_required' => ['Passport'],
+    ]);
+    [$user, $case] = caseTaskUser();
+    app(PlanSnapshotStore::class)->store($case);
+
+    $this->actingAs($user)
+        ->patch(route('bureaucracy.case-task.documents.update', ['task' => $unrelated->key]), [
+            'documents_checked' => ['Passport'],
+        ])
+        ->assertForbidden();
+
+    expect(UserTask::where('user_id', $user->id)->where('task_id', $unrelated->id)->exists())->toBeFalse();
 });

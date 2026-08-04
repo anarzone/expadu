@@ -34,7 +34,7 @@ export function PersonaSwitcher() {
             <button
                 onClick={() => setOpen(true)}
                 title="Open the QA persona switcher"
-                className="fixed right-4 bottom-4 z-[70] flex items-center gap-1.5 rounded-[12px] border border-border bg-primary-soft px-3 py-2 text-[12px] font-semibold text-primary shadow-lg"
+                className="fixed right-4 bottom-24 z-[300] flex items-center gap-1.5 rounded-[12px] border border-border bg-primary-soft px-3 py-2 text-[12px] font-semibold text-primary shadow-lg md:bottom-4"
             >
                 QA · {currentLabel ?? 'persona'}
                 <IconChevronUp size={14} stroke={ICON_STROKE} />
@@ -43,7 +43,7 @@ export function PersonaSwitcher() {
     }
 
     return (
-        <div className="fixed right-4 bottom-4 z-[70] w-60 rounded-[12px] border border-border bg-card p-3 shadow-lg">
+        <div className="fixed right-4 bottom-24 z-[300] w-60 rounded-[12px] border border-border bg-card p-3 shadow-lg md:bottom-4">
             <div className="mb-2 flex items-center justify-between">
                 <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                     QA persona
