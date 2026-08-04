@@ -68,6 +68,136 @@ final class CaseFactStore
         });
     }
 
+    /**
+     * @param  array<string, mixed>  $facts
+     * @param  list<string>  $retireKeys
+     */
+    public function synchronizeConfirmedFacts(
+        User $user,
+        array $facts,
+        string $source,
+        array $retireKeys = [],
+    ): BureaucracyCase {
+        return DB::transaction(function () use ($user, $facts, $source, $retireKeys): BureaucracyCase {
+            $lockedUser = User::query()
+                ->whereKey($user->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $case = BureaucracyCase::query()->firstOrCreate(
+                ['user_id' => $lockedUser->getKey()],
+                ['status' => 'active'],
+            );
+            $caseWasCreated = $case->wasRecentlyCreated;
+
+            $lockedCase = BureaucracyCase::query()
+                ->whereKey($case->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $normalizedFacts = [];
+            foreach ($facts as $key => $value) {
+                if ($value !== null) {
+                    $normalizedFacts[$key] = $this->registry->definition($key)->normalize($value);
+                }
+            }
+
+            foreach ($retireKeys as $key) {
+                $this->registry->definition($key);
+            }
+
+            $caseChanged = false;
+            foreach ($normalizedFacts as $key => $value) {
+                $existing = BureaucracyCaseFact::query()
+                    ->where('case_id', $lockedCase->getKey())
+                    ->where('key', $key)
+                    ->where('state', 'confirmed')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing === null) {
+                    BureaucracyCaseFact::query()->create([
+                        'case_id' => $lockedCase->getKey(),
+                        'key' => $key,
+                        'value' => $value,
+                        'state' => 'confirmed',
+                        'source' => $source,
+                        ...$this->confirmationTimestamps($key),
+                    ]);
+                    $caseChanged = true;
+
+                    continue;
+                }
+
+                if ($existing->value === $value) {
+                    continue;
+                }
+
+                if ($existing->source === $source) {
+                    $this->supersedeFact($existing);
+                    BureaucracyCaseFact::query()->create([
+                        'case_id' => $lockedCase->getKey(),
+                        'key' => $key,
+                        'value' => $value,
+                        'state' => 'confirmed',
+                        'source' => $source,
+                        ...$this->confirmationTimestamps($key),
+                    ]);
+                    $caseChanged = true;
+
+                    continue;
+                }
+
+                $candidate = BureaucracyCaseFact::query()
+                    ->where('case_id', $lockedCase->getKey())
+                    ->where('key', $key)
+                    ->where('value', $value)
+                    ->where('state', 'candidate')
+                    ->where('source', $source)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($candidate === null) {
+                    $candidate = BureaucracyCaseFact::query()->create([
+                        'case_id' => $lockedCase->getKey(),
+                        'key' => $key,
+                        'value' => $value,
+                        'state' => 'candidate',
+                        'source' => $source,
+                    ]);
+                }
+
+                BureaucracyFactConflict::query()->firstOrCreate([
+                    'case_id' => $lockedCase->getKey(),
+                    'fact_key' => $key,
+                    'existing_fact_id' => $existing->getKey(),
+                    'candidate_fact_id' => $candidate->getKey(),
+                    'status' => 'unresolved',
+                ]);
+            }
+
+            if ($retireKeys !== []) {
+                $retiredFacts = BureaucracyCaseFact::query()
+                    ->where('case_id', $lockedCase->getKey())
+                    ->whereIn('key', $retireKeys)
+                    ->where('state', 'confirmed')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($retiredFacts as $fact) {
+                    $this->supersedeFact($fact);
+                    $caseChanged = true;
+                }
+            }
+
+            if ($caseChanged && ! $caseWasCreated) {
+                $lockedCase->increment('fact_version');
+            }
+
+            return $lockedCase->fresh();
+        });
+    }
+
     public function confirmedFact(
         BureaucracyCase $case,
         string $key,

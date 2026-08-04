@@ -38,8 +38,6 @@ final class LegacyFactBootstrapper
             $facts['entry_mode'] = $storedProfileAttributes['entry_mode'];
         }
 
-        $facts['german_level'] = $profile->germanLevel?->value;
-
         return $this->factStore->bootstrapConfirmedFacts($user, $facts);
     }
 }

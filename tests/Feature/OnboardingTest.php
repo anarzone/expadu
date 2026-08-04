@@ -1,7 +1,11 @@
 <?php
 
+use App\Bureaucracy\Facts\CaseFactStore;
+use App\Models\BureaucracyCaseFact;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\UserPlace;
+use App\Onboarding\ApplyOnboardingAnswers;
 
 test('onboarding page renders for non-onboarded user', function () {
     $user = User::factory()->notOnboarded()->create();
@@ -81,7 +85,7 @@ test('onboarding can be completed with valid data', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('bureaucracy'));
 
     $user->refresh();
     expect($user->situation->value)->toBe('non_eu_employee');
@@ -117,7 +121,20 @@ test('employee situations do not require the EU question', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('bureaucracy'));
+});
+
+test('family and non-EU onboarding flows require an entry mode', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'family_reunification',
+        'veedel' => 'Nippes',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ])->assertSessionHasErrors('entry_mode');
 });
 
 test('german level is optional', function () {
@@ -133,7 +150,7 @@ test('german level is optional', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('bureaucracy'));
 });
 
 test('onboarding requires at least three interests', function () {
@@ -227,7 +244,7 @@ test('entry mode and housing status land in the attribute bag with audit log', f
         'housing_status' => 'temporary',
         'entry_mode' => 'd_visa',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('bureaucracy'));
 
     $user->refresh();
     expect($user->profile_attributes['entry_mode'])->toBe('d_visa');
@@ -269,7 +286,7 @@ test('redo onboarding re-asks everything but keeps all progress', function () {
         'arrival_date' => now()->subDays(3)->toDateString(),
         'housing_status' => 'long_term',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('bureaucracy'));
 
     // The touched old-path task survives in the records lane.
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
@@ -293,7 +310,7 @@ test('planning mode completes onboarding with no arrival date', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('bureaucracy'));
 
     $user->refresh();
     expect($user->onboarded_at)->not->toBeNull();
@@ -313,7 +330,7 @@ test('planning mode lands in the Before-you-fly phase with no firing deadlines',
         'housing_status' => 'long_term',
         'entry_mode' => 'visa_free',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('bureaucracy'));
 
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $props = $page->toArray()['props'];
@@ -327,4 +344,127 @@ test('planning mode lands in the Before-you-fly phase with no firing deadlines',
 
         return true;
     });
+});
+
+test('family D-visa onboarding confirms explicit canonical facts without inventing refinements', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'family_reunification',
+        'veedel' => 'Ehrenfeld',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'entry_mode' => 'd_visa',
+        'visa_expires_at' => '2026-09-30',
+        'current_residence_title' => 'national_d_visa',
+        'residence_title_expires_at' => '2026-09-30',
+        'case_goal' => 'family_reunification_permit',
+        'sponsor_current_title' => 'blue_card',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ])->assertRedirect(route('bureaucracy'));
+
+    $case = $user->fresh()->bureaucracyCase;
+    expect($case)->not->toBeNull();
+
+    $facts = BureaucracyCaseFact::query()
+        ->where('case_id', $case->id)
+        ->where('state', 'confirmed')
+        ->pluck('value', 'key');
+
+    expect($facts->all())->toMatchArray([
+        'citizenship_group' => 'non_eu',
+        'purpose' => 'family',
+        'entry_mode' => 'd_visa',
+        'visa_expires_at' => '2026-09-30',
+        'current_residence_title' => 'national_d_visa',
+        'residence_title_expires_at' => '2026-09-30',
+        'case_goal' => 'family_reunification_permit',
+        'sponsor_current_title' => 'blue_card',
+    ]);
+    expect($facts)->not->toHaveKeys(['permit_track', 'german_level']);
+});
+
+test('Blue Card onboarding maps only the documented German level and derives the Blue Card track', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'non_eu_employee',
+        'veedel' => 'Ehrenfeld',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'entry_mode' => 'has_permit',
+        'current_residence_title' => 'blue_card',
+        'case_goal' => 'blue_card',
+        'german_level' => 'a2',
+        'documented_german_level' => 'b1',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ])->assertRedirect(route('bureaucracy'));
+
+    $case = $user->fresh()->bureaucracyCase;
+    expect($case)->not->toBeNull();
+
+    $store = app(CaseFactStore::class);
+    expect($store->confirmedFact($case, 'permit_track')->value)->toBe('blue_card');
+    expect($store->confirmedFact($case, 'german_level')->value)->toBe('b1');
+    expect($store->confirmedFact($case, 'visa_expires_at'))->toBeNull();
+});
+
+test('re-onboarding retires visa sponsor and refinement facts that are no longer applicable', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'family_reunification',
+        'veedel' => 'Ehrenfeld',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'entry_mode' => 'd_visa',
+        'visa_expires_at' => '2026-09-30',
+        'current_residence_title' => 'national_d_visa',
+        'case_goal' => 'family_reunification_permit',
+        'sponsor_current_title' => 'blue_card',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ])->assertRedirect(route('bureaucracy'));
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'eu_employee',
+        'veedel' => 'Ehrenfeld',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ])->assertRedirect(route('bureaucracy'));
+
+    $case = $user->fresh()->bureaucracyCase;
+    $store = app(CaseFactStore::class);
+    expect($store->confirmedFact($case, 'visa_expires_at'))->toBeNull();
+    expect($store->confirmedFact($case, 'sponsor_current_title'))->toBeNull();
+    expect($store->confirmedFact($case, 'current_residence_title'))->toBeNull();
+    expect($store->confirmedFact($case, 'case_goal'))->toBeNull();
+});
+
+test('onboarding rolls back profile and canonical fact writes when required place creation fails', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $dispatcher = UserPlace::getEventDispatcher();
+    UserPlace::creating(fn () => throw new RuntimeException('Place creation failed.'));
+
+    try {
+        expect(fn () => app(ApplyOnboardingAnswers::class)->execute($user, [
+            'situation' => 'non_eu_employee',
+            'veedel' => 'Ehrenfeld',
+            'arrival_date' => '2026-01-15',
+            'housing_status' => 'long_term',
+            'entry_mode' => 'visa_free',
+            'interests' => ['parks', 'museums', 'cafes'],
+        ]))->toThrow(RuntimeException::class);
+    } finally {
+        UserPlace::flushEventListeners();
+        UserPlace::setEventDispatcher($dispatcher);
+    }
+
+    $user->refresh();
+    expect($user->onboarded_at)->toBeNull();
+    expect($user->bureaucracyCase)->toBeNull();
+    expect($user->places()->count())->toBe(0);
 });

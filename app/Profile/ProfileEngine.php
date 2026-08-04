@@ -149,17 +149,17 @@ class ProfileEngine
             Situation::Other => 'other',
         };
 
-        // Refinements default to the base path: showing the standard track
-        // until the user sharpens it mirrors the path-banner behaviour.
-        $permitTrack = match ($branch) {
+        $permitTrack = match ($user->bureaucracy_path) {
             'non_eu_employee_blue_card' => 'blue_card',
             'non_eu_employee_chancenkarte' => 'chancenkarte',
-            default => 'standard',
+            'non_eu_employee' => 'standard',
+            default => null,
         };
-        $sponsor = match ($branch) {
+        $sponsor = match ($user->bureaucracy_path) {
             'family_reunification_of_german' => 'german',
             'family_reunification_of_eu_citizen' => 'eu_citizen',
-            default => 'non_eu',
+            'family_reunification' => 'non_eu',
+            default => null,
         };
         $businessType = $branch === 'freelancer_gewerbe' ? 'gewerbe' : 'liberal';
 
@@ -175,9 +175,7 @@ class ProfileEngine
             'permit_track' => $permitTrack,
             'sponsor' => $sponsor,
             'business_type' => $businessType,
-            // Legacy users answered before the question existed — visa_free
-            // preserves the old behaviour (permit tasks visible, 90-day clock).
-            'entry_mode' => $stored['entry_mode'] ?? 'visa_free',
+            'entry_mode' => $stored['entry_mode'] ?? null,
             'housing_status' => $housing,
             'moved_in_at' => $movedInAt,
             'license_country' => $stored['license_country'] ?? null,

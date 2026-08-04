@@ -48,13 +48,36 @@ class OnboardingRequest extends FormRequest
             'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
             // Asked only when the EU follow-up was answered "No" — it sets
             // the real permit deadline (visa expiry vs the 90-day window).
-            'entry_mode' => ['nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit'])],
+            'entry_mode' => ['nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit']), Rule::requiredIf(fn (): bool => $this->requiresEntryMode())],
             // D-visa holders can give their expiry — it becomes the real
             // permit deadline instead of a vague warning.
             'visa_expires_at' => ['nullable', 'date'],
+            'current_residence_title' => ['nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_18c', 'other'])],
+            'residence_title_expires_at' => ['nullable', 'date'],
+            'case_goal' => ['nullable', 'string', Rule::in(['blue_card', 'family_reunification_permit', 'renew_current_title', 'settlement_permit', 'understand_options'])],
+            'sponsor_current_title' => ['nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
+            'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
+            'moved_in_at' => ['nullable', 'date'],
+            'address_registration_status' => ['nullable', 'string'],
             // Temporary housing pauses the Anmeldung clock instead of
             // showing a false overdue.
             'housing_status' => ['required', 'string', Rule::in(['long_term', 'temporary'])],
         ];
+    }
+
+    private function requiresEntryMode(): bool
+    {
+        $situation = $this->input('situation');
+
+        if (in_array($situation, [Situation::NonEuEmployee->value, Situation::FamilyReunification->value], true)) {
+            return true;
+        }
+
+        return in_array($situation, [
+            Situation::Student->value,
+            Situation::Freelancer->value,
+            Situation::DigitalNomad->value,
+            Situation::Other->value,
+        ], true) && $this->boolean('is_eu') === false;
     }
 }

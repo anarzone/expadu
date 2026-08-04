@@ -72,7 +72,6 @@ test('bootstrap creates confirmed legacy_profile facts for deterministically res
 
     $citizenship = caseFactStore()->confirmedFact($case, 'citizenship_group');
     $purpose = caseFactStore()->confirmedFact($case, 'purpose');
-    $permitTrack = caseFactStore()->confirmedFact($case, 'permit_track');
 
     expect($citizenship)->not->toBeNull();
     expect($citizenship->state)->toBe('confirmed');
@@ -82,18 +81,13 @@ test('bootstrap creates confirmed legacy_profile facts for deterministically res
     expect($purpose)->not->toBeNull();
     expect($purpose->value)->toBe('employment');
 
-    expect($permitTrack)->not->toBeNull();
-    expect($permitTrack->value)->toBe('standard');
+    expect(caseFactStore()->confirmedFact($case, 'permit_track'))->toBeNull();
 });
 
-test('bootstrap confirms german_level and a non-null visa_expires_at from legacy data', function () {
+test('bootstrap does not map self-assessed German level and confirms a non-null visa expiry from legacy data', function () {
     $case = legacyFactBootstrapper()->bootstrap(bureaucracyUser());
 
-    $germanLevel = caseFactStore()->confirmedFact($case, 'german_level');
-    expect($germanLevel)->not->toBeNull();
-    expect($germanLevel->state)->toBe('confirmed');
-    expect($germanLevel->source)->toBe('legacy_profile');
-    expect($germanLevel->value)->toBe('b1');
+    expect(caseFactStore()->confirmedFact($case, 'german_level'))->toBeNull();
 
     $visaExpires = caseFactStore()->confirmedFact($case, 'visa_expires_at');
     expect($visaExpires)->not->toBeNull();
@@ -428,15 +422,66 @@ test('case fact values are encrypted at rest and remain transparent through the 
     $case = legacyFactBootstrapper()->bootstrap(bureaucracyUser());
     $fact = BureaucracyCaseFact::query()
         ->where('case_id', $case->id)
-        ->where('key', 'german_level')
+        ->where('key', 'visa_expires_at')
         ->sole();
     $raw = DB::table('bureaucracy_case_facts')->where('id', $fact->id)->first();
 
-    expect($fact->value)->toBe('b1')
-        ->and((string) $raw->value)->not->toContain('b1')
+    expect($fact->value)->toBe('2027-06-01')
+        ->and((string) $raw->value)->not->toContain('2027-06-01')
         ->and((string) $raw->value)->toContain('protected')
         ->and($raw->encrypted_value)->toBeString()
-        ->and($raw->encrypted_value)->not->toBe('"b1"')
-        ->and(Crypt::decryptString($raw->encrypted_value))->toBe('"b1"')
+        ->and($raw->encrypted_value)->not->toBe('"2027-06-01"')
+        ->and(Crypt::decryptString($raw->encrypted_value))->toBe('"2027-06-01"')
         ->and($fact->toArray())->not->toHaveKeys(['value', 'encrypted_value']);
+});
+
+test('synchronization supersedes a changed fact from the same authoritative source', function () {
+    $user = bureaucracyUser();
+    $store = caseFactStore();
+
+    $case = $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+    $revised = $store->synchronizeConfirmedFacts($user, ['case_goal' => 'settlement_permit'], 'onboarding');
+
+    expect($revised->id)->toBe($case->id);
+    expect($store->confirmedFact($revised, 'case_goal')->value)->toBe('settlement_permit');
+    expect(BureaucracyCaseFact::query()
+        ->where('case_id', $case->id)
+        ->where('key', 'case_goal')
+        ->where('state', 'superseded')
+        ->count())->toBe(1);
+    expect(BureaucracyFactConflict::where('case_id', $case->id)->count())->toBe(0);
+});
+
+test('synchronization creates a conflict when another authoritative source disagrees', function () {
+    $user = bureaucracyUser();
+    $store = caseFactStore();
+
+    $case = $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+    $store->synchronizeConfirmedFacts($user, ['case_goal' => 'settlement_permit'], 'legacy_profile');
+
+    expect($store->confirmedFact($case, 'case_goal')->value)->toBe('blue_card');
+    expect(BureaucracyFactConflict::query()
+        ->where('case_id', $case->id)
+        ->where('fact_key', 'case_goal')
+        ->where('status', 'unresolved')
+        ->count())->toBe(1);
+});
+
+test('synchronization retires confirmed facts that are no longer applicable', function () {
+    $user = bureaucracyUser();
+    $store = caseFactStore();
+    $case = $store->synchronizeConfirmedFacts($user, [
+        'entry_mode' => 'd_visa',
+        'visa_expires_at' => '2026-09-30',
+    ], 'onboarding');
+    $startingVersion = $case->fresh()->fact_version;
+
+    $store->synchronizeConfirmedFacts($user, ['entry_mode' => 'has_permit'], 'onboarding', ['visa_expires_at']);
+
+    expect($store->confirmedFact($case, 'visa_expires_at'))->toBeNull();
+    expect(BureaucracyCaseFact::query()
+        ->where('case_id', $case->id)
+        ->where('key', 'visa_expires_at')
+        ->value('state'))->toBe('superseded');
+    expect($case->fresh()->fact_version)->toBeGreaterThan($startingVersion);
 });

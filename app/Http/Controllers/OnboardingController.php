@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\DeadlineType;
 use App\Http\Requests\OnboardingRequest;
 use App\Models\Task;
+use App\Onboarding\ApplyOnboardingAnswers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -87,58 +88,10 @@ class OnboardingController extends Controller
         return redirect()->route('onboarding');
     }
 
-    public function complete(OnboardingRequest $request): RedirectResponse
+    public function complete(OnboardingRequest $request, ApplyOnboardingAnswers $applyOnboardingAnswers): RedirectResponse
     {
-        $user = $request->user();
+        $applyOnboardingAnswers->execute($request->user(), $request->validated());
 
-        $validated = $request->validated();
-        // Long-tail attributes go to the attribute bag (with audit log),
-        // not to user columns.
-        $entryMode = $validated['entry_mode'] ?? null;
-        $housing = $validated['housing_status'] ?? null;
-        $visaExpires = $validated['visa_expires_at'] ?? null;
-        // Planning mode stores no arrival date (excluded by the request rules).
-        $planning = (bool) ($validated['arrival_planned'] ?? false);
-        unset($validated['entry_mode'], $validated['housing_status'], $validated['visa_expires_at'], $validated['arrival_planned']);
-
-        $user->update([
-            ...$validated,
-            // "Before you fly": a null arrival pauses every deadline. Explicit
-            // null also clears a prior date when re-onboarding into planning mode.
-            'arrival_date' => $planning ? null : ($validated['arrival_date'] ?? null),
-            'city' => 'Köln', // Cologne-only for now; the field unlocks other NRW cities later
-            'onboarded_at' => now(),
-        ]);
-
-        if ($entryMode !== null) {
-            $user->setProfileAttribute('entry_mode', $entryMode, 'onboarding');
-        }
-        if ($housing !== null) {
-            $user->setProfileAttribute('housing_status', $housing, 'onboarding');
-        }
-        if ($visaExpires !== null && $entryMode === 'd_visa') {
-            $user->setProfileAttribute('visa_expires_at', $visaExpires, 'onboarding');
-        }
-
-        // Auto-create required Home + Work places if they don't exist
-        if (! $user->places()->where('category', 'home')->exists()) {
-            $user->places()->create([
-                'emoji' => '🏠',
-                'name' => 'Home',
-                'category' => 'home',
-                'sort_order' => 0,
-            ]);
-        }
-
-        if (! $user->places()->where('category', 'work')->exists()) {
-            $user->places()->create([
-                'emoji' => '💼',
-                'name' => 'Work',
-                'category' => 'work',
-                'sort_order' => 1,
-            ]);
-        }
-
-        return redirect()->route('dashboard');
+        return redirect()->route('bureaucracy');
     }
 }
