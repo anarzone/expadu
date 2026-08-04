@@ -33,6 +33,7 @@ test('onboarding can be completed with valid data', function () {
         'veedel' => 'Ehrenfeld',
         'german_level' => 'a2',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'visa_free',
         'has_deutschlandticket' => true,
@@ -58,6 +59,7 @@ test('ambiguous situations require the EU question', function () {
         'situation' => 'student',
         'veedel' => 'Sülz',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
     ]);
 
     $response->assertSessionHasErrors('is_eu');
@@ -71,6 +73,7 @@ test('employee situations do not require the EU question', function () {
         'situation' => 'eu_employee',
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
@@ -86,6 +89,7 @@ test('family and non-EU onboarding flows require an entry mode', function () {
         'situation' => 'family_reunification',
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'interests' => ['parks', 'museums', 'cafes'],
     ])->assertSessionHasErrors('entry_mode');
@@ -100,6 +104,7 @@ test('german level is optional', function () {
         'is_eu' => true,
         'veedel' => 'Deutz',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
@@ -115,6 +120,7 @@ test('interests are optional', function () {
         'situation' => 'eu_employee',
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'interests' => [],
     ]);
@@ -131,6 +137,7 @@ test('onboarding limits interests to the configured maximum', function () {
         'situation' => 'eu_employee',
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'interests' => ['parks', 'museums', 'cafes', 'sports', 'swimming', 'sights', 'family'],
     ]);
@@ -141,7 +148,7 @@ test('onboarding limits interests to the configured maximum', function () {
 test('onboarding derives address deadlines only from a registrable move-in', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
-    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'address_registration_status' => 'registrable', 'moved_in_at' => '2026-01-20', 'interests' => []])->assertRedirect(route('bureaucracy'));
+    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => 'registrable', 'moved_in_at' => '2026-01-20', 'interests' => []])->assertRedirect(route('bureaucracy'));
     $user->refresh();
     expect($user->profile_attributes['housing_status'])->toBe('long_term')->and($user->profile_attributes['moved_in_at'])->toBe('2026-01-20');
 });
@@ -149,7 +156,7 @@ test('onboarding derives address deadlines only from a registrable move-in', fun
 test('onboarding pauses address deadlines when registration is unknown or unavailable', function (string $status) {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
-    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'address_registration_status' => $status, 'interests' => []])->assertRedirect(route('bureaucracy'));
+    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => $status, 'interests' => []])->assertRedirect(route('bureaucracy'));
     $user->refresh();
     expect($user->profile_attributes['housing_status'] ?? null)->toBe($status === 'not_registrable' ? 'temporary' : null)->and($user->profile_attributes['moved_in_at'] ?? null)->toBeNull();
 })->with(['unsure' => 'unsure', 'unavailable' => 'not_registrable']);
@@ -162,6 +169,7 @@ test('onboarding requires an explicit address-registration answer before it pers
         'situation' => 'eu_employee',
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'interests' => [],
     ])->assertSessionHasErrors('address_registration_status');
 
@@ -179,11 +187,38 @@ test('onboarding rejects a move-in date for a non-registrable address', function
         'situation' => 'eu_employee',
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'moved_in_at' => '2026-01-20',
         'interests' => [],
     ])->assertSessionHasErrors('moved_in_at');
 });
+
+test('onboarding rejects a goal that contradicts the current residence title', function (array $answers) {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $this->post(route('onboarding.complete'), [
+        'veedel' => 'Nippes',
+        'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
+        'address_registration_status' => 'not_registrable',
+        'entry_mode' => 'has_permit',
+        'interests' => [],
+        ...$answers,
+    ])->assertSessionHasErrors('case_goal');
+})->with([
+    'Blue Card holder cannot apply for another Blue Card' => [[
+        'situation' => 'non_eu_employee',
+        'current_residence_title' => 'blue_card',
+        'case_goal' => 'blue_card',
+    ]],
+    'family permit holder cannot apply for family reunification again' => [[
+        'situation' => 'family_reunification',
+        'current_residence_title' => 'family_reunification',
+        'case_goal' => 'family_reunification_permit',
+    ]],
+]);
 
 test('onboarding fails with invalid situation', function () {
     $user = User::factory()->notOnboarded()->create();
@@ -217,7 +252,7 @@ test('onboarding fails without required fields', function () {
 
     $response = $this->post(route('onboarding.complete'), []);
 
-    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_date', 'address_registration_status']);
+    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_planned', 'arrival_date', 'address_registration_status']);
 });
 
 test('onboarding fails with future arrival date', function () {
@@ -229,6 +264,7 @@ test('onboarding fails with future arrival date', function () {
         'is_eu' => false,
         'veedel' => 'Ehrenfeld',
         'arrival_date' => '2030-01-01',
+        'arrival_planned' => false,
     ]);
 
     $response->assertSessionHasErrors('arrival_date');
@@ -258,6 +294,7 @@ test('entry mode and derived address status land in the attribute bag with audit
         'situation' => 'non_eu_employee',
         'veedel' => 'Ehrenfeld',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'd_visa',
         'interests' => ['parks', 'museums', 'cafes'],
@@ -301,6 +338,7 @@ test('redo onboarding re-asks everything but keeps all progress', function () {
         'is_eu' => true,
         'veedel' => 'Nippes',
         'arrival_date' => now()->subDays(3)->toDateString(),
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('bureaucracy'));
@@ -371,6 +409,7 @@ test('family D-visa onboarding confirms explicit canonical facts without inventi
         'situation' => 'family_reunification',
         'veedel' => 'Ehrenfeld',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'd_visa',
         'visa_expires_at' => '2026-09-30',
@@ -411,9 +450,10 @@ test('Blue Card onboarding maps only the documented German level and derives the
         'situation' => 'non_eu_employee',
         'veedel' => 'Ehrenfeld',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'has_permit',
-        'current_residence_title' => 'blue_card',
+        'current_residence_title' => 'standard_work_permit',
         'case_goal' => 'blue_card',
         'german_level' => 'a2',
         'documented_german_level' => 'b1',
@@ -437,6 +477,7 @@ test('re-onboarding retires visa sponsor and refinement facts that are no longer
         'situation' => 'family_reunification',
         'veedel' => 'Ehrenfeld',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'd_visa',
         'visa_expires_at' => '2026-09-30',
@@ -450,6 +491,7 @@ test('re-onboarding retires visa sponsor and refinement facts that are no longer
         'situation' => 'eu_employee',
         'veedel' => 'Ehrenfeld',
         'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'd_visa',
         'visa_expires_at' => '2027-01-31',
@@ -485,6 +527,7 @@ test('onboarding rolls back profile and canonical fact writes when required plac
             'situation' => 'non_eu_employee',
             'veedel' => 'Ehrenfeld',
             'arrival_date' => '2026-01-15',
+            'arrival_planned' => false,
             'address_registration_status' => 'not_registrable',
             'entry_mode' => 'visa_free',
             'interests' => ['parks', 'museums', 'cafes'],

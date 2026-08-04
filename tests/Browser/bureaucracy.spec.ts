@@ -199,6 +199,9 @@ test.describe('Onboarding v2', () => {
             .getByRole('button', { name: 'Work residence permit' })
             .click();
         await page
+            .getByRole('button', { name: 'Apply for an EU Blue Card' })
+            .click();
+        await page
             .getByLabel('When does this title expire?')
             .fill('2027-09-01');
         await page
@@ -210,12 +213,12 @@ test.describe('Onboarding v2', () => {
         await expect(
             page.getByLabel('When does this title expire?'),
         ).toHaveValue('');
+        await expect(
+            page.getByRole('button', { name: 'Apply for an EU Blue Card' }),
+        ).toHaveCount(0);
         await page
             .getByLabel('When does this title expire?')
             .fill('2027-10-01');
-        await page
-            .getByRole('button', { name: 'Apply for an EU Blue Card' })
-            .click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
         // Step 3 keeps address-registration status distinct from arrival.
@@ -241,6 +244,19 @@ test.describe('Onboarding v2', () => {
         await page
             .getByLabel('When did you move into this address?')
             .fill('2026-07-01');
+        await expect(
+            page.getByRole('button', { name: 'Continue' }),
+        ).toBeDisabled();
+        await page.getByRole('button', { name: "I'm here" }).click();
+        await expect(
+            page.getByLabel('When did you arrive in Germany?'),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Continue' }),
+        ).toBeDisabled();
+        await page
+            .getByLabel('When did you arrive in Germany?')
+            .fill('2026-06-15');
         await page.getByRole('button', { name: 'B1' }).click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
@@ -264,6 +280,12 @@ test.describe('Onboarding v2', () => {
         await expect(
             page.getByText('2027-10-01', { exact: true }),
         ).toBeVisible();
+        await expect(
+            page.getByText('2026-06-15', { exact: true }),
+        ).toBeVisible();
+        await expect(page.getByText('Your goal', { exact: true })).toHaveCount(
+            0,
+        );
         await expect(page.getByText('B1', { exact: true })).toBeVisible();
         await expect(page.getByText('First on your list')).toHaveCount(0);
         await expect(page.getByText(/due \d+ \w+/)).toHaveCount(0);

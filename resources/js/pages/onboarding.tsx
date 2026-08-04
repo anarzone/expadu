@@ -19,8 +19,8 @@ export type OnboardingData = {
     veedel: string;
     has_deutschlandticket: boolean;
     arrival_date: string;
-    // "I haven't arrived yet" — submits a null arrival, pausing all deadlines.
-    arrival_planned: boolean;
+    // Null means they have not answered whether they are here yet.
+    arrival_planned: boolean | null;
     interests: string[];
     current_residence_title: string;
     residence_title_expires_at: string;
@@ -59,12 +59,6 @@ export default function Onboarding() {
     }>().props;
     const [step, setStep] = useState(1);
 
-    // The arrival selects display the current month/year by default — the
-    // form must hold that same value, or Continue stays disabled with no
-    // visible reason for anyone who arrived this month.
-    const now = new Date();
-    const defaultArrival = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-
     const form = useForm<OnboardingData>({
         situation: '',
         is_eu: null,
@@ -72,8 +66,8 @@ export default function Onboarding() {
         visa_expires_at: '',
         veedel: '',
         has_deutschlandticket: false,
-        arrival_date: defaultArrival,
-        arrival_planned: false,
+        arrival_date: '',
+        arrival_planned: null,
         interests: [],
         current_residence_title: '',
         residence_title_expires_at: '',
@@ -172,6 +166,7 @@ export default function Onboarding() {
                     form.data.address_registration_status !== '' &&
                     (form.data.address_registration_status !== 'registrable' ||
                         form.data.moved_in_at !== '') &&
+                    form.data.arrival_planned !== null &&
                     (form.data.arrival_planned || form.data.arrival_date !== '')
                 );
             case 4:
@@ -230,6 +225,7 @@ export default function Onboarding() {
                                     ...form.data,
                                     current_residence_title: v,
                                     residence_title_expires_at: '',
+                                    case_goal: '',
                                 })
                             }
                             residenceTitleExpiresAt={
@@ -265,12 +261,7 @@ export default function Onboarding() {
                             }
                             onArrivalPlannedChange={(planned) => {
                                 form.setData('arrival_planned', planned);
-                                // Clear the date in planning mode; restore the
-                                // sensible default when they say they've arrived.
-                                form.setData(
-                                    'arrival_date',
-                                    planned ? '' : defaultArrival,
-                                );
+                                form.setData('arrival_date', '');
                             }}
                             documentedGermanLevel={
                                 form.data.documented_german_level

@@ -35,7 +35,7 @@ class OnboardingRequest extends FormRequest
             // Planning mode: a not-yet-arrived expat has no arrival date. The
             // engine already renders this as the "Before you fly" phase with
             // every deadline paused, so we simply store a null arrival.
-            'arrival_planned' => ['nullable', 'boolean'],
+            'arrival_planned' => ['required', 'boolean'],
             'arrival_date' => ['nullable', 'exclude_if:arrival_planned,true', 'required_unless:arrival_planned,true', 'date', 'before_or_equal:today'],
             'veedel' => ['required', 'string', Rule::in($veedels)],
             'german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
@@ -54,7 +54,7 @@ class OnboardingRequest extends FormRequest
             'visa_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('entry_mode') !== 'd_visa'), 'nullable', 'date_format:Y-m-d'],
             'current_residence_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_18c', 'other'])],
             'residence_title_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || ! $this->filled('current_residence_title')), 'nullable', 'date_format:Y-m-d'],
-            'case_goal' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['blue_card', 'family_reunification_permit', 'renew_current_title', 'settlement_permit', 'understand_options'])],
+            'case_goal' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in($this->availableCaseGoals())],
             'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
             'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
             'moved_in_at' => ['nullable', 'date_format:Y-m-d', Rule::requiredIf(fn (): bool => $this->input('address_registration_status') === 'registrable'), Rule::prohibitedIf(fn (): bool => $this->input('address_registration_status') !== 'registrable')],
@@ -85,5 +85,23 @@ class OnboardingRequest extends FormRequest
             Situation::NonEuEmployee->value, Situation::FamilyReunification->value => true,
             default => $this->boolean('is_eu') === false,
         };
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function availableCaseGoals(): array
+    {
+        $currentTitle = $this->input('current_residence_title');
+
+        if ($this->input('situation') === Situation::FamilyReunification->value) {
+            return $currentTitle === 'family_reunification'
+                ? ['renew_current_title', 'settlement_permit', 'understand_options']
+                : ['family_reunification_permit', 'renew_current_title', 'understand_options'];
+        }
+
+        return $currentTitle === 'blue_card'
+            ? ['renew_current_title', 'settlement_permit', 'understand_options']
+            : ['blue_card', 'renew_current_title', 'settlement_permit', 'understand_options'];
     }
 }

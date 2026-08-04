@@ -57,6 +57,11 @@ export function ConfirmationStep({ data }: { data: OnboardingData }) {
         data.moved_in_at !== ''
             ? ['Move-in date', data.moved_in_at]
             : null,
+        data.arrival_planned === true
+            ? ['Arrival', 'Still planning']
+            : data.arrival_planned === false && data.arrival_date !== ''
+              ? ['Arrival', data.arrival_date]
+              : null,
         data.entry_mode !== ''
             ? ['Entry', entryModeLabels[data.entry_mode]]
             : null,

@@ -9,21 +9,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { ICON_STROKE } from '@/constants/icons';
 
-const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-];
-
 const germanLevels = [
     { value: 'none', label: 'None' },
     { value: 'a1', label: 'A1' },
@@ -33,9 +18,6 @@ const germanLevels = [
     { value: 'c1', label: 'C1' },
     { value: 'c2', label: 'C2' },
 ];
-
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 7 }, (_, i) => currentYear - i);
 
 export function VeedelStep({
     veedels,
@@ -57,7 +39,7 @@ export function VeedelStep({
     veedels: Record<string, string[]>;
     veedel: string;
     arrivalDate: string;
-    arrivalPlanned: boolean;
+    arrivalPlanned: boolean | null;
     hasDeutschlandticket: boolean;
     onVeedelChange: (value: string) => void;
     onArrivalDateChange: (value: string) => void;
@@ -70,15 +52,6 @@ export function VeedelStep({
     movedInAt: string;
     onMovedInAtChange: (value: string) => void;
 }) {
-    const parsed = arrivalDate ? new Date(arrivalDate) : null;
-    const selectedMonth = parsed ? parsed.getMonth() : new Date().getMonth();
-    const selectedYear = parsed ? parsed.getFullYear() : currentYear;
-
-    function updateDate(month: number, year: number) {
-        const date = new Date(year, month, 1);
-        onArrivalDateChange(date.toISOString().split('T')[0]);
-    }
-
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
@@ -159,7 +132,7 @@ export function VeedelStep({
                                 onChange={(event) =>
                                     onMovedInAtChange(event.target.value)
                                 }
-                                className="rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
                             />
                         </label>
                     )}
@@ -200,55 +173,30 @@ export function VeedelStep({
                             </button>
                         ))}
                     </div>
-                    {arrivalPlanned ? (
+                    {arrivalPlanned === true ? (
                         <p className="mt-1.5 text-xs text-muted-foreground">
                             No date yet — date-based guidance stays on hold.
                             We’ll show a <strong>Before you fly</strong> plan
                             until you can update your arrival.
                         </p>
-                    ) : (
+                    ) : arrivalPlanned === false ? (
                         <>
-                            <div className="flex gap-2.5">
-                                <select
-                                    value={selectedMonth}
-                                    onChange={(e) =>
-                                        updateDate(
-                                            Number(e.target.value),
-                                            selectedYear,
-                                        )
-                                    }
-                                    className="flex-1 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
-                                >
-                                    {months.map((m, i) => (
-                                        <option key={m} value={i}>
-                                            {m}
-                                        </option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={selectedYear}
-                                    onChange={(e) =>
-                                        updateDate(
-                                            selectedMonth,
-                                            Number(e.target.value),
-                                        )
-                                    }
-                                    className="w-[100px] rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
-                                >
-                                    {years.map((y) => (
-                                        <option key={y} value={y}>
-                                            {y}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            <input
+                                type="date"
+                                aria-label="When did you arrive in Germany?"
+                                value={arrivalDate}
+                                onChange={(event) =>
+                                    onArrivalDateChange(event.target.value)
+                                }
+                                className="min-h-11 w-full rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                            />
                             <p className="mt-1.5 text-xs text-muted-foreground">
                                 Arrival helps sequence your first plan. Your
                                 move-in date, not arrival, anchors address
                                 registration.
                             </p>
                         </>
-                    )}
+                    ) : null}
                 </div>
 
                 <div>

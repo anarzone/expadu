@@ -113,40 +113,33 @@ export function SituationStep({
 }) {
     const residenceFactsApply =
         value === 'family_reunification' || isEu === false;
+    const sharedGoals = [
+        { value: 'renew_current_title', label: 'Renew my current title' },
+        { value: 'settlement_permit', label: 'Explore settlement' },
+        { value: 'understand_options', label: "I'm not sure" },
+    ];
     const caseGoals =
         value === 'family_reunification'
-            ? [
-                  {
-                      value: 'family_reunification_permit',
-                      label: 'Apply for family reunification',
-                  },
-                  {
-                      value: 'renew_current_title',
-                      label: 'Renew my current title',
-                  },
-                  {
-                      value: 'understand_options',
-                      label: "I'm not sure",
-                  },
-              ]
-            : [
-                  {
-                      value: 'blue_card',
-                      label: 'Apply for an EU Blue Card',
-                  },
-                  {
-                      value: 'renew_current_title',
-                      label: 'Renew my current title',
-                  },
-                  {
-                      value: 'settlement_permit',
-                      label: 'Explore settlement',
-                  },
-                  {
-                      value: 'understand_options',
-                      label: "I'm not sure",
-                  },
-              ];
+            ? currentResidenceTitle === 'family_reunification'
+                ? sharedGoals
+                : [
+                      {
+                          value: 'family_reunification_permit',
+                          label: 'Apply for family reunification',
+                      },
+                      ...sharedGoals.filter(
+                          (goal) => goal.value !== 'settlement_permit',
+                      ),
+                  ]
+            : currentResidenceTitle === 'blue_card'
+              ? sharedGoals
+              : [
+                    {
+                        value: 'blue_card',
+                        label: 'Apply for an EU Blue Card',
+                    },
+                    ...sharedGoals,
+                ];
 
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
@@ -270,7 +263,7 @@ export function SituationStep({
                                     onChange={(e) =>
                                         onVisaExpiresAtChange(e.target.value)
                                     }
-                                    className="rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                    className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
                                 />
                             </label>
                             <p className="mt-1.5 text-xs text-muted-foreground">
@@ -350,7 +343,7 @@ export function SituationStep({
                                                 event.target.value,
                                             )
                                         }
-                                        className="rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                        className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
                                     />
                                 </label>
                             )}
