@@ -35,15 +35,15 @@ class BureaucracyPersonas
             ['key' => 'eu-student', 'label' => 'EU student', 'situation' => Situation::Student, 'is_eu' => true, 'path' => null, 'entry_mode' => 'has_permit'],
             ['key' => 'eu-freelancer', 'label' => 'EU freelancer (liberal)', 'situation' => Situation::Freelancer, 'is_eu' => true, 'path' => null, 'entry_mode' => 'has_permit'],
             ['key' => 'eu-gewerbe', 'label' => 'EU freelancer (Gewerbe)', 'situation' => Situation::Freelancer, 'is_eu' => true, 'path' => 'freelancer_gewerbe', 'entry_mode' => 'has_permit'],
-            ['key' => 'neu-employee-dvisa', 'label' => 'Non-EU employee · standard · D-visa', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => null, 'entry_mode' => 'd_visa'],
-            ['key' => 'neu-employee-visafree', 'label' => 'Non-EU employee · standard · visa-free', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => null, 'entry_mode' => 'visa_free'],
-            ['key' => 'neu-employee-haspermit', 'label' => 'Non-EU employee · standard · has permit', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => null, 'entry_mode' => 'has_permit'],
+            ['key' => 'neu-employee-dvisa', 'label' => 'Non-EU employee · standard · D-visa', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => 'non_eu_employee', 'entry_mode' => 'd_visa'],
+            ['key' => 'neu-employee-visafree', 'label' => 'Non-EU employee · standard · visa-free', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => 'non_eu_employee', 'entry_mode' => 'visa_free'],
+            ['key' => 'neu-employee-haspermit', 'label' => 'Non-EU employee · standard · has permit', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => 'non_eu_employee', 'entry_mode' => 'has_permit'],
             ['key' => 'neu-bluecard', 'label' => 'Non-EU employee · Blue Card · D-visa', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => 'non_eu_employee_blue_card', 'entry_mode' => 'd_visa'],
             ['key' => 'neu-chancenkarte', 'label' => 'Non-EU employee · Chancenkarte · visa-free', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => 'non_eu_employee_chancenkarte', 'entry_mode' => 'visa_free'],
             ['key' => 'neu-student', 'label' => 'Non-EU student · D-visa', 'situation' => Situation::Student, 'is_eu' => false, 'path' => null, 'entry_mode' => 'd_visa'],
             ['key' => 'neu-freelancer', 'label' => 'Non-EU freelancer (liberal §21.5) · D-visa', 'situation' => Situation::Freelancer, 'is_eu' => false, 'path' => null, 'entry_mode' => 'd_visa'],
             ['key' => 'neu-gewerbe', 'label' => 'Non-EU freelancer (Gewerbe §21.1) · D-visa', 'situation' => Situation::Freelancer, 'is_eu' => false, 'path' => 'freelancer_gewerbe', 'entry_mode' => 'd_visa'],
-            ['key' => 'family-neu', 'label' => 'Family reunification → non-EU sponsor', 'situation' => Situation::FamilyReunification, 'is_eu' => false, 'path' => null, 'entry_mode' => 'd_visa'],
+            ['key' => 'family-neu', 'label' => 'Family reunification → non-EU sponsor', 'situation' => Situation::FamilyReunification, 'is_eu' => false, 'path' => 'family_reunification', 'entry_mode' => 'd_visa'],
             ['key' => 'family-german', 'label' => 'Family reunification → German sponsor', 'situation' => Situation::FamilyReunification, 'is_eu' => false, 'path' => 'family_reunification_of_german', 'entry_mode' => 'd_visa'],
             ['key' => 'family-eu', 'label' => 'Family reunification → EU sponsor', 'situation' => Situation::FamilyReunification, 'is_eu' => false, 'path' => 'family_reunification_of_eu_citizen', 'entry_mode' => 'visa_free'],
             ['key' => 'nomad-neu', 'label' => 'Digital nomad / other · non-EU', 'situation' => Situation::DigitalNomad, 'is_eu' => false, 'path' => null, 'entry_mode' => 'visa_free'],
@@ -60,8 +60,8 @@ class BureaucracyPersonas
     public static function demo(): array
     {
         $showcases = [
-            ['key' => 'planning', 'label' => 'Planning the move (not arrived yet)', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => null, 'entry_mode' => 'd_visa', 'planned' => true],
-            ['key' => 'temp-housing', 'label' => 'Non-EU employee · temporary housing', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => null, 'entry_mode' => 'visa_free', 'housing' => 'temporary'],
+            ['key' => 'planning', 'label' => 'Planning the move (not arrived yet)', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => 'non_eu_employee', 'entry_mode' => 'd_visa', 'planned' => true],
+            ['key' => 'temp-housing', 'label' => 'Non-EU employee · temporary housing', 'situation' => Situation::NonEuEmployee, 'is_eu' => false, 'path' => 'non_eu_employee', 'entry_mode' => 'visa_free', 'housing' => 'temporary'],
             ['key' => 'foreign-licence', 'label' => 'EU employee · foreign driving licence', 'situation' => Situation::EuEmployee, 'is_eu' => true, 'path' => null, 'entry_mode' => 'has_permit', 'license' => 'other'],
         ];
 
@@ -100,7 +100,7 @@ class BureaucracyPersonas
                 'label' => 'Case · Joining spouse · sponsor Blue Card pending',
                 'situation' => Situation::FamilyReunification,
                 'is_eu' => false,
-                'path' => null,
+                'path' => 'family_reunification',
                 'entry_mode' => 'd_visa',
                 'facts' => [
                     'current_residence_title' => 'national_d_visa',
@@ -135,7 +135,7 @@ class BureaucracyPersonas
                 'label' => 'Case · Spouse of §18c holder · three years',
                 'situation' => Situation::FamilyReunification,
                 'is_eu' => false,
-                'path' => null,
+                'path' => 'family_reunification',
                 'entry_mode' => 'has_permit',
                 'facts' => [
                     'current_residence_title' => 'family_reunification',
@@ -157,7 +157,7 @@ class BureaucracyPersonas
                 'label' => 'Case · Family permit renewal · almost four years',
                 'situation' => Situation::FamilyReunification,
                 'is_eu' => false,
-                'path' => null,
+                'path' => 'family_reunification',
                 'entry_mode' => 'has_permit',
                 'facts' => [
                     'current_residence_title' => 'family_reunification',
@@ -184,7 +184,7 @@ class BureaucracyPersonas
                 'entry_mode' => 'has_permit',
                 'facts' => [
                     'current_residence_title' => 'other',
-                    'case_goal' => 'understand_options',
+                    'case_goal' => 'blue_card',
                     'citizenship_group' => 'non_eu',
                     'purpose' => 'employment',
                     'permit_track' => 'blue_card',

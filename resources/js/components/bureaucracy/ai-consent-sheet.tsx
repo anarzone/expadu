@@ -48,7 +48,7 @@ export function AiConsentSheet({
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-end justify-center bg-[#18170F]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-5 dark:bg-black/65"
+            className="fixed inset-0 z-[10000] flex items-end justify-center bg-[#18170F]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-5 dark:bg-black/65"
             role="presentation"
         >
             <section

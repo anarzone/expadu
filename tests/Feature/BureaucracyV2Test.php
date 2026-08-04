@@ -260,7 +260,10 @@ test('import aborts before writing when a task title is missing', function () {
 // ── Path refinement ────────────────────────────────────────────────────
 
 test('refining the path swaps in the sub-path tasks and hides untouched old-path ones', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
+    ]);
 
     $shared = Task::factory()->create([
         'key' => 'p.anmeldung',

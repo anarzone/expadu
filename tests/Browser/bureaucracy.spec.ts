@@ -303,6 +303,73 @@ test.describe('Verified bureaucracy case plan', () => {
     });
 });
 
+const investigatedPersonas = [
+    {
+        persona: 'case-blue-card-first',
+        status: 'Case matched',
+        section: /Do now/,
+        item: 'Prepare the evidence for your first Blue Card application',
+    },
+    {
+        persona: 'case-family-sponsor-pending',
+        status: 'One detail needed',
+        section: /Information we still need/,
+        item: "Prepare the joining spouse's first residence application",
+    },
+    {
+        persona: 'case-blue-card-b1-12',
+        status: 'Case matched',
+        section: /Coming up/,
+        item: 'Track the 21-month Blue Card settlement route',
+    },
+    {
+        persona: 'case-spouse-18c-three-years',
+        status: 'Case matched',
+        section: /Options you may qualify for/,
+        item: 'Review the special settlement option for spouses of §18c holders',
+    },
+    {
+        persona: 'case-family-renewal-four-years',
+        status: 'Case matched',
+        section: /Do now/,
+        item: 'Renew the family permit before it expires',
+    },
+    {
+        persona: 'case-unsupported-title',
+        status: 'Partial coverage',
+        section: /Not currently covered/,
+        item: 'Verify an unrecognized title against the official source',
+    },
+] as const;
+
+test.describe('Investigated QA personas', () => {
+    for (const scenario of investigatedPersonas) {
+        test(`${scenario.persona} shows its reviewed plan state`, async ({
+            page,
+        }) => {
+            const errors: string[] = [];
+            page.on('pageerror', (error) => errors.push(error.message));
+
+            await switchPersona(page, scenario.persona, true);
+
+            await expect(
+                page.getByText(scenario.status, { exact: true }),
+            ).toBeVisible();
+            await expect(
+                page.getByRole('heading', { name: scenario.section }),
+            ).toBeVisible();
+            await expect(
+                page.getByRole('heading', {
+                    name: scenario.item,
+                    exact: true,
+                }),
+            ).toBeVisible();
+            await expect(page.getByText('Case assistant')).toBeVisible();
+            expect(errors).toHaveLength(0);
+        });
+    }
+});
+
 test.describe('Onboarding v2', () => {
     test('onboarding case facts stay progressive and avoid task claims', async ({
         page,

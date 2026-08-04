@@ -88,20 +88,20 @@ test('malformed operator conditions fail explicitly', function (mixed $condition
 
 dataset('path fixtures', [
     'non-EU employee, standard, visa-free' => [
-        ['situation' => 'non_eu_employee'],
-        [],
+        ['situation' => 'non_eu_employee', 'bureaucracy_path' => 'non_eu_employee'],
+        ['entry_mode' => 'visa_free'],
         ['nee.anmeldung', 'nee.residence_permit', 'shared.long_game'],
         ['bc.blue_card', 'eue.anmeldung', 'core.anmeldung', 'stu.residence_permit'],
     ],
     'non-EU employee who already holds a permit' => [
-        ['situation' => 'non_eu_employee'],
+        ['situation' => 'non_eu_employee', 'bureaucracy_path' => 'non_eu_employee'],
         ['entry_mode' => 'has_permit'],
         ['nee.anmeldung'],
         ['nee.residence_permit'],
     ],
     'Blue Card path shares the employee spine' => [
         ['situation' => 'non_eu_employee', 'bureaucracy_path' => 'non_eu_employee_blue_card'],
-        [],
+        ['entry_mode' => 'd_visa'],
         ['nee.anmeldung', 'bc.blue_card', 'bc.ne_fast_track'],
         ['nee.residence_permit', 'nee.ne_check'],
     ],
@@ -119,19 +119,19 @@ dataset('path fixtures', [
     ],
     'non-EU student gets the §16b permit' => [
         ['situation' => 'student', 'is_eu' => false],
-        [],
+        ['entry_mode' => 'd_visa'],
         ['stu.residence_permit', 'stu.work_rules'],
         [],
     ],
     'Gewerbe freelancer swaps the permit, keeps the tax spine' => [
         ['situation' => 'freelancer', 'is_eu' => false, 'bureaucracy_path' => 'freelancer_gewerbe'],
-        [],
+        ['entry_mode' => 'd_visa'],
         ['fre.anmeldung', 'fre.fragebogen', 'gw.residence_permit', 'gw.gewerbeanmeldung'],
         ['fre.residence_permit', 'fre.gewerbe_check'],
     ],
     'family joining a German citizen' => [
         ['situation' => 'family_reunification', 'bureaucracy_path' => 'family_reunification_of_german'],
-        [],
+        ['entry_mode' => 'd_visa'],
         ['fam.anmeldung', 'famde.residence_permit', 'famde.ne_three_years'],
         ['fam.residence_permits', 'fameu.aufenthaltskarte'],
     ],
@@ -334,6 +334,7 @@ test('a D-visa holder sees the visa-expiry framing instead of a 90-day date', fu
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
         'profile_attributes' => ['entry_mode' => 'd_visa'],
     ]);
 
@@ -367,6 +368,7 @@ test('imported content carries substituted figures and cards explain themselves'
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
         'bureaucracy_path' => 'non_eu_employee_blue_card',
+        'profile_attributes' => ['entry_mode' => 'd_visa'],
     ]);
 
     $this->actingAs($user);
@@ -418,7 +420,10 @@ test('the roadmap phase follows days since arrival', function () {
 test('life-event tasks stay dormant until the event is recorded — then wake with anchored deadlines', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
+    ]);
 
     $this->actingAs($user);
 
@@ -463,6 +468,7 @@ test('the Kindergeld life-event task skips the family branch (it has its own)', 
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'family_reunification',
+        'bureaucracy_path' => 'family_reunification',
         'profile_attributes' => ['child_born_at' => now()->subDays(10)->toDateString()],
     ]);
 
@@ -518,7 +524,9 @@ test('task cards resolve their office (Bezirk Bürgeramt) and document origins',
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
         'veedel' => 'Ehrenfeld',
+        'profile_attributes' => ['entry_mode' => 'visa_free'],
     ]);
 
     $this->actingAs($user);
@@ -545,7 +553,11 @@ test('task cards resolve their office (Bezirk Bürgeramt) and document origins',
 test('the submit task is actionable on day one; attend waits for it', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
+        'profile_attributes' => ['entry_mode' => 'visa_free'],
+    ]);
 
     $this->actingAs($user);
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
@@ -570,7 +582,11 @@ test('the submit task is actionable on day one; attend waits for it', function (
 test('a booked appointment becomes the effective deadline and feeds reminders', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
+        'profile_attributes' => ['entry_mode' => 'visa_free'],
+    ]);
     $this->actingAs($user);
     $this->get(route('bureaucracy')); // materialise
 
@@ -711,6 +727,7 @@ test('a D-visa holder who gives the expiry date gets a real countdown', function
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
         'profile_attributes' => [
             'entry_mode' => 'd_visa',
             'visa_expires_at' => now()->addDays(30)->toDateString(),
@@ -736,6 +753,7 @@ test('without the expiry date the card offers to capture it', function () {
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
+        'bureaucracy_path' => 'non_eu_employee',
         'profile_attributes' => ['entry_mode' => 'd_visa'],
     ]);
 

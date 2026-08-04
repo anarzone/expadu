@@ -160,6 +160,7 @@ test('matcher accepts exact trusted predicates compiled from a persona branch', 
         'case_goal' => 'renew_current_title',
     ], [
         'situation' => 'family_reunification',
+        'bureaucracy_path' => 'family_reunification',
     ]));
 
     expect($result->coverageState)->toBe(BureaucracyCoverageState::Matched)

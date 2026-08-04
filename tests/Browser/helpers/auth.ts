@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /**
  * Log in via the Fortify login form and wait for the dashboard to load.

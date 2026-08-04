@@ -35,11 +35,13 @@ test.describe('Dashboard (Today)', () => {
         await page.waitForTimeout(1500);
 
         const pin = page.getByRole('button', { name: /plan around/i }).first();
+
         // Skip gracefully if the test DB has no spots seeded.
         if (await pin.count()) {
             await pin.click();
             await expect(page.getByText(/Plan around \d+ spot/i)).toBeVisible();
         }
+
         expect(errors).toHaveLength(0);
     });
 

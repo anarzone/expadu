@@ -33,6 +33,11 @@ final class ApplyOnboardingAnswers
                 : null;
             $caseGoal = $residenceFactsApply ? ($validated['case_goal'] ?? null) : null;
             $permitTrack = $this->permitTrack($currentResidenceTitle, $caseGoal);
+            $bureaucracyPath = $this->bureaucracyPath(
+                $situation,
+                $permitTrack,
+                $validated['sponsor_current_title'] ?? null,
+            );
             $planning = (bool) ($validated['arrival_planned'] ?? false);
             $addressStatus = $validated['address_registration_status'] ?? null;
             $movedInAt = $addressStatus === 'registrable' ? ($validated['moved_in_at'] ?? null) : null;
@@ -59,6 +64,7 @@ final class ApplyOnboardingAnswers
             $lockedUser->update([
                 ...$profileValues,
                 'is_eu' => $isEu,
+                'bureaucracy_path' => $bureaucracyPath,
                 'arrival_date' => $planning ? null : ($validated['arrival_date'] ?? null),
                 'city' => 'Köln',
                 'onboarded_at' => now(),
@@ -162,5 +168,18 @@ final class ApplyOnboardingAnswers
         }
 
         return $currentResidenceTitle === 'standard_work_permit' ? 'standard' : null;
+    }
+
+    private function bureaucracyPath(
+        Situation $situation,
+        ?string $permitTrack,
+        ?string $sponsorCurrentTitle,
+    ): ?string {
+        return match (true) {
+            $situation === Situation::NonEuEmployee && $permitTrack === 'blue_card' => 'non_eu_employee_blue_card',
+            $situation === Situation::NonEuEmployee && $permitTrack === 'standard' => 'non_eu_employee',
+            $situation === Situation::FamilyReunification && $sponsorCurrentTitle !== null => 'family_reunification',
+            default => null,
+        };
     }
 }

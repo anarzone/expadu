@@ -34,8 +34,11 @@ return [
                 'case.family.first_permit.prepare',
                 'case.family.register_address',
             ],
-            'information_needed' => ['case.family.first_permit.sponsor_pending_review'],
         ],
+        'information_needed' => [[
+            'question' => 'Is your household livelihood currently secured without Bürgergeld or Sozialhilfe?',
+            'why' => 'Residence and settlement routes can depend on secured livelihood.',
+        ]],
         'deadlines' => [
             'case.family.first_permit.prepare' => '2026-10-01',
         ],
