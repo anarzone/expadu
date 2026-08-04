@@ -31,6 +31,128 @@ it('yields a complete, gap-free path for every persona', function () {
 });
 
 /**
+ * The audit sweep must not depend on `--full`. Reachability is only meaningful
+ * over the whole modifier cross-product: life-event tasks stay dormant until
+ * their trigger fires, and the licence task needs a licence-bearing persona, so
+ * a narrow sweep reported five healthy tasks as dead cards — and `--fail-on-gap`
+ * counted them, meaning the gate failed on phantom gaps whenever `--full` was
+ * omitted. Both invocations must now agree.
+ */
+it('audits the full modifier sweep whether or not --full is passed', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $exitCode = Artisan::call('bureaucracy:coverage', ['--fail-on-gap' => true]);
+    $output = Artisan::output();
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('✓ No gaps.')
+        ->and($output)->not->toContain('Unreachable tasks')
+        ->and($output)->not->toContain('Silently-hidden tasks');
+});
+
+/**
+ * The teaser-hygiene check resolves waited-on attributes against each persona's
+ * real attribute bag. Passing an empty bag marked branch-defining attributes
+ * (purpose, citizenship_group, permit_track, business_type, sponsor) as
+ * "unknown" even though every real user always has them — reporting
+ * `shared.driving_licence` as silently hidden when its only open attribute,
+ * `license_country`, does have a teaser question.
+ */
+it('does not report branch-defining attributes as missing teaser questions', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    Artisan::call('bureaucracy:coverage');
+
+    expect(Artisan::output())
+        ->toContain('Bureaucracy coverage')
+        ->not->toContain('shared.driving_licence')
+        ->not->toContain('waits on `purpose`')
+        ->not->toContain('waits on `citizenship_group`')
+        ->not->toContain('waits on `sponsor`');
+});
+
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function task3PublishUnreachable(string $key, array $overrides): Task
+{
+    return Task::factory()->create([
+        'key' => $key,
+        'title' => "Fixture — {$key}",
+        'is_published' => true,
+        'review_status' => 'legacy',
+        ...$overrides,
+    ]);
+}
+
+/**
+ * The teaser-hygiene check must judge a task that IS unreachable by the same
+ * rule. This fixture only ever goes Unknown — `license_country` is null for some
+ * swept personas and never matches otherwise — so it survives the reachability
+ * guard and reaches the attribute comparison itself. Its other two attributes
+ * are branch-defining and always known, so the only genuinely open attribute is
+ * `license_country`, which has a teaser question: no orphan, gate stays green.
+ * Resolved against an empty bag instead, the two branch attributes would read as
+ * unknown, have no teaser question, and fail the gate.
+ */
+it('judges teaser hygiene against the persona attribute bag, not an empty one', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    task3PublishUnreachable('fixture.licence_gated', [
+        'applies_if' => [[
+            'purpose' => 'employment',
+            'citizenship_group' => 'non_eu',
+            'license_country' => 'unobtainable_value',
+        ]],
+    ]);
+
+    $exitCode = Artisan::call('bureaucracy:coverage', ['--fail-on-gap' => true]);
+    $output = Artisan::output();
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->not->toContain('waits on `purpose`')
+        ->and($output)->not->toContain('waits on `citizenship_group`');
+});
+
+/**
+ * Guard against the fix above going too far: silencing the false positives must
+ * not silence a genuine dead card. A task gated on a value no persona can hold
+ * is unreachable and unaskable, and must both print and fail the gate.
+ */
+it('still fails the gate on a genuinely unreachable task', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    task3PublishUnreachable('fixture.unreachable', [
+        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'martian']],
+    ]);
+
+    $exitCode = Artisan::call('bureaucracy:coverage', ['--fail-on-gap' => true]);
+
+    expect($exitCode)->toBe(1)
+        ->and(Artisan::output())
+        ->toContain('Unreachable tasks')
+        ->toContain('fixture.unreachable');
+});
+
+/**
+ * Invariant 5 must be enforced, not merely printed: a task that goes Unknown on
+ * an attribute with no teaser question can never be asked about, so it would be
+ * silently hidden from every user forever.
+ */
+it('still fails the gate on a silently-hidden task', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    task3PublishUnreachable('fixture.silently_hidden', [
+        'applies_if' => [['unmapped_attribute' => 'yes']],
+    ]);
+
+    $exitCode = Artisan::call('bureaucracy:coverage', ['--fail-on-gap' => true]);
+
+    expect($exitCode)->toBe(1)
+        ->and(Artisan::output())
+        ->toContain('Silently-hidden tasks')
+        ->toContain('fixture.silently_hidden')
+        ->toContain('waits on `unmapped_attribute`');
+});
+
+/**
  * Regression guard for the trade-registration dependency: Gewerbeanmeldung must
  * never hard-depend on the §21 residence permit, which is non_eu_only and gated
  * to d_visa/visa_free. Depending on it blocks the trade registration forever for
