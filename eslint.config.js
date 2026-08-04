@@ -60,6 +60,13 @@ export default [
                 },
                 node: true,
             },
+            // Classify every `@/` alias as internal by pattern rather than by
+            // resolving it. `resources/js/{routes,actions,wayfinder}` are
+            // gitignored Wayfinder output: they exist locally but NOT in the
+            // lint job, which never generates them. Resolution-based grouping
+            // therefore disagreed between the two (0 errors locally, 18 in CI),
+            // and no source order could satisfy both.
+            'import/internal-regex': '^@/',
         },
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
@@ -118,6 +125,9 @@ export default [
             'vendor',
             'node_modules',
             'public',
+            // Agent worktrees hold full copies of the project; linting them
+            // makes `eslint .` walk the tree N+1 times and hang locally.
+            '.claude/worktrees',
             'bootstrap/ssr',
             'tailwind.config.js',
             'vite.config.ts',
@@ -134,7 +144,11 @@ export default [
         },
         rules: {
             curly: ['error', 'all'],
-            '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
+            '@stylistic/brace-style': [
+                'error',
+                '1tbs',
+                { allowSingleLine: false },
+            ],
         },
     },
 ];
