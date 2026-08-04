@@ -196,11 +196,20 @@ test.describe('Onboarding v2', () => {
             })
             .click();
         await page
+            .getByRole('button', { name: 'Work residence permit' })
+            .click();
+        await page
+            .getByLabel('When does this title expire?')
+            .fill('2027-09-01');
+        await page
             .getByRole('button', { name: 'EU Blue Card', exact: true })
             .click();
         await expect(
             page.getByLabel('When does this title expire?'),
         ).toBeVisible();
+        await expect(
+            page.getByLabel('When does this title expire?'),
+        ).toHaveValue('');
         await page
             .getByLabel('When does this title expire?')
             .fill('2027-10-01');
@@ -217,12 +226,18 @@ test.describe('Onboarding v2', () => {
         await page
             .getByRole('button', { name: 'Ehrenfeld', exact: true })
             .click();
+        await expect(
+            page.getByRole('button', { name: 'Continue' }),
+        ).toBeDisabled();
         await page
             .getByRole('button', { name: 'Yes, I can register here' })
             .click();
         await expect(
             page.getByLabel('When did you move into this address?'),
         ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Continue' }),
+        ).toBeDisabled();
         await page
             .getByLabel('When did you move into this address?')
             .fill('2026-07-01');

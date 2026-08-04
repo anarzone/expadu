@@ -58,7 +58,7 @@ const entryModes = [
         value: 'd_visa',
         icon: IconIdBadge,
         label: 'With a national D visa',
-        subtitle: 'Your permit application is due before the visa expires',
+        subtitle: 'Share its expiry to help identify what to verify first',
     },
     {
         value: 'visa_free',
@@ -70,7 +70,7 @@ const entryModes = [
         value: 'has_permit',
         icon: IconCheck,
         label: 'I already hold a German residence permit',
-        subtitle: "We'll skip the first-permit tasks entirely",
+        subtitle: "We'll adjust the first-permit guidance",
     },
 ];
 
@@ -155,8 +155,8 @@ export function SituationStep({
                     What brings you to Cologne?
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                    This picks your paperwork path — each situation has
-                    different offices and documents.
+                    This helps us start a focused plan. Verify requirements with
+                    official sources before you act.
                 </p>
             </div>
 
@@ -166,7 +166,8 @@ export function SituationStep({
                         key={s.value}
                         type="button"
                         onClick={() => onChange(s.value)}
-                        className={`flex items-center gap-3.5 rounded-xl border-[1.5px] p-3.5 text-left transition-all ${
+                        aria-pressed={value === s.value}
+                        className={`flex min-h-11 items-center gap-3.5 rounded-xl border-[1.5px] p-3.5 text-left transition-all ${
                             value === s.value
                                 ? 'border-primary bg-accent-soft'
                                 : 'border-border bg-card hover:border-primary/30'
@@ -200,8 +201,8 @@ export function SituationStep({
                         Are you an EU / EEA / Swiss citizen?
                     </div>
                     <p className="mb-3 text-xs text-primary">
-                        Why we ask: EU citizens skip the residence-permit
-                        process entirely — it changes half your checklist.
+                        Why we ask: citizenship affects whether residence-
+                        permit guidance might apply.
                     </p>
                     <div className="flex gap-2.5">
                         {[
@@ -212,7 +213,8 @@ export function SituationStep({
                                 key={String(opt.value)}
                                 type="button"
                                 onClick={() => onIsEuChange(opt.value)}
-                                className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                                aria-pressed={isEu === opt.value}
+                                className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] px-3.5 py-2.5 text-sm font-semibold transition-all ${
                                     isEu === opt.value
                                         ? 'border-primary bg-accent-soft text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
@@ -232,9 +234,8 @@ export function SituationStep({
                         How did you enter Germany?
                     </div>
                     <p className="mb-3 text-xs text-primary">
-                        Why we ask: this sets your real permit deadline — the
-                        90-day clock and the visa-expiry clock are different
-                        animals.
+                        Why we ask: entry details affect the guidance we show.
+                        Verify relevant time limits with official sources.
                     </p>
                     <div className="flex flex-col gap-2">
                         {entryModes.map((opt) => (
@@ -242,7 +243,8 @@ export function SituationStep({
                                 key={opt.value}
                                 type="button"
                                 onClick={() => onEntryModeChange(opt.value)}
-                                className={`rounded-[10px] border-[1.5px] px-3.5 py-3 text-left transition-all ${
+                                aria-pressed={entryMode === opt.value}
+                                className={`min-h-11 rounded-[10px] border-[1.5px] px-3.5 py-3 text-left transition-all ${
                                     entryMode === opt.value
                                         ? 'border-primary bg-accent-soft'
                                         : 'border-border bg-card hover:border-primary/30'
@@ -272,9 +274,8 @@ export function SituationStep({
                                 />
                             </label>
                             <p className="mt-1.5 text-xs text-muted-foreground">
-                                Optional — but with it, your permit deadline
-                                becomes a real countdown instead of a vague
-                                warning.
+                                Optional — it helps us flag an important date
+                                for you to verify.
                             </p>
                         </div>
                     )}
@@ -322,7 +323,11 @@ export function SituationStep({
                                                 option.value,
                                             )
                                         }
-                                        className={`rounded-[10px] border-[1.5px] px-3 py-2 text-left text-xs font-semibold transition-all ${
+                                        aria-pressed={
+                                            currentResidenceTitle ===
+                                            option.value
+                                        }
+                                        className={`min-h-11 rounded-[10px] border-[1.5px] px-3 py-2 text-left text-xs font-semibold transition-all ${
                                             currentResidenceTitle ===
                                             option.value
                                                 ? 'border-primary bg-accent-soft text-primary'
@@ -390,7 +395,10 @@ export function SituationStep({
                                                 option.value,
                                             )
                                         }
-                                        className={`rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
+                                        aria-pressed={
+                                            sponsorCurrentTitle === option.value
+                                        }
+                                        className={`min-h-11 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
                                             sponsorCurrentTitle === option.value
                                                 ? 'border-primary bg-accent-soft text-primary'
                                                 : 'border-border bg-card hover:border-primary/30'
@@ -416,7 +424,8 @@ export function SituationStep({
                                         onClick={() =>
                                             onCaseGoalChange(option.value)
                                         }
-                                        className={`rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
+                                        aria-pressed={caseGoal === option.value}
+                                        className={`min-h-11 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
                                             caseGoal === option.value
                                                 ? 'border-primary bg-accent-soft text-primary'
                                                 : 'border-border bg-card hover:border-primary/30'

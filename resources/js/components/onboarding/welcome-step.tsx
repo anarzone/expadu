@@ -21,21 +21,21 @@ export function WelcomeStep() {
                     Let's make it a list.
                 </h1>
                 <p className="max-w-[400px] text-[15px] leading-relaxed text-muted-foreground">
-                    Four quick questions and Expadu builds your personal plan —
-                    the offices, the documents, the deadlines. Nothing generic.
+                    Five short steps create a focused first plan. We’ll point
+                    you to official sources to verify the details that apply.
                 </p>
             </div>
 
             <div className="flex flex-col gap-2.5">
                 <BenefitCard
                     icon={IconClipboardList}
-                    title="Your exact paperwork path"
-                    description="Only the tasks that apply to your situation — with every document named."
+                    title="A focused first plan"
+                    description="A practical starting point, with official sources to check before you act."
                 />
                 <BenefitCard
                     icon={IconClockHour4}
-                    title="Deadlines that find you"
-                    description="We compute them from your arrival date and remind you before they bite."
+                    title="Important dates in view"
+                    description="When a date is known, we’ll help you keep it visible and explain what to verify."
                 />
                 <BenefitCard
                     icon={IconTree}

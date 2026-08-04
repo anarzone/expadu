@@ -163,11 +163,16 @@ class ProfileEngine
         };
         $businessType = $branch === 'freelancer_gewerbe' ? 'gewerbe' : 'liberal';
 
-        $housing = $stored['housing_status'] ?? 'long_term';
-        // The Anmeldung clock anchors to move-in: explicit date, else
-        // arrival for long-term housing, else null (= paused).
-        $movedInAt = $stored['moved_in_at']
-            ?? ($housing === 'long_term' ? $user->arrival_date?->toDateString() : null);
+        $addressStatus = $stored['address_registration_status'] ?? null;
+        $legacyHousing = $stored['housing_status'] ?? null;
+        $housing = match ($addressStatus) {
+            'registrable' => ($stored['moved_in_at'] ?? null) === null ? null : 'long_term',
+            'not_registrable' => 'temporary',
+            default => $legacyHousing,
+        };
+        $movedInAt = $addressStatus === 'registrable' || ($addressStatus === null && $legacyHousing === 'long_term')
+            ? ($stored['moved_in_at'] ?? null)
+            : null;
 
         return [
             'citizenship_group' => $isEu ? 'eu' : 'non_eu',

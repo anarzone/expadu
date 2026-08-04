@@ -34,6 +34,13 @@ final class ApplyOnboardingAnswers
             $caseGoal = $residenceFactsApply ? ($validated['case_goal'] ?? null) : null;
             $permitTrack = $this->permitTrack($currentResidenceTitle, $caseGoal);
             $planning = (bool) ($validated['arrival_planned'] ?? false);
+            $addressStatus = $validated['address_registration_status'] ?? null;
+            $movedInAt = $addressStatus === 'registrable' ? ($validated['moved_in_at'] ?? null) : null;
+            $housingStatus = match ($addressStatus) {
+                'registrable' => $movedInAt === null ? null : 'long_term',
+                'not_registrable' => 'temporary',
+                default => null,
+            };
 
             $profileValues = Arr::except($validated, [
                 'arrival_planned',
@@ -58,13 +65,13 @@ final class ApplyOnboardingAnswers
             ]);
 
             $this->storeProfileAttribute($lockedUser, 'entry_mode', $entryMode);
-            $this->storeProfileAttribute($lockedUser, 'housing_status', $validated['housing_status'] ?? null);
+            $this->storeProfileAttribute($lockedUser, 'housing_status', $housingStatus);
             $this->storeProfileAttribute(
                 $lockedUser,
                 'visa_expires_at',
                 $entryMode === 'd_visa' ? ($validated['visa_expires_at'] ?? null) : null,
             );
-            $this->storeProfileAttribute($lockedUser, 'moved_in_at', $validated['moved_in_at'] ?? null);
+            $this->storeProfileAttribute($lockedUser, 'moved_in_at', $movedInAt);
             $this->storeProfileAttribute(
                 $lockedUser,
                 'address_registration_status',

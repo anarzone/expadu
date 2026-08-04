@@ -20,7 +20,7 @@ export function OnboardingProgress({
                     onClick={onBack}
                     disabled={step <= 1}
                     aria-label="Go back"
-                    className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-30"
+                    className="flex size-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-30"
                 >
                     <OnboardingIcon icon={IconChevronLeft} size="md" />
                 </button>

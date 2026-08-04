@@ -116,6 +116,35 @@ test('days since arrival computes from arrival date', function () {
     expect(app(ProfileEngine::class)->build($user)->daysSinceArrival())->toBe(9);
 });
 
+test('unknown address facts do not turn an arrival date into an address-registration deadline', function () {
+    $user = User::factory()->make([
+        'arrival_date' => '2026-05-01',
+        'profile_attributes' => [],
+    ]);
+
+    $attributes = app(ProfileEngine::class)->build($user)->attributes;
+
+    expect($attributes['housing_status'])->toBeNull()
+        ->and($attributes['moved_in_at'])->toBeNull();
+});
+
+test('legacy housing facts remain usable without an address-registration answer', function () {
+    $temporaryUser = User::factory()->make([
+        'profile_attributes' => ['housing_status' => 'temporary'],
+    ]);
+    $longTermWithoutMoveIn = User::factory()->make([
+        'arrival_date' => '2026-05-01',
+        'profile_attributes' => ['housing_status' => 'long_term'],
+    ]);
+
+    expect(app(ProfileEngine::class)->build($temporaryUser)->attributes['housing_status'])
+        ->toBe('temporary')
+        ->and(app(ProfileEngine::class)->build($longTermWithoutMoveIn)->attributes['housing_status'])
+        ->toBe('long_term')
+        ->and(app(ProfileEngine::class)->build($longTermWithoutMoveIn)->attributes['moved_in_at'])
+        ->toBeNull();
+});
+
 /**
  * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>

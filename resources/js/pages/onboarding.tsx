@@ -17,7 +17,6 @@ export type OnboardingData = {
     entry_mode: string;
     visa_expires_at: string;
     veedel: string;
-    housing_status: string;
     has_deutschlandticket: boolean;
     arrival_date: string;
     // "I haven't arrived yet" — submits a null arrival, pausing all deadlines.
@@ -72,7 +71,6 @@ export default function Onboarding() {
         entry_mode: '',
         visa_expires_at: '',
         veedel: '',
-        housing_status: 'long_term',
         has_deutschlandticket: false,
         arrival_date: defaultArrival,
         arrival_planned: false,
@@ -162,8 +160,8 @@ export default function Onboarding() {
                     return false;
                 }
 
-                // Non-EU answer unlocks the entry-mode question — it sets
-                // the real permit deadline, so it must be answered.
+                // A non-EU answer unlocks entry details, which are needed for
+                // the first-plan guidance.
                 return form.data.is_eu === false
                     ? form.data.entry_mode !== ''
                     : true;
@@ -171,6 +169,9 @@ export default function Onboarding() {
             case 3:
                 return (
                     form.data.veedel !== '' &&
+                    form.data.address_registration_status !== '' &&
+                    (form.data.address_registration_status !== 'registrable' ||
+                        form.data.moved_in_at !== '') &&
                     (form.data.arrival_planned || form.data.arrival_date !== '')
                 );
             case 4:
@@ -228,11 +229,7 @@ export default function Onboarding() {
                                 form.setData({
                                     ...form.data,
                                     current_residence_title: v,
-                                    residence_title_expires_at:
-                                        v === ''
-                                            ? ''
-                                            : form.data
-                                                  .residence_title_expires_at,
+                                    residence_title_expires_at: '',
                                 })
                             }
                             residenceTitleExpiresAt={
@@ -288,10 +285,6 @@ export default function Onboarding() {
                                 form.setData({
                                     ...form.data,
                                     address_registration_status: v,
-                                    housing_status:
-                                        v === 'registrable'
-                                            ? 'long_term'
-                                            : 'temporary',
                                     moved_in_at:
                                         v === 'registrable'
                                             ? form.data.moved_in_at

@@ -33,7 +33,7 @@ const INTERESTS: { value: string; label: string; icon: TablerIcon }[] = [
 ];
 
 // Mirrors App\Profile\Interest::MAX_SELECT.
-const MAX = 7;
+const MAX = 6;
 
 export function InterestsStep({
     interests,
@@ -72,7 +72,7 @@ export function InterestsStep({
                             aria-pressed={on}
                             disabled={disabled}
                             onClick={() => onToggle(interest.value)}
-                            className={`flex items-center gap-2.5 rounded-[12px] border-[1.5px] px-4 py-3.5 text-left text-[14px] font-semibold transition-all ${
+                            className={`flex min-h-11 items-center gap-2.5 rounded-[12px] border-[1.5px] px-4 py-3.5 text-left text-[14px] font-semibold transition-all ${
                                 on
                                     ? 'border-primary bg-accent-soft text-primary'
                                     : disabled

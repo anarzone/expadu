@@ -131,7 +131,10 @@ export function VeedelStep({
                                             opt.value,
                                         )
                                     }
-                                    className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                    aria-pressed={
+                                        addressRegistrationStatus === opt.value
+                                    }
+                                    className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
                                         addressRegistrationStatus === opt.value
                                             ? 'border-primary bg-accent-soft text-primary'
                                             : 'border-border bg-card hover:border-primary/30'
@@ -143,8 +146,8 @@ export function VeedelStep({
                         </div>
                     </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                        This helps us keep address-registration guidance
-                        relevant. You can update it later.
+                        This tells us whether a move-in date can anchor
+                        address-registration guidance.
                     </p>
                     {addressRegistrationStatus === 'registrable' && (
                         <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
@@ -185,7 +188,8 @@ export function VeedelStep({
                                 onClick={() =>
                                     onArrivalPlannedChange(opt.planned)
                                 }
-                                className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                aria-pressed={arrivalPlanned === opt.planned}
+                                className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
                                     arrivalPlanned === opt.planned
                                         ? 'border-primary bg-accent-soft text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
@@ -198,10 +202,9 @@ export function VeedelStep({
                     </div>
                     {arrivalPlanned ? (
                         <p className="mt-1.5 text-xs text-muted-foreground">
-                            No date yet — we'll keep every deadline paused and
-                            show your plan in <strong>Before you fly</strong>{' '}
-                            mode. Set your arrival once you land and the clock
-                            starts.
+                            No date yet — date-based guidance stays on hold.
+                            We’ll show a <strong>Before you fly</strong> plan
+                            until you can update your arrival.
                         </p>
                     ) : (
                         <>
@@ -240,8 +243,9 @@ export function VeedelStep({
                                 </select>
                             </div>
                             <p className="mt-1.5 text-xs text-muted-foreground">
-                                We use this to compute your registration
-                                deadline — nothing else.
+                                Arrival helps sequence your first plan. Your
+                                move-in date, not arrival, anchors address
+                                registration.
                             </p>
                         </>
                     )}
@@ -266,7 +270,8 @@ export function VeedelStep({
                                             : l.value,
                                     )
                                 }
-                                className={`rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[13px] transition-all ${
+                                aria-pressed={documentedGermanLevel === l.value}
+                                className={`min-h-11 rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[13px] transition-all ${
                                     documentedGermanLevel === l.value
                                         ? 'border-primary bg-accent-soft font-semibold text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
@@ -294,7 +299,10 @@ export function VeedelStep({
                                 key={String(opt.value)}
                                 type="button"
                                 onClick={() => onDticketChange(opt.value)}
-                                className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                aria-pressed={
+                                    hasDeutschlandticket === opt.value
+                                }
+                                className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
                                     hasDeutschlandticket === opt.value
                                         ? 'border-primary bg-accent-soft text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
@@ -397,7 +405,8 @@ function VeedelPicker({
                     setQuery('');
                     setOpen((o) => !o);
                 }}
-                className={`flex w-full items-center justify-between gap-2 rounded-[10px] border-[1.5px] bg-card px-3 py-2.5 text-left text-sm transition-colors outline-none ${
+                aria-expanded={open}
+                className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-[10px] border-[1.5px] bg-card px-3 py-2.5 text-left text-sm transition-colors outline-none ${
                     open ? 'border-primary' : 'border-border'
                 }`}
             >
@@ -461,7 +470,8 @@ function VeedelPicker({
                                             key={s}
                                             type="button"
                                             onClick={() => select(s)}
-                                            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-secondary ${
+                                            aria-pressed={value === s}
+                                            className={`flex min-h-11 w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-secondary ${
                                                 value === s
                                                     ? 'font-semibold text-primary'
                                                     : 'text-foreground'

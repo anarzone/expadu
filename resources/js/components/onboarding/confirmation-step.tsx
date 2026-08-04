@@ -24,6 +24,7 @@ const residenceTitleLabels: Record<string, string> = {
     national_d_visa: 'National D visa',
     standard_work_permit: 'Work residence permit',
     blue_card: 'EU Blue Card',
+    blue_card_pending: 'EU Blue Card application pending',
     family_reunification: 'Family reunification permit',
     settlement_permit_18c: 'Settlement permit',
     other: 'Another title',
@@ -46,33 +47,50 @@ const addressRegistrationLabels: Record<string, string> = {
 export function ConfirmationStep({ data }: { data: OnboardingData }) {
     const situation = resolveSituation(data.situation, data.is_eu);
     const answers = [
-        ['Situation', situationLabels[situation] ?? 'Not specified'],
+        ['Situation', situationLabels[situation]],
         ['Veedel', data.veedel],
         [
             'Address registration',
-            addressRegistrationLabels[data.address_registration_status] ??
-                'Not specified',
+            addressRegistrationLabels[data.address_registration_status],
         ],
-        ['Move-in date', data.moved_in_at || 'Not specified'],
-        ['Entry', entryModeLabels[data.entry_mode] ?? 'Not specified'],
-        [
-            'Current title',
-            residenceTitleLabels[data.current_residence_title] ??
-                'Not specified',
-        ],
-        ['Title expiry', data.residence_title_expires_at || 'Not specified'],
-        ['Your goal', goalLabels[data.case_goal] ?? 'Not specified'],
-        [
-            'Sponsor’s title',
-            residenceTitleLabels[data.sponsor_current_title] ?? 'Not specified',
-        ],
-        [
-            'Documented German level',
-            data.documented_german_level.toUpperCase() || 'Not specified',
-        ],
-    ].filter(
-        ([, answer]) => answer !== 'Not specified' || data.entry_mode !== '',
-    );
+        data.address_registration_status === 'registrable' &&
+        data.moved_in_at !== ''
+            ? ['Move-in date', data.moved_in_at]
+            : null,
+        data.entry_mode !== ''
+            ? ['Entry', entryModeLabels[data.entry_mode]]
+            : null,
+        data.entry_mode === 'd_visa' && data.visa_expires_at !== ''
+            ? ['D-visa expiry', data.visa_expires_at]
+            : null,
+        data.entry_mode === 'has_permit' && data.current_residence_title !== ''
+            ? [
+                  'Current title',
+                  residenceTitleLabels[data.current_residence_title],
+              ]
+            : null,
+        data.entry_mode === 'has_permit' &&
+        data.current_residence_title !== '' &&
+        data.residence_title_expires_at !== ''
+            ? ['Title expiry', data.residence_title_expires_at]
+            : null,
+        data.case_goal !== ''
+            ? ['Your goal', goalLabels[data.case_goal]]
+            : null,
+        situation === 'family_reunification' &&
+        data.sponsor_current_title !== ''
+            ? [
+                  'Sponsor’s title',
+                  residenceTitleLabels[data.sponsor_current_title],
+              ]
+            : null,
+        data.documented_german_level !== ''
+            ? [
+                  'Documented German level',
+                  data.documented_german_level.toUpperCase(),
+              ]
+            : null,
+    ].filter((answer): answer is [string, string] => answer !== null);
 
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
@@ -84,8 +102,9 @@ export function ConfirmationStep({ data }: { data: OnboardingData }) {
                     Check your answers
                 </h2>
                 <p className="text-[14.5px] leading-relaxed text-muted-foreground">
-                    We’ll use these details to start your verified plan after
-                    you continue. You can update them later.
+                    We’ll use these details to start your first plan after you
+                    continue, with official sources to verify. You can update
+                    them later.
                 </p>
             </div>
 

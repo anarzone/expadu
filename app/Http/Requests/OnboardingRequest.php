@@ -44,10 +44,10 @@ class OnboardingRequest extends FormRequest
             'has_deutschlandticket' => ['nullable', 'boolean'],
             // Explicit interests — a cold-start personalisation signal that
             // shapes the home feed and composer (see Interest enum).
-            'interests' => ['nullable', 'array', 'max:7'],
+            'interests' => ['nullable', 'array', 'max:'.Interest::MAX_SELECT],
             'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
-            // Asked only when the EU follow-up was answered "No" — it sets
-            // the real permit deadline (visa expiry vs the 90-day window).
+            // Asked only when the EU follow-up was answered "No" — entry
+            // details inform the guidance shown in the first plan.
             'entry_mode' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit']), Rule::requiredIf(fn (): bool => $this->requiresEntryMode())],
             // D-visa holders can give their expiry — it becomes the real
             // permit deadline instead of a vague warning.
@@ -57,11 +57,8 @@ class OnboardingRequest extends FormRequest
             'case_goal' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['blue_card', 'family_reunification_permit', 'renew_current_title', 'settlement_permit', 'understand_options'])],
             'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
             'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
-            'moved_in_at' => ['nullable', 'date_format:Y-m-d'],
-            'address_registration_status' => ['nullable', 'string', Rule::in(['registrable', 'not_registrable', 'unsure'])],
-            // Temporary housing pauses the Anmeldung clock instead of
-            // showing a false overdue.
-            'housing_status' => ['required', 'string', Rule::in(['long_term', 'temporary'])],
+            'moved_in_at' => ['nullable', 'date_format:Y-m-d', Rule::requiredIf(fn (): bool => $this->input('address_registration_status') === 'registrable'), Rule::prohibitedIf(fn (): bool => $this->input('address_registration_status') !== 'registrable')],
+            'address_registration_status' => ['required', 'string', Rule::in(['registrable', 'not_registrable', 'unsure'])],
         ];
     }
 
