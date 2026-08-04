@@ -215,15 +215,27 @@ test.describe('Verified bureaucracy case plan', () => {
 
         await page.getByRole('button', { name: 'Not now' }).click();
         await expect(page.getByRole('dialog')).toHaveCount(0);
+        // Declining consent must leave the verified choices usable. Which
+        // question the engine selects depends on which facts are already
+        // answered, and that differs between a seeded CI database and a local
+        // one — so assert the bounded controls every question renders rather
+        // than the options of one specific question.
         await expect(
-            page.getByRole('button', { name: 'Employment', exact: true }),
+            page.getByRole('button', { name: "I don't know" }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Skip for now' }),
         ).toBeVisible();
 
         await page.getByRole('button', { name: 'Check my answer' }).click();
         await page.getByRole('button', { name: 'Allow this check' }).click();
 
+        // The candidate label is also an option button, so match the paragraph
+        // the confirmation card renders it in rather than any element with the
+        // same text.
+        await expect(page.getByText('Check this answer')).toBeVisible();
         await expect(
-            page.getByText('EU Blue Card', { exact: true }),
+            page.getByRole('paragraph').filter({ hasText: /^EU Blue Card$/ }),
         ).toBeVisible();
         await expect(
             page.getByRole('button', { name: 'Confirm answer' }),
