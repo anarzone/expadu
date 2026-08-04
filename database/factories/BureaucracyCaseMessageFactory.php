@@ -24,7 +24,7 @@ class BureaucracyCaseMessageFactory extends Factory
             'content' => fake()->sentence(),
             'operation' => 'extract_case_fact',
             'prompt_version' => '2026-08-04',
-            'expires_at' => now()->addDays(30),
+            'expires_at' => now()->addDays(29),
         ];
     }
 }

@@ -22,7 +22,7 @@ final class BureaucracyAiQuota
             'content' => $content,
             'operation' => self::Operation,
             'prompt_version' => (string) config('services.bureaucracy_llm.prompt_version'),
-            'expires_at' => now()->addDays(30),
+            'expires_at' => now()->addDays(29),
         ]);
     }
 

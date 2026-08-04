@@ -190,7 +190,7 @@ test('accepted raw messages are encrypted hidden and expire within thirty days',
     expect($message->content)->toBe($plaintext)
         ->and($message->toArray())->not->toHaveKey('content')
         ->and($stored)->toBeString()->not->toBe($plaintext)->not->toContain('Private reference')
-        ->and($message->expires_at->equalTo($message->created_at->addDays(30)))->toBeTrue()
+        ->and($message->expires_at->lessThanOrEqualTo($message->created_at->addDays(30)))->toBeTrue()
         ->and($message->expires_at->lessThanOrEqualTo(now()->addDays(30)))->toBeTrue();
 });
 
@@ -209,6 +209,16 @@ test('expired raw messages are pruned while unexpired messages remain', function
 
     $this->assertModelMissing($expired);
     $this->assertModelExists($unexpired);
+});
+
+test('raw message pruning is scheduled daily', function () {
+    Artisan::call('schedule:list', ['--json' => true]);
+    $events = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR);
+    $event = collect($events)
+        ->firstWhere('command', 'php artisan model:prune');
+
+    expect($event)->not->toBeNull()
+        ->and($event['expression'])->toBe('45 3 * * *');
 });
 
 test('the burst limiter contains independent five-per-minute user and IP budgets', function () {
