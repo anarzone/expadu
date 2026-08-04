@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
+use App\Bureaucracy\Ai\DeepSeekCaseFactExtractor;
+use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
 use App\Composer\AnthropicCandidateRanker;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
@@ -46,6 +49,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(ExtractsCaseFact::class, function ($app): ExtractsCaseFact {
+            $configuration = config('services.bureaucracy_llm');
+
+            if (! is_array($configuration) || ! $this->bureaucracyLlmIsConfigured($configuration)) {
+                return $app->make(UnavailableCaseFactExtractor::class);
+            }
+
+            return $app->make(DeepSeekCaseFactExtractor::class);
+        });
+
         $this->app->singleton(
             RouteService::class,
             FailoverRouteService::class,
@@ -70,6 +83,29 @@ class AppServiceProvider extends ServiceProvider
             ClassifiesEvents::class,
             AnthropicEventClassifier::class,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $configuration
+     */
+    private function bureaucracyLlmIsConfigured(array $configuration): bool
+    {
+        if (($configuration['enabled'] ?? false) !== true) {
+            return false;
+        }
+
+        foreach (['base_url', 'model', 'key', 'processor_name', 'processor_privacy_url', 'prompt_version'] as $key) {
+            if (! is_string($configuration[$key] ?? null) || trim($configuration[$key]) === '') {
+                return false;
+            }
+        }
+
+        return filter_var($configuration['base_url'], FILTER_VALIDATE_URL) !== false
+            && filter_var($configuration['processor_privacy_url'], FILTER_VALIDATE_URL) !== false
+            && is_int($configuration['timeout'] ?? null)
+            && $configuration['timeout'] > 0
+            && is_int($configuration['daily_limit'] ?? null)
+            && $configuration['daily_limit'] > 0;
     }
 
     /**

@@ -72,6 +72,18 @@ return [
         'key' => env('LLM_KEY'),
     ],
 
+    'bureaucracy_llm' => [
+        'enabled' => env('BUREAUCRACY_LLM_ENABLED', false),
+        'base_url' => env('BUREAUCRACY_LLM_BASE_URL', 'https://api.deepseek.com/beta'),
+        'model' => env('BUREAUCRACY_LLM_MODEL', 'deepseek-v4-flash'),
+        'key' => env('BUREAUCRACY_LLM_KEY'),
+        'processor_name' => env('BUREAUCRACY_LLM_PROCESSOR_NAME'),
+        'processor_privacy_url' => env('BUREAUCRACY_LLM_PROCESSOR_PRIVACY_URL'),
+        'timeout' => (int) env('BUREAUCRACY_LLM_TIMEOUT', 8),
+        'prompt_version' => env('BUREAUCRACY_LLM_PROMPT_VERSION', '2026-08-04'),
+        'daily_limit' => (int) env('BUREAUCRACY_LLM_DAILY_LIMIT', 20),
+    ],
+
     'motis' => [
         // Our self-hosted MOTIS (VRS GTFS+RT + NRW OSM). Primary routing
         // provider; the public Transitous below is the dev/failover backstop.
