@@ -45,6 +45,7 @@ test('expensive and abuse-prone routes carry their buckets', function () {
         'api.track' => 'throttle:app-writes',
         'composer.parse' => 'throttle:composer-parse',
         'reviews.store' => 'throttle:ugc',
+        'bureaucracy.case.messages.store' => 'throttle:bureaucracy-ai-burst',
         'social.redirect' => 'throttle:social',
         'profile.update' => 'throttle:app-writes',
         'user-password.update' => 'throttle:6,1',

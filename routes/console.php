@@ -74,5 +74,6 @@ Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
 Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:00')->withoutOverlapping();
+Schedule::command('model:prune')->dailyAt('03:45')->withoutOverlapping();
 
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();

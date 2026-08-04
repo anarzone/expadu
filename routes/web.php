@@ -17,6 +17,8 @@ use App\Http\Controllers\Api\TakeMeThereController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\Api\TripController;
+use App\Http\Controllers\Bureaucracy\AiConsentController;
+use App\Http\Controllers\Bureaucracy\CaseMessageController;
 use App\Http\Controllers\BureaucracyCaseConflictController;
 use App\Http\Controllers\BureaucracyCaseQuestionController;
 use App\Http\Controllers\BureaucracyCaseTaskController;
@@ -224,6 +226,11 @@ $appRoutes = function () use ($appDomain) {
 
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+        Route::put('bureaucracy/case/ai-consent', AiConsentController::class)
+            ->name('bureaucracy.case.ai-consent.update');
+        Route::post('bureaucracy/case/messages', CaseMessageController::class)
+            ->middleware('throttle:bureaucracy-ai-burst')
+            ->name('bureaucracy.case.messages.store');
         Route::post('bureaucracy/case/questions/{question}', BureaucracyCaseQuestionController::class)
             ->name('bureaucracy.case-question.answer');
         Route::patch('bureaucracy/case/conflicts/{conflict}', BureaucracyCaseConflictController::class)

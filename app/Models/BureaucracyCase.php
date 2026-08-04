@@ -71,4 +71,15 @@ class BureaucracyCase extends Model
     {
         return $this->hasMany(BureaucracyPlanSnapshot::class, 'case_id');
     }
+
+    /** @return HasMany<BureaucracyCaseMessage, $this> */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(BureaucracyCaseMessage::class, 'case_id');
+    }
+
+    public function hasCurrentAiConsent(): bool
+    {
+        return $this->ai_consent_at !== null && $this->ai_consent_withdrawn_at === null;
+    }
 }

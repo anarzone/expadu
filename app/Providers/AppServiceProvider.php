@@ -213,6 +213,21 @@ class AppServiceProvider extends ServiceProvider
             ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
+        RateLimiter::for('bureaucracy-ai-burst', function (Request $request): array {
+            $response = fn (Request $_request, array $headers) => response()->json([
+                'outcome' => 'limited',
+                'message' => 'Please wait a moment before trying again. You can still use the choices below.',
+            ], 429, $headers);
+
+            return [
+                Limit::perMinute(5)
+                    ->by('bureaucracy-ai-user:'.$request->user()?->getAuthIdentifier())
+                    ->response($response),
+                Limit::perMinute(5)
+                    ->by('bureaucracy-ai-ip:'.$request->ip())
+                    ->response($response),
+            ];
+        });
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));
     }
