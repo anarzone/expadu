@@ -201,6 +201,14 @@ final class CasePlanComposer
             'urgency' => $task->urgency?->value,
             'depends_on' => $task->depends_on ?? [],
             'deadline' => $task->computeDeadlineFor($user, $attributes)?->toDateString(),
+            'documents_required' => $task->documents_required ?? [],
+            'decision_options' => $task->decision_options ?? [],
+            'how_to_steps' => $task->how_to_steps ?? [],
+            'links' => $task->links ?? [],
+            'legal_sources' => $task->legal_sources ?? [],
+            'verified_at' => $task->verified_at?->toDateString(),
+            'high_impact' => $task->deadline_type?->value !== 'none'
+                || in_array($task->urgency?->value, ['critical', 'high'], true),
         ];
     }
 }

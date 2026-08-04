@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Bureaucracy\Cases\CurrentCasePlan;
 use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\PermanentResidencyEligibility;
 use App\Enums\DeadlineType;
@@ -44,7 +45,7 @@ class BureaucracyController extends Controller
      * React side renders without further logic: active / upcoming /
      * completed / not_applicable / info / no_longer_relevant + teasers.
      */
-    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): Response
+    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility, CurrentCasePlan $currentCasePlan): Response
     {
         $user = $request->user();
         $profile = $generator->ensure($user);
@@ -54,9 +55,12 @@ class BureaucracyController extends Controller
             ->get()
             ->filter(fn (UserTask $ut) => $ut->task !== null && $ut->task->is_published);
 
-        return Inertia::render('bureaucracy', $this->buildPayload(
-            $user, $profile, $userTasks, $buergeramtService, $profileEngine, $generator, $eligibility,
-        ));
+        return Inertia::render('bureaucracy', [
+            ...$this->buildPayload(
+                $user, $profile, $userTasks, $buergeramtService, $profileEngine, $generator, $eligibility,
+            ),
+            'casePlan' => $currentCasePlan->for($user),
+        ]);
     }
 
     /**
