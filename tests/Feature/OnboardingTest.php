@@ -358,7 +358,7 @@ test('family D-visa onboarding confirms explicit canonical facts without inventi
         'entry_mode' => 'd_visa',
         'visa_expires_at' => '2026-09-30',
         'current_residence_title' => 'national_d_visa',
-        'residence_title_expires_at' => '2026-09-30',
+        'residence_title_expires_at' => '2026-10-15',
         'case_goal' => 'family_reunification_permit',
         'sponsor_current_title' => 'blue_card',
         'interests' => ['parks', 'museums', 'cafes'],
@@ -379,7 +379,7 @@ test('family D-visa onboarding confirms explicit canonical facts without inventi
         'entry_mode' => 'd_visa',
         'visa_expires_at' => '2026-09-30',
         'current_residence_title' => 'national_d_visa',
-        'residence_title_expires_at' => '2026-09-30',
+        'residence_title_expires_at' => '2026-10-15',
         'case_goal' => 'family_reunification_permit',
         'sponsor_current_title' => 'blue_card',
     ]);
@@ -434,6 +434,12 @@ test('re-onboarding retires visa sponsor and refinement facts that are no longer
         'veedel' => 'Ehrenfeld',
         'arrival_date' => '2026-01-15',
         'housing_status' => 'long_term',
+        'entry_mode' => 'd_visa',
+        'visa_expires_at' => '2027-01-31',
+        'current_residence_title' => 'blue_card',
+        'residence_title_expires_at' => '2027-02-28',
+        'case_goal' => 'blue_card',
+        'sponsor_current_title' => 'blue_card',
         'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('bureaucracy'));
 
@@ -443,14 +449,21 @@ test('re-onboarding retires visa sponsor and refinement facts that are no longer
     expect($store->confirmedFact($case, 'sponsor_current_title'))->toBeNull();
     expect($store->confirmedFact($case, 'current_residence_title'))->toBeNull();
     expect($store->confirmedFact($case, 'case_goal'))->toBeNull();
+    expect($store->confirmedFact($case, 'entry_mode'))->toBeNull();
+    expect($store->confirmedFact($case, 'residence_title_expires_at'))->toBeNull();
+    expect($store->confirmedFact($case, 'permit_track'))->toBeNull();
+    expect($user->fresh()->profile_attributes['entry_mode'] ?? null)->toBeNull();
+    expect($user->fresh()->profile_attributes['visa_expires_at'] ?? null)->toBeNull();
 });
 
 test('onboarding rolls back profile and canonical fact writes when required place creation fails', function () {
     $user = User::factory()->notOnboarded()->create();
-    $dispatcher = UserPlace::getEventDispatcher();
-    UserPlace::creating(fn () => throw new RuntimeException('Place creation failed.'));
+    $originalDispatcher = UserPlace::getEventDispatcher();
+    UserPlace::setEventDispatcher(clone $originalDispatcher);
 
     try {
+        UserPlace::creating(fn () => throw new RuntimeException('Place creation failed.'));
+
         expect(fn () => app(ApplyOnboardingAnswers::class)->execute($user, [
             'situation' => 'non_eu_employee',
             'veedel' => 'Ehrenfeld',
@@ -460,11 +473,11 @@ test('onboarding rolls back profile and canonical fact writes when required plac
             'interests' => ['parks', 'museums', 'cafes'],
         ]))->toThrow(RuntimeException::class);
     } finally {
-        UserPlace::flushEventListeners();
-        UserPlace::setEventDispatcher($dispatcher);
+        UserPlace::setEventDispatcher($originalDispatcher);
     }
 
     $user->refresh();
+    expect(UserPlace::getEventDispatcher())->toBe($originalDispatcher);
     expect($user->onboarded_at)->toBeNull();
     expect($user->bureaucracyCase)->toBeNull();
     expect($user->places()->count())->toBe(0);

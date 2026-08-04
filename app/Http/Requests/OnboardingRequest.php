@@ -48,14 +48,14 @@ class OnboardingRequest extends FormRequest
             'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
             // Asked only when the EU follow-up was answered "No" — it sets
             // the real permit deadline (visa expiry vs the 90-day window).
-            'entry_mode' => ['nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit']), Rule::requiredIf(fn (): bool => $this->requiresEntryMode())],
+            'entry_mode' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit']), Rule::requiredIf(fn (): bool => $this->requiresEntryMode())],
             // D-visa holders can give their expiry — it becomes the real
             // permit deadline instead of a vague warning.
-            'visa_expires_at' => ['nullable', 'date_format:Y-m-d'],
-            'current_residence_title' => ['nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_18c', 'other'])],
-            'residence_title_expires_at' => ['nullable', 'date_format:Y-m-d'],
-            'case_goal' => ['nullable', 'string', Rule::in(['blue_card', 'family_reunification_permit', 'renew_current_title', 'settlement_permit', 'understand_options'])],
-            'sponsor_current_title' => ['nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
+            'visa_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('entry_mode') !== 'd_visa'), 'nullable', 'date_format:Y-m-d'],
+            'current_residence_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_18c', 'other'])],
+            'residence_title_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || ! $this->filled('current_residence_title')), 'nullable', 'date_format:Y-m-d'],
+            'case_goal' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['blue_card', 'family_reunification_permit', 'renew_current_title', 'settlement_permit', 'understand_options'])],
+            'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
             'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
             'moved_in_at' => ['nullable', 'date_format:Y-m-d'],
             'address_registration_status' => ['nullable', 'string', Rule::in(['registrable', 'not_registrable', 'unsure'])],
@@ -79,5 +79,14 @@ class OnboardingRequest extends FormRequest
             Situation::DigitalNomad->value,
             Situation::Other->value,
         ], true) && $this->boolean('is_eu') === false;
+    }
+
+    private function residenceFactsApply(): bool
+    {
+        return match ($this->input('situation')) {
+            Situation::EuEmployee->value => false,
+            Situation::NonEuEmployee->value, Situation::FamilyReunification->value => true,
+            default => $this->boolean('is_eu') === false,
+        };
     }
 }

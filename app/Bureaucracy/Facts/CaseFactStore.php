@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 final class CaseFactStore
 {
+    /** @var list<string> */
+    private const ONBOARDING_OWNED_SOURCES = ['onboarding', 'legacy_profile'];
+
     public function __construct(private FactRegistry $registry) {}
 
     /**
@@ -130,10 +133,18 @@ final class CaseFactStore
                 }
 
                 if ($existing->value === $value) {
+                    $caseChanged = $this->closeOpenConflicts($existing) || $caseChanged;
+
+                    if ($existing->reconfirm_at !== null && $existing->reconfirm_at->lessThanOrEqualTo(now())) {
+                        $this->confirmFact($existing);
+                        $caseChanged = true;
+                    }
+
                     continue;
                 }
 
                 if ($existing->source === $source) {
+                    $this->closeOpenConflicts($existing);
                     $this->supersedeFact($existing);
                     BureaucracyCaseFact::query()->create([
                         'case_id' => $lockedCase->getKey(),
@@ -181,10 +192,12 @@ final class CaseFactStore
                     ->where('case_id', $lockedCase->getKey())
                     ->whereIn('key', $retireKeys)
                     ->where('state', 'confirmed')
+                    ->whereIn('source', self::ONBOARDING_OWNED_SOURCES)
                     ->lockForUpdate()
                     ->get();
 
                 foreach ($retiredFacts as $fact) {
+                    $this->closeOpenConflicts($fact);
                     $this->supersedeFact($fact);
                     $caseChanged = true;
                 }
@@ -360,6 +373,18 @@ final class CaseFactStore
                 throw new DomainException('The chosen fact does not belong to this conflict.');
             }
 
+            $newerConfirmedFactExists = BureaucracyCaseFact::query()
+                ->where('case_id', $lockedCase->getKey())
+                ->where('key', $lockedConflict->fact_key)
+                ->where('state', 'confirmed')
+                ->whereNotIn('id', $allowedFactIds)
+                ->lockForUpdate()
+                ->exists();
+
+            if ($newerConfirmedFactExists) {
+                throw new DomainException('The conflict no longer represents the current confirmed fact.');
+            }
+
             $facts = BureaucracyCaseFact::query()
                 ->whereIn('id', $allowedFactIds)
                 ->lockForUpdate()
@@ -415,6 +440,50 @@ final class CaseFactStore
             'state' => 'superseded',
             'superseded_at' => now(),
         ]);
+    }
+
+    private function closeOpenConflicts(BureaucracyCaseFact $confirmedFact): bool
+    {
+        $conflicts = BureaucracyFactConflict::query()
+            ->where('case_id', $confirmedFact->case_id)
+            ->where('fact_key', $confirmedFact->key)
+            ->where('status', 'unresolved')
+            ->where(function ($query) use ($confirmedFact) {
+                $query->where('existing_fact_id', $confirmedFact->getKey())
+                    ->orWhere('candidate_fact_id', $confirmedFact->getKey());
+            })
+            ->lockForUpdate()
+            ->get();
+
+        if ($conflicts->isEmpty()) {
+            return false;
+        }
+
+        $competingFactIds = $conflicts
+            ->flatMap(fn (BureaucracyFactConflict $conflict): array => [
+                (int) $conflict->existing_fact_id,
+                (int) $conflict->candidate_fact_id,
+            ])
+            ->reject(fn (int $factId): bool => $factId === (int) $confirmedFact->getKey())
+            ->unique()
+            ->values();
+
+        BureaucracyCaseFact::query()
+            ->whereIn('id', $competingFactIds)
+            ->whereIn('state', ['candidate', 'confirmed'])
+            ->lockForUpdate()
+            ->get()
+            ->each(fn (BureaucracyCaseFact $fact) => $this->supersedeFact($fact));
+
+        foreach ($conflicts as $conflict) {
+            $conflict->update([
+                'status' => 'resolved',
+                'resolved_fact_id' => $confirmedFact->getKey(),
+                'resolved_at' => now(),
+            ]);
+        }
+
+        return true;
     }
 
     /**

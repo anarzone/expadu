@@ -485,3 +485,64 @@ test('synchronization retires confirmed facts that are no longer applicable', fu
         ->value('state'))->toBe('superseded');
     expect($case->fresh()->fact_version)->toBeGreaterThan($startingVersion);
 });
+
+test('synchronization preserves a confirmed fact owned by another authoritative source when onboarding retires the key', function () {
+    $user = bureaucracyUser();
+    $case = BureaucracyCase::factory()->for($user)->create();
+    $authoritative = BureaucracyCaseFact::factory()->for($case, 'case')->create([
+        'key' => 'visa_expires_at',
+        'value' => '2027-03-31',
+        'source' => 'case_question',
+    ]);
+
+    caseFactStore()->synchronizeConfirmedFacts($user, [], 'onboarding', ['visa_expires_at']);
+
+    expect($authoritative->fresh()->state)->toBe('confirmed');
+    expect(caseFactStore()->confirmedFact($case, 'visa_expires_at')->id)->toBe($authoritative->id);
+});
+
+test('re-onboarding closes an earlier conflict before replacing its owned confirmed fact', function () {
+    $user = bureaucracyUser();
+    $store = caseFactStore();
+    $case = $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+
+    $store->synchronizeConfirmedFacts($user, ['case_goal' => 'settlement_permit'], 'case_question');
+    $conflict = BureaucracyFactConflict::query()
+        ->where('case_id', $case->id)
+        ->where('fact_key', 'case_goal')
+        ->where('status', 'unresolved')
+        ->sole();
+    $candidate = BureaucracyCaseFact::findOrFail($conflict->candidate_fact_id);
+
+    $store->synchronizeConfirmedFacts($user, ['case_goal' => 'renew_current_title'], 'onboarding');
+    $store->resolveConflict($conflict, $candidate);
+
+    $confirmed = BureaucracyCaseFact::query()
+        ->where('case_id', $case->id)
+        ->where('key', 'case_goal')
+        ->where('state', 'confirmed')
+        ->get();
+
+    expect($confirmed)->toHaveCount(1);
+    expect($confirmed->sole()->value)->toBe('renew_current_title');
+    expect($candidate->fresh()->state)->toBe('superseded');
+    expect($conflict->fresh()->status)->toBe('resolved');
+});
+
+test('explicitly re-answering an expired equal fact refreshes its confirmation window', function () {
+    $this->travelTo('2026-01-01 10:00:00');
+    $user = bureaucracyUser();
+    $store = caseFactStore();
+    $case = $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+    $fact = $store->confirmedFact($case, 'case_goal');
+    $firstConfirmedAt = $fact->confirmed_at->copy();
+    $firstReconfirmAt = $fact->reconfirm_at->copy();
+
+    $this->travelTo('2026-07-02 10:00:00');
+    $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+
+    $fact->refresh();
+    expect($fact->confirmed_at->greaterThan($firstConfirmedAt))->toBeTrue();
+    expect($fact->reconfirm_at->greaterThan($firstReconfirmAt))->toBeTrue();
+    expect($fact->reconfirm_at->isFuture())->toBeTrue();
+});

@@ -26,9 +26,12 @@ final class ApplyOnboardingAnswers
 
             $situation = Situation::from($validated['situation']);
             $isEu = $this->isEu($situation, $validated['is_eu'] ?? null);
-            $entryMode = $validated['entry_mode'] ?? null;
-            $currentResidenceTitle = $validated['current_residence_title'] ?? null;
-            $caseGoal = $validated['case_goal'] ?? null;
+            $residenceFactsApply = ! $isEu;
+            $entryMode = $residenceFactsApply ? ($validated['entry_mode'] ?? null) : null;
+            $currentResidenceTitle = $residenceFactsApply
+                ? ($validated['current_residence_title'] ?? null)
+                : null;
+            $caseGoal = $residenceFactsApply ? ($validated['case_goal'] ?? null) : null;
             $permitTrack = $this->permitTrack($currentResidenceTitle, $caseGoal);
             $planning = (bool) ($validated['arrival_planned'] ?? false);
 
@@ -78,7 +81,7 @@ final class ApplyOnboardingAnswers
                     ? null
                     : ($validated['residence_title_expires_at'] ?? null),
                 'case_goal' => $caseGoal,
-                'sponsor_current_title' => $situation === Situation::FamilyReunification
+                'sponsor_current_title' => $residenceFactsApply && $situation === Situation::FamilyReunification
                     ? ($validated['sponsor_current_title'] ?? null)
                     : null,
                 'permit_track' => $permitTrack,
