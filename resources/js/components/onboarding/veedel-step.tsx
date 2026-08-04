@@ -1,5 +1,12 @@
-import { IconCheck, IconChevronDown, IconSearch } from '@tabler/icons-react';
+import {
+    IconCalendarEvent,
+    IconCheck,
+    IconChevronDown,
+    IconMapPin,
+    IconSearch,
+} from '@tabler/icons-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { ICON_STROKE } from '@/constants/icons';
 
 const months = [
@@ -35,29 +42,33 @@ export function VeedelStep({
     veedel,
     arrivalDate,
     arrivalPlanned,
-    germanLevel,
-    housingStatus,
     hasDeutschlandticket,
     onVeedelChange,
     onArrivalDateChange,
     onArrivalPlannedChange,
-    onGermanLevelChange,
-    onHousingStatusChange,
     onDticketChange,
+    documentedGermanLevel,
+    onDocumentedGermanLevelChange,
+    addressRegistrationStatus,
+    onAddressRegistrationStatusChange,
+    movedInAt,
+    onMovedInAtChange,
 }: {
     veedels: Record<string, string[]>;
     veedel: string;
     arrivalDate: string;
     arrivalPlanned: boolean;
-    germanLevel: string;
-    housingStatus: string;
     hasDeutschlandticket: boolean;
     onVeedelChange: (value: string) => void;
     onArrivalDateChange: (value: string) => void;
     onArrivalPlannedChange: (value: boolean) => void;
-    onGermanLevelChange: (value: string) => void;
-    onHousingStatusChange: (value: string) => void;
     onDticketChange: (value: boolean) => void;
+    documentedGermanLevel: string;
+    onDocumentedGermanLevelChange: (value: string) => void;
+    addressRegistrationStatus: string;
+    onAddressRegistrationStatusChange: (value: string) => void;
+    movedInAt: string;
+    onMovedInAtChange: (value: string) => void;
 }) {
     const parsed = arrivalDate ? new Date(arrivalDate) : null;
     const selectedMonth = parsed ? parsed.getMonth() : new Date().getMonth();
@@ -93,38 +104,62 @@ export function VeedelStep({
                         value={veedel}
                         onChange={onVeedelChange}
                     />
-                    <div className="mt-2 flex gap-2">
-                        {[
-                            {
-                                value: 'long_term',
-                                emoji: '🏠',
-                                label: 'Long-term address',
-                            },
-                            {
-                                value: 'temporary',
-                                emoji: '🧳',
-                                label: 'Still in temporary housing',
-                            },
-                        ].map((opt) => (
-                            <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => onHousingStatusChange(opt.value)}
-                                className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
-                                    housingStatus === opt.value
-                                        ? 'border-primary bg-accent-soft text-primary'
-                                        : 'border-border bg-card hover:border-primary/30'
-                                }`}
-                            >
-                                {opt.emoji} {opt.label}
-                            </button>
-                        ))}
+                    <div className="mt-3">
+                        <div className="mb-2 text-[13px] font-semibold">
+                            Can you register at this address?
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            {[
+                                {
+                                    value: 'registrable',
+                                    label: 'Yes, I can register here',
+                                },
+                                {
+                                    value: 'not_registrable',
+                                    label: 'No, not at this address',
+                                },
+                                {
+                                    value: 'unsure',
+                                    label: "I'm not sure",
+                                },
+                            ].map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() =>
+                                        onAddressRegistrationStatusChange(
+                                            opt.value,
+                                        )
+                                    }
+                                    className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                        addressRegistrationStatus === opt.value
+                                            ? 'border-primary bg-accent-soft text-primary'
+                                            : 'border-border bg-card hover:border-primary/30'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                        {housingStatus === 'temporary'
-                            ? "Temporary housing (Airbnb, hotel, a friend's couch) can't be registered — we'll pause your Anmeldung deadline until you move in, so no false alarms."
-                            : 'Not moved in yet or unsure? Pick the closest Veedel — you can change it later.'}
+                        This helps us keep address-registration guidance
+                        relevant. You can update it later.
                     </p>
+                    {addressRegistrationStatus === 'registrable' && (
+                        <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                            When did you move into this address?
+                            <input
+                                type="date"
+                                aria-label="When did you move into this address?"
+                                value={movedInAt}
+                                onChange={(event) =>
+                                    onMovedInAtChange(event.target.value)
+                                }
+                                className="rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                            />
+                        </label>
+                    )}
                 </div>
 
                 <div>
@@ -135,12 +170,12 @@ export function VeedelStep({
                         {[
                             {
                                 planned: false,
-                                emoji: '📍',
+                                icon: IconMapPin,
                                 label: "I'm here",
                             },
                             {
                                 planned: true,
-                                emoji: '🗓️',
+                                icon: IconCalendarEvent,
                                 label: 'Still planning',
                             },
                         ].map((opt) => (
@@ -150,13 +185,14 @@ export function VeedelStep({
                                 onClick={() =>
                                     onArrivalPlannedChange(opt.planned)
                                 }
-                                className={`flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
                                     arrivalPlanned === opt.planned
                                         ? 'border-primary bg-accent-soft text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
                                 }`}
                             >
-                                {opt.emoji} {opt.label}
+                                <OnboardingIcon icon={opt.icon} size="sm" />
+                                {opt.label}
                             </button>
                         ))}
                     </div>
@@ -213,9 +249,9 @@ export function VeedelStep({
 
                 <div>
                     <div className="mb-2 text-[13px] font-semibold">
-                        How's your German?{' '}
+                        Do you have a documented German level?{' '}
                         <span className="font-normal text-muted-foreground">
-                            (optional — skip if you like)
+                            (optional — only choose a level you can document)
                         </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -224,12 +260,14 @@ export function VeedelStep({
                                 key={l.value}
                                 type="button"
                                 onClick={() =>
-                                    onGermanLevelChange(
-                                        germanLevel === l.value ? '' : l.value,
+                                    onDocumentedGermanLevelChange(
+                                        documentedGermanLevel === l.value
+                                            ? ''
+                                            : l.value,
                                     )
                                 }
                                 className={`rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[13px] transition-all ${
-                                    germanLevel === l.value
+                                    documentedGermanLevel === l.value
                                         ? 'border-primary bg-accent-soft font-semibold text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
                                 }`}

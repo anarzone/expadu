@@ -147,7 +147,7 @@ test.describe('Verified bureaucracy case plan', () => {
 });
 
 test.describe('Onboarding v2', () => {
-    test('walks the five steps and previews the first tasks', async ({
+    test('onboarding case facts stay progressive and avoid task claims', async ({
         page,
     }) => {
         const errors: string[] = [];
@@ -161,25 +161,55 @@ test.describe('Onboarding v2', () => {
             page.getByText("Let's make it a list", { exact: false }),
         ).toBeVisible();
         await expect(
-            page.getByText('never shared', { exact: false }),
+            page.getByText('never sold', { exact: false }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('not legal advice', { exact: false }),
         ).toBeVisible();
         await page.getByRole('button', { name: "Let's get started" }).click();
 
-        // Step 2 — situation + EU follow-up + entry mode (non-EU only)
-        await page.getByRole('button', { name: 'I have a job here' }).click();
-        await expect(
-            page.getByText('Why we ask', { exact: false }),
-        ).toBeVisible();
-        await page.getByRole('button', { name: '🌐 No' }).click();
+        // Family entry asks only the facts relevant to a family route.
+        await page.getByRole('button', { name: "I'm joining family" }).click();
         await expect(
             page.getByText('How did you enter Germany?', { exact: false }),
         ).toBeVisible();
         await page
-            .getByRole('button', { name: 'Visa-free (90-day window)' })
+            .getByRole('button', { name: 'With a national D visa' })
+            .click();
+        await page
+            .getByRole('button', { name: 'My sponsor has a Blue Card' })
+            .click();
+        await expect(
+            page.getByRole('button', { name: 'Apply for an EU Blue Card' }),
+        ).toHaveCount(0);
+        await page
+            .getByRole('button', { name: 'Apply for family reunification' })
+            .click();
+
+        // Switching situation clears family-only answers and reveals the
+        // existing-title and goal questions for a non-EU employee.
+        await page.getByRole('button', { name: 'I have a job here' }).click();
+        await page.getByRole('button', { name: 'No', exact: true }).click();
+        await page
+            .getByRole('button', {
+                name: 'I already hold a German residence permit',
+            })
+            .click();
+        await page
+            .getByRole('button', { name: 'EU Blue Card', exact: true })
+            .click();
+        await expect(
+            page.getByLabel('When does this title expire?'),
+        ).toBeVisible();
+        await page
+            .getByLabel('When does this title expire?')
+            .fill('2027-10-01');
+        await page
+            .getByRole('button', { name: 'Apply for an EU Blue Card' })
             .click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Step 3 — veedel (searchable combobox) + arrival
+        // Step 3 keeps address-registration status distinct from arrival.
         await page
             .getByRole('button', { name: 'Pick your neighbourhood' })
             .click();
@@ -187,28 +217,41 @@ test.describe('Onboarding v2', () => {
         await page
             .getByRole('button', { name: 'Ehrenfeld', exact: true })
             .click();
+        await page
+            .getByRole('button', { name: 'Yes, I can register here' })
+            .click();
+        await expect(
+            page.getByLabel('When did you move into this address?'),
+        ).toBeVisible();
+        await page
+            .getByLabel('When did you move into this address?')
+            .fill('2026-07-01');
+        await page.getByRole('button', { name: 'B1' }).click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Step 4 — interests: pick the minimum three so Continue enables.
+        // Interests are optional, so the user can keep moving without picks.
         await expect(
             page.getByText('What are you into?', { exact: false }),
         ).toBeVisible();
-        await page.getByRole('button', { name: /Parks & green/ }).click();
-        await page.getByRole('button', { name: /Swimming & lakes/ }).click();
-        await page.getByRole('button', { name: /Sports & courts/ }).click();
+        await expect(
+            page.getByText('optional', { exact: false }).first(),
+        ).toBeVisible();
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Step 5 — plan preview with real tasks and a due date
+        // Confirmation is an answer summary; the verified plan is built only
+        // after submit at /bureaucracy.
         await expect(
-            page.getByText('Your Cologne plan is ready', { exact: false }),
+            page.getByText('Check your answers', { exact: false }),
         ).toBeVisible();
         await expect(
-            page.getByText('First on your list', { exact: false }),
+            page.getByRole('button', { name: 'Open my first plan' }),
         ).toBeVisible();
         await expect(
-            page.getByText('Register your address', { exact: false }),
+            page.getByText('2027-10-01', { exact: true }),
         ).toBeVisible();
-        await expect(page.getByText(/due \d+ \w+/).first()).toBeVisible();
+        await expect(page.getByText('B1', { exact: true })).toBeVisible();
+        await expect(page.getByText('First on your list')).toHaveCount(0);
+        await expect(page.getByText(/due \d+ \w+/)).toHaveCount(0);
 
         expect(errors).toHaveLength(0);
         // Deliberately do NOT submit — the e2e user's profile stays untouched.

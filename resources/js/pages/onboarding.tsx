@@ -18,24 +18,19 @@ export type OnboardingData = {
     visa_expires_at: string;
     veedel: string;
     housing_status: string;
-    german_level: string;
     has_deutschlandticket: boolean;
     arrival_date: string;
     // "I haven't arrived yet" — submits a null arrival, pausing all deadlines.
     arrival_planned: boolean;
     interests: string[];
+    current_residence_title: string;
+    residence_title_expires_at: string;
+    case_goal: string;
+    sponsor_current_title: string;
+    documented_german_level: string;
+    moved_in_at: string;
+    address_registration_status: string;
 };
-
-export type TaskPreview = {
-    title: string;
-    meta: string | null;
-    deadline_days: number | null;
-};
-
-export type TaskPreviews = Record<
-    string,
-    { eu: TaskPreview[]; non_eu: TaskPreview[] }
->;
 
 /** 'job' resolves via the EU answer; everything else is already an enum value. */
 export function resolveSituation(choice: string, isEu: boolean | null): string {
@@ -60,9 +55,8 @@ const TOTAL_STEPS = 5;
 
 export default function Onboarding() {
     const { track } = useTracker();
-    const { veedels, taskPreviews } = usePage<{
+    const { veedels } = usePage<{
         veedels: Record<string, string[]>;
-        taskPreviews: TaskPreviews;
     }>().props;
     const [step, setStep] = useState(1);
 
@@ -79,12 +73,56 @@ export default function Onboarding() {
         visa_expires_at: '',
         veedel: '',
         housing_status: 'long_term',
-        german_level: '',
         has_deutschlandticket: false,
         arrival_date: defaultArrival,
         arrival_planned: false,
         interests: [],
+        current_residence_title: '',
+        residence_title_expires_at: '',
+        case_goal: '',
+        sponsor_current_title: '',
+        documented_german_level: '',
+        moved_in_at: '',
+        address_registration_status: '',
     });
+
+    function clearResidenceFacts(data: OnboardingData): OnboardingData {
+        return {
+            ...data,
+            entry_mode: '',
+            visa_expires_at: '',
+            current_residence_title: '',
+            residence_title_expires_at: '',
+            case_goal: '',
+            sponsor_current_title: '',
+        };
+    }
+
+    function changeSituation(situation: string) {
+        const data = clearResidenceFacts(form.data);
+
+        form.setData({
+            ...data,
+            situation,
+            is_eu: situation === 'family_reunification' ? false : null,
+        });
+    }
+
+    function changeIsEu(isEu: boolean) {
+        form.setData({
+            ...clearResidenceFacts(form.data),
+            is_eu: isEu,
+        });
+    }
+
+    function changeEntryMode(entryMode: string) {
+        form.setData({
+            ...clearResidenceFacts(form.data),
+            entry_mode: entryMode,
+            current_residence_title:
+                entryMode === 'd_visa' ? 'national_d_visa' : '',
+        });
+    }
 
     function next() {
         if (step < TOTAL_STEPS) {
@@ -136,7 +174,7 @@ export default function Onboarding() {
                     (form.data.arrival_planned || form.data.arrival_date !== '')
                 );
             case 4:
-                return form.data.interests.length >= 3; // at least 3 interests
+                return true;
             case 5:
                 return true;
             default:
@@ -149,7 +187,7 @@ export default function Onboarding() {
             case 1:
                 return "Let's get started";
             case 5:
-                return 'Open my plan';
+                return 'Open my first plan';
             default:
                 return 'Continue';
         }
@@ -176,14 +214,42 @@ export default function Onboarding() {
                             showEuQuestion={EU_QUESTION_CHOICES.includes(
                                 form.data.situation,
                             )}
-                            onChange={(v) => form.setData('situation', v)}
-                            onIsEuChange={(v) => form.setData('is_eu', v)}
-                            onEntryModeChange={(v) =>
-                                form.setData('entry_mode', v)
-                            }
+                            onChange={changeSituation}
+                            onIsEuChange={changeIsEu}
+                            onEntryModeChange={changeEntryMode}
                             visaExpiresAt={form.data.visa_expires_at}
                             onVisaExpiresAtChange={(v) =>
                                 form.setData('visa_expires_at', v)
+                            }
+                            currentResidenceTitle={
+                                form.data.current_residence_title
+                            }
+                            onCurrentResidenceTitleChange={(v) =>
+                                form.setData({
+                                    ...form.data,
+                                    current_residence_title: v,
+                                    residence_title_expires_at:
+                                        v === ''
+                                            ? ''
+                                            : form.data
+                                                  .residence_title_expires_at,
+                                })
+                            }
+                            residenceTitleExpiresAt={
+                                form.data.residence_title_expires_at
+                            }
+                            onResidenceTitleExpiresAtChange={(v) =>
+                                form.setData('residence_title_expires_at', v)
+                            }
+                            caseGoal={form.data.case_goal}
+                            onCaseGoalChange={(v) =>
+                                form.setData('case_goal', v)
+                            }
+                            sponsorCurrentTitle={
+                                form.data.sponsor_current_title
+                            }
+                            onSponsorCurrentTitleChange={(v) =>
+                                form.setData('sponsor_current_title', v)
                             }
                         />
                     )}
@@ -193,8 +259,6 @@ export default function Onboarding() {
                             veedel={form.data.veedel}
                             arrivalDate={form.data.arrival_date}
                             arrivalPlanned={form.data.arrival_planned}
-                            germanLevel={form.data.german_level}
-                            housingStatus={form.data.housing_status}
                             hasDeutschlandticket={
                                 form.data.has_deutschlandticket
                             }
@@ -211,11 +275,32 @@ export default function Onboarding() {
                                     planned ? '' : defaultArrival,
                                 );
                             }}
-                            onGermanLevelChange={(v) =>
-                                form.setData('german_level', v)
+                            documentedGermanLevel={
+                                form.data.documented_german_level
                             }
-                            onHousingStatusChange={(v) =>
-                                form.setData('housing_status', v)
+                            onDocumentedGermanLevelChange={(v) =>
+                                form.setData('documented_german_level', v)
+                            }
+                            addressRegistrationStatus={
+                                form.data.address_registration_status
+                            }
+                            onAddressRegistrationStatusChange={(v) =>
+                                form.setData({
+                                    ...form.data,
+                                    address_registration_status: v,
+                                    housing_status:
+                                        v === 'registrable'
+                                            ? 'long_term'
+                                            : 'temporary',
+                                    moved_in_at:
+                                        v === 'registrable'
+                                            ? form.data.moved_in_at
+                                            : '',
+                                })
+                            }
+                            movedInAt={form.data.moved_in_at}
+                            onMovedInAtChange={(v) =>
+                                form.setData('moved_in_at', v)
                             }
                             onDticketChange={(v) =>
                                 form.setData('has_deutschlandticket', v)
@@ -237,12 +322,7 @@ export default function Onboarding() {
                             }
                         />
                     )}
-                    {step === 5 && (
-                        <ConfirmationStep
-                            data={form.data}
-                            previews={taskPreviews ?? {}}
-                        />
-                    )}
+                    {step === 5 && <ConfirmationStep data={form.data} />}
                 </div>
 
                 <div className="sticky bottom-0 border-t border-border bg-background px-6 py-4">

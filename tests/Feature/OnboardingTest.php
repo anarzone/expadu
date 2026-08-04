@@ -153,7 +153,7 @@ test('german level is optional', function () {
     $response->assertRedirect(route('bureaucracy'));
 });
 
-test('onboarding requires at least three interests', function () {
+test('interests are optional', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
@@ -162,7 +162,23 @@ test('onboarding requires at least three interests', function () {
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
         'housing_status' => 'long_term',
-        'interests' => ['parks', 'museums'], // only two
+        'interests' => [],
+    ]);
+
+    $response->assertRedirect(route('bureaucracy'));
+    expect($user->fresh()->interests)->toBe([]);
+});
+
+test('onboarding limits interests to seven options', function () {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user);
+
+    $response = $this->post(route('onboarding.complete'), [
+        'situation' => 'eu_employee',
+        'veedel' => 'Nippes',
+        'arrival_date' => '2026-01-15',
+        'housing_status' => 'long_term',
+        'interests' => ['parks', 'museums', 'cafes', 'sports', 'swimming', 'sights', 'family', 'dogs'],
     ]);
 
     $response->assertSessionHasErrors('interests');

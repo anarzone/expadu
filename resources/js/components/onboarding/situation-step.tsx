@@ -1,39 +1,53 @@
 // Friendly first-person choices. 'job' resolves to eu_employee /
 // non_eu_employee via the EU follow-up (see resolveSituation in onboarding.tsx).
+import {
+    IconBriefcase,
+    IconCheck,
+    IconDeviceLaptop,
+    IconFlag,
+    IconHeartHandshake,
+    IconIdBadge,
+    IconPlaneArrival,
+    IconSchool,
+    IconSparkles,
+    IconWorld,
+} from '@tabler/icons-react';
+import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
+
 const choices = [
     {
         value: 'job',
-        emoji: '💼',
+        icon: IconBriefcase,
         title: 'I have a job here',
         subtitle: 'Employed by a company in Germany',
     },
     {
         value: 'student',
-        emoji: '🎓',
+        icon: IconSchool,
         title: "I'm studying",
         subtitle: 'University, Studienkolleg or study preparation',
     },
     {
         value: 'freelancer',
-        emoji: '💻',
+        icon: IconDeviceLaptop,
         title: 'I work for myself',
         subtitle: 'Freelance or my own business',
     },
     {
         value: 'family_reunification',
-        emoji: '❤️',
+        icon: IconHeartHandshake,
         title: "I'm joining family",
         subtitle: 'My partner or family lives here',
     },
     {
         value: 'digital_nomad',
-        emoji: '🌍',
+        icon: IconWorld,
         title: 'I work remotely',
         subtitle: 'Digital nomad, employer abroad',
     },
     {
         value: 'other',
-        emoji: '✨',
+        icon: IconSparkles,
         title: 'Something else',
         subtitle: "We'll start with the essentials everyone needs",
     },
@@ -42,20 +56,19 @@ const choices = [
 const entryModes = [
     {
         value: 'd_visa',
-        emoji: '🛂',
+        icon: IconIdBadge,
         label: 'With a national D visa',
         subtitle: 'Your permit application is due before the visa expires',
     },
     {
         value: 'visa_free',
-        emoji: '🛬',
+        icon: IconPlaneArrival,
         label: 'Visa-free (90-day window)',
-        subtitle:
-            "Permit due within 90 days — and no working before it's approved",
+        subtitle: 'We’ll tailor first-permit guidance to your entry window',
     },
     {
         value: 'has_permit',
-        emoji: '💳',
+        icon: IconCheck,
         label: 'I already hold a German residence permit',
         subtitle: "We'll skip the first-permit tasks entirely",
     },
@@ -71,6 +84,14 @@ export function SituationStep({
     onEntryModeChange,
     visaExpiresAt,
     onVisaExpiresAtChange,
+    currentResidenceTitle,
+    onCurrentResidenceTitleChange,
+    residenceTitleExpiresAt,
+    onResidenceTitleExpiresAtChange,
+    caseGoal,
+    onCaseGoalChange,
+    sponsorCurrentTitle,
+    onSponsorCurrentTitleChange,
 }: {
     value: string;
     isEu: boolean | null;
@@ -81,7 +102,52 @@ export function SituationStep({
     onEntryModeChange: (value: string) => void;
     visaExpiresAt: string;
     onVisaExpiresAtChange: (value: string) => void;
+    currentResidenceTitle: string;
+    onCurrentResidenceTitleChange: (value: string) => void;
+    residenceTitleExpiresAt: string;
+    onResidenceTitleExpiresAtChange: (value: string) => void;
+    caseGoal: string;
+    onCaseGoalChange: (value: string) => void;
+    sponsorCurrentTitle: string;
+    onSponsorCurrentTitleChange: (value: string) => void;
 }) {
+    const residenceFactsApply =
+        value === 'family_reunification' || isEu === false;
+    const caseGoals =
+        value === 'family_reunification'
+            ? [
+                  {
+                      value: 'family_reunification_permit',
+                      label: 'Apply for family reunification',
+                  },
+                  {
+                      value: 'renew_current_title',
+                      label: 'Renew my current title',
+                  },
+                  {
+                      value: 'understand_options',
+                      label: "I'm not sure",
+                  },
+              ]
+            : [
+                  {
+                      value: 'blue_card',
+                      label: 'Apply for an EU Blue Card',
+                  },
+                  {
+                      value: 'renew_current_title',
+                      label: 'Renew my current title',
+                  },
+                  {
+                      value: 'settlement_permit',
+                      label: 'Explore settlement',
+                  },
+                  {
+                      value: 'understand_options',
+                      label: "I'm not sure",
+                  },
+              ];
+
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
@@ -106,8 +172,8 @@ export function SituationStep({
                                 : 'border-border bg-card hover:border-primary/30'
                         }`}
                     >
-                        <span className="w-8 text-center text-[22px]">
-                            {s.emoji}
+                        <span className="flex w-8 items-center justify-center">
+                            <OnboardingIcon icon={s.icon} size="lg" />
                         </span>
                         <div className="flex-1">
                             <div className="text-sm font-semibold">
@@ -117,13 +183,13 @@ export function SituationStep({
                                 {s.subtitle}
                             </div>
                         </div>
-                        <span
-                            className={`text-base font-bold text-primary transition-opacity ${
+                        <OnboardingIcon
+                            icon={IconCheck}
+                            size="sm"
+                            className={`text-primary transition-opacity ${
                                 value === s.value ? 'opacity-100' : 'opacity-0'
                             }`}
-                        >
-                            ✓
-                        </span>
+                        />
                     </button>
                 ))}
             </div>
@@ -139,8 +205,8 @@ export function SituationStep({
                     </p>
                     <div className="flex gap-2.5">
                         {[
-                            { value: true, emoji: '🇪🇺', label: 'Yes' },
-                            { value: false, emoji: '🌐', label: 'No' },
+                            { value: true, icon: IconFlag, label: 'Yes' },
+                            { value: false, icon: IconWorld, label: 'No' },
                         ].map((opt) => (
                             <button
                                 key={String(opt.value)}
@@ -152,7 +218,7 @@ export function SituationStep({
                                         : 'border-border bg-card hover:border-primary/30'
                                 }`}
                             >
-                                <span>{opt.emoji}</span>
+                                <OnboardingIcon icon={opt.icon} size="sm" />
                                 {opt.label}
                             </button>
                         ))}
@@ -160,7 +226,7 @@ export function SituationStep({
                 </div>
             )}
 
-            {isEu === false && (
+            {residenceFactsApply && (
                 <div className="mt-4 animate-in rounded-xl border border-dashed border-border bg-card p-4 fade-in slide-in-from-bottom-2">
                     <div className="mb-1 text-sm font-semibold">
                         How did you enter Germany?
@@ -182,8 +248,9 @@ export function SituationStep({
                                         : 'border-border bg-card hover:border-primary/30'
                                 }`}
                             >
-                                <span className="text-sm font-semibold">
-                                    {opt.emoji} {opt.label}
+                                <span className="flex items-center gap-2 text-sm font-semibold">
+                                    <OnboardingIcon icon={opt.icon} size="sm" />
+                                    {opt.label}
                                 </span>
                                 <span className="mt-0.5 block text-xs text-muted-foreground">
                                     {opt.subtitle}
@@ -209,6 +276,156 @@ export function SituationStep({
                                 becomes a real countdown instead of a vague
                                 warning.
                             </p>
+                        </div>
+                    )}
+
+                    {entryMode === 'has_permit' && (
+                        <div className="mt-4 border-t border-border pt-4">
+                            <div className="mb-2 text-sm font-semibold">
+                                Which German visa or residence title do you
+                                currently hold?
+                            </div>
+                            <p className="mb-3 text-xs text-muted-foreground">
+                                Optional. Choose “I’m not sure” if you do not
+                                know the exact title.
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    {
+                                        value: 'national_d_visa',
+                                        label: 'National D visa',
+                                    },
+                                    {
+                                        value: 'standard_work_permit',
+                                        label: 'Work residence permit',
+                                    },
+                                    {
+                                        value: 'blue_card',
+                                        label: 'EU Blue Card',
+                                    },
+                                    {
+                                        value: 'family_reunification',
+                                        label: 'Family reunification permit',
+                                    },
+                                    {
+                                        value: 'settlement_permit_18c',
+                                        label: 'Settlement permit',
+                                    },
+                                    { value: 'other', label: 'Another title' },
+                                    { value: '', label: "I'm not sure" },
+                                ].map((option) => (
+                                    <button
+                                        key={option.label}
+                                        type="button"
+                                        onClick={() =>
+                                            onCurrentResidenceTitleChange(
+                                                option.value,
+                                            )
+                                        }
+                                        className={`rounded-[10px] border-[1.5px] px-3 py-2 text-left text-xs font-semibold transition-all ${
+                                            currentResidenceTitle ===
+                                            option.value
+                                                ? 'border-primary bg-accent-soft text-primary'
+                                                : 'border-border bg-card hover:border-primary/30'
+                                        }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                            {currentResidenceTitle !== '' && (
+                                <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                    When does this title expire?
+                                    <input
+                                        type="date"
+                                        aria-label="When does this title expire?"
+                                        value={residenceTitleExpiresAt}
+                                        onChange={(event) =>
+                                            onResidenceTitleExpiresAtChange(
+                                                event.target.value,
+                                            )
+                                        }
+                                        className="rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                    />
+                                </label>
+                            )}
+                        </div>
+                    )}
+
+                    {value === 'family_reunification' && entryMode !== '' && (
+                        <div className="mt-4 border-t border-border pt-4">
+                            <div className="mb-2 text-sm font-semibold">
+                                Which title does your sponsor currently hold?
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    {
+                                        value: 'national_d_visa',
+                                        label: 'National D visa',
+                                    },
+                                    {
+                                        value: 'standard_work_permit',
+                                        label: 'Work residence permit',
+                                    },
+                                    {
+                                        value: 'blue_card',
+                                        label: 'My sponsor has a Blue Card',
+                                    },
+                                    {
+                                        value: 'blue_card_pending',
+                                        label: 'Their Blue Card is pending',
+                                    },
+                                    {
+                                        value: 'settlement_permit_18c',
+                                        label: 'Settlement permit',
+                                    },
+                                    { value: 'other', label: 'Another title' },
+                                    { value: '', label: "I'm not sure" },
+                                ].map((option) => (
+                                    <button
+                                        key={option.label}
+                                        type="button"
+                                        onClick={() =>
+                                            onSponsorCurrentTitleChange(
+                                                option.value,
+                                            )
+                                        }
+                                        className={`rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
+                                            sponsorCurrentTitle === option.value
+                                                ? 'border-primary bg-accent-soft text-primary'
+                                                : 'border-border bg-card hover:border-primary/30'
+                                        }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {entryMode !== '' && (
+                        <div className="mt-4 border-t border-border pt-4">
+                            <div className="mb-2 text-sm font-semibold">
+                                What would you like help with?
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {caseGoals.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() =>
+                                            onCaseGoalChange(option.value)
+                                        }
+                                        className={`rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
+                                            caseGoal === option.value
+                                                ? 'border-primary bg-accent-soft text-primary'
+                                                : 'border-border bg-card hover:border-primary/30'
+                                        }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

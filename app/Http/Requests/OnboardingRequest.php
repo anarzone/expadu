@@ -44,7 +44,7 @@ class OnboardingRequest extends FormRequest
             'has_deutschlandticket' => ['nullable', 'boolean'],
             // Explicit interests — a cold-start personalisation signal that
             // shapes the home feed and composer (see Interest enum).
-            'interests' => ['required', 'array', 'min:'.Interest::MIN_SELECT, 'max:'.Interest::MAX_SELECT],
+            'interests' => ['nullable', 'array', 'max:7'],
             'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
             // Asked only when the EU follow-up was answered "No" — it sets
             // the real permit deadline (visa expiry vs the 90-day window).

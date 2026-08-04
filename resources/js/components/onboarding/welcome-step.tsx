@@ -1,8 +1,20 @@
+import {
+    IconClipboardList,
+    IconClockHour4,
+    IconHandStop,
+    IconLock,
+    IconTree,
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
+import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
+
 export function WelcomeStep() {
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="pt-8 pb-6">
-                <div className="mb-4 text-5xl">👋</div>
+                <div className="mb-4">
+                    <OnboardingIcon icon={IconHandStop} size="xl" />
+                </div>
                 <h1 className="mb-2.5 font-display text-[28px] leading-tight font-medium">
                     Moving to Cologne is a lot.
                     <br />
@@ -16,39 +28,39 @@ export function WelcomeStep() {
 
             <div className="flex flex-col gap-2.5">
                 <BenefitCard
-                    emoji="📋"
+                    icon={IconClipboardList}
                     title="Your exact paperwork path"
                     description="Only the tasks that apply to your situation — with every document named."
                 />
                 <BenefitCard
-                    emoji="⏰"
+                    icon={IconClockHour4}
                     title="Deadlines that find you"
                     description="We compute them from your arrival date and remind you before they bite."
                 />
                 <BenefitCard
-                    emoji="🌳"
+                    icon={IconTree}
                     title="A city to enjoy meanwhile"
                     description="Parks, museums and people-meeting events around your Veedel."
                 />
             </div>
 
-            <PrivacyNote text="Your answers stay in your profile. They only personalize your checklist — never shared, and you can change them anytime in Settings." />
+            <PrivacyNote text="Your answers are stored in your Expadu profile to personalise your plan. They are never sold. Expadu is not legal advice." />
         </div>
     );
 }
 
 function BenefitCard({
-    emoji,
+    icon: Icon,
     title,
     description,
 }: {
-    emoji: string;
+    icon: TablerIcon;
     title: string;
     description: string;
 }) {
     return (
         <div className="flex gap-3.5 rounded-xl border border-border bg-card p-4">
-            <span className="text-2xl">{emoji}</span>
+            <OnboardingIcon icon={Icon} size="lg" />
             <div>
                 <div className="text-sm font-semibold">{title}</div>
                 <div className="mt-0.5 text-[13px] text-muted-foreground">
@@ -62,7 +74,11 @@ function BenefitCard({
 export function PrivacyNote({ text }: { text: string }) {
     return (
         <div className="mt-5 flex items-start gap-2 rounded-[10px] bg-accent-soft px-3.5 py-3 text-[12.5px] leading-normal font-medium text-primary">
-            <span aria-hidden>🔒</span>
+            <OnboardingIcon
+                icon={IconLock}
+                size="sm"
+                className="mt-0.5 shrink-0"
+            />
             <span>{text}</span>
         </div>
     );

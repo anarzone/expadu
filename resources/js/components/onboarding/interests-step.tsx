@@ -1,22 +1,39 @@
+import {
+    IconBabyCarriage,
+    IconBallFootball,
+    IconBooks,
+    IconBuildingBank,
+    IconCheck,
+    IconCoffee,
+    IconDeviceLaptop,
+    IconDog,
+    IconGlassFull,
+    IconMusic,
+    IconPalette,
+    IconSwimming,
+    IconTree,
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
+import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
+
 // Keys + labels mirror the backend App\Profile\Interest enum.
-const INTERESTS = [
-    { value: 'parks', label: 'Parks & green', emoji: '🌳' },
-    { value: 'swimming', label: 'Swimming & lakes', emoji: '🏊' },
-    { value: 'sports', label: 'Sports & courts', emoji: '⚽' },
-    { value: 'museums', label: 'Museums & galleries', emoji: '🎨' },
-    { value: 'sights', label: 'Sights & landmarks', emoji: '🏛️' },
-    { value: 'family', label: 'Family & kids', emoji: '🛝' },
-    { value: 'cafes', label: 'Cafés & bakeries', emoji: '☕' },
-    { value: 'nightlife', label: 'Bars & nightlife', emoji: '🍻' },
-    { value: 'live_music', label: 'Live music', emoji: '🎶' },
-    { value: 'coworking', label: 'Coworking', emoji: '💻' },
-    { value: 'libraries', label: 'Libraries', emoji: '📚' },
-    { value: 'dogs', label: 'Dog-friendly', emoji: '🐕' },
+const INTERESTS: { value: string; label: string; icon: TablerIcon }[] = [
+    { value: 'parks', label: 'Parks & green', icon: IconTree },
+    { value: 'swimming', label: 'Swimming & lakes', icon: IconSwimming },
+    { value: 'sports', label: 'Sports & courts', icon: IconBallFootball },
+    { value: 'museums', label: 'Museums & galleries', icon: IconPalette },
+    { value: 'sights', label: 'Sights & landmarks', icon: IconBuildingBank },
+    { value: 'family', label: 'Family & kids', icon: IconBabyCarriage },
+    { value: 'cafes', label: 'Cafés & bakeries', icon: IconCoffee },
+    { value: 'nightlife', label: 'Bars & nightlife', icon: IconGlassFull },
+    { value: 'live_music', label: 'Live music', icon: IconMusic },
+    { value: 'coworking', label: 'Coworking', icon: IconDeviceLaptop },
+    { value: 'libraries', label: 'Libraries', icon: IconBooks },
+    { value: 'dogs', label: 'Dog-friendly', icon: IconDog },
 ];
 
-// Mirrors App\Profile\Interest::MIN_SELECT / MAX_SELECT.
-const MIN = 3;
-const MAX = 6;
+// Mirrors App\Profile\Interest::MAX_SELECT.
+const MAX = 7;
 
 export function InterestsStep({
     interests,
@@ -35,14 +52,11 @@ export function InterestsStep({
                     What are you into?
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                    Pick at least {MIN} (up to {MAX}) — we lead your home feed
-                    and day plans with these, and you can change them anytime.
+                    Optional — pick up to {MAX} to tailor your home feed and day
+                    plans. You can change them anytime.
                 </p>
-                <p
-                    className={`mt-2 text-[13px] font-semibold ${count >= MIN ? 'text-success' : 'text-muted-foreground'}`}
-                >
+                <p className="mt-2 text-[13px] font-semibold text-muted-foreground">
                     {count}/{MAX} chosen
-                    {count < MIN ? ` · pick ${MIN - count} more` : ''}
                 </p>
             </div>
 
@@ -66,12 +80,14 @@ export function InterestsStep({
                                       : 'border-border bg-card hover:border-primary/30'
                             }`}
                         >
-                            <span className="text-[20px] leading-none">
-                                {interest.emoji}
-                            </span>
+                            <OnboardingIcon icon={interest.icon} size="md" />
                             {interest.label}
                             {on && (
-                                <span className="ml-auto text-primary">✓</span>
+                                <OnboardingIcon
+                                    icon={IconCheck}
+                                    size="sm"
+                                    className="ml-auto text-primary"
+                                />
                             )}
                         </button>
                     );
