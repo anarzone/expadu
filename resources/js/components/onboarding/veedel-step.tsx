@@ -399,7 +399,7 @@ function VeedelPicker({
                                 }
                             }}
                             placeholder="Search your Veedel…"
-                            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            className="min-h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                         />
                     </div>
                     <div className="max-h-[280px] overflow-y-auto py-1">
