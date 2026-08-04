@@ -370,7 +370,8 @@ test('family D-visa onboarding confirms explicit canonical facts without inventi
     $facts = BureaucracyCaseFact::query()
         ->where('case_id', $case->id)
         ->where('state', 'confirmed')
-        ->pluck('value', 'key');
+        ->get()
+        ->mapWithKeys(fn (BureaucracyCaseFact $fact): array => [$fact->key => $fact->value]);
 
     expect($facts->all())->toMatchArray([
         'citizenship_group' => 'non_eu',

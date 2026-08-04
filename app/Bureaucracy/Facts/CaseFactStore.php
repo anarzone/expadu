@@ -151,11 +151,11 @@ final class CaseFactStore
                 $candidate = BureaucracyCaseFact::query()
                     ->where('case_id', $lockedCase->getKey())
                     ->where('key', $key)
-                    ->where('value', $value)
                     ->where('state', 'candidate')
                     ->where('source', $source)
                     ->lockForUpdate()
-                    ->first();
+                    ->get()
+                    ->first(fn (BureaucracyCaseFact $candidate): bool => $candidate->value === $value);
 
                 if ($candidate === null) {
                     $candidate = BureaucracyCaseFact::query()->create([

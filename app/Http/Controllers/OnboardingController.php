@@ -91,6 +91,7 @@ class OnboardingController extends Controller
     public function complete(OnboardingRequest $request, ApplyOnboardingAnswers $applyOnboardingAnswers): RedirectResponse
     {
         $applyOnboardingAnswers->execute($request->user(), $request->validated());
+        $request->user()->refresh();
 
         return redirect()->route('bureaucracy');
     }

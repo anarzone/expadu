@@ -51,14 +51,14 @@ class OnboardingRequest extends FormRequest
             'entry_mode' => ['nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit']), Rule::requiredIf(fn (): bool => $this->requiresEntryMode())],
             // D-visa holders can give their expiry — it becomes the real
             // permit deadline instead of a vague warning.
-            'visa_expires_at' => ['nullable', 'date'],
+            'visa_expires_at' => ['nullable', 'date_format:Y-m-d'],
             'current_residence_title' => ['nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_18c', 'other'])],
-            'residence_title_expires_at' => ['nullable', 'date'],
+            'residence_title_expires_at' => ['nullable', 'date_format:Y-m-d'],
             'case_goal' => ['nullable', 'string', Rule::in(['blue_card', 'family_reunification_permit', 'renew_current_title', 'settlement_permit', 'understand_options'])],
             'sponsor_current_title' => ['nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
             'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
-            'moved_in_at' => ['nullable', 'date'],
-            'address_registration_status' => ['nullable', 'string'],
+            'moved_in_at' => ['nullable', 'date_format:Y-m-d'],
+            'address_registration_status' => ['nullable', 'string', Rule::in(['registrable', 'not_registrable', 'unsure'])],
             // Temporary housing pauses the Anmeldung clock instead of
             // showing a false overdue.
             'housing_status' => ['required', 'string', Rule::in(['long_term', 'temporary'])],
