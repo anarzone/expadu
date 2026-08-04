@@ -501,10 +501,46 @@ test('synchronization preserves a confirmed fact owned by another authoritative 
     expect(caseFactStore()->confirmedFact($case, 'visa_expires_at')->id)->toBe($authoritative->id);
 });
 
-test('re-onboarding closes an earlier conflict before replacing its owned confirmed fact', function () {
+test('repeating an onboarding fact makes its open cross-source conflict obsolete without choosing a winner', function () {
     $user = bureaucracyUser();
     $store = caseFactStore();
     $case = $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+    $existing = $store->confirmedFact($case, 'case_goal');
+
+    $store->synchronizeConfirmedFacts($user, ['case_goal' => 'settlement_permit'], 'case_question');
+    $conflict = BureaucracyFactConflict::query()
+        ->where('case_id', $case->id)
+        ->where('fact_key', 'case_goal')
+        ->where('status', 'unresolved')
+        ->sole();
+    $candidate = BureaucracyCaseFact::findOrFail($conflict->candidate_fact_id);
+
+    $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+
+    expect(fn () => $store->resolveConflict($conflict, $candidate))
+        ->toThrow(DomainException::class, 'Only an unresolved conflict may be resolved.');
+
+    $activeFacts = BureaucracyCaseFact::query()
+        ->where('case_id', $case->id)
+        ->where('key', 'case_goal')
+        ->where('state', 'confirmed')
+        ->get();
+    $conflict->refresh();
+
+    expect($activeFacts)->toHaveCount(1)
+        ->and($activeFacts->sole()->id)->toBe($existing->id)
+        ->and($activeFacts->sole()->value)->toBe('blue_card')
+        ->and($candidate->fresh()->state)->toBe('candidate')
+        ->and($conflict->status)->toBe('obsolete')
+        ->and($conflict->resolved_fact_id)->toBeNull()
+        ->and($conflict->resolved_at)->toBeNull();
+});
+
+test('replacing an onboarding fact makes its open cross-source conflict obsolete without choosing a winner', function () {
+    $user = bureaucracyUser();
+    $store = caseFactStore();
+    $case = $store->synchronizeConfirmedFacts($user, ['case_goal' => 'blue_card'], 'onboarding');
+    $existing = $store->confirmedFact($case, 'case_goal');
 
     $store->synchronizeConfirmedFacts($user, ['case_goal' => 'settlement_permit'], 'case_question');
     $conflict = BureaucracyFactConflict::query()
@@ -515,18 +551,58 @@ test('re-onboarding closes an earlier conflict before replacing its owned confir
     $candidate = BureaucracyCaseFact::findOrFail($conflict->candidate_fact_id);
 
     $store->synchronizeConfirmedFacts($user, ['case_goal' => 'renew_current_title'], 'onboarding');
-    $store->resolveConflict($conflict, $candidate);
 
-    $confirmed = BureaucracyCaseFact::query()
+    expect(fn () => $store->resolveConflict($conflict, $candidate))
+        ->toThrow(DomainException::class, 'Only an unresolved conflict may be resolved.');
+
+    $activeFacts = BureaucracyCaseFact::query()
         ->where('case_id', $case->id)
         ->where('key', 'case_goal')
         ->where('state', 'confirmed')
         ->get();
+    $conflict->refresh();
 
-    expect($confirmed)->toHaveCount(1);
-    expect($confirmed->sole()->value)->toBe('renew_current_title');
-    expect($candidate->fresh()->state)->toBe('superseded');
-    expect($conflict->fresh()->status)->toBe('resolved');
+    expect($activeFacts)->toHaveCount(1)
+        ->and($activeFacts->sole()->value)->toBe('renew_current_title')
+        ->and($existing->fresh()->state)->toBe('superseded')
+        ->and($candidate->fresh()->state)->toBe('candidate')
+        ->and($conflict->status)->toBe('obsolete')
+        ->and($conflict->resolved_fact_id)->toBeNull()
+        ->and($conflict->resolved_at)->toBeNull();
+});
+
+test('retiring an onboarding fact makes its open cross-source conflict obsolete without choosing a winner', function () {
+    $user = bureaucracyUser();
+    $store = caseFactStore();
+    $case = $store->synchronizeConfirmedFacts($user, ['visa_expires_at' => '2026-09-30'], 'onboarding');
+    $existing = $store->confirmedFact($case, 'visa_expires_at');
+
+    $store->synchronizeConfirmedFacts($user, ['visa_expires_at' => '2027-03-31'], 'case_question');
+    $conflict = BureaucracyFactConflict::query()
+        ->where('case_id', $case->id)
+        ->where('fact_key', 'visa_expires_at')
+        ->where('status', 'unresolved')
+        ->sole();
+    $candidate = BureaucracyCaseFact::findOrFail($conflict->candidate_fact_id);
+
+    $store->synchronizeConfirmedFacts($user, [], 'onboarding', ['visa_expires_at']);
+
+    expect(fn () => $store->resolveConflict($conflict, $candidate))
+        ->toThrow(DomainException::class, 'Only an unresolved conflict may be resolved.');
+
+    $activeFacts = BureaucracyCaseFact::query()
+        ->where('case_id', $case->id)
+        ->where('key', 'visa_expires_at')
+        ->where('state', 'confirmed')
+        ->get();
+    $conflict->refresh();
+
+    expect($activeFacts)->toBeEmpty()
+        ->and($existing->fresh()->state)->toBe('superseded')
+        ->and($candidate->fresh()->state)->toBe('candidate')
+        ->and($conflict->status)->toBe('obsolete')
+        ->and($conflict->resolved_fact_id)->toBeNull()
+        ->and($conflict->resolved_at)->toBeNull();
 });
 
 test('explicitly re-answering an expired equal fact refreshes its confirmation window', function () {

@@ -133,7 +133,7 @@ final class CaseFactStore
                 }
 
                 if ($existing->value === $value) {
-                    $caseChanged = $this->closeOpenConflicts($existing) || $caseChanged;
+                    $caseChanged = $this->markOpenConflictsObsolete($existing) || $caseChanged;
 
                     if ($existing->reconfirm_at !== null && $existing->reconfirm_at->lessThanOrEqualTo(now())) {
                         $this->confirmFact($existing);
@@ -144,7 +144,7 @@ final class CaseFactStore
                 }
 
                 if ($existing->source === $source) {
-                    $this->closeOpenConflicts($existing);
+                    $this->markOpenConflictsObsolete($existing);
                     $this->supersedeFact($existing);
                     BureaucracyCaseFact::query()->create([
                         'case_id' => $lockedCase->getKey(),
@@ -197,7 +197,7 @@ final class CaseFactStore
                     ->get();
 
                 foreach ($retiredFacts as $fact) {
-                    $this->closeOpenConflicts($fact);
+                    $this->markOpenConflictsObsolete($fact);
                     $this->supersedeFact($fact);
                     $caseChanged = true;
                 }
@@ -364,6 +364,10 @@ final class CaseFactStore
                 return BureaucracyCaseFact::query()->findOrFail($lockedConflict->resolved_fact_id);
             }
 
+            if ($lockedConflict->status !== 'unresolved') {
+                throw new DomainException('Only an unresolved conflict may be resolved.');
+            }
+
             $allowedFactIds = [
                 (int) $lockedConflict->existing_fact_id,
                 (int) $lockedConflict->candidate_fact_id,
@@ -442,7 +446,7 @@ final class CaseFactStore
         ]);
     }
 
-    private function closeOpenConflicts(BureaucracyCaseFact $confirmedFact): bool
+    private function markOpenConflictsObsolete(BureaucracyCaseFact $confirmedFact): bool
     {
         $conflicts = BureaucracyFactConflict::query()
             ->where('case_id', $confirmedFact->case_id)
@@ -459,27 +463,11 @@ final class CaseFactStore
             return false;
         }
 
-        $competingFactIds = $conflicts
-            ->flatMap(fn (BureaucracyFactConflict $conflict): array => [
-                (int) $conflict->existing_fact_id,
-                (int) $conflict->candidate_fact_id,
-            ])
-            ->reject(fn (int $factId): bool => $factId === (int) $confirmedFact->getKey())
-            ->unique()
-            ->values();
-
-        BureaucracyCaseFact::query()
-            ->whereIn('id', $competingFactIds)
-            ->whereIn('state', ['candidate', 'confirmed'])
-            ->lockForUpdate()
-            ->get()
-            ->each(fn (BureaucracyCaseFact $fact) => $this->supersedeFact($fact));
-
         foreach ($conflicts as $conflict) {
             $conflict->update([
-                'status' => 'resolved',
-                'resolved_fact_id' => $confirmedFact->getKey(),
-                'resolved_at' => now(),
+                'status' => 'obsolete',
+                'resolved_fact_id' => null,
+                'resolved_at' => null,
             ]);
         }
 
