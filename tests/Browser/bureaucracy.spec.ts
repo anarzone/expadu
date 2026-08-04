@@ -30,6 +30,103 @@ async function switchPersona(
     }
 }
 
+function decodeHtmlAttribute(value: string): string {
+    return value
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#039;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&amp;', '&');
+}
+
+function encodeHtmlAttribute(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+}
+
+async function exposeConfiguredAssistant(page: Page): Promise<void> {
+    await page.route('**/bureaucracy', async (route) => {
+        if (route.request().method() !== 'GET') {
+            await route.continue();
+
+            return;
+        }
+
+        const response = await route.fetch();
+        const contentType = response.headers()['content-type'] ?? '';
+
+        if (contentType.includes('application/json')) {
+            const payload = await response.json();
+
+            if (payload?.props?.casePlan) {
+                payload.props.casePlan.ai = {
+                    available: true,
+                    consented: false,
+                    processor_name: 'DeepSeek',
+                    processor_privacy_url: 'https://www.deepseek.com/privacy',
+                    remaining_quota: 20,
+                };
+            }
+
+            await route.fulfill({ response, json: payload });
+
+            return;
+        }
+
+        const body = await response.text();
+        const updated = body.replace(
+            /data-page="([^"]+)"/,
+            (attribute, encodedPage: string) => {
+                const inertiaPage = JSON.parse(
+                    decodeHtmlAttribute(encodedPage),
+                );
+
+                if (!inertiaPage?.props?.casePlan) {
+                    return attribute;
+                }
+
+                inertiaPage.props.casePlan.ai = {
+                    available: true,
+                    consented: false,
+                    processor_name: 'DeepSeek',
+                    processor_privacy_url: 'https://www.deepseek.com/privacy',
+                    remaining_quota: 20,
+                };
+
+                return `data-page="${encodeHtmlAttribute(JSON.stringify(inertiaPage))}"`;
+            },
+        );
+
+        await route.fulfill({ response, body: updated });
+    });
+
+    await page.route('**/bureaucracy/case/ai-consent', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ consented: true }),
+        });
+    });
+
+    await page.route('**/bureaucracy/case/messages', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                outcome: 'candidate',
+                value: 'blue_card',
+                label: 'EU Blue Card',
+                message:
+                    'I understood this answer. Confirm it before it changes your plan.',
+            }),
+        });
+    });
+}
+
 test.describe('Verified bureaucracy case plan', () => {
     test('renders the source-backed plan without JS errors', async ({
         page,
@@ -48,6 +145,15 @@ test.describe('Verified bureaucracy case plan', () => {
         ).toBeVisible();
         await expect(
             page.getByRole('heading', { name: /Do now/ }),
+        ).toBeVisible();
+        await expect(page.getByText('Case assistant')).toBeVisible();
+        await expect(
+            page.getByRole('heading', {
+                name: 'Your plan has enough confirmed information',
+            }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('link', { name: 'Update my answers' }),
         ).toBeVisible();
 
         await page
@@ -73,7 +179,58 @@ test.describe('Verified bureaucracy case plan', () => {
         await expect(
             page.getByRole('button', { name: 'Skip for now' }),
         ).toBeVisible();
+        await expect(
+            page.getByText('Text checking is not available right now', {
+                exact: false,
+            }),
+        ).toBeVisible();
         await expect(page.locator('textarea')).toHaveCount(0);
+    });
+
+    test('opens consent before the first text check and requires candidate confirmation', async ({
+        page,
+    }) => {
+        await switchPersona(page, 'neu-bluecard');
+        await exposeConfiguredAssistant(page);
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+
+        const textAnswer = page.getByPlaceholder(
+            'For example: I have a Blue Card and passed B1.',
+        );
+        await expect(textAnswer).toBeVisible();
+        await textAnswer.fill('I already have an EU Blue Card.');
+        await page.getByRole('button', { name: 'Check my answer' }).click();
+
+        await expect(
+            page.getByRole('dialog', {
+                name: 'Let DeepSeek interpret one answer?',
+            }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('link', {
+                name: "Read DeepSeek's privacy policy",
+            }),
+        ).toHaveAttribute('href', 'https://www.deepseek.com/privacy');
+
+        await page.getByRole('button', { name: 'Not now' }).click();
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+        await expect(
+            page.getByRole('button', { name: 'Employment', exact: true }),
+        ).toBeVisible();
+
+        await page.getByRole('button', { name: 'Check my answer' }).click();
+        await page.getByRole('button', { name: 'Allow this check' }).click();
+
+        await expect(
+            page.getByText('EU Blue Card', { exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Confirm answer' }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Edit response' }),
+        ).toBeVisible();
     });
 
     test('derives verified deadlines and documents from the active case plan', async ({

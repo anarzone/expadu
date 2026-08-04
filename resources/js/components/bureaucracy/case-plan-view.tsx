@@ -193,14 +193,14 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
                 </div>
             )}
 
-            {plan.next_question && !plan.active_conflict && (
-                <div className="mt-4">
-                    <CaseAssistantCard
-                        key={plan.next_question.id}
-                        question={plan.next_question}
-                    />
-                </div>
-            )}
+            <div className="mt-4">
+                <CaseAssistantCard
+                    key={plan.next_question?.id ?? 'case-ready'}
+                    question={plan.active_conflict ? null : plan.next_question}
+                    ai={plan.ai}
+                    blockedByConflict={plan.active_conflict !== null}
+                />
+            </div>
 
             {plan.coverage_state === 'conflict' && errors?.value && (
                 <div

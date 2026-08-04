@@ -2,6 +2,9 @@
 
 namespace App\Bureaucracy\Cases;
 
+use App\Bureaucracy\Ai\BureaucracyAiQuota;
+use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
+use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
 use App\Bureaucracy\Facts\FactDefinition;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Enums\TaskStatus;
@@ -27,7 +30,11 @@ final class CasePlanPresenter
         'not_covered',
     ];
 
-    public function __construct(private FactRegistry $factRegistry) {}
+    public function __construct(
+        private FactRegistry $factRegistry,
+        private ExtractsCaseFact $factExtractor,
+        private BureaucracyAiQuota $aiQuota,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -58,6 +65,23 @@ final class CasePlanPresenter
             'sections' => $sections,
             'active_conflict' => $this->activeConflict($case),
             'next_question' => $this->question($question),
+            'ai' => $this->ai($case),
+        ];
+    }
+
+    /**
+     * @return array{available: bool, consented: bool, processor_name: ?string, processor_privacy_url: ?string, remaining_quota: int}
+     */
+    private function ai(BureaucracyCase $case): array
+    {
+        $available = ! $this->factExtractor instanceof UnavailableCaseFactExtractor;
+
+        return [
+            'available' => $available,
+            'consented' => $case->hasCurrentAiConsent(),
+            'processor_name' => $available ? (string) config('services.bureaucracy_llm.processor_name') : null,
+            'processor_privacy_url' => $available ? (string) config('services.bureaucracy_llm.processor_privacy_url') : null,
+            'remaining_quota' => $available ? $this->aiQuota->remaining($case) : 0,
         ];
     }
 

@@ -72,6 +72,14 @@ export type CasePlanConflict = {
     }>;
 };
 
+export type CasePlanAi = {
+    available: boolean;
+    consented: boolean;
+    processor_name: string | null;
+    processor_privacy_url: string | null;
+    remaining_quota: number;
+};
+
 export type CasePlanItem = {
     kind?: 'coverage_notice' | string;
     key?: string;
@@ -110,6 +118,7 @@ export type CasePlan = {
     sections: CasePlanSections;
     active_conflict: CasePlanConflict | null;
     next_question: CasePlanQuestion | null;
+    ai: CasePlanAi;
 };
 
 export function documentLabel(document: CasePlanDocument): string {

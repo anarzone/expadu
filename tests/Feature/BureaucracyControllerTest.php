@@ -1,8 +1,10 @@
 <?php
 
+use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
 use App\Enums\TaskStatus;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
+use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyFactConflict;
 use App\Models\Task;
 use App\Models\User;
@@ -101,7 +103,52 @@ test('live bureaucracy page exposes a source-backed verified case plan', functio
             ->where('casePlan.sections.do_now.0.documents_required.0', 'Valid passport')
             ->where('casePlan.sections.do_now.0.documents_checked', [])
             ->where('casePlan.next_question', null)
+            ->where('casePlan.ai.available', false)
+            ->where('casePlan.ai.consented', false)
+            ->where('casePlan.ai.processor_name', null)
+            ->where('casePlan.ai.processor_privacy_url', null)
+            ->where('casePlan.ai.remaining_quota', 0)
             ->has('casePlan.generated_at')
+            ->etc());
+});
+
+test('live bureaucracy page exposes only bounded AI availability consent disclosure and quota', function () {
+    config()->set('services.bureaucracy_llm', [
+        'enabled' => true,
+        'base_url' => 'https://api.deepseek.com/beta',
+        'model' => 'deepseek-v4-flash',
+        'key' => 'dedicated-test-key',
+        'processor_name' => 'DeepSeek',
+        'processor_privacy_url' => 'https://www.deepseek.com/privacy',
+        'timeout' => 8,
+        'prompt_version' => '2026-08-04',
+        'daily_limit' => 20,
+    ]);
+    app()->forgetInstance(ExtractsCaseFact::class);
+
+    $user = User::factory()->onboarded()->create([
+        'situation' => 'other',
+        'is_eu' => false,
+        'german_level' => null,
+        'profile_attributes' => [],
+    ]);
+    $case = BureaucracyCase::factory()->for($user)->create([
+        'ai_consent_at' => now(),
+    ]);
+    BureaucracyCaseMessage::factory()->count(3)->for($case, 'case')->create();
+
+    $this->actingAs($user)
+        ->get(route('bureaucracy'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('casePlan.ai.available', true)
+            ->where('casePlan.ai.consented', true)
+            ->where('casePlan.ai.processor_name', 'DeepSeek')
+            ->where('casePlan.ai.processor_privacy_url', 'https://www.deepseek.com/privacy')
+            ->where('casePlan.ai.remaining_quota', 17)
+            ->missing('casePlan.ai.model')
+            ->missing('casePlan.ai.base_url')
+            ->missing('casePlan.ai.key')
             ->etc());
 });
 
