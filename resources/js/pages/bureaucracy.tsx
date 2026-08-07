@@ -199,10 +199,35 @@ export default function Bureaucracy() {
         }
     }
 
+    /**
+     * Union of both surfaces the checklist now renders: the verified plan and
+     * the general catalogue below it. Picking one or the other left this tab
+     * empty for every situation without an approved rule, because `casePlan`
+     * is always present.
+     */
     const derivedDocs = useMemo(() => {
-        return casePlan
-            ? deriveCasePlanDocuments(casePlan)
-            : deriveDocuments(taskBuckets);
+        const merged = new Map<string, DerivedDoc>();
+
+        for (const doc of [
+            ...(casePlan ? deriveCasePlanDocuments(casePlan) : []),
+            ...deriveDocuments(taskBuckets),
+        ]) {
+            const seen = merged.get(doc.label);
+
+            if (!seen) {
+                merged.set(doc.label, { ...doc, tasks: [...doc.tasks] });
+
+                continue;
+            }
+
+            seen.note = seen.note ?? doc.note;
+            seen.warn = seen.warn || doc.warn;
+            seen.tasks.push(...doc.tasks);
+        }
+
+        return [...merged.values()].sort(
+            (left, right) => right.tasks.length - left.tasks.length,
+        );
     }, [casePlan, taskBuckets]);
 
     const filteredDocs = useMemo(() => {
@@ -298,10 +323,45 @@ export default function Bureaucracy() {
                     would otherwise POST as the admin's own account). */}
                 <div className={preview ? 'pointer-events-none' : ''}>
                     {/* ════ CHECKLIST TAB ════ */}
-                    {activeTab === 'checklist' &&
-                        (casePlan ? (
-                            <CasePlanView plan={casePlan} />
-                        ) : (
+                    {activeTab === 'checklist' && (
+                        <>
+                            {casePlan && <CasePlanView plan={casePlan} />}
+
+                            {/* This catalogue has NOT been through source review,
+                                so it renders BELOW the verified plan and says so —
+                                an unreviewed step must never read as an
+                                authority-verified one. It used to sit in the `else`
+                                of `casePlan ? … : …`, but CurrentCasePlan::for()
+                                always returns an array, so the branch was dead and
+                                every situation without an approved rule (all but
+                                Blue Card and family reunification) rendered an
+                                empty plan. */}
+                            <section
+                                aria-labelledby="general-steps"
+                                className="px-4 pt-1 sm:px-6"
+                            >
+                                <h2
+                                    id="general-steps"
+                                    className="text-[16px] font-bold text-[#18170F] dark:text-[#F6F5F1]"
+                                >
+                                    General steps for your situation
+                                </h2>
+                                <div className="mt-2 flex items-start gap-2 rounded-[10px] border border-[#E4DED1] bg-[#F8F6F0] p-3 text-[11.5px] leading-5 text-[#6B6860] dark:border-[#454339] dark:bg-[#25241C] dark:text-[#AAA89F]">
+                                    <IconAlertTriangle
+                                        size={15}
+                                        stroke={ICON_STROKE}
+                                        className="mt-0.5 shrink-0"
+                                    />
+                                    <span>
+                                        These steps are <strong>not</strong>{' '}
+                                        part of the verified plan above and have
+                                        not been through source review yet. Use
+                                        them as a starting point and confirm
+                                        each one with the responsible authority.
+                                    </span>
+                                </div>
+                            </section>
+
                             <ChecklistFramingB
                                 situation={situation}
                                 progress={progress}
@@ -315,7 +375,8 @@ export default function Bureaucracy() {
                                 focusTaskId={focusTaskId}
                                 onTakeMeThere={takeMeThereToOffice}
                             />
-                        ))}
+                        </>
+                    )}
 
                     {/* ════ DOCUMENTS TAB — derived from the user's path ════ */}
                     {activeTab === 'documents' && (

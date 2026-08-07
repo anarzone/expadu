@@ -6,6 +6,9 @@ import { test, expect } from '@playwright/test';
 test.use({
     geolocation: { latitude: 50.985, longitude: 6.93 },
     permissions: ['geolocation'],
+    // A stale service worker serves the previous build's map bundle, which
+    // leaves the marker un-centred and fails this spec locally after a rebuild.
+    serviceWorkers: 'block',
 });
 
 test.describe('Places map — locate me', () => {
