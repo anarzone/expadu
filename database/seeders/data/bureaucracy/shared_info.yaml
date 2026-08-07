@@ -17,6 +17,7 @@ situation:
 tasks:
   - title: Sort out your driving licence
     key: shared.driving_licence
+    coverage_scope: universal
     depends_on: []
     applies_if:
       license_country: [other]
@@ -59,6 +60,7 @@ tasks:
 
   - title: 'Church tax: know before you tick the box'
     key: shared.church_tax
+    coverage_scope: universal
     type: info
     depends_on: []
     description: |
@@ -76,6 +78,7 @@ tasks:
 
   - title: 'Schufa: how Germany decides if it trusts you'
     key: shared.schufa
+    coverage_scope: universal
     type: info
     depends_on: []
     description: |
@@ -93,6 +96,7 @@ tasks:
 
   - title: 'Inviting family or friends to visit? Verpflichtungserklärung'
     key: shared.verpflichtungserklaerung
+    coverage_scope: universal
     type: info
     depends_on: []
     description: |
@@ -112,6 +116,7 @@ tasks:
 
   - title: 'Fiktionsbescheinigung: what that bridging paper really permits'
     key: shared.fiktionsbescheinigung
+    coverage_scope: universal
     type: info
     eu_filter: non_eu_only
     depends_on: []
@@ -131,6 +136,7 @@ tasks:
 
   - title: 'New passport? Transfer your permit (Übertrag)'
     key: shared.passport_transfer
+    coverage_scope: universal
     type: info
     eu_filter: non_eu_only
     depends_on: []
@@ -151,6 +157,7 @@ tasks:
 
   - title: 'The long game: permanent residency and citizenship'
     key: shared.long_game
+    coverage_scope: universal
     type: info
     eu_filter: non_eu_only
     depends_on: []
@@ -175,6 +182,7 @@ tasks:
 
   - title: 'Foreign professional qualification? Get it recognized'
     key: shared.recognition
+    coverage_scope: universal
     type: info
     eu_filter: non_eu_only
     depends_on: []
@@ -195,6 +203,7 @@ tasks:
 
   - title: 'Turkish citizens: ask about your ARB 1/80 rights'
     key: shared.arb_turkish
+    coverage_scope: universal
     type: info
     eu_filter: non_eu_only
     depends_on: []
@@ -216,6 +225,7 @@ tasks:
 
   - title: 'A child born in Germany: check citizenship first'
     key: shared.child_born
+    coverage_scope: universal
     type: info
     depends_on: []
     description: |
@@ -238,6 +248,7 @@ tasks:
 
   - title: 'Other permit types: where to look'
     key: shared.other_permits
+    coverage_scope: universal
     type: info
     eu_filter: non_eu_only
     depends_on: []

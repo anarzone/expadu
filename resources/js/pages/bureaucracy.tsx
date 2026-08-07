@@ -138,7 +138,9 @@ export default function Bureaucracy() {
         lifeEvents,
         eligibility,
         settledSuggestion,
-        progress,
+        // `progress` from the payload counts every applicable rule, including
+        // the ones the verified plan renders. The catalogue ring is derived
+        // from the filtered buckets below instead, so it matches what it lists.
         casePlan,
         preview,
     } = usePage<{
@@ -200,6 +202,67 @@ export default function Bureaucracy() {
     }
 
     /**
+     * Rule keys the verified plan already renders. Filtering the catalogue on
+     * what the plan ACTUALLY shows — rather than on review_status — means a
+     * rule the case engine did not match can never vanish from both surfaces
+     * at once.
+     */
+    const verifiedKeys = useMemo(() => {
+        const keys = new Set<string>();
+
+        for (const items of Object.values(casePlan?.sections ?? {})) {
+            for (const item of items as CasePlanItem[]) {
+                if (item.key) {
+                    keys.add(item.key);
+                }
+            }
+        }
+
+        return keys;
+    }, [casePlan]);
+
+    /**
+     * The general catalogue, minus anything the verified plan presents above it.
+     * The two engines read different inputs — CaseMatcher evaluates case facts,
+     * PathGenerator evaluates profile attributes — so both can carry the same
+     * rule and render it twice. `authoritative()` rules are already in
+     * PathGenerator's pool (it filters only on is_published), so the overlap
+     * grows with every rule that gets approved.
+     */
+    const catalogue = useMemo<Buckets>(() => {
+        if (verifiedKeys.size === 0) {
+            return taskBuckets;
+        }
+
+        const keep = (cards: FramingBTask[] = []): FramingBTask[] =>
+            cards.filter((card) => !card.key || !verifiedKeys.has(card.key));
+
+        return {
+            active: keep(taskBuckets.active),
+            upcoming: keep(taskBuckets.upcoming),
+            completed: keep(taskBuckets.completed),
+            not_applicable: keep(taskBuckets.not_applicable),
+            info: keep(taskBuckets.info),
+            no_longer_relevant: keep(taskBuckets.no_longer_relevant),
+        };
+    }, [taskBuckets, verifiedKeys]);
+
+    // Keep the progress ring consistent with what the catalogue actually lists.
+    const catalogueProgress = useMemo(() => {
+        const total =
+            catalogue.active.length +
+            catalogue.upcoming.length +
+            catalogue.completed.length;
+        const done = catalogue.completed.length;
+
+        return {
+            done,
+            total,
+            percent: total > 0 ? Math.round((done / total) * 100) : 0,
+        };
+    }, [catalogue]);
+
+    /**
      * Union of both surfaces the checklist now renders: the verified plan and
      * the general catalogue below it. Picking one or the other left this tab
      * empty for every situation without an approved rule, because `casePlan`
@@ -210,7 +273,7 @@ export default function Bureaucracy() {
 
         for (const doc of [
             ...(casePlan ? deriveCasePlanDocuments(casePlan) : []),
-            ...deriveDocuments(taskBuckets),
+            ...deriveDocuments(catalogue),
         ]) {
             const seen = merged.get(doc.label);
 
@@ -228,7 +291,7 @@ export default function Bureaucracy() {
         return [...merged.values()].sort(
             (left, right) => right.tasks.length - left.tasks.length,
         );
-    }, [casePlan, taskBuckets]);
+    }, [casePlan, catalogue]);
 
     const filteredDocs = useMemo(() => {
         const q = docSearch.toLowerCase().trim();
@@ -364,8 +427,8 @@ export default function Bureaucracy() {
 
                             <ChecklistFramingB
                                 situation={situation}
-                                progress={progress}
-                                tasks={taskBuckets}
+                                progress={catalogueProgress}
+                                tasks={catalogue}
                                 path={path}
                                 teasers={teasers ?? []}
                                 phases={phases ?? null}
