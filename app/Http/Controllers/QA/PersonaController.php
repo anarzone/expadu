@@ -4,6 +4,7 @@ namespace App\Http\Controllers\QA;
 
 use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\PathGenerator;
+use App\Bureaucracy\QA\ResetPersonaState;
 use App\Bureaucracy\QA\ScenarioFactSynchronizer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -32,7 +33,20 @@ class PersonaController extends Controller
         abort_if($match === null, 404);
 
         $user = $request->user();
-        $user->forceFill(BureaucracyPersonas::persistableProfile($match))->save();
+
+        // A persona switch is a clean slate, never a layer on top of the
+        // previous one — otherwise stale answers, facts and task progress
+        // surface as phantom product bugs.
+        app(ResetPersonaState::class)->execute($user);
+
+        // A persona represents a COMPLETED onboarding. The reset above blanks
+        // onboarded_at, so it must be restored here — otherwise the
+        // EnsureUserIsOnboarded middleware bounces every following QA request
+        // to the wizard and the switcher appears to do nothing.
+        $user->forceFill([
+            ...BureaucracyPersonas::persistableProfile($match),
+            'onboarded_at' => now(),
+        ])->save();
         app(ScenarioFactSynchronizer::class)->sync($user, $match);
 
         // Mirrors OnboardingController::complete() — the rest of the app
