@@ -13,6 +13,7 @@ import {
     IconWorld,
 } from '@tabler/icons-react';
 import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
+import { EXPIRY_BOUNDS } from '@/lib/date-bounds';
 
 const choices = [
     {
@@ -259,6 +260,8 @@ export function SituationStep({
                                 When does your visa expire?
                                 <input
                                     type="date"
+                                    min={EXPIRY_BOUNDS.min}
+                                    max={EXPIRY_BOUNDS.max}
                                     value={visaExpiresAt}
                                     onChange={(e) =>
                                         onVisaExpiresAtChange(e.target.value)
@@ -337,6 +340,8 @@ export function SituationStep({
                                     <input
                                         type="date"
                                         aria-label="When does this title expire?"
+                                        min={EXPIRY_BOUNDS.min}
+                                        max={EXPIRY_BOUNDS.max}
                                         value={residenceTitleExpiresAt}
                                         onChange={(event) =>
                                             onResidenceTitleExpiresAtChange(
