@@ -66,6 +66,11 @@ Schedule::command('spots:fetch-photos')->weeklyOn(1, '05:30')->withoutOverlappin
 // created any new venues — events inherit these via the media cascade.
 Schedule::command('venues:fetch-photos')->weeklyOn(1, '06:00')->withoutOverlapping()->onOneServer();
 
+// Street-level fallback runs LAST, so Commons always gets first refusal and
+// Mapillary only fills places no deliberate photograph exists for.
+Schedule::command('photos:fetch-mapillary --limit=400')->weeklyOn(1, '06:30')->withoutOverlapping()->onOneServer();
+Schedule::command('photos:fetch-mapillary --venues --limit=100')->weeklyOn(1, '07:00')->withoutOverlapping()->onOneServer();
+
 // External API health monitoring — every 5 minutes
 Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
