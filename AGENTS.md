@@ -1,4 +1,20 @@
-# Expadu — project rules
+## DeepSeek Delegation
+
+- Treat DeepSeek Flash v4 through the installed Cline CLI as the external assistant/subagent for this project, with the primary agent acting as orchestrator.
+- Proactively delegate suitable bounded, routine work such as tests, factories, seeders, scaffolding, repetitive CRUD, straightforward UI changes, mechanical refactors, lint/type fixes, translations, documentation upkeep, codebase investigation, and first-pass implementations.
+- Give the subagent a narrow scope and allow it to inspect files, edit files, and run relevant commands within that scope. Avoid concurrent edits to the same files.
+- Keep architecture, security-sensitive work, ambiguous product decisions, integration, and final verification with the primary agent.
+- Review every delegated diff, correct mistakes, preserve existing user changes, and run the relevant project checks before claiming completion.
+- Continue this workflow until the user explicitly asks to stop. If Cline or DeepSeek becomes unavailable, report that briefly and complete the work locally when practical.
+
+
+---
+
+# Project rules
+
+The project-specific rules below are shared with Claude Code (`CLAUDE.md`). Keep the two in sync —
+both assistants must work to the same standard.
+
 
 A situation-aware companion for expats in Cologne. Laravel 13 + Inertia/React 19 + Filament 5,
 PostgreSQL/PostGIS, Redis. Deployed to a single Hetzner box (prod + staging side by side).
