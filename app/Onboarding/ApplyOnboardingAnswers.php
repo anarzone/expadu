@@ -70,6 +70,12 @@ final class ApplyOnboardingAnswers
                 'onboarded_at' => now(),
             ]);
 
+            // Hand-answered onboarding replaces whatever persona the QA
+            // switcher last applied. Leaving the badge behind made the corner
+            // announce a persona the profile no longer matched, which reads as
+            // "onboarding did nothing".
+            $this->storeProfileAttribute($lockedUser, 'qa_persona', null);
+
             $this->storeProfileAttribute($lockedUser, 'entry_mode', $entryMode);
             $this->storeProfileAttribute($lockedUser, 'housing_status', $housingStatus);
             $this->storeProfileAttribute(

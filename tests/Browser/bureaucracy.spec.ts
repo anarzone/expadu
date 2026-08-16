@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
+// After a rebuild the asset hashes change, and a stale PWA service worker keeps
+// serving the previous build — so the page renders old code and assertions fail
+// against markup that is already fixed. Every other spec touching built assets
+// blocks it; this one did not.
+test.use({ serviceWorkers: 'block' });
+
 async function switchPersona(
     page: Page,
     persona: string,
@@ -242,6 +248,39 @@ test.describe('Verified bureaucracy case plan', () => {
         ).toBeVisible();
         await expect(
             page.getByRole('button', { name: 'Edit response' }),
+        ).toBeVisible();
+    });
+
+    /**
+     * Only 11 rules are approved, and they cover Blue Card + family
+     * reunification only. The checklist used to render
+     * `casePlan ? CasePlanView : ChecklistFramingB`, but
+     * CurrentCasePlan::for() always returns an array — so the general
+     * catalogue was unreachable and every other situation (student,
+     * freelancer, EU employee, ...) rendered an empty "Not currently covered"
+     * page no matter what the user answered in onboarding.
+     */
+    test('keeps the general catalogue reachable when no approved rule covers the situation', async ({
+        page,
+    }) => {
+        await switchPersona(page, 'neu-student', true);
+
+        // Labelled so an unreviewed step never reads as an authority-verified one.
+        await expect(
+            page.getByRole('heading', {
+                name: 'General steps for your situation',
+            }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('have not been through source review yet', {
+                exact: false,
+            }),
+        ).toBeVisible();
+
+        // Every persona reaches the Anmeldung root — invariant 1 of
+        // bureaucracy:coverage. If this is missing the page is empty again.
+        await expect(
+            page.getByText('Register your address (Anmeldung)').first(),
         ).toBeVisible();
     });
 

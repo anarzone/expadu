@@ -138,7 +138,9 @@ export default function Bureaucracy() {
         lifeEvents,
         eligibility,
         settledSuggestion,
-        progress,
+        // `progress` from the payload counts every applicable rule, including
+        // the ones the verified plan renders. The catalogue ring is derived
+        // from the filtered buckets below instead, so it matches what it lists.
         casePlan,
         preview,
     } = usePage<{
@@ -199,11 +201,97 @@ export default function Bureaucracy() {
         }
     }
 
+    /**
+     * Rule keys the verified plan already renders. Filtering the catalogue on
+     * what the plan ACTUALLY shows — rather than on review_status — means a
+     * rule the case engine did not match can never vanish from both surfaces
+     * at once.
+     */
+    const verifiedKeys = useMemo(() => {
+        const keys = new Set<string>();
+
+        for (const items of Object.values(casePlan?.sections ?? {})) {
+            for (const item of items as CasePlanItem[]) {
+                if (item.key) {
+                    keys.add(item.key);
+                }
+            }
+        }
+
+        return keys;
+    }, [casePlan]);
+
+    /**
+     * The general catalogue, minus anything the verified plan presents above it.
+     * The two engines read different inputs — CaseMatcher evaluates case facts,
+     * PathGenerator evaluates profile attributes — so both can carry the same
+     * rule and render it twice. `authoritative()` rules are already in
+     * PathGenerator's pool (it filters only on is_published), so the overlap
+     * grows with every rule that gets approved.
+     */
+    const catalogue = useMemo<Buckets>(() => {
+        if (verifiedKeys.size === 0) {
+            return taskBuckets;
+        }
+
+        const keep = (cards: FramingBTask[] = []): FramingBTask[] =>
+            cards.filter((card) => !card.key || !verifiedKeys.has(card.key));
+
+        return {
+            active: keep(taskBuckets.active),
+            upcoming: keep(taskBuckets.upcoming),
+            completed: keep(taskBuckets.completed),
+            not_applicable: keep(taskBuckets.not_applicable),
+            info: keep(taskBuckets.info),
+            no_longer_relevant: keep(taskBuckets.no_longer_relevant),
+        };
+    }, [taskBuckets, verifiedKeys]);
+
+    // Keep the progress ring consistent with what the catalogue actually lists.
+    const catalogueProgress = useMemo(() => {
+        const total =
+            catalogue.active.length +
+            catalogue.upcoming.length +
+            catalogue.completed.length;
+        const done = catalogue.completed.length;
+
+        return {
+            done,
+            total,
+            percent: total > 0 ? Math.round((done / total) * 100) : 0,
+        };
+    }, [catalogue]);
+
+    /**
+     * Union of both surfaces the checklist now renders: the verified plan and
+     * the general catalogue below it. Picking one or the other left this tab
+     * empty for every situation without an approved rule, because `casePlan`
+     * is always present.
+     */
     const derivedDocs = useMemo(() => {
-        return casePlan
-            ? deriveCasePlanDocuments(casePlan)
-            : deriveDocuments(taskBuckets);
-    }, [casePlan, taskBuckets]);
+        const merged = new Map<string, DerivedDoc>();
+
+        for (const doc of [
+            ...(casePlan ? deriveCasePlanDocuments(casePlan) : []),
+            ...deriveDocuments(catalogue),
+        ]) {
+            const seen = merged.get(doc.label);
+
+            if (!seen) {
+                merged.set(doc.label, { ...doc, tasks: [...doc.tasks] });
+
+                continue;
+            }
+
+            seen.note = seen.note ?? doc.note;
+            seen.warn = seen.warn || doc.warn;
+            seen.tasks.push(...doc.tasks);
+        }
+
+        return [...merged.values()].sort(
+            (left, right) => right.tasks.length - left.tasks.length,
+        );
+    }, [casePlan, catalogue]);
 
     const filteredDocs = useMemo(() => {
         const q = docSearch.toLowerCase().trim();
@@ -298,14 +386,49 @@ export default function Bureaucracy() {
                     would otherwise POST as the admin's own account). */}
                 <div className={preview ? 'pointer-events-none' : ''}>
                     {/* ════ CHECKLIST TAB ════ */}
-                    {activeTab === 'checklist' &&
-                        (casePlan ? (
-                            <CasePlanView plan={casePlan} />
-                        ) : (
+                    {activeTab === 'checklist' && (
+                        <>
+                            {casePlan && <CasePlanView plan={casePlan} />}
+
+                            {/* This catalogue has NOT been through source review,
+                                so it renders BELOW the verified plan and says so —
+                                an unreviewed step must never read as an
+                                authority-verified one. It used to sit in the `else`
+                                of `casePlan ? … : …`, but CurrentCasePlan::for()
+                                always returns an array, so the branch was dead and
+                                every situation without an approved rule (all but
+                                Blue Card and family reunification) rendered an
+                                empty plan. */}
+                            <section
+                                aria-labelledby="general-steps"
+                                className="px-4 pt-1 sm:px-6"
+                            >
+                                <h2
+                                    id="general-steps"
+                                    className="text-[16px] font-bold text-[#18170F] dark:text-[#F6F5F1]"
+                                >
+                                    General steps for your situation
+                                </h2>
+                                <div className="mt-2 flex items-start gap-2 rounded-[10px] border border-[#E4DED1] bg-[#F8F6F0] p-3 text-[11.5px] leading-5 text-[#6B6860] dark:border-[#454339] dark:bg-[#25241C] dark:text-[#AAA89F]">
+                                    <IconAlertTriangle
+                                        size={15}
+                                        stroke={ICON_STROKE}
+                                        className="mt-0.5 shrink-0"
+                                    />
+                                    <span>
+                                        These steps are <strong>not</strong>{' '}
+                                        part of the verified plan above and have
+                                        not been through source review yet. Use
+                                        them as a starting point and confirm
+                                        each one with the responsible authority.
+                                    </span>
+                                </div>
+                            </section>
+
                             <ChecklistFramingB
                                 situation={situation}
-                                progress={progress}
-                                tasks={taskBuckets}
+                                progress={catalogueProgress}
+                                tasks={catalogue}
                                 path={path}
                                 teasers={teasers ?? []}
                                 phases={phases ?? null}
@@ -315,7 +438,8 @@ export default function Bureaucracy() {
                                 focusTaskId={focusTaskId}
                                 onTakeMeThere={takeMeThereToOffice}
                             />
-                        ))}
+                        </>
+                    )}
 
                     {/* ════ DOCUMENTS TAB — derived from the user's path ════ */}
                     {activeTab === 'documents' && (

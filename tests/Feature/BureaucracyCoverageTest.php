@@ -189,6 +189,44 @@ it('does not publish known stale bureaucracy links or figures', function () {
         ->not->toContain('Up to €934/month');
 });
 
+/**
+ * `coverage_scope: universal` bypasses case matching entirely (CaseMatcher
+ * collects it whenever applies_if is satisfied, regardless of the matched case),
+ * which is right for cross-cutting rules and wrong for anything conditional.
+ *
+ * `shared.*` qualifies: every rule applies in all branches and none is
+ * trigger-gated. `le.*` must NOT, because CaseMatcher and CasePlanComposer do
+ * not read `trigger_event` — a universal life-event rule would surface "reserve
+ * a Kita place" to users who never recorded a birth, losing the dormancy
+ * PathGenerator guarantees. `core.*` stays case-scoped too: it is the digital
+ * nomad / other branch, not a universal spine.
+ */
+it('scopes only genuinely cross-cutting rules as universal', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $scopes = fn (string $prefix): array => Task::query()
+        ->where('is_published', true)
+        ->get()
+        ->filter(fn (Task $task): bool => str_starts_with((string) $task->key, $prefix))
+        ->pluck('coverage_scope')
+        ->unique()
+        ->values()
+        ->all();
+
+    expect($scopes('shared.'))->toBe(['universal'])
+        ->and($scopes('le.'))->toBe(['case'])
+        ->and($scopes('core.'))->toBe(['case']);
+
+    // The invariant behind all of the above: nothing conditional may ride the
+    // universal channel while that channel ignores trigger_event.
+    expect(Task::query()
+        ->where('is_published', true)
+        ->where('coverage_scope', 'universal')
+        ->whereNotNull('trigger_event')
+        ->pluck('key')
+        ->all())->toBe([]);
+});
+
 it('keeps every investigated case rule authoritative and every scenario in the QA roster', function () {
     $this->travelTo('2026-08-03 10:00:00');
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
