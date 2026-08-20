@@ -1,6 +1,6 @@
 current_residence_title:
   type: enum
-  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_18c, other]
+  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_9, settlement_permit_18c, other]
   question: Which German visa or residence title do you currently hold?
   why: Your current title changes the application route and which deadline applies.
   sensitivity: high
@@ -26,7 +26,7 @@ case_goal:
 
 sponsor_current_title:
   type: enum
-  options: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_18c, other]
+  options: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_9, settlement_permit_18c, other]
   question: Which German residence status does your spouse currently have?
   why: Family-reunification and settlement options depend on the sponsor's current title.
   sensitivity: high

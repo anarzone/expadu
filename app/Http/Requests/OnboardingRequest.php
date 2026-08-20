@@ -52,10 +52,10 @@ class OnboardingRequest extends FormRequest
             // D-visa holders can give their expiry — it becomes the real
             // permit deadline instead of a vague warning.
             'visa_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('entry_mode') !== 'd_visa'), 'nullable', 'date_format:Y-m-d'],
-            'current_residence_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_18c', 'other'])],
+            'current_residence_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_9', 'settlement_permit_18c', 'other'])],
             'residence_title_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || ! $this->filled('current_residence_title')), 'nullable', 'date_format:Y-m-d'],
             'case_goal' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in($this->availableCaseGoals())],
-            'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
+            'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_9', 'settlement_permit_18c', 'other'])],
             'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
             'moved_in_at' => ['nullable', 'date_format:Y-m-d', Rule::requiredIf(fn (): bool => $this->input('address_registration_status') === 'registrable'), Rule::prohibitedIf(fn (): bool => $this->input('address_registration_status') !== 'registrable')],
             'address_registration_status' => ['required', 'string', Rule::in(['registrable', 'not_registrable', 'unsure'])],
