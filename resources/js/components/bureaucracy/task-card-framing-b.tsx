@@ -23,6 +23,13 @@ export type DocEntry =
           from?: string | null;
           /** Resolved title of the producing task (server-side). */
           from_title?: string | null;
+          /**
+           * Which branch of a multi-branch task needs this document. A task
+           * like the driving licence has three routes with different
+           * paperwork, and one flat list made the translation requirement look
+           * universal when Branch A needs nothing at all. Absent = every branch.
+           */
+          branch?: string | null;
       };
 
 export type TaskOffice = { name: string; address: string };
@@ -539,6 +546,10 @@ export function TaskCardFramingB({
                                     const isWarn =
                                         typeof doc !== 'string' &&
                                         doc.tone === 'warn';
+                                    const branch =
+                                        typeof doc === 'string'
+                                            ? null
+                                            : (doc.branch ?? null);
                                     const isChecked =
                                         checkedDocs.includes(label);
 
@@ -565,6 +576,11 @@ export function TaskCardFramingB({
                                                 >
                                                     {label}
                                                 </span>
+                                                {branch && (
+                                                    <span className="mt-1 mr-1 inline-block rounded-md bg-[#EFEDE7] px-2 py-0.5 text-[11px] font-semibold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                                                        Only for: {branch}
+                                                    </span>
+                                                )}
                                                 {note &&
                                                     (isWarn ? (
                                                         <span className="mt-1 inline-block rounded-md bg-[#FDE8E6] px-2 py-0.5 text-[11.5px] leading-snug font-semibold text-[#C4271A] dark:bg-[#C4271A]/20 dark:text-[#FF7D70]">
