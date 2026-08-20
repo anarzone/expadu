@@ -35,6 +35,10 @@ tasks:
     deadline_type: days_since_arrival
     deadline_days: 180
     booking_service_key: kfz
+    # Scoped per route. One flat list made the translation look universal and
+    # left the exam-only certificates reading as everyone's problem — the
+    # owner's question was literally "does the translation apply to all
+    # branches?". Documents with no branch apply to both routes below.
     documents_required:
       - label: Passport or ID
       - label: The valid foreign licence
@@ -43,18 +47,22 @@ tasks:
         note: Some English-language licences are exempt; ask before paying.
       - label: Biometric photo
       - label: Proof of when you first registered in Germany, if not first registered in Cologne
-      - label: 'Exam route only: vision test certificate + first-aid course certificate'
+      - label: Vision test certificate + first-aid course certificate
+        branch: Exam route
         note: Standard for exam-based applications — both are cheap and bookable within days.
-    links:
-      - https://www.stadt-koeln.de/service/produkte/00834/index.html
-      - https://www.stadt-koeln.de/service/produkte/00836/index.html
+    # Links belong to the route they describe, not to a flat list a reader has
+    # to guess their way through: 00834 is the Anlage 11 conversion, 00836 the
+    # third-country one.
+    links: []
     how_to_steps:
-      - title: 'Branch A — EU/EEA licence: nothing to do'
-        body: Your licence keeps working indefinitely; an exchange is voluntary (€35, card by Bundesdruckerei in ~3–4 weeks). Mark this task as "doesn't apply to me".
-      - title: 'Branch B — Anlage 11 country: test-free exchange'
+      - title: 'Anlage 11 country: test-free exchange'
+        branch: Exchange route
         body: Fee €36.30, processing ~2–3 weeks at any Kundenzentrum. Bring the documents listed — the translation is the piece people forget.
-      - title: 'Branch C — all other countries: exams required'
+        link: https://www.stadt-koeln.de/service/produkte/00834/index.html
+      - title: 'All other countries: exams required'
+        branch: Exam route
         body: Conversion needs German theory + practical exams, booked through a Fahrschule (no minimum lessons mandated, but the Fahrschule files the exam request). Realistic cost is several hundred euros and exam slots queue — start in month one, not month five.
+        link: https://www.stadt-koeln.de/service/produkte/00836/index.html
       - title: Started late? Stop driving, then fix it
         body: 'The 6-month validity can only be extended (up to 6 more months) if you can show you''ll stay under 12 months total. Otherwise: no driving until the German licence is issued.'
 
