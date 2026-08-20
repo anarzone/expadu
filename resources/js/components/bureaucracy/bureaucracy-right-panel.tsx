@@ -13,12 +13,15 @@ const quickActions: Array<{
     {
         Icon: IconCalendarPlus,
         label: 'Book Bürgeramt',
-        url: 'https://termine.stadt-koeln.de/m/buergeramt/',
+        // The booking system 404s without a service uid — the bare
+        // /m/buergeramt/ path used here returned 400. This uid is the one
+        // the official Anmeldung page (produkte/00415) links to.
+        url: 'https://termine.stadt-koeln.de/m/kundenzentren/extern/calendar/?uid=b5a5a394-ec33-4130-9af3-490f99517071',
     },
     {
         Icon: IconPhone,
         label: 'Ausländerbehörde Cologne',
-        url: 'https://www.stadt-koeln.de/service/aemter/ordnungsamt-auslaenderangelegenheiten',
+        url: 'https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/',
     },
     {
         Icon: IconWorld,
