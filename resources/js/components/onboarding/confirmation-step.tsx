@@ -26,7 +26,8 @@ const residenceTitleLabels: Record<string, string> = {
     blue_card: 'EU Blue Card',
     blue_card_pending: 'EU Blue Card application pending',
     family_reunification: 'Family reunification permit',
-    settlement_permit_18c: 'Settlement permit',
+    settlement_permit_9: 'Permanent residence (§9)',
+    settlement_permit_18c: 'Permanent residence (§18c)',
     other: 'Another title',
 };
 

@@ -15,6 +15,69 @@ import {
 import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { EXPIRY_BOUNDS } from '@/lib/date-bounds';
 
+/**
+ * Residence titles, with the ones that never expire marked.
+ *
+ * "Settlement permit" was one option storing settlement_permit_18c — the §18c
+ * skilled-worker route. A holder of the ordinary §9 permanent residence picked
+ * the same button and was recorded as §18c, which is false and feeds rule
+ * matching (the spouse-of-§18c settlement route keys off exactly this value).
+ * Owner review also showed the old label hid permanent residence from the
+ * person holding it: they went looking for "permanent residency" and found
+ * nothing they recognised.
+ */
+const RESIDENCE_TITLES: Array<{
+    value: string;
+    label: string;
+    hint?: string;
+    unlimited?: boolean;
+}> = [
+    { value: 'national_d_visa', label: 'National D visa' },
+    { value: 'standard_work_permit', label: 'Work residence permit' },
+    { value: 'blue_card', label: 'EU Blue Card' },
+    { value: 'family_reunification', label: 'Family reunification permit' },
+    {
+        value: 'settlement_permit_9',
+        label: 'Permanent residence (§9)',
+        hint: 'Niederlassungserlaubnis — the usual route, about 5 years',
+        unlimited: true,
+    },
+    {
+        value: 'settlement_permit_18c',
+        label: 'Permanent residence (§18c)',
+        hint: 'Niederlassungserlaubnis — skilled worker or Blue Card route',
+        unlimited: true,
+    },
+    { value: 'other', label: 'Another title' },
+    { value: '', label: "I'm not sure" },
+];
+
+const SPONSOR_TITLES: Array<{ value: string; label: string; hint?: string }> = [
+    { value: 'national_d_visa', label: 'National D visa' },
+    { value: 'standard_work_permit', label: 'Work residence permit' },
+    { value: 'blue_card', label: 'My sponsor has a Blue Card' },
+    { value: 'blue_card_pending', label: 'Their Blue Card is pending' },
+    {
+        value: 'settlement_permit_9',
+        label: 'Permanent residence (§9)',
+        hint: 'Niederlassungserlaubnis — the usual route',
+    },
+    {
+        value: 'settlement_permit_18c',
+        label: 'Permanent residence (§18c)',
+        hint: 'Skilled worker or Blue Card route',
+    },
+    { value: 'other', label: 'Another title' },
+    { value: '', label: "I'm not sure" },
+];
+
+/** A permanent residence permit has no expiry date to ask for. */
+export function titleIsUnlimited(value: string): boolean {
+    return RESIDENCE_TITLES.some(
+        (t) => t.value === value && t.unlimited === true,
+    );
+}
+
 const choices = [
     {
         value: 'job',
@@ -287,30 +350,7 @@ export function SituationStep({
                                 know the exact title.
                             </p>
                             <div className="grid grid-cols-2 gap-2">
-                                {[
-                                    {
-                                        value: 'national_d_visa',
-                                        label: 'National D visa',
-                                    },
-                                    {
-                                        value: 'standard_work_permit',
-                                        label: 'Work residence permit',
-                                    },
-                                    {
-                                        value: 'blue_card',
-                                        label: 'EU Blue Card',
-                                    },
-                                    {
-                                        value: 'family_reunification',
-                                        label: 'Family reunification permit',
-                                    },
-                                    {
-                                        value: 'settlement_permit_18c',
-                                        label: 'Settlement permit',
-                                    },
-                                    { value: 'other', label: 'Another title' },
-                                    { value: '', label: "I'm not sure" },
-                                ].map((option) => (
+                                {RESIDENCE_TITLES.map((option) => (
                                     <button
                                         key={option.label}
                                         type="button"
@@ -331,27 +371,40 @@ export function SituationStep({
                                         }`}
                                     >
                                         {option.label}
+                                        {option.hint !== undefined && (
+                                            <span className="mt-0.5 block text-[10.5px] font-normal text-muted-foreground">
+                                                {option.hint}
+                                            </span>
+                                        )}
                                     </button>
                                 ))}
                             </div>
-                            {currentResidenceTitle !== '' && (
-                                <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                                    When does this title expire?
-                                    <input
-                                        type="date"
-                                        aria-label="When does this title expire?"
-                                        min={EXPIRY_BOUNDS.min}
-                                        max={EXPIRY_BOUNDS.max}
-                                        value={residenceTitleExpiresAt}
-                                        onChange={(event) =>
-                                            onResidenceTitleExpiresAtChange(
-                                                event.target.value,
-                                            )
-                                        }
-                                        className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
-                                    />
-                                </label>
-                            )}
+                            {currentResidenceTitle !== '' &&
+                                titleIsUnlimited(currentResidenceTitle) && (
+                                    <p className="mt-3 text-xs text-muted-foreground">
+                                        Permanent residence does not expire, so
+                                        there is no date to add here.
+                                    </p>
+                                )}
+                            {currentResidenceTitle !== '' &&
+                                !titleIsUnlimited(currentResidenceTitle) && (
+                                    <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                        When does this title expire?
+                                        <input
+                                            type="date"
+                                            aria-label="When does this title expire?"
+                                            min={EXPIRY_BOUNDS.min}
+                                            max={EXPIRY_BOUNDS.max}
+                                            value={residenceTitleExpiresAt}
+                                            onChange={(event) =>
+                                                onResidenceTitleExpiresAtChange(
+                                                    event.target.value,
+                                                )
+                                            }
+                                            className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                        />
+                                    </label>
+                                )}
                         </div>
                     )}
 
@@ -361,30 +414,7 @@ export function SituationStep({
                                 Which title does your sponsor currently hold?
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {[
-                                    {
-                                        value: 'national_d_visa',
-                                        label: 'National D visa',
-                                    },
-                                    {
-                                        value: 'standard_work_permit',
-                                        label: 'Work residence permit',
-                                    },
-                                    {
-                                        value: 'blue_card',
-                                        label: 'My sponsor has a Blue Card',
-                                    },
-                                    {
-                                        value: 'blue_card_pending',
-                                        label: 'Their Blue Card is pending',
-                                    },
-                                    {
-                                        value: 'settlement_permit_18c',
-                                        label: 'Settlement permit',
-                                    },
-                                    { value: 'other', label: 'Another title' },
-                                    { value: '', label: "I'm not sure" },
-                                ].map((option) => (
+                                {SPONSOR_TITLES.map((option) => (
                                     <button
                                         key={option.label}
                                         type="button"
@@ -403,6 +433,11 @@ export function SituationStep({
                                         }`}
                                     >
                                         {option.label}
+                                        {option.hint !== undefined && (
+                                            <span className="mt-0.5 block text-[10.5px] font-normal text-muted-foreground">
+                                                {option.hint}
+                                            </span>
+                                        )}
                                     </button>
                                 ))}
                             </div>
