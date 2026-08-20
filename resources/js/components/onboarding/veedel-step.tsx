@@ -8,6 +8,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { ICON_STROKE } from '@/constants/icons';
+import { ARRIVAL_BOUNDS, MOVE_IN_BOUNDS } from '@/lib/date-bounds';
 
 const germanLevels = [
     { value: 'none', label: 'None' },
@@ -128,6 +129,8 @@ export function VeedelStep({
                             <input
                                 type="date"
                                 aria-label="When did you move into this address?"
+                                min={MOVE_IN_BOUNDS.min}
+                                max={MOVE_IN_BOUNDS.max}
                                 value={movedInAt}
                                 onChange={(event) =>
                                     onMovedInAtChange(event.target.value)
@@ -184,6 +187,8 @@ export function VeedelStep({
                             <input
                                 type="date"
                                 aria-label="When did you arrive in Germany?"
+                                min={ARRIVAL_BOUNDS.min}
+                                max={ARRIVAL_BOUNDS.max}
                                 value={arrivalDate}
                                 onChange={(event) =>
                                     onArrivalDateChange(event.target.value)

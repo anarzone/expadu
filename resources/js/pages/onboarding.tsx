@@ -8,6 +8,7 @@ import { SituationStep } from '@/components/onboarding/situation-step';
 import { VeedelStep } from '@/components/onboarding/veedel-step';
 import { WelcomeStep } from '@/components/onboarding/welcome-step';
 import { useTracker } from '@/hooks/use-tracker';
+import { ARRIVAL_BOUNDS } from '@/lib/date-bounds';
 
 // The form stores the friendly CHOICE ('job' | 'student' | …); the real
 // Situation enum value is derived from choice + is_eu at submit time.
@@ -167,7 +168,13 @@ export default function Onboarding() {
                     (form.data.address_registration_status !== 'registrable' ||
                         form.data.moved_in_at !== '') &&
                     form.data.arrival_planned !== null &&
-                    (form.data.arrival_planned || form.data.arrival_date !== '')
+                    (form.data.arrival_planned ||
+                        (form.data.arrival_date !== '' &&
+                            // The backend enforces before_or_equal:today. Catch
+                            // it here too so a typed-in future date can never
+                            // reach the final submit and fail there, which left
+                            // QA staring at a button that did nothing.
+                            form.data.arrival_date <= ARRIVAL_BOUNDS.max))
                 );
             case 4:
                 return true;
@@ -177,6 +184,100 @@ export default function Onboarding() {
                 return false;
         }
     };
+
+    /**
+     * Why Continue is disabled, in the user's terms. A dead button with no
+     * explanation was the most confusing thing in QA: answering "I can register
+     * here" and "I'm here" silently requires two dates further up the screen,
+     * and nothing on the page said so.
+     */
+    const missingReason = (): string | null => {
+        if (canProceed()) {
+            return null;
+        }
+
+        if (step === 2) {
+            if (form.data.situation === '') {
+                return 'Choose what brings you to Cologne.';
+            }
+
+            if (
+                EU_QUESTION_CHOICES.includes(form.data.situation) &&
+                form.data.is_eu === null
+            ) {
+                return 'Let us know whether you are an EU / EEA / Swiss citizen.';
+            }
+
+            return 'Tell us how you entered Germany.';
+        }
+
+        if (step === 3) {
+            if (form.data.veedel === '') {
+                return 'Pick your neighbourhood.';
+            }
+
+            if (form.data.address_registration_status === '') {
+                return 'Answer whether you can register at this address.';
+            }
+
+            if (
+                form.data.address_registration_status === 'registrable' &&
+                form.data.moved_in_at === ''
+            ) {
+                return 'Add your move-in date — it anchors the 14-day registration deadline.';
+            }
+
+            if (form.data.arrival_planned === null) {
+                return 'Tell us whether you are already here.';
+            }
+
+            if (!form.data.arrival_planned && form.data.arrival_date === '') {
+                return 'Add the date you arrived in Germany.';
+            }
+
+            if (
+                !form.data.arrival_planned &&
+                form.data.arrival_date > ARRIVAL_BOUNDS.max
+            ) {
+                return 'Your arrival date is in the future — pick "Still planning" instead, or correct the date.';
+            }
+        }
+
+        return null;
+    };
+
+    /**
+     * Server-side validation used to fail silently: nothing in this wizard
+     * rendered `errors`, so a rejected submit left the user on step 5 with a
+     * button that did nothing. Surface the messages and offer a way back to the
+     * step that owns the field.
+     */
+    const STEP_FOR_FIELD: Record<string, number> = {
+        situation: 2,
+        is_eu: 2,
+        entry_mode: 2,
+        visa_expires_at: 2,
+        current_residence_title: 2,
+        residence_title_expires_at: 2,
+        case_goal: 2,
+        sponsor_current_title: 2,
+        veedel: 3,
+        arrival_planned: 3,
+        arrival_date: 3,
+        address_registration_status: 3,
+        moved_in_at: 3,
+        documented_german_level: 3,
+        german_level: 3,
+        has_deutschlandticket: 3,
+        interests: 4,
+    };
+
+    const errorEntries = Object.entries(form.errors).filter(([, message]) =>
+        Boolean(message),
+    ) as Array<[string, string]>;
+    const firstErrorStep = errorEntries
+        .map(([field]) => STEP_FOR_FIELD[field] ?? TOTAL_STEPS)
+        .sort((a, b) => a - b)[0];
 
     const buttonLabel = () => {
         switch (step) {
@@ -310,6 +411,38 @@ export default function Onboarding() {
                 </div>
 
                 <div className="sticky bottom-0 border-t border-border bg-background px-6 py-4">
+                    {errorEntries.length > 0 && (
+                        <div
+                            role="alert"
+                            className="mx-auto mb-3 max-w-[600px] rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3"
+                        >
+                            <p className="text-[13px] font-semibold text-destructive">
+                                We could not save your answers
+                            </p>
+                            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-destructive">
+                                {errorEntries.map(([field, message]) => (
+                                    <li key={field}>{message}</li>
+                                ))}
+                            </ul>
+                            {firstErrorStep !== undefined &&
+                                firstErrorStep !== step && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(firstErrorStep)}
+                                        className="mt-2 cursor-pointer text-xs font-bold text-destructive underline underline-offset-2"
+                                    >
+                                        Go back and fix this
+                                    </button>
+                                )}
+                        </div>
+                    )}
+
+                    {missingReason() !== null && (
+                        <p className="mx-auto mb-3 max-w-[600px] text-xs text-muted-foreground">
+                            {missingReason()}
+                        </p>
+                    )}
+
                     <div className="mx-auto flex max-w-[600px] items-center gap-3">
                         <button
                             type="button"
