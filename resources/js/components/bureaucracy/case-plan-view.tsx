@@ -34,8 +34,12 @@ type SectionDefinition = {
 const SECTIONS: SectionDefinition[] = [
     {
         key: 'current_status',
-        title: 'Current status',
-        description: 'Confirmed progress and steps you have already finished.',
+        // Named "Current status" while the catalogue below called the same
+        // thing "Completed", which read as two different concepts. Both are
+        // tasks whose user_task is Done; only the owning engine differs.
+        title: 'Completed',
+        description:
+            'Steps you have finished — and, where we marked one for you, why.',
         Icon: IconCircleCheck,
     },
     {

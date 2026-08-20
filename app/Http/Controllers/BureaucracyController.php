@@ -198,7 +198,10 @@ class BureaucracyController extends Controller
 
             if (in_array(Str::afterLast($key, '.'), self::ARRIVAL_BASICS, true)) {
                 if (($userTask->status ?? TaskStatus::NotStarted) !== TaskStatus::Done) {
-                    $userTask->markDone();
+                    // Record WHY. Completing a handful of tasks silently on the
+                    // user's behalf is what made the app look like it knew
+                    // things it was never told.
+                    $userTask->markDone('settled_declaration');
                 }
             } elseif (in_array($key, self::PR_JOURNEY_KEYS, true)) {
                 $userTask->update(['is_applicable' => false]);
@@ -360,6 +363,9 @@ class BureaucracyController extends Controller
             'status' => $status->value,
             'status_label' => $status->label(),
             'status_tone' => $status->tone(),
+            // Null unless the app completed this for the user, so the card can
+            // say who decided instead of leaving them to wonder.
+            'completed_source' => $userTask->completed_source,
             'deadline' => $deadline?->toDateString(),
             'days_remaining' => $daysRemaining,
             'deadline_tier' => $deadlineTier,

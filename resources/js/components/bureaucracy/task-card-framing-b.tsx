@@ -34,6 +34,16 @@ export type DocEntry =
 
 export type TaskOffice = { name: string; address: string };
 
+/**
+ * Why a task is done, when the app decided rather than the user. Declaring
+ * "I'm settled" completes every arrival basic at once, which read as the app
+ * knowing things it had never been told.
+ */
+const COMPLETED_SOURCE_COPY: Record<string, string> = {
+    settled_declaration:
+        'Marked done when you told us you are settled — reopen it if that is wrong.',
+};
+
 export function docLabel(doc: DocEntry): string {
     return typeof doc === 'string' ? doc : doc.label;
 }
@@ -50,6 +60,8 @@ export type FramingBTask = {
     status: 'not_started' | 'in_progress' | 'submitted' | 'done';
     status_label: string;
     status_tone: 'neutral' | 'info' | 'warn' | 'success';
+    /** Set when the app completed this instead of the user. */
+    completed_source?: string | null;
     deadline: string | null;
     days_remaining: number | null;
     deadline_tier:
@@ -358,6 +370,14 @@ export function TaskCardFramingB({
                     >
                         {task.title}
                     </h3>
+                    {task.completed_source !== null &&
+                        task.completed_source !== undefined &&
+                        COMPLETED_SOURCE_COPY[task.completed_source] !==
+                            undefined && (
+                            <p className="mt-1 text-[11px] leading-snug text-[#6B6860] dark:text-[#AAA89F]">
+                                {COMPLETED_SOURCE_COPY[task.completed_source]}
+                            </p>
+                        )}
                     {deadlineLabel && (
                         <div className="mt-1 flex items-center gap-1 text-xs text-[#6B6860] dark:text-[#AAA89F]">
                             <IconCalendar size={12} stroke={ICON_STROKE} />
