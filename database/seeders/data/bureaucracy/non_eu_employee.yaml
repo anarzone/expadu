@@ -111,7 +111,6 @@ tasks:
         from: nee.steuer_id
     links:
       - https://www.n26.com/en-de
-      - https://www.commerzbank.de/portal/en/englishsite/englishsite.html
     how_to_steps:
       - title: Pick an account type
         body: Online-only banks (N26, Revolut, C24) are fastest to open. Traditional banks (Sparkasse, Deutsche Bank, Commerzbank) are useful if you need a branch or notarised paperwork.

@@ -160,6 +160,12 @@ tasks:
     coverage_scope: universal
     type: info
     eu_filter: non_eu_only
+    # Do not offer permanent residency to someone who already holds it. Without
+    # this the card appeared as "you could apply next" for a user who had told
+    # onboarding they hold a settlement permit — while another lane said they
+    # were not eligible. Same rule, two contradictory places.
+    applies_if:
+      settled_at: { present: false }
     depends_on: []
     description: |
       Germany rewards staying. Niederlassungserlaubnis (permanent residency): usually

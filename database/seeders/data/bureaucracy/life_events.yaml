@@ -140,7 +140,7 @@ tasks:
       - label: Meldebescheinigung
       - label: Residence permit(s), if non-EU
     links:
-      - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld-beantragen
+      - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld
     how_to_steps:
       - title: File online via the Familienkasse portal
         body: One application per family; processing takes 6–10 weeks and payments arrive backdated.
