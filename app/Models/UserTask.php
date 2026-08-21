@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'task_id', 'status', 'completed_at', 'next_due_at', 'is_applicable', 'snoozed_until', 'notes', 'documents_checked', 'appointment_at'])]
+#[Fillable(['user_id', 'task_id', 'status', 'completed_at', 'completed_source', 'next_due_at', 'is_applicable', 'snoozed_until', 'notes', 'documents_checked', 'appointment_at'])]
 class UserTask extends Model
 {
     /** @use HasFactory<UserTaskFactory> */
@@ -196,10 +196,15 @@ class UserTask extends Model
     /**
      * Mark this task done. For recurring tasks, also schedules the next instance.
      */
-    public function markDone(): void
+    /**
+     * @param  string|null  $source  Why this is done, when the app decided rather
+     *                               than the user. Null = the user marked it.
+     */
+    public function markDone(?string $source = null): void
     {
         $this->status = TaskStatus::Done;
         $this->completed_at = now();
+        $this->completed_source = $source;
 
         $task = $this->task;
         if ($task && $task->isRecurring()) {
