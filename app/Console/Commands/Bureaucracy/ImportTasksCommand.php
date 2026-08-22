@@ -593,7 +593,81 @@ class ImportTasksCommand extends Command
             $groups[] = array_merge($base, $extra);
         }
 
-        return $groups;
+        return $this->collapseUndiscriminatingKeys($groups);
+    }
+
+    /**
+     * Drop a predicate key from a set of groups that already covers every one
+     * of its values.
+     *
+     * `nee.anmeldung` lists all three non-EU employee tracks, because you
+     * register your address whichever permit you are on. Compiled literally
+     * that became three groups each demanding a `permit_track`, so a user who
+     * had not said which track they were on evaluated to Unknown — and
+     * PathGenerator only materialises Yes. The task vanished rather than
+     * appearing without a permit-specific detail.
+     *
+     * Removing a condition satisfied by every possible value changes no
+     * verdict for anyone who has answered; it only stops an irrelevant
+     * question from withholding the task from everyone who has not.
+     *
+     * @param  list<array<string, mixed>>  $groups
+     * @return list<array<string, mixed>>
+     */
+    private function collapseUndiscriminatingKeys(array $groups): array
+    {
+        $domain = [];
+        foreach (ProfileEngine::BRANCH_PREDICATES as $predicate) {
+            foreach ($predicate as $key => $value) {
+                foreach ((array) $value as $single) {
+                    $domain[$key][$single] = true;
+                }
+            }
+        }
+
+        do {
+            $collapsed = false;
+
+            foreach ($domain as $key => $values) {
+                $buckets = [];
+
+                foreach ($groups as $index => $group) {
+                    if (! array_key_exists($key, $group)) {
+                        continue;
+                    }
+
+                    $rest = $group;
+                    unset($rest[$key]);
+                    ksort($rest);
+                    $buckets[json_encode($rest)][] = $index;
+                }
+
+                foreach ($buckets as $rest => $indexes) {
+                    $covered = [];
+                    foreach ($indexes as $index) {
+                        foreach ((array) $groups[$index][$key] as $single) {
+                            $covered[$single] = true;
+                        }
+                    }
+
+                    if (array_diff_key($values, $covered) !== []) {
+                        continue;
+                    }
+
+                    foreach ($indexes as $index) {
+                        unset($groups[$index]);
+                    }
+
+                    $groups[] = json_decode($rest, true);
+                    $groups = array_values($groups);
+                    $collapsed = true;
+
+                    break 2;
+                }
+            }
+        } while ($collapsed);
+
+        return array_values($groups);
     }
 
     /**
