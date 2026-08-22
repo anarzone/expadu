@@ -60,7 +60,18 @@ class OnboardingRequest extends FormRequest
             'case_goal' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in($this->availableCaseGoals())],
             'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_9', 'settlement_permit_18c', 'other'])],
             'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
-            'moved_in_at' => ['nullable', 'date_format:Y-m-d', Rule::requiredIf(fn (): bool => $this->input('address_registration_status') === 'registrable'), Rule::prohibitedIf(fn (): bool => $this->input('address_registration_status') !== 'registrable')],
+            // You cannot have moved into a Cologne address before arriving in
+            // the country. The wizard used to ask the address questions BEFORE
+            // the arrival question, so switching to "Still planning" left a
+            // move-in date behind and this happily stored it.
+            'moved_in_at' => [
+                'nullable',
+                'date_format:Y-m-d',
+                Rule::requiredIf(fn (): bool => $this->input('address_registration_status') === 'registrable'
+                    && ! $this->boolean('arrival_planned')),
+                Rule::prohibitedIf(fn (): bool => $this->input('address_registration_status') !== 'registrable'
+                    || $this->boolean('arrival_planned')),
+            ],
             // Optional, with a caveat we surface rather than hide: skipping it
             // leaves the Anmeldung task without its 14-day countdown, so
             // BureaucracyController::deadlineState() says so on the card and

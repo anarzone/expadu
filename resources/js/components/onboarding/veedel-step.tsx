@@ -35,6 +35,14 @@ export function VeedelStep({
     movedInAt: string;
     onMovedInAtChange: (value: string) => void;
 }) {
+    // Whether they are here yet decides whether the address questions mean
+    // anything, so it is asked first and gates the rest of the screen. Until
+    // it is answered the address half stays closed too: asking "can you
+    // register at this address" before knowing whether they have one is the
+    // same mistake in a quieter form.
+    const arrived = arrivalPlanned === false;
+    const planning = arrivalPlanned === true;
+
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
@@ -48,84 +56,6 @@ export function VeedelStep({
             </div>
 
             <div className="flex flex-col gap-5">
-                <div>
-                    <div className="mb-2 text-[13px] font-semibold">
-                        Which Veedel do you live in?{' '}
-                        <span className="font-normal text-muted-foreground">
-                            (your district)
-                        </span>
-                    </div>
-                    <VeedelPicker
-                        veedels={veedels}
-                        value={veedel}
-                        onChange={onVeedelChange}
-                    />
-                    <div className="mt-3">
-                        <div className="mb-2 text-[13px] font-semibold">
-                            Can you register at this address?{' '}
-                            <span className="font-normal text-muted-foreground">
-                                (optional)
-                            </span>
-                        </div>
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                            {[
-                                {
-                                    value: 'registrable',
-                                    label: 'Yes, I can register here',
-                                },
-                                {
-                                    value: 'not_registrable',
-                                    label: 'No, not at this address',
-                                },
-                                {
-                                    value: 'unsure',
-                                    label: "I'm not sure",
-                                },
-                            ].map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() =>
-                                        onAddressRegistrationStatusChange(
-                                            opt.value,
-                                        )
-                                    }
-                                    aria-pressed={
-                                        addressRegistrationStatus === opt.value
-                                    }
-                                    className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
-                                        addressRegistrationStatus === opt.value
-                                            ? 'border-primary bg-accent-soft text-primary'
-                                            : 'border-border bg-card hover:border-primary/30'
-                                    }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                        This tells us whether a move-in date can anchor
-                        address-registration guidance.
-                    </p>
-                    {addressRegistrationStatus === 'registrable' && (
-                        <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                            When did you move into this address?
-                            <input
-                                type="date"
-                                aria-label="When did you move into this address?"
-                                min={MOVE_IN_BOUNDS.min}
-                                max={MOVE_IN_BOUNDS.max}
-                                value={movedInAt}
-                                onChange={(event) =>
-                                    onMovedInAtChange(event.target.value)
-                                }
-                                className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
-                            />
-                        </label>
-                    )}
-                </div>
-
                 <div>
                     <div className="mb-2 text-[13px] font-semibold">
                         When did you arrive in Germany?
@@ -187,6 +117,102 @@ export function VeedelStep({
                             </p>
                         </>
                     ) : null}
+                </div>
+                <div>
+                    <div className="mb-2 text-[13px] font-semibold">
+                        {planning
+                            ? 'Which Veedel are you moving to?'
+                            : 'Which Veedel do you live in?'}{' '}
+                        <span className="font-normal text-muted-foreground">
+                            {planning
+                                ? '(not sure yet? pick the area you have in mind)'
+                                : '(your district)'}
+                        </span>
+                    </div>
+                    <VeedelPicker
+                        veedels={veedels}
+                        value={veedel}
+                        onChange={onVeedelChange}
+                    />
+                    {arrived && (
+                        <>
+                            <div className="mt-3">
+                                <div className="mb-2 text-[13px] font-semibold">
+                                    Can you register at this address?{' '}
+                                    <span className="font-normal text-muted-foreground">
+                                        (optional)
+                                    </span>
+                                </div>
+                                <div className="flex flex-col gap-2 sm:flex-row">
+                                    {[
+                                        {
+                                            value: 'registrable',
+                                            label: 'Yes, I can register here',
+                                        },
+                                        {
+                                            value: 'not_registrable',
+                                            label: 'No, not at this address',
+                                        },
+                                        {
+                                            value: 'unsure',
+                                            label: "I'm not sure",
+                                        },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() =>
+                                                onAddressRegistrationStatusChange(
+                                                    opt.value,
+                                                )
+                                            }
+                                            aria-pressed={
+                                                addressRegistrationStatus ===
+                                                opt.value
+                                            }
+                                            className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                                addressRegistrationStatus ===
+                                                opt.value
+                                                    ? 'border-primary bg-accent-soft text-primary'
+                                                    : 'border-border bg-card hover:border-primary/30'
+                                            }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                This tells us whether a move-in date can anchor
+                                address-registration guidance.
+                            </p>
+                            {addressRegistrationStatus === 'registrable' && (
+                                <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                    When did you move into this address?
+                                    <input
+                                        type="date"
+                                        aria-label="When did you move into this address?"
+                                        min={MOVE_IN_BOUNDS.min}
+                                        max={MOVE_IN_BOUNDS.max}
+                                        value={movedInAt}
+                                        onChange={(event) =>
+                                            onMovedInAtChange(
+                                                event.target.value,
+                                            )
+                                        }
+                                        className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                    />
+                                </label>
+                            )}
+                        </>
+                    )}
+                    {planning && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            We&rsquo;ll ask about registering the address once
+                            you&rsquo;ve moved in — the 14-day clock starts
+                            then, not now.
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
