@@ -454,8 +454,29 @@ test.describe('Onboarding v2', () => {
         await page.getByRole('button', { name: "I'm joining family" }).click();
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Step 3 — the address answer is optional now, so Continue unlocks on
-        // Veedel plus arrival alone.
+        // Step 3 asks whether they are here BEFORE anything about an address:
+        // that answer decides whether the address questions mean anything.
+        await expect(
+            page.getByText('Can you register at this address?'),
+        ).toHaveCount(0);
+
+        // Still planning: no address to register, and the Veedel question
+        // shifts to the future tense.
+        await page.getByRole('button', { name: 'Still planning' }).click();
+        await expect(
+            page.getByText('Which Veedel are you moving to?'),
+        ).toBeVisible();
+        await expect(
+            page.getByText('Can you register at this address?'),
+        ).toHaveCount(0);
+
+        await page.getByRole('button', { name: "I'm here" }).click();
+        await expect(
+            page.getByText('Which Veedel do you live in?'),
+        ).toBeVisible();
+        await page
+            .getByLabel('When did you arrive in Germany?')
+            .fill('2026-06-15');
         await page
             .getByRole('button', { name: 'Pick your neighbourhood' })
             .click();
@@ -463,13 +484,6 @@ test.describe('Onboarding v2', () => {
         await page
             .getByRole('button', { name: 'Ehrenfeld', exact: true })
             .click();
-        await expect(
-            page.getByRole('button', { name: 'Continue' }),
-        ).toBeDisabled();
-        await page.getByRole('button', { name: "I'm here" }).click();
-        await page
-            .getByLabel('When did you arrive in Germany?')
-            .fill('2026-06-15');
         await expect(
             page.getByRole('button', { name: 'Continue' }),
         ).toBeEnabled();
@@ -485,6 +499,20 @@ test.describe('Onboarding v2', () => {
         await page
             .getByLabel('When did you move into this address?')
             .fill('2026-07-01');
+
+        // Switching back to planning must RETRACT those answers, not just hide
+        // them — otherwise someone who has not arrived submits a move-in date.
+        await page.getByRole('button', { name: 'Still planning' }).click();
+        await expect(
+            page.getByLabel('When did you move into this address?'),
+        ).toHaveCount(0);
+        await page.getByRole('button', { name: "I'm here" }).click();
+        await expect(
+            page.getByRole('button', { name: 'Yes, I can register here' }),
+        ).toHaveAttribute('aria-pressed', 'false');
+        await page
+            .getByLabel('When did you arrive in Germany?')
+            .fill('2026-06-15');
         await page.getByRole('button', { name: 'Continue' }).click();
 
         // Step 4 — everything optional on one screen, skippable in one click.

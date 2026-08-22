@@ -368,8 +368,22 @@ export default function Onboarding() {
                                 form.setData('arrival_date', v)
                             }
                             onArrivalPlannedChange={(planned) => {
-                                form.setData('arrival_planned', planned);
-                                form.setData('arrival_date', '');
+                                // Switching to "still planning" has to retract
+                                // the address answers, not just hide them: you
+                                // cannot have moved into an address before
+                                // arriving, and leaving them set would submit a
+                                // move-in date for someone who is not here.
+                                form.setData({
+                                    ...form.data,
+                                    arrival_planned: planned,
+                                    arrival_date: '',
+                                    ...(planned
+                                        ? {
+                                              address_registration_status: '',
+                                              moved_in_at: '',
+                                          }
+                                        : {}),
+                                });
                             }}
                             addressRegistrationStatus={
                                 form.data.address_registration_status
