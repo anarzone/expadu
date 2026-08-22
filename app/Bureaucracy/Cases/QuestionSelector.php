@@ -109,46 +109,74 @@ final class QuestionSelector
                 ->lockForUpdate()
                 ->firstOrFail();
             $result = $this->caseMatcher->match($lockedCase);
-            $rankedKeys = $this->rankedFactKeys($lockedCase, $result);
 
-            if ($rankedKeys === []) {
-                return null;
-            }
-
-            $unanswered = $this->currentForRankedKeys($lockedCase, $rankedKeys, true);
-
-            if ($unanswered instanceof BureaucracyCaseQuestion) {
-                return $unanswered;
-            }
-
-            $questionCount = BureaucracyCaseQuestion::query()
-                ->where('case_id', $lockedCase->getKey())
-                ->count();
-
-            if ($questionCount >= self::MaxQuestionsPerCase) {
-                return null;
-            }
-
-            foreach ($rankedKeys as $factKey) {
-                $attempt = (int) BureaucracyCaseQuestion::query()
-                    ->where('case_id', $lockedCase->getKey())
-                    ->where('fact_key', $factKey)
-                    ->max('attempt');
-
-                if ($attempt >= self::MaxAttemptsPerFact) {
-                    continue;
-                }
-
-                return BureaucracyCaseQuestion::query()->create([
-                    'case_id' => $lockedCase->getKey(),
-                    'fact_key' => $factKey,
-                    'attempt' => $attempt + 1,
-                    'asked_at' => now(),
-                ]);
-            }
-
-            return null;
+            return $this->askFrom($lockedCase, $this->rankedFactKeys($lockedCase, $result));
         });
+    }
+
+    /**
+     * Ask from a ranking this class did not produce.
+     *
+     * PendingAnswers sees published rules the plan is not allowed to read, so
+     * it finds questions `select()` cannot. The budget and retry ceilings are
+     * shared deliberately: a fallback question still costs the user the same
+     * attention, so it draws on the same twelve.
+     *
+     * @param  list<string>  $rankedKeys
+     */
+    public function ask(BureaucracyCase $case, array $rankedKeys): ?BureaucracyCaseQuestion
+    {
+        return DB::transaction(fn (): ?BureaucracyCaseQuestion => $this->askFrom(
+            BureaucracyCase::query()
+                ->whereKey($case->getKey())
+                ->lockForUpdate()
+                ->firstOrFail(),
+            $rankedKeys,
+        ));
+    }
+
+    /**
+     * @param  list<string>  $rankedKeys
+     */
+    private function askFrom(BureaucracyCase $lockedCase, array $rankedKeys): ?BureaucracyCaseQuestion
+    {
+        if ($rankedKeys === []) {
+            return null;
+        }
+
+        $unanswered = $this->currentForRankedKeys($lockedCase, $rankedKeys, true);
+
+        if ($unanswered instanceof BureaucracyCaseQuestion) {
+            return $unanswered;
+        }
+
+        $questionCount = BureaucracyCaseQuestion::query()
+            ->where('case_id', $lockedCase->getKey())
+            ->count();
+
+        if ($questionCount >= self::MaxQuestionsPerCase) {
+            return null;
+        }
+
+        foreach ($rankedKeys as $factKey) {
+            $attempt = (int) BureaucracyCaseQuestion::query()
+                ->where('case_id', $lockedCase->getKey())
+                ->where('fact_key', $factKey)
+                ->max('attempt');
+
+            if ($attempt >= self::MaxAttemptsPerFact) {
+                continue;
+            }
+
+            return BureaucracyCaseQuestion::query()->create([
+                'case_id' => $lockedCase->getKey(),
+                'fact_key' => $factKey,
+                'attempt' => $attempt + 1,
+                'asked_at' => now(),
+            ]);
+        }
+
+        return null;
     }
 
     public function current(
@@ -158,6 +186,24 @@ final class QuestionSelector
     ): ?BureaucracyCaseQuestion {
         $rankedKeys = $this->rankedFactKeys($case, $result);
 
+        return $this->currentForRankedKeys($case, $rankedKeys, $lockForUpdate);
+    }
+
+    /**
+     * The outstanding question for a ranking produced elsewhere.
+     *
+     * `ask()` can create a question the plan cannot rank, so whatever guards
+     * "is this the question we are actually asking?" has to be able to
+     * recognise it too — otherwise the app poses a question it then refuses
+     * to accept an answer to.
+     *
+     * @param  list<string>  $rankedKeys
+     */
+    public function currentForKeys(
+        BureaucracyCase $case,
+        array $rankedKeys,
+        bool $lockForUpdate = false,
+    ): ?BureaucracyCaseQuestion {
         return $this->currentForRankedKeys($case, $rankedKeys, $lockForUpdate);
     }
 

@@ -13,6 +13,7 @@ final class CurrentCasePlan
         private LegacyFactBootstrapper $factBootstrapper,
         private PlanSnapshotStore $snapshotStore,
         private QuestionSelector $questionSelector,
+        private PendingAnswers $pendingAnswers,
         private CasePlanPresenter $presenter,
     ) {}
 
@@ -29,7 +30,16 @@ final class CurrentCasePlan
                 ->lockForUpdate()
                 ->firstOrFail();
             $snapshot = $this->snapshotStore->store($lockedCase);
-            $question = $this->questionSelector->select($lockedCase);
+
+            // The plan asks first, because a question it raises can change what
+            // the plan asserts. Only when it has nothing left do we fall back to
+            // the wider sweep — which finds facts gating published-but-unapproved
+            // branches, the ones nothing else in the app would ever ask for.
+            $question = $this->questionSelector->select($lockedCase)
+                ?? $this->questionSelector->ask(
+                    $lockedCase,
+                    $this->pendingAnswers->forCase($lockedCase),
+                );
 
             return $this->presenter->present($lockedCase, $snapshot, $question);
         });

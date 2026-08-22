@@ -6,7 +6,6 @@ use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\BureaucracyCoverageState;
 use App\Models\BureaucracyCase;
-use App\Models\BureaucracyCaseFact;
 use App\Models\BureaucracyFactConflict;
 use App\Models\Task;
 use App\Profile\Applicability;
@@ -17,14 +16,14 @@ use Illuminate\Support\Collection;
 final class CaseMatcher
 {
     public function __construct(
-        private ProfileEngine $profileEngine,
+        private CaseAttributes $caseAttributes,
         private FactRegistry $factRegistry,
         private RuleSourcePolicy $sourcePolicy,
     ) {}
 
     public function match(BureaucracyCase $case): CaseMatchResult
     {
-        $attributes = $this->attributes($case);
+        $attributes = $this->caseAttributes->for($case);
         $tasks = $this->authoritativeTasks();
         $matched = [];
         $universal = [];
@@ -106,40 +105,6 @@ final class CaseMatcher
             unknownRuleKeys: $unknown,
             missingFactsByRule: $missingFactsByRule,
         );
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function attributes(BureaucracyCase $case): array
-    {
-        $profile = $this->profileEngine->build($case->user()->firstOrFail());
-        $attributes = [
-            ...$profile->attributes,
-            'german_level' => $profile->germanLevel?->value,
-        ];
-
-        $factHistory = BureaucracyCaseFact::query()
-            ->where('case_id', $case->getKey())
-            ->orderBy('id')
-            ->get();
-
-        foreach ($factHistory as $fact) {
-            $attributes[$fact->key] = null;
-        }
-
-        foreach ($factHistory as $fact) {
-            if ($fact->state !== 'confirmed'
-                || $fact->confirmed_at === null
-                || $fact->superseded_at !== null
-                || ($fact->reconfirm_at !== null && ! $fact->reconfirm_at->isFuture())) {
-                continue;
-            }
-
-            $attributes[$fact->key] = $fact->value;
-        }
-
-        return $attributes;
     }
 
     /**
