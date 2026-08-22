@@ -449,7 +449,9 @@ test.describe('Onboarding v2', () => {
         // used to share this screen, which made it eight questions long.
         await expect(page.getByText('1 of 3')).toBeVisible();
         await expect(
-            page.getByText('How did you enter Germany?', { exact: false }),
+            page.getByText('What German paperwork do you hold right now?', {
+                exact: false,
+            }),
         ).toHaveCount(0);
         await page.getByRole('button', { name: "I'm joining family" }).click();
         await page.getByRole('button', { name: 'Continue' }).click();
@@ -521,11 +523,11 @@ test.describe('Onboarding v2', () => {
             page.getByRole('button', { name: 'Skip for now' }),
         ).toBeVisible();
         await expect(
-            page.getByText('How did you enter Germany?', { exact: false }),
+            page.getByText('What German paperwork do you hold right now?', {
+                exact: false,
+            }),
         ).toBeVisible();
-        await page
-            .getByRole('button', { name: 'With a national D visa' })
-            .click();
+        await page.getByRole('button', { name: 'A national D visa' }).click();
         await page
             .getByRole('button', { name: 'My sponsor has a Blue Card' })
             .click();
@@ -549,11 +551,12 @@ test.describe('Onboarding v2', () => {
         await expect(
             page.getByRole('button', { name: 'My sponsor has a Blue Card' }),
         ).toHaveCount(0);
-        await page
-            .getByRole('button', {
-                name: 'I already hold a German residence permit',
-            })
-            .click();
+        await page.getByRole('button', { name: 'A residence permit' }).click();
+        // Having said they hold a permit, the follow-up must not offer the
+        // choice directly above it back as a title.
+        await expect(
+            page.getByRole('button', { name: 'National D visa', exact: true }),
+        ).toHaveCount(0);
         await page
             .getByRole('button', { name: 'Work residence permit' })
             .click();

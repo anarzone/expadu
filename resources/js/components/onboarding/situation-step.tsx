@@ -117,24 +117,35 @@ const choices = [
     },
 ];
 
+/**
+ * These used to be two different kinds of answer under one heading: "with a
+ * national D visa" and "visa-free" describe how you ENTERED, while "I already
+ * hold a residence permit" describes what you hold NOW. Someone who entered on
+ * a D visa eighteen months ago and now holds a work permit could truthfully
+ * pick either, which is what made the screen confusing.
+ *
+ * They are all phrased as current status now. The stored fact is unchanged —
+ * `entry_mode` still distinguishes a first application from a renewal, which
+ * is what the rules branch on.
+ */
 const entryModes = [
     {
         value: 'd_visa',
         icon: IconIdBadge,
-        label: 'With a national D visa',
-        subtitle: 'Share its expiry to help identify what to verify first',
+        label: 'A national D visa',
+        subtitle: 'The entry visa you came in on, still valid',
     },
     {
         value: 'visa_free',
         icon: IconPlaneArrival,
-        label: 'Visa-free (90-day window)',
-        subtitle: 'We’ll tailor first-permit guidance to your entry window',
+        label: 'Nothing yet — I entered visa-free',
+        subtitle: 'The 90-day window; your first permit is still ahead',
     },
     {
         value: 'has_permit',
         icon: IconCheck,
-        label: 'I already hold a German residence permit',
-        subtitle: "We'll adjust the first-permit guidance",
+        label: 'A residence permit',
+        subtitle: "An Aufenthaltstitel you already hold — we'll ask which",
     },
 ];
 
@@ -381,11 +392,12 @@ function ResidenceFields({
     return (
         <div className="mt-4 animate-in rounded-xl border border-dashed border-border bg-card p-4 fade-in slide-in-from-bottom-2">
             <div className="mb-1 text-sm font-semibold">
-                How did you enter Germany?
+                What German paperwork do you hold right now?
             </div>
             <p className="mb-3 text-xs text-primary">
-                Why we ask: entry details affect the guidance we show. Verify
-                relevant time limits with official sources.
+                Why we ask: it decides whether your plan is about getting a
+                first permit or keeping the one you have. Verify relevant time
+                limits with official sources.
             </p>
             <div className="flex flex-col gap-2">
                 {entryModes.map((opt) => (
@@ -435,15 +447,20 @@ function ResidenceFields({
             {entryMode === 'has_permit' && (
                 <div className="mt-4 border-t border-border pt-4">
                     <div className="mb-2 text-sm font-semibold">
-                        Which German visa or residence title do you currently
-                        hold?
+                        Which residence permit do you hold?
                     </div>
                     <p className="mb-3 text-xs text-muted-foreground">
                         Optional. Choose “I’m not sure” if you do not know the
                         exact title.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
-                        {RESIDENCE_TITLES.map((option) => (
+                        {RESIDENCE_TITLES.filter(
+                            // A D visa is legally an Aufenthaltstitel (§4
+                            // AufenthG lists it first), but it is the answer
+                            // ABOVE this one — offering it here just asks the
+                            // same question twice.
+                            (option) => option.value !== 'national_d_visa',
+                        ).map((option) => (
                             <button
                                 key={option.label}
                                 type="button"
