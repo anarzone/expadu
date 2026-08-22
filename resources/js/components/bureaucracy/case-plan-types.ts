@@ -106,6 +106,9 @@ export type CasePlanItem = {
         question: string;
         why: string;
     }>;
+    fact_key?: string;
+    /** Titles of the steps this one answer would unblock. */
+    unlocks?: string[];
     coverage_state?: CasePlanCoverageState;
 };
 
