@@ -9,6 +9,7 @@ import {
     IconExternalLink,
     IconFileText,
     IconInfoCircle,
+    IconLock,
     IconListCheck,
     IconRosetteDiscountCheck,
     IconScale,
@@ -98,6 +99,10 @@ export function CasePlanTaskCard({
 
     if (section === 'information_needed') {
         return <InformationNeededNotice item={item} />;
+    }
+
+    if (section === 'opens_when') {
+        return <OpensWhenNotice item={item} />;
     }
 
     const documents = item.documents_required ?? [];
@@ -573,6 +578,36 @@ function CoverageNotice() {
                         situation. We will continue showing the steps that are
                         independently confirmed, but we will not guess about the
                         unresolved part.
+                    </p>
+                </div>
+            </div>
+        </article>
+    );
+}
+
+/**
+ * A route that does not apply yet, and the one thing that would open it.
+ *
+ * Shows the rule's TITLE and the unmet condition only — never its description,
+ * which is guidance written for people the rule actually covers. Reading it
+ * must not feel like being offered the route.
+ */
+function OpensWhenNotice({ item }: { item: CasePlanItem }) {
+    return (
+        <article className="rounded-[14px] border border-dashed border-[#DED8C8] bg-transparent p-4 dark:border-[#4A4638]">
+            <div className="flex items-start gap-3">
+                <IconLock
+                    size={18}
+                    stroke={ICON_STROKE}
+                    className="mt-0.5 shrink-0 text-[#8C8574] dark:text-[#9C947F]"
+                />
+                <div>
+                    <h3 className="text-[13.5px] font-bold text-[#6B6860] dark:text-[#AAA89F]">
+                        {item.title}
+                    </h3>
+                    <p className="mt-1 text-[12px] leading-5 text-[#77736B] dark:text-[#9C947F]">
+                        Opens when {item.opens_when}. This is not a decision
+                        about your case — check with the responsible authority.
                     </p>
                 </div>
             </div>

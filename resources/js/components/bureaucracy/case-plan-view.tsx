@@ -6,6 +6,7 @@ import {
     IconCircleCheck,
     IconClockPause,
     IconInfoCircle,
+    IconLock,
     IconListCheck,
     IconRoad,
     IconRouteAltLeft,
@@ -80,6 +81,13 @@ const SECTIONS: SectionDefinition[] = [
         Icon: IconInfoCircle,
     },
     {
+        key: 'opens_when',
+        title: 'Not open to you yet',
+        description:
+            'Routes that need one thing to change. Not advice that they will.',
+        Icon: IconLock,
+    },
+    {
         key: 'not_covered',
         title: 'Not currently covered',
         description:
@@ -120,7 +128,9 @@ const COVERAGE_COPY: Record<
 
 function countProgress(plan: CasePlan): { done: number; total: number } {
     const items = Object.entries(plan.sections).flatMap(([section, entries]) =>
-        section === 'information_needed' || section === 'not_covered'
+        section === 'information_needed' ||
+        section === 'opens_when' ||
+        section === 'not_covered'
             ? []
             : entries,
     );

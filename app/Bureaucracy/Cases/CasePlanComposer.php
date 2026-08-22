@@ -24,10 +24,12 @@ final class CasePlanComposer
         'options',
         'waiting',
         'information_needed',
+        'opens_when',
         'not_covered',
     ];
 
     public function __construct(
+        private NearMissRules $nearMissRules,
         private FactRegistry $factRegistry,
         private CaseFactStore $factStore,
         private RuleSourcePolicy $sourcePolicy,
@@ -112,6 +114,18 @@ final class CasePlanComposer
                 // What the answer would actually unblock, so the card can say
                 // which step it is holding rather than "a possible step".
                 'unlocks' => $titles,
+            ];
+        }
+
+        // Routes that do not apply YET, with the one answer that opens them.
+        // A hidden rule is invisible for a reason the user cannot see.
+        foreach ($this->nearMissRules->forCase($case) as $row) {
+            $sections['opens_when'][] = [
+                'kind' => 'opens_when',
+                'key' => $row['key'],
+                'content_version' => $row['content_version'],
+                'title' => $row['title'],
+                'opens_when' => $row['opens_when'],
             ];
         }
 

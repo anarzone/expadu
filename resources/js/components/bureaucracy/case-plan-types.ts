@@ -12,6 +12,7 @@ export type CasePlanSectionKey =
     | 'options'
     | 'waiting'
     | 'information_needed'
+    | 'opens_when'
     | 'not_covered';
 
 export type CasePlanTaskStatus =
@@ -107,6 +108,8 @@ export type CasePlanItem = {
         why: string;
     }>;
     fact_key?: string;
+    /** The single unmet condition that would open a route not yet available. */
+    opens_when?: string;
     /** Titles of the steps this one answer would unblock. */
     unlocks?: string[];
     coverage_state?: CasePlanCoverageState;
