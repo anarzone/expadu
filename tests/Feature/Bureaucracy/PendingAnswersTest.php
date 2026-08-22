@@ -6,6 +6,7 @@ use App\Bureaucracy\Cases\QuestionSelector;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
+use App\Models\BureaucracyCaseQuestion;
 use App\Models\BureaucracyFactConflict;
 use App\Models\User;
 
@@ -152,4 +153,74 @@ it('ranks by the registry priority, not catalogue order', function () {
     rsort($sorted);
 
     expect($pending)->not->toBeEmpty()->and($priorities)->toBe($sorted);
+});
+
+it('surfaces the fallback question on the Bureaucracy page itself', function () {
+    // A non-EU student who never answered how they entered the country. No
+    // approved rule covers this branch, so before the fallback existed the page
+    // rendered with nothing to ask and the answer stayed blank forever.
+    $user = User::factory()->create([
+        'situation' => 'student',
+        'is_eu' => false,
+        'bureaucracy_path' => 'student',
+        'veedel' => 'Altstadt-Nord',
+        'arrival_date' => now()->subMonths(2)->toDateString(),
+        'email_verified_at' => now(),
+        'onboarded_at' => now(),
+        'profile_attributes' => [],
+    ]);
+
+    $response = $this->actingAs($user)->get('/bureaucracy');
+
+    $response->assertSuccessful();
+
+    $question = $response->viewData('page')['props']['casePlan']['next_question'] ?? null;
+
+    // The payload carries the rendered question, not the fact key, so assert
+    // against the registry's own wording for entry_mode.
+    $expected = app(FactRegistry::class)->definition('entry_mode');
+
+    expect($question)->not->toBeNull()
+        ->and($question['question'])->toBe($expected->question)
+        ->and($question['options'])->not->toBeEmpty();
+});
+
+it('accepts the answer to a fallback question and records the fact', function () {
+    // The guard in AnswerCaseQuestion re-derives "the question we are asking"
+    // and rejects anything else, so a fallback question was posed and then
+    // refused with a 403. Asking something the app will not accept an answer
+    // to is worse than not asking.
+    $user = User::factory()->create([
+        'situation' => 'student',
+        'is_eu' => false,
+        'bureaucracy_path' => 'student',
+        'veedel' => 'Altstadt-Nord',
+        'arrival_date' => now()->subMonths(2)->toDateString(),
+        'email_verified_at' => now(),
+        'onboarded_at' => now(),
+        'profile_attributes' => [],
+    ]);
+
+    $this->actingAs($user)->get('/bureaucracy')->assertSuccessful();
+
+    $question = BureaucracyCaseQuestion::query()
+        ->where('fact_key', 'entry_mode')
+        ->latest('id')
+        ->firstOrFail();
+
+    $this->actingAs($user)
+        ->post("/bureaucracy/case/questions/{$question->id}", ['value' => 'd_visa'])
+        ->assertRedirect();
+
+    expect($question->fresh()->answered_at)->not->toBeNull()
+        ->and(BureaucracyCaseFact::query()
+            ->where('case_id', $question->case_id)
+            ->where('key', 'entry_mode')
+            ->where('state', 'confirmed')
+            ->latest('id')
+            ->first()
+            ?->value)->toBe('d_visa');
+
+    // And it stops being asked.
+    expect(app(PendingAnswers::class)->forCase($question->case))->not->toContain('entry_mode');
 });
