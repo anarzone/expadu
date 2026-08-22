@@ -140,12 +140,16 @@ test('unresolved high impact branches keep safe matches visible without claiming
     expect($result->coverageState)->toBe(BureaucracyCoverageState::NeedsInformation)
         ->and($result->safeRuleKeys)->toBe(['case.safe-registration'])
         ->and(collect($sections['do_now'])->pluck('key')->all())->toBe(['case.safe-registration'])
+        // One card per unanswered question, naming the steps it would unblock
+        // rather than calling each of them "a possible step".
         ->and($sections['information_needed'])->toBe([[
             'kind' => 'information_needed',
+            'fact_key' => 'sponsor_current_title',
             'questions' => [[
                 'question' => 'Which German residence status does your spouse currently have?',
                 'why' => "Family-reunification and settlement options depend on the sponsor's current title.",
             ]],
+            'unlocks' => ['Rule case.sponsor-dependent'],
         ]]);
 });
 

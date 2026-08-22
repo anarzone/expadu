@@ -76,6 +76,13 @@ final class CasePlanComposer
             $sections[$section][] = $this->taskItem($case, $user, $task);
         }
 
+        // One card per unanswered QUESTION, not per blocked rule. Two rules can
+        // wait on the same fact — a family-reunification renewal has two that
+        // both hinge on whether the household continues — and a card each meant
+        // the page asked the identical question twice under a heading that
+        // named neither step.
+        $blockedByFact = [];
+
         foreach ($result->unknownRuleKeys as $key) {
             $task = $tasks->get($key);
 
@@ -83,20 +90,28 @@ final class CasePlanComposer
                 continue;
             }
 
-            $missingFacts = $result->missingFactsByRule[$key] ?? [];
-            $questions = [];
-
-            foreach ($missingFacts as $factKey) {
-                $definition = $this->factRegistry->definition($factKey);
-                $questions[] = [
-                    'question' => $definition->question,
-                    'why' => $definition->why,
-                ];
+            foreach ($result->missingFactsByRule[$key] ?? [] as $factKey) {
+                $blockedByFact[$factKey][] = $task->title;
             }
+        }
+
+        foreach ($blockedByFact as $factKey => $titles) {
+            $definition = $this->factRegistry->definition($factKey);
+            $titles = array_values(array_unique(array_filter($titles)));
+            sort($titles, SORT_STRING);
 
             $sections['information_needed'][] = [
                 'kind' => 'information_needed',
-                'questions' => $questions,
+                'fact_key' => $factKey,
+                // Kept as a list so the card renderer stays unchanged for any
+                // caller that still reads it.
+                'questions' => [[
+                    'question' => $definition->question,
+                    'why' => $definition->why,
+                ]],
+                // What the answer would actually unblock, so the card can say
+                // which step it is holding rather than "a possible step".
+                'unlocks' => $titles,
             ];
         }
 

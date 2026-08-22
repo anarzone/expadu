@@ -590,12 +590,18 @@ function InformationNeededNotice({ item }: { item: CasePlanItem }) {
                     className="mt-0.5 shrink-0 text-[#766D59] dark:text-[#C5BDA9]"
                 />
                 <div>
+                    {/* Every one of these cards used to be headed "A possible
+                        step needs more information", which named no step at
+                        all. It now says which. */}
                     <h3 className="text-[13.5px] font-bold text-[#38362F] dark:text-[#E7E3D8]">
-                        A possible step needs more information
+                        {(item.unlocks ?? []).length > 0
+                            ? `Needed for: ${(item.unlocks ?? []).join(' · ')}`
+                            : 'A possible step needs more information'}
                     </h3>
                     <p className="mt-1 text-[12px] leading-5 text-[#6B6860] dark:text-[#AAA89F]">
-                        We are not treating this as applicable until the
-                        relevant detail is confirmed.
+                        {(item.unlocks ?? []).length > 1
+                            ? 'These stay tentative until you answer — one answer covers all of them.'
+                            : 'We are not treating this as applicable until the relevant detail is confirmed.'}
                     </p>
                     {(item.questions ?? []).length > 0 && (
                         <ul className="mt-2.5 space-y-2 border-t border-[#E7E1D4] pt-2.5 dark:border-[#403D32]">
