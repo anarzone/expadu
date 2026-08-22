@@ -81,7 +81,10 @@ test('employee situations do not require the EU question', function () {
     $response->assertRedirect(route('bureaucracy'));
 });
 
-test('family and non-EU onboarding flows require an entry mode', function () {
+test('entry mode is offered but never required', function () {
+    // It used to block the form. It is the highest-value optional answer — 17
+    // applies_if references — but PendingAnswers asks for it on the Bureaucracy
+    // page for every situation, so a skip is deferred rather than lost.
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
@@ -90,9 +93,10 @@ test('family and non-EU onboarding flows require an entry mode', function () {
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
         'arrival_planned' => false,
-        'address_registration_status' => 'not_registrable',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertSessionHasErrors('entry_mode');
+    ])->assertSessionHasNoErrors();
+
+    expect($user->fresh()->profile_attributes['entry_mode'] ?? null)->toBeNull();
 });
 
 test('german level is optional', function () {
@@ -161,7 +165,10 @@ test('onboarding pauses address deadlines when registration is unknown or unavai
     expect($user->profile_attributes['housing_status'] ?? null)->toBe($status === 'not_registrable' ? 'temporary' : null)->and($user->profile_attributes['moved_in_at'] ?? null)->toBeNull();
 })->with(['unsure' => 'unsure', 'unavailable' => 'not_registrable']);
 
-test('onboarding requires an explicit address-registration answer before it persists profile facts', function () {
+test('a skipped address-registration answer is left unanswered, never assumed', function () {
+    // No longer blocks the form: someone who has not moved in yet cannot
+    // answer it. What must not happen is a guess — the Anmeldung card says its
+    // 14-day clock has no start date instead (see SkippableAnswersTest).
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
@@ -171,10 +178,10 @@ test('onboarding requires an explicit address-registration answer before it pers
         'arrival_date' => '2026-01-15',
         'arrival_planned' => false,
         'interests' => [],
-    ])->assertSessionHasErrors('address_registration_status');
+    ])->assertSessionHasNoErrors();
 
     $user->refresh();
-    expect($user->onboarded_at)->toBeNull()
+    expect($user->onboarded_at)->not->toBeNull()
         ->and($user->profile_attributes['housing_status'] ?? null)->toBeNull()
         ->and($user->profile_attributes['moved_in_at'] ?? null)->toBeNull();
 });
@@ -252,7 +259,11 @@ test('onboarding fails without required fields', function () {
 
     $response = $this->post(route('onboarding.complete'), []);
 
-    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_planned', 'arrival_date', 'address_registration_status']);
+    // Exactly three: situation picks the branch, veedel drives places,
+    // commute and alerts, and the arrival answer anchors every
+    // days_since_arrival deadline. Everything else is deferrable.
+    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_planned']);
+    $response->assertSessionDoesntHaveErrors(['address_registration_status', 'entry_mode']);
 });
 
 test('onboarding fails with future arrival date', function () {

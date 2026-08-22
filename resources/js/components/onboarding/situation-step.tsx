@@ -156,7 +156,14 @@ export function SituationStep({
     onCaseGoalChange,
     sponsorCurrentTitle,
     onSponsorCurrentTitleChange,
+    section = 'situation',
 }: {
+    /**
+     * The step 2 screen was 2.5 viewports of scrolling because it carried the
+     * branch question AND every residence detail. They are now two screens:
+     * 'situation' is required, 'residence' is optional and skippable.
+     */
+    section?: 'situation' | 'residence';
     value: string;
     isEu: boolean | null;
     entryMode: string;
@@ -177,33 +184,52 @@ export function SituationStep({
 }) {
     const residenceFactsApply =
         value === 'family_reunification' || isEu === false;
-    const sharedGoals = [
-        { value: 'renew_current_title', label: 'Renew my current title' },
-        { value: 'settlement_permit', label: 'Explore settlement' },
-        { value: 'understand_options', label: "I'm not sure" },
-    ];
-    const caseGoals =
-        value === 'family_reunification'
-            ? currentResidenceTitle === 'family_reunification'
-                ? sharedGoals
-                : [
-                      {
-                          value: 'family_reunification_permit',
-                          label: 'Apply for family reunification',
-                      },
-                      ...sharedGoals.filter(
-                          (goal) => goal.value !== 'settlement_permit',
-                      ),
-                  ]
-            : currentResidenceTitle === 'blue_card'
-              ? sharedGoals
-              : [
-                    {
-                        value: 'blue_card',
-                        label: 'Apply for an EU Blue Card',
-                    },
-                    ...sharedGoals,
-                ];
+
+    if (section === 'residence') {
+        return (
+            <div className="mx-auto max-w-[600px] px-6 pb-24">
+                <div className="py-2 pb-6">
+                    <h2 className="mb-2 font-display text-[26px] font-medium">
+                        Your residence details
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        Optional. Answering these sharpens your plan and its
+                        deadlines — skip them and the Bureaucracy page will ask
+                        when one of them actually matters.
+                    </p>
+                </div>
+
+                {residenceFactsApply ? (
+                    <ResidenceFields
+                        entryMode={entryMode}
+                        onEntryModeChange={onEntryModeChange}
+                        visaExpiresAt={visaExpiresAt}
+                        onVisaExpiresAtChange={onVisaExpiresAtChange}
+                        currentResidenceTitle={currentResidenceTitle}
+                        onCurrentResidenceTitleChange={
+                            onCurrentResidenceTitleChange
+                        }
+                        residenceTitleExpiresAt={residenceTitleExpiresAt}
+                        onResidenceTitleExpiresAtChange={
+                            onResidenceTitleExpiresAtChange
+                        }
+                        caseGoal={caseGoal}
+                        onCaseGoalChange={onCaseGoalChange}
+                        sponsorCurrentTitle={sponsorCurrentTitle}
+                        onSponsorCurrentTitleChange={
+                            onSponsorCurrentTitleChange
+                        }
+                        situation={value}
+                    />
+                ) : (
+                    <p className="rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">
+                        Nothing to ask here for your situation — EU, EEA and
+                        Swiss citizens do not need a residence permit.
+                    </p>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
@@ -284,192 +310,249 @@ export function SituationStep({
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
 
-            {residenceFactsApply && (
-                <div className="mt-4 animate-in rounded-xl border border-dashed border-border bg-card p-4 fade-in slide-in-from-bottom-2">
-                    <div className="mb-1 text-sm font-semibold">
-                        How did you enter Germany?
-                    </div>
-                    <p className="mb-3 text-xs text-primary">
-                        Why we ask: entry details affect the guidance we show.
-                        Verify relevant time limits with official sources.
+/**
+ * The residence block, lifted out of the branch question so each gets its
+ * own screen. Nothing here is required: every field is either a registered
+ * fact PendingAnswers can ask for later, or one the case assistant raises
+ * when a rule actually needs it.
+ */
+function ResidenceFields({
+    entryMode,
+    onEntryModeChange,
+    visaExpiresAt,
+    onVisaExpiresAtChange,
+    currentResidenceTitle,
+    onCurrentResidenceTitleChange,
+    residenceTitleExpiresAt,
+    onResidenceTitleExpiresAtChange,
+    caseGoal,
+    onCaseGoalChange,
+    sponsorCurrentTitle,
+    onSponsorCurrentTitleChange,
+    situation,
+}: {
+    entryMode: string;
+    onEntryModeChange: (value: string) => void;
+    visaExpiresAt: string;
+    onVisaExpiresAtChange: (value: string) => void;
+    currentResidenceTitle: string;
+    onCurrentResidenceTitleChange: (value: string) => void;
+    residenceTitleExpiresAt: string;
+    onResidenceTitleExpiresAtChange: (value: string) => void;
+    caseGoal: string;
+    onCaseGoalChange: (value: string) => void;
+    sponsorCurrentTitle: string;
+    onSponsorCurrentTitleChange: (value: string) => void;
+    situation: string;
+}) {
+    const value = situation;
+    const sharedGoals = [
+        { value: 'renew_current_title', label: 'Renew my current title' },
+        { value: 'settlement_permit', label: 'Explore settlement' },
+        { value: 'understand_options', label: "I'm not sure" },
+    ];
+    const caseGoals =
+        value === 'family_reunification'
+            ? currentResidenceTitle === 'family_reunification'
+                ? sharedGoals
+                : [
+                      {
+                          value: 'family_reunification_permit',
+                          label: 'Apply for family reunification',
+                      },
+                      ...sharedGoals.filter(
+                          (goal) => goal.value !== 'settlement_permit',
+                      ),
+                  ]
+            : currentResidenceTitle === 'blue_card'
+              ? sharedGoals
+              : [
+                    {
+                        value: 'blue_card',
+                        label: 'Apply for an EU Blue Card',
+                    },
+                    ...sharedGoals,
+                ];
+
+    return (
+        <div className="mt-4 animate-in rounded-xl border border-dashed border-border bg-card p-4 fade-in slide-in-from-bottom-2">
+            <div className="mb-1 text-sm font-semibold">
+                How did you enter Germany?
+            </div>
+            <p className="mb-3 text-xs text-primary">
+                Why we ask: entry details affect the guidance we show. Verify
+                relevant time limits with official sources.
+            </p>
+            <div className="flex flex-col gap-2">
+                {entryModes.map((opt) => (
+                    <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => onEntryModeChange(opt.value)}
+                        aria-pressed={entryMode === opt.value}
+                        className={`min-h-11 rounded-[10px] border-[1.5px] px-3.5 py-3 text-left transition-all ${
+                            entryMode === opt.value
+                                ? 'border-primary bg-accent-soft'
+                                : 'border-border bg-card hover:border-primary/30'
+                        }`}
+                    >
+                        <span className="flex items-center gap-2 text-sm font-semibold">
+                            <OnboardingIcon icon={opt.icon} size="sm" />
+                            {opt.label}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                            {opt.subtitle}
+                        </span>
+                    </button>
+                ))}
+            </div>
+            {entryMode === 'd_visa' && (
+                <div className="mt-3">
+                    <label className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                        When does your visa expire?
+                        <input
+                            type="date"
+                            min={EXPIRY_BOUNDS.min}
+                            max={EXPIRY_BOUNDS.max}
+                            value={visaExpiresAt}
+                            onChange={(e) =>
+                                onVisaExpiresAtChange(e.target.value)
+                            }
+                            className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                        />
+                    </label>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        Optional — it helps us flag an important date for you to
+                        verify.
                     </p>
-                    <div className="flex flex-col gap-2">
-                        {entryModes.map((opt) => (
+                </div>
+            )}
+
+            {entryMode === 'has_permit' && (
+                <div className="mt-4 border-t border-border pt-4">
+                    <div className="mb-2 text-sm font-semibold">
+                        Which German visa or residence title do you currently
+                        hold?
+                    </div>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                        Optional. Choose “I’m not sure” if you do not know the
+                        exact title.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                        {RESIDENCE_TITLES.map((option) => (
                             <button
-                                key={opt.value}
+                                key={option.label}
                                 type="button"
-                                onClick={() => onEntryModeChange(opt.value)}
-                                aria-pressed={entryMode === opt.value}
-                                className={`min-h-11 rounded-[10px] border-[1.5px] px-3.5 py-3 text-left transition-all ${
-                                    entryMode === opt.value
-                                        ? 'border-primary bg-accent-soft'
+                                onClick={() =>
+                                    onCurrentResidenceTitleChange(option.value)
+                                }
+                                aria-pressed={
+                                    currentResidenceTitle === option.value
+                                }
+                                className={`min-h-11 rounded-[10px] border-[1.5px] px-3 py-2 text-left text-xs font-semibold transition-all ${
+                                    currentResidenceTitle === option.value
+                                        ? 'border-primary bg-accent-soft text-primary'
                                         : 'border-border bg-card hover:border-primary/30'
                                 }`}
                             >
-                                <span className="flex items-center gap-2 text-sm font-semibold">
-                                    <OnboardingIcon icon={opt.icon} size="sm" />
-                                    {opt.label}
-                                </span>
-                                <span className="mt-0.5 block text-xs text-muted-foreground">
-                                    {opt.subtitle}
-                                </span>
+                                {option.label}
+                                {option.hint !== undefined && (
+                                    <span className="mt-0.5 block text-[10.5px] font-normal text-muted-foreground">
+                                        {option.hint}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
-                    {entryMode === 'd_visa' && (
-                        <div className="mt-3">
-                            <label className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                                When does your visa expire?
+                    {currentResidenceTitle !== '' &&
+                        titleIsUnlimited(currentResidenceTitle) && (
+                            <p className="mt-3 text-xs text-muted-foreground">
+                                Permanent residence does not expire, so there is
+                                no date to add here.
+                            </p>
+                        )}
+                    {currentResidenceTitle !== '' &&
+                        !titleIsUnlimited(currentResidenceTitle) && (
+                            <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                When does this title expire?
                                 <input
                                     type="date"
+                                    aria-label="When does this title expire?"
                                     min={EXPIRY_BOUNDS.min}
                                     max={EXPIRY_BOUNDS.max}
-                                    value={visaExpiresAt}
-                                    onChange={(e) =>
-                                        onVisaExpiresAtChange(e.target.value)
+                                    value={residenceTitleExpiresAt}
+                                    onChange={(event) =>
+                                        onResidenceTitleExpiresAtChange(
+                                            event.target.value,
+                                        )
                                     }
                                     className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
                                 />
                             </label>
-                            <p className="mt-1.5 text-xs text-muted-foreground">
-                                Optional — it helps us flag an important date
-                                for you to verify.
-                            </p>
-                        </div>
-                    )}
+                        )}
+                </div>
+            )}
 
-                    {entryMode === 'has_permit' && (
-                        <div className="mt-4 border-t border-border pt-4">
-                            <div className="mb-2 text-sm font-semibold">
-                                Which German visa or residence title do you
-                                currently hold?
-                            </div>
-                            <p className="mb-3 text-xs text-muted-foreground">
-                                Optional. Choose “I’m not sure” if you do not
-                                know the exact title.
-                            </p>
-                            <div className="grid grid-cols-2 gap-2">
-                                {RESIDENCE_TITLES.map((option) => (
-                                    <button
-                                        key={option.label}
-                                        type="button"
-                                        onClick={() =>
-                                            onCurrentResidenceTitleChange(
-                                                option.value,
-                                            )
-                                        }
-                                        aria-pressed={
-                                            currentResidenceTitle ===
-                                            option.value
-                                        }
-                                        className={`min-h-11 rounded-[10px] border-[1.5px] px-3 py-2 text-left text-xs font-semibold transition-all ${
-                                            currentResidenceTitle ===
-                                            option.value
-                                                ? 'border-primary bg-accent-soft text-primary'
-                                                : 'border-border bg-card hover:border-primary/30'
-                                        }`}
-                                    >
-                                        {option.label}
-                                        {option.hint !== undefined && (
-                                            <span className="mt-0.5 block text-[10.5px] font-normal text-muted-foreground">
-                                                {option.hint}
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                            {currentResidenceTitle !== '' &&
-                                titleIsUnlimited(currentResidenceTitle) && (
-                                    <p className="mt-3 text-xs text-muted-foreground">
-                                        Permanent residence does not expire, so
-                                        there is no date to add here.
-                                    </p>
+            {value === 'family_reunification' && entryMode !== '' && (
+                <div className="mt-4 border-t border-border pt-4">
+                    <div className="mb-2 text-sm font-semibold">
+                        Which title does your sponsor currently hold?
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {SPONSOR_TITLES.map((option) => (
+                            <button
+                                key={option.label}
+                                type="button"
+                                onClick={() =>
+                                    onSponsorCurrentTitleChange(option.value)
+                                }
+                                aria-pressed={
+                                    sponsorCurrentTitle === option.value
+                                }
+                                className={`min-h-11 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
+                                    sponsorCurrentTitle === option.value
+                                        ? 'border-primary bg-accent-soft text-primary'
+                                        : 'border-border bg-card hover:border-primary/30'
+                                }`}
+                            >
+                                {option.label}
+                                {option.hint !== undefined && (
+                                    <span className="mt-0.5 block text-[10.5px] font-normal text-muted-foreground">
+                                        {option.hint}
+                                    </span>
                                 )}
-                            {currentResidenceTitle !== '' &&
-                                !titleIsUnlimited(currentResidenceTitle) && (
-                                    <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                                        When does this title expire?
-                                        <input
-                                            type="date"
-                                            aria-label="When does this title expire?"
-                                            min={EXPIRY_BOUNDS.min}
-                                            max={EXPIRY_BOUNDS.max}
-                                            value={residenceTitleExpiresAt}
-                                            onChange={(event) =>
-                                                onResidenceTitleExpiresAtChange(
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
-                                        />
-                                    </label>
-                                )}
-                        </div>
-                    )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-                    {value === 'family_reunification' && entryMode !== '' && (
-                        <div className="mt-4 border-t border-border pt-4">
-                            <div className="mb-2 text-sm font-semibold">
-                                Which title does your sponsor currently hold?
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {SPONSOR_TITLES.map((option) => (
-                                    <button
-                                        key={option.label}
-                                        type="button"
-                                        onClick={() =>
-                                            onSponsorCurrentTitleChange(
-                                                option.value,
-                                            )
-                                        }
-                                        aria-pressed={
-                                            sponsorCurrentTitle === option.value
-                                        }
-                                        className={`min-h-11 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
-                                            sponsorCurrentTitle === option.value
-                                                ? 'border-primary bg-accent-soft text-primary'
-                                                : 'border-border bg-card hover:border-primary/30'
-                                        }`}
-                                    >
-                                        {option.label}
-                                        {option.hint !== undefined && (
-                                            <span className="mt-0.5 block text-[10.5px] font-normal text-muted-foreground">
-                                                {option.hint}
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {entryMode !== '' && (
-                        <div className="mt-4 border-t border-border pt-4">
-                            <div className="mb-2 text-sm font-semibold">
-                                What would you like help with?
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {caseGoals.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        onClick={() =>
-                                            onCaseGoalChange(option.value)
-                                        }
-                                        aria-pressed={caseGoal === option.value}
-                                        className={`min-h-11 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
-                                            caseGoal === option.value
-                                                ? 'border-primary bg-accent-soft text-primary'
-                                                : 'border-border bg-card hover:border-primary/30'
-                                        }`}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+            {entryMode !== '' && (
+                <div className="mt-4 border-t border-border pt-4">
+                    <div className="mb-2 text-sm font-semibold">
+                        What would you like help with?
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {caseGoals.map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => onCaseGoalChange(option.value)}
+                                aria-pressed={caseGoal === option.value}
+                                className={`min-h-11 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition-all ${
+                                    caseGoal === option.value
+                                        ? 'border-primary bg-accent-soft text-primary'
+                                        : 'border-border bg-card hover:border-primary/30'
+                                }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

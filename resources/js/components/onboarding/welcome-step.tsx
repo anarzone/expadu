@@ -21,8 +21,9 @@ export function WelcomeStep() {
                     Let's make it a list.
                 </h1>
                 <p className="max-w-[400px] text-[15px] leading-relaxed text-muted-foreground">
-                    Five short steps create a focused first plan. We’ll point
-                    you to official sources to verify the details that apply.
+                    Three quick questions create a focused first plan. Skip
+                    anything you’re unsure about — you can add it later. We’ll
+                    point you to official sources to verify the details.
                 </p>
             </div>
 

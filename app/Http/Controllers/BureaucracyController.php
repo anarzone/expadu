@@ -315,7 +315,7 @@ class BureaucracyController extends Controller
         }
         // What the note strip can DO about a missing date.
         $deadlineAction = match (true) {
-            $deadlineTier === 'paused' => 'moved_in',
+            $deadlineTier === 'paused', $deadlineTier === 'needs_answer' => 'moved_in',
             $deadline === null
                 && $task->deadline_type === DeadlineType::PermitWindow
                 && ($profile->attributes['entry_mode'] ?? null) === 'd_visa'
@@ -408,6 +408,15 @@ class BureaucracyController extends Controller
             if ($task->deadline_type === DeadlineType::DaysSinceMoveIn
                 && ($profile->attributes['housing_status'] ?? null) === 'temporary') {
                 return ['paused', 'Deadline paused — the clock starts when you move into a long-term address.'];
+            }
+
+            // Onboarding no longer forces the move-in date, so this task can
+            // reach a user with nothing to count from. §17 BMG gives two weeks
+            // and §54 makes missing it finable, so silence is the wrong
+            // default: say the clock is missing and what would start it.
+            if ($task->deadline_type === DeadlineType::DaysSinceMoveIn
+                && ($profile->attributes['moved_in_at'] ?? null) === null) {
+                return ['needs_answer', 'Your 14-day registration deadline needs your move-in date. Add it to see the exact date.'];
             }
 
             if ($task->deadline_type === DeadlineType::PermitWindow
@@ -507,8 +516,11 @@ class BureaucracyController extends Controller
         }
 
         // Paused (move-in pending) stays in the attention lane — it's the
-        // user's primary next thing even without a ticking clock.
-        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'paused', 'lapsed'], true)
+        // user's primary next thing even without a ticking clock. `needs_answer`
+        // is the same case and more urgent: the two-week Anmeldung window is
+        // running, we just cannot say from when. Burying it under "upcoming"
+        // would hide the one card whose clock we most need started.
+        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'paused', 'needs_answer', 'lapsed'], true)
             ? 'active'
             : 'upcoming';
     }

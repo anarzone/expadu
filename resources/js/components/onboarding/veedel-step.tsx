@@ -10,28 +10,14 @@ import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { ICON_STROKE } from '@/constants/icons';
 import { ARRIVAL_BOUNDS, MOVE_IN_BOUNDS } from '@/lib/date-bounds';
 
-const germanLevels = [
-    { value: 'none', label: 'None' },
-    { value: 'a1', label: 'A1' },
-    { value: 'a2', label: 'A2' },
-    { value: 'b1', label: 'B1' },
-    { value: 'b2', label: 'B2' },
-    { value: 'c1', label: 'C1' },
-    { value: 'c2', label: 'C2' },
-];
-
 export function VeedelStep({
     veedels,
     veedel,
     arrivalDate,
     arrivalPlanned,
-    hasDeutschlandticket,
     onVeedelChange,
     onArrivalDateChange,
     onArrivalPlannedChange,
-    onDticketChange,
-    documentedGermanLevel,
-    onDocumentedGermanLevelChange,
     addressRegistrationStatus,
     onAddressRegistrationStatusChange,
     movedInAt,
@@ -41,13 +27,9 @@ export function VeedelStep({
     veedel: string;
     arrivalDate: string;
     arrivalPlanned: boolean | null;
-    hasDeutschlandticket: boolean;
     onVeedelChange: (value: string) => void;
     onArrivalDateChange: (value: string) => void;
     onArrivalPlannedChange: (value: boolean) => void;
-    onDticketChange: (value: boolean) => void;
-    documentedGermanLevel: string;
-    onDocumentedGermanLevelChange: (value: string) => void;
     addressRegistrationStatus: string;
     onAddressRegistrationStatusChange: (value: string) => void;
     movedInAt: string;
@@ -80,7 +62,10 @@ export function VeedelStep({
                     />
                     <div className="mt-3">
                         <div className="mb-2 text-[13px] font-semibold">
-                            Can you register at this address?
+                            Can you register at this address?{' '}
+                            <span className="font-normal text-muted-foreground">
+                                (optional)
+                            </span>
                         </div>
                         <div className="flex flex-col gap-2 sm:flex-row">
                             {[
@@ -202,73 +187,6 @@ export function VeedelStep({
                             </p>
                         </>
                     ) : null}
-                </div>
-
-                <div>
-                    <div className="mb-2 text-[13px] font-semibold">
-                        Do you have a documented German level?{' '}
-                        <span className="font-normal text-muted-foreground">
-                            (optional — only choose a level you can document)
-                        </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {germanLevels.map((l) => (
-                            <button
-                                key={l.value}
-                                type="button"
-                                onClick={() =>
-                                    onDocumentedGermanLevelChange(
-                                        documentedGermanLevel === l.value
-                                            ? ''
-                                            : l.value,
-                                    )
-                                }
-                                aria-pressed={documentedGermanLevel === l.value}
-                                className={`min-h-11 rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[13px] transition-all ${
-                                    documentedGermanLevel === l.value
-                                        ? 'border-primary bg-accent-soft font-semibold text-primary'
-                                        : 'border-border bg-card hover:border-primary/30'
-                                }`}
-                            >
-                                {l.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div>
-                    <div className="mb-2 text-[13px] font-semibold">
-                        Do you have a Deutschlandticket?{' '}
-                        <span className="font-normal text-muted-foreground">
-                            (optional)
-                        </span>
-                    </div>
-                    <div className="flex gap-2">
-                        {[
-                            { value: true, label: 'Yes, I have one' },
-                            { value: false, label: 'Not yet' },
-                        ].map((opt) => (
-                            <button
-                                key={String(opt.value)}
-                                type="button"
-                                onClick={() => onDticketChange(opt.value)}
-                                aria-pressed={
-                                    hasDeutschlandticket === opt.value
-                                }
-                                className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
-                                    hasDeutschlandticket === opt.value
-                                        ? 'border-primary bg-accent-soft text-primary'
-                                        : 'border-border bg-card hover:border-primary/30'
-                                }`}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                        If you do, we'll show trips as covered instead of
-                        quoting a single fare.
-                    </p>
                 </div>
             </div>
         </div>

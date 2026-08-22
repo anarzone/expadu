@@ -73,6 +73,7 @@ export type FramingBTask = {
         | 'on_track'
         | 'no_deadline'
         | 'paused'
+        | 'needs_answer'
         | 'none';
     deadline_note: string | null;
     deadline_action: 'moved_in' | 'visa_expiry' | null;
@@ -113,6 +114,8 @@ const TIER_LABELS: Record<FramingBTask['deadline_tier'], string> = {
     on_track: 'On track',
     no_deadline: 'No deadline',
     paused: '⏸ Deadline paused',
+    // Not "no deadline": there IS one, we just do not know when it started.
+    needs_answer: 'Deadline needs a date',
     none: '',
 };
 
@@ -127,6 +130,8 @@ const TIER_CLASSES: Record<FramingBTask['deadline_tier'], string> = {
         'bg-primary-soft text-primary dark:bg-primary/20 dark:text-primary',
     on_track:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
+    needs_answer:
+        'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
     no_deadline:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
     paused: 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
@@ -399,7 +404,8 @@ export function TaskCardFramingB({
                     {task.deadline_note && (
                         <div className="flex flex-wrap items-center gap-3 rounded-[9px] bg-[#EFEDE7] p-3 text-[13px] leading-relaxed text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
                             <span className="min-w-0 flex-1">
-                                {task.deadline_tier === 'paused'
+                                {task.deadline_tier === 'paused' ||
+                                task.deadline_tier === 'needs_answer'
                                     ? '🏠 '
                                     : '⏰ '}
                                 {task.deadline_note}
