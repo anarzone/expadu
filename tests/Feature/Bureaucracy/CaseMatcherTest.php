@@ -251,6 +251,7 @@ test('conflicting matches are quarantined while independent safe rules remain co
             'options',
             'waiting',
             'information_needed',
+            'opens_when',
             'not_covered',
         ])
         ->and($composedRuleKeys)->toBe(['case.safe-registration', 'universal.keep-documents']);

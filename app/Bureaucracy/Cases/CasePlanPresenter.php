@@ -27,6 +27,7 @@ final class CasePlanPresenter
         'options',
         'waiting',
         'information_needed',
+        'opens_when',
         'not_covered',
     ];
 
