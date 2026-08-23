@@ -53,7 +53,9 @@ final class CasePlanComposer
     public function compose(BureaucracyCase $case, CaseMatchResult $result): array
     {
         $sections = array_fill_keys(self::SectionKeys, []);
-        $user = $case->user()->firstOrFail();
+        $user = $case->relationLoaded('user')
+            ? $case->user
+            : $case->user()->firstOrFail();
         $visibleKeys = array_values(array_unique([
             ...$result->safeRuleKeys,
             ...$result->universalRuleKeys,

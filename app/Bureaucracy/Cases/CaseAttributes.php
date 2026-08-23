@@ -23,17 +23,27 @@ final class CaseAttributes
      */
     public function for(BureaucracyCase $case): array
     {
-        $profile = $this->profileEngine->build($case->user()->firstOrFail());
+        // A relation that is already loaded is used as-is. The read-only demo
+        // renders a persona from an unsaved case whose user and facts exist
+        // only in memory, and re-querying them would either fail or, worse,
+        // silently read a different user's row.
+        $user = $case->relationLoaded('user')
+            ? $case->user
+            : $case->user()->firstOrFail();
+
+        $profile = $this->profileEngine->build($user);
 
         $attributes = [
             ...$profile->attributes,
             'german_level' => $profile->germanLevel?->value,
         ];
 
-        $factHistory = BureaucracyCaseFact::query()
-            ->where('case_id', $case->getKey())
-            ->orderBy('id')
-            ->get();
+        $factHistory = $case->relationLoaded('facts')
+            ? $case->facts->sortBy('id')->values()
+            : BureaucracyCaseFact::query()
+                ->where('case_id', $case->getKey())
+                ->orderBy('id')
+                ->get();
 
         foreach ($factHistory as $fact) {
             $attributes[$fact->key] = null;
