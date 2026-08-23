@@ -501,6 +501,7 @@ class ImportTasksCommand extends Command
             'deadline_type' => $this->normalizeDeadlineType($data['deadline_type'] ?? 'none'),
             'deadline_days' => isset($data['deadline_days']) ? (int) $data['deadline_days'] : null,
             'recurrence_months' => isset($data['recurrence_months']) ? (int) $data['recurrence_months'] : null,
+            'description_variants' => $data['description_variants'] ?? null,
             'documents_required' => $data['documents_required'] ?? [],
             'links' => $data['links'] ?? [],
             'how_to_steps' => $data['how_to_steps'] ?? [],
