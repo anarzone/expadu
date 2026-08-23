@@ -450,6 +450,12 @@ final class CaseFactStore
 
     private function supersedeFact(BureaucracyCaseFact $fact): void
     {
+        // A conflict argues about two facts. Retiring one of them retires the
+        // argument: leaving it open asks the user to choose between an answer
+        // the system has already dropped and their real one, which reads as the
+        // app forgetting what it was told.
+        $this->markOpenConflictsObsolete($fact);
+
         $fact->update([
             'state' => 'superseded',
             'superseded_at' => now(),

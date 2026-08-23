@@ -294,7 +294,7 @@ export function DateField({
     return (
         <div ref={wrapper} className="relative inline-block">
             <div
-                className={`inline-flex min-h-11 items-center gap-0.5 rounded-[10px] border-[1.5px] bg-card py-2 pr-1.5 pl-3 text-sm transition-colors focus-within:border-primary ${
+                className={`inline-flex min-h-11 items-center gap-0.5 rounded-[10px] border-[1.5px] bg-card py-2 pr-1.5 pl-3 text-sm font-normal transition-colors focus-within:border-primary ${
                     (filled && !complete) || outOfRange
                         ? 'border-destructive'
                         : 'border-border'
@@ -326,7 +326,7 @@ export function DateField({
                             onPaste={handlePaste}
                             onFocus={(event) => event.currentTarget.select()}
                             onBlur={() => handleBlur(segment)}
-                            className={`bg-transparent text-center font-mono tabular-nums outline-none placeholder:text-muted-foreground/60 ${
+                            className={`bg-transparent text-center font-mono font-normal tabular-nums outline-none placeholder:text-muted-foreground/60 ${
                                 segment === 'year' ? 'w-[4.5ch]' : 'w-[2.75ch]'
                             }`}
                         />

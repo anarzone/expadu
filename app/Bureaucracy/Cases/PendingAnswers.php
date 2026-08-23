@@ -46,7 +46,7 @@ final class PendingAnswers
 
         $conflicted = BureaucracyFactConflict::query()
             ->where('case_id', $case->getKey())
-            ->where('status', 'unresolved')
+            ->actionable()
             ->pluck('fact_key')
             ->all();
 

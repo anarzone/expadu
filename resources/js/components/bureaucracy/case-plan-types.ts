@@ -12,6 +12,7 @@ export type CasePlanSectionKey =
     | 'options'
     | 'waiting'
     | 'information_needed'
+    | 'good_to_know'
     | 'opens_when'
     | 'not_covered';
 

@@ -25,6 +25,7 @@ final class CasePlanPresenter
         'next',
         'coming_up',
         'options',
+        'good_to_know',
         'waiting',
         'information_needed',
         'opens_when',
@@ -180,7 +181,7 @@ final class CasePlanPresenter
     {
         $conflict = BureaucracyFactConflict::query()
             ->where('case_id', $case->getKey())
-            ->where('status', 'unresolved')
+            ->actionable()
             ->with(['existingFact', 'candidateFact'])
             ->oldest('created_at')
             ->oldest('id')
