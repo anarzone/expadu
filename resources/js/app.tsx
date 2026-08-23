@@ -126,11 +126,24 @@ router.on('error', (event) => {
     }
 });
 
-// A non-Inertia response (commonly an ad blocker / extension interfering).
+// A response Inertia cannot use. An ad blocker is ONE cause, and it used to be
+// the only one we named — so an expired session or a rejected request told the
+// user to go hunting for a browser extension. Both arrive here identically:
+// no `x-inertia` header, because Laravel's 419/403 responses are not Inertia
+// responses. Say which it was.
 router.on('invalid', (event) => {
     event.preventDefault();
+
+    const status = event.detail.response?.status;
+
     showToast(
-        'Something blocked the response — an ad blocker or browser extension may be interfering. Try turning it off for this site, or reload.',
+        status === 419
+            ? 'Your session expired while this page was open. Reload the page and try again — nothing was saved.'
+            : status === 403
+              ? 'That action was refused. The page is probably out of date — reload it and try again.'
+              : status !== undefined && status >= 500
+                ? 'The server hit an error. Nothing was saved — try again in a moment.'
+                : 'Something blocked the response — an ad blocker or browser extension may be interfering. Try turning it off for this site, or reload.',
     );
 });
 
