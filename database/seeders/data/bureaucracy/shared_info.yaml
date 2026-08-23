@@ -163,7 +163,7 @@ tasks:
     links:
       - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html
 
-  - title: 'The long game: permanent residency and citizenship'
+  - title: 'The long game: permanent residency'
     key: shared.long_game
     coverage_scope: universal
     type: info
@@ -183,16 +183,40 @@ tasks:
       10 m² per child under 6). Faster tracks: 3 years on a skilled-worker permit (2
       with a German degree), Blue Card 21–27 months, family of Germans 3 years. The
       EU variant (Daueraufenthalt-EU) has the same bar but adds EU mobility — if you
-      might leave Germany one day, ask for that one. Citizenship: 5 years + B1 +
-      Einbürgerungstest, €255 (the 3-year fast track was abolished in October 2025 —
-      many blogs still advertise it). And when any renewal comes due: check whether
-      you already qualify for permanent residency instead of paying for a renewal.
+      might leave Germany one day, ask for that one. And when any renewal comes due:
+      check whether you already qualify for permanent residency instead of paying for
+      a renewal.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
       - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis
+
+  # Split out of shared.long_game, which was gated on NOT already being settled.
+  # That gate is right for the permanent-residency half and wrong for this one:
+  # it hid citizenship from the only people for whom it is the next question.
+  # Citizenship counts years of residence, not years since permanent residency,
+  # so it carries no settled_at gate at all. The sentence below is the one that
+  # was already in the long-game card, moved unchanged — no figure, deadline or
+  # § here is new, and none has been re-reviewed.
+  - title: 'German citizenship'
+    key: shared.citizenship
+    coverage_scope: universal
+    type: info
+    eu_filter: non_eu_only
+    depends_on: []
+    description: |
+      Citizenship: 5 years + B1 + Einbürgerungstest, €255 (the 3-year fast track was
+      abolished in October 2025 — many blogs still advertise it).
+    phase: ongoing
+    urgency: low
+    deadline_type: none
+    documents_required: []
+    # Deliberately empty: the long-game card's link is the Niederlassungserlaubnis
+    # page, which is the wrong destination for this, and guessing a citizenship
+    # URL is exactly what the trust rules forbid. Owner to supply one.
+    links: []
 
   - title: 'Foreign professional qualification? Get it recognized'
     key: shared.recognition
