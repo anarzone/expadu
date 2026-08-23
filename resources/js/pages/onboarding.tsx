@@ -1,5 +1,5 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlashToast } from '@/components/flash-toast';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
 import { OptionalStep } from '@/components/onboarding/optional-step';
@@ -55,31 +55,99 @@ const EU_QUESTION_CHOICES = [
 // Residence now shares the final, skippable screen with interests.
 const TOTAL_STEPS = 4;
 
+/**
+ * A refresh used to empty the wizard and drop the user back on step 1, which
+ * on a form asking for visa dates and permit types is a real cost — people
+ * reload when they go looking for the document they are being asked about.
+ *
+ * sessionStorage rather than localStorage: the draft holds residence details,
+ * so it should not outlive the tab on a shared machine. It is cleared the
+ * moment the answers reach the server.
+ */
+const DRAFT_KEY = 'expadu:onboarding-draft';
+
+const EMPTY_FORM: OnboardingData = {
+    situation: '',
+    is_eu: null,
+    entry_mode: '',
+    visa_expires_at: '',
+    veedel: '',
+    has_deutschlandticket: false,
+    arrival_date: '',
+    arrival_planned: null,
+    interests: [],
+    current_residence_title: '',
+    residence_title_expires_at: '',
+    case_goal: '',
+    sponsor_current_title: '',
+    documented_german_level: '',
+    moved_in_at: '',
+    address_registration_status: '',
+};
+
+function readDraft(): { step: number; data: OnboardingData } {
+    try {
+        const raw = sessionStorage.getItem(DRAFT_KEY);
+        const saved = raw === null ? null : JSON.parse(raw);
+
+        if (saved === null || typeof saved !== 'object') {
+            return { step: 1, data: EMPTY_FORM };
+        }
+
+        // Only the keys we know about, so a stale draft from an older shape
+        // cannot smuggle a field the form no longer has.
+        const data = { ...EMPTY_FORM };
+
+        for (const key of Object.keys(EMPTY_FORM) as Array<
+            keyof OnboardingData
+        >) {
+            if (key in (saved.data ?? {})) {
+                (data as Record<string, unknown>)[key] = saved.data[key];
+            }
+        }
+
+        // Never resume past a step whose answer is missing — a draft written
+        // before a field became required would otherwise strand the user on a
+        // screen they cannot leave.
+        const furthest =
+            data.situation === ''
+                ? 1
+                : data.veedel === '' || data.arrival_planned === null
+                  ? 2
+                  : TOTAL_STEPS;
+        const step = Math.min(
+            Math.max(Number(saved.step) || 1, 1),
+            Math.max(furthest, 1),
+        );
+
+        return { step, data };
+    } catch {
+        return { step: 1, data: EMPTY_FORM };
+    }
+}
+
 export default function Onboarding() {
     const { track } = useTracker();
     const { veedels } = usePage<{
         veedels: Record<string, string[]>;
     }>().props;
-    const [step, setStep] = useState(1);
+    const [draft] = useState(readDraft);
+    const [step, setStep] = useState(draft.step);
 
-    const form = useForm<OnboardingData>({
-        situation: '',
-        is_eu: null,
-        entry_mode: '',
-        visa_expires_at: '',
-        veedel: '',
-        has_deutschlandticket: false,
-        arrival_date: '',
-        arrival_planned: null,
-        interests: [],
-        current_residence_title: '',
-        residence_title_expires_at: '',
-        case_goal: '',
-        sponsor_current_title: '',
-        documented_german_level: '',
-        moved_in_at: '',
-        address_registration_status: '',
-    });
+    const form = useForm<OnboardingData>(draft.data);
+
+    // Keep the draft in step with the wizard so a reload resumes where they
+    // were rather than starting over.
+    useEffect(() => {
+        try {
+            sessionStorage.setItem(
+                DRAFT_KEY,
+                JSON.stringify({ step, data: form.data }),
+            );
+        } catch {
+            // A full or disabled store just means no resume; never block the form.
+        }
+    }, [step, form.data]);
 
     function clearResidenceFacts(data: OnboardingData): OnboardingData {
         return {
@@ -153,7 +221,11 @@ export default function Onboarding() {
             ...data,
             situation: resolveSituation(data.situation, data.is_eu),
         }));
-        form.post('/onboarding/complete');
+        form.post('/onboarding/complete', {
+            // The answers are the server's now; nothing sensitive lingers in
+            // the tab.
+            onSuccess: () => sessionStorage.removeItem(DRAFT_KEY),
+        });
     }
 
     const canProceed = () => {
