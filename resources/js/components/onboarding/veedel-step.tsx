@@ -6,6 +6,7 @@ import {
     IconSearch,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { DateField } from '@/components/date-field';
 import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { ICON_STROKE } from '@/constants/icons';
 import { ARRIVAL_BOUNDS, MOVE_IN_BOUNDS } from '@/lib/date-bounds';
@@ -99,16 +100,12 @@ export function VeedelStep({
                         </p>
                     ) : arrivalPlanned === false ? (
                         <>
-                            <input
-                                type="date"
-                                aria-label="When did you arrive in Germany?"
+                            <DateField
+                                label="When did you arrive in Germany?"
                                 min={ARRIVAL_BOUNDS.min}
                                 max={ARRIVAL_BOUNDS.max}
                                 value={arrivalDate}
-                                onChange={(event) =>
-                                    onArrivalDateChange(event.target.value)
-                                }
-                                className="min-h-11 w-full rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                                onChange={onArrivalDateChange}
                             />
                             <p className="mt-1.5 text-xs text-muted-foreground">
                                 Arrival helps sequence your first plan. Your
@@ -187,22 +184,18 @@ export function VeedelStep({
                                 address-registration guidance.
                             </p>
                             {addressRegistrationStatus === 'registrable' && (
-                                <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                                    When did you move into this address?
-                                    <input
-                                        type="date"
-                                        aria-label="When did you move into this address?"
+                                <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                    <span id="moved-in-label">
+                                        When did you move into this address?
+                                    </span>
+                                    <DateField
+                                        label="When did you move into this address?"
                                         min={MOVE_IN_BOUNDS.min}
                                         max={MOVE_IN_BOUNDS.max}
                                         value={movedInAt}
-                                        onChange={(event) =>
-                                            onMovedInAtChange(
-                                                event.target.value,
-                                            )
-                                        }
-                                        className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                        onChange={onMovedInAtChange}
                                     />
-                                </label>
+                                </div>
                             )}
                         </>
                     )}

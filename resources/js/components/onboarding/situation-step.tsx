@@ -12,6 +12,7 @@ import {
     IconSparkles,
     IconWorld,
 } from '@tabler/icons-react';
+import { DateField } from '@/components/date-field';
 import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { EXPIRY_BOUNDS } from '@/lib/date-bounds';
 
@@ -424,19 +425,16 @@ function ResidenceFields({
             </div>
             {entryMode === 'd_visa' && (
                 <div className="mt-3">
-                    <label className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                        When does your visa expire?
-                        <input
-                            type="date"
+                    <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                        <span>When does your visa expire?</span>
+                        <DateField
+                            label="When does your visa expire?"
                             min={EXPIRY_BOUNDS.min}
                             max={EXPIRY_BOUNDS.max}
                             value={visaExpiresAt}
-                            onChange={(e) =>
-                                onVisaExpiresAtChange(e.target.value)
-                            }
-                            className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                            onChange={onVisaExpiresAtChange}
                         />
-                    </label>
+                    </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
                         Optional — it helps us flag an important date for you to
                         verify.
@@ -494,22 +492,16 @@ function ResidenceFields({
                         )}
                     {currentResidenceTitle !== '' &&
                         !titleIsUnlimited(currentResidenceTitle) && (
-                            <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                                When does this title expire?
-                                <input
-                                    type="date"
-                                    aria-label="When does this title expire?"
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                <span>When does this title expire?</span>
+                                <DateField
+                                    label="When does this title expire?"
                                     min={EXPIRY_BOUNDS.min}
                                     max={EXPIRY_BOUNDS.max}
                                     value={residenceTitleExpiresAt}
-                                    onChange={(event) =>
-                                        onResidenceTitleExpiresAtChange(
-                                            event.target.value,
-                                        )
-                                    }
-                                    className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
+                                    onChange={onResidenceTitleExpiresAtChange}
                                 />
-                            </label>
+                            </div>
                         )}
                 </div>
             )}

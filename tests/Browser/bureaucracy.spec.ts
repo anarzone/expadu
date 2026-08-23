@@ -1,6 +1,17 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
+/**
+ * The date inputs are three segments (day / month / year) rather than one
+ * `<input type="date">`, so a Playwright `.fill()` has three boxes to fill.
+ */
+async function fillDate(page: Page, label: string, iso: string): Promise<void> {
+    const [year, month, day] = iso.split('-');
+
+    await page.getByLabel(`${label} — day`).fill(day);
+    await page.getByLabel(`${label} — month`).fill(month);
+    await page.getByLabel(`${label} — year`).fill(year);
+}
 // After a rebuild the asset hashes change, and a stale PWA service worker keeps
 // serving the previous build — so the page renders old code and assertions fail
 // against markup that is already fixed. Every other spec touching built assets
@@ -476,9 +487,7 @@ test.describe('Onboarding v2', () => {
         await expect(
             page.getByText('Which Veedel do you live in?'),
         ).toBeVisible();
-        await page
-            .getByLabel('When did you arrive in Germany?')
-            .fill('2026-06-15');
+        await fillDate(page, 'When did you arrive in Germany?', '2026-06-15');
         await page
             .getByRole('button', { name: 'Pick your neighbourhood' })
             .click();
@@ -498,23 +507,19 @@ test.describe('Onboarding v2', () => {
         await expect(
             page.getByRole('button', { name: 'Continue' }),
         ).toBeDisabled();
-        await page
-            .getByLabel('When did you move into this address?')
-            .fill('2026-07-01');
+        await fillDate(page, 'When did you move into this address?', '2026-07-01');
 
         // Switching back to planning must RETRACT those answers, not just hide
         // them — otherwise someone who has not arrived submits a move-in date.
         await page.getByRole('button', { name: 'Still planning' }).click();
         await expect(
-            page.getByLabel('When did you move into this address?'),
+            page.getByLabel('When did you move into this address? — day'),
         ).toHaveCount(0);
         await page.getByRole('button', { name: "I'm here" }).click();
         await expect(
             page.getByRole('button', { name: 'Yes, I can register here' }),
         ).toHaveAttribute('aria-pressed', 'false');
-        await page
-            .getByLabel('When did you arrive in Germany?')
-            .fill('2026-06-15');
+        await fillDate(page, 'When did you arrive in Germany?', '2026-06-15');
         await page.getByRole('button', { name: 'Continue' }).click();
 
         // Step 4 — everything optional on one screen, skippable in one click.
@@ -561,11 +566,9 @@ test.describe('Onboarding v2', () => {
             .getByRole('button', { name: 'Work residence permit' })
             .click();
         await expect(
-            page.getByLabel('When does this title expire?'),
+            page.getByLabel('When does this title expire? — day'),
         ).toHaveValue('');
-        await page
-            .getByLabel('When does this title expire?')
-            .fill('2027-10-01');
+        await fillDate(page, 'When does this title expire?', '2027-10-01');
         await page
             .getByRole('button', { name: 'Apply for an EU Blue Card' })
             .click();
