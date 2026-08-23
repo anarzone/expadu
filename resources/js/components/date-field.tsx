@@ -114,6 +114,15 @@ export function DateField({
     id?: string;
 }) {
     const [parts, setParts] = useState(() => split(value));
+    /**
+     * What the segments hold RIGHT NOW, which is not always what this render
+     * closed over. Finishing a segment focuses the next one, and that blurs the
+     * current one synchronously — before React has re-rendered with the digits
+     * just committed. A handler reading `parts` there sees the previous value,
+     * which is how a two-digit day typed one digit at a time was padded from
+     * its first digit alone and 10 came out as 01. Every handler reads this.
+     */
+    const latest = useRef(parts);
     const [open, setOpen] = useState(false);
     const wrapper = useRef<HTMLDivElement>(null);
     const refs = {
@@ -136,6 +145,14 @@ export function DateField({
             setParts(split(value));
         }
     }
+
+    // Catch the mirror up after every render. `commit` writes it eagerly too,
+    // because the case this exists for happens inside one event — but the
+    // resync above updates state during render, where writing a ref is not
+    // allowed.
+    useEffect(() => {
+        latest.current = parts;
+    }, [parts]);
 
     // Close on an outside click or Escape, like any other popover.
     useEffect(() => {
@@ -165,6 +182,7 @@ export function DateField({
     }, [open]);
 
     function commit(next: Record<Segment, string>): void {
+        latest.current = next;
         setParts(next);
 
         const complete =
@@ -179,7 +197,7 @@ export function DateField({
 
     function handle(segment: Segment, raw: string): void {
         const typed = raw.replace(/\D/g, '');
-        const next = { ...parts };
+        const next = { ...latest.current };
         let index = ORDER.indexOf(segment);
         let rest = typed;
 
@@ -221,11 +239,11 @@ export function DateField({
      * explaining why.
      */
     function handleBlur(segment: Segment): void {
-        const digits = parts[segment];
+        const digits = latest.current[segment];
 
         if (digits.length > 0 && digits.length < LENGTH[segment]) {
             commit({
-                ...parts,
+                ...latest.current,
                 [segment]:
                     segment === 'year'
                         ? digits

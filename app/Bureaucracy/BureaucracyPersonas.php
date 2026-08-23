@@ -77,6 +77,15 @@ class BureaucracyPersonas
      */
     public static function caseScenarios(): array
     {
+        /**
+         * Dates are relative, never literals. A persona called "three years"
+         * that hardcodes 2023-08-03 stops meaning three years the moment the
+         * calendar moves, and "almost four years" silently becomes four — so
+         * the fixture that proves a threshold works is the first thing to rot.
+         */
+        $monthsAgo = fn (int $months): string => now()->subMonthsNoOverflow($months)->toDateString();
+        $monthsAhead = fn (int $months): string => now()->addMonthsNoOverflow($months)->toDateString();
+
         return [
             [
                 'key' => 'case-blue-card-first',
@@ -89,7 +98,7 @@ class BureaucracyPersonas
                     'current_residence_title' => 'national_d_visa',
                     'case_goal' => 'blue_card',
                     'entry_mode' => 'd_visa',
-                    'visa_expires_at' => '2026-10-01',
+                    'visa_expires_at' => $monthsAhead(2),
                     'citizenship_group' => 'non_eu',
                     'purpose' => 'employment',
                     'permit_track' => 'blue_card',
@@ -107,7 +116,7 @@ class BureaucracyPersonas
                     'case_goal' => 'family_reunification_permit',
                     'sponsor_current_title' => 'blue_card_pending',
                     'entry_mode' => 'd_visa',
-                    'visa_expires_at' => '2026-10-01',
+                    'visa_expires_at' => $monthsAhead(2),
                     'marital_household_continues' => true,
                     'citizenship_group' => 'non_eu',
                     'purpose' => 'family',
@@ -120,6 +129,7 @@ class BureaucracyPersonas
                 'is_eu' => false,
                 'path' => 'non_eu_employee_blue_card',
                 'entry_mode' => 'has_permit',
+                'arrived_months_ago' => 13,
                 'facts' => [
                     'current_residence_title' => 'blue_card',
                     'case_goal' => 'settlement_permit',
@@ -137,11 +147,12 @@ class BureaucracyPersonas
                 'is_eu' => false,
                 'path' => 'family_reunification',
                 'entry_mode' => 'has_permit',
+                'arrived_months_ago' => 37,
                 'facts' => [
                     'current_residence_title' => 'family_reunification',
                     'case_goal' => 'settlement_permit',
                     'sponsor_current_title' => 'settlement_permit_18c',
-                    'family_residence_permit_held_since' => '2023-08-03',
+                    'family_residence_permit_held_since' => $monthsAgo(36),
                     'marital_household_continues' => true,
                     'weekly_work_hours' => 25,
                     'livelihood_secured' => 'yes',
@@ -159,20 +170,80 @@ class BureaucracyPersonas
                 'is_eu' => false,
                 'path' => 'family_reunification',
                 'entry_mode' => 'has_permit',
+                'arrived_months_ago' => 48,
                 'facts' => [
                     'current_residence_title' => 'family_reunification',
                     'case_goal' => 'renew_current_title',
                     'sponsor_current_title' => 'settlement_permit_18c',
-                    'family_residence_permit_held_since' => '2022-09-01',
+                    'family_residence_permit_held_since' => $monthsAgo(47),
                     'marital_household_continues' => true,
                     'weekly_work_hours' => 25,
                     'livelihood_secured' => 'yes',
                     'housing_sufficient' => 'yes',
                     'legal_social_knowledge_proved' => 'yes',
                     'german_level' => 'b1',
-                    'residence_title_expires_at' => '2026-09-01',
+                    'residence_title_expires_at' => $monthsAhead(1),
                     'citizenship_group' => 'non_eu',
                     'purpose' => 'family',
+                ],
+            ],
+            [
+                // Onboarding split "settlement permit" into §9 and §18c, and
+                // nothing exercised either as the user's OWN title — only as a
+                // sponsor's. This is the shape a long-settled resident has, and
+                // the one whose next real question is citizenship.
+                'key' => 'case-settlement-9-holder',
+                'label' => 'Case · Holds permanent residence (§9)',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee',
+                'entry_mode' => 'has_permit',
+                'arrived_months_ago' => 72,
+                'facts' => [
+                    'current_residence_title' => 'settlement_permit_9',
+                    'case_goal' => 'understand_options',
+                    'german_level' => 'b1',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
+                ],
+            ],
+            [
+                // The §18c holder's own view. Two personas already use this as
+                // the SPONSOR's title, so the rules referencing it were only
+                // ever exercised from the other side of the marriage.
+                'key' => 'case-settlement-18c-holder',
+                'label' => 'Case · Holds permanent residence (§18c)',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee_blue_card',
+                'entry_mode' => 'has_permit',
+                'arrived_months_ago' => 40,
+                'facts' => [
+                    'current_residence_title' => 'settlement_permit_18c',
+                    'case_goal' => 'understand_options',
+                    'german_level' => 'b1',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
+                    'permit_track' => 'blue_card',
+                ],
+            ],
+            [
+                // The remaining unexercised title. A standard §18a/§18b holder
+                // renewing is the most common non-Blue-Card employment case.
+                'key' => 'case-work-permit-renewal',
+                'label' => 'Case · Standard work permit · renewal',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee',
+                'entry_mode' => 'has_permit',
+                'arrived_months_ago' => 30,
+                'facts' => [
+                    'current_residence_title' => 'standard_work_permit',
+                    'case_goal' => 'renew_current_title',
+                    'residence_title_expires_at' => $monthsAhead(3),
+                    'german_level' => 'b1',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
                 ],
             ],
             [
@@ -198,10 +269,32 @@ class BureaucracyPersonas
      *
      * @param  array<string, mixed>  $persona
      */
+    /**
+     * When this persona entered Germany.
+     *
+     * Coverage personas are fresh arrivals — that is the point of them. Case
+     * scenarios are not: one holds a family permit issued three years ago,
+     * another has twelve qualifying Blue Card months. Giving those an arrival
+     * ten days back described someone who cannot exist, and the plan said so —
+     * a four-year resident was told to register their address within 14 days
+     * while renewing a permit they could not have held.
+     */
+    public static function arrivalFor(array $persona): ?string
+    {
+        if ((bool) ($persona['planned'] ?? false)) {
+            // The "Before you fly" lane carries no arrival date at all.
+            return null;
+        }
+
+        $months = $persona['arrived_months_ago'] ?? null;
+
+        return $months === null
+            ? now()->subDays(10)->toDateString()
+            : now()->subMonthsNoOverflow((int) $months)->toDateString();
+    }
+
     public static function userFor(array $persona): User
     {
-        $planned = (bool) ($persona['planned'] ?? false);
-
         $attributes = [
             'entry_mode' => $persona['entry_mode'],
             'housing_status' => $persona['housing'] ?? 'long_term',
@@ -217,8 +310,7 @@ class BureaucracyPersonas
             'situation' => $persona['situation']->value,
             'is_eu' => $persona['is_eu'],
             'bureaucracy_path' => $persona['path'],
-            // Planning personas carry no arrival date (the "Before you fly" lane).
-            'arrival_date' => $planned ? null : now()->subDays(10)->toDateString(),
+            'arrival_date' => self::arrivalFor($persona),
             'veedel' => 'Altstadt-Nord',
             'profile_attributes' => $attributes,
             'interests' => [],
@@ -240,13 +332,11 @@ class BureaucracyPersonas
      */
     public static function persistableProfile(array $persona): array
     {
-        $planned = (bool) ($persona['planned'] ?? false);
-
         return [
             'situation' => $persona['situation']->value,
             'is_eu' => $persona['is_eu'],
             'bureaucracy_path' => $persona['path'],
-            'arrival_date' => $planned ? null : now()->subDays(10)->toDateString(),
+            'arrival_date' => self::arrivalFor($persona),
             'veedel' => 'Altstadt-Nord',
             'profile_attributes' => [...self::userFor($persona)->profile_attributes, 'qa_persona' => $persona['key']],
         ];

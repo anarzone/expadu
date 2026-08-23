@@ -27,7 +27,7 @@ it('yields a complete, gap-free path for every persona', function () {
     $exitCode = Artisan::call('bureaucracy:coverage', ['--full' => true, '--fail-on-gap' => true]);
 
     expect($exitCode)->toBe(0)
-        ->and(Artisan::output())->toContain('✓ No gaps.');
+        ->and(Artisan::output())->toContain('✓ No STRUCTURAL gaps:');
 });
 
 /**
@@ -45,7 +45,7 @@ it('audits the full modifier sweep whether or not --full is passed', function ()
     $output = Artisan::output();
 
     expect($exitCode)->toBe(0)
-        ->and($output)->toContain('✓ No gaps.')
+        ->and($output)->toContain('✓ No STRUCTURAL gaps:')
         ->and($output)->not->toContain('Unreachable tasks')
         ->and($output)->not->toContain('Silently-hidden tasks');
 });
@@ -253,6 +253,11 @@ it('keeps every investigated case rule authoritative and every scenario in the Q
             'case-blue-card-b1-12',
             'case-spouse-18c-three-years',
             'case-family-renewal-four-years',
+            // The three residence titles onboarding offers that nothing
+            // exercised — two of them created by the §9 / §18c split.
+            'case-settlement-9-holder',
+            'case-settlement-18c-holder',
+            'case-work-permit-renewal',
             'case-unsupported-title',
         ]);
 });
