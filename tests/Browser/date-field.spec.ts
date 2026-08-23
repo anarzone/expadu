@@ -31,10 +31,26 @@ async function setOnboarded(page: Page, onboarded: boolean): Promise<void> {
         cookies.find((cookie) => cookie.name === 'XSRF-TOKEN')?.value ?? '',
     );
 
-    const response = await page.request.post(
-        onboarded ? '/qa/become/neu-bluecard' : '/onboarding/restart',
-        { headers: { 'X-XSRF-TOKEN': xsrf, Accept: 'text/html' } },
-    );
+    // Restoring goes through the wizard's own submit. The QA persona endpoint
+    // sits inside the group behind the onboarded guard, so it cannot put back
+    // an account that is not onboarded — it redirects to /onboarding and
+    // returns 200 having done nothing, which looks exactly like success. Using
+    // it here left every spec that runs after this file talking to a
+    // de-onboarded account.
+    const response = onboarded
+        ? await page.request.post('/onboarding/complete', {
+              headers: { 'X-XSRF-TOKEN': xsrf, Accept: 'text/html' },
+              form: {
+                  situation: 'non_eu_employee',
+                  is_eu: '0',
+                  arrival_planned: '0',
+                  arrival_date: '2024-01-15',
+                  veedel: 'Altstadt-Nord',
+              },
+          })
+        : await page.request.post('/onboarding/restart', {
+              headers: { 'X-XSRF-TOKEN': xsrf, Accept: 'text/html' },
+          });
 
     expect(response.ok()).toBe(true);
 }
@@ -112,6 +128,13 @@ test.describe.serial('Date field', () => {
         const page = await browser.newPage();
         await page.goto('/onboarding');
         await setOnboarded(page, true);
+
+        // Every spec that runs after this file shares the account, so a silent
+        // restore failure fails them all with errors that point nowhere near
+        // here. Prove it landed.
+        await page.goto('/dashboard');
+        await expect(page).toHaveURL(/\/dashboard/);
+
         await page.close();
     });
 

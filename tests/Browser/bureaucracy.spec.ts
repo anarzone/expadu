@@ -47,6 +47,27 @@ async function switchPersona(
     }
 }
 
+/**
+ * The same clamp Carbon's addMonthsNoOverflow applies, formatted the way the
+ * deadline label renders it: "23 Oct".
+ */
+function monthsAhead(months: number): string {
+    const today = new Date();
+    const target = new Date(today.getFullYear(), today.getMonth() + months, 1);
+    const lastDay = new Date(
+        target.getFullYear(),
+        target.getMonth() + 1,
+        0,
+    ).getDate();
+
+    target.setDate(Math.min(today.getDate(), lastDay));
+
+    return target.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+    });
+}
+
 function decodeHtmlAttribute(value: string): string {
     return value
         .replaceAll('&quot;', '"')
@@ -308,8 +329,13 @@ test.describe('Verified bureaucracy case plan', () => {
             await expect(
                 rightPanel.getByText('Your verified deadlines'),
             ).toBeVisible();
+            // The persona's visa expiry is relative — two months out — so that
+            // a fixture proving deadline rendering cannot itself expire. Derive
+            // the label the same way rather than pinning a literal date.
             await expect(
-                rightPanel.getByText('check or act by 1 Oct').first(),
+                rightPanel
+                    .getByText(`check or act by ${monthsAhead(2)}`)
+                    .first(),
             ).toBeVisible();
         }
 
@@ -507,7 +533,11 @@ test.describe('Onboarding v2', () => {
         await expect(
             page.getByRole('button', { name: 'Continue' }),
         ).toBeDisabled();
-        await fillDate(page, 'When did you move into this address?', '2026-07-01');
+        await fillDate(
+            page,
+            'When did you move into this address?',
+            '2026-07-01',
+        );
 
         // Switching back to planning must RETRACT those answers, not just hide
         // them — otherwise someone who has not arrived submits a move-in date.
