@@ -143,7 +143,17 @@ final class CaseFactStore
                     continue;
                 }
 
-                if ($existing->source === $source) {
+                // A hand-answered onboarding also overrides whatever the QA
+                // persona switcher seeded. ApplyOnboardingAnswers already
+                // states that intent — it clears the `qa_persona` badge —  but
+                // the persona's FACTS stayed confirmed, so every answer that
+                // disagreed with the synthetic persona came back to the user as
+                // "two answers do not match" about answers they only gave once.
+                $supersedes = $existing->source === $source
+                    || (in_array($source, self::ONBOARDING_OWNED_SOURCES, true)
+                        && str_starts_with((string) $existing->source, 'qa_scenario:'));
+
+                if ($supersedes) {
                     $this->markOpenConflictsObsolete($existing);
                     $this->supersedeFact($existing);
                     BureaucracyCaseFact::query()->create([
