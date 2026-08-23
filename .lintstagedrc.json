@@ -1,4 +1,12 @@
 {
-    "resources/js/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-    "resources/css/**/*.css": ["prettier --write"]
+    "**/*.php": [
+        "vendor/bin/pint"
+    ],
+    "resources/js/**/*.{ts,tsx}": [
+        "eslint --fix",
+        "prettier --write"
+    ],
+    "resources/css/**/*.css": [
+        "prettier --write"
+    ]
 }
