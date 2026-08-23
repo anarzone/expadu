@@ -28,6 +28,25 @@ const PLACEHOLDER: Record<Segment, string> = {
     year: 'YYYY',
 };
 
+/**
+ * A day or month typed as one digit is finished when no second digit could
+ * follow it: there is no day 4x and no month 2x. Padding it there means the
+ * field moves on by itself instead of waiting for a digit that is never coming.
+ */
+function isComplete(segment: Segment, digits: string): boolean {
+    if (digits.length === LENGTH[segment]) {
+        return true;
+    }
+
+    if (digits.length !== 1) {
+        return false;
+    }
+
+    return segment === 'day'
+        ? Number(digits) > 3
+        : segment === 'month' && Number(digits) > 1;
+}
+
 function split(value: string): Record<Segment, string> {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
 
@@ -159,13 +178,59 @@ export function DateField({
     }
 
     function handle(segment: Segment, raw: string): void {
-        const digits = raw.replace(/\D/g, '').slice(0, LENGTH[segment]);
+        const typed = raw.replace(/\D/g, '');
+        const next = { ...parts };
+        let index = ORDER.indexOf(segment);
+        let rest = typed;
 
-        commit({ ...parts, [segment]: digits });
+        // Digits that overflow one segment spill into the next rather than
+        // being dropped. Typing a whole date in one run used to lose whatever
+        // arrived in the moment between filling a segment and the focus
+        // landing on the following one.
+        while (rest.length > 0 && index < ORDER.length) {
+            const current = ORDER[index];
+            const taken = rest.slice(0, LENGTH[current]);
 
-        if (digits.length === LENGTH[segment]) {
-            const following = ORDER[ORDER.indexOf(segment) + 1];
-            refs[following as Segment]?.current?.focus();
+            next[current] = isComplete(current, taken)
+                ? taken.padStart(LENGTH[current], '0')
+                : taken;
+
+            if (!isComplete(current, taken)) {
+                rest = '';
+                break;
+            }
+
+            rest = rest.slice(taken.length);
+            index += 1;
+        }
+
+        commit(next);
+
+        // Focus the first segment still waiting for digits.
+        const landing = ORDER[Math.min(index, ORDER.length - 1)];
+
+        if (landing !== segment) {
+            refs[landing].current?.focus();
+        }
+    }
+
+    /**
+     * Leaving a segment finishes it. Typing "1" for the day and tabbing on used
+     * to leave the field reading 1.11.2025 — complete to the eye, one digit
+     * short to the parser — so Continue stayed disabled with nothing on screen
+     * explaining why.
+     */
+    function handleBlur(segment: Segment): void {
+        const digits = parts[segment];
+
+        if (digits.length > 0 && digits.length < LENGTH[segment]) {
+            commit({
+                ...parts,
+                [segment]:
+                    segment === 'year'
+                        ? digits
+                        : digits.padStart(LENGTH[segment], '0'),
+            });
         }
     }
 
@@ -260,6 +325,7 @@ export function DateField({
                             onKeyDown={(event) => handleKey(segment, event)}
                             onPaste={handlePaste}
                             onFocus={(event) => event.currentTarget.select()}
+                            onBlur={() => handleBlur(segment)}
                             className={`bg-transparent text-center font-mono tabular-nums outline-none placeholder:text-muted-foreground/60 ${
                                 segment === 'year' ? 'w-[4.5ch]' : 'w-[2.75ch]'
                             }`}
