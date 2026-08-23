@@ -84,7 +84,7 @@ final class CaseMatcher
 
         $hasUnresolvedFactConflict = BureaucracyFactConflict::query()
             ->where('case_id', $case->getKey())
-            ->where('status', 'unresolved')
+            ->actionable()
             ->exists();
         $coverageState = match (true) {
             $hasUnresolvedFactConflict => BureaucracyCoverageState::Conflict,

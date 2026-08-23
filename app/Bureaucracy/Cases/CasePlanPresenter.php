@@ -180,7 +180,7 @@ final class CasePlanPresenter
     {
         $conflict = BureaucracyFactConflict::query()
             ->where('case_id', $case->getKey())
-            ->where('status', 'unresolved')
+            ->actionable()
             ->with(['existingFact', 'candidateFact'])
             ->oldest('created_at')
             ->oldest('id')

@@ -33,7 +33,7 @@ final class QuestionSelector
     {
         $conflictedKeys = BureaucracyFactConflict::query()
             ->where('case_id', $case->getKey())
-            ->where('status', 'unresolved')
+            ->actionable()
             ->pluck('fact_key');
         $definitions = collect($result->missingFactKeys)
             ->reject(fn (string $key): bool => $conflictedKeys->contains($key))
