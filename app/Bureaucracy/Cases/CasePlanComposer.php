@@ -15,6 +15,17 @@ use Illuminate\Support\Collection;
 
 final class CasePlanComposer
 {
+    /**
+     * Bump when the composer files the same rules into different sections.
+     *
+     * The snapshot signature covers the CASE — facts, matched rules, dates —
+     * so a purely presentational change never invalidated it, and a stored
+     * plan kept its old layout until the user's situation happened to change.
+     * That is how "Options you may qualify for" went on showing a universal
+     * caveat after the routing for it was fixed.
+     */
+    public const LayoutVersion = '2026-08-23.good-to-know';
+
     /** @var list<string> */
     private const SectionKeys = [
         'current_status',
@@ -22,6 +33,7 @@ final class CasePlanComposer
         'next',
         'coming_up',
         'options',
+        'good_to_know',
         'waiting',
         'information_needed',
         'opens_when',
@@ -183,6 +195,15 @@ final class CasePlanComposer
         }
 
         if ($task->isInfo()) {
+            // A universal card applies to everyone regardless of case, so by
+            // definition it is not a route THIS person might qualify for.
+            // Everything info-shaped used to fall through to `options`, which
+            // put "we may not have a reviewed rule for your title" under a
+            // heading promising "possible routes to compare".
+            if ($task->coverage_scope === 'universal') {
+                return 'good_to_know';
+            }
+
             return match ($task->phase) {
                 'ongoing' => 'coming_up',
                 'waiting' => 'waiting',

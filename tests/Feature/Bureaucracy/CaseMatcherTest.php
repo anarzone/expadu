@@ -249,6 +249,7 @@ test('conflicting matches are quarantined while independent safe rules remain co
             'next',
             'coming_up',
             'options',
+            'good_to_know',
             'waiting',
             'information_needed',
             'opens_when',

@@ -25,6 +25,7 @@ final class CasePlanPresenter
         'next',
         'coming_up',
         'options',
+        'good_to_know',
         'waiting',
         'information_needed',
         'opens_when',

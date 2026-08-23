@@ -81,6 +81,13 @@ const SECTIONS: SectionDefinition[] = [
         Icon: IconInfoCircle,
     },
     {
+        key: 'good_to_know',
+        title: 'Good to know',
+        description:
+            'Applies to everyone in your situation — context, not a step to take.',
+        Icon: IconInfoCircle,
+    },
+    {
         key: 'opens_when',
         title: 'Not open to you yet',
         description:
