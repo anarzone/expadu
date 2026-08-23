@@ -50,6 +50,15 @@ class CoverageCommand extends Command
      */
     private Collection $tasks;
 
+    /**
+     * Keys of the rules that actually reach the verified plan. Taken from the
+     * `authoritative()` scope itself rather than re-checked here — the approval
+     * window has a dozen conditions and a second copy would drift.
+     *
+     * @var array<string, int>
+     */
+    private array $authoritative = [];
+
     public function __construct(
         private ProfileEngine $engine,
         private PathGenerator $paths,
@@ -64,6 +73,13 @@ class CoverageCommand extends Command
             ->where('is_published', true)
             ->get()
             ->keyBy('key');
+
+        $this->authoritative = Task::query()
+            ->authoritative()
+            ->whereNotNull('key')
+            ->pluck('key')
+            ->flip()
+            ->all();
 
         if ($this->tasks->whereNull('key')->isNotEmpty()) {
             $this->warn('Some published tasks have no `key` — they are excluded from dependency checks.');
@@ -82,10 +98,11 @@ class CoverageCommand extends Command
         // The matrix: one row per canonical persona, so every label reports the
         // seed's own entry_mode rather than a modifier variant's numbers.
         $rows = [];
+        $unverified = [];
         foreach ($this->canonicalPersonas() as $persona) {
             $verdict = $this->evaluate($this->profileFor($persona));
             $this->accumulate($verdict, $reachable, $waitingOn);
-            $rows[] = $this->summariseRow($persona, $verdict, $violations);
+            $rows[] = $this->summariseRow($persona, $verdict, $violations, $unverified);
         }
 
         // The audit: widen across every modifier so reachability and dependency
@@ -93,13 +110,15 @@ class CoverageCommand extends Command
         foreach ($this->sweepPersonas() as $persona) {
             $verdict = $this->evaluate($this->profileFor($persona));
             $this->accumulate($verdict, $reachable, $waitingOn);
-            $this->summariseRow($persona, $verdict, $violations);
+            $ignored = [];
+            $this->summariseRow($persona, $verdict, $violations, $ignored);
         }
 
         $dead = $this->deadTasks($reachable, $waitingOn);
         $orphanTeasers = $this->orphanTeasers($reachable, $waitingOn);
 
         $this->renderMatrix($rows);
+        $this->renderVerifiedPlanAdvisory($unverified);
         $this->renderGaps($dead, $orphanTeasers, $violations);
 
         // A silently-hidden task is invariant 5: it prints a warning AND fails
@@ -278,7 +297,7 @@ class CoverageCommand extends Command
      * @param  list<string>  $violations
      * @return array<string, string>
      */
-    private function summariseRow(array $persona, array $verdict, array &$violations): array
+    private function summariseRow(array $persona, array $verdict, array &$violations, array &$unverified): array
     {
         $yes = $verdict['yes'];
         $applicable = array_flip($yes);
@@ -303,6 +322,24 @@ class CoverageCommand extends Command
             $violations[] = "MISSING PERMIT — {$label} is non-EU yet reaches no residence-permit task.";
         }
 
+        // What this persona would actually see in the VERIFIED plan. The
+        // invariants above are satisfied by any published task, reviewed or
+        // not — so a branch whose whole spine is `legacy` passes them while its
+        // verified plan is empty and the page falls through to the unreviewed
+        // catalogue. That is invisible unless it is counted separately.
+        $approved = collect($yes)->filter(
+            fn (string $key) => isset($this->authoritative[$key])
+                && $this->sourcePolicy->persistedErrors($this->tasks[$key]) === []
+        );
+        $approvedAnmeldung = $approved->contains(
+            fn (string $key) => str_ends_with($key, '.anmeldung')
+                || ($this->tasks[$key]->booking_service_key ?? null) === 'anmeldung'
+        );
+
+        if ($hasAnmeldung && ! $approvedAnmeldung) {
+            $unverified[] = $label;
+        }
+
         // Dependency integrity: every applicable task's prerequisites must also
         // be applicable, else the task can never unblock.
         foreach ($yes as $key) {
@@ -317,7 +354,8 @@ class CoverageCommand extends Command
             'Persona' => $label,
             'Branch' => $this->engineBranchLabel($persona),
             'Tasks' => (string) count($yes),
-            'Anmeldung' => $hasAnmeldung ? '✓' : '✗',
+            'Verified' => $approved->isEmpty() ? '0 ✗' : (string) $approved->count(),
+            'Anmeldung' => $approvedAnmeldung ? '✓' : ($hasAnmeldung ? 'legacy' : '✗'),
             'Permit' => $hasPermit ? '✓' : ($needsPermit ? '✗' : '—'),
             'Teasers' => (string) count($verdict['unknown']),
         ];
@@ -339,9 +377,38 @@ class CoverageCommand extends Command
         $this->newLine();
         $this->info('Bureaucracy coverage — real engine, every persona');
         $this->table(
-            ['Persona', 'Branch', 'Tasks', 'Anmeldung', 'Permit', 'Teasers'],
+            ['Persona', 'Branch', 'Tasks', 'Verified', 'Anmeldung', 'Permit', 'Teasers'],
             $rows,
         );
+        $this->line('  Tasks = published cards reachable · Verified = of those, how many pass Task::authoritative()');
+    }
+
+    /**
+     * Branches whose address registration exists only as unreviewed content.
+     *
+     * Advisory, not a gate: closing it means approving content against a legal
+     * source, which is the owner's call and not something a red CI run should
+     * pressure. But it must be said out loud every run — "✓ No gaps" while most
+     * branches show an empty verified plan is exactly the reassurance this
+     * harness exists to prevent.
+     *
+     * @param  list<string>  $unverified
+     */
+    private function renderVerifiedPlanAdvisory(array $unverified): void
+    {
+        if ($unverified === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->warn('Verified-plan gap — reachable, but not through reviewed content:');
+
+        foreach (array_unique($unverified) as $label) {
+            $this->line("  · {$label} — reaches an Anmeldung task, but no APPROVED one.");
+        }
+
+        $this->line('  These personas see an empty verified plan and fall through to the');
+        $this->line('  unreviewed catalogue. Not a gate: approving content is an owner decision.');
     }
 
     /**
@@ -353,7 +420,11 @@ class CoverageCommand extends Command
     {
         $this->newLine();
         if ($violations === [] && $dead->isEmpty() && $orphanTeasers === []) {
-            $this->info('✓ No gaps. Every persona has a root + permit, all deps resolve, every task is reachable.');
+            // Deliberately scoped to what was actually checked. The old wording
+            // was a flat "No gaps", printed directly under an advisory saying
+            // most branches have an empty verified plan.
+            $this->info('✓ No STRUCTURAL gaps: every persona has a root + permit, all deps resolve, every task is reachable.');
+            $this->line('  Says nothing about whether that content is reviewed — see the verified-plan advisory above.');
 
             return;
         }
