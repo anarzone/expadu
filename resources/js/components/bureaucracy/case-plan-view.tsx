@@ -24,6 +24,8 @@ import type {
     CasePlanItem,
     CasePlanSectionKey,
 } from './case-plan-types';
+import { ProgressBreakdown, revealSection } from './progress-breakdown';
+import type { ProgressSegment, SegmentTone } from './progress-breakdown';
 
 type SectionDefinition = {
     key: CasePlanSectionKey;
@@ -133,22 +135,86 @@ const COVERAGE_COPY: Record<
     },
 };
 
-function countProgress(plan: CasePlan): { done: number; total: number } {
-    const items = Object.entries(plan.sections).flatMap(([section, entries]) =>
-        section === 'information_needed' ||
-        section === 'opens_when' ||
-        section === 'not_covered'
-            ? []
-            : entries,
-    );
-    const actionable = items.filter(
-        (item: CasePlanItem) => item.key && item.type !== 'info',
-    );
+/**
+ * Where each counted task is rendered, in the order the bar reads.
+ *
+ * A count with no section behind it is the BU-2 defect: the number asserts
+ * work the user cannot go and look at.
+ */
+const PROGRESS_BUCKETS: Array<{
+    key: string;
+    label: string;
+    tone: SegmentTone;
+    section: CasePlanSectionKey;
+}> = [
+    { key: 'done', label: 'done', tone: 'done', section: 'current_status' },
+    { key: 'do_now', label: 'to do now', tone: 'now', section: 'do_now' },
+    { key: 'next', label: 'to prepare next', tone: 'later', section: 'next' },
+    {
+        key: 'coming_up',
+        label: 'coming up',
+        tone: 'later',
+        section: 'coming_up',
+    },
+    { key: 'waiting', label: 'waiting', tone: 'waiting', section: 'waiting' },
+];
 
-    return {
-        done: actionable.filter((item) => item.status === 'done').length,
-        total: actionable.length,
-    };
+/**
+ * Lanes outside the total. The first three are tentative or not open, so they
+ * carry no checkbox and must not read as work; `options` and `good_to_know`
+ * hold info cards only, which have never counted either.
+ */
+const UNCOUNTED_SECTIONS: CasePlanSectionKey[] = [
+    'information_needed',
+    'opens_when',
+    'not_covered',
+    'options',
+    'good_to_know',
+];
+
+function countProgress(plan: CasePlan): Record<string, number> {
+    const counts: Record<string, number> = {};
+
+    for (const [section, entries] of Object.entries(plan.sections)) {
+        if (UNCOUNTED_SECTIONS.includes(section as CasePlanSectionKey)) {
+            continue;
+        }
+
+        for (const item of entries as CasePlanItem[]) {
+            if (!item.key || item.type === 'info') {
+                continue;
+            }
+
+            // Done is tracked by status rather than by section, so a finished
+            // task counts as finished wherever the composer files it.
+            const bucket =
+                item.status === 'done'
+                    ? 'done'
+                    : PROGRESS_BUCKETS.find(
+                          (candidate) => candidate.section === section,
+                      )?.key;
+
+            if (!bucket) {
+                continue;
+            }
+
+            counts[bucket] = (counts[bucket] ?? 0) + 1;
+        }
+    }
+
+    return counts;
+}
+
+function progressSegments(plan: CasePlan): ProgressSegment[] {
+    const counts = countProgress(plan);
+
+    return PROGRESS_BUCKETS.map((bucket) => ({
+        key: bucket.key,
+        label: bucket.label,
+        count: counts[bucket.key] ?? 0,
+        tone: bucket.tone,
+        onSelect: () => revealSection(`case-section-${bucket.section}`),
+    }));
 }
 
 export function CasePlanView({ plan }: { plan: CasePlan }) {
@@ -156,10 +222,7 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
         errors?: Record<string, string>;
     }>().props;
     const coverage = COVERAGE_COPY[plan.coverage_state];
-    const progress = countProgress(plan);
-    const percent = progress.total
-        ? Math.round((progress.done / progress.total) * 100)
-        : 0;
+    const segments = progressSegments(plan);
 
     return (
         <div className="px-4 py-5 sm:px-6 sm:py-6">
@@ -186,22 +249,12 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
                         {coverage.description}
                     </p>
 
-                    {progress.total > 0 && (
-                        <div className="mt-5">
-                            <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-[#6B6860] dark:text-[#AAA89F]">
-                                <span>Your confirmed actions</span>
-                                <span>
-                                    {progress.done} of {progress.total} complete
-                                </span>
-                            </div>
-                            <div className="h-1.5 overflow-hidden rounded-full bg-[#E8E3D7] dark:bg-[#353329]">
-                                <div
-                                    className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
-                                    style={{ width: `${percent}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
+                    <div className="mt-5">
+                        <ProgressBreakdown
+                            segments={segments}
+                            label="Your confirmed actions"
+                        />
+                    </div>
                 </div>
             </header>
 
@@ -250,7 +303,9 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
                     return (
                         <section
                             key={section.key}
+                            id={`case-section-${section.key}`}
                             aria-labelledby={`case-${section.key}`}
+                            className="scroll-mt-24"
                         >
                             <div className="mb-3 flex items-start gap-2.5 px-1">
                                 <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-[#EEEAE0] text-[#6B6860] dark:bg-[#2B2A22] dark:text-[#B8B4A9]">
