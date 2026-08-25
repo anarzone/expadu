@@ -79,12 +79,48 @@ The equivalents for the other three concepts are in `core.yaml`: §139b AO for
 the Steuer-ID (`single_source_approved` — no allow-listed implementation host
 covers it), §5 SGB V for health insurance, §31 ZKG for the basic account.
 
-**A cheaper alternative worth considering first.** Group C added branch scoping
-to `documents_required` and `links`. The spine could become one universal
-approved card per concept whose documents and steps are branch-scoped — one
-review instead of six per concept, and no duplicated cards. That is a content
-restructure, so it is also the owner's call, but it converts a recurring
-six-fold review burden into a one-off.
+## The cheaper route, and how far it actually gets
+
+One universal card per concept, with the parts that differ scoped to who they
+apply to. That converts a six-fold review into a one-off — but attempting it
+turned up a limit worth writing down before anyone else tries.
+
+**Built (2026-08-23): documents can now name who they are for.** A document may
+carry `applies_if` in the same predicate format a task uses; the payload drops
+it for anyone it definitely does not apply to, and keeps it whenever the answer
+is Unknown — a document shown to someone who did not need it costs a moment, one
+hidden from someone who did costs them the appointment. The condition never
+reaches the browser.
+
+This existed only as a *label* before: `branch:` renders "Only for: Exam route"
+and shows the document to everybody, which is right for two routes of one task
+and wrong for handing a single person a family's paperwork.
+
+**Not solved: the descriptions.** `description` has no scoping, and the branch
+cards do not merely add documents — they say substantively different things:
+
+- EU: "you don't need a visa or residence permit — freedom of movement covers you"
+- Student: "without the Meldebescheinigung you can't enrol at university"
+- Family: "every family member must be registered — including children", and
+  "book a single appointment for the whole family"
+- Non-EU: "arriving from abroad you must appear in person"
+
+Merging those into one description means rewriting them — choosing what survives
+and how it reads. That is authoring user-facing bureaucracy content, so it stops
+at the owner. Two ways forward, both content decisions:
+
+1. **Accept the approved generic description** (`core.anmeldung`'s prose already
+   reads as the universal version) and move each branch's specifics into scoped
+   documents and steps. Cheapest, but the EU freedom-of-movement framing and the
+   student enrolment consequence are lost unless they become scoped items.
+2. **Scope the description too** — an engine change on top of the document work,
+   letting one card carry per-branch paragraphs.
+
+Whichever is chosen, the merged card must NOT inherit `core.anmeldung`'s
+approval: changing an approved card's content invalidates the review it claims.
+It starts unreviewed like everything else in the right-hand column, and the
+verified plan stays empty for those branches until a human approves it. The
+restructure shrinks the reviewing job; it does not do the reviewing.
 
 ## How this is now visible
 

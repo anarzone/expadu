@@ -296,13 +296,37 @@ class BureaucracyController extends Controller
         // Documents may cross-link the task that produces them
         // ("Meldebescheinigung ← from Anmeldung").
         $documents = collect($task->documents_required ?? [])
+            // A document may name who it is for, in the same predicate format a
+            // task uses. This exists so one card can serve every branch without
+            // handing a single person the paperwork for a family of four.
+            //
+            // Only a definite No hides it: an unanswered question must leave the
+            // document on the list, because a document shown to someone who
+            // turns out not to need it costs them a moment, and one hidden from
+            // someone who did costs them the appointment.
+            ->filter(function ($doc) use ($profile): bool {
+                $condition = is_array($doc) ? ($doc['applies_if'] ?? null) : null;
+
+                return ! is_array($condition)
+                    || Applicability::evaluate($condition, $profile->attributes) !== Applicability::No;
+            })
             ->map(function ($doc) use ($titlesByKey) {
-                if (is_array($doc) && isset($doc['from'])) {
+                // Plenty of documents are still plain strings.
+                if (! is_array($doc)) {
+                    return $doc;
+                }
+
+                if (isset($doc['from'])) {
                     $doc['from_title'] = $titlesByKey[$doc['from']] ?? null;
                 }
 
+                // The condition is a server-side concern; it decided whether
+                // this document is here at all and has no business in the page.
+                unset($doc['applies_if']);
+
                 return $doc;
             })
+            ->values()
             ->all();
         $daysRemaining = $deadline
             ? (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false)

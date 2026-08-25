@@ -11,6 +11,7 @@ use App\Models\BureaucracyCase;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Profile\Applicability;
 use Illuminate\Support\Collection;
 
 final class CasePlanComposer
@@ -45,6 +46,7 @@ final class CasePlanComposer
         private FactRegistry $factRegistry,
         private CaseFactStore $factStore,
         private RuleSourcePolicy $sourcePolicy,
+        private CaseAttributes $caseAttributes,
     ) {}
 
     /**
@@ -56,6 +58,10 @@ final class CasePlanComposer
         $user = $case->relationLoaded('user')
             ? $case->user
             : $case->user()->firstOrFail();
+        // Profile underneath, confirmed case facts on top — the same bag every
+        // applies_if is judged against, so a card's paragraphs and documents
+        // answer to exactly what the case knows.
+        $audience = $this->caseAttributes->for($case);
         $visibleKeys = array_values(array_unique([
             ...$result->safeRuleKeys,
             ...$result->universalRuleKeys,
@@ -89,7 +95,7 @@ final class CasePlanComposer
 
             $userTask = $userTasks->get($task->id);
             $section = $this->sectionFor($task, $userTask, $doneKeys);
-            $sections[$section][] = $this->taskItem($case, $user, $task);
+            $sections[$section][] = $this->taskItem($case, $user, $task, $audience);
         }
 
         // One card per unanswered QUESTION, not per blocked rule. Two rules can
@@ -239,7 +245,37 @@ final class CasePlanComposer
     /**
      * @return array<string, mixed>
      */
-    private function taskItem(BureaucracyCase $case, User $user, Task $task): array
+    /**
+     * Documents this person should actually be handed. Same rule the catalogue
+     * uses: only a definite No removes one, and the condition never ships.
+     *
+     * @param  array<string, mixed>  $audience
+     * @return list<mixed>
+     */
+    private function documentsFor(Task $task, array $audience): array
+    {
+        return collect($task->documents_required ?? [])
+            ->filter(function (mixed $doc) use ($audience): bool {
+                $condition = is_array($doc) ? ($doc['applies_if'] ?? null) : null;
+
+                return ! is_array($condition)
+                    || Applicability::evaluate($condition, $audience) !== Applicability::No;
+            })
+            ->map(function (mixed $doc): mixed {
+                if (is_array($doc)) {
+                    unset($doc['applies_if']);
+                }
+
+                return $doc;
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $audience  what this case knows about the person
+     */
+    private function taskItem(BureaucracyCase $case, User $user, Task $task, array $audience): array
     {
         $attributes = null;
 
@@ -252,13 +288,13 @@ final class CasePlanComposer
             'key' => $task->key,
             'content_version' => $task->content_version,
             'title' => $task->title,
-            'description' => $task->description,
+            'description' => $task->descriptionFor($audience),
             'type' => $task->type,
             'phase' => $task->phase,
             'urgency' => $task->urgency?->value,
             'depends_on' => $task->depends_on ?? [],
             'deadline' => $task->computeDeadlineFor($user, $attributes)?->toDateString(),
-            'documents_required' => $task->documents_required ?? [],
+            'documents_required' => $this->documentsFor($task, $audience),
             'decision_options' => $task->decision_options ?? [],
             'how_to_steps' => $task->how_to_steps ?? [],
             'links' => $task->links ?? [],
