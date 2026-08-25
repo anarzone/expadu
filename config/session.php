@@ -127,9 +127,12 @@ return [
     |
     */
 
+    // An environment missing APP_NAME must not silently rename the cookie: that
+    // drifted staging to `laravel-session`, so browsers held two cookies and
+    // login looped. The fallback is the real app name, so both paths agree.
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session',
+        Str::slug((string) env('APP_NAME', 'Expadu')).'-session',
     ),
 
     /*
