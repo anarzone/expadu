@@ -70,8 +70,11 @@ never debug it as auth.
 
 - **No Epics.** `workitem_type` 404s and cannot be enabled. Use the area label plus `parent` nesting
   to break a job into steps.
-- **Modules and cycles are off** and `project update_features` 404s — enabling them is a manual step
-  in the Plane web UI.
+- **Modules and cycles are off on a new project.** `project update_features` 404s (commercial
+  endpoint), but `module_view` / `cycle_view` are writable on the v1 project serializer — enable
+  with `PATCH /api/v1/workspaces/<slug>/projects/<id>/ {"module_view": true}`. No UI step.
+  Note `module list` returns empty whether or not modules are on, so check `module_view` on the
+  project to know — not the empty list.
 - Also dead: workspace `page`, `collection`, `initiative`, `customer`, `template`.
 - **Webhooks exist, but not on the API-key layer.** `/api/v1/…/webhooks/` 404s while
   `/api/workspaces/<slug>/webhooks/` returns 401 — they are real, session-authenticated, and managed
