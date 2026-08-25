@@ -27,6 +27,31 @@ Labels are the area grouping: `bureaucracy`, `transit`, `places`, `composer`, `a
 `events`, `onboarding`, `design`, `infra`, `security`, `platform`, `marketing`, plus the
 cross-cutting `blocked-on-owner`. Resolve label ids with `label` + `action: "list"`.
 
+## Starting work from Plane's board
+
+`bin/plane-sync` turns a card into a branch. Move a card to **In Progress** in Plane, then:
+
+```bash
+bin/plane-sync              # act
+bin/plane-sync --dry-run    # show what it would do
+bin/plane-sync --watch=60   # keep syncing every 60s
+```
+
+For each in-progress ticket it creates the branch `<type>/EXP-<n>-<slug>` from `staging`, a stub
+page in Work Log under a chapter for the ticket's area label, a link on the ticket to that page, and
+one comment naming the branch. The branch prefix is inferred from the title's leading verb
+(*Fix…* → `fix`, *Write…* → `docs`, *Clean up / Migrate / Rotate…* → `chore`, else `feat`).
+
+Two properties to rely on:
+
+- **It never checks out.** The branch ref is created and left alone, so it cannot disturb a dirty
+  working tree or interrupt whatever you are mid-way through.
+- **It skips `blocked-on-owner`.** Those tickets need a human decision and must not get a branch
+  implying work has started.
+
+It is fully idempotent — anything already done is reported with `=` and skipped, so `--watch` is
+safe to leave running.
+
 ## Conventions
 
 - **Branch:** `<type>/EXP-<n>-<short-slug>` — e.g. `fix/EXP-42-sbahn-absurd-itineraries`.
@@ -47,7 +72,15 @@ never debug it as auth.
   to break a job into steps.
 - **Modules and cycles are off** and `project update_features` 404s — enabling them is a manual step
   in the Plane web UI.
-- Also dead: workspace `page`, `collection`, `initiative`, `customer`, `template`, and `/webhooks/`.
+- Also dead: workspace `page`, `collection`, `initiative`, `customer`, `template`.
+- **Webhooks exist, but not on the API-key layer.** `/api/v1/…/webhooks/` 404s while
+  `/api/workspaces/<slug>/webhooks/` returns 401 — they are real, session-authenticated, and managed
+  in the Plane UI (HMAC-signed via `X-Plane-Signature`; events: project, issue, module, cycle,
+  issue_comment). Before building on them, note Plane validates the target against
+  `WEBHOOK_ALLOWED_IPS`, which is **unset here**, so a webhook aimed at this machine is refused as
+  SSRF. Making it work means adding that CIDR to the Plane compose env and restarting the api and
+  worker containers — a deliberate loosening of a security control, so ask first. `bin/plane-sync`
+  polls instead and needs none of that.
 - `description_html` must be **raw** HTML (`<p>text</p>`). Escaped entities get stored literally.
 - Project names reject special characters (no parentheses).
 - **Rate limit is 60 requests/minute.** When filing many items, sleep ~1.2s between calls and back
