@@ -10,6 +10,7 @@ use App\Models\Event;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\UserTask;
+use App\Places\DestinationGrouping;
 use App\Places\PlaceIdentity;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
@@ -442,13 +443,12 @@ class DiscoveryFeed
         // a model collection is fragile across cache drivers (it can come back
         // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
         $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution'];
-        $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision();
+        $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision().':grouping:'.app(DestinationGrouping::class)->revision();
 
         // No origin (GPS declined, nothing remembered): the old global, lowest-id
         // pool, cached once for everyone.
         if ($originLat === null || $originLng === null) {
-            $rows = Cache::remember($cacheKey, self::SCAN_TTL, fn () => Spot::query()
-                ->recommendationEligible()
+            $rows = Cache::remember($cacheKey, self::SCAN_TTL, fn () => app(DestinationGrouping::class)->general(Spot::query())
                 ->select($columns)
                 ->whereNotNull('lat')
                 ->whereNotNull('lng')

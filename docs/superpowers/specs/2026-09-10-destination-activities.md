@@ -56,4 +56,16 @@ Import refreshes may update geometric containment but must preserve reviewed ope
 
 Use the approved Today C direction at `http://127.0.0.1:8765/dev/design/today-c/` for later presentation. This backend contract does not redesign the UI. Preserve existing media approval and health gates. PHP 8.4, Node 22, PostGIS and focused Pest regressions apply. Production catalogue changes remain subject to the EXP-72 review.
 
-EXP-68 is in preparation; this document does not claim that grouping is implemented or that the catalogue has been classified.
+The backend implementation is under verification for a staging pull request. The migration does not classify existing places; the live catalogue still requires the reviewed pilot.
+
+## Operator procedure
+
+Complete identity reconciliation before reviewing a facility's membership. The identity command refuses to move a place that already has a reviewed membership. Destination aliases remain resolvable for existing children without rewriting their audit evidence.
+
+Preview a proposed relationship with `php artisan places:review-destination <facility-id> <destination-id>`. Use `independent` in place of the destination ID for an independently operated venue. Review the returned place and destination snapshot against documented source evidence.
+
+Apply the exact reviewed preview by repeating the command with `--apply --fingerprint='<preview fingerprint>' --evidence='<documented source and reason>'`. A stale snapshot is rejected. Each accepted decision records its evidence and snapshot in `place_destination_reviews`; it does not change source IDs or coordinates. Both the selected facility and destination are locked while applying a decision.
+
+If an import changes containment, the original reviewed decision remains stored and a conflicting component stops appearing in recommendations. Inspect and review the new relationship rather than replacing it with the new polygon automatically. An independent decision remains independent when containment changes.
+
+The Places API accepts `activity=tennis` (or another supported fine category) for actual facilities. The existing `category=court` filter continues to return destination cards. General discovery leaves unreviewed places independent, so classification must precede any claim that destination duplicates have been removed from the catalogue.

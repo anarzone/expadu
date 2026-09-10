@@ -287,7 +287,7 @@ test('events and destination context remain accessible through the old place URL
     [$alias, $canonical] = identityPair();
     $venue = Venue::create(['name' => 'Testgarten', 'place_id' => $alias->id, 'lat' => 50.95, 'lng' => 6.95]);
     Event::factory()->create(['title' => 'Garden concert', 'venue_id' => $venue->id, 'starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addHours(2), 'recurrence' => null]);
-    $child = Spot::factory()->create(['name' => 'Garden court', 'category' => 'basketball', 'parent_spot_id' => $alias->id, 'lat' => 50.9501, 'lng' => 6.95]);
+    $child = Spot::factory()->create(['name' => 'Garden court', 'category' => 'basketball', 'parent_spot_id' => $alias->id, 'destination_spot_id' => $alias->id, 'destination_reviewed_parent_id' => $alias->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture', 'lat' => 50.9501, 'lng' => 6.95]);
     reconcileIdentity($alias, $canonical);
     $this->actingAs(User::factory()->onboarded()->create());
     foreach ([$alias, $canonical] as $place) {
