@@ -54,7 +54,7 @@ class EventTrackingService
     {
         // Find spots within ~100m using simple coordinate distance
         // 0.001 degrees ≈ 111m at this latitude
-        $nearbySpots = Spot::whereBetween('lat', [$lat - 0.001, $lat + 0.001])
+        $nearbySpots = Spot::query()->canonical()->whereBetween('lat', [$lat - 0.001, $lat + 0.001])
             ->whereBetween('lng', [$lng - 0.0015, $lng + 0.0015])
             ->limit(3)
             ->get(['id', 'name', 'lat', 'lng']);

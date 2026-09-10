@@ -21,6 +21,7 @@ class VeedelDirectory
     public function bezirkRail(?string $homeBezirk): array
     {
         $rows = DB::table('spots')
+            ->whereNull('spots.canonical_spot_id')
             ->join('veedels', 'veedels.name', '=', 'spots.veedel')
             ->where('spots.is_active', true)
             ->where('spots.is_recommendable', true)
@@ -51,6 +52,7 @@ class VeedelDirectory
     public function veedelsByBezirk(): array
     {
         return DB::table('spots')
+            ->whereNull('spots.canonical_spot_id')
             ->join('veedels', 'veedels.name', '=', 'spots.veedel')
             ->where('spots.is_active', true)
             ->where('spots.is_recommendable', true)

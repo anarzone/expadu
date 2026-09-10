@@ -3,6 +3,7 @@
 namespace App\Composer;
 
 use App\Models\User;
+use App\Places\PlaceIdentity;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 
@@ -32,6 +33,7 @@ class TodayPlanStore
         if (empty($plan['slots'])) {
             return;
         }
+        $plan = app(PlaceIdentity::class)->normalizePlan($plan);
 
         $start = $plan['constraints']['window_start'] ?? null;
         $until = is_string($start)
@@ -62,6 +64,7 @@ class TodayPlanStore
         if (! is_array($data) || empty($data['slots'])) {
             return null;
         }
+        $data = app(PlaceIdentity::class)->normalizePlan($data);
 
         $weekday = isset($data['window_start']) && is_string($data['window_start'])
             ? CarbonImmutable::parse($data['window_start'])->isoFormat('dddd')

@@ -5,6 +5,7 @@ namespace App\Composer;
 use App\Exceptions\CologneBoundaryUnavailable;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Places\PlaceIdentity;
 use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
@@ -85,6 +86,7 @@ class CandidateRepository
         $distance = NearbyPlaces::DISTANCE_KM_SQL;
 
         $ranked = DB::table('spots')
+            ->whereNull('canonical_spot_id')
             ->select('id')
             ->selectRaw("ROW_NUMBER() OVER (PARTITION BY category ORDER BY ({$distance}), id) AS rn", NearbyPlaces::bindings($originLat, $originLng))
             ->where('is_active', true)
@@ -122,6 +124,7 @@ class CandidateRepository
      */
     public function byIds(array $ids, CarbonImmutable $day): array
     {
+        $ids = app(PlaceIdentity::class)->candidateIds($ids);
         $spotIds = collect($ids)
             ->filter(fn ($id) => is_string($id) && str_starts_with($id, 'spot:'))
             ->map(fn ($id) => (int) substr($id, 5))

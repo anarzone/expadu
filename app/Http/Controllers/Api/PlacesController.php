@@ -56,7 +56,7 @@ class PlacesController extends Controller
      */
     public function show(Request $request, Spot $spot): PlaceResource
     {
-        $spot->loadMissing('mediaAttachments.mediaAsset');
+        $spot->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
         $origin = $this->locations->context($request->user(), $request);
 
         $spot->distance_km = $origin->hasOrigin()
@@ -65,6 +65,7 @@ class PlacesController extends Controller
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
         $spot->activities = $this->activitiesForDestinations(collect([$spot]))[$spot->id] ?? [];
         $spot->cluster_size = Spot::query()
+            ->canonical()
             ->where('is_active', true)
             ->where('name', $spot->name)
             ->where('veedel', $spot->veedel)
@@ -73,10 +74,7 @@ class PlacesController extends Controller
 
         // The user's standing feedback, so the detail modal (opened from the
         // home rails or Places) reflects it.
-        $row = SpotFeedback::query()
-            ->where('user_id', $request->user()->id)
-            ->where('spot_id', $spot->id)
-            ->first();
+        $row = SpotFeedback::effectiveForUser($request->user()->id, $spot->id)->get($spot->id);
         $spot->feedback_state = $row?->state?->value;
         $spot->feedback_rating = $row?->rating;
         $travelOption = $origin->hasOrigin()
@@ -120,10 +118,7 @@ class PlacesController extends Controller
 
         // The user's place feedback: "not interested" drops out of the list
         // entirely; the rest carry their state through to a card badge.
-        $feedback = SpotFeedback::query()
-            ->where('user_id', $request->user()->id)
-            ->get(['spot_id', 'state', 'rating'])
-            ->keyBy('spot_id');
+        $feedback = SpotFeedback::effectiveForUser($request->user()->id);
         $notInterestedIds = $feedback
             ->filter(fn (SpotFeedback $row) => $row->state === SpotFeedbackState::NotInterested)
             ->keys()
@@ -272,7 +267,7 @@ class PlacesController extends Controller
             ->orderBy('id')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 
-        $paginator->getCollection()->loadMissing('mediaAttachments.mediaAsset');
+        $paginator->getCollection()->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
 
         $activities = $this->activitiesForDestinations($paginator->getCollection());
         $stopHints = $this->stopHintsForPage($paginator->getCollection());
