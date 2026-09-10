@@ -36,6 +36,7 @@ final readonly class Candidate
         public array $tags = [],
         public ?float $qualityScore = null,
         public ?int $travelMinutesFromOrigin = null,
+        public ?string $destinationGroupId = null,
     ) {}
 
     public function isFixedTime(): bool

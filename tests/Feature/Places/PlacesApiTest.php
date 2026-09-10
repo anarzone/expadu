@@ -301,10 +301,10 @@ test('OSM tags surface as facts, chips and real opening hours', function () {
     expect(collect($place['facts'])->firstWhere('label', 'floodlit')['value'])->toBe('Yes');
 });
 
-test('facilities inside a park collapse into the park card with activity chips', function () {
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.962, 'lng' => 6.930]);
-    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'veedel' => 'Neuehrenfeld', 'lat' => 50.9622, 'lng' => 6.9301]);
-    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'veedel' => 'Neuehrenfeld', 'lat' => 50.9623, 'lng' => 6.9302]);
+test('reviewed facilities inside a park collapse into the park card with activity chips', function () {
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.962, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'veedel' => 'Neuehrenfeld', 'lat' => 50.9622, 'lng' => 6.9301]);
+    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'veedel' => 'Neuehrenfeld', 'lat' => 50.9623, 'lng' => 6.9302]);
     // Standalone facility outside any park stays its own card
     Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => null, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
 
@@ -321,8 +321,8 @@ test('facilities inside a park collapse into the park card with activity chips',
 });
 
 test('an activity filter returns parks containing it plus standalone facilities', function () {
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
-    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'lat' => 50.9622, 'lng' => 6.9301]);
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.9622, 'lng' => 6.9301]);
     Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'lat' => 50.945, 'lng' => 6.935]); // park without tennis
     $standalone = Spot::factory()->create(['name' => 'Tennisclub Süd', 'category' => 'tennis', 'park_name' => null, 'lat' => 50.92, 'lng' => 6.94]);
 
@@ -335,7 +335,7 @@ test('an activity filter returns parks containing it plus standalone facilities'
     expect($standalone)->not->toBeNull();
 });
 
-test('facilities inside a mapped sports centre collapse into one destination card', function () {
+test('reviewed facilities inside a mapped sports centre collapse into one destination card', function () {
     $complex = Spot::factory()->create([
         'name' => 'Sportanlage Nippes',
         'category' => 'sports_centre',
@@ -347,6 +347,10 @@ test('facilities inside a mapped sports centre collapse into one destination car
         'name' => 'Tennisplatz',
         'category' => 'tennis',
         'parent_spot_id' => $complex->id,
+        'destination_spot_id' => $complex->id,
+        'destination_reviewed_parent_id' => $complex->id,
+        'destination_reviewed_at' => now(),
+        'destination_grouping_evidence' => 'Reviewed component fixture',
         'veedel' => 'Nippes',
         'lat' => 50.9642,
         'lng' => 6.9541,
@@ -355,6 +359,10 @@ test('facilities inside a mapped sports centre collapse into one destination car
         'name' => 'Bolzplatz',
         'category' => 'pitch',
         'parent_spot_id' => $complex->id,
+        'destination_spot_id' => $complex->id,
+        'destination_reviewed_parent_id' => $complex->id,
+        'destination_reviewed_at' => now(),
+        'destination_grouping_evidence' => 'Reviewed component fixture',
         'veedel' => 'Nippes',
         'lat' => 50.9643,
         'lng' => 6.9542,
@@ -397,6 +405,10 @@ test('a mapped sports centre context lists only its contained facilities', funct
         'name' => 'Tennisplatz',
         'category' => 'tennis',
         'parent_spot_id' => $complex->id,
+        'destination_spot_id' => $complex->id,
+        'destination_reviewed_parent_id' => $complex->id,
+        'destination_reviewed_at' => now(),
+        'destination_grouping_evidence' => 'Reviewed component fixture',
         'lat' => 50.969,
         'lng' => 6.954,
     ]);
@@ -428,7 +440,7 @@ test('culture places are listed with the culture coarse bucket', function () {
 test('named destinations rank above generic facilities', function () {
     // The commodity facility is closer to home, the named park farther
     Spot::factory()->create(['name' => 'Tischtennisplatte', 'category' => 'table_tennis', 'lat' => 50.948, 'lng' => 6.921]);
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
 
     $names = collect($this->getJson('/api/places')->json('data'))->pluck('name')->all();
 
@@ -439,7 +451,7 @@ test("a park's context lists the facilities inside it", function () {
     Http::fake();
 
     $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
-    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'lat' => 50.9685, 'lng' => 6.930]); // ~700m, still inside
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.9685, 'lng' => 6.930]); // ~700m, still inside
     Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'park_name' => null, 'lat' => 50.9621, 'lng' => 6.9301]); // close but outside
 
     $nearby = $this->getJson("/api/places/{$park->id}/context")->json('nearby');
@@ -473,10 +485,11 @@ test('shows a single place with the full card contract', function () {
 
 test('context prefers facilities in the same park over the 300m radius', function () {
     Http::fake();
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
 
-    $court = Spot::factory()->create(['name' => 'Basketballplatz', 'category' => 'basketball', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
+    $court = Spot::factory()->create(['name' => 'Basketballplatz', 'category' => 'basketball', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.962, 'lng' => 6.930]);
     // Same park but ~700m away → still listed (the park is the venue)
-    $farPitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'lat' => 50.9685, 'lng' => 6.930]);
+    $farPitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.9685, 'lng' => 6.930]);
     // 100m away but NOT in the park → excluded in park mode
     Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'park_name' => null, 'lat' => 50.9621, 'lng' => 6.9312]);
 
@@ -486,8 +499,9 @@ test('context prefers facilities in the same park over the 300m radius', functio
 });
 
 test('places inside a park carry the park name', function () {
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
     // In-park facilities are reached via the detail (park hop), not the list
-    $pitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'veedel' => 'Neuehrenfeld', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
+    $pitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'veedel' => 'Neuehrenfeld', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.962, 'lng' => 6.930]);
 
     $this->getJson("/api/places/{$pitch->id}")->assertJsonPath('data.park', 'Blücherpark');
 });
@@ -501,7 +515,7 @@ test('place context lists nearby places, excluding same-name siblings', function
     // Different place ~80m away → listed with a walk time
     Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'lat' => 50.9485, 'lng' => 6.9215]);
     // Too far (>300m) → excluded
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.96, 'lng' => 6.95]);
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.96, 'lng' => 6.95]);
 
     $response = $this->getJson("/api/places/{$spot->id}/context");
 

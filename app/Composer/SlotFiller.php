@@ -334,9 +334,18 @@ class SlotFiller
     ): ?array {
         $best = null;
         $bestScore = -INF;
+        $occupiedGroups = [];
+        foreach ($slots as $slot) {
+            if ($slot->candidate->destinationGroupId !== null) {
+                $occupiedGroups[$slot->candidate->destinationGroupId] = true;
+            }
+        }
 
         foreach ($feasible as $candidate) {
             if (isset($used[$candidate->id])) {
+                continue;
+            }
+            if ($candidate->destinationGroupId !== null && isset($occupiedGroups[$candidate->destinationGroupId])) {
                 continue;
             }
             // Skip a venue whose visible name is already placed nearby (one

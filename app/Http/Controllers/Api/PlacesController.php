@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
+use App\Places\DestinationGrouping;
 use App\Services\NearbyPlaces;
 use App\Services\UserLocationService;
 use App\Transit\Dto\GeoPoint;
@@ -96,6 +97,7 @@ class PlacesController extends Controller
             'veedel' => ['nullable', 'string', 'max:100'],
             'bezirk' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'in:'.implode(',', self::COARSE)],
+            'activity' => ['nullable', 'string', 'in:'.implode(',', SpotCategory::placesFines())],
             'page' => ['nullable', 'integer', 'min:1'],
             'near' => ['nullable', 'boolean'],
             // An explicit "From": a picked saved place (by id, coords resolved
@@ -124,51 +126,30 @@ class PlacesController extends Controller
             ->keys()
             ->all();
 
-        $query = Spot::query()
-            ->recommendationEligible()
+        $grouping = app(DestinationGrouping::class);
+        $query = $grouping->eligible(Spot::query())
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->whereIn('category', SpotCategory::placesFines())
             ->when($notInterestedIds !== [], fn ($q) => $q->whereNotIn('id', $notInterestedIds));
 
-        // Venue-first: facilities inside a mapped park or sports centre
-        // collapse into the parent card (its activity chips). A facility with
-        // no trusted containing area remains independently discoverable.
-        if (! empty($validated['category']) && $validated['category'] !== 'park') {
-            $fines = SpotCategory::finesForCoarse($validated['category']);
-            $facilityFines = array_values(array_diff($fines, ['sports_centre']));
-
-            // An activity filter matches standalone facilities of that
-            // kind AND destination cards that contain such a facility.
-            $query->where(function ($q) use ($facilityFines) {
-                $q->where(fn ($standalone) => $standalone
-                    ->whereIn('category', $facilityFines)
-                    ->whereNull('parent_spot_id')
-                    ->whereNull('park_name'))
-                    ->orWhereIn('id', Spot::query()
-                        ->select('parent_spot_id')
-                        ->where('is_active', true)
-                        ->whereIn('category', $facilityFines)
-                        ->whereNotNull('parent_spot_id'))
-                    // Legacy park_name records remain grouped during the
-                    // relation backfill, so the rollout never reintroduces
-                    // duplicate facility cards.
-                    ->orWhere(fn ($legacyPark) => $legacyPark
-                        ->where('category', 'park')
-                        ->whereIn('name', Spot::query()
-                            ->select('park_name')
-                            ->where('is_active', true)
-                            ->whereIn('category', $facilityFines)
-                            ->whereNull('parent_spot_id')
-                            ->whereNotNull('park_name')));
-            });
-        } elseif (! empty($validated['category'])) {
-            $query->whereIn('category', SpotCategory::finesForCoarse('park'))
-                ->whereNull('parent_spot_id')
-                ->whereNull('park_name');
+        if (! empty($validated['activity'])) {
+            $query->where('category', $validated['activity']);
+            if (! empty($validated['category'])) {
+                $query->whereIn('category', SpotCategory::finesForCoarse($validated['category']));
+            }
         } else {
-            $query->whereNull('parent_spot_id')
-                ->whereNull('park_name');
+            $query->whereNull('destination_spot_id');
+            if (! empty($validated['category']) && $validated['category'] !== 'park') {
+                $fines = array_values(array_diff(SpotCategory::finesForCoarse($validated['category']), ['sports_centre']));
+                $matchingDestinations = $grouping->eligible(Spot::query())
+                    ->join('spots as activity_destination', 'activity_destination.id', '=', 'spots.destination_spot_id')
+                    ->whereIn('spots.category', $fines)
+                    ->selectRaw('COALESCE(activity_destination.canonical_spot_id, activity_destination.id)');
+                $query->where(fn ($where) => $where->whereIn('category', $fines)->orWhereIn('id', $matchingDestinations));
+            } elseif (! empty($validated['category'])) {
+                $query->whereIn('category', SpotCategory::finesForCoarse('park'));
+            }
         }
 
         $nearbyIncluded = false;
@@ -238,7 +219,8 @@ class PlacesController extends Controller
             ->selectRaw('count(*) over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3)) as cluster_size')
             ->selectRaw('row_number() over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3) order by id) as cluster_rank');
 
-        $outer = Spot::query()->fromSub($query, 'spots')->where('cluster_rank', 1);
+        $outer = Spot::query()->fromSub($query, 'spots')
+            ->when(empty($validated['activity']), fn ($rows) => $rows->where('cluster_rank', 1));
 
         // The selected Veedel's own places come first — a page of "nearby"
         // results above them would read as broken filtering. Within each
@@ -318,9 +300,7 @@ class PlacesController extends Controller
      *
     /**
      * What you can do in each destination on this page — the distinct
-     * facility kinds inside it, as ready-to-render chips. Existing park-name
-     * containment remains a temporary fallback while its stable parent IDs
-     * are backfilled by the area importer.
+     * facility kinds inside it, as ready-to-render chips. Only reviewed eligible components contribute activities.
      *
      * @param  Collection<int, Spot>  $places
      * @return array<int, list<array{emoji: string, label: string}>>
@@ -333,40 +313,13 @@ class PlacesController extends Controller
             return [];
         }
 
-        $activities = DB::table('spots')
-            ->whereIn('parent_spot_id', $destinations->pluck('id'))
-            ->where('is_active', true)
-            ->whereIn('category', SpotCategory::placesFines())
-            ->distinct()
-            ->get(['parent_spot_id', 'category'])
-            ->groupBy('parent_spot_id')
-            ->map(fn (Collection $rows) => $this->activityChips($rows))
-            ->all();
+        $rows = app(DestinationGrouping::class)->components(Spot::query(), $destinations->pluck('id')->all())
+            ->join('spots as activity_destination', 'activity_destination.id', '=', 'spots.destination_spot_id')
+            ->whereIn('spots.category', SpotCategory::placesFines())
+            ->select('spots.category')->selectRaw('COALESCE(activity_destination.canonical_spot_id, activity_destination.id) as group_id')
+            ->distinct()->toBase()->get();
 
-        $legacyParks = $destinations
-            ->filter(fn (Spot $spot) => $spot->getRawOriginal('category') === 'park')
-            ->filter(fn (Spot $spot) => ! array_key_exists($spot->id, $activities))
-            ->keyBy('name');
-        if ($legacyParks->isEmpty()) {
-            return $activities;
-        }
-
-        $legacyActivities = DB::table('spots')
-            ->whereIn('park_name', $legacyParks->keys())
-            ->whereNull('parent_spot_id')
-            ->where('is_active', true)
-            ->whereIn('category', SpotCategory::placesFines())
-            ->distinct()
-            ->get(['park_name', 'category'])
-            ->groupBy('park_name');
-
-        foreach ($legacyParks as $parkName => $park) {
-            if (isset($legacyActivities[$parkName])) {
-                $activities[$park->id] = $this->activityChips($legacyActivities[$parkName]);
-            }
-        }
-
-        return $activities;
+        return $rows->groupBy('group_id')->map(fn (Collection $rows) => $this->activityChips($rows))->all();
     }
 
     /**
