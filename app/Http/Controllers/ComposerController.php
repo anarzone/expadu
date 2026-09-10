@@ -27,6 +27,7 @@ use App\Enums\SpotCategory;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
+use App\Places\PlaceIdentity;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
@@ -176,8 +177,13 @@ class ComposerController extends Controller
 
         // "Locked" picks from the result page are kept across recomposes —
         // mechanically identical to home-feed pins, so they merge.
-        $pins = array_values(array_unique([...($validated['pins'] ?? []), ...($validated['locked'] ?? [])]));
-        $excluded = array_values($validated['excluded'] ?? []);
+        $pins = app(PlaceIdentity::class)->candidateIds([...($validated['pins'] ?? []), ...($validated['locked'] ?? [])]);
+        $excluded = app(PlaceIdentity::class)->candidateIds($validated['excluded'] ?? []);
+        $spotPins = array_values(array_filter(array_diff($pins, $excluded), fn (string $id): bool => str_starts_with($id, 'spot:')));
+        $availablePins = array_map(fn (Candidate $candidate): string => $candidate->id, $candidates->byIds($spotPins, $constraints->windowStart));
+        if (array_diff($spotPins, $availablePins) !== []) {
+            return response()->json(['message' => 'A pinned place is no longer available. Remove it or choose another place.'], 422);
+        }
 
         // The plan's start: the shared origin (explicit pick / live / confirmed
         // / recent ping), else the area being planned, else the user's
@@ -481,11 +487,16 @@ class ComposerController extends Controller
             return response()->json(['message' => 'No active plan — compose one first.'], 404);
         }
 
+        $stored = app(PlaceIdentity::class)->normalizePlan($stored);
         $pins = $stored['pins'] ?? [];
         $excluded = $stored['excluded'] ?? [];
         $storedConstraints = Constraints::fromArray($stored['constraints']);
         $appointmentPool = $appointments->within($user, $storedConstraints);
-        $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins, $storedConstraints->windowStart));
+        try {
+            $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins, $storedConstraints->windowStart));
+        } catch (\DomainException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 409);
+        }
         $slotIndex = (int) $validated['slot'];
         $rejected = $stored['rejected'][$slotIndex] ?? [];
 
@@ -596,8 +607,9 @@ class ComposerController extends Controller
             return response()->json(['message' => 'No plan to save — compose one first.'], 404);
         }
 
+        $stored = app(PlaceIdentity::class)->normalizePlan($stored);
         if ($validated['keep'] ?? null) {
-            $keep = $validated['keep'];
+            $keep = app(PlaceIdentity::class)->candidateIds($validated['keep']);
             $stored['slots'] = array_values(array_filter(
                 $stored['slots'],
                 fn ($slot) => in_array($slot['id'] ?? null, $keep, true),
@@ -840,13 +852,14 @@ class ComposerController extends Controller
         $constraints = Constraints::fromArray($stored['constraints']);
         // Refresh from the same local pool the plan was composed against.
         [$originLat, $originLng] = $stored['origin'] ?? [50.9375, 6.9603];
-        $pool = collect([...$candidates->candidatesFor($constraints, $originLat, $originLng), ...$appointmentPool, ...$pinnedPool])->keyBy('id');
+        $storedPool = $candidates->byIds(array_column($stored['slots'], 'id'), $constraints->windowStart);
+        $pool = collect([...$candidates->candidatesFor($constraints, $originLat, $originLng), ...$appointmentPool, ...$pinnedPool, ...$storedPool])->keyBy('id');
 
         $slots = [];
         foreach ($stored['slots'] as $slotData) {
             $candidate = $pool->get($slotData['id']);
             if ($candidate === null) {
-                continue; // venue vanished between compose and swap
+                throw new \DomainException('A place or appointment in this plan is no longer available. Recompose the plan before swapping.');
             }
             $slots[] = new PlanSlot(
                 candidate: $candidate,

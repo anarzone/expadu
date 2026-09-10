@@ -31,6 +31,7 @@ class SpotSearchController extends Controller
         $userLng = $home?->lng ? (float) $home->lng : 6.9603;
 
         $query = Spot::query()
+            ->canonical()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->where('lat', '>=', $request->query('sw_lat'))
