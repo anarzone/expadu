@@ -56,7 +56,7 @@ Files: `CandidateRepository`, `ComposerController`, `TodayPlanStore`, `Reconcile
 - [x] Add regression tests for old-ID pins, exclusions, locked picks, saved slots and rejected swap choices; assert existing times remain unchanged.
 - [x] Normalize incoming/stored candidate IDs at the boundaries, explicitly hydrate stored Spot IDs outside the nearest pool, and keep unknown/non-Spot IDs unchanged.
 - [x] Add `places:reconcile-identity {alias} {canonical} {--fingerprint=} {--evidence=} {--apply}`. Default to preview. Applying requires nonempty documented evidence and the matching preview fingerprint. It is not scheduled.
-- [ ] Run affected Composer/import tests, Pint, and the project hook checks. Obtain an independent diff review and address reference-safety findings.
+- [x] Run affected Composer/import tests, Pint, and the project hook checks. Obtain an independent diff review and address reference-safety findings.
 - [ ] Update Jira/BookStack with tests and limitations. Prepare a staging review; no production mutation. Commit only EXP-67 files with the required ticket reference.
 
 ## Verification record
@@ -69,3 +69,6 @@ Files: `CandidateRepository`, `ComposerController`, `TodayPlanStore`, `Reconcile
 - Independent review found four blocking cases (repeated choices, media deletion, unavailable saved slots, and concurrent review writes); fixes received a clean scoped re-review.
 - Changed saved candidates now produce an explicit conflict instead of silently dropping or renumbering slots. Unavailable pinned places produce a validation response.
 - Canonical targets are sourced OSM records; aliases remain source-null and are not refreshed by the OSM identity importer. More general cross-provider reconciliation is outside this first operator path.
+
+- Required commit hooks: gitleaks clean; staged Pint clean; fast parallel Pest suite 1,475 passed, 1 skipped, 5,853 assertions. No hooks bypassed.
+- Staging and production catalogues remain unchanged. The migration has only been exercised in testing. EXP-67 remains in progress until staging validation.
