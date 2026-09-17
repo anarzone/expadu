@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
+use App\Places\DestinationGrouping;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -30,8 +31,8 @@ class SpotSearchController extends Controller
         $userLat = $home?->lat ? (float) $home->lat : 50.9375;
         $userLng = $home?->lng ? (float) $home->lng : 6.9603;
 
-        $query = Spot::query()
-            ->canonical()
+        $grouping = app(DestinationGrouping::class);
+        $query = $grouping->eligible(Spot::query())
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->where('lat', '>=', $request->query('sw_lat'))
@@ -41,6 +42,8 @@ class SpotSearchController extends Controller
 
         if ($category = $request->query('category')) {
             $query->where('category', $category);
+        } else {
+            $grouping->general($query);
         }
 
         // Add distance calculation and sort by distance. The acos argument is

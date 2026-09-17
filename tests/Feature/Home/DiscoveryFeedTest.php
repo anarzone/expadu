@@ -155,10 +155,10 @@ test('the global spot catalogue scan is cached as plain rows', function () {
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
 
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
-    expect(Cache::has('discovery:spot-scan:identity:0'))->toBeTrue();
+    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0'))->toBeTrue();
     // Plain rows, not Eloquent models — so the cache round-trips on any driver
     // (a serialised model collection can come back as __PHP_Incomplete_Class).
-    expect(Cache::get('discovery:spot-scan:identity:0')[0])->toBeArray();
+    expect(Cache::get('discovery:spot-scan:identity:0:grouping:0')[0])->toBeArray();
     // A second call hits the cache and still builds the feed.
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
 });

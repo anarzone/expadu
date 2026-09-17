@@ -61,7 +61,9 @@ class PlaceIdentity
     {
         return (clone $query)->where(fn ($where) => $where
             ->whereIn('id', DB::table('place_reconciliations')->select('alias_spot_id'))
-            ->orWhereIn('id', DB::table('place_reconciliations')->select('canonical_spot_id')))->exists();
+            ->orWhereIn('id', DB::table('place_reconciliations')->select('canonical_spot_id'))
+            ->orWhereIn('id', DB::table('place_destination_reviews')->select('spot_id'))
+            ->orWhereIn('id', DB::table('place_destination_reviews')->select('destination_spot_id')))->exists();
     }
 
     public function withCanonicalLock(int $id, Closure $action): mixed

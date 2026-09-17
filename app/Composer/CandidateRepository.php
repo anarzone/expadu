@@ -2,9 +2,11 @@
 
 namespace App\Composer;
 
+use App\Enums\SpotCategory;
 use App\Exceptions\CologneBoundaryUnavailable;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Places\DestinationGrouping;
 use App\Places\PlaceIdentity;
 use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
@@ -51,7 +53,7 @@ class CandidateRepository
     public function candidatesFor(Constraints $constraints, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG): array
     {
         $events = $this->eventCandidates($constraints, $originLat, $originLng);
-        $spots = $this->spotCandidates($constraints->windowStart, $originLat, $originLng);
+        $spots = $this->spotCandidates($constraints, $originLat, $originLng);
 
         // Events get a RESERVED slice, not the leftovers. At prod volume ~20
         // categories each contribute their dozen nearest spots — well over
@@ -79,14 +81,16 @@ class CandidateRepository
      *
      * @return list<Candidate>
      */
-    private function spotCandidates(CarbonImmutable $day, float $originLat, float $originLng): array
+    private function spotCandidates(Constraints $constraints, float $originLat, float $originLng): array
     {
         // The shared great-circle formula (single source in NearbyPlaces), used
         // here inside a per-category ROW_NUMBER window the service can't express.
         $distance = NearbyPlaces::DISTANCE_KM_SQL;
 
-        $ranked = DB::table('spots')
-            ->whereNull('canonical_spot_id')
+        $grouping = app(DestinationGrouping::class);
+        $requested = array_values(array_unique(array_merge([], ...array_map(SpotCategory::finesForSelector(...), $constraints->categories))));
+        $ranked = $grouping->eligible(Spot::query())
+            ->where(fn ($query) => $query->whereNull('destination_spot_id')->orWhereIn('category', $requested))
             ->select('id')
             ->selectRaw("ROW_NUMBER() OVER (PARTITION BY category ORDER BY ({$distance}), id) AS rn", NearbyPlaces::bindings($originLat, $originLng))
             ->where('is_active', true)
@@ -106,11 +110,14 @@ class CandidateRepository
 
         // Return globally nearest-first so the MAX_CANDIDATES cap keeps the
         // closest spots when many categories each contribute their dozen.
-        return Spot::query()
+        $spots = Spot::query()
             ->whereIn('id', $ids)
             ->orderByRaw("({$distance}), id", NearbyPlaces::bindings($originLat, $originLng))
-            ->get()
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, $originLat, $originLng))
+            ->get();
+        $groups = $grouping->groupIds($spots->modelKeys());
+
+        return $spots
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $constraints->windowStart, $originLat, $originLng, $groups[$spot->id]))
             ->all();
     }
 
@@ -135,17 +142,19 @@ class CandidateRepository
             return [];
         }
 
-        return Spot::query()
-            ->recommendationEligible()
+        $spots = app(DestinationGrouping::class)->eligible(Spot::query())
             ->whereIn('id', $spotIds)
             ->whereNotNull('lat')
             ->whereNotNull('lng')
-            ->get()
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day))
+            ->get();
+        $groups = app(DestinationGrouping::class)->groupIds($spots->modelKeys());
+
+        return $spots
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, destinationId: $groups[$spot->id]))
             ->all();
     }
 
-    private function spotToCandidate(Spot $spot, CarbonImmutable $day, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG): Candidate
+    private function spotToCandidate(Spot $spot, CarbonImmutable $day, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG, ?int $destinationId = null): Candidate
     {
         $category = $spot->category instanceof \BackedEnum
             ? $spot->category->value
@@ -165,6 +174,7 @@ class CandidateRepository
 
         return new Candidate(
             id: "spot:{$spot->id}",
+            destinationGroupId: 'spot:'.($destinationId ?? $spot->id),
             type: 'spot',
             name: $spot->name,
             lat: (float) $spot->lat,

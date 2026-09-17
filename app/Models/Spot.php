@@ -38,19 +38,22 @@ class Spot extends Model
             'is_active' => 'boolean',
             'is_recommendable' => 'boolean',
             'canonical_spot_id' => 'integer',
+            'destination_spot_id' => 'integer',
+            'destination_reviewed_parent_id' => 'integer',
+            'destination_reviewed_at' => 'datetime',
         ];
     }
 
     /** @param Builder<Spot> $query */
     public function scopeRecommendationEligible(Builder $query): Builder
     {
-        return $query->canonical()->where('is_active', true)->where('is_recommendable', true);
+        return $query->canonical()->where('spots.is_active', true)->where('spots.is_recommendable', true);
     }
 
     /** @param Builder<Spot> $query */
     public function scopeCanonical(Builder $query): Builder
     {
-        return $query->whereNull('canonical_spot_id');
+        return $query->whereNull('spots.canonical_spot_id');
     }
 
     public function delete()

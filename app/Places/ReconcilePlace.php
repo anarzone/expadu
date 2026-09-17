@@ -59,6 +59,12 @@ class ReconcilePlace
         }
         $completed = $alias->canonical_spot_id === $canonicalId;
         if (! $completed) {
+            if ($alias->destination_reviewed_at !== null) {
+                throw new DomainException('A reviewed membership cannot be moved to another identity; reconcile identities before reviewing destination membership.');
+            }
+            if ($canonical->destination_spot_id !== null && app(DestinationGrouping::class)->hasComponents($aliasId)) {
+                throw new DomainException('Reconciliation would create a destination grouping chain.');
+            }
             if ($alias->source !== null || $alias->source_id !== null || $canonical->source !== 'osm' || ! $canonical->source_id || ! $canonical->is_active) {
                 throw new DomainException('This reconciliation path requires a source-null legacy record and an active OSM target.');
             }

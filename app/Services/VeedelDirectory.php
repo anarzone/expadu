@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\SpotCategory;
+use App\Models\Spot;
+use App\Places\DestinationGrouping;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -20,11 +22,8 @@ class VeedelDirectory
      */
     public function bezirkRail(?string $homeBezirk): array
     {
-        $rows = DB::table('spots')
-            ->whereNull('spots.canonical_spot_id')
+        $rows = app(DestinationGrouping::class)->general(Spot::query())
             ->join('veedels', 'veedels.name', '=', 'spots.veedel')
-            ->where('spots.is_active', true)
-            ->where('spots.is_recommendable', true)
             ->whereIn('spots.category', SpotCategory::placesFines())
             ->groupBy('veedels.bezirk')
             ->select('veedels.bezirk as name', DB::raw('count(*) as n'))
@@ -51,11 +50,8 @@ class VeedelDirectory
      */
     public function veedelsByBezirk(): array
     {
-        return DB::table('spots')
-            ->whereNull('spots.canonical_spot_id')
+        return app(DestinationGrouping::class)->general(Spot::query())
             ->join('veedels', 'veedels.name', '=', 'spots.veedel')
-            ->where('spots.is_active', true)
-            ->where('spots.is_recommendable', true)
             ->whereIn('spots.category', SpotCategory::placesFines())
             ->distinct()
             ->orderBy('veedels.name')

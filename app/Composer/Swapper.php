@@ -55,12 +55,21 @@ class Swapper
             fn (PlanSlot $slot, int $i) => $i !== $slotIndex,
             ARRAY_FILTER_USE_BOTH,
         ));
+        $occupiedGroups = [];
+        foreach ($neighbors as $slot) {
+            if ($slot->candidate->destinationGroupId !== null) {
+                $occupiedGroups[$slot->candidate->destinationGroupId] = true;
+            }
+        }
 
         $best = null;
         $bestScore = -INF;
 
         foreach ($feasible as $candidate) {
             if ($candidate->isFixedTime() || in_array($candidate->id, $excluded, true)) {
+                continue;
+            }
+            if ($candidate->destinationGroupId !== null && isset($occupiedGroups[$candidate->destinationGroupId])) {
                 continue;
             }
 
