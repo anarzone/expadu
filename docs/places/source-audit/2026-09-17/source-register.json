@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "audit": "EXP-70",
+  "reviewed_at": "2026-09-17",
+  "sources": [
+    {
+      "id": "current_staging_catalogue",
+      "role": "baseline",
+      "status": "evaluated",
+      "access": "authenticated project API",
+      "coverage": "2,809 canonical Places API records; cafes are exposed separately by /api/spots",
+      "strengths": [
+        "existing identity and provenance fields",
+        "review gates already enforced for published media",
+        "coordinates present in the frozen sample"
+      ],
+      "gaps": [
+        "91/100 sampled records have no photo",
+        "20/100 use descriptive names",
+        "no reviewed activity memberships yet",
+        "outer-city cafe query returned zero"
+      ]
+    },
+    {
+      "id": "openstreetmap",
+      "role": "current primary place feed",
+      "status": "keep_with_remediation",
+      "access": "existing importer; no new live provider requests in EXP-70",
+      "license": "ODbL 1.0",
+      "license_url": "https://osmfoundation.org/wiki/Licence_and_Legal_FAQ",
+      "rights_requirements": [
+        "attribute OpenStreetMap contributors",
+        "evaluate ODbL share-alike duties for any public derivative database"
+      ],
+      "strengths": [
+        "city-wide geographic base",
+        "stable source element URLs for recent imports",
+        "commercial reuse permitted under ODbL"
+      ],
+      "gaps": [
+        "inner-city-only cafe import configuration",
+        "exact coordinate duplicate cafe rows",
+        "uneven names, access, hours, contacts and media"
+      ]
+    },
+    {
+      "id": "stadt_koeln_open_data_parks",
+      "role": "authoritative structured enrichment candidate",
+      "status": "recommended_for_reviewed_pilot",
+      "access": "public ArcGIS JSON",
+      "dataset_url": "https://www.offenedaten-koeln.de/dataset/parkanlagen-koeln",
+      "api_url": "https://geoportal.stadt-koeln.de/arcgis/rest/services/freizeit_natur_sport/parkanlagen/MapServer/0",
+      "license": "DL-DE Zero 2.0",
+      "license_url": "https://www.govdata.de/dl-de/zero-2-0",
+      "inventory": {
+        "records": 589,
+        "names": 589,
+        "coordinates": 589,
+        "street_names": 517,
+        "districts": 586,
+        "source_links": 50,
+        "records_with_remarks": 28,
+        "media": 0
+      },
+      "strengths": [
+        "authoritative names and coordinates",
+        "district, neighbourhood and street fields",
+        "commercial and non-commercial reuse without conditions"
+      ],
+      "gaps": [
+        "no media",
+        "no opening hours, fees or access semantics",
+        "numeric status and object-type codes have no exposed domain labels"
+      ],
+      "guardrail": "The structured data licence covers the dataset only. It does not license photos on linked Stadt Köln web pages."
+    },
+    {
+      "id": "data_hub_nrw",
+      "role": "potential POI, gastronomy, description and media enrichment",
+      "status": "not_evaluated_access_blocked",
+      "access": "B2B contract flow plus a private destination.meta licence key",
+      "finder_url": "https://tourismusverband.nrw/themen/datenmanagement/open-data-finder",
+      "terms_url": "https://tourismusverband.nrw/allgemeine-geschaeftsbedingungen-data-hub-nrw",
+      "formats": [
+        "JSON",
+        "GeoJSON",
+        "JSON-LD",
+        "JPEG",
+        "PNG"
+      ],
+      "media_licenses": [
+        "CC0",
+        "CC BY",
+        "CC BY-SA"
+      ],
+      "strengths": [
+        "tourism-focused POIs, gastronomy, descriptions and media",
+        "licence-type filtering",
+        "commercially usable media licences documented in current terms"
+      ],
+      "gaps": [
+        "no project key",
+        "contact details and terms acceptance required",
+        "provider disclaims completeness, accuracy and currentness",
+        "fair-use limits and breaking changes are possible"
+      ],
+      "decision": "Do not score as zero coverage. Product or legal owner must complete the B2B access decision before a measured pilot."
+    },
+    {
+      "id": "wikimedia_commons",
+      "role": "current per-asset media source",
+      "status": "keep_with_asset_level_verification",
+      "reuse_url": "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia/en",
+      "strengths": [
+        "commercial reuse is often permitted",
+        "current catalogue already has attribution-bearing assets",
+        "strong landmark coverage"
+      ],
+      "gaps": [
+        "weak long-tail neighbourhood coverage",
+        "licence and author must be checked per file",
+        "Wikimedia gives no warranty and non-copyright restrictions can still apply"
+      ],
+      "guardrail": "Approve only an exact file revision with author, source, licence and licence URL captured."
+    },
+    {
+      "id": "mapillary",
+      "role": "potential street-level media source",
+      "status": "not_evaluated_access_blocked",
+      "access": "API token required; project token was unset on 2026-09-17",
+      "license": "CC BY-SA",
+      "license_url": "https://help.mapillary.com/hc/en-us/articles/115001770409-CC-BY-SA-license-for-open-data",
+      "strengths": [
+        "large street-level imagery pool",
+        "commercial distribution and modification described as available with attribution"
+      ],
+      "gaps": [
+        "no configured API token",
+        "a nearby street frame may not depict the place",
+        "quality, direction and author metadata require gating"
+      ],
+      "decision": "Defer measured coverage until a token is configured; retain the current orientation and attribution gates."
+    },
+    {
+      "id": "stadt_koeln_website_photos",
+      "role": "negative media control",
+      "status": "exclude_without_asset_specific_permission",
+      "copyright_url": "https://www.stadt-koeln.de/artikel/06121/index.html",
+      "press_terms_url": "https://www.stadt-koeln.de/artikel/00146/index.html",
+      "result": "20/20 exact page-image candidates remain pending and excluded; no asset-specific open licence was found.",
+      "guardrail": "Do not treat DL-DE Zero structured data rights as photo rights."
+    }
+  ]
+}
