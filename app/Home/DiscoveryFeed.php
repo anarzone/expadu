@@ -11,6 +11,7 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\UserTask;
 use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use App\Places\PlaceIdentity;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
@@ -443,7 +444,7 @@ class DiscoveryFeed
         // a model collection is fragile across cache drivers (it can come back
         // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
         $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution'];
-        $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision().':grouping:'.app(DestinationGrouping::class)->revision();
+        $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision().':grouping:'.app(DestinationGrouping::class)->revision().':facts:'.app(PlaceFacts::class)->revision();
 
         // No origin (GPS declined, nothing remembered): the old global, lowest-id
         // pool, cached once for everyone.
@@ -457,7 +458,10 @@ class DiscoveryFeed
                 ->get()
                 ->toArray());
 
-            return Spot::hydrate($rows);
+            $spots = Spot::hydrate($rows);
+            app(PlaceFacts::class)->project($spots);
+
+            return $spots;
         }
 
         // Nearest-first to the user, cached per ~1km cell (rounded so nearby
@@ -472,7 +476,10 @@ class DiscoveryFeed
             fn () => $this->nearby->nearest($cellLat, $cellLng, self::POOL, null, $columns)->toArray(),
         );
 
-        return Spot::hydrate($rows);
+        $spots = Spot::hydrate($rows);
+        app(PlaceFacts::class)->project($spots);
+
+        return $spots;
     }
 
     private function category(Spot $spot): string

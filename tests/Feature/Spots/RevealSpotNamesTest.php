@@ -64,7 +64,7 @@ test('with --geocode, a bare spot in one of the 3 cities is anchored to its near
     expect($spot->fresh()->name)->toBe('Bolzplatz · Merkenicher Hauptstraße');
 });
 
-test('a spot whose city is not Köln / Leverkusen / Bonn is pruned', function () {
+test('a spot whose city is not Köln Leverkusen or Bonn is retained but quarantined', function () {
     $spot = Spot::factory()->create([
         'name' => 'Bolzplatz',
         'category' => 'pitch',
@@ -83,7 +83,10 @@ test('a spot whose city is not Köln / Leverkusen / Bonn is pruned', function ()
 
     $this->artisan('spots:reveal-names --geocode')->assertSuccessful();
 
-    expect(Spot::find($spot->id))->toBeNull();
+    expect($spot->fresh())
+        ->not->toBeNull()
+        ->is_active->toBeFalse()
+        ->is_recommendable->toBeFalse();
 });
 
 test('a nearest POI (not a street) leaves the spot bare rather than mislabelled', function () {

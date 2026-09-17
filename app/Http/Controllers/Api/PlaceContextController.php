@@ -6,6 +6,7 @@ use App\Enums\SpotCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
 use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use App\Services\WeatherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -112,7 +113,10 @@ class PlaceContextController extends Controller
             // Over-fetch, then collapse same-name rows (three OSM
             // "Tischtennisplatte" entries are one chip, not three).
             ->limit($limit * 3)
-            ->get()
+            ->get();
+        app(PlaceFacts::class)->project($rows);
+
+        $rows = $rows
             ->unique('name')
             ->take($limit)
             ->values();

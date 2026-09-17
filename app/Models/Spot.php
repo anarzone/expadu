@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NoiseLevel;
 use App\Enums\SpotCategory;
+use App\Places\PlaceFacts;
 use App\Places\PlaceIdentity;
 use Database\Factories\SpotFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -47,7 +48,9 @@ class Spot extends Model
     /** @param Builder<Spot> $query */
     public function scopeRecommendationEligible(Builder $query): Builder
     {
-        return $query->canonical()->where('spots.is_active', true)->where('spots.is_recommendable', true);
+        return app(PlaceFacts::class)->publiclyRecommendable(
+            $query->canonical()->where('spots.is_active', true)->where('spots.is_recommendable', true),
+        );
     }
 
     /** @param Builder<Spot> $query */
@@ -107,6 +110,22 @@ class Spot extends Model
     public function containedSpots(): HasMany
     {
         return $this->hasMany(self::class, 'parent_spot_id');
+    }
+
+    /** @return HasMany<PlaceFactObservation, $this> */
+    public function factObservations(): HasMany
+    {
+        return $this->hasMany(PlaceFactObservation::class)
+            ->orderBy('observed_at')
+            ->orderBy('id');
+    }
+
+    /** @return HasMany<PlaceFactCorrection, $this> */
+    public function factCorrections(): HasMany
+    {
+        return $this->hasMany(PlaceFactCorrection::class)
+            ->orderBy('reviewed_at')
+            ->orderBy('id');
     }
 
     /** @return MorphMany<MediaAttachment, $this> */

@@ -23,7 +23,7 @@ class RevealSpotNames extends Command
         {--geocode : reverse-geocode a nearest-street anchor for spots not inside a park (needs MOTIS — staging/prod)}
         {--limit=0 : cap the number of geocode lookups this run (0 = no cap)}';
 
-    protected $description = 'Give duplicate generic spots (Bolzplatz, Spielplatz, …) distinct names via their containing park, else the nearest street; --geocode also prunes spots outside Köln / Leverkusen / Bonn';
+    protected $description = 'Give generic spots distinct park or street labels; --geocode quarantines records outside Köln, Leverkusen and Bonn';
 
     /** We only carry these three cities for now (majorly Köln). */
     private const ALLOWED_CITIES = ['köln', 'koeln', 'cologne', 'leverkusen', 'bonn'];
@@ -53,18 +53,18 @@ class RevealSpotNames extends Command
         }
 
         // Pass 2 — reverse-geocode the rest. One call yields BOTH the nearest
-        // street and the municipality, so we prune anything outside our three
+        // street and the municipality, so we quarantine anything outside our three
         // cities and only anchor to a *real* street (never the nearest café or
         // charging station). Throttled; skips gracefully when the geocoder is
         // unreachable (e.g. locally).
         //
-        // chunkById walks forward by id: anchored/pruned rows drop out of the
+        // chunkById walks forward by id: anchored/quarantined rows drop out of the
         // set and kept-bare rows sit below the cursor, so nothing is re-fetched
         // and memory stays bounded over the (thousands of) points — a plain
         // ->get() OOM-killed the process mid-run.
         $limit = (int) $this->option('limit');
         $geocoded = 0;
-        $pruned = 0;
+        $quarantined = 0;
         $keptBare = 0;
         $skipped = 0;
         $processed = 0;
@@ -73,7 +73,7 @@ class RevealSpotNames extends Command
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->orderBy('id')
-            ->chunkById(100, function ($spots) use ($routes, $limit, &$geocoded, &$pruned, &$keptBare, &$skipped, &$processed) {
+            ->chunkById(100, function ($spots) use ($routes, $limit, &$geocoded, &$quarantined, &$keptBare, &$skipped, &$processed) {
                 foreach ($spots as $spot) {
                     if ($limit > 0 && $processed >= $limit) {
                         return false;
@@ -95,10 +95,11 @@ class RevealSpotNames extends Command
 
                     usleep(200_000); // ~5/s — be kind to the geocoder
 
-                    // Scope: keep only Köln / Leverkusen / Bonn; drop confirmed other towns.
+                    // Keep the audit/history row, but remove confirmed other
+                    // towns from every public recommendation surface.
                     if ($this->outsideAllowedCity($place->municipality)) {
-                        $spot->delete();
-                        $pruned++;
+                        $spot->update(['is_active' => false, 'is_recommendable' => false]);
+                        $quarantined++;
 
                         continue;
                     }
@@ -120,7 +121,7 @@ class RevealSpotNames extends Command
             });
 
         $this->info("Anchored to a street: {$geocoded}");
-        $this->info("Pruned (outside Köln/Leverkusen/Bonn): {$pruned}");
+        $this->info("Quarantined (outside Köln/Leverkusen/Bonn): {$quarantined}");
         $this->line("Kept bare (no street-like anchor): {$keptBare}  ·  skipped/unreachable: {$skipped}");
 
         return self::SUCCESS;

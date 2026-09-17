@@ -7,6 +7,7 @@ use App\Exceptions\CologneBoundaryUnavailable;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use App\Places\PlaceIdentity;
 use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
@@ -115,9 +116,10 @@ class CandidateRepository
             ->orderByRaw("({$distance}), id", NearbyPlaces::bindings($originLat, $originLng))
             ->get();
         $groups = $grouping->groupIds($spots->modelKeys());
+        $facts = app(PlaceFacts::class)->resolveMany($spots);
 
         return $spots
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $constraints->windowStart, $originLat, $originLng, $groups[$spot->id]))
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $constraints->windowStart, $facts[$spot->id], $originLat, $originLng, $groups[$spot->id]))
             ->all();
     }
 
@@ -148,20 +150,27 @@ class CandidateRepository
             ->whereNotNull('lng')
             ->get();
         $groups = app(DestinationGrouping::class)->groupIds($spots->modelKeys());
+        $facts = app(PlaceFacts::class)->resolveMany($spots);
 
         return $spots
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, destinationId: $groups[$spot->id]))
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, $facts[$spot->id], destinationId: $groups[$spot->id]))
             ->all();
     }
 
-    private function spotToCandidate(Spot $spot, CarbonImmutable $day, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG, ?int $destinationId = null): Candidate
+    /** @param array<string, mixed> $facts */
+    private function spotToCandidate(Spot $spot, CarbonImmutable $day, array $facts, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG, ?int $destinationId = null): Candidate
     {
         $category = $spot->category instanceof \BackedEnum
             ? $spot->category->value
             : (string) $spot->category;
 
-        [$opensAt, $closesAt, $closedToday] = $this->hoursOn($spot->opening_hours, $day);
+        [$opensAt, $closesAt, $closedToday] = $this->hoursOn($facts['hours']['parsed'], $day);
         $tags = is_array($spot->tags) ? $spot->tags : [];
+        $mapPoint = $facts['location']['map_point'];
+        $entrance = $facts['location']['entrance_point'];
+        $routePoint = $entrance['status'] === 'verified' ? $entrance : $mapPoint;
+        $lat = $routePoint['lat'] !== null ? (float) $routePoint['lat'] : (float) $spot->lat;
+        $lng = $routePoint['lng'] !== null ? (float) $routePoint['lng'] : (float) $spot->lng;
 
         // No real hours → typical hours for the category, marked assumed. This
         // is what keeps museums out of 22:00 plans and playgrounds out of the
@@ -176,23 +185,31 @@ class CandidateRepository
             id: "spot:{$spot->id}",
             destinationGroupId: 'spot:'.($destinationId ?? $spot->id),
             type: 'spot',
-            name: $spot->name,
-            lat: (float) $spot->lat,
-            lng: (float) $spot->lng,
+            name: $facts['name']['value'] ?? $spot->name,
+            lat: $lat,
+            lng: $lng,
             veedel: $spot->veedel ?? null,
             category: $category,
             outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true),
             typicalDurationMin: self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default'],
-            costTier: $this->spotCostTier($spot),
+            costTier: $this->spotCostTier($spot, $facts['fee']),
             opensAt: $opensAt,
             closesAt: $closesAt,
             isLandmark: isset($tags['wikidata']) || isset($tags['wikipedia']),
             closedToday: $closedToday,
             hoursAssumed: $hoursAssumed,
-            description: $spot->description,
-            tags: $this->textTags($tags),
+            description: $facts['description']['value'],
+            tags: $this->textTags([
+                ...$tags,
+                ...collect($facts['negative_facts'])->mapWithKeys(fn (mixed $value, string $key): array => ["negative:{$key}" => $value])->all(),
+                'resolved_access' => $facts['access']['value'],
+                'resolved_fee' => $facts['fee']['value'],
+            ]),
             qualityScore: $spot->rating !== null ? min(1.0, max(0.0, (float) $spot->rating / 5.0)) : null,
-            travelMinutesFromOrigin: (new TravelEstimator)->minutesBetween($originLat, $originLng, (float) $spot->lat, (float) $spot->lng),
+            travelMinutesFromOrigin: (new TravelEstimator)->minutesBetween($originLat, $originLng, $lat, $lng),
+            access: $facts['access']['value'],
+            factConflicts: $facts['conflicts'],
+            factRevision: $facts['revision'],
         );
     }
 
@@ -327,17 +344,20 @@ class CandidateRepository
         return false;
     }
 
-    private function spotCostTier(Spot $spot): string
+    /** @param array<string, mixed> $fee */
+    private function spotCostTier(Spot $spot, array $fee): string
     {
-        $category = $spot->category instanceof \BackedEnum ? $spot->category->value : (string) $spot->category;
-
-        if (in_array($category, self::OUTDOOR_CATEGORIES, true) || $category === 'library') {
+        if ($fee['value'] === 'free') {
             return 'free';
+        }
+        if ($fee['value'] === 'paid') {
+            return ($spot->price_range ?? null) === '€' ? 'low' : 'normal';
         }
 
         return match ($spot->price_range ?? null) {
             '€' => 'low',
-            default => 'normal',
+            '€€', '€€€' => 'normal',
+            default => 'unknown',
         };
     }
 

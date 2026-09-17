@@ -230,9 +230,8 @@ function defaultAmount(categories: string[]): 'just' | 'few' | 'full' {
 }
 
 /**
- * Only meaningful cost tiers reach the card. "free" and "budget" tell you
- * something; "normal" is just the default "no known price" bucket — noise, so
- * it's hidden rather than shown as a confusing word.
+ * Only useful compact cost labels reach the card. Standard paid and unknown
+ * prices stay hidden rather than appearing as a misleading badge.
  */
 function costLabel(tier: string): string | null {
     return tier === 'free' ? 'free' : tier === 'low' ? 'budget' : null;

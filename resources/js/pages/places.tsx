@@ -713,8 +713,8 @@ export default function Places() {
             name: place.name,
             backLabel: place.name,
             emoji: placeEmoji(place),
-            lat: place.lat,
-            lng: place.lng,
+            lat: place.routing_lat,
+            lng: place.routing_lng,
             // Route from the same origin the card distances were measured from,
             // so the sheet's times match the card (and walk isn't dropped from a
             // far-away fallback). Only when the origin is actually known.

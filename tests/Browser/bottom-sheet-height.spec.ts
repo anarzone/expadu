@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { placeFacts } from './helpers/place-facts';
 
 // Mobile viewport so the place detail opens as a BottomSheet (not the desktop
 // dialog). Block the SW so page.route intercepts.
@@ -19,6 +20,8 @@ const LISTING = {
             park: null,
             lat: 50.949,
             lng: 6.922,
+            routing_lat: 50.949,
+            routing_lng: 6.922,
             photo_url: null,
             photo_attribution: null,
             distance_min: 9,
@@ -32,6 +35,7 @@ const LISTING = {
             activities: [],
             transit_hint: null,
             facts: [{ label: 'surface', value: 'Grass' }],
+            place_facts: placeFacts(50.949, 6.922),
             feedback_state: null,
             feedback_rating: null,
         },

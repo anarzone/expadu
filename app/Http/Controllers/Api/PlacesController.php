@@ -10,6 +10,7 @@ use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use App\Services\NearbyPlaces;
 use App\Services\UserLocationService;
 use App\Transit\Dto\GeoPoint;
@@ -87,6 +88,7 @@ class PlacesController extends Controller
             : null;
         $spot->travel_min = $travelOption['minutes'] ?? null;
         $spot->travel_mode = $travelOption['mode'] ?? $request->user()->transport_mode?->value;
+        app(PlaceFacts::class)->attach(collect([$spot]));
 
         return new PlaceResource($spot);
     }
@@ -271,6 +273,8 @@ class PlacesController extends Controller
                 $request->user()->transport_mode,
             );
         }
+
+        app(PlaceFacts::class)->attach($paginator->getCollection());
 
         return PlaceResource::collection($paginator)
             ->additional([

@@ -22,7 +22,7 @@ final readonly class Candidate
         public string $category,
         public bool $outdoor,
         public int $typicalDurationMin,
-        public string $costTier,           // free | low | normal
+        public string $costTier,           // free | low | normal | unknown
         public ?CarbonImmutable $opensAt,  // null = always open within window
         public ?CarbonImmutable $closesAt,
         public ?CarbonImmutable $fixedStart = null, // events + appointments
@@ -37,6 +37,10 @@ final readonly class Candidate
         public ?float $qualityScore = null,
         public ?int $travelMinutesFromOrigin = null,
         public ?string $destinationGroupId = null,
+        public string $access = 'unknown',
+        /** @var list<string> */
+        public array $factConflicts = [],
+        public int $factRevision = 0,
     ) {}
 
     public function isFixedTime(): bool

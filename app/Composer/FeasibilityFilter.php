@@ -58,7 +58,7 @@ class FeasibilityFilter
         if ($constraints->budget === 'free' && $candidate->costTier !== 'free') {
             return false;
         }
-        if ($constraints->budget === 'low' && $candidate->costTier === 'normal') {
+        if ($constraints->budget === 'low' && ! in_array($candidate->costTier, ['free', 'low'], true)) {
             return false;
         }
 

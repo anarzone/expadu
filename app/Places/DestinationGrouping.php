@@ -26,6 +26,7 @@ class DestinationGrouping
                     ->whereNull('destination.canonical_spot_id')->whereNull('destination.destination_spot_id')
                     ->whereIn('destination.category', self::DESTINATIONS)
                     ->where('destination.is_active', true)->where('destination.is_recommendable', true);
+                app(PlaceFacts::class)->publiclyRecommendable($parent, 'destination');
             });
         });
     }

@@ -5,8 +5,11 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserPlace;
+use App\Places\RecordPlaceObservation;
+use App\Places\ReviewPlaceFacts;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
@@ -32,23 +35,115 @@ test('lists leisure places with the full contract shape', function () {
         'veedel' => 'Ehrenfeld',
         'lat' => 50.949,
         'lng' => 6.922,
+        'tip' => 'Unverified legacy advice.',
     ]);
 
     $response = $this->getJson('/api/places');
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'tip', 'transit_hint', 'facts']],
+        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'routing_lat', 'routing_lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'tip', 'transit_hint', 'facts', 'place_facts']],
         'meta' => ['total'],
     ]);
     // basketball rolls up to the coarse 'court' bucket but keeps its fine identity
     $response->assertJsonPath('data.0.category', 'court');
     $response->assertJsonPath('data.0.fine_label', 'Basketball court');
     $response->assertJsonPath('data.0.emoji', '🏀');
-    $response->assertJsonPath('data.0.open_now', true);
-    $response->assertJsonPath('data.0.price_text', 'free');
-    // no per-place tip stored → the category fallback is marked generic
-    $response->assertJsonPath('data.0.tip_is_generic', true);
+    // Category alone is not evidence that a place is currently open or free.
+    $response->assertJsonPath('data.0.open_now', null);
+    $response->assertJsonPath('data.0.price_text', null);
+    // Legacy and category-level advice without evidence remains hidden.
+    $response->assertJsonPath('data.0.tip', null);
+    $response->assertJsonPath('data.0.tip_is_generic', false);
+});
+
+test('place cards expose reviewed names and evidence-backed practical facts', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-17 10:00:00', 'Europe/Berlin'));
+    $spot = Spot::factory()->create([
+        'name' => 'Source projection',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'source' => 'osm',
+        'source_id' => 'way/991',
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/991',
+        'source_url' => 'https://www.openstreetmap.org/way/991',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-api-991',
+        'payload' => [
+            'name' => 'Quellenname',
+            'aliases' => ['Source Park'],
+            'location' => ['lat' => 50.949, 'lng' => 6.922, 'kind' => 'source_center', 'boundary_reference' => 'way/991'],
+            'access' => ['raw' => 'yes', 'conditional' => null],
+            'fee' => ['raw' => 'no'],
+            'hours' => ['raw' => 'Mo-Su 08:00-22:00'],
+            'contact' => ['website' => 'https://official.example.test/park', 'phone' => null, 'address' => 'Parkweg 9, Köln'],
+        ],
+    ]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = [
+        'name' => 'Friendly reviewed park',
+        'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225],
+    ];
+    $preview = $review->preview($spot->id, $changes);
+    $review->apply($spot->id, $changes, $preview['fingerprint'], 'https://official.example.test/park', 'reviewer@example.test');
+
+    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
+
+    expect($place['name'])->toBe('Friendly reviewed park')
+        ->and($place['lat'])->toBe(50.949)
+        ->and($place['lng'])->toBe(6.922)
+        ->and($place['routing_lat'])->toBe(50.9494)
+        ->and($place['routing_lng'])->toBe(6.9225)
+        ->and($place['open_now'])->toBeTrue()
+        ->and($place['opening_hours_text'])->toBe('Mo-Su 08:00-22:00')
+        ->and($place['price_text'])->toBe('free')
+        ->and($place['place_facts']['name_kind'])->toBe('reviewed')
+        ->and($place['place_facts']['aliases'])->toContain('Quellenname', 'Source Park')
+        ->and($place['place_facts']['location']['map_point']['kind'])->toBe('source_center')
+        ->and($place['place_facts']['contact']['website']['value'])->toBe('https://official.example.test/park')
+        ->and($place['place_facts']['revision'])->toBeGreaterThan(0);
+});
+
+test('source entrance candidates are visible but never used for routing', function () {
+    $spot = Spot::factory()->create([
+        'name' => 'Park with candidate entrance',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'source' => 'osm',
+        'source_id' => 'way/992',
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/992',
+        'source_url' => 'https://www.openstreetmap.org/way/992',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-api-992',
+        'payload' => [
+            'location' => [
+                'lat' => 50.949,
+                'lng' => 6.922,
+                'kind' => 'source_center',
+                'boundary_reference' => 'way/992',
+                'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225, 'status' => 'candidate'],
+            ],
+        ],
+    ]);
+
+    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
+
+    expect($place['place_facts']['location']['entrance_point'])->toMatchArray([
+        'lat' => 50.9494,
+        'lng' => 6.9225,
+        'status' => 'candidate',
+    ])->and($place['routing_lat'])->toBe(50.949)
+        ->and($place['routing_lng'])->toBe(6.922);
 });
 
 test('place cards expose only approved active media and prefer it over legacy columns', function () {

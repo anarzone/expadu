@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
 use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -54,6 +55,7 @@ class SpotSearchController extends Controller
             ->orderBy('distance_km')
             ->limit((int) ($request->query('limit', 50)))
             ->get();
+        app(PlaceFacts::class)->project($spots);
 
         return response()->json($spots->map(fn (Spot $s) => [
             'id' => $s->id,
