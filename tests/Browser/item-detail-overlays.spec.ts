@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { placeFacts } from './helpers/place-facts';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -12,6 +13,8 @@ const PLACE = {
     park: null,
     lat: 50.958,
     lng: 6.973,
+    routing_lat: 50.958,
+    routing_lng: 6.973,
     photo_url: null,
     photo_attribution: null,
     distance_min: 19,
@@ -33,6 +36,9 @@ const PLACE = {
         { label: 'Access', value: 'Free' },
         { label: 'Best for', value: 'Walking' },
     ],
+    place_facts: placeFacts(50.958, 6.973, {
+        description: 'A calm garden for a walk or a low-key afternoon.',
+    }),
     feedback_state: null,
     feedback_rating: null,
 };

@@ -9,6 +9,7 @@ use App\Models\Spot;
 use App\Models\User;
 use App\Places\DestinationGrouping;
 use App\Places\ReconcilePlace;
+use App\Places\ReviewPlaceFacts;
 use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
@@ -84,6 +85,17 @@ test('parent restrictions and changed containment fail closed without erasing re
         ->and($child->fresh()->destination_spot_id)->toBe($parent->id)
         ->and(DB::table('place_destination_reviews')->count())->toBe(1);
 })->with(['inactive', 'restricted', 'moved', 'child_restricted']);
+
+test('a reviewed private destination also removes its grouped facilities from discovery', function () {
+    [$parent, $child] = destinationFixture();
+    reviewDestination($child, $parent);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($parent->id, ['access' => 'private']);
+    $review->apply($parent->id, ['access' => 'private'], $preview['fingerprint'], 'Official access evidence confirms private entry.', 'reviewer@example.test');
+
+    expect(app(DestinationGrouping::class)->eligible(Spot::query())->pluck('id')->all())
+        ->not->toContain($parent->id, $child->id);
+});
 
 test('reviewed membership is preserved when its destination identity is reconciled', function () {
     [$parent, $child] = destinationFixture();
@@ -184,11 +196,11 @@ test('reviewing membership invalidates warm Home scans and nearest general disco
     [$parent, $child] = destinationFixture();
     $user = User::factory()->onboarded()->create();
     app(DiscoveryFeed::class)->for(homeContext($user));
-    expect(array_column(Cache::get('discovery:spot-scan:identity:0:grouping:0'), 'id'))->toContain($child->id);
+    expect(array_column(Cache::get('discovery:spot-scan:identity:0:grouping:0:facts:0'), 'id'))->toContain($child->id);
     reviewDestination($child, $parent);
     app(DiscoveryFeed::class)->for(homeContext($user));
     $revision = app(DestinationGrouping::class)->revision();
-    expect(array_column(Cache::get("discovery:spot-scan:identity:0:grouping:$revision"), 'id'))->not->toContain($child->id)
+    expect(array_column(Cache::get("discovery:spot-scan:identity:0:grouping:$revision:facts:0"), 'id'))->not->toContain($child->id)
         ->and(app(NearbyPlaces::class)->nearest(50.95, 6.95, 20)->modelKeys())->toBe([$parent->id]);
 });
 

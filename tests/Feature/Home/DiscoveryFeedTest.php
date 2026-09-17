@@ -5,6 +5,7 @@ use App\Home\PromptSuggestions;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\User;
+use App\Places\ReviewPlaceFacts;
 use App\Profile\CategoryAffinity;
 use App\Profile\ProfileEngine;
 use Illuminate\Support\Facades\Cache;
@@ -155,12 +156,36 @@ test('the global spot catalogue scan is cached as plain rows', function () {
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
 
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
-    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0'))->toBeTrue();
+    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0:facts:0'))->toBeTrue();
     // Plain rows, not Eloquent models — so the cache round-trips on any driver
     // (a serialised model collection can come back as __PHP_Incomplete_Class).
-    expect(Cache::get('discovery:spot-scan:identity:0:grouping:0')[0])->toBeArray();
+    expect(Cache::get('discovery:spot-scan:identity:0:grouping:0:facts:0')[0])->toBeArray();
     // A second call hits the cache and still builds the feed.
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
+});
+
+test('a reviewed place fact invalidates the Home scan and updates its display name', function () {
+    $user = feedUser();
+    $spot = Spot::factory()->create([
+        'name' => 'Old source name',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.95,
+        'lng' => 6.92,
+    ]);
+    app(DiscoveryFeed::class)->for(homeContext($user));
+    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0:facts:0'))->toBeTrue();
+
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($spot->id, ['name' => 'Friendly reviewed name']);
+    $review->apply($spot->id, ['name' => 'Friendly reviewed name'], $preview['fingerprint'], 'Official evidence confirms this display name.', 'reviewer@example.test');
+
+    $rails = collect(app(DiscoveryFeed::class)->for(homeContext($user)));
+    $names = $rails->flatMap(fn (array $rail) => $rail['cards'])->pluck('name');
+
+    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0:facts:1'))->toBeTrue()
+        ->and($names)->toContain('Friendly reviewed name')
+        ->not->toContain('Old source name');
 });
 
 test('a family sees a with-the-kids rail of family categories, not bars', function () {

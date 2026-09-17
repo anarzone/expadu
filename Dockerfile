@@ -85,6 +85,9 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 # ── Stage 4: Production ───────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production
 
+ARG APP_COMMIT=""
+ENV APP_COMMIT=$APP_COMMIT
+
 # Runtime libraries only — no -dev headers, no LLVM, no Python
 RUN apk add --no-cache \
     nginx \

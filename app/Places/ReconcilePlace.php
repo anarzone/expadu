@@ -30,6 +30,7 @@ class ReconcilePlace
                 throw new DomainException('The place records changed after preview; review a fresh preview.');
             }
 
+            $this->moveFactHistory($aliasId, $canonicalId);
             foreach (['spots' => 'parent_spot_id', 'park_areas' => 'parent_spot_id', 'venues' => 'place_id'] as $table => $column) {
                 DB::table($table)->where($column, $aliasId)->update([$column => $canonicalId]);
             }
@@ -97,6 +98,18 @@ class ReconcilePlace
         foreach (['spots' => 'parent_spot_id', 'park_areas' => 'parent_spot_id', 'venues' => 'place_id'] as $table => $column) {
             $snapshot['references'][$table] = DB::table($table)->where($column, $aliasId)->orderBy('id')->pluck('id')->all();
         }
+        $snapshot['fact_observations'] = DB::table('place_fact_observations')
+            ->whereIn('spot_id', [$aliasId, $canonicalId])
+            ->orderBy('id')
+            ->get()
+            ->map(fn (object $row) => (array) $row)
+            ->all();
+        $snapshot['fact_corrections'] = DB::table('place_fact_corrections')
+            ->whereIn('spot_id', [$aliasId, $canonicalId])
+            ->orderBy('id')
+            ->get()
+            ->map(fn (object $row) => (array) $row)
+            ->all();
 
         return [
             'alias_id' => $aliasId,
@@ -106,5 +119,44 @@ class ReconcilePlace
             'fingerprint' => hash('sha256', json_encode($snapshot, JSON_THROW_ON_ERROR)),
             'snapshot' => $snapshot,
         ];
+    }
+
+    private function moveFactHistory(int $aliasId, int $canonicalId): void
+    {
+        $observations = DB::table('place_fact_observations')
+            ->whereIn('spot_id', [$aliasId, $canonicalId])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+        $corrections = DB::table('place_fact_corrections')
+            ->whereIn('spot_id', [$aliasId, $canonicalId])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        $canonicalKeys = $observations
+            ->where('spot_id', $canonicalId)
+            ->mapWithKeys(fn (object $row) => [$row->provider."\0".$row->provider_record_id."\0".$row->ingestion_key => true]);
+        foreach ($observations->where('spot_id', $aliasId) as $row) {
+            $key = $row->provider."\0".$row->provider_record_id."\0".$row->ingestion_key;
+            if ($canonicalKeys->has($key)) {
+                throw new DomainException('Resolve duplicate source observation keys before reconciling these place identities.');
+            }
+        }
+
+        $aliasActiveFields = $corrections->where('spot_id', $aliasId)->whereNull('revoked_at')->pluck('field');
+        $canonicalActiveFields = $corrections->where('spot_id', $canonicalId)->whereNull('revoked_at')->pluck('field');
+        if ($aliasActiveFields->intersect($canonicalActiveFields)->isNotEmpty()) {
+            throw new DomainException('Resolve conflicting active fact corrections before reconciling these place identities.');
+        }
+
+        $moved = $observations->where('spot_id', $aliasId)->count() + $corrections->where('spot_id', $aliasId)->count();
+        if ($moved === 0) {
+            return;
+        }
+
+        DB::table('place_fact_observations')->where('spot_id', $aliasId)->update(['spot_id' => $canonicalId, 'updated_at' => now()]);
+        DB::table('place_fact_corrections')->where('spot_id', $aliasId)->update(['spot_id' => $canonicalId, 'updated_at' => now()]);
+        app(PlaceFactRevision::class)->bump();
     }
 }

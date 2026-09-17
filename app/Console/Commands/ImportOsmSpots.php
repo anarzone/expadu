@@ -5,12 +5,15 @@ namespace App\Console\Commands;
 use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Spot;
+use App\Places\PlaceFacts;
+use App\Places\RecordPlaceObservation;
 use App\Services\OpeningHoursParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class ImportOsmSpots extends Command
@@ -25,11 +28,15 @@ class ImportOsmSpots extends Command
      */
     protected $description = 'Import cafes, coworking spaces, and libraries from OpenStreetMap via Overpass API';
 
-    public function handle(CaptureMediaCandidate $captureMediaCandidate): int
-    {
+    public function handle(
+        CaptureMediaCandidate $captureMediaCandidate,
+        RecordPlaceObservation $recordPlaceObservation,
+        PlaceFacts $placeFacts,
+    ): int {
         // The database column has second precision. Align the cutoff so rows
         // seen during this same second are not immediately retired.
         $refreshStartedAt = CarbonImmutable::now()->startOfSecond();
+        $observationRunId = (string) Str::uuid();
         $city = $this->option('city');
 
         if ($city !== 'cologne') {
@@ -238,12 +245,53 @@ class ImportOsmSpots extends Command
                 'is_recommendable' => $this->isRecommendationDestination($category, $name),
             ];
 
-            if ($existing !== null) {
-                $existing->update(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
-                $spot = $existing;
-            } else {
-                $spot = Spot::query()->create(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
-            }
+            $spot = DB::transaction(function () use (
+                $existing,
+                $values,
+                $sourceId,
+                $element,
+                $tags,
+                $lat,
+                $lng,
+                $address,
+                $refreshStartedAt,
+                $observationRunId,
+                $recordPlaceObservation,
+                $placeFacts,
+                $category,
+                $name,
+            ): Spot {
+                if ($existing !== null) {
+                    $existing->update(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
+                    $spot = $existing;
+                } else {
+                    $spot = Spot::query()->create(['source' => 'osm', 'source_id' => $sourceId, ...$values]);
+                }
+
+                $recordPlaceObservation->record($spot, [
+                    'provider' => 'osm',
+                    'provider_record_id' => $sourceId,
+                    'source_url' => 'https://www.openstreetmap.org/'.$sourceId,
+                    'observed_at' => $refreshStartedAt,
+                    'ingestion_key' => "osm:{$observationRunId}:{$sourceId}",
+                    'payload' => $this->observationPayload($element, $tags, $sourceId, $lat, $lng, $address),
+                ]);
+
+                $facts = $placeFacts->resolve($spot->fresh());
+                $resolvedName = $facts['name']['value'] ?? $name;
+                $spot->update([
+                    'name' => $resolvedName,
+                    'address' => $facts['contact']['address']['value'],
+                    'opening_hours' => $facts['hours']['parsed'],
+                    'website' => $facts['contact']['website']['value'],
+                    'phone' => $facts['contact']['phone']['value'],
+                    'description' => $facts['description']['value'],
+                    'is_recommendable' => $this->isRecommendationDestination($category, $resolvedName)
+                        && $this->hasPublicRecommendationAccess($facts['access']),
+                ]);
+
+                return $spot;
+            });
 
             $this->captureSourceMedia($spot, $tags, $sourceId, $captureMediaCandidate);
 
@@ -360,7 +408,7 @@ class ImportOsmSpots extends Command
      * wikidata/wikipedia link to Commons photos (spots:fetch-photos).
      */
     private const KEPT_TAG_KEYS = [
-        'surface', 'lit', 'covered', 'indoor', 'access', 'fee', 'opening_hours',
+        'surface', 'lit', 'covered', 'indoor', 'access', 'access:conditional', 'fee', 'opening_hours',
         'sport', 'hoops', 'wheelchair', 'drinking_water', 'barrier',
         // Photo links resolved later by spots:fetch-photos. wikimedia_commons
         // and image are mapper-provided photos of the place itself.
@@ -374,6 +422,115 @@ class ImportOsmSpots extends Command
     protected function keptTags(array $tags): array
     {
         return array_intersect_key($tags, array_flip(self::KEPT_TAG_KEYS));
+    }
+
+    /**
+     * Preserve what the provider actually said. Display projections are
+     * resolved separately so a later refresh cannot erase reviewed facts.
+     *
+     * @param  array<string, mixed>  $element
+     * @param  array<string, mixed>  $tags
+     * @return array<string, mixed>
+     */
+    private function observationPayload(
+        array $element,
+        array $tags,
+        string $sourceId,
+        float $lat,
+        float $lng,
+        ?string $address,
+    ): array {
+        $type = (string) ($element['type'] ?? 'node');
+
+        return [
+            'name' => $this->tagValue($tags['name'] ?? null, 255),
+            'aliases' => $this->sourceAliases($tags),
+            'location' => [
+                'lat' => $lat,
+                'lng' => $lng,
+                'kind' => $type === 'node' ? 'source_node' : 'source_center',
+                'boundary_reference' => $type === 'node' ? null : $sourceId,
+            ],
+            'access' => [
+                'raw' => $this->tagValue($tags['access'] ?? null, 500),
+                'conditional' => $this->tagValue($tags['access:conditional'] ?? null, 500),
+            ],
+            'fee' => ['raw' => $this->tagValue($tags['fee'] ?? null, 255)],
+            'hours' => ['raw' => $this->tagValue($tags['opening_hours'] ?? null, 500)],
+            'contact' => [
+                'website' => $this->httpUrlTag($tags['contact:website'] ?? $tags['website'] ?? null),
+                'phone' => $this->tagValue($tags['contact:phone'] ?? $tags['phone'] ?? null, 500),
+                'address' => $this->tagValue($address, 500),
+            ],
+            'description' => $this->tagValue($tags['description'] ?? $tags['description:en'] ?? null, 1000),
+            'negative_facts' => collect(['covered', 'drinking_water', 'indoor', 'lit', 'wheelchair'])
+                ->filter(fn (string $key): bool => in_array(mb_strtolower((string) ($tags[$key] ?? '')), ['no', 'false', '0'], true))
+                ->mapWithKeys(fn (string $key): array => [$key => (string) $tags[$key]])
+                ->all(),
+        ];
+    }
+
+    /** @param array<string, mixed> $tags
+     * @return list<string>
+     */
+    private function sourceAliases(array $tags): array
+    {
+        $aliases = [];
+        foreach (['alt_name', 'short_name', 'official_name', 'local_name', 'old_name'] as $key) {
+            $value = $this->tagValue($tags[$key] ?? null);
+            if ($value !== null) {
+                array_push($aliases, ...array_map('trim', explode(';', $value)));
+            }
+        }
+
+        $localized = collect($tags)
+            ->filter(fn (mixed $value, string $key): bool => str_starts_with($key, 'name:') && $this->tagValue($value) !== null)
+            ->sortKeys()
+            ->values()
+            ->map(fn (mixed $value): ?string => $this->tagValue($value))
+            ->filter()
+            ->all();
+
+        return collect([...$aliases, ...$localized])
+            ->map(fn (string $alias): string => trim($alias))
+            ->filter(fn (string $alias): bool => $alias !== '' && mb_strlen($alias) <= 255 && $alias !== $this->tagValue($tags['name'] ?? null))
+            ->unique()
+            ->values()
+            ->take(50)
+            ->all();
+    }
+
+    /** @param array<string, mixed> $access */
+    private function hasPublicRecommendationAccess(array $access): bool
+    {
+        return $access['status'] !== 'conflicting'
+            && ($access['conditional'] ?? null) === null
+            && ! in_array($access['value'] ?? 'unknown', ['private', 'no', 'customers', 'members', 'permit'], true);
+    }
+
+    private function tagValue(mixed $value, ?int $maxLength = null): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' || ($maxLength !== null && mb_strlen($value) > $maxLength) ? null : $value;
+    }
+
+    private function httpUrlTag(mixed $value): ?string
+    {
+        $url = $this->tagValue($value, 500);
+        if ($url === null) {
+            return null;
+        }
+
+        $scheme = mb_strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) !== false
+            ? $url
+            : null;
     }
 
     /**

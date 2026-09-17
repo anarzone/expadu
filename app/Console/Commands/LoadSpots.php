@@ -21,8 +21,8 @@ class LoadSpots extends Command
 
     public function handle(): int
     {
-        if ((DB::table('place_reconciliations')->exists() || DB::table('place_destination_reviews')->exists())) {
-            $this->error('Snapshot replacement would erase retained place identities and their history.');
+        if ($this->hasProtectedHistory()) {
+            $this->error('Snapshot replacement would erase retained place identities or fact evidence.');
 
             return self::FAILURE;
         }
@@ -45,8 +45,8 @@ class LoadSpots extends Command
 
         DB::transaction(function () use ($rows) {
             DB::statement('LOCK TABLE spots IN ACCESS EXCLUSIVE MODE');
-            if ((DB::table('place_reconciliations')->exists() || DB::table('place_destination_reviews')->exists())) {
-                throw new \DomainException('Place identities changed before replacement; the catalogue was not modified.');
+            if ($this->hasProtectedHistory()) {
+                throw new \DomainException('Protected place history changed before replacement; the catalogue was not modified.');
             }
             DB::statement('TRUNCATE spots RESTART IDENTITY CASCADE');
 
@@ -63,5 +63,13 @@ class LoadSpots extends Command
         $this->info('Loaded '.count($rows).' spots.');
 
         return self::SUCCESS;
+    }
+
+    private function hasProtectedHistory(): bool
+    {
+        return DB::table('place_reconciliations')->exists()
+            || DB::table('place_destination_reviews')->exists()
+            || DB::table('place_fact_observations')->exists()
+            || DB::table('place_fact_corrections')->exists();
     }
 }
