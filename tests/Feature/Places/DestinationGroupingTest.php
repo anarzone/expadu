@@ -9,6 +9,7 @@ use App\Models\Spot;
 use App\Models\User;
 use App\Places\DestinationGrouping;
 use App\Places\ReconcilePlace;
+use App\Places\RecordPlaceObservation;
 use App\Places\ReviewPlaceFacts;
 use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
@@ -147,6 +148,66 @@ test('restricted activities neither advertise destination chips nor pass explici
     $this->getJson('/api/places?activity=tennis')->assertSuccessful()->assertJsonCount(0, 'data');
     $this->getJson('/api/places?category=court')->assertSuccessful()->assertJsonCount(0, 'data');
     $this->getJson("/api/places/{$parent->id}")->assertSuccessful()->assertJsonCount(0, 'data.activities');
+});
+
+test('a destination without component candidates skips the reviewed component policy query', function () {
+    $parent = Spot::factory()->create([
+        'name' => 'Empty park',
+        'category' => 'park',
+        'source' => 'osm',
+        'source_id' => 'way/9910',
+    ]);
+    app(RecordPlaceObservation::class)->record($parent, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/9910',
+        'source_url' => 'https://www.openstreetmap.org/way/9910',
+        'observed_at' => '2026-09-18T10:00:00+00:00',
+        'ingestion_key' => 'fixture',
+        'payload' => ['name' => 'Empty park'],
+    ]);
+    $this->actingAs(User::factory()->onboarded()->create());
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    $this->getJson("/api/places/{$parent->id}")
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data.activities');
+
+    expect(collect($queries)->contains(fn (string $sql) => str_contains($sql, 'reviewed_destination')))->toBeFalse();
+});
+
+test('destination activity chips retain policy gates when raw component candidates exist', function () {
+    [$parent, $valid] = destinationFixture();
+    reviewDestination($valid, $parent);
+
+    $restricted = Spot::factory()->create([
+        'name' => 'Restricted pitch',
+        'category' => 'pitch',
+        'parent_spot_id' => $parent->id,
+        'lat' => 50.952,
+        'lng' => 6.952,
+    ]);
+    reviewDestination($restricted, $parent);
+    $restricted->update(['is_recommendable' => false]);
+
+    $stale = Spot::factory()->create([
+        'name' => 'Stale basketball court',
+        'category' => 'basketball',
+        'parent_spot_id' => $parent->id,
+        'lat' => 50.953,
+        'lng' => 6.953,
+    ]);
+    reviewDestination($stale, $parent);
+    $stale->update(['parent_spot_id' => null]);
+
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    $this->getJson("/api/places/{$parent->id}")
+        ->assertSuccessful()
+        ->assertJsonPath('data.activities.0.label', 'Tennis court')
+        ->assertJsonCount(1, 'data.activities');
 });
 
 test('Composer suppresses components before ranking but retains explicitly requested or pinned facilities', function () {

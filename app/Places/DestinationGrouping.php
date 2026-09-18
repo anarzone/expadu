@@ -46,6 +46,17 @@ class DestinationGrouping
             ->select('id')->whereIn('id', $destinationIds)->orWhereIn('canonical_spot_id', $destinationIds));
     }
 
+    /** @param list<int> $destinationIds */
+    public function hasComponentCandidates(array $destinationIds): bool
+    {
+        if ($destinationIds === []) {
+            return false;
+        }
+
+        return Spot::query()->whereIn('destination_spot_id', DB::table('spots')
+            ->select('id')->whereIn('id', $destinationIds)->orWhereIn('canonical_spot_id', $destinationIds))->exists();
+    }
+
     /** @param list<int> $spotIds
      * @return array<int, int>
      */
