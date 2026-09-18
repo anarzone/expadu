@@ -10,9 +10,21 @@ return [
         'min_width' => 400,
         'min_height' => 225,
         'broken_after_failures' => 3,
+        'queue_lease_minutes' => 30,
+        'active_interval_seconds' => 7 * 24 * 60 * 60,
+        'failure_retry_seconds' => [60 * 60, 6 * 60 * 60, 24 * 60 * 60, 7 * 24 * 60 * 60],
+    ],
+
+    'acquisition' => [
+        'claim_minutes' => 30,
+        'outcome_cooldown_days' => 30,
+        'transient_retry_seconds' => [60 * 60, 6 * 60 * 60, 24 * 60 * 60],
     ],
 
     'providers' => [
+        // The structured event feed does not grant reusable image rights. The
+        // city's copyright notice requires prior written permission and bars
+        // commercial reuse, so validation may prove health but never rights.
         'stadt-koeln' => [
             'hosts' => ['www.stadt-koeln.de'],
         ],
@@ -22,11 +34,10 @@ return [
         'wikimedia-commons' => [
             'hosts' => ['commons.wikimedia.org', 'upload.wikimedia.org'],
         ],
-        // Street-level imagery, CC BY-SA 4.0, free for commercial use. Photos
-        // are served from Facebook's CDN (Meta owns Mapillary), so the host
-        // allow-list has to cover the scontent shards, not graph.mapillary.com.
+        // Mapillary documents its imagery as CC BY-SA 4.0. Its thumbnail URLs
+        // use Meta CDN shards; each host must be audited and listed exactly.
         'mapillary' => [
-            'hosts' => ['scontent-mxp1-1.xx.fbcdn.net', 'z-p3-scontent.xx.fbcdn.net', 'fbcdn.net', 'mapillary.com'],
+            'hosts' => ['scontent-mxp1-1.xx.fbcdn.net', 'z-p3-scontent.xx.fbcdn.net', 'mapillary.com'],
         ],
     ],
 
@@ -46,7 +57,7 @@ return [
         // it. Beyond this many degrees off the bearing to the spot, the frame
         // shows whatever was across the road instead.
         'max_bearing_offset_degrees' => (int) env('MAPILLARY_MAX_BEARING_OFFSET', 40),
-        // Mapillary caps radius at 50m.
+        // Keep the search box local enough that bearing is useful evidence.
         'radius_metres' => (int) env('MAPILLARY_RADIUS', 30),
     ],
 ];

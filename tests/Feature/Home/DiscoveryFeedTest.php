@@ -3,6 +3,7 @@
 use App\Home\DiscoveryFeed;
 use App\Home\PromptSuggestions;
 use App\Models\Event;
+use App\Models\MediaAsset;
 use App\Models\Spot;
 use App\Models\User;
 use App\Places\ReviewPlaceFacts;
@@ -243,7 +244,7 @@ test('a spot never repeats across rails', function () {
     expect($rails->pluck('key'))->toContain('made_for_today', 'with_kids', 'around_home');
 });
 
-test('a spot photo and its attribution flow through to the rail card', function () {
+test('an unreviewed legacy spot photo never flows through to a rail card', function () {
     $user = feedUser();
     Spot::factory()->create([
         'name' => 'Rheinpark',
@@ -260,8 +261,41 @@ test('a spot photo and its attribution flow through to the rail card', function 
         ->firstWhere('name', 'Rheinpark');
 
     expect($card)->not->toBeNull()
-        ->and($card['photo_url'])->toContain('Special:FilePath')
-        ->and($card['photo_attribution'])->toContain('CC BY-SA 4.0');
+        ->and($card['photo_url'])->toBeNull()
+        ->and($card['photo_attribution'])->toBeNull();
+});
+
+test('a managed spot rail card carries source and license attribution links', function () {
+    $user = feedUser();
+    $spot = Spot::factory()->create([
+        'name' => 'Rheinpark',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.95,
+        'lng' => 6.92,
+    ]);
+    $asset = MediaAsset::factory()->approved()->create([
+        'remote_url' => 'https://upload.wikimedia.org/rheinpark.jpg',
+        'source_page_url' => 'https://commons.wikimedia.org/wiki/File:Rheinpark.jpg',
+        'license_url' => 'https://creativecommons.org/licenses/by-sa/4.0/',
+        'attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+    $spot->mediaAttachments()->create([
+        'media_asset_id' => $asset->id,
+        'role' => 'hero',
+        'match_status' => 'accepted',
+        'match_method' => 'osm_wikimedia_commons_tag',
+        'match_evidence' => ['tag' => 'File:Rheinpark.jpg'],
+        'match_reviewed_at' => now(),
+    ]);
+
+    $card = collect(app(DiscoveryFeed::class)->for(homeContext($user)))
+        ->flatMap(fn ($rail) => $rail['cards'])
+        ->firstWhere('name', 'Rheinpark');
+
+    expect($card['photo_url'])->toBe('https://upload.wikimedia.org/rheinpark.jpg')
+        ->and($card['photo_source_url'])->toBe('https://commons.wikimedia.org/wiki/File:Rheinpark.jpg')
+        ->and($card['photo_license_url'])->toBe('https://creativecommons.org/licenses/by-sa/4.0/');
 });
 
 test('a just-arrived user gets a get-oriented rail of landmarks', function () {

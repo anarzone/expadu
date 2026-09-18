@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Media\CaptureMediaCandidate;
 use App\Media\CommonsPhotoResolver;
+use App\Media\MediaAcquisitionScheduler;
+use App\Media\ScheduledMediaAcquisition;
 use App\Models\Venue;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -55,23 +57,41 @@ class FetchVenuePhotos extends Command
         parent::__construct();
     }
 
-    public function handle(CaptureMediaCandidate $captureMediaCandidate): int
-    {
-        $venues = Venue::query()
+    public function handle(
+        CaptureMediaCandidate $captureMediaCandidate,
+        MediaAcquisitionScheduler $scheduler,
+    ): int {
+        $query = Venue::query()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->when(! $this->option('force'), fn ($query) => $query->whereDoesntHave(
-                'mediaAttachments.mediaAsset',
-                fn ($asset) => $asset->where('provider', 'wikimedia-commons')->published(),
-            ))
-            ->orderBy('id')
-            ->limit((int) $this->option('limit'))
-            ->get();
+                'mediaAttachments',
+                fn ($attachment) => $attachment->publishable('wikimedia-commons'),
+            ));
+        $scheduled = $scheduler->select(
+            $query,
+            'wikimedia-commons',
+            'venue_search',
+            max(1, (int) $this->option('limit')),
+            fn (Venue $venue): array => [
+                'name' => $venue->name,
+                'address' => $venue->address_text,
+                'lat' => $venue->lat,
+                'lng' => $venue->lng,
+                'entity_max_distance_metres' => self::ENTITY_MAX_DISTANCE_M,
+                'geosearch_radius_metres' => CommonsPhotoResolver::GEOSEARCH_RADIUS_M,
+            ],
+            (bool) $this->option('force'),
+        );
+        $venues = $scheduled->map(fn (ScheduledMediaAcquisition $item) => $item->target);
+        $scheduledByVenue = $scheduled->keyBy(fn (ScheduledMediaAcquisition $item) => $item->target->getKey());
 
         $this->info("Resolving photos for {$venues->count()} venue(s)...");
 
         // venue id => Commons file name
-        $files = $this->filesFromWikidataSearch($venues);
+        $providerErrors = [];
+        $files = $this->filesFromWikidataSearch($venues, $providerErrors);
+        $wikidataVenueIds = array_keys($files);
         $this->info('Wikidata (coordinate-verified): '.count($files).' file(s).');
 
         $stopWords = $this->venueStopWords();
@@ -84,7 +104,10 @@ class FetchVenuePhotos extends Command
                 (float) $venue->lat,
                 (float) $venue->lng,
                 $this->identityName((string) $venue->name),
-                fn (string $error) => $this->warn("  geosearch failed for venue {$venue->id}: {$error}"),
+                function (string $error) use ($venue, &$providerErrors): void {
+                    $this->retainProviderError($providerErrors, $venue->id, $error);
+                    $this->warn("  geosearch failed for venue {$venue->id}: {$error}");
+                },
                 $stopWords,
             );
             if ($file !== null) {
@@ -92,9 +115,33 @@ class FetchVenuePhotos extends Command
             }
         }
 
-        $saved = $this->save($venues, $files, $captureMediaCandidate);
+        $result = $this->save($venues, $files, $wikidataVenueIds, $captureMediaCandidate);
+        foreach ($scheduledByVenue as $venueId => $item) {
+            $assetId = $result['captured'][$venueId] ?? null;
+            $hasCandidate = isset($files[$venueId]);
+            $providerError = $providerErrors[$venueId] ?? ($hasCandidate ? $result['provider_error'] : null);
+            $scheduler->record(
+                $item,
+                $assetId !== null
+                    ? 'captured'
+                    : ($providerError !== null
+                        ? (str_contains($providerError, '429') ? 'rate_limited' : 'failed')
+                        : ($hasCandidate ? 'failed' : 'no_result')),
+                errorCode: $assetId === null && ($hasCandidate || $providerError !== null)
+                    ? ($providerError === null ? 'metadata_or_candidate_unavailable' : 'provider_request_failed')
+                    : null,
+                candidateCount: $hasCandidate ? 1 : 0,
+                selectedAssetIds: $assetId === null ? [] : [$assetId],
+                retryAfterSeconds: $scheduler->retryAfterSeconds($providerError),
+                metadata: $hasCandidate ? ['commons_file' => $files[$venueId]] : null,
+            );
+        }
 
-        $this->info("Venue photos saved: {$saved}.");
+        $this->info("Venue photos saved: {$result['count']}.");
+        $this->line(json_encode(
+            ['acquisition_summary' => $scheduler->summary($scheduled)],
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        ));
 
         return self::SUCCESS;
     }
@@ -103,18 +150,23 @@ class FetchVenuePhotos extends Command
      * @param  Collection<int, Venue>  $venues
      * @param  array<int, string>  $files  venue id => Commons file name
      */
-    private function save(Collection $venues, array $files, CaptureMediaCandidate $captureMediaCandidate): int
+    private function save(Collection $venues, array $files, array $wikidataVenueIds, CaptureMediaCandidate $captureMediaCandidate): array
     {
         if ($files === []) {
-            return 0;
+            return ['count' => 0, 'captured' => [], 'provider_error' => null];
         }
 
+        $providerError = null;
         $meta = $this->resolver->commonsMetadata(
             array_unique(array_values($files)),
-            fn (string $error) => $this->warn("  {$error}"),
+            function (string $error) use (&$providerError): void {
+                $providerError = $error;
+                $this->warn("  {$error}");
+            },
         );
 
         $saved = 0;
+        $captured = [];
         foreach ($files as $venueId => $file) {
             $venue = $venues->firstWhere('id', $venueId);
             if (! $venue) {
@@ -127,15 +179,32 @@ class FetchVenuePhotos extends Command
             }
 
             $canonicalFile = str_replace(' ', '_', trim($file));
-            $attachment = $captureMediaCandidate->execute($venue, $this->resolver->candidate($canonicalFile, $metadata));
+            $method = in_array($venueId, $wikidataVenueIds, true)
+                ? 'venue_wikidata_coordinate_match'
+                : 'venue_commons_geosearch';
+            $attachment = $captureMediaCandidate->execute($venue, $this->resolver->candidate(
+                $canonicalFile,
+                $metadata,
+                'pending',
+                $method,
+                [
+                    'name' => $venue->name,
+                    'lat' => $venue->lat,
+                    'lng' => $venue->lng,
+                    'commons_file' => $canonicalFile,
+                ],
+            ));
 
             $asset = $attachment?->mediaAsset;
+            if ($attachment !== null) {
+                $captured[$venueId] = $attachment->media_asset_id;
+            }
             if ($asset?->rights_status === 'approved' && $asset->health_status === 'active') {
                 $saved++;
             }
         }
 
-        return $saved;
+        return ['count' => $saved, 'captured' => $captured, 'provider_error' => $providerError];
     }
 
     /**
@@ -146,20 +215,34 @@ class FetchVenuePhotos extends Command
      * @param  Collection<int, Venue>  $venues
      * @return array<int, string> venue id => Commons file name
      */
-    private function filesFromWikidataSearch(Collection $venues): array
+    private function filesFromWikidataSearch(Collection $venues, array &$providerErrors): array
     {
         // venue id => ordered candidate QIDs
         $candidates = [];
         $allQids = [];
         foreach ($venues as $venue) {
-            $qids = $this->searchEntityIds((string) $venue->name);
+            $qids = $this->searchEntityIds(
+                (string) $venue->name,
+                function (string $error) use (&$providerErrors, $venue): void {
+                    $this->retainProviderError($providerErrors, $venue->id, $error);
+                },
+            );
             if ($qids !== []) {
                 $candidates[$venue->id] = $qids;
                 $allQids = array_merge($allQids, $qids);
             }
         }
 
-        $claims = $this->entityClaims(array_values(array_unique($allQids)));
+        $claims = $this->entityClaims(
+            array_values(array_unique($allQids)),
+            function (string $error, array $failedQids) use ($candidates, &$providerErrors): void {
+                foreach ($candidates as $venueId => $venueQids) {
+                    if (array_intersect($venueQids, $failedQids) !== []) {
+                        $this->retainProviderError($providerErrors, $venueId, $error);
+                    }
+                }
+            },
+        );
 
         $files = [];
         foreach ($candidates as $venueId => $qids) {
@@ -229,14 +312,14 @@ class FetchVenuePhotos extends Command
     /**
      * @return list<string> candidate QIDs in search-relevance order
      */
-    private function searchEntityIds(string $name): array
+    private function searchEntityIds(string $name, ?callable $onError = null): array
     {
         if (trim($name) === '') {
             return [];
         }
 
         try {
-            $results = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(20)
+            $response = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(20)
                 ->get('https://www.wikidata.org/w/api.php', [
                     'action' => 'wbsearchentities',
                     'search' => $name,
@@ -245,10 +328,22 @@ class FetchVenuePhotos extends Command
                     'type' => 'item',
                     'limit' => 5,
                     'format' => 'json',
-                ])
-                ->json('search', []);
+                ]);
+            if (! $response->successful()) {
+                $error = CommonsPhotoResolver::httpError($response);
+                $this->warn("  wikidata search failed for \"{$name}\": {$error}");
+                if ($onError !== null) {
+                    $onError($error);
+                }
+
+                return [];
+            }
+            $results = $response->json('search', []);
         } catch (\Exception $e) {
             $this->warn("  wikidata search failed for \"{$name}\": {$e->getMessage()}");
+            if ($onError !== null) {
+                $onError($e->getMessage());
+            }
 
             return [];
         }
@@ -266,7 +361,7 @@ class FetchVenuePhotos extends Command
      * @param  list<string>  $qids
      * @return array<string, array{file: ?string, lat: ?float, lng: ?float}>
      */
-    private function entityClaims(array $qids): array
+    private function entityClaims(array $qids, ?callable $onError = null): array
     {
         $claims = [];
         foreach (array_chunk($qids, CommonsPhotoResolver::BATCH) as $chunk) {
@@ -274,16 +369,28 @@ class FetchVenuePhotos extends Command
                 continue;
             }
             try {
-                $entities = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(30)
+                $response = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(30)
                     ->get('https://www.wikidata.org/w/api.php', [
                         'action' => 'wbgetentities',
                         'ids' => implode('|', $chunk),
                         'props' => 'claims',
                         'format' => 'json',
-                    ])
-                    ->json('entities', []);
+                    ]);
+                if (! $response->successful()) {
+                    $error = CommonsPhotoResolver::httpError($response);
+                    $this->warn('  wikidata claims batch failed: '.$error);
+                    if ($onError !== null) {
+                        $onError($error, $chunk);
+                    }
+
+                    continue;
+                }
+                $entities = $response->json('entities', []);
             } catch (\Exception $e) {
                 $this->warn("  wikidata claims batch failed: {$e->getMessage()}");
+                if ($onError !== null) {
+                    $onError($e->getMessage(), $chunk);
+                }
 
                 continue;
             }
@@ -299,6 +406,15 @@ class FetchVenuePhotos extends Command
         }
 
         return $claims;
+    }
+
+    /** @param array<int, string> $errors */
+    private function retainProviderError(array &$errors, int $venueId, string $error): void
+    {
+        if (! isset($errors[$venueId])
+            || (! str_contains($errors[$venueId], '429') && str_contains($error, '429'))) {
+            $errors[$venueId] = $error;
+        }
     }
 
     private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float

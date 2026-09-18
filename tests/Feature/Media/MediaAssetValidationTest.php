@@ -3,6 +3,8 @@
 use App\Jobs\ValidateMediaAssetJob;
 use App\Media\MediaAssetValidator;
 use App\Models\MediaAsset;
+use App\Models\MediaValidationAttempt;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -30,6 +32,25 @@ test('media validator and provider safety policy are available', function () {
 test('media validator exposes validation and failure recording operations', function () {
     expect(method_exists(MediaAssetValidator::class, 'validate'))->toBeTrue()
         ->and(method_exists(MediaAssetValidator::class, 'recordFailure'))->toBeTrue();
+});
+
+test('mapillary validation accepts only explicitly audited CDN hosts', function () {
+    expect(MediaAssetValidator::isAllowedProviderUrl(
+        'mapillary',
+        'https://scontent-mxp1-1.xx.fbcdn.net/photo.jpg',
+    ))->toBeTrue()
+        ->and(MediaAssetValidator::isAllowedProviderUrl(
+            'mapillary',
+            'https://scontent-fra5-2.xx.fbcdn.net/photo.jpg',
+        ))->toBeFalse()
+        ->and(MediaAssetValidator::isAllowedProviderUrl(
+            'mapillary',
+            'https://evilfbcdn.net/photo.jpg',
+        ))->toBeFalse()
+        ->and(MediaAssetValidator::isAllowedProviderUrl(
+            'mapillary',
+            'https://fbcdn.net.attacker.example/photo.jpg',
+        ))->toBeFalse();
 });
 
 test('a healthy provider image is verified without granting unknown publishing rights', function () {
@@ -138,12 +159,45 @@ test('the unique validation job delegates safely and records terminal queue fail
     $job = new ValidateMediaAssetJob($asset);
     $job->handle(app(MediaAssetValidator::class));
 
-    expect($job->uniqueId())->toBe((string) $asset->id)
+    expect($job->uniqueId())->toStartWith($asset->id.':')
         ->and($asset->fresh()->health_status)->toBe('active');
 
-    $failedAsset = MediaAsset::factory()->create();
-    (new ValidateMediaAssetJob($failedAsset))->failed(new RuntimeException('remote unavailable'));
+    $failedAsset = MediaAsset::factory()->create([
+        'health_status' => 'active',
+        'failure_count' => 0,
+        'next_validation_at' => now()->addWeek(),
+    ]);
+    (new ValidateMediaAssetJob($failedAsset))->failed(new RuntimeException('queue worker stopped'));
 
-    expect($failedAsset->fresh()->failure_count)->toBe(1)
-        ->and($failedAsset->fresh()->last_error)->toContain('remote unavailable');
+    expect($failedAsset->fresh()->failure_count)->toBe(0)
+        ->and($failedAsset->fresh()->health_status)->toBe('active')
+        ->and($failedAsset->fresh()->last_validation_outcome)->toBe('job_failed')
+        ->and($failedAsset->fresh()->next_validation_at->lte(now()))->toBeTrue()
+        ->and(MediaValidationAttempt::query()->where('media_asset_id', $failedAsset->id)->sole()->outcome)
+        ->toBe('job_failed');
+});
+
+test('the validation job keeps one retry deadline after time advances', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-18 08:00:00', 'UTC'));
+    $job = new ValidateMediaAssetJob(MediaAsset::factory()->create());
+    $deadline = $job->retryUntil()->getTimestamp();
+
+    $this->travel(12)->hours();
+
+    expect($job->retryUntil()->getTimestamp())->toBe($deadline);
+});
+
+test('a successful non-image response is rejected as content evidence', function () {
+    $asset = MediaAsset::factory()->create([
+        'provider' => 'stadt-koeln',
+        'remote_url' => 'https://www.stadt-koeln.de/mediaasset/not-an-image.jpg',
+    ]);
+    Http::fake([
+        'www.stadt-koeln.de/*' => Http::response('<html>not an image</html>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    app(MediaAssetValidator::class)->validate($asset);
+
+    expect($asset->fresh()->health_status)->toBe('pending')
+        ->and($asset->fresh()->last_validation_error_code)->toBe('unsupported_mime_type');
 });

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Media\MediaAssetValidator;
 use App\Models\MediaAsset;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,16 +28,29 @@ class ValidateMediaAssetJob implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 86400;
 
-    public function __construct(public MediaAsset $asset) {}
+    public string $expectedInputFingerprint;
+
+    /** @var array<string, mixed> */
+    public array $expectedInputSnapshot;
+
+    public CarbonImmutable $retryDeadline;
+
+    public function __construct(public MediaAsset $asset, ?string $expectedInputFingerprint = null)
+    {
+        $this->expectedInputSnapshot = MediaAssetValidator::inputSnapshot($asset);
+        $this->expectedInputFingerprint = $expectedInputFingerprint
+            ?? MediaAssetValidator::inputFingerprint($asset);
+        $this->retryDeadline = CarbonImmutable::now()->addDay();
+    }
 
     public function uniqueId(): string
     {
-        return (string) $this->asset->getKey();
+        return $this->asset->getKey().':'.$this->expectedInputFingerprint;
     }
 
     public function retryUntil(): DateTimeInterface
     {
-        return now()->addDay();
+        return $this->retryDeadline;
     }
 
     /** @return list<object> */
@@ -50,22 +64,23 @@ class ValidateMediaAssetJob implements ShouldBeUnique, ShouldQueue
      */
     public function handle(MediaAssetValidator $validator): void
     {
-        $validator->validate($this->asset);
+        $validator->validate(
+            $this->asset,
+            $this->expectedInputFingerprint,
+            $this->expectedInputSnapshot,
+        );
     }
 
     public function failed(?Throwable $exception): void
     {
-        if ($this->asset->exists) {
-            $this->asset->refresh();
-
-            if ($this->asset->failure_count === 0) {
-                $this->asset->update([
-                    'health_status' => 'pending',
-                    'failure_count' => 1,
-                    'last_error' => mb_substr($exception?->getMessage() ?? 'validation_job_failed', 0, 500),
-                    'last_verified_at' => now(),
-                ]);
-            }
+        $asset = MediaAsset::query()->find($this->asset->getKey());
+        if ($asset !== null) {
+            app(MediaAssetValidator::class)->recordInfrastructureFailure(
+                $asset,
+                $exception?->getMessage() ?? 'validation_job_failed',
+                $this->expectedInputFingerprint,
+                $this->expectedInputSnapshot,
+            );
         }
 
         Log::warning('Media asset validation job failed', [

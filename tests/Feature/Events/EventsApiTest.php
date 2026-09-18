@@ -203,7 +203,7 @@ test('placeholder venue text is never shown as a venue', function () {
     expect($data[0]['meta'])->not->toContain('Siehe');
 });
 
-test('the venue\'s place photo richens the card', function () {
+test('an unreviewed legacy place photo never richens an event card', function () {
     $place = Spot::factory()->create([
         'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
         'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
@@ -214,8 +214,8 @@ test('the venue\'s place photo richens the card', function () {
 
     $data = $this->getJson('/api/events?window=today')->assertOk()->json('data');
 
-    expect($data[0]['photo_url'])->toContain('Volksgarten.jpg');
-    expect($data[0]['photo_attribution'])->toContain('CC BY-SA');
+    expect($data[0]['photo_url'])->toBeNull();
+    expect($data[0]['photo_attribution'])->toBeNull();
 });
 
 test('an approved event poster takes precedence while pending media stays private', function () {

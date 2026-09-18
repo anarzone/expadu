@@ -41,18 +41,25 @@ class MapillaryPhotoResolver
             return null;
         }
 
+        $radius = min(50, max(1, (int) config('media.mapillary.radius_metres', 30)));
         try {
-            $images = Http::withUserAgent((string) config('media.user_agent'))
+            $response = Http::withUserAgent((string) config('media.user_agent'))
                 ->timeout(20)
                 ->get(self::ENDPOINT, [
                     'access_token' => (string) config('media.mapillary.token'),
-                    'lat' => $lat,
-                    'lng' => $lng,
-                    'radius' => min(50, (int) config('media.mapillary.radius_metres', 30)),
+                    'bbox' => $this->boundingBox($lat, $lng, $radius),
                     'limit' => 25,
                     'fields' => self::FIELDS,
-                ])
-                ->json('data', []);
+                ]);
+            if (! $response->successful()) {
+                if ($onError !== null) {
+                    $retryAfter = trim((string) $response->header('Retry-After'));
+                    $onError('http_status_'.$response->status().($retryAfter === '' ? '' : ';retry_after='.$retryAfter));
+                }
+
+                return null;
+            }
+            $images = $response->json('data', []);
         } catch (\Exception $e) {
             if ($onError !== null) {
                 $onError($e->getMessage());
@@ -88,6 +95,9 @@ class MapillaryPhotoResolver
             $cameraLng = (float) $coordinates[0];
             $cameraLat = (float) $coordinates[1];
             $distance = $this->distanceMetres($cameraLat, $cameraLng, $lat, $lng);
+            if ($distance > min(50, max(1, (int) config('media.mapillary.radius_metres', 30)))) {
+                continue;
+            }
 
             // A frame taken exactly on the spot has no meaningful bearing.
             if ($distance > 1.0 && ! ($image['is_pano'] ?? false)) {
@@ -109,6 +119,18 @@ class MapillaryPhotoResolver
         }
 
         return $best;
+    }
+
+    private function boundingBox(float $lat, float $lng, int $radiusMetres): string
+    {
+        $latDelta = $radiusMetres / 111_320;
+        $longitudeMetresPerDegree = max(1.0, 111_320 * cos(deg2rad($lat)));
+        $lngDelta = $radiusMetres / $longitudeMetresPerDegree;
+
+        return implode(',', array_map(
+            fn (float $coordinate): string => number_format($coordinate, 7, '.', ''),
+            [$lng - $lngDelta, $lat - $latDelta, $lng + $lngDelta, $lat + $latDelta],
+        ));
     }
 
     /**

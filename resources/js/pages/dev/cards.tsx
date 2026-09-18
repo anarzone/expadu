@@ -19,6 +19,8 @@ const SAMPLE: Place = {
     routing_lng: 6.91,
     photo_url: null,
     photo_attribution: null,
+    photo_source_url: null,
+    photo_license_url: null,
     distance_min: 8,
     open_now: true,
     opening_hours_text: 'Open 24 h · floodlights until 22:00',

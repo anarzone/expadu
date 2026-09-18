@@ -86,6 +86,20 @@ class CaptureMediaCandidate
                     'failure_count' => 0,
                     'last_error' => null,
                     'last_verified_at' => now(),
+                    'next_validation_at' => now()->utc()->addSeconds(max(
+                        1,
+                        (int) config('media.validation.active_interval_seconds', 604800),
+                    )),
+                    'last_validation_outcome' => 'active',
+                    'last_validation_error_code' => null,
+                ]);
+            } elseif ($remoteUrlChanged) {
+                $asset->fill([
+                    'next_validation_at' => now()->utc(),
+                    'validation_queued_at' => null,
+                    'validation_queued_fingerprint' => null,
+                    'last_validation_outcome' => 'pending',
+                    'last_validation_error_code' => null,
                 ]);
             }
 
@@ -101,6 +115,10 @@ class CaptureMediaCandidate
                 [
                     'priority' => $candidate->priority,
                     'is_primary' => false,
+                    'match_status' => $candidate->matchStatus,
+                    'match_method' => $candidate->matchMethod,
+                    'match_evidence' => $candidate->matchEvidence,
+                    'match_reviewed_at' => $candidate->matchStatus === 'pending' ? null : now()->utc(),
                 ],
             );
             $attachmentWasCreated = $attachment->wasRecentlyCreated;
@@ -131,10 +149,20 @@ class CaptureMediaCandidate
                 ]);
             }
 
+            if ($attachmentWasCreated || $attachment->match_status === 'pending') {
+                $attachment->fill([
+                    'match_status' => $candidate->matchStatus,
+                    'match_method' => $candidate->matchMethod,
+                    'match_evidence' => $candidate->matchEvidence,
+                    'match_reviewed_at' => $candidate->matchStatus === 'pending' ? null : now()->utc(),
+                ]);
+            }
+
             $attachment->save();
 
+            $activeInterval = max(1, (int) config('media.validation.active_interval_seconds', 604800));
             $shouldValidate = $isNew || $remoteUrlChanged || $asset->last_verified_at === null
-                || $asset->last_verified_at->lt(now()->subDays(7));
+                || $asset->last_verified_at->lt(now()->subSeconds($activeInterval));
 
             $attachment->setRelation('mediaAsset', $asset);
 
@@ -153,6 +181,12 @@ class CaptureMediaCandidate
     {
         return $candidate->provider !== ''
             && $candidate->type === 'image'
+            && in_array($candidate->matchStatus, ['pending', 'accepted', 'rejected'], true)
+            && ($candidate->matchStatus === 'pending'
+                || (is_string($candidate->matchMethod)
+                    && trim($candidate->matchMethod) !== ''
+                    && is_array($candidate->matchEvidence)
+                    && $candidate->matchEvidence !== []))
             && mb_strlen($candidate->remoteUrl) <= 2048
             && filter_var($candidate->remoteUrl, FILTER_VALIDATE_URL) !== false
             && parse_url($candidate->remoteUrl, PHP_URL_SCHEME) === 'https';

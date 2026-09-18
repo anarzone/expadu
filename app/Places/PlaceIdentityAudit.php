@@ -45,22 +45,35 @@ class PlaceIdentityAudit
         }
 
         $records = $spots->map(function (Spot $spot) use ($references): array {
-            $media = $spot->mediaAttachments->sortBy('id')->map(fn ($attachment): array => [
-                'asset_id' => $attachment->media_asset_id,
-                'provider' => $attachment->mediaAsset->provider,
-                'rights_status' => $attachment->mediaAsset->rights_status,
-                'health_status' => $attachment->mediaAsset->health_status,
-                'license_code' => $attachment->mediaAsset->license_code,
-                'role' => $attachment->role,
-                'is_primary' => $attachment->is_primary,
-                'is_manually_locked' => $attachment->is_manually_locked,
-            ])->values()->all();
+            $media = $spot->mediaAttachments->sortBy('id')->map(function ($attachment): array {
+                $asset = $attachment->mediaAsset;
+                $isPublishable = $attachment->isPublishable($asset);
+
+                return [
+                    'asset_id' => $attachment->media_asset_id,
+                    'provider' => $asset->provider,
+                    'rights_status' => $asset->rights_status,
+                    'health_status' => $asset->health_status,
+                    'license_code' => $asset->license_code,
+                    'attribution_present' => filled(trim((string) $asset->attribution)),
+                    'source_page_url' => $asset->source_page_url,
+                    'role' => $attachment->role,
+                    'is_primary' => $attachment->is_primary,
+                    'is_manually_locked' => $attachment->is_manually_locked,
+                    'match_status' => $attachment->match_status,
+                    'match_method' => $attachment->match_method,
+                    'match_evidence_present' => is_array($attachment->match_evidence)
+                        && $attachment->match_evidence !== [],
+                    'match_reviewed_at' => $attachment->match_reviewed_at?->toIso8601String(),
+                    'is_publishable' => $isPublishable,
+                ];
+            })->values()->all();
 
             return [
                 ...$spot->only(['id', 'name', 'category', 'lat', 'lng', 'source', 'source_id', 'veedel', 'parent_spot_id', 'park_name', 'is_active', 'is_recommendable', 'updated_at']),
                 'references' => array_map(fn ($counts): int => (int) ($counts[$spot->id] ?? 0), $references),
                 'media' => $media,
-                'published_media_count' => count(array_filter($media, fn (array $asset): bool => $asset['rights_status'] === 'approved' && $asset['health_status'] === 'active')),
+                'published_media_count' => count(array_filter($media, fn (array $asset): bool => $asset['is_publishable'])),
                 'legacy_photo_present' => filled($spot->photo_url),
             ];
         });

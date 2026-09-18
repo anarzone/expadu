@@ -348,6 +348,14 @@ class ImportOsmSpots extends Command
                     isPrimary: true,
                     metadata: ['discovered_via' => $sourcePageUrl],
                     shouldValidate: false,
+                    matchStatus: 'accepted',
+                    matchMethod: 'osm_wikimedia_commons_tag',
+                    matchEvidence: [
+                        'source' => 'osm',
+                        'source_id' => $sourceId,
+                        'tag' => $commonsReference,
+                        'commons_file' => $filename,
+                    ],
                 ));
             }
 
@@ -362,6 +370,12 @@ class ImportOsmSpots extends Command
                     isPrimary: ! $hasCommonsFile,
                     metadata: ['discovered_via' => $sourcePageUrl],
                     shouldValidate: false,
+                    matchMethod: 'osm_image_tag',
+                    matchEvidence: [
+                        'source' => 'osm',
+                        'source_id' => $sourceId,
+                        'tag' => $sourceImage,
+                    ],
                 ));
             }
         } catch (Throwable $exception) {

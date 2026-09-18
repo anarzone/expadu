@@ -5,6 +5,7 @@ use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\MediaAsset;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\Middleware\RateLimited;
@@ -157,6 +158,22 @@ test('a stale active asset is queued for health revalidation on rediscovery', fu
     );
 });
 
+test('capture uses the configured active validation interval', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-18 08:00:00', 'UTC'));
+    config()->set('media.validation.active_interval_seconds', 7200);
+    $event = Event::factory()->create();
+    Queue::fake();
+
+    $attachment = app(CaptureMediaCandidate::class)->execute($event, new MediaCandidate(
+        provider: 'stadt-koeln',
+        providerAssetId: '/mediaasset/configured.jpg',
+        remoteUrl: 'https://www.stadt-koeln.de/mediaasset/configured.jpg',
+        healthStatus: 'active',
+    ));
+
+    expect($attachment?->mediaAsset->next_validation_at->equalTo(now()->addSeconds(7200)))->toBeTrue();
+});
+
 test('automatic capture cannot replace a manually locked primary attachment', function () {
     $event = Event::factory()->create();
     $lockedAsset = MediaAsset::factory()->approved()->create();
@@ -215,4 +232,55 @@ test('unknown-host source media is retained for review without scheduling an uns
         ->and($attachment?->mediaAsset->health_status)->toBe('pending');
 
     Queue::assertNothingPushed();
+});
+
+test('capture stores place-specific match evidence and accepts only explicit high-confidence matches', function () {
+    $event = Event::factory()->create();
+    Queue::fake();
+
+    $attachment = app(CaptureMediaCandidate::class)->execute($event, new MediaCandidate(
+        provider: 'wikimedia-commons',
+        providerAssetId: 'File:Exact.jpg',
+        remoteUrl: 'https://upload.wikimedia.org/exact.jpg',
+        sourcePageUrl: 'https://commons.wikimedia.org/wiki/File:Exact.jpg',
+        rightsStatus: 'approved',
+        healthStatus: 'active',
+        attribution: 'Photographer · CC BY 4.0',
+        matchStatus: 'accepted',
+        matchMethod: 'osm_wikimedia_commons_tag',
+        matchEvidence: ['tag' => 'File:Exact.jpg', 'source_id' => 'way/42'],
+    ));
+
+    expect($attachment)->not->toBeNull()
+        ->and($attachment?->match_status)->toBe('accepted')
+        ->and($attachment?->match_method)->toBe('osm_wikimedia_commons_tag')
+        ->and($attachment?->match_evidence)->toBe(['tag' => 'File:Exact.jpg', 'source_id' => 'way/42'])
+        ->and($attachment?->match_reviewed_at)->not->toBeNull();
+});
+
+test('lower-confidence rediscovery cannot overwrite a completed match review', function () {
+    $event = Event::factory()->create();
+    Queue::fake();
+    $capture = app(CaptureMediaCandidate::class);
+    $reviewed = $capture->execute($event, new MediaCandidate(
+        provider: 'wikimedia-commons',
+        providerAssetId: 'File:Reviewed.jpg',
+        remoteUrl: 'https://upload.wikimedia.org/reviewed.jpg',
+        matchStatus: 'accepted',
+        matchMethod: 'manual_review',
+        matchEvidence: ['review' => 'Exact event poster'],
+    ));
+
+    $capture->execute($event, new MediaCandidate(
+        provider: 'wikimedia-commons',
+        providerAssetId: 'File:Reviewed.jpg',
+        remoteUrl: 'https://upload.wikimedia.org/reviewed-new-url.jpg',
+        matchMethod: 'commons_geosearch',
+        matchEvidence: ['query' => 'nearby only'],
+        shouldValidate: false,
+    ));
+
+    expect($reviewed?->refresh()->match_status)->toBe('accepted')
+        ->and($reviewed?->match_method)->toBe('manual_review')
+        ->and($reviewed?->match_evidence)->toBe(['review' => 'Exact event poster']);
 });

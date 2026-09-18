@@ -311,13 +311,22 @@ test('osm import captures exact Commons and source image tags with rights pendin
     $spot = Spot::query()->where('source_id', 'node/4242')->sole();
     $commons = MediaAsset::query()->where('provider', 'wikimedia-commons')->sole();
     $sourceImage = MediaAsset::query()->where('provider', 'osm-image')->sole();
+    $commonsAttachment = $spot->mediaAttachments()->where('media_asset_id', $commons->id)->sole();
+    $sourceAttachment = $spot->mediaAttachments()->where('media_asset_id', $sourceImage->id)->sole();
 
     expect($commons->provider_asset_id)->toBe('File:Stadtwald_Koeln.jpg')
         ->and($commons->remote_url)->toBe('https://commons.wikimedia.org/wiki/Special:FilePath/Stadtwald_Koeln.jpg')
         ->and($commons->source_page_url)->toBe('https://commons.wikimedia.org/wiki/File:Stadtwald_Koeln.jpg')
         ->and($commons->rights_status)->toBe('pending')
+        ->and($commonsAttachment->match_status)->toBe('accepted')
+        ->and($commonsAttachment->match_method)->toBe('osm_wikimedia_commons_tag')
+        ->and($commonsAttachment->match_evidence)->toMatchArray([
+            'source_id' => 'node/4242',
+            'tag' => 'File:Stadtwald_Koeln.jpg',
+        ])
         ->and($sourceImage->remote_url)->toBe('https://images.example.org/osm/park.jpg')
         ->and($sourceImage->rights_status)->toBe('pending')
+        ->and($sourceAttachment->match_status)->toBe('pending')
         ->and($spot->mediaAttachments()->count())->toBe(2);
 
     Queue::assertNotPushed(ValidateMediaAssetJob::class);

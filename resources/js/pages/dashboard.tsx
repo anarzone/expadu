@@ -160,6 +160,8 @@ type RailCard = {
     reason: string | null;
     photo_url?: string | null;
     photo_attribution?: string | null;
+    photo_source_url?: string | null;
+    photo_license_url?: string | null;
     kind: string; // spot | event | task
     href: string | null; // tasks deep-link instead of take-me-there
     // task-card fields (kind === 'task')

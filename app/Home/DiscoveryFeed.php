@@ -139,9 +139,10 @@ class DiscoveryFeed
                 $spot = $spots->get((int) substr($card['id'], 5));
                 if ($spot !== null) {
                     $media = $selector->select($spot, 'hero');
-                    $legacyAllowed = ! $selector->hasManagedMedia($spot);
-                    $card['photo_url'] = $media?->remote_url ?? ($legacyAllowed ? $spot->photo_url : null);
-                    $card['photo_attribution'] = $media?->attribution ?? ($legacyAllowed ? $spot->photo_attribution : null);
+                    $card['photo_url'] = $media?->remote_url;
+                    $card['photo_attribution'] = $media?->attribution;
+                    $card['photo_source_url'] = $media?->source_page_url;
+                    $card['photo_license_url'] = $media?->license_url;
                 }
             }
             unset($card);
@@ -336,8 +337,10 @@ class DiscoveryFeed
                 'kind' => 'spot',
                 'href' => null,
                 'reason' => $reason,
-                'photo_url' => $x['spot']->photo_url,
-                'photo_attribution' => $x['spot']->photo_attribution,
+                'photo_url' => null,
+                'photo_attribution' => null,
+                'photo_source_url' => null,
+                'photo_license_url' => null,
             ];
         }
 
@@ -375,6 +378,8 @@ class DiscoveryFeed
                     'reason' => $e->starts_at->format('H:i'),
                     'photo_url' => $photo['url'],
                     'photo_attribution' => $photo['attribution'],
+                    'photo_source_url' => $photo['source_url'],
+                    'photo_license_url' => $photo['license_url'],
                 ];
             })->all());
     }
@@ -443,7 +448,7 @@ class DiscoveryFeed
         // Cache plain rows (not Eloquent models) and re-hydrate — serialising
         // a model collection is fragile across cache drivers (it can come back
         // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
-        $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution'];
+        $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating'];
         $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision().':grouping:'.app(DestinationGrouping::class)->revision().':facts:'.app(PlaceFacts::class)->revision();
 
         // No origin (GPS declined, nothing remembered): the old global, lowest-id

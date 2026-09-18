@@ -1,7 +1,9 @@
 <?php
 
 use App\Media\PublishedMediaSelector;
+use App\Media\ReviewMediaMatch;
 use App\Models\Event;
+use App\Models\MediaAcquisitionAttempt;
 use App\Models\User;
 use App\Models\Venue;
 use Carbon\CarbonImmutable;
@@ -73,11 +75,14 @@ test('wikidata name search resolves a photo only for the coordinate-verified ent
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
 
-    $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
-    expect($media?->remote_url)->toContain('Special:FilePath/K')
-        ->and($media?->remote_url)->toContain('Philharmonie_Saal.jpg')
-        ->and($media?->attribution)->toBe('Raimond · CC BY-SA 4.0 · Wikimedia Commons')
-        ->and($media?->rights_status)->toBe('approved');
+    $attachment = $venue->mediaAttachments()->with('mediaAsset')->sole();
+    expect($attachment->match_status)->toBe('pending')
+        ->and($attachment->match_method)->toBe('venue_wikidata_coordinate_match')
+        ->and($attachment->mediaAsset->remote_url)->toContain('Special:FilePath/K')
+        ->and($attachment->mediaAsset->remote_url)->toContain('Philharmonie_Saal.jpg')
+        ->and($attachment->mediaAsset->attribution)->toBe('Raimond · CC BY-SA 4.0 · Wikimedia Commons')
+        ->and($attachment->mediaAsset->rights_status)->toBe('approved')
+        ->and(app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero'))->toBeNull();
 });
 
 test('falls back to name-matched geosearch when no wikidata entity verifies', function () {
@@ -108,9 +113,12 @@ test('falls back to name-matched geosearch when no wikidata entity verifies', fu
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
 
-    $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
-    expect($media?->remote_url)->toContain('Konzertsaal_B');
-    expect($media?->attribution)->toBe('Foto Fan · CC BY 4.0 · Wikimedia Commons');
+    $attachment = $venue->mediaAttachments()->with('mediaAsset')->sole();
+    expect($attachment->match_status)->toBe('pending')
+        ->and($attachment->match_method)->toBe('venue_commons_geosearch')
+        ->and($attachment->mediaAsset->remote_url)->toContain('Konzertsaal_B')
+        ->and($attachment->mediaAsset->attribution)->toBe('Foto Fan · CC BY 4.0 · Wikimedia Commons')
+        ->and(app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero'))->toBeNull();
 });
 
 test('saves nothing when neither wikidata verifies nor geosearch matches the name', function () {
@@ -193,8 +201,11 @@ test('stripping the locative phrase keeps matching on the identity part of the n
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
 
-    $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
-    expect($media?->remote_url)->toContain('Gilden_im_Zims');
+    $attachment = $venue->mediaAttachments()->with('mediaAsset')->sole();
+    expect($attachment->match_status)->toBe('pending')
+        ->and($attachment->match_method)->toBe('venue_commons_geosearch')
+        ->and($attachment->mediaAsset->remote_url)->toContain('Gilden_im_Zims')
+        ->and(app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero'))->toBeNull();
 });
 
 test('district and building-type words never count as name evidence', function () {
@@ -248,7 +259,7 @@ test('parenthetical clarifiers in the venue name are not identity evidence', fun
     expect($venue->fresh()->mediaAttachments()->count())->toBe(0);
 });
 
-test('an event with no own media inherits the venue commons photo through the api', function () {
+test('an event inherits a venue Commons photo through the API only after match review', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-12 10:00', 'Europe/Berlin'));
     $this->actingAs(User::factory()->onboarded()->create());
 
@@ -283,8 +294,38 @@ test('an event with no own media inherits the venue commons photo through the ap
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
 
+    $attachment = $venue->mediaAttachments()->sole();
+    $review = app(ReviewMediaMatch::class);
+    $preview = $review->preview($attachment->id, 'accepted', 'manual_review');
+    $review->apply(
+        $attachment->id,
+        'accepted',
+        'manual_review',
+        $preview['fingerprint'],
+        'The venue website and Commons subject confirm this exact concert hall.',
+        'reviewer@example.test',
+    );
+
     $data = $this->getJson('/api/events?window=today')->assertOk()->json('data.0');
 
     expect($data['photo_url'])->toContain('Philharmonie_Saal.jpg')
         ->and($data['photo_attribution'])->toBe('Raimond · CC BY-SA 4.0 · Wikimedia Commons');
+});
+
+test('wikidata rate limits are retained when geosearch has no candidate', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-18 08:00:00', 'UTC'));
+    photoVenue();
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'wbsearchentities')) {
+            return Http::response([], 429, ['Retry-After' => '7200']);
+        }
+
+        return Http::response(['query' => ['pages' => []]]);
+    });
+
+    $this->artisan('venues:fetch-photos', ['--limit' => 1])->assertSuccessful();
+
+    $attempt = MediaAcquisitionAttempt::query()->sole();
+    expect($attempt->outcome)->toBe('rate_limited')
+        ->and($attempt->next_attempt_at->equalTo(now()->utc()->addHours(2)))->toBeTrue();
 });

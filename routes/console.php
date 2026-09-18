@@ -71,6 +71,10 @@ Schedule::command('venues:fetch-photos')->weeklyOn(1, '06:00')->withoutOverlappi
 Schedule::command('photos:fetch-mapillary --limit=400')->weeklyOn(1, '06:30')->withoutOverlapping()->onOneServer();
 Schedule::command('photos:fetch-mapillary --venues --limit=100')->weeklyOn(1, '07:00')->withoutOverlapping()->onOneServer();
 
+// Independently re-check attached media so expiring URLs and removed files are
+// withdrawn even when their acquisition source is not rediscovered that week.
+Schedule::command('media:revalidate --limit=200')->hourly()->withoutOverlapping()->onOneServer();
+
 // External API health monitoring — every 5 minutes
 Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
