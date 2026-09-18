@@ -27,7 +27,6 @@ class PlaceResource extends JsonResource
         $coarse = $fine?->coarse() ?? 'park';
         $mediaSelector = app(PublishedMediaSelector::class);
         $media = $mediaSelector->select($this->resource, 'hero');
-        $allowLegacyMedia = ! $mediaSelector->hasManagedMedia($this->resource);
         $placeFacts = app(PlaceFacts::class)->resolve($this->resource);
         $mapPoint = $placeFacts['location']['map_point'];
         $entrancePoint = $placeFacts['location']['entrance_point'];
@@ -45,8 +44,8 @@ class PlaceResource extends JsonResource
             'lng' => $mapPoint['lng'] !== null ? (float) $mapPoint['lng'] : null,
             'routing_lat' => $routingPoint['lat'] !== null ? (float) $routingPoint['lat'] : null,
             'routing_lng' => $routingPoint['lng'] !== null ? (float) $routingPoint['lng'] : null,
-            'photo_url' => $media?->remote_url ?? ($allowLegacyMedia ? $this->photo_url : null),
-            'photo_attribution' => $media?->attribution ?? ($allowLegacyMedia ? $this->photo_attribution : null),
+            'photo_url' => $media?->remote_url,
+            'photo_attribution' => $media?->attribution,
             'photo_source_url' => $media?->source_page_url,
             'photo_license_url' => $media?->license_url,
             'distance_min' => $this->travel_min !== null ? (int) $this->travel_min : null,

@@ -68,6 +68,8 @@ export type Place = {
     routing_lng: number;
     photo_url: string | null;
     photo_attribution: string | null;
+    photo_source_url: string | null;
+    photo_license_url: string | null;
     distance_min: number | null;
     distance_mode?: 'walk' | 'bike' | 'transit' | null;
     distance_km?: number | null;

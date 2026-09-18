@@ -158,7 +158,15 @@ test('family reviews preserve history and count the newest review once per user 
 test('family media selection preserves rights and canonical manual preference', function (bool $eager) {
     [$alias, $canonical] = identityPair();
     $asset = MediaAsset::factory()->approved()->create();
-    $alias->mediaAttachments()->create(['media_asset_id' => $asset->id, 'role' => 'hero', 'is_manually_locked' => true]);
+    $alias->mediaAttachments()->create([
+        'media_asset_id' => $asset->id,
+        'role' => 'hero',
+        'is_manually_locked' => true,
+        'match_status' => 'accepted',
+        'match_method' => 'manual_review',
+        'match_evidence' => ['review' => 'Exact alias identity'],
+        'match_reviewed_at' => now(),
+    ]);
     reconcileIdentity($alias, $canonical);
     if ($eager) {
         $canonical->load('mediaAttachments.mediaAsset');
@@ -169,7 +177,15 @@ test('family media selection preserves rights and canonical manual preference', 
         ->and($selector->select($canonical)?->id)->toBe($asset->id);
 
     $own = MediaAsset::factory()->approved()->create();
-    $canonical->mediaAttachments()->create(['media_asset_id' => $own->id, 'role' => 'hero', 'is_manually_locked' => true]);
+    $canonical->mediaAttachments()->create([
+        'media_asset_id' => $own->id,
+        'role' => 'hero',
+        'is_manually_locked' => true,
+        'match_status' => 'accepted',
+        'match_method' => 'manual_review',
+        'match_evidence' => ['review' => 'Exact canonical identity'],
+        'match_reviewed_at' => now(),
+    ]);
     expect($selector->select($canonical->fresh())?->id)->toBe($own->id);
 })->with([false, true]);
 

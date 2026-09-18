@@ -171,6 +171,10 @@ test('place cards expose only approved active media and prefer it over legacy co
         'media_asset_id' => $approved->id,
         'role' => 'hero',
         'priority' => 2,
+        'match_status' => 'accepted',
+        'match_method' => 'reviewed_source',
+        'match_evidence' => ['source_url' => 'https://commons.wikimedia.org/wiki/File:Place.jpg'],
+        'match_reviewed_at' => now(),
     ]);
 
     $place = $this->getJson('/api/places')->assertOk()->json('data.0');

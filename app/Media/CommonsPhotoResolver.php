@@ -2,6 +2,7 @@
 
 namespace App\Media;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -32,7 +33,7 @@ class CommonsPhotoResolver
     public function geoSearchFile(float $lat, float $lng, string $name, ?callable $onError = null, array $extraStopWords = []): ?string
     {
         try {
-            $pages = Http::withUserAgent(self::USER_AGENT)->timeout(20)
+            $response = Http::withUserAgent(self::USER_AGENT)->timeout(20)
                 ->get('https://commons.wikimedia.org/w/api.php', [
                     'action' => 'query',
                     'generator' => 'geosearch',
@@ -43,8 +44,15 @@ class CommonsPhotoResolver
                     'prop' => 'imageinfo',
                     'iiprop' => 'mediatype',
                     'format' => 'json',
-                ])
-                ->json('query.pages', []);
+                ]);
+            if (! $response->successful()) {
+                if ($onError !== null) {
+                    $onError(self::httpError($response));
+                }
+
+                return null;
+            }
+            $pages = $response->json('query.pages', []);
         } catch (\Exception $e) {
             if ($onError !== null) {
                 $onError($e->getMessage());
@@ -155,7 +163,7 @@ class CommonsPhotoResolver
         $meta = [];
         foreach (array_chunk($files, self::BATCH) as $chunk) {
             try {
-                $pages = Http::withUserAgent(self::USER_AGENT)->timeout(30)
+                $response = Http::withUserAgent(self::USER_AGENT)->timeout(30)
                     ->get('https://commons.wikimedia.org/w/api.php', [
                         'action' => 'query',
                         'titles' => implode('|', array_map(fn (string $f) => "File:{$f}", $chunk)),
@@ -163,8 +171,15 @@ class CommonsPhotoResolver
                         'iiprop' => 'url|mime|size|sha1|extmetadata',
                         'iiurlwidth' => 1200,
                         'format' => 'json',
-                    ])
-                    ->json('query.pages', []);
+                    ]);
+                if (! $response->successful()) {
+                    if ($onError !== null) {
+                        $onError('commons metadata batch failed: '.self::httpError($response));
+                    }
+
+                    continue;
+                }
+                $pages = $response->json('query.pages', []);
             } catch (\Exception $e) {
                 if ($onError !== null) {
                     $onError("commons metadata batch failed: {$e->getMessage()}");
@@ -254,13 +269,25 @@ class CommonsPhotoResolver
             });
     }
 
+    public static function httpError(Response $response): string
+    {
+        $retryAfter = trim((string) $response->header('Retry-After'));
+
+        return 'http_status_'.$response->status().($retryAfter === '' ? '' : ';retry_after='.$retryAfter);
+    }
+
     /**
      * Build the standard Commons media candidate from resolved metadata.
      *
      * @param  array{remote_url: string, source_page_url: string, author: ?string, attribution: string, license_code: ?string, license_url: ?string, mime_type: ?string, width: ?int, height: ?int, checksum: ?string, rights_status: string, health_status: string}  $metadata
      */
-    public function candidate(string $canonicalFile, array $metadata): MediaCandidate
-    {
+    public function candidate(
+        string $canonicalFile,
+        array $metadata,
+        string $matchStatus = 'pending',
+        ?string $matchMethod = null,
+        ?array $matchEvidence = null,
+    ): MediaCandidate {
         return new MediaCandidate(
             provider: 'wikimedia-commons',
             remoteUrl: $metadata['remote_url'],
@@ -282,6 +309,9 @@ class CommonsPhotoResolver
             metadata: ['commons_file' => $canonicalFile],
             shouldValidate: $metadata['health_status'] !== 'active',
             authoritativeEvidence: true,
+            matchStatus: $matchStatus,
+            matchMethod: $matchMethod,
+            matchEvidence: $matchEvidence,
         );
     }
 }

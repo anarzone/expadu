@@ -65,8 +65,9 @@ test('identity audit exposes reference counts and photo gates without exporting 
     Review::factory()->create(['spot_id' => $legacy->id, 'body' => 'Private review text']);
     SpotFeedback::factory()->create(['spot_id' => $legacy->id]);
     $legacy->mediaAttachments()->create([
-        'media_asset_id' => MediaAsset::factory()->create(['rights_status' => 'pending', 'health_status' => 'active'])->id,
+        'media_asset_id' => MediaAsset::factory()->approved()->create()->id,
         'role' => 'hero', 'is_manually_locked' => true,
+        'match_status' => 'pending',
     ]);
 
     $report = app(PlaceIdentityAudit::class)->report();
@@ -75,7 +76,8 @@ test('identity audit exposes reference counts and photo gates without exporting 
     expect($record['references']['reviews'])->toBe(1)
         ->and($record['references']['feedback'])->toBe(1)
         ->and($record['references']['children'])->toBe(1)
-        ->and($record['media'][0]['rights_status'])->toBe('pending')
+        ->and($record['media'][0]['rights_status'])->toBe('approved')
+        ->and($record['media'][0]['match_status'])->toBe('pending')
         ->and($record['media'][0]['is_manually_locked'])->toBeTrue()
         ->and($record['published_media_count'])->toBe(0)
         ->and(json_encode($report))->not->toContain('Private review text', 'user_id');

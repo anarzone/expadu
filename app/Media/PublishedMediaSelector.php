@@ -2,6 +2,7 @@
 
 namespace App\Media;
 
+use App\Models\Event;
 use App\Models\MediaAsset;
 use App\Models\MediaAttachment;
 use App\Models\Spot;
@@ -27,8 +28,7 @@ class PublishedMediaSelector
         if ($mediable instanceof Spot) {
             $attachment = $this->familyAttachments($mediable)
                 ->filter(fn (MediaAttachment $attachment): bool => ($role === null || $attachment->role === $role)
-                    && $attachment->mediaAsset?->rights_status === 'approved'
-                    && $attachment->mediaAsset?->health_status === 'active')
+                    && $attachment->isPublishable())
                 ->sortBy(fn (MediaAttachment $attachment): string => sprintf('%d-%d-%d-%010d-%010d',
                     $attachment->is_manually_locked ? 0 : 1,
                     $attachment->mediable_id === $mediable->id ? 0 : 1,
@@ -39,16 +39,21 @@ class PublishedMediaSelector
 
             return $attachment?->mediaAsset;
         }
+
+        $requiresMatchReview = ! ($mediable instanceof Event);
+
         if ($mediable->relationLoaded('mediaAttachments')) {
             /** @var MediaAttachment|null $attachment */
             $attachment = $mediable->mediaAttachments
                 ->filter(fn (MediaAttachment $attachment): bool => $role === null || $attachment->role === $role)
-                ->filter(function (MediaAttachment $attachment): bool {
+                ->filter(function (MediaAttachment $attachment) use ($requiresMatchReview): bool {
                     $asset = $attachment->relationLoaded('mediaAsset')
                         ? $attachment->mediaAsset
                         : $attachment->mediaAsset()->first();
 
-                    return $asset?->rights_status === 'approved' && $asset->health_status === 'active';
+                    return $requiresMatchReview
+                        ? $attachment->isPublishable($asset)
+                        : $asset?->isPublished() === true;
                 })
                 ->sortBy(fn (MediaAttachment $attachment): string => sprintf(
                     '%d-%d-%010d-%010d',
@@ -65,13 +70,20 @@ class PublishedMediaSelector
         /** @var MediaAttachment|null $attachment */
         $attachment = $mediable->mediaAttachments()
             ->when($role !== null, fn ($query) => $query->where('role', $role))
-            ->whereHas('mediaAsset', fn ($query) => $query->published())
+            ->when(
+                $requiresMatchReview,
+                fn ($query) => $query->publishable(),
+                fn ($query) => $query->whereHas('mediaAsset', fn ($assetQuery) => $assetQuery->published()),
+            )
             ->with('mediaAsset')
             ->orderByDesc('is_manually_locked')
             ->orderByDesc('is_primary')
             ->orderBy('priority')
             ->orderBy('id')
-            ->first();
+            ->get()
+            ->first(fn (MediaAttachment $candidate): bool => $requiresMatchReview
+                ? $candidate->isPublishable()
+                : $candidate->mediaAsset?->isPublished() === true);
 
         return $attachment?->mediaAsset;
     }
