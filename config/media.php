@@ -32,7 +32,10 @@ return [
             'hosts' => ['www.koeln.de'],
         ],
         'wikimedia-commons' => [
-            'hosts' => ['commons.wikimedia.org', 'upload.wikimedia.org'],
+            'hosts' => ['commons.wikimedia.org', 'thumb.wikimedia.org', 'upload.wikimedia.org'],
+        ],
+        'koeln-tourismus' => [
+            'hosts' => ['dam.destination.one'],
         ],
         // Mapillary documents its imagery as CC BY-SA 4.0. Its thumbnail URLs
         // use Meta CDN shards; each host must be audited and listed exactly.
