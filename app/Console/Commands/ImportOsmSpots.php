@@ -498,7 +498,7 @@ class ImportOsmSpots extends Command
         }
 
         $localized = collect($tags)
-            ->filter(fn (mixed $value, string $key): bool => str_starts_with($key, 'name:') && $this->tagValue($value) !== null)
+            ->filter(fn (mixed $value, string $key): bool => preg_match('/^name:[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/D', $key) === 1 && $this->tagValue($value) !== null)
             ->sortKeys()
             ->values()
             ->map(fn (mixed $value): ?string => $this->tagValue($value))

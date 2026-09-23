@@ -31,118 +31,52 @@ class PlaceFacts
         }
 
         $policy = <<<'SQL'
-            CASE
-                WHEN (
-                    SELECT count(*)
-                    FROM place_fact_corrections access_correction_count
-                    WHERE access_correction_count.spot_id = spots.id
-                      AND access_correction_count.field = 'access'
-                      AND access_correction_count.revoked_at IS NULL
-                ) > 1 THEN false
-                WHEN EXISTS (
-                    SELECT 1
-                    FROM place_fact_corrections active_access_correction
-                    WHERE active_access_correction.spot_id = spots.id
-                      AND active_access_correction.field = 'access'
-                      AND active_access_correction.revoked_at IS NULL
-                ) THEN
-                    NOT EXISTS (
-                        SELECT 1
-                        FROM place_fact_corrections restricted_correction
-                        WHERE restricted_correction.spot_id = spots.id
-                          AND restricted_correction.field = 'access'
-                          AND restricted_correction.revoked_at IS NULL
-                          AND lower(COALESCE(restricted_correction.value->>'value', 'unknown')) IN ('private', 'no', 'customers', 'members', 'permit')
-                    )
-                    AND NOT EXISTS (
-                        SELECT 1
-                        FROM place_fact_observations restricted_after_review
-                        WHERE restricted_after_review.spot_id = spots.id
-                          AND jsonb_exists(restricted_after_review.payload, 'access')
-                          AND restricted_after_review.observed_at > (
-                              SELECT max(active_review.reviewed_at)
-                              FROM place_fact_corrections active_review
-                              WHERE active_review.spot_id = spots.id
-                                AND active_review.field = 'access'
-                                AND active_review.revoked_at IS NULL
-                          )
-                          AND NOT EXISTS (
-                              SELECT 1
-                              FROM place_fact_observations newer_restricted_after_review
-                              WHERE newer_restricted_after_review.spot_id = restricted_after_review.spot_id
-                                AND newer_restricted_after_review.provider = restricted_after_review.provider
-                                AND newer_restricted_after_review.provider_record_id = restricted_after_review.provider_record_id
-                                AND (
-                                    newer_restricted_after_review.observed_at > restricted_after_review.observed_at
-                                    OR (newer_restricted_after_review.observed_at = restricted_after_review.observed_at AND newer_restricted_after_review.id > restricted_after_review.id)
-                                )
-                          )
-                          AND (
-                              lower(COALESCE(restricted_after_review.payload #>> '{access,raw}', restricted_after_review.payload->>'access', '')) IN ('private', 'no', 'customers', 'members', 'permit')
-                              OR nullif(trim(COALESCE(restricted_after_review.payload #>> '{access,conditional}', '')), '') IS NOT NULL
-                          )
-                    )
-                ELSE
-                    CASE WHEN EXISTS (
-                        SELECT 1
-                        FROM place_fact_observations current_access
-                        WHERE current_access.spot_id = spots.id
-                          AND jsonb_exists(current_access.payload, 'access')
-                          AND NOT EXISTS (
-                              SELECT 1
-                              FROM place_fact_observations newer_current_access
-                              WHERE newer_current_access.spot_id = current_access.spot_id
-                                AND newer_current_access.provider = current_access.provider
-                                AND newer_current_access.provider_record_id = current_access.provider_record_id
-                                AND (
-                                    newer_current_access.observed_at > current_access.observed_at
-                                    OR (newer_current_access.observed_at = current_access.observed_at AND newer_current_access.id > current_access.id)
-                                )
-                          )
-                    ) THEN NOT EXISTS (
-                        SELECT 1
-                        FROM place_fact_observations restricted_current_access
-                        WHERE restricted_current_access.spot_id = spots.id
-                          AND jsonb_exists(restricted_current_access.payload, 'access')
-                          AND NOT EXISTS (
-                              SELECT 1
-                              FROM place_fact_observations newer_restricted_current_access
-                              WHERE newer_restricted_current_access.spot_id = restricted_current_access.spot_id
-                                AND newer_restricted_current_access.provider = restricted_current_access.provider
-                                AND newer_restricted_current_access.provider_record_id = restricted_current_access.provider_record_id
-                                AND (
-                                    newer_restricted_current_access.observed_at > restricted_current_access.observed_at
-                                    OR (newer_restricted_current_access.observed_at = restricted_current_access.observed_at AND newer_restricted_current_access.id > restricted_current_access.id)
-                                )
-                          )
-                          AND (
-                              lower(COALESCE(restricted_current_access.payload #>> '{access,raw}', restricted_current_access.payload->>'access', '')) IN ('private', 'no', 'customers', 'members', 'permit')
-                              OR nullif(trim(COALESCE(restricted_current_access.payload #>> '{access,conditional}', '')), '') IS NOT NULL
-                          )
-                    ) ELSE
-                        CASE WHEN EXISTS (
-                            SELECT 1
-                            FROM place_fact_observations current_source_snapshot
-                            WHERE current_source_snapshot.spot_id = spots.id
-                              AND current_source_snapshot.provider = spots.source
-                              AND current_source_snapshot.provider_record_id = spots.source_id
-                              AND NOT EXISTS (
-                                  SELECT 1
-                                  FROM place_fact_observations newer_source_snapshot
-                                  WHERE newer_source_snapshot.spot_id = current_source_snapshot.spot_id
-                                    AND newer_source_snapshot.provider = current_source_snapshot.provider
-                                    AND newer_source_snapshot.provider_record_id = current_source_snapshot.provider_record_id
-                                    AND (
-                                        newer_source_snapshot.observed_at > current_source_snapshot.observed_at
-                                        OR (newer_source_snapshot.observed_at = current_source_snapshot.observed_at AND newer_source_snapshot.id > current_source_snapshot.id)
-                                    )
+            (
+                WITH current_observations AS MATERIALIZED (
+                    SELECT DISTINCT ON (provider, provider_record_id)
+                        provider, provider_record_id, observed_at, payload
+                    FROM place_fact_observations
+                    WHERE spot_id = spots.id
+                    ORDER BY provider, provider_record_id, observed_at DESC, id DESC
+                ), active_corrections AS MATERIALIZED (
+                    SELECT value, reviewed_at
+                    FROM place_fact_corrections
+                    WHERE spot_id = spots.id AND field = 'access' AND revoked_at IS NULL
+                )
+                SELECT CASE
+                    WHEN (SELECT count(*) FROM active_corrections) > 1 THEN false
+                    WHEN EXISTS (SELECT 1 FROM active_corrections) THEN
+                        NOT EXISTS (
+                            SELECT 1 FROM active_corrections
+                            WHERE lower(COALESCE(value->>'value', 'unknown')) IN ('private', 'no', 'customers', 'members', 'permit')
+                        )
+                        AND NOT EXISTS (
+                            SELECT 1 FROM current_observations
+                            WHERE jsonb_exists(payload, 'access')
+                              AND observed_at > (SELECT max(reviewed_at) FROM active_corrections)
+                              AND (
+                                  lower(COALESCE(payload #>> '{access,raw}', payload->>'access', '')) IN ('private', 'no', 'customers', 'members', 'permit')
+                                  OR nullif(trim(COALESCE(payload #>> '{access,conditional}', '')), '') IS NOT NULL
                               )
-                        ) THEN true ELSE
-                            LOWER(COALESCE(spots.tags->>'access', '')) NOT IN ('private', 'no', 'customers', 'members', 'permit')
-                            AND NOT COALESCE(jsonb_exists(spots.tags::jsonb, 'access:conditional'), false)
-                        END
-                    END
-            END
+                        )
+                    WHEN EXISTS (SELECT 1 FROM current_observations WHERE jsonb_exists(payload, 'access')) THEN
+                        NOT EXISTS (
+                            SELECT 1 FROM current_observations
+                            WHERE jsonb_exists(payload, 'access')
+                              AND (
+                                  lower(COALESCE(payload #>> '{access,raw}', payload->>'access', '')) IN ('private', 'no', 'customers', 'members', 'permit')
+                                  OR nullif(trim(COALESCE(payload #>> '{access,conditional}', '')), '') IS NOT NULL
+                              )
+                        )
+                    WHEN EXISTS (
+                        SELECT 1 FROM current_observations
+                        WHERE provider = spots.source AND provider_record_id = spots.source_id
+                    ) THEN true
+                    ELSE
+                        LOWER(COALESCE(spots.tags->>'access', '')) NOT IN ('private', 'no', 'customers', 'members', 'permit')
+                        AND NOT COALESCE(jsonb_exists(spots.tags::jsonb, 'access:conditional'), false)
+                END
+            )
             SQL;
 
         return $query->whereRaw(str_replace('spots.', $table.'.', $policy));

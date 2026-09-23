@@ -23,3 +23,19 @@ Results: selected photos 3 → 30 of the same 100; websites 0 → 35; known acce
 The initial media attempt rolled back in full on an existing accepted review. The corrected run preserves that review history; final exact replay is unchanged. The private raw backup stays outside the repository. Automatic approval review rejected the private GitHub push; the owner approval question is pending.
 
 See pilot-report.md, validation-results.json and performance-diagnosis.md for measured results and remaining gates.
+
+## 23 September delivery continuation
+
+Resumed after the owner requested urgent completion. Latest staging workflow still runs f5a85503. Local containers restarted; original disposable pilot database is intact. No production changes.
+
+- Reproduced Innenstadt court list: 17,644.8 ms, 57 results. Count query EXPLAIN: 7,451.5 ms execution, 7,438.3 ms JIT (578 functions); cost 718,061.43.
+- Hypothesis verified on the exact captured SQL: materialize each place's latest source observations and active access corrections once. Both count and result queries return identical values; candidate query timings 735.4 / 268.4 ms.
+- Existing fact/grouping baseline: 54 tests, 327 assertions passed before modification.
+- Ruling: reuse the existing pilot ledger and immutable manifests rather than restart completed work. The performance repair changes SQL evaluation only; latest source, correction conflicts, parent restrictions and legacy fallback semantics remain mandatory.
+- Pending: full access/grouping regression and measured API acceptance; complete membership rehearsal; municipal-source acquisition exclusion; guarded staging delivery.
+
+- Component rehearsal completed: 44 fully paginated list requests per snapshot; ten children grouped under seven roots; fine activity coordinates retained; replay and independent reversal correct; every spot and audit row restored by outer rollback. The first attempt exhausted the CLI's 128 MiB while holding snapshots; the complete rerun used 1 GiB and succeeded. No live write.
+- Municipal source regressions: five RED cases, then 28 GREEN tests / 116 assertions. Independent-photo control remains publishable. Alias metadata regression RED→GREEN, 4 tests / 9 assertions.
+- Full PHP suite: 1,629 passed / 6,815 assertions, one skipped (165 seconds, four processes).
+- Final review: one Important warm-media relation finding; reproduced RED, fixed owner-relation invalidation, then 20 tests / 77 assertions passed. No Critical/Minor findings.
+- Final Ruling: reviewer did not certify live rollout/performance, historical missing provenance or contaminated aliases, citywide coverage, or the forthcoming staging operator. Keep these open rather than infer completion from code tests; cost is that live catalogue acceptance remains outstanding.

@@ -5,6 +5,7 @@ namespace App\Media;
 use App\Jobs\ValidateMediaAssetJob;
 use App\Models\MediaAsset;
 use App\Models\MediaAttachment;
+use App\Models\Spot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -103,6 +104,10 @@ class CaptureMediaCandidate
                 ]);
             }
 
+            if ($mediable instanceof Spot && app(MediaSourcePolicy::class)->excludesAsset($asset)) {
+                $asset->rights_status = 'pending';
+            }
+
             $asset->save();
 
             $attachment = MediaAttachment::query()->firstOrCreate(
@@ -168,6 +173,12 @@ class CaptureMediaCandidate
 
             return $attachment;
         });
+
+        // A caller may select again using the same hydrated owner after refresh.
+        $mediable->unsetRelation('mediaAttachments');
+        if ($mediable instanceof Spot) {
+            $mediable->unsetRelation('identityAliases');
+        }
 
         $providerHosts = config("media.providers.{$attachment->mediaAsset->provider}.hosts");
         if ($candidate->shouldValidate && $shouldValidate && is_array($providerHosts) && $providerHosts !== []) {

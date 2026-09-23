@@ -1,6 +1,13 @@
 <?php
 
 return [
+    // Owner policy: municipal-origin place media is excluded, including redistribution.
+    'excluded_place_origins' => [
+        'providers' => ['stadt-koeln'],
+        'names' => ['Stadt Köln', 'Stadt Koeln', 'City of Cologne', 'Rheinisches Bildarchiv', 'Rhenish Picture Archive'],
+        'hosts' => ['stadt-koeln.de', 'offenedaten-koeln.de', 'kulturelles-erbe-koeln.de'],
+    ],
+
     'user_agent' => 'Expadu/1.0 (media validation; contact: support@expadu.com)',
 
     'validation' => [
