@@ -220,8 +220,17 @@ class CommonsPhotoResolver
                     ? 'active'
                     : 'pending';
 
+                $provenance = [
+                    'artist' => (string) ($ext['Artist']['value'] ?? ''),
+                    'credit' => (string) ($ext['Credit']['value'] ?? ''),
+                    'permission' => (string) ($ext['Permission']['value'] ?? ''),
+                ];
+                $excludedOrigin = app(MediaSourcePolicy::class)->excludes(
+                    'wikimedia-commons', $artist, $sourcePageUrl, $remoteUrl,
+                    ['source_provenance' => $provenance],
+                );
                 $isPublicDomain = in_array(mb_strtoupper($licence), ['PUBLIC DOMAIN', 'PD'], true);
-                $rightsStatus = $this->isOpenLicense($licence)
+                $rightsStatus = ! $excludedOrigin && $this->isOpenLicense($licence)
                     && $sourcePageUrl !== ''
                     && ($isPublicDomain || $licenceUrl !== null)
                     && (! str_starts_with(mb_strtoupper($licence), 'CC BY') || $artist !== '')
@@ -249,6 +258,7 @@ class CommonsPhotoResolver
                     'height' => $height,
                     'checksum' => is_string($imageInfo['sha1'] ?? null) ? $imageInfo['sha1'] : null,
                     'rights_status' => $rightsStatus,
+                    'source_provenance' => $provenance,
                     'health_status' => $healthStatus,
                 ];
             }
@@ -306,7 +316,7 @@ class CommonsPhotoResolver
             width: $metadata['width'],
             height: $metadata['height'],
             checksum: $metadata['checksum'],
-            metadata: ['commons_file' => $canonicalFile],
+            metadata: ['commons_file' => $canonicalFile, 'source_provenance' => $metadata['source_provenance'] ?? []],
             shouldValidate: $metadata['health_status'] !== 'active',
             authoritativeEvidence: true,
             matchStatus: $matchStatus,

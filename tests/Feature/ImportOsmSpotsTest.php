@@ -31,3 +31,18 @@ test('the pitch query refines basketball and soccer by sport', function () {
     expect($resolve->invoke($cmd, ['sport' => 'multi'], 'pitch'))->toBe('pitch');
     expect($resolve->invoke($cmd, ['sport' => 'tennis'], 'sports_centre'))->toBe('sports_centre');
 });
+
+test('source aliases keep translated names without exposing etymology ids or pronunciation metadata', function () {
+    $command = new ImportOsmSpots;
+    $aliases = new ReflectionMethod($command, 'sourceAliases');
+
+    expect($aliases->invoke($command, [
+        'name' => 'Yitzhak-Rabin-Platz',
+        'alt_name' => 'Rabinplatz',
+        'name:en' => 'Yitzhak Rabin Square',
+        'name:sr-Latn' => 'Trg Jicaka Rabina',
+        'name:etymology:wikidata' => 'Q34060',
+        'name:pronunciation' => 'test phonetics',
+        'name:signed' => 'yes',
+    ]))->toBe(['Rabinplatz', 'Yitzhak Rabin Square', 'Trg Jicaka Rabina']);
+});

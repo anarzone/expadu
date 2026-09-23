@@ -28,7 +28,8 @@ class PublishedMediaSelector
         if ($mediable instanceof Spot) {
             $attachment = $this->familyAttachments($mediable)
                 ->filter(fn (MediaAttachment $attachment): bool => ($role === null || $attachment->role === $role)
-                    && $attachment->isPublishable())
+                    && $attachment->isPublishable()
+                    && ! app(MediaSourcePolicy::class)->excludesAsset($attachment->mediaAsset))
                 ->sortBy(fn (MediaAttachment $attachment): string => sprintf('%d-%d-%d-%010d-%010d',
                     $attachment->is_manually_locked ? 0 : 1,
                     $attachment->mediable_id === $mediable->id ? 0 : 1,

@@ -1,6 +1,13 @@
 <?php
 
 return [
+    // Owner policy: municipal-origin place media is excluded, including redistribution.
+    'excluded_place_origins' => [
+        'providers' => ['stadt-koeln'],
+        'names' => ['Stadt Köln', 'Stadt Koeln', 'City of Cologne', 'Rheinisches Bildarchiv', 'Rhenish Picture Archive'],
+        'hosts' => ['stadt-koeln.de', 'offenedaten-koeln.de', 'kulturelles-erbe-koeln.de'],
+    ],
+
     'user_agent' => 'Expadu/1.0 (media validation; contact: support@expadu.com)',
 
     'validation' => [
@@ -32,7 +39,10 @@ return [
             'hosts' => ['www.koeln.de'],
         ],
         'wikimedia-commons' => [
-            'hosts' => ['commons.wikimedia.org', 'upload.wikimedia.org'],
+            'hosts' => ['commons.wikimedia.org', 'thumb.wikimedia.org', 'upload.wikimedia.org'],
+        ],
+        'koeln-tourismus' => [
+            'hosts' => ['dam.destination.one'],
         ],
         // Mapillary documents its imagery as CC BY-SA 4.0. Its thumbnail URLs
         // use Meta CDN shards; each host must be audited and listed exactly.

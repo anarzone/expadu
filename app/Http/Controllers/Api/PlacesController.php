@@ -317,7 +317,13 @@ class PlacesController extends Controller
             return [];
         }
 
-        $rows = app(DestinationGrouping::class)->components(Spot::query(), $destinations->pluck('id')->all())
+        $destinationIds = $destinations->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $grouping = app(DestinationGrouping::class);
+        if (! $grouping->hasComponentCandidates($destinationIds)) {
+            return [];
+        }
+
+        $rows = $grouping->components(Spot::query(), $destinationIds)
             ->join('spots as activity_destination', 'activity_destination.id', '=', 'spots.destination_spot_id')
             ->whereIn('spots.category', SpotCategory::placesFines())
             ->select('spots.category')->selectRaw('COALESCE(activity_destination.canonical_spot_id, activity_destination.id) as group_id')
