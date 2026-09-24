@@ -213,12 +213,7 @@ class CommonsPhotoResolver
                 $mimeType = is_string($imageInfo['mime'] ?? null) ? $imageInfo['mime'] : null;
                 $width = filter_var($imageInfo['thumbwidth'] ?? $imageInfo['width'] ?? null, FILTER_VALIDATE_INT) ?: null;
                 $height = filter_var($imageInfo['thumbheight'] ?? $imageInfo['height'] ?? null, FILTER_VALIDATE_INT) ?: null;
-                $healthStatus = MediaAssetValidator::supportsMimeType($mimeType)
-                    && MediaAssetValidator::isAllowedProviderUrl('wikimedia-commons', $remoteUrl)
-                    && $width !== null && $width >= (int) config('media.validation.min_width')
-                    && $height !== null && $height >= (int) config('media.validation.min_height')
-                    ? 'active'
-                    : 'pending';
+                $healthStatus = 'pending';
 
                 $provenance = [
                     'artist' => (string) ($ext['Artist']['value'] ?? ''),
@@ -256,7 +251,8 @@ class CommonsPhotoResolver
                     'mime_type' => $mimeType,
                     'width' => $width,
                     'height' => $height,
-                    'checksum' => is_string($imageInfo['sha1'] ?? null) ? $imageInfo['sha1'] : null,
+                    'checksum' => null,
+                    'commons_original_sha1' => is_string($imageInfo['sha1'] ?? null) ? $imageInfo['sha1'] : null,
                     'rights_status' => $rightsStatus,
                     'source_provenance' => $provenance,
                     'health_status' => $healthStatus,
@@ -316,8 +312,8 @@ class CommonsPhotoResolver
             width: $metadata['width'],
             height: $metadata['height'],
             checksum: $metadata['checksum'],
-            metadata: ['commons_file' => $canonicalFile, 'source_provenance' => $metadata['source_provenance'] ?? []],
-            shouldValidate: $metadata['health_status'] !== 'active',
+            metadata: ['commons_file' => $canonicalFile, 'commons_original_sha1' => $metadata['commons_original_sha1'] ?? null, 'source_provenance' => $metadata['source_provenance'] ?? []],
+            shouldValidate: true,
             authoritativeEvidence: true,
             matchStatus: $matchStatus,
             matchMethod: $matchMethod,
