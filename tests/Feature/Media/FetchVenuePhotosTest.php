@@ -1,5 +1,6 @@
 <?php
 
+use App\Media\MediaAssetValidator;
 use App\Media\PublishedMediaSelector;
 use App\Media\ReviewMediaMatch;
 use App\Models\Event;
@@ -7,8 +8,10 @@ use App\Models\MediaAcquisitionAttempt;
 use App\Models\User;
 use App\Models\Venue;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 /** @return array<string, mixed> */
 function venueCommonsInfo(string $artist, string $license): array
@@ -260,6 +263,7 @@ test('parenthetical clarifiers in the venue name are not identity evidence', fun
 });
 
 test('an event inherits a venue Commons photo through the API only after match review', function () {
+    Queue::fake();
     $this->travelTo(CarbonImmutable::parse('2026-06-12 10:00', 'Europe/Berlin'));
     $this->actingAs(User::factory()->onboarded()->create());
 
@@ -272,6 +276,9 @@ test('an event inherits a venue Commons photo through the API only after match r
 
     Http::fake(function ($request) {
         $url = $request->url();
+        if (str_contains($url, 'Special:FilePath/')) {
+            return Http::response(UploadedFile::fake()->image('photo.jpg', 800, 500)->getContent(), 200, ['Content-Type' => 'image/jpeg']);
+        }
         if (str_contains($url, 'wbsearchentities')) {
             return Http::response(['search' => [['id' => 'Q472950']]]);
         }
@@ -306,6 +313,8 @@ test('an event inherits a venue Commons photo through the API only after match r
         'reviewer@example.test',
     );
 
+    expect(app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero'))->toBeNull();
+    expect(app(MediaAssetValidator::class)->validate($attachment->mediaAsset))->toBe('active');
     $data = $this->getJson('/api/events?window=today')->assertOk()->json('data.0');
 
     expect($data['photo_url'])->toContain('Philharmonie_Saal.jpg')

@@ -1,9 +1,14 @@
 <?php
 
+use App\Media\MediaAssetValidator;
 use App\Media\PublishedMediaSelector;
 use App\Models\MediaAsset;
 use App\Models\Spot;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+
+beforeEach(fn () => Queue::fake());
 
 /** @return array<string, mixed> */
 function commonsPhotoInfo(string $artist, string $license): array
@@ -31,6 +36,7 @@ test('resolves photos from wikidata P18 claims with commons attribution', functi
     ]);
 
     Http::fake([
+        'commons.wikimedia.org/wiki/Special:FilePath/*' => Http::response(UploadedFile::fake()->image('photo.jpg', 800, 500)->getContent(), 200, ['Content-Type' => 'image/jpeg']),
         'www.wikidata.org/*' => Http::response([
             'entities' => [
                 'Q703640' => [
@@ -56,6 +62,7 @@ test('resolves photos from wikidata P18 claims with commons attribution', functi
 
     $this->artisan('spots:fetch-photos')->assertSuccessful();
 
+    expect(app(MediaAssetValidator::class)->validate($spot->mediaAttachments()->sole()->mediaAsset))->toBe('active');
     $spot->refresh();
     $media = app(PublishedMediaSelector::class)->select($spot, 'hero');
     expect($spot->photo_url)->toBeNull();
@@ -77,6 +84,7 @@ test('falls back to the wikipedia page image, surviving redirects and underscore
     ]);
 
     Http::fake([
+        'commons.wikimedia.org/wiki/Special:FilePath/*' => Http::response(UploadedFile::fake()->image('photo.jpg', 800, 500)->getContent(), 200, ['Content-Type' => 'image/jpeg']),
         'www.wikidata.org/*' => Http::response([
             'entities' => ['Q999999' => ['claims' => []]],
         ]),
@@ -104,6 +112,7 @@ test('falls back to the wikipedia page image, surviving redirects and underscore
 
     $this->artisan('spots:fetch-photos')->assertSuccessful();
 
+    expect(app(MediaAssetValidator::class)->validate($spot->mediaAttachments()->sole()->mediaAsset))->toBe('active');
     $spot->refresh();
     $attachment = $spot->mediaAttachments()->sole();
     $media = app(PublishedMediaSelector::class)->select($spot, 'hero');
@@ -141,6 +150,7 @@ test('an exact Commons tag is retained but not published when license metadata i
     ]);
 
     Http::fake([
+        'commons.wikimedia.org/wiki/Special:FilePath/*' => Http::response(UploadedFile::fake()->image('photo.jpg', 800, 500)->getContent(), 200, ['Content-Type' => 'image/jpeg']),
         'commons.wikimedia.org/*' => Http::response(['query' => ['pages' => [
             '12' => [
                 'title' => 'File:Exact source park.jpg',
@@ -161,7 +171,7 @@ test('an exact Commons tag is retained but not published when license metadata i
     $asset = MediaAsset::query()->sole();
     expect($asset->provider_asset_id)->toBe('File:Exact_source_park.jpg')
         ->and($asset->rights_status)->toBe('pending')
-        ->and($asset->health_status)->toBe('active')
+        ->and($asset->health_status)->toBe('pending')
         ->and($spot->fresh()->photo_url)->toBeNull()
         ->and($spot->mediaAttachments()->count())->toBe(1);
 });
@@ -177,6 +187,7 @@ test('noncommercial Commons licenses are never auto-published', function () {
     $restricted = commonsPhotoInfo('Jane Doe', 'CC BY-NC 4.0');
 
     Http::fake([
+        'commons.wikimedia.org/wiki/Special:FilePath/*' => Http::response(UploadedFile::fake()->image('photo.jpg', 800, 500)->getContent(), 200, ['Content-Type' => 'image/jpeg']),
         'commons.wikimedia.org/*' => Http::response(['query' => ['pages' => [
             '13' => ['title' => 'File:Restricted.jpg', 'imageinfo' => [$restricted]],
         ]]]),
@@ -200,6 +211,7 @@ test('unsupported Commons image formats are not marked healthy or published', fu
     $vector['mime'] = 'image/svg+xml';
 
     Http::fake([
+        'commons.wikimedia.org/wiki/Special:FilePath/*' => Http::response(UploadedFile::fake()->image('photo.jpg', 800, 500)->getContent(), 200, ['Content-Type' => 'image/jpeg']),
         'commons.wikimedia.org/*' => Http::response(['query' => ['pages' => [
             '15' => ['title' => 'File:Vector.svg', 'imageinfo' => [$vector]],
         ]]]),
@@ -222,7 +234,10 @@ test('an authoritative Commons refresh revokes publishing when rights become res
         'tags' => ['wikimedia_commons' => 'File:Changing.jpg'],
     ]);
     $metadataCalls = 0;
-    Http::fake(function () use (&$metadataCalls) {
+    Http::fake(function ($request) use (&$metadataCalls) {
+        if (str_contains($request->url(), 'Special:FilePath/')) {
+            return Http::response(UploadedFile::fake()->image('photo.jpg', 800, 500)->getContent(), 200, ['Content-Type' => 'image/jpeg']);
+        }
         $metadataCalls++;
         $info = $metadataCalls === 1
             ? commonsPhotoInfo('Jane Doe', 'CC BY-SA 4.0')
@@ -234,6 +249,7 @@ test('an authoritative Commons refresh revokes publishing when rights become res
     });
 
     $this->artisan('spots:fetch-photos --geo=0')->assertSuccessful();
+    expect(app(MediaAssetValidator::class)->validate($spot->mediaAttachments()->sole()->mediaAsset))->toBe('active');
     expect(app(PublishedMediaSelector::class)->select($spot->fresh(), 'hero'))->not->toBeNull();
 
     $this->artisan('spots:fetch-photos --force --geo=0')->assertSuccessful();
