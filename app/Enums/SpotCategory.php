@@ -27,8 +27,7 @@ enum SpotCategory: string
     case Attraction = 'attraction';
     case Zoo = 'zoo';
 
-    // Indoor / legacy categories — kept so existing rows stay valid and the
-    // composer can still mix in cafés on rainy days; de-emphasised in the UI.
+    // Food, drink and other indoor destinations.
     case Cafe = 'cafe';
     case Coworking = 'coworking';
     case Library = 'library';
@@ -113,8 +112,7 @@ enum SpotCategory: string
     }
 
     /**
-     * The six coarse Places filter buckets the UI exposes. Indoor/legacy
-     * categories map to 'other' and are excluded from the Places page.
+     * Places filter buckets. Work/study categories remain outside browsing.
      */
     public function coarse(): string
     {
@@ -126,6 +124,7 @@ enum SpotCategory: string
             self::Playground => 'playground',
             self::DogPark => 'dog_park',
             self::Museum, self::Gallery, self::Attraction, self::Zoo => 'culture',
+            self::Cafe, self::Restaurant, self::FastFood, self::Bar, self::Bakery => 'food_drink',
             default => 'other',
         };
     }
@@ -150,7 +149,7 @@ enum SpotCategory: string
      * Mirrors how the composer's feasibility filter widens a request: a fine
      * value always matches itself. Bare finesForCoarse() returns [] for a fine
      * value that heads no coarse family of its own (basketball/tennis roll up
-     * into 'court'; library/bar into 'other') — so a solo "basketball" plan was
+     * into 'court'; library into 'other') — so a solo "basketball" plan was
      * silently emptied to complements. This never returns [] for a known value,
      * so the composer builds the day around exactly what was asked for.
      *
@@ -184,6 +183,7 @@ enum SpotCategory: string
             'playground' => 'Playgrounds',
             'dog_park' => 'Dog parks',
             'culture' => 'Culture',
+            'food_drink' => 'Food & drink',
             default => ucfirst($coarse),
         };
     }

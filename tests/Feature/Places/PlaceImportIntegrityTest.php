@@ -503,3 +503,57 @@ test('a valid empty overpass result retires that refreshed source group', functi
         ->is_recommendable->toBeFalse()
         ->and(PlaceFactObservation::query()->where('spot_id', $existing->id)->count())->toBe(1);
 });
+
+test('food imports cover citywide nodes ways and relations with stable identities', function (string $category, string $key, string $value) {
+    seedTestVeedelBoundary();
+    Queue::fake();
+    Http::fake(['*' => Http::response(['elements' => [
+        ['type' => 'node', 'id' => 771, 'lat' => 50.98, 'lon' => 6.95, 'tags' => ['name' => 'Northern node venue', $key => $value]],
+        ['type' => 'way', 'id' => 771, 'center' => ['lat' => 50.981, 'lon' => 6.951], 'tags' => ['name' => 'Northern way venue', $key => $value]],
+        ['type' => 'relation', 'id' => 771, 'center' => ['lat' => 50.982, 'lon' => 6.952], 'tags' => ['name' => 'Northern relation venue', $key => $value]],
+        ['type' => 'node', 'id' => 772, 'lat' => 51.20, 'lon' => 7.20, 'tags' => ['name' => 'Outside venue', $key => $value]],
+    ]])]);
+
+    $this->artisan('osm:import', ['--only' => $category])->assertSuccessful();
+
+    Http::assertSent(function ($request) use ($key, $value) {
+        $query = $request['data'];
+
+        return str_contains($query, 'nwr[')
+            && str_contains($query, '"'.$key.'"')
+            && str_contains($query, $value)
+            && str_contains($query, '(50.83,6.77,51.09,7.16)')
+            && str_contains($query, 'out center');
+    });
+    $venues = Spot::query()->where('source', 'osm')->where('category', $category)->get();
+    expect($venues)->toHaveCount(3)
+        ->and($venues->pluck('source_id')->all())->toContain('node/771', 'way/771', 'relation/771')
+        ->and($venues->every(fn (Spot $spot) => $spot->is_active && $spot->is_recommendable))->toBeTrue();
+    expect(PlaceFactObservation::query()->where('provider', 'osm')->count())->toBe(3);
+
+    $this->artisan('osm:import', ['--only' => $category])->assertSuccessful();
+    expect(Spot::query()->where('source', 'osm')->where('category', $category)->count())->toBe(3);
+})->with([
+    ['cafe', 'amenity', 'cafe'],
+    ['restaurant', 'amenity', 'restaurant'],
+    ['fast_food', 'amenity', 'fast_food'],
+    ['bar', 'amenity', 'bar'],
+    ['bakery', 'shop', 'bakery'],
+]);
+
+test('overlapping cafe bakery tags keep their category and refresh ownership across partial imports', function () {
+    seedTestVeedelBoundary();
+    Queue::fake();
+    Http::fake(['*' => Http::response(['elements' => [
+        ['type' => 'node', 'id' => 880, 'lat' => 50.98, 'lon' => 6.95, 'tags' => ['name' => 'Bakery cafe', 'amenity' => 'cafe', 'shop' => 'bakery']],
+    ]])]);
+
+    foreach (['cafe,bakery', 'cafe', 'bakery'] as $refresh) {
+        $this->artisan('osm:import', ['--only' => $refresh])->assertSuccessful();
+        $venue = Spot::query()->where('source', 'osm')->where('source_id', 'node/880')->sole();
+        expect($venue->getRawOriginal('category'))->toBe('cafe')
+            ->and($venue->source_group)->toBe('cafe')
+            ->and($venue->is_active)->toBeTrue();
+    }
+    expect(Spot::query()->where('source', 'osm')->count())->toBe(1);
+});

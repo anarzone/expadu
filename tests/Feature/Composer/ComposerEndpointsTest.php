@@ -886,3 +886,22 @@ test('the origin leg uses the real travel matrix in the composer', function () {
     $response->assertOk();
     expect($response->json('plan.slots.0.travel_min_from_previous'))->toBe(42);
 });
+
+test('compose accepts the food and drink category filter it offers', function () {
+    $this->actingAs(composerUser());
+    Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.924]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => [],
+            'categories' => ['food_drink'],
+        ],
+    ])->assertOk();
+
+    $food = collect($response->json('facets.categories'))->firstWhere('value', 'food_drink');
+    expect($food)->not->toBeNull()
+        ->and($food['label'])->toBe('Food & drink');
+});

@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * GET /api/places?veedel=&category=&page=
  *
- * Lists physical-leisure places from our own seeded DB — no live
+ * Lists leisure and food places from our own seeded DB — no live
  * third-party calls. Distance is measured from the shared origin
  * (UserLocationService::context — live fix / picked or browsed area, else
  * none); transit_hint is the nearest GTFS stop (our static data).
@@ -41,7 +41,7 @@ class PlacesController extends Controller
     /** "Near me" browse radius around the user's location. */
     private const NEAR_RADIUS_KM = 3.0;
 
-    private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park', 'culture'];
+    private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park', 'culture', 'food_drink'];
 
     /** Named areas that represent their contained facilities as activities. */
     private const DESTINATION_CATEGORIES = ['park', 'sports_centre'];
@@ -66,8 +66,9 @@ class PlacesController extends Controller
             : null;
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
         $spot->activities = $this->activitiesForDestinations(collect([$spot]))[$spot->id] ?? [];
-        $spot->cluster_size = Spot::query()
+        $spot->cluster_size = $spot->category?->coarse() === 'food_drink' ? 1 : Spot::query()
             ->canonical()
+            ->whereNotIn('category', SpotCategory::finesForCoarse('food_drink'))
             ->where('is_active', true)
             ->where('name', $spot->name)
             ->where('veedel', $spot->veedel)
@@ -204,8 +205,8 @@ class PlacesController extends Controller
 
         // OSM seeds many identically-named rows (e.g. three "Tischtennisplatte"
         // in one park corner). Collapse same-name clusters within a ~100m grid
-        // cell into one card carrying cluster_size; distinct locations further
-        // apart stay separate.
+        // cell into one card carrying cluster_size. Food venues keep their
+        // canonical identity: nearby branches can share a brand name.
         $query->select('*');
 
         if ($origin->hasOrigin()) {
@@ -217,9 +218,12 @@ class PlacesController extends Controller
             $query->selectRaw('NULL::float8 as distance_km');
         }
 
+        $foodCategories = SpotCategory::finesForCoarse('food_drink');
+        $foodBindings = implode(', ', array_fill(0, count($foodCategories), '?'));
+        $clusterPartition = "name, veedel, round(lat::numeric, 3), round(lng::numeric, 3), CASE WHEN category IN ({$foodBindings}) THEN id END";
         $query
-            ->selectRaw('count(*) over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3)) as cluster_size')
-            ->selectRaw('row_number() over (partition by name, veedel, round(lat::numeric, 3), round(lng::numeric, 3) order by id) as cluster_rank');
+            ->selectRaw("count(*) over (partition by {$clusterPartition}) as cluster_size", $foodCategories)
+            ->selectRaw("row_number() over (partition by {$clusterPartition} order by id) as cluster_rank", $foodCategories);
 
         $outer = Spot::query()->fromSub($query, 'spots')
             ->when(empty($validated['activity']), fn ($rows) => $rows->where('cluster_rank', 1));
@@ -319,11 +323,13 @@ class PlacesController extends Controller
 
         $destinationIds = $destinations->pluck('id')->map(fn ($id) => (int) $id)->all();
         $grouping = app(DestinationGrouping::class);
-        if (! $grouping->hasComponentCandidates($destinationIds)) {
+        $candidateIds = $grouping->componentCandidateIds($destinationIds);
+        if ($candidateIds === []) {
             return [];
         }
 
         $rows = $grouping->components(Spot::query(), $destinationIds)
+            ->whereIn('spots.id', $candidateIds)
             ->join('spots as activity_destination', 'activity_destination.id', '=', 'spots.destination_spot_id')
             ->whereIn('spots.category', SpotCategory::placesFines())
             ->select('spots.category')->selectRaw('COALESCE(activity_destination.canonical_spot_id, activity_destination.id) as group_id')

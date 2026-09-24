@@ -164,6 +164,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
             ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
             'court',
             'culture',
+            'food_drink',
             'event',
         ];
 

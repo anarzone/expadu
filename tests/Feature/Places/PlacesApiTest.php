@@ -265,14 +265,33 @@ test('an explicit From by geocoded point carries its label', function () {
         ->assertJsonPath('origin.label', 'Neumarkt');
 });
 
-test('excludes indoor/legacy categories from Places', function () {
-    Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
-    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+test('food and drink places are browsable while unrelated indoor categories remain excluded', function (string $category) {
+    $food = Spot::factory()->create(['name' => 'Independent food venue', 'category' => $category, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $library = Spot::factory()->create(['category' => 'library', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $coworking = Spot::factory()->create(['category' => 'coworking', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $park = Spot::factory()->create(['name' => 'Separate park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
 
-    $response = $this->getJson('/api/places');
+    $places = collect($this->getJson('/api/places')->assertOk()->json('data'));
+    expect($places->pluck('id')->all())->toContain($food->id, $park->id)
+        ->not->toContain($library->id, $coworking->id);
+    expect($places->firstWhere('id', $food->id)['category'])->toBe('food_drink');
 
-    expect(collect($response->json('data'))->pluck('category')->all())->not->toContain('other');
-    expect(collect($response->json('data'))->pluck('category')->all())->toContain('park');
+    $this->getJson('/api/places?category=food_drink')->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
+    $this->getJson('/api/places?activity='.$category)->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
+    $this->getJson('/api/places?category=park&activity='.$category)->assertOk()
+        ->assertJsonCount(0, 'data');
+})->with(['cafe', 'restaurant', 'fast_food', 'bar', 'bakery']);
+
+test('an independent cafe geographically inside a park remains a separate place', function () {
+    $park = Spot::factory()->create(['name' => 'Test park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $cafe = Spot::factory()->create(['name' => 'Independent park cafe', 'category' => 'cafe', 'parent_spot_id' => $park->id, 'veedel' => 'Ehrenfeld', 'lat' => 50.9481, 'lng' => 6.9211]);
+
+    $ids = collect($this->getJson('/api/places')->assertOk()->json('data'))->pluck('id')->all();
+    expect($ids)->toContain($park->id, $cafe->id);
+    $this->getJson('/api/places?category=food_drink')->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $cafe->id);
 });
 
 test('filters by coarse category', function () {
@@ -793,4 +812,15 @@ test('the list carries feedback state and hides not-interested places', function
     expect($data->pluck('name')->all())->toContain('Saved park');
     expect($data->pluck('name')->all())->not->toContain('Hidden park');
     expect($data->firstWhere('name', 'Saved park')['feedback_state'])->toBe('saved');
+});
+
+test('nearby same named food venues retain their distinct identities', function () {
+    $first = Spot::factory()->create(['name' => 'Same brand', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.9481, 'lng' => 6.9211, 'tags' => ['addr:housenumber' => '1']]);
+    $second = Spot::factory()->create(['name' => 'Same brand', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.9482, 'lng' => 6.9212, 'tags' => ['addr:housenumber' => '3']]);
+    $restaurant = Spot::factory()->create(['name' => 'Same brand', 'category' => 'restaurant', 'veedel' => 'Ehrenfeld', 'lat' => 50.9483, 'lng' => 6.9213]);
+
+    $places = collect($this->getJson('/api/places?category=food_drink')->assertOk()->json('data'));
+    expect($places->pluck('id')->all())->toContain($first->id, $second->id, $restaurant->id)
+        ->and($places->pluck('cluster_size')->all())->toBe([1, 1, 1]);
+    $this->getJson('/api/places/'.$first->id)->assertOk()->assertJsonPath('data.cluster_size', 1);
 });
