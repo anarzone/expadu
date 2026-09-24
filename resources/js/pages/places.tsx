@@ -45,6 +45,7 @@ const CSRF = () =>
 const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
     { id: 'park', label: 'Parks', emoji: '🌳' },
     { id: 'culture', label: 'Culture', emoji: '🏛️' },
+    { id: 'food_drink', label: 'Food & drink', emoji: '🍽️' },
     { id: 'pitch', label: 'Pitches', emoji: '⚽' },
     { id: 'court', label: 'Courts', emoji: '🏀' },
     { id: 'swimming', label: 'Swimming', emoji: '🏊' },

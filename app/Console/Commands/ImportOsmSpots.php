@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\SpotCategory;
 use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Spot;
@@ -54,11 +55,10 @@ class ImportOsmSpots extends Command
 
         $this->info('Querying Overpass API for Cologne spots...');
 
-        // Fetch each category separately to avoid timeouts. v2: physical
-        // leisure across the whole city is the primary content; indoor
-        // categories stay on the old inner-city bbox.
+        // Fetch each category separately. Food and leisure cover the city;
+        // work/study retain their existing central-area import scope.
         $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
-        $innerBbox = '50.92,6.92,50.96,6.97'; // inner city (cafés etc.)
+        $innerBbox = '50.92,6.92,50.96,6.97'; // existing work/study scope
         $queries = [
             'park' => "[out:json][timeout:40];nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});out center;",
             // No `out` limit on playground/pitch: Cologne has ~2,300 playgrounds
@@ -82,7 +82,11 @@ class ImportOsmSpots extends Command
             'gallery' => "[out:json][timeout:40];nwr[\"tourism\"=\"gallery\"][\"name\"]({$bbox});out center;",
             'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center 200;",
             'zoo' => "[out:json][timeout:40];nwr[\"tourism\"=\"zoo\"][\"name\"]({$bbox});out center;",
-            'cafe' => "[out:json][timeout:25];node[\"amenity\"=\"cafe\"]({$innerBbox});out body;",
+            'cafe' => "[out:json][timeout:40];nwr[\"amenity\"=\"cafe\"]({$bbox});out center;",
+            'restaurant' => "[out:json][timeout:40];nwr[\"amenity\"=\"restaurant\"]({$bbox});out center;",
+            'fast_food' => "[out:json][timeout:40];nwr[\"amenity\"=\"fast_food\"]({$bbox});out center;",
+            'bar' => "[out:json][timeout:40];nwr[\"amenity\"=\"bar\"]({$bbox});out center;",
+            'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
             'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$innerBbox});node[\"office\"=\"coworking\"]({$innerBbox}););out body;",
             'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
         ];
@@ -239,7 +243,7 @@ class ImportOsmSpots extends Command
                 'veedel' => $veedel,
                 'tags' => $keptTags ?: null,
                 'opening_hours' => OpeningHoursParser::parse($tags['opening_hours'] ?? null),
-                'source_group' => $element['_category'],
+                'source_group' => in_array($category, SpotCategory::finesForCoarse('food_drink'), true) ? $category : $element['_category'],
                 'last_seen_at' => now(),
                 'is_active' => true,
                 'is_recommendable' => $this->isRecommendationDestination($category, $name),
@@ -569,6 +573,15 @@ class ImportOsmSpots extends Command
         $tourism = $tags['tourism'] ?? '';
         if (in_array($tourism, ['museum', 'gallery', 'zoo'], true)) {
             return $tourism;
+        }
+
+        if (in_array($hint, SpotCategory::finesForCoarse('food_drink'), true)) {
+            if (in_array($amenity, ['cafe', 'restaurant', 'fast_food', 'bar'], true)) {
+                return $amenity;
+            }
+            if (($tags['shop'] ?? '') === 'bakery') {
+                return 'bakery';
+            }
         }
 
         if ($hint === 'pitch') {

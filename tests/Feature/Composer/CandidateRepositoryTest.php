@@ -406,3 +406,21 @@ test('recurring occurrences have stable unique candidate ids', function () {
     expect($occurrences)->toHaveCount(2)
         ->and($occurrences->pluck('id')->unique())->toHaveCount(2);
 });
+
+test('food and drink filtering preserves independent cafes contained in parks', function () {
+    $park = spotWithHours(['name' => 'Parent park', 'category' => 'park']);
+    $cafe = spotWithHours(['name' => 'Independent cafe', 'category' => 'cafe', 'parent_spot_id' => $park->id]);
+    $restaurant = spotWithHours(['name' => 'Separate restaurant', 'category' => 'restaurant']);
+    $constraints = new Constraints(
+        windowStart: mondayWindow()->windowStart,
+        windowEnd: mondayWindow()->windowEnd,
+        categories: ['food_drink'],
+    );
+    $repository = app(CandidateRepository::class);
+    $candidates = $repository->candidatesFor($constraints);
+    $filtered = app(FeasibilityFilter::class)->filter($constraints, $candidates);
+    expect(collect($filtered)->pluck('id')->all())->toContain('spot:'.$cafe->id, 'spot:'.$restaurant->id)
+        ->not->toContain('spot:'.$park->id);
+    $loaded = collect($repository->byIds(['spot:'.$park->id, 'spot:'.$cafe->id], $constraints->windowStart));
+    expect($loaded->pluck('destinationGroupId')->unique()->count())->toBe(2);
+});
