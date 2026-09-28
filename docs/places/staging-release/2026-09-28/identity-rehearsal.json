@@ -1,0 +1,98 @@
+{
+    "checked_at": "2026-09-28T19:38:15+00:00",
+    "environment": "isolated local transaction",
+    "input_sha256": "dacfb9018343c8ac21e61863fb5b8d1810289b5d8e9f7d41aa4575130f84d2fb",
+    "scope": "all strict identity proposals",
+    "live_reconciliation_required": true,
+    "proposals": 12,
+    "applied_in_rehearsal": [
+        {
+            "alias_id": 1425,
+            "canonical_id": 8519,
+            "source_id": "node/11511162101"
+        },
+        {
+            "alias_id": 1426,
+            "canonical_id": 8520,
+            "source_id": "node/13287090933"
+        },
+        {
+            "alias_id": 1416,
+            "canonical_id": 8510,
+            "source_id": "node/305167114"
+        },
+        {
+            "alias_id": 1418,
+            "canonical_id": 8512,
+            "source_id": "node/5022696146"
+        },
+        {
+            "alias_id": 1421,
+            "canonical_id": 8515,
+            "source_id": "node/6218855785"
+        },
+        {
+            "alias_id": 1423,
+            "canonical_id": 8517,
+            "source_id": "node/7230180824"
+        },
+        {
+            "alias_id": 1424,
+            "canonical_id": 8518,
+            "source_id": "node/7230226414"
+        },
+        {
+            "alias_id": 1417,
+            "canonical_id": 8511,
+            "source_id": "node/751978797"
+        },
+        {
+            "alias_id": 1448,
+            "canonical_id": 7974,
+            "source_id": "node/9314933338"
+        },
+        {
+            "alias_id": 1497,
+            "canonical_id": 8018,
+            "source_id": "relation/2303617"
+        },
+        {
+            "alias_id": 1049,
+            "canonical_id": 8618,
+            "source_id": "way/364929558"
+        },
+        {
+            "alias_id": 1481,
+            "canonical_id": 8003,
+            "source_id": "way/931873865"
+        }
+    ],
+    "policy_holds": [],
+    "staging_changed": false,
+    "production_changed": false,
+    "eligibility_losses_requiring_separate_qualification": [
+        {
+            "alias_id": 1448,
+            "canonical_id": 7974,
+            "source_id": "node/9314933338"
+        }
+    ],
+    "general_browse_losses": [
+        {
+            "alias_id": 1448,
+            "canonical_id": 7974,
+            "source_id": "node/9314933338"
+        }
+    ],
+    "local_visibility_checks_passed": false,
+    "promotion_allowed": false,
+    "promotion_hold": "Fresh target-environment identity reconciliation and release review are required.",
+    "checks": {
+        "old_links_resolve": true,
+        "saved_references_resolve": true,
+        "no_ids_deleted": true,
+        "user_and_media_data_unchanged": true,
+        "replay_exact": true,
+        "rollback_exact": true
+    }
+}

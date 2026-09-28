@@ -1,0 +1,25 @@
+{
+  "pr": "https://github.com/anarzone/expadu/pull/57",
+  "state": "merged",
+  "commit": "f81e2d3bfb597aec7050a3b87f72ed51a8b29cd4",
+  "merged_at": "2026-09-28T19:12:06Z",
+  "ci_run": "https://github.com/anarzone/expadu/actions/runs/36470573038",
+  "ci_status": "success",
+  "production_changed": false,
+  "catalogue_import_applied": false,
+  "reconciliation_approval": "pending",
+  "staging_verified": {
+    "verified_at": "2026-09-28T19:21:59.062709+00:00",
+    "app_image": "sha256:6d15ded6d90a7fa3b587107fe7e0728444131fca7eb18292accb3c135ac339a6",
+    "health_http": 200,
+    "deployed_file_checks": {
+      "app/Places/PlaceFacts.php": true,
+      "app/Places/PlaceCapabilities.php": true,
+      "app/Composer/FeasibilityFilter.php": true,
+      "app/Composer/CandidateRepository.php": true,
+      "app/Composer/PlaceSearchHints.php": true,
+      "app/Http/Controllers/ComposerController.php": true
+    },
+    "data_queried": false
+  }
+}

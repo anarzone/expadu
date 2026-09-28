@@ -1,0 +1,11 @@
+{
+    "verified_at": "2026-09-28T19:38:22+00:00",
+    "status": "held_at_source_policy_preflight",
+    "sources_checked": 17,
+    "accepted_fact_reviews": 0,
+    "native_mutations_attempted": false,
+    "api_coverage_claimed": false,
+    "staging_changed": false,
+    "production_changed": false,
+    "reason": "Excluded/unreviewed providers and missing independent public-access evidence cannot authorize fact corrections or activity qualification."
+}
