@@ -33,6 +33,51 @@ This continuation verified the running application through code checksums and it
 health endpoint. It did **not** inspect current staging records or establish new
 live catalogue/API counts. Evidence: `release.json`.
 
+## Full-package staging rehearsal prepared and verified locally
+
+The renewed summary-only staging check was rejected before execution. Automatic
+approval review did not accept the owner's “go” as specific authorization for
+staging data inspection and summary export. The exact-scope approval question is
+still pending. No alternate execution path was used. See `approval-status.json`.
+
+Independent preparation is complete: the new transaction-only rehearsal pins the
+reviewed package, importer, manifest and expected fingerprints. It has no commit
+mode. Its four guard probes reject a commit flag, the wrong target, modified
+executable importer and modified identity fingerprints. Local source review found
+no remaining material issues after input, visibility and error-isolation fixes.
+
+The full native run against the existing isolated public-data copy passed:
+
+- **4,643 records verified:** 1,874 created and 2,769 refreshed inside the transaction.
+- **4,084 prepared identities available to Composer**, without new activity
+  qualifications; 559 remain outside automatic recommendations. The earlier
+  4,100 result included 16 provisional qualifications, which are not applied here.
+- Zero losses of ordinary or activity visibility. Every existing place ID,
+  grouping relationship and media reference was preserved. Unrelated places and
+  existing observation history stayed unchanged.
+- Eight Places category endpoints and 28 detail samples passed. Every returned
+  Composer candidate used the same resolved facts as Places. Synthetic saved
+  references remained intact; existing private accounts/plans were not loaded.
+- **Repeat import made no changes; rollback restored all nine checked tables
+  exactly.** PostgreSQL sequence allocations are not rolled back or reset.
+- Forty-six prepared candidates satisfy the explicit free filter. Verified
+  free/public football remains **zero**. These are local preparation results,
+  not newly published coverage or guarantees of opening/availability.
+
+Evidence: `local-native-rehearsal.json`, `rehearsal-guard-checks.json` and
+`rehearsal-code-review.json`. No photos were added or approved.
+
+One local Places pagination query was still active after 23 seconds, with no
+blocking session. This was an expanded-data transaction before a fresh statistics
+pass, not a staging or production latency measurement. Target performance must be
+measured before a production-ready claim. See `local-performance-observation.json`.
+Repository checks initially hit PostgreSQL shared-memory/lock capacity when run
+alongside the long rehearsal. The standalone rerun passed **1,677 tests, 7,009
+assertions and two skips**, plus secret scanning and formatting. Commit-message
+formatting was rejected afterward; normal hooks are being rerun with the corrected
+message. No hooks were bypassed or server configuration changed. Run heavy checks
+sequentially. See `repository-checks.json`.
+
 ## Duplicate review completed locally
 
 The first pass screened 2,428 held existing identities and proposed 624 pairs from

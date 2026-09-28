@@ -15,7 +15,10 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
    identity must still be absent. Do not force mismatches or transfer raw
    staging records. Automatic approval review rejected both the raw export and
    the proposed aggregate-only check; explicit owner approval for the latter
-   is pending. Continue independent local data work meanwhile.
+   is pending. A renewed attempt following the owner's “go” was rejected before
+   execution because automatic review still required specific authorization for
+   inspection and summary export. The exact-scope approval question remains
+   pending; do not retry through another execution path. See `approval-status.json`.
 3. Completed: release the tested application to staging through its normal CI
    deployment. Run `36470573038` passed application tests, browser tests, lint,
    image build and staging deployment. Verified the resulting image and `/up`.
@@ -23,6 +26,18 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
 4. Run a server-side transaction-only rehearsal of the full package, retaining
    detailed backup/evidence on the server. Verify expected identities, every
    shared fact contract, saved references, source refresh and exact rollback.
+   The prepared `../rehearse-staging-package.php` pins the frozen input, importer,
+   manifest and expected fingerprints. It has no commit mode. It compares
+   ordinary/activity visibility and independently expected Composer identities,
+   exercises Places APIs with a non-persisted synthetic user, repeats the import,
+   and verifies exact table restoration while retaining transaction locks.
+   Existing user accounts/plans are not loaded; feedback lookups are restricted
+   to the synthetic ID. Error reporting is confined to the execution environment.
+   Local verification does not authorize or establish a staging run.
+   Outcome: all 4,643 records, 4,084 Composer identities, eight category endpoints,
+   28 details, exact replay and rollback passed without new qualifications.
+   Run database-heavy checks sequentially; overlapping local test setup exhausted
+   shared-memory/lock capacity. Measure target API latency before promotion claims.
 5. Promote a small, deterministic canary only after the rehearsal passes,
    then the rest of the unchanged manifest. Report new versus refreshed places,
    actual consumer/Composer eligibility, holds, source dates and approved media.

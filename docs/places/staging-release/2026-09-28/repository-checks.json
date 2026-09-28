@@ -1,0 +1,21 @@
+{
+  "recorded_at": "2026-09-28T21:00:28.712261+00:00",
+  "native_rehearsal": "passed; all 4643 records and exact rollback",
+  "secret_scan": "passed",
+  "formatting": "passed",
+  "full_repository_tests": {
+    "passed": 1677,
+    "skipped": 2,
+    "assertions": 7009,
+    "duration_seconds": 553.08,
+    "parallel_processes": 10
+  },
+  "first_overlapping_run": {
+    "status": "failed",
+    "cause": "PostgreSQL shared-memory/lock capacity during parallel test setup while long local rehearsal was active",
+    "application_regression_claimed": false
+  },
+  "publication": "commit-message formatting rejected after passing checks; correcting and rerunning normal hooks",
+  "hooks_bypassed": false,
+  "staging_access": "not attempted after renewed automatic approval rejection"
+}
