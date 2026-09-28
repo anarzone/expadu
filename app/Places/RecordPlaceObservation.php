@@ -20,6 +20,7 @@ class RecordPlaceObservation
         'contact',
         'description',
         'negative_facts',
+        'practical',
     ];
 
     /** @param array<string, mixed> $observation */
@@ -311,9 +312,14 @@ class RecordPlaceObservation
         }
 
         if (array_key_exists('fee', $payload)) {
-            $fee = $this->keyedObject($payload['fee'], ['raw', 'amount', 'currency'], 'Observation fee facts');
+            $fee = $this->keyedObject($payload['fee'], ['raw', 'amount', 'currency', 'conditional', 'charge', 'charge_conditional'], 'Observation fee facts');
             if (array_key_exists('raw', $fee)) {
                 $this->validateNullableText($fee['raw'], 255, 'Observation fee values');
+            }
+            foreach (['conditional', 'charge', 'charge_conditional'] as $field) {
+                if (array_key_exists($field, $fee)) {
+                    $this->validateNullableText($fee[$field], 500, 'Observation fee conditions');
+                }
             }
             if (isset($fee['amount']) && (! is_numeric($fee['amount']) || (float) $fee['amount'] < 0)) {
                 throw new DomainException('Observation fee amounts must be non-negative numbers.');
@@ -345,6 +351,13 @@ class RecordPlaceObservation
 
         if (array_key_exists('description', $payload)) {
             $this->validateNullableText($payload['description'], 1000, 'Observation descriptions');
+        }
+
+        if (array_key_exists('practical', $payload)) {
+            $practical = $this->keyedObject($payload['practical'], PlaceCapabilities::TAGS, 'Observation practical facts');
+            foreach ($practical as $value) {
+                $this->validateNullableText($value, 500, 'Observation practical values', allowNull: false);
+            }
         }
 
         if (array_key_exists('negative_facts', $payload)) {

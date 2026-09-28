@@ -192,7 +192,8 @@ test('osm import records source facts once and advances the revision only when f
                 'boundary_reference' => 'way/12',
             ],
             'access' => ['raw' => 'yes', 'conditional' => 'no @ (22:00-06:00)'],
-            'fee' => ['raw' => 'no'],
+            'fee' => ['raw' => 'no', 'conditional' => null, 'charge' => null, 'charge_conditional' => null],
+            'practical' => ['lit' => 'no', 'wheelchair' => 'no'],
             'hours' => ['raw' => 'Mo-Su 06:00-22:00'],
             'contact' => [
                 'website' => 'https://official.example.test/quellenpark',
@@ -522,7 +523,7 @@ test('food imports cover citywide nodes ways and relations with stable identitie
         return str_contains($query, 'nwr[')
             && str_contains($query, '"'.$key.'"')
             && str_contains($query, $value)
-            && str_contains($query, '(50.83,6.77,51.09,7.16)')
+            && str_contains($query, '(50.9,6.9,52.01,8.01)')
             && str_contains($query, 'out center');
     });
     $venues = Spot::query()->where('source', 'osm')->where('category', $category)->get();
@@ -539,6 +540,8 @@ test('food imports cover citywide nodes ways and relations with stable identitie
     ['fast_food', 'amenity', 'fast_food'],
     ['bar', 'amenity', 'bar'],
     ['bakery', 'shop', 'bakery'],
+    ['library', 'amenity', 'library'],
+    ['coworking', 'office', 'coworking'],
 ]);
 
 test('overlapping cafe bakery tags keep their category and refresh ownership across partial imports', function () {
@@ -556,4 +559,47 @@ test('overlapping cafe bakery tags keep their category and refresh ownership acr
             ->and($venue->is_active)->toBeTrue();
     }
     expect(Spot::query()->where('source', 'osm')->count())->toBe(1);
+});
+
+test('attraction refreshes retain records beyond the former source response cap', function () {
+    seedTestVeedelBoundary();
+    $elements = array_map(static fn (int $id): array => [
+        'type' => 'node', 'id' => $id, 'lat' => 50.98, 'lon' => 6.95,
+        'tags' => ['name' => 'Attraction '.$id, 'tourism' => 'attraction'],
+    ], range(1, 205));
+    Http::fake(function ($request) use ($elements) {
+        $rows = preg_match('/out center\\s+(\\d+)/', $request['data'], $match) === 1
+            ? array_slice($elements, 0, (int) $match[1])
+            : $elements;
+
+        return Http::response(['elements' => $rows]);
+    });
+
+    $this->artisan('osm:import --only=attraction')->assertSuccessful();
+
+    expect(Spot::query()->where('source', 'osm')->where('category', 'attraction')->count())->toBe(205)
+        ->and(PlaceFactObservation::query()->where('provider', 'osm')->count())->toBe(205);
+});
+
+test('source acquisition includes accepted locations beyond the former eastern rectangle', function () {
+    seedTestVeedelBoundary();
+    Queue::fake();
+    $veedel = DB::table('veedels')->orderBy('id')->value('id');
+    DB::statement('UPDATE veedels SET boundary = ST_Multi(ST_GeomFromText(?, 4326)) WHERE id = ?', [
+        'POLYGON((6.90 50.85, 7.1621 50.85, 7.1621 51.00, 6.90 51.00, 6.90 50.85))', $veedel,
+    ]);
+    Http::fake(function ($request) {
+        preg_match('/\\(([-0-9.,]+)\\)/', $request['data'], $match);
+        $bounds = isset($match[1]) ? array_map('floatval', explode(',', $match[1])) : [];
+        $covered = count($bounds) === 4 && $bounds[0] <= 50.8685084 && $bounds[3] >= 7.1607594;
+
+        return Http::response(['elements' => $covered ? [[
+            'type' => 'node', 'id' => 2301210583, 'lat' => 50.8685084, 'lon' => 7.1607594,
+            'tags' => ['name' => 'Eastern viewpoint', 'tourism' => 'viewpoint'],
+        ]] : []]);
+    });
+
+    $this->artisan('osm:import --only=viewpoint')->assertSuccessful();
+    expect(Spot::query()->where('source_id', 'node/2301210583')->first())
+        ->not->toBeNull()->is_active->toBeTrue();
 });

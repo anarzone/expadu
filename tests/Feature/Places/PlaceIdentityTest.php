@@ -245,10 +245,11 @@ test('catalogue replacement and pruning refuse to destroy retained identity refe
 });
 
 test('saved Composer snapshots normalize identity without changing timing or other candidate types', function () {
+    $this->travelTo(now()->setTime(12, 0));
     [$alias, $canonical] = identityPair();
     $user = User::factory()->onboarded()->create();
     $slot = ['id' => "spot:{$alias->id}", 'name' => $alias->name, 'start_at' => now()->addHour()->toIso8601String(), 'end_at' => now()->addHours(2)->toIso8601String(), 'travel_min_from_previous' => 7];
-    $plan = ['slots' => [$slot], 'pins' => ["spot:{$alias->id}"], 'excluded' => ["spot:{$alias->id}"], 'rejected' => [["spot:{$alias->id}", 'event:42']]];
+    $plan = ['constraints' => ['window_start' => now()->toIso8601String(), 'window_end' => now()->addHours(4)->toIso8601String()], 'slots' => [$slot], 'pins' => ["spot:{$alias->id}"], 'excluded' => ["spot:{$alias->id}"], 'rejected' => [["spot:{$alias->id}", 'event:42']]];
     app(TodayPlanStore::class)->save($user, $plan, 'Saved before reconciliation');
     reconcileIdentity($alias, $canonical);
     $normalized = app(PlaceIdentity::class)->normalizePlan($plan);
@@ -257,7 +258,10 @@ test('saved Composer snapshots normalize identity without changing timing or oth
         ->and($normalized['pins'])->toBe(["spot:{$canonical->id}"])
         ->and($normalized['excluded'])->toBe(["spot:{$canonical->id}"])
         ->and($normalized['rejected'][0])->toBe(["spot:{$canonical->id}", 'event:42'])
-        ->and(app(TodayPlanStore::class)->get($user)['slots'][0])->toBe($normalized['slots'][0]);
+        ->and(app(TodayPlanStore::class)->get($user)['slots'][0])->toMatchArray([
+            'id' => "spot:{$canonical->id}", 'name' => $canonical->name,
+            'start_at' => $slot['start_at'], 'end_at' => $slot['end_at'], 'travel_min_from_previous' => 7,
+        ]);
 });
 
 test('Composer honors old identity pins locks and exclusions after reconciliation', function () {

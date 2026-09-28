@@ -6,6 +6,7 @@ use App\Enums\SpotCategory;
 use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Spot;
+use App\Places\PlaceCapabilities;
 use App\Places\PlaceFacts;
 use App\Places\RecordPlaceObservation;
 use App\Services\OpeningHoursParser;
@@ -55,10 +56,20 @@ class ImportOsmSpots extends Command
 
         $this->info('Querying Overpass API for Cologne spots...');
 
-        // Fetch each category separately. Food and leisure cover the city;
-        // work/study retain their existing central-area import scope.
-        $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
-        $innerBbox = '50.92,6.92,50.96,6.97'; // existing work/study scope
+        // Derive acquisition bounds from the same official polygons used
+        // for acceptance; a hand-written rectangle can omit edge locations.
+        $bounds = DB::table('veedels')
+            ->whereIn('name', $officialVeedels)
+            ->whereNotNull('boundary')
+            ->selectRaw('ST_YMin(ST_Extent(boundary)) AS south, ST_XMin(ST_Extent(boundary)) AS west, ST_YMax(ST_Extent(boundary)) AS north, ST_XMax(ST_Extent(boundary)) AS east')
+            ->first();
+        $coordinates = [$bounds?->south, $bounds?->west, $bounds?->north, $bounds?->east];
+        if (in_array(null, $coordinates, true)) {
+            $this->error('Official Veedel polygons must have a usable geographic extent.');
+
+            return self::FAILURE;
+        }
+        $bbox = implode(',', $coordinates);
         $queries = [
             'park' => "[out:json][timeout:40];nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});out center;",
             // No `out` limit on playground/pitch: Cologne has ~2,300 playgrounds
@@ -80,15 +91,15 @@ class ImportOsmSpots extends Command
             'swimming' => "[out:json][timeout:40];(nwr[\"leisure\"=\"swimming_area\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"=\"swimming\"]({$bbox}););out center;",
             'museum' => "[out:json][timeout:40];nwr[\"tourism\"=\"museum\"][\"name\"]({$bbox});out center;",
             'gallery' => "[out:json][timeout:40];nwr[\"tourism\"=\"gallery\"][\"name\"]({$bbox});out center;",
-            'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center 200;",
+            'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center;",
             'zoo' => "[out:json][timeout:40];nwr[\"tourism\"=\"zoo\"][\"name\"]({$bbox});out center;",
             'cafe' => "[out:json][timeout:40];nwr[\"amenity\"=\"cafe\"]({$bbox});out center;",
             'restaurant' => "[out:json][timeout:40];nwr[\"amenity\"=\"restaurant\"]({$bbox});out center;",
             'fast_food' => "[out:json][timeout:40];nwr[\"amenity\"=\"fast_food\"]({$bbox});out center;",
             'bar' => "[out:json][timeout:40];nwr[\"amenity\"=\"bar\"]({$bbox});out center;",
             'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
-            'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$innerBbox});node[\"office\"=\"coworking\"]({$innerBbox}););out body;",
-            'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
+            'coworking' => "[out:json][timeout:25];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
+            'library' => "[out:json][timeout:25];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
         ];
 
         // Optionally re-import a subset (e.g. after a query fix) without
@@ -422,24 +433,21 @@ class ImportOsmSpots extends Command
     }
 
     /**
-     * OSM tags worth keeping — they feed the place detail's facts/chips;
-     * wikidata/wikipedia link to Commons photos (spots:fetch-photos).
-     */
-    private const KEPT_TAG_KEYS = [
-        'surface', 'lit', 'covered', 'indoor', 'access', 'access:conditional', 'fee', 'opening_hours',
-        'sport', 'hoops', 'wheelchair', 'drinking_water', 'barrier',
-        // Photo links resolved later by spots:fetch-photos. wikimedia_commons
-        // and image are mapper-provided photos of the place itself.
-        'wikidata', 'wikipedia', 'wikimedia_commons', 'image',
-    ];
-
-    /**
-     * @param  array<string, string>  $tags
+     * Keep valid source facts so refreshes retain practical details and conditions.
+     *
+     * @param  array<string, mixed>  $tags
      * @return array<string, string>
      */
     protected function keptTags(array $tags): array
     {
-        return array_intersect_key($tags, array_flip(self::KEPT_TAG_KEYS));
+        return array_filter(
+            $tags,
+            static fn (mixed $value, mixed $key): bool => is_string($key)
+                && $key !== ''
+                && is_string($value)
+                && trim($value) !== '',
+            ARRAY_FILTER_USE_BOTH,
+        );
     }
 
     /**
@@ -473,7 +481,13 @@ class ImportOsmSpots extends Command
                 'raw' => $this->tagValue($tags['access'] ?? null, 500),
                 'conditional' => $this->tagValue($tags['access:conditional'] ?? null, 500),
             ],
-            'fee' => ['raw' => $this->tagValue($tags['fee'] ?? null, 255)],
+            'fee' => [
+                'raw' => $this->tagValue($tags['fee'] ?? null, 255),
+                'conditional' => $this->tagValue($tags['fee:conditional'] ?? null, 500),
+                'charge' => $this->tagValue($tags['charge'] ?? null, 500),
+                'charge_conditional' => $this->tagValue($tags['charge:conditional'] ?? null, 500),
+            ],
+            'practical' => PlaceCapabilities::sourceTags($tags),
             'hours' => ['raw' => $this->tagValue($tags['opening_hours'] ?? null, 500)],
             'contact' => [
                 'website' => $this->httpUrlTag($tags['contact:website'] ?? $tags['website'] ?? null),
@@ -544,9 +558,20 @@ class ImportOsmSpots extends Command
             return null;
         }
 
-        $scheme = mb_strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (preg_match('~^(https?)://([^/?#]+)(.*)$~iuD', $url, $parts) !== 1
+            || preg_match('~^(\[[0-9a-f:.]+\]|[^:@]+)(:\d+)?$~iuD', $parts[2], $authority) !== 1) {
+            return null;
+        }
+        $host = str_starts_with($authority[1], '[')
+            ? $authority[1]
+            : idn_to_ascii($authority[1], IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+        if ($host === false) {
+            return null;
+        }
+        $suffix = preg_replace_callback('/[^\x21-\x7e]+/u', static fn (array $match): string => rawurlencode($match[0]), $parts[3]);
+        $url = $suffix === null ? null : mb_strtolower($parts[1]).'://'.$host.($authority[2] ?? '').$suffix;
 
-        return in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) !== false
+        return $url !== null && mb_strlen($url) <= 500 && filter_var($url, FILTER_VALIDATE_URL) !== false
             ? $url
             : null;
     }

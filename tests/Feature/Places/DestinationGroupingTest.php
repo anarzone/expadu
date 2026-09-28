@@ -275,7 +275,7 @@ test('saved child slots retain coordinates and timing and prevent a sibling from
     $user = User::factory()->onboarded()->create();
     $start = CarbonImmutable::now('Europe/Berlin')->addDay()->setTime(10, 0);
     $window = new Constraints($start, $start->addHours(8), categories: ['tennis', 'cafe']);
-    $candidates = collect(app(CandidateRepository::class)->byIds(["spot:{$child->id}", "spot:{$cafe->id}"], $start))->keyBy('id');
+    $candidates = collect(app(CandidateRepository::class)->byIds(["spot:{$child->id}", "spot:{$cafe->id}"], $start, 50.951, 6.951))->keyBy('id');
     $slots = [(new PlanSlot($candidates["spot:{$child->id}"], $start, $start->addHour(), 0))->toArray(), (new PlanSlot($candidates["spot:{$cafe->id}"], $start->addHours(2), $start->addHours(3), 0))->toArray()];
     $plan = ['constraints' => $window->toArray(), 'slots' => $slots, 'pins' => ["spot:{$child->id}"], 'origin' => [50.951, 6.951]];
     Cache::put("composer:plan:{$user->id}", $plan, 3600);
