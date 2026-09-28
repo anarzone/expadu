@@ -12,7 +12,6 @@ use App\Places\PlaceIdentity;
 use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 
 /**
  * The impure boundary of the composer: snapshots spots and curated
@@ -84,43 +83,55 @@ class CandidateRepository
      */
     private function spotCandidates(Constraints $constraints, float $originLat, float $originLng): array
     {
-        // The shared great-circle formula (single source in NearbyPlaces), used
-        // here inside a per-category ROW_NUMBER window the service can't express.
-        $distance = NearbyPlaces::DISTANCE_KM_SQL;
-
         $grouping = app(DestinationGrouping::class);
         $requested = array_values(array_unique(array_merge([], ...array_map(SpotCategory::finesForSelector(...), $constraints->categories))));
-        $ranked = $grouping->eligible(Spot::query())
-            ->where(fn ($query) => $query->whereNull('destination_spot_id')->orWhereIn('category', $requested))
-            ->select('id')
-            ->selectRaw("ROW_NUMBER() OVER (PARTITION BY category ORDER BY ({$distance}), id) AS rn", NearbyPlaces::bindings($originLat, $originLng))
-            ->where('is_active', true)
-            ->where('is_recommendable', true)
-            ->whereNotNull('lat')
-            ->whereNotNull('lng');
+        $includeFacilities = $constraints->activities !== [];
+        $query = $grouping->eligible(Spot::query(), $includeFacilities)
+            ->when(! $includeFacilities, fn ($query) => $query->where(fn ($where) => $where->whereNull('destination_spot_id')->orWhereIn('category', $requested)))
+            ->when($requested !== [], fn ($query) => $query->whereIn('category', $requested));
+        $selected = [];
+        $filter = app(FeasibilityFilter::class);
 
-        $ids = DB::query()
-            ->fromSub($ranked, 'ranked')
-            ->where('rn', '<=', self::PER_CATEGORY)
-            ->pluck('id')
-            ->all();
-
-        if ($ids === []) {
-            return [];
+        // Hints use the minimum distance over every source/review point. Once
+        // that lower bound exceeds a full category's farthest accepted result,
+        // no remaining row in that category can displace it. Every admitted row
+        // still passes the shared current-fact and hard-constraint policies.
+        $hints = app(PlaceSearchHints::class)->ordered(clone $query, $constraints, $originLat, $originLng);
+        $offset = 0;
+        while ($offset < count($hints)) {
+            $ids = [];
+            while ($offset < count($hints) && count($ids) < 64) {
+                $hint = $hints[$offset++];
+                $pool = $selected[$hint['category']] ?? [];
+                if (count($pool) >= self::PER_CATEGORY && $hint['minimum_km'] > $pool[array_key_last($pool)]->distanceKmFromOrigin) {
+                    continue;
+                }
+                $ids[] = $hint['id'];
+            }
+            if ($ids === []) {
+                break;
+            }
+            $spots = (clone $query)->whereIn('spots.id', $ids)->get();
+            $facts = app(PlaceFacts::class)->resolveMany($spots);
+            $groups = $grouping->groupIds($spots->modelKeys(), $includeFacilities);
+            foreach ($spots as $spot) {
+                $resolved = $facts[$spot->id];
+                if ($resolved['location']['map_point']['status'] !== 'known') {
+                    continue;
+                }
+                $candidate = $this->spotToCandidate($spot, $constraints->windowStart, $resolved, $originLat, $originLng, $groups[$spot->id]);
+                if (! $filter->matchesDiscovery($constraints, $candidate)) {
+                    continue;
+                }
+                $selected[$candidate->category][] = $candidate;
+                usort($selected[$candidate->category], fn (Candidate $a, Candidate $b): int => [$a->distanceKmFromOrigin, (int) substr($a->id, 5)] <=> [$b->distanceKmFromOrigin, (int) substr($b->id, 5)]);
+                $selected[$candidate->category] = array_slice($selected[$candidate->category], 0, self::PER_CATEGORY);
+            }
         }
+        $candidates = array_merge([], ...array_values($selected));
+        usort($candidates, fn (Candidate $a, Candidate $b): int => [$a->distanceKmFromOrigin, (int) substr($a->id, 5)] <=> [$b->distanceKmFromOrigin, (int) substr($b->id, 5)]);
 
-        // Return globally nearest-first so the MAX_CANDIDATES cap keeps the
-        // closest spots when many categories each contribute their dozen.
-        $spots = Spot::query()
-            ->whereIn('id', $ids)
-            ->orderByRaw("({$distance}), id", NearbyPlaces::bindings($originLat, $originLng))
-            ->get();
-        $groups = $grouping->groupIds($spots->modelKeys());
-        $facts = app(PlaceFacts::class)->resolveMany($spots);
-
-        return $spots
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $constraints->windowStart, $facts[$spot->id], $originLat, $originLng, $groups[$spot->id]))
-            ->all();
+        return $candidates;
     }
 
     /**
@@ -131,7 +142,7 @@ class CandidateRepository
      * @param  list<string>  $ids
      * @return list<Candidate>
      */
-    public function byIds(array $ids, CarbonImmutable $day): array
+    public function byIds(array $ids, CarbonImmutable $day, float $originLat = self::COLOGNE_LAT, float $originLng = self::COLOGNE_LNG): array
     {
         $ids = app(PlaceIdentity::class)->candidateIds($ids);
         $spotIds = collect($ids)
@@ -144,16 +155,16 @@ class CandidateRepository
             return [];
         }
 
-        $spots = app(DestinationGrouping::class)->eligible(Spot::query())
+        $spots = app(DestinationGrouping::class)->eligible(Spot::query(), includeActivityFacilities: true)
             ->whereIn('id', $spotIds)
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->get();
-        $groups = app(DestinationGrouping::class)->groupIds($spots->modelKeys());
+        $groups = app(DestinationGrouping::class)->groupIds($spots->modelKeys(), includeActivityFacilities: true);
         $facts = app(PlaceFacts::class)->resolveMany($spots);
 
         return $spots
-            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, $facts[$spot->id], destinationId: $groups[$spot->id]))
+            ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, $facts[$spot->id], $originLat, $originLng, $groups[$spot->id]))
             ->all();
     }
 
@@ -210,6 +221,8 @@ class CandidateRepository
             access: $facts['access']['value'],
             factConflicts: $facts['conflicts'],
             factRevision: $facts['revision'],
+            placeFacts: $facts,
+            distanceKmFromOrigin: NearbyPlaces::km($originLat, $originLng, $lat, $lng),
         );
     }
 
@@ -273,6 +286,10 @@ class CandidateRepository
 
     private function eventCandidates(Constraints $constraints, float $originLat, float $originLng): array
     {
+        if ($constraints->activities !== []) {
+            return [];
+        }
+
         $occurrences = Event::occurringBetween($constraints->windowStart, $constraints->windowEnd);
         try {
             $coordinates = $this->serviceArea->eventCoordinates(
@@ -291,7 +308,6 @@ class CandidateRepository
                 (float) $coordinates->get($occurrence['event']->id)->lat,
                 (float) $coordinates->get($occurrence['event']->id)->lng,
             ))
-            ->take(50)
             ->map(function (array $occurrence) use ($coordinates, $originLat, $originLng): Candidate {
                 /** @var Event $event */
                 $event = $occurrence['event'];
@@ -324,8 +340,11 @@ class CandidateRepository
                     tags: $this->textTags([...(array) $event->tags, ...(array) $event->chips]),
                     qualityScore: $event->quality_score,
                     travelMinutesFromOrigin: (new TravelEstimator)->minutesBetween($originLat, $originLng, (float) $point->lat, (float) $point->lng),
+                    distanceKmFromOrigin: NearbyPlaces::km($originLat, $originLng, (float) $point->lat, (float) $point->lng),
                 );
             })
+            ->filter(fn (Candidate $candidate): bool => app(FeasibilityFilter::class)->matchesDiscovery($constraints, $candidate))
+            ->take(50)
             ->values()
             ->all();
     }
@@ -347,6 +366,9 @@ class CandidateRepository
     /** @param array<string, mixed> $fee */
     private function spotCostTier(Spot $spot, array $fee): string
     {
+        if (in_array($fee['status'], ['conflicting', 'conditional'], true)) {
+            return 'unknown';
+        }
         if ($fee['value'] === 'free') {
             return 'free';
         }

@@ -74,9 +74,9 @@ class Swapper
             }
 
             $travelMin = $this->travel->minutesBetween($cursorLat, $cursorLng, $candidate->lat, $candidate->lng);
-            $start = $cursor->addMinutes($travelMin);
-            if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
-                $start = $candidate->opensAt;
+            $start = $candidate->nextVisitStart($cursor->addMinutes($travelMin), $gapEnd);
+            if ($start === null) {
+                continue;
             }
             $end = $start->addMinutes($candidate->typicalDurationMin);
 

@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "files_identical": {
+    "records.jsonl": true,
+    "holds.jsonl": true,
+    "identity-review.jsonl": true,
+    "containment-evidence.jsonl": true
+  },
+  "builder_sha256": "a2096ffc0baaa4eb04cce4c938c238ac12873120c538e69d02638497596a94e2"
+}

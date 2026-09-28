@@ -12,9 +12,9 @@ class DestinationGrouping
     public const DESTINATIONS = ['park', 'sports_centre'];
 
     /** @param Builder<Spot> $query */
-    public function eligible(Builder $query): Builder
+    public function eligible(Builder $query, bool $includeActivityFacilities = false): Builder
     {
-        return $query->recommendationEligible()->where(function ($where) {
+        return $query->recommendationEligible($includeActivityFacilities)->where(function ($where) {
             $where->whereNull('spots.destination_spot_id')->orWhereExists(function ($parent) {
                 $parent->selectRaw('1')->from('spots as reviewed_destination')
                     ->join('spots as destination', fn ($join) => $join->whereRaw('destination.id = COALESCE(reviewed_destination.canonical_spot_id, reviewed_destination.id)'))
@@ -63,10 +63,10 @@ class DestinationGrouping
     /** @param list<int> $spotIds
      * @return array<int, int>
      */
-    public function groupIds(array $spotIds): array
+    public function groupIds(array $spotIds, bool $includeActivityFacilities = false): array
     {
         $canonical = app(PlaceIdentity::class)->canonicalIds($spotIds);
-        $rows = $this->eligible(Spot::query())->whereIn('spots.id', array_values($canonical))
+        $rows = $this->eligible(Spot::query(), $includeActivityFacilities)->whereIn('spots.id', array_values($canonical))
             ->leftJoin('spots as grouped_destination', 'grouped_destination.id', '=', 'spots.destination_spot_id')
             ->select('spots.id')->selectRaw('COALESCE(grouped_destination.canonical_spot_id, grouped_destination.id, spots.id) as group_id')
             ->get()->pluck('group_id', 'id');

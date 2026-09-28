@@ -190,9 +190,15 @@ class SlotFiller
         foreach ([...$slots, null] as $next) {
             $gapEnd = $next?->startAt ?? $constraints->windowEnd;
             $travelMin = $this->travel->minutesBetween($lat, $lng, $pin->lat, $pin->lng);
-            $start = $cursor->addMinutes($travelMin);
-            if ($pin->opensAt !== null && $pin->opensAt->greaterThan($start)) {
-                $start = $pin->opensAt;
+            $start = $pin->nextVisitStart($cursor->addMinutes($travelMin), $gapEnd);
+            if ($start === null) {
+                if ($next !== null) {
+                    $cursor = $next->endAt;
+                    $lat = $next->candidate->lat;
+                    $lng = $next->candidate->lng;
+                }
+
+                continue;
             }
             $end = $start->addMinutes($pin->typicalDurationMin);
             $outbound = $next === null ? 0 : $this->travel->minutesBetween($pin->lat, $pin->lng, $next->candidate->lat, $next->candidate->lng);
@@ -377,9 +383,9 @@ class SlotFiller
                 }
                 $start = $candidate->fixedStart;
             } else {
-                $start = $arrival;
-                if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
-                    $start = $candidate->opensAt;
+                $start = $candidate->nextVisitStart($arrival, $gapEnd);
+                if ($start === null) {
+                    continue;
                 }
             }
             $end = $start->addMinutes($candidate->typicalDurationMin);

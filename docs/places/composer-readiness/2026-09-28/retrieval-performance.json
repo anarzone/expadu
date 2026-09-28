@@ -1,0 +1,9 @@
+{
+  "environment": "same isolated baseline before package import",
+  "before_ms": 8122.8,
+  "after_ms": 2032.9,
+  "candidates_before": 200,
+  "candidates_after": 200,
+  "sample_count_each": 1,
+  "note": "Diagnostic samples, not production latency or p95. Full prepared-package timings are in package-acceptance.json."
+}

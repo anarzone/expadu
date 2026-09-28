@@ -21,6 +21,12 @@ class ReviewPlaceFacts
         $normalized = $this->normalizeChanges($changes);
         $canonicalId = app(PlaceIdentity::class)->canonicalIds([$spotId])[$spotId];
         $spot = Spot::query()->findOrFail($canonicalId);
+        if (($normalized['activity_discovery']['value'] ?? false) === true) {
+            $normalized['activity_discovery'] += [
+                'basis' => array_map(fn (mixed $value): mixed => $value instanceof \BackedEnum ? $value->value : $value, $spot->only(PlaceFacts::ACTIVITY_REVIEW_FIELDS)),
+                'observation_id' => (int) PlaceFactObservation::where('spot_id', $spot->id)->max('id'),
+            ];
+        }
         $snapshot = $this->snapshot($spot, $normalized);
 
         return [
@@ -107,6 +113,7 @@ class ReviewPlaceFacts
         $normalized = [];
         foreach ($changes as $field => $value) {
             $normalized[$field] = match ($field) {
+                'activity_discovery' => $value === null ? null : $this->normalizeActivityDiscovery($value),
                 'name' => $value === null ? null : $this->normalizeName($value),
                 'access' => $value === null ? null : $this->normalizeAccess($value),
                 'entrance_point' => $value === null ? null : $this->normalizeEntrancePoint($value),
@@ -120,6 +127,16 @@ class ReviewPlaceFacts
         ksort($normalized);
 
         return $normalized;
+    }
+
+    /** @return array{value: bool} */
+    private function normalizeActivityDiscovery(mixed $value): array
+    {
+        if (! is_bool($value)) {
+            throw new DomainException('Activity discovery qualification must be an explicit boolean.');
+        }
+
+        return ['value' => $value];
     }
 
     /** @return array{value: string} */

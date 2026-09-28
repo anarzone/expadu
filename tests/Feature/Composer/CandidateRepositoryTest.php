@@ -424,3 +424,11 @@ test('food and drink filtering preserves independent cafes contained in parks', 
     $loaded = collect($repository->byIds(['spot:'.$park->id, 'spot:'.$cafe->id], $constraints->windowStart));
     expect($loaded->pluck('destinationGroupId')->unique()->count())->toBe(2);
 });
+
+test('an overnight source interval survives a closed calendar-day entry', function () {
+    $spot = spotWithHours(['name' => 'Late Monday cafe', 'category' => 'cafe', 'tags' => ['opening_hours' => 'Mo 22:00-02:00; Tu off']]);
+    $start = CarbonImmutable::parse('2026-09-29 00:30', 'Europe/Berlin');
+    $constraints = new Constraints($start, $start->setTime(2, 0), categories: ['cafe']);
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    expect(array_column(app(FeasibilityFilter::class)->filter($constraints, $candidates), 'id'))->toBe(["spot:{$spot->id}"]);
+});

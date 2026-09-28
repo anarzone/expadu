@@ -58,7 +58,7 @@ class PlaceResource extends JsonResource
                 'paid' => $this->paidPriceText($placeFacts['fee']),
                 default => null,
             },
-            'feature_chips' => $this->resolveFeatureChips(),
+            'feature_chips' => $this->resolveFeatureChips($placeFacts['practical']),
             'tip' => null,
             'tip_is_generic' => false,
             'cluster_size' => (int) ($this->cluster_size ?? 1),
@@ -66,8 +66,9 @@ class PlaceResource extends JsonResource
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
-            'facts' => $this->resolveFacts(),
+            'facts' => $this->resolveFacts($placeFacts['practical']),
             'place_facts' => [
+                'identity' => $placeFacts['identity'],
                 'name_kind' => $placeFacts['name_kind'],
                 'aliases' => $placeFacts['aliases'],
                 'location' => $placeFacts['location'],
@@ -77,6 +78,8 @@ class PlaceResource extends JsonResource
                 'contact' => $placeFacts['contact'],
                 'description' => $placeFacts['description'],
                 'negative_facts' => $placeFacts['negative_facts'],
+                'practical' => $placeFacts['practical'],
+                'activities' => $placeFacts['activities'],
                 'conflicts' => $placeFacts['conflicts'],
                 'revision' => $placeFacts['revision'],
             ],
@@ -169,9 +172,9 @@ class PlaceResource extends JsonResource
      *
      * @return list<string>
      */
-    private function resolveFeatureChips(): array
+    private function resolveFeatureChips(array $practical): array
     {
-        $tags = is_array($this->tags) ? $this->tags : [];
+        $tags = array_map(fn (array $fact): mixed => $fact['status'] === 'known' ? $fact['value'] : null, $practical);
         $chips = [];
 
         if (($tags['lit'] ?? null) === 'yes') {
@@ -199,9 +202,9 @@ class PlaceResource extends JsonResource
      *
      * @return list<array{label: string, value: string}>
      */
-    private function resolveFacts(): array
+    private function resolveFacts(array $practical): array
     {
-        $tags = is_array($this->tags) ? $this->tags : [];
+        $tags = array_map(fn (array $fact): mixed => $fact['status'] === 'known' ? $fact['value'] : null, $practical);
         $facts = [];
 
         $map = [

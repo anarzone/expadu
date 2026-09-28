@@ -1,0 +1,17 @@
+{
+  "overture:0f020897-6d37-460f-a336-cd0f2ffb326c": "Internet Coffee: primary internet_cafe does not establish the current coffee-venue contract.",
+  "overture:1e56a702-222b-4e5a-ac58-5a6db5117467": "El Eventlocation: event-rental venue versus walk-in restaurant requires confirmation.",
+  "overture:34d352d2-e1ba-4656-be0d-0c444c7c2751": "Miso's Golfrestaurant: access to golf-club premises unresolved; do not infer public entry.",
+  "overture:36208c21-ad0c-4e0d-bc1d-d6d818826fe8": "Maier Landschaftsarchitektur Betonlandschaften: named architecture business is classified as skatepark; facility identity is not established.",
+  "overture:652b5502-1267-4f1e-9fcc-75894c60d8a6": "Urwaldkaffee Kaffeerösterei Showroom: showroom/retail versus walk-in cafe requires confirmation.",
+  "overture:71888209-7eb0-4af1-80c4-1b379b4eda4a": "As/if Records: record business versus cafe identity requires confirmation.",
+  "overture:78314dd6-dfa9-4e08-b6b8-9892627551d3": "Tashlieva Permanent Make-up Studio: named cosmetics business conflicts with coffee-shop classification.",
+  "overture:996c0630-f23a-422d-8801-172b7125a595": "Rick & Jülich Gmbh: business operator identity versus named customer destination unresolved.",
+  "overture:aa213b17-d5d5-4434-ae47-04c1cbc76827": "Sixty1 Shisha Store: retail store versus consumable-on-premises bar requires confirmation.",
+  "overture:ace28e93-ea5e-4b12-bcac-db08d7466b7a": "Hans Hogrebe: personal name and wraptec.de website do not establish the claimed cafe identity.",
+  "overture:ae92b631-a40e-4402-82cd-c116546e27f6": "Deutsche Sporthochschule Köln: university entity does not identify the specific public pool or entry conditions.",
+  "overture:be773aa2-b2c2-4093-ac96-ea0392532f16": "Lorenz And Cavallo Weinimport: wine import company versus bar requires confirmation.",
+  "overture:cd88c08e-e4fb-4822-9f93-0c5e6a6d9d6d": "Olli's Casino: canteen/casino terminology leaves venue type and public access unresolved.",
+  "overture:e1d5a8d8-56f5-493d-9e56-fc11f2406e25": "Triforum: generic company/property name and website need venue-identity confirmation.",
+  "overture:ef457c21-5df2-4d58-b91a-cbfae97737fb": "Aqualand Köln: primary water_park conflicts with the coarse park mapping. Hold for correct facility identity and category."
+}

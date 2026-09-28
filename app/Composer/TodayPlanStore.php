@@ -47,6 +47,8 @@ class TodayPlanStore
 
         Cache::put($this->key($user), [
             'window_start' => $start,
+            'constraints' => $plan['constraints'] ?? null,
+            'origin' => $plan['origin'] ?? null,
             'prompt' => $prompt,
             'slots' => array_values($plan['slots']),
             'saved_at' => CarbonImmutable::now()->toIso8601String(),
@@ -64,7 +66,33 @@ class TodayPlanStore
         if (! is_array($data) || empty($data['slots'])) {
             return null;
         }
+        // Earlier Today snapshots omitted the constraints needed to revalidate
+        // a recommendation. Keep their stored references intact, but require a
+        // fresh plan instead of displaying stale free/access/availability claims.
+        if (! isset($data['constraints']['window_end'])) {
+            return null;
+        }
         $data = app(PlaceIdentity::class)->normalizePlan($data);
+
+        if (isset($data['constraints']['window_end'])) {
+            $constraints = Constraints::fromArray($data['constraints']);
+            [$lat, $lng] = $data['origin'] ?? [50.9375, 6.9603];
+            $repository = app(CandidateRepository::class);
+            $candidates = collect($repository->byIds(array_column($data['slots'], 'id'), $constraints->windowStart, $lat, $lng))->keyBy('id');
+            foreach ($data['slots'] as $index => $slot) {
+                if (! str_starts_with($slot['id'], 'spot:')) {
+                    continue;
+                }
+                $candidate = $candidates->get($slot['id']);
+                if ($candidate === null || (! app(FeasibilityFilter::class)->matchesDiscovery($constraints, $candidate) || ! $candidate->coversVisit(CarbonImmutable::parse($slot['start_at']), CarbonImmutable::parse($slot['end_at'])))) {
+                    return null;
+                }
+                $data['slots'][$index] = (new PlanSlot(
+                    $candidate, CarbonImmutable::parse($slot['start_at']), CarbonImmutable::parse($slot['end_at']),
+                    (int) $slot['travel_min_from_previous'], $slot['why'] ?? null,
+                ))->toArray();
+            }
+        }
 
         $weekday = isset($data['window_start']) && is_string($data['window_start'])
             ? CarbonImmutable::parse($data['window_start'])->isoFormat('dddd')

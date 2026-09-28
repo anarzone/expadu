@@ -16,6 +16,8 @@ class PlaceFacts
 {
     public const SNAPSHOT_RELATION = 'placeFactsSnapshot';
 
+    public const ACTIVITY_REVIEW_FIELDS = ['name', 'category', 'lat', 'lng', 'source', 'source_id', 'tags', 'parent_spot_id', 'destination_spot_id', 'destination_reviewed_parent_id', 'is_active', 'is_recommendable'];
+
     private const RESTRICTED_ACCESS = ['private', 'no', 'customers', 'members', 'permit'];
 
     /**
@@ -80,6 +82,21 @@ class PlaceFacts
             SQL;
 
         return $query->whereRaw(str_replace('spots.', $table.'.', $policy));
+    }
+
+    /** An explicit, current review can qualify an otherwise hidden facility for activity search. */
+    public function activityQualified(Builder $query): Builder
+    {
+        $basis = 'jsonb_build_object('.implode(', ', array_map(fn (string $field): string => "'{$field}', spots.{$field}", self::ACTIVITY_REVIEW_FIELDS)).')';
+
+        return $query->whereRaw(str_replace('__BASIS__', $basis, <<<'SQL'
+            (SELECT count(*) = 1 AND bool_and(value->>'value' = 'true'
+                AND value->'basis' = __BASIS__
+                AND (value->>'observation_id')::bigint = COALESCE((SELECT max(o.id) FROM place_fact_observations o
+                    WHERE o.spot_id = spots.id), 0))
+             FROM place_fact_corrections c
+             WHERE c.spot_id = spots.id AND c.field = 'activity_discovery' AND c.revoked_at IS NULL)
+            SQL));
     }
 
     /**
@@ -176,13 +193,15 @@ class PlaceFacts
         $name = $this->resolveName($spot, $observations, $effectiveObservations, $corrections->get('name', collect()), $useLegacyProjection);
         $access = $this->resolveAccess($tags, $sourceUrl, $effectiveObservations, $corrections->get('access', collect()), $useLegacyProjection);
         $location = $this->resolveLocation($spot, $sourceUrl, $effectiveObservations, $corrections->get('entrance_point', collect()), $useLegacyProjection);
-        $fee = $this->resolveFee($tags, $sourceUrl, $effectiveObservations, $corrections->get('fee', collect()), $useLegacyProjection);
+        $fee = $this->resolveFee($tags, $sourceUrl, $effectiveObservations, $corrections->get('fee', collect()), $useLegacyProjection, ! $observations->contains(fn (PlaceFactObservation $row): bool => $row->provider === $spot->source && $row->provider_record_id === $spot->source_id && array_key_exists('conditional', $row->payload['fee'] ?? [])));
         $hours = $this->resolveHours($spot, $tags, $sourceUrl, $effectiveObservations, $corrections->get('hours', collect()), $useLegacyProjection);
         $contact = $this->resolveContact($spot, $sourceUrl, $effectiveObservations, $corrections->get('contact', collect()), $useLegacyProjection);
         $description = $this->resolveDescription($spot, $sourceUrl, $effectiveObservations, $corrections->get('description', collect()), $useLegacyProjection);
         $negativeFacts = $this->resolveNegativeFacts($effectiveObservations);
+        $practical = app(PlaceCapabilities::class)->resolve($spot, $effectiveObservations, $sourceUrl);
 
         return [
+            'identity' => ['canonical_id' => $spot->id, 'provider' => $spot->source, 'provider_record_id' => $spot->source_id],
             'name' => $name['fact'],
             'name_kind' => $name['kind'],
             'aliases' => $name['aliases'],
@@ -193,7 +212,13 @@ class PlaceFacts
             'contact' => $contact,
             'description' => $description,
             'negative_facts' => $negativeFacts,
-            'conflicts' => $access['conflicting'] ? ['access'] : [],
+            'practical' => $practical,
+            'activities' => PlaceCapabilities::activities($practical['sport']['value']),
+            'conflicts' => array_values(array_filter([
+                $access['conflicting'] ? 'access' : null,
+                $fee['status'] === 'conflicting' ? 'fee' : null,
+                ...collect($practical)->filter(fn (array $fact): bool => $fact['status'] === 'conflicting')->keys()->map(fn (string $key): string => 'practical.'.$key)->all(),
+            ])),
             'revision' => $revision,
         ];
     }
@@ -407,30 +432,53 @@ class PlaceFacts
      * @param  Collection<int, PlaceFactObservation>  $observations
      * @return array<string, mixed>
      */
-    private function resolveFee(array $tags, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection): array
+    private function resolveFee(array $tags, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection, bool $legacyConditions): array
     {
-        $row = $this->latestWithField($observations, 'fee');
-        $source = is_array($row?->payload['fee'] ?? null) ? $row->payload['fee'] : [];
-        $raw = $row !== null
-            ? $this->stringValue(array_key_exists('raw', $source) ? $source['raw'] : null)
-            : ($useLegacyProjection ? $this->stringValue($tags['fee'] ?? null) : null);
-        $value = match (mb_strtolower((string) $raw)) {
-            'no', 'free' => 'free',
-            'yes', 'paid' => 'paid',
-            default => 'unknown',
-        };
+        $rows = $observations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('fee', $row->payload))
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at->getTimestamp(), $row->id]);
+        $sources = $rows->map(function (PlaceFactObservation $row) use ($tags, $legacySourceUrl, $legacyConditions): array {
+            $source = $row->payload['fee'];
+            if ($legacyConditions && $legacySourceUrl !== null && $row->source_url === $legacySourceUrl) {
+                $source += ['conditional' => $tags['fee:conditional'] ?? null, 'charge' => $tags['charge'] ?? null, 'charge_conditional' => $tags['charge:conditional'] ?? null];
+            }
 
-        $correction = $corrections->last();
-        if ($correction !== null) {
-            $value = (string) ($correction->value['value'] ?? 'unknown');
+            return [...$source, 'source_url' => $row->source_url, 'observed_at' => $row->observed_at];
+        });
+        if ($sources->isEmpty()) {
+            $sources = collect([[
+                'raw' => $useLegacyProjection ? ($tags['fee'] ?? null) : null,
+                'conditional' => $useLegacyProjection ? ($tags['fee:conditional'] ?? null) : null,
+                'charge' => $useLegacyProjection ? ($tags['charge'] ?? null) : null,
+                'charge_conditional' => $useLegacyProjection ? ($tags['charge:conditional'] ?? null) : null,
+                'source_url' => $useLegacyProjection ? $legacySourceUrl : null, 'observed_at' => null,
+            ]]);
         }
+        $normalize = static fn (array $source): string => match (mb_strtolower(trim((string) ($source['raw'] ?? '')))) {
+            'no', 'free' => 'free', 'yes', 'paid' => 'paid', default => 'unknown',
+        };
+        $correction = $corrections->last();
+        $effective = $correction === null ? $sources : $sources->filter(fn (array $source): bool => $source['observed_at']?->greaterThan($correction->reviewed_at) ?? false);
+        $known = $effective->map($normalize)->reject(fn (string $value): bool => $value === 'unknown');
+        if ($correction !== null && ($correction->value['value'] ?? 'unknown') !== 'unknown') {
+            $known->push($correction->value['value']);
+        }
+        $conditional = $effective->pluck('conditional')->map($this->stringValue(...))->filter()->first();
+        $chargeConditional = $effective->pluck('charge_conditional')->map($this->stringValue(...))->filter()->first();
+        $charge = $effective->pluck('charge')->map($this->stringValue(...))->filter()->first();
+        $hasCharge = $effective->contains(fn (array $source): bool => (is_numeric($source['amount'] ?? null) && (float) $source['amount'] > 0)
+            || ($this->stringValue($source['charge'] ?? null) !== null && preg_match('/^0(?:[.,]0+)?(?:\s+[A-Z]{3})?$/iD', trim($source['charge'])) !== 1));
+        $conflicting = $known->unique()->count() > 1 || $corrections->count() > 1 || ($known->contains('free') && $hasCharge);
+        $source = $sources->last();
+        $value = $correction?->value['value'] ?? $normalize($source);
+        $status = $conflicting ? 'conflicting' : (($conditional !== null || $chargeConditional !== null) ? 'conditional' : ($value === 'unknown' ? 'unknown' : 'known'));
 
         return [
-            ...$this->fact($value, $corrections->count() > 1 ? 'conflicting' : ($value === 'unknown' ? 'unknown' : 'known'), $correction?->evidence_url ?? ($row?->source_url ?? ($raw !== null ? $legacySourceUrl : null))),
-            'raw' => $raw,
+            ...$this->fact($status === 'known' ? $value : 'unknown', $status, $correction?->evidence_url ?? $source['source_url']),
+            'raw' => $this->stringValue($source['raw'] ?? null),
+            'conditional' => $conditional, 'charge' => $charge, 'charge_conditional' => $chargeConditional,
             'amount' => $correction?->value['amount'] ?? (is_numeric($source['amount'] ?? null) ? (float) $source['amount'] : null),
             'currency' => $correction?->value['currency'] ?? $this->stringValue($source['currency'] ?? null),
-            'observed_at' => $row?->observed_at?->toIso8601String(),
+            'observed_at' => $source['observed_at']?->toIso8601String(),
             'reviewed_at' => $correction?->reviewed_at?->toIso8601String(),
         ];
     }

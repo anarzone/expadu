@@ -46,10 +46,15 @@ class Spot extends Model
     }
 
     /** @param Builder<Spot> $query */
-    public function scopeRecommendationEligible(Builder $query): Builder
+    public function scopeRecommendationEligible(Builder $query, bool $includeActivityFacilities = false): Builder
     {
         return app(PlaceFacts::class)->publiclyRecommendable(
-            $query->canonical()->where('spots.is_active', true)->where('spots.is_recommendable', true),
+            $query->canonical()->where('spots.is_active', true)->where(function (Builder $eligible) use ($includeActivityFacilities): void {
+                $eligible->where('spots.is_recommendable', true);
+                if ($includeActivityFacilities) {
+                    $eligible->orWhere(fn (Builder $qualified): Builder => app(PlaceFacts::class)->activityQualified($qualified));
+                }
+            }),
         );
     }
 
