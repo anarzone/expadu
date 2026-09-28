@@ -73,10 +73,10 @@ pass, not a staging or production latency measurement. Target performance must b
 measured before a production-ready claim. See `local-performance-observation.json`.
 Repository checks initially hit PostgreSQL shared-memory/lock capacity when run
 alongside the long rehearsal. The standalone rerun passed **1,677 tests, 7,009
-assertions and two skips**, plus secret scanning and formatting. Commit-message
-formatting was rejected afterward; normal hooks are being rerun with the corrected
-message. No hooks were bypassed or server configuration changed. Run heavy checks
-sequentially. See `repository-checks.json`.
+assertions and two skips**, plus secret scanning and formatting. The final normal
+hook run also passed in 244.11 seconds and the commit succeeded. Both skips are
+existing weather tests with late-day conditions. No hooks were bypassed or server
+configuration changed. Run heavy checks sequentially. See `repository-checks.json`.
 
 ## Duplicate review completed locally
 
