@@ -117,8 +117,12 @@ A shared access-query rewrite has passed 2,664 synthetic equivalence cases and
 no skips). All nine V2 staging payload comparisons and the complete access-ID
 comparison passed, but p95 still failed at 6.132/6.895 seconds versus
 1.274/1.045 seconds. The single-place eligibility lookup also regressed. Exact
-rollback and cleanup passed; query-plan diagnosis continues and the candidate
-is not accepted for release.
+rollback and cleanup passed. Investigation then isolated a retained-savepoint
+rehearsal artifact. On the same completed local public fixture the original and
+revised queries returned identical results in 6.6–7.7 seconds versus 144–149 ms.
+Corrected V3 staging p95 passed at 470/487 ms versus 1,055/1,694 ms, with all nine
+full API payloads and access IDs identical, exact rollback and cleanup. The fix
+awaits final evidence CI and application release verification.
 The replacement snapshot passed exact native-column reconstruction for all nine
 tables at 11:43 UTC after review caught a JSON-normalization limitation in the
 initial archive. This tests temporary-table reconstruction, not full-database recovery. See the [current report](staging-release/2026-09-29/REPORT.md).

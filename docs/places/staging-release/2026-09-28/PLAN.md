@@ -37,7 +37,10 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
    59 facts/grouping tests and the full 1,684-test suite. Its full expanded access
    IDs and nine staging API payloads are identical, but V2 p95 is still too slow:
    6.132/6.895 seconds versus 1.274/1.045 seconds. Rollback and cleanup passed.
-   The query-plan investigation continues; no candidate fix is deployed.
+   The retained-savepoint rehearsal artifact was then isolated with synthetic and
+   committed-public-fixture comparisons. Corrected V3 staging p95 is
+   470/487 ms versus 1,055/1,694 ms, with full API/access parity and exact rollback.
+   Final evidence CI and application deployment verification remain.
    Locks, sequence gaps, cache isolation and planner-statistics cleanup are
    recorded explicitly. The earlier upload/snapshot approval blocker is resolved.
 5. Promote a small, deterministic canary only after the rehearsal passes,

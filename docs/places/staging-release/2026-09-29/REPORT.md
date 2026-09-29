@@ -6,8 +6,10 @@ Refs EXP-69, EXP-70, EXP-72. Continues the [28 September release report](../2026
 All 4,643 prepared records passed the native staging check: 1,874 additions and
 2,769 refreshes inside the rollback transaction. Places and Composer use the same
 facts; 4,084 identities were retrieved by Composer and 559 remain outside automatic
-recommendations. Existing ordinary and activity visibility had zero losses. The expanded catalogue
-still fails response-time acceptance; source changes remain unreleased.
+recommendations. Existing ordinary and activity visibility had zero losses. **The corrected target
+performance rehearsal also passed** at 13:12 UTC: expanded food/drink API p95
+470/487 ms versus deployed current-catalogue baseline 1,055/1,694 ms. The source
+fix is uploaded in PR #58; application release verification remains outstanding.
 
 The user authorized the prepared upload, private server-only snapshot and
 rollback-only rehearsal with “go ahead upload and continue your work”. The earlier
@@ -126,7 +128,7 @@ baseline of 1,273.8 / 1,045.1 ms. All nine full API payloads and the complete ac
 Nine-table rollback, statistics cleanup and unchanged runtime-source hashes passed.
 Keyed eligibility p95 rose from 3.0 to 1,090.9 ms; detail API p95 rose from 17.1
 to 231.0 ms. These compare current baseline data against expanded candidate data.
-The candidate is not accepted; an expanded local plan diagnostic is underway.
+At that checkpoint the candidate was not accepted; the subsequent timing correction and final acceptance are recorded below.
 [Full V2 result](staging-batch-v2-performance.json),
 [cleanup](staging-batch-v2-cleanup.json), [runtime](staging-batch-v2-runtime.json). No live access policy has changed.
 [Equivalence proof](access-policy-equivalence.json), [review](access-policy-review.json),
@@ -136,8 +138,69 @@ The candidate is not accepted; an expanded local plan diagnostic is underway.
 
 The final source implementation passed the full local suite: **1,684 tests, 7,039
 assertions, no skips**, with normal secret, formatting and commit-message hooks.
-That functional result does not override the failed target performance gate.
+That functional result alone did not override the then-failed target performance gate.
 [Test receipt](final-query-test-result.json).
+
+## Rehearsal timing correction
+
+Review found that the native importer creates 4,643 nested Laravel transactions
+inside the rehearsal's caller transaction. Successful nested commits decrement
+Laravel's counter but leave their PostgreSQL savepoints active. The expanded
+local plan had no JIT and only shared-buffer hits, yet a simple 11,802-row scan
+took around 200–229 ms. Those open transaction states inflated the read timings.
+
+A controlled 3,000-row temporary-table experiment measured scans of 41.6–55.5 ms
+with retained child savepoints versus 1.4–4.3 ms after releasing completed children.
+Both variants produced the same count/sum and fully rolled back. Separate checks
+proved successful children and an injected child failure preserve both caller
+rollback boundaries. PostgreSQL documents that [releasing a savepoint](https://www.postgresql.org/docs/16/sql-release-savepoint.html)
+merges its changes into the parent transaction; it does not commit that parent.
+[Probe](savepoint-probe.json), [rollback guards](savepoint-rollback-guards.json).
+
+The exact native package was then committed **only to a separate local, zero-user
+public fixture**, and measured through a fresh read-only connection. It contains
+11,802 stored rows, not 11,802 eligible destinations. The same revised SQL fell
+from 1,507/1,657 ms during the open import to 169/163 ms after its commit. This
+supports an open-import-state effect; it does not isolate subtransaction overflow
+from all tuple-visibility and hint-bit effects. Independent imports have different
+allocated new IDs and write timestamps, so this comparison checks query/binding,
+count and baseline page-identity parity, not cross-fixture full-row hashes.
+[Fixture receipt](public-query-lab.json), [fresh-read result](committed-public-fixture-performance.json).
+
+On that **same completed local fixture**, the original deployed SQL and revised
+SQL returned exactly identical full results. Original count/page executions took
+7,698/6,589 ms, including 7,046/6,486 ms of JIT work. Revised executions took
+144/149 ms with no JIT and unchanged settings. These are individual SQL executions,
+not API p95 or a staging acceptance result. [Direct comparison](durable-query-comparison.json).
+
+V3 releases successful import-child savepoints while retaining both caller rollback
+boundaries. It changes only verifier transaction-resource handling. The full local
+4,643-record run, all nine API comparisons, all access IDs, 4,643 child releases,
+exact nine-table rollback and statistics cleanup passed. That local application
+already contains the candidate, so its inherited `deployed_baseline` key is a local
+candidate baseline, not evidence of deployed-original parity. The reviewed V3
+staging measurement passed at 13:12 UTC. Food/drink page-one/page-two p95 was
+470.2/487.0 ms against the same-run deployed current-data baseline of
+1,054.7/1,694.4 ms. All nine full API payloads and all access-allowed IDs matched
+the original code on the same expanded data. Exactly 4,643 child savepoints were
+released, both caller rollback boundaries remained, all nine table digests were
+restored, cleanup passed, and running application hashes stayed unchanged.
+[Staging result](staging-batch-v3-performance.json),
+[cleanup](staging-batch-v3-cleanup.json), [runtime](staging-batch-v3-runtime.json). The p95 gate here applies to the two listing pages.
+Narrow reads remain a tradeoff: keyed eligibility median/p95 increased from
+1.46/2.36 ms on the current deployed data to 55.33/126.89 ms for the expanded
+candidate; detail API median/p95 increased from 12.99/16.07 to 34.91/84.73 ms.
+The committed local fixture measured keyed p95 39.30 ms and detail p95 22.06 ms.
+These are different environments and transaction states, not interchangeable
+results. Final independent review recommends adopting the fix, with this tradeoff recorded.
+There is no direct production keyed-exists caller. Candidate hydration and grouping
+can repeat the policy per batch, including twice per 64-ID Composer candidate batch;
+Composer/context latency remains a focused follow-up. The tested food-place detail
+path does not invoke eligibility, so that timing difference does not establish a
+policy-caused detail regression. The broad listing gate must not be described as a
+pass for every narrow lookup. [Adoption review](final-adoption-review.json). Earlier failed measurements remain above and must
+not be represented as durable production timings. [Local validation](local-v3-rehearsal.json),
+[review](batch-v3-verifier-review.json), [executed verifier](verification/batch-v3/candidate-performance.php).
 
 ## Recovery and the next batch
 
@@ -161,7 +224,8 @@ source names and 13 descriptive facility names. Selection is deterministic and
 references unchanged rows from the full frozen package. Descriptive labels do not
 constitute new recommendation qualifications. This canary has not been imported.
 
-Before committing it, finish the target speed/recovery checks, reconcile its exact
+Before committing it, release and verify the tested query fix, finish recovery
+checks, reconcile its exact
 identities under locks, and review the concrete commit and recovery procedure.
 Production requires its own current mapping and acceptance evidence. Retain the
 other 4,543 package records unchanged for the subsequent batch.
@@ -208,8 +272,8 @@ fresh staging export.
 
 ## Remaining acceptance work
 
-1. Resolve the remaining access-query cost without changing eligibility rules,
-   pass the target p95 gate and verify the adopted code in the staging release.
+1. Target query/API performance and equivalence now pass. Complete final evidence
+   CI and verify the adopted application fix in the staging release.
 2. Typed snapshot reconstruction passed; finalize a guarded, batch-specific recovery procedure.
    Temporary-table reconstruction does not exercise external foreign keys,
    application triggers, user references or full-database disaster recovery.

@@ -67,6 +67,10 @@ identity reconciliation, review and authorization.
 
 - Selection manifest prepared and independently cross-checked against the package.
 - Full staging rollback rehearsal passed; replacement typed snapshot reconstruction passed.
-- Both the grouping-only and bounded-query V2 candidate measurements failed the speed gate. Further query diagnosis is underway; the fix is not deployed.
+- Corrected V3 target performance and full parity passed. Earlier failed measurements are retained with their open-transaction limitation. The application fix is not deployed yet.
 - Commit/recovery wrapper implementation and its focused rehearsal remain open.
+- Local recovery preflight: 41 of the 50 proposed refreshes have a prior same-source
+  observation; nine do not. The current native observation restore cannot recover
+  those nine. Do not commit this selection before resolving that gap or explicitly
+  revising the canary selection and retaining the unsupported cases as holds.
 - No canary or full catalogue import has been committed.
