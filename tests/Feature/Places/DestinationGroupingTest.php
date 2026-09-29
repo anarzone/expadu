@@ -132,6 +132,47 @@ test('places coarse browse groups reviewed activities while fine activity select
     $this->getJson('/api/places?activity=not-a-category')->assertUnprocessable();
 });
 
+test('general Places pagination avoids component parent queries for independent destinations', function (string $queryString) {
+    [$parent, $child] = destinationFixture();
+    reviewDestination($child, $parent);
+    $this->actingAs(User::factory()->onboarded()->create());
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        if (str_contains($query->sql, 'row_number() over')) {
+            $queries[] = $query->sql;
+        }
+    });
+
+    $places = $this->getJson('/api/places'.$queryString)->assertSuccessful()->json('data');
+
+    expect(array_column($places, 'id'))->toBe([$parent->id])
+        ->and($queries)->not->toBeEmpty();
+    foreach ($queries as $sql) {
+        expect($sql)->not->toContain('reviewed_destination');
+    }
+})->with(['all places' => '', 'parks' => '?category=park']);
+
+test('coarse Places pagination limits component matching to grouped facilities', function (string $activity, string $category) {
+    [$parent, $child] = destinationFixture();
+    $child->update(['category' => $activity]);
+    reviewDestination($child, $parent);
+    $this->actingAs(User::factory()->onboarded()->create());
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        if (str_contains($query->sql, 'row_number() over')) {
+            $queries[] = $query->sql;
+        }
+    });
+
+    $places = $this->getJson('/api/places?category='.$category)->assertSuccessful()->json('data');
+
+    expect(array_column($places, 'id'))->toBe([$parent->id])
+        ->and($queries)->not->toBeEmpty();
+    foreach ($queries as $sql) {
+        expect($sql)->toContain('"spots"."destination_spot_id" is not null');
+    }
+})->with(['court' => ['tennis', 'court'], 'cafe' => ['cafe', 'food_drink']]);
+
 test('unreviewed containment and independent culture places stay visible in Places', function () {
     [$parent, $child] = destinationFixture();
     $museum = Spot::factory()->create(['category' => 'museum', 'parent_spot_id' => $parent->id, 'park_name' => $parent->name, 'lat' => 50.951, 'lng' => 6.952]);

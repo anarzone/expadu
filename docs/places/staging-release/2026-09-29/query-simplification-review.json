@@ -1,0 +1,43 @@
+{
+  "recorded_at": "2026-09-29T11:55:54.288101+00:00",
+  "status": "grouping_only_candidate_correctness_passed_speed_gate_failed",
+  "files": {
+    "app/Places/DestinationGrouping.php": "b7b4f543f5d7092b608517c342f7527b81d95a58ec7b4f8038f0a0048f631f5b",
+    "app/Http/Controllers/Api/PlacesController.php": "c49a235039265a0aa6067ea5732a8bf2658dad09d66140ff7f3ea98c79659b90",
+    "tests/Feature/Places/DestinationGroupingTest.php": "9dc5d5d9f9f91f09530e0f470e5288be883d21c6c6310fc224708dae0c58313c"
+  },
+  "problem": "General pagination redundantly checks reviewed parents; component matching evaluates null destination IDs despite an inner join requiring a parent.",
+  "change": "General starts from recommendationEligible with null destination; coarse component matching explicitly excludes null destination IDs. Activity queries retain full eligible policy.",
+  "regression_before": {
+    "failed_cases": 2,
+    "assertions": 8,
+    "failure": "Redundant reviewed_destination branch remained in pagination SQL"
+  },
+  "grouping_suite_after": {
+    "passed": 30,
+    "assertions": 116,
+    "seconds": 12.79
+  },
+  "environment_setup_issues_corrected": [
+    "Initial shell used SQLite instead of isolated PostgreSQL",
+    "Task-local Redis dependency was stopped and was restarted on port 16379"
+  ],
+  "independent_review": "exp69_laravel_patterns: both final changes reviewed; no correctness findings; canonical, active, recommendability, effective access and reviewed containment remain enforced",
+  "staging_deployed": false,
+  "performance_improvement_verified": true,
+  "second_regression_before": {
+    "failed_cases": 2,
+    "assertions": 8,
+    "failure": "Explicit non-null component predicate absent from pagination SQL"
+  },
+  "full_fast_suite": {
+    "passed": 1683,
+    "assertions": 7034,
+    "seconds": 314.23,
+    "parallel_processes": 10,
+    "skipped": 0,
+    "log_sha256": "fceef531863b84580beaff2187d59f93c2041175e085071c74c4e4c4eeb7058f"
+  },
+  "p95_gate_passed": false,
+  "measured_result": "staging-candidate-performance.json"
+}

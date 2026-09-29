@@ -893,3 +893,40 @@ test('fact history prevents catalogue snapshot replacement', function () {
         @unlink($path);
     }
 });
+
+test('catalogue access eligibility scans source observations once for a batch of places', function () {
+    $spots = Spot::factory()->count(40)->create([
+        'category' => 'park', 'source' => 'osm', 'tags' => null,
+        'is_active' => true, 'is_recommendable' => true,
+    ]);
+    $expected = [];
+    foreach ($spots as $index => $spot) {
+        $spot->update(['source_id' => "node/{$spot->id}"]);
+        app(RecordPlaceObservation::class)->record($spot, [
+            'provider' => 'osm', 'provider_record_id' => $spot->source_id,
+            'observed_at' => '2026-09-29T10:00:00+00:00',
+            'ingestion_key' => "access-batch-{$spot->id}",
+            'payload' => ['access' => ['raw' => $index % 2 === 0 ? 'yes' : 'private']],
+        ]);
+        if ($index % 2 === 0) {
+            $expected[] = $spot->id;
+        }
+    }
+    $query = Spot::query()->recommendationEligible()->orderBy('spots.id')->select('spots.id');
+    expect($query->pluck('spots.id')->all())->toBe($expected)
+        ->and(app(PlaceFacts::class)->publiclyRecommendable(DB::table('spots as destination'), 'destination')
+            ->orderBy('destination.id')->pluck('destination.id')->all())->toBe($expected);
+    $plan = json_decode(DB::select('EXPLAIN (ANALYZE, FORMAT JSON) '.$query->toSql(), $query->getBindings())[0]->{'QUERY PLAN'}, true, flags: JSON_THROW_ON_ERROR)[0]['Plan'];
+    $observationScans = [];
+    $visit = function (array $node) use (&$visit, &$observationScans): void {
+        if (($node['Relation Name'] ?? null) === 'place_fact_observations') {
+            $observationScans[] = $node['Actual Loops'];
+        }
+        foreach ($node['Plans'] ?? [] as $child) {
+            $visit($child);
+        }
+    };
+    $visit($plan);
+    expect($observationScans)->not->toBeEmpty()
+        ->and(array_sum($observationScans))->toBeLessThanOrEqual(1);
+});

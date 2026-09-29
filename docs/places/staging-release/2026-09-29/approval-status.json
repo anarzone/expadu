@@ -8,10 +8,16 @@
   "raw_records_exported": false,
   "conflicts": 0,
   "local_preflight_failure": "PHP memory limit was raised for the local fingerprint helper; first attempt stopped before connecting",
-  "next_step": "Server-side snapshot and rollback-only rehearsal; separate specific approval requested after automatic review rejected the broader scope",
-  "next_step_attempt_executed": false,
-  "next_step_automatic_review": "Rejected because read-only comparison approval does not authorize uploads or persistence of raw staging tables",
-  "server_files_uploaded": false,
-  "server_snapshot_created": false,
-  "staging_rehearsal_run": false
+  "next_step": "Approved staging upload, private server-only snapshot and rollback-only rehearsal",
+  "next_step_attempt_executed": true,
+  "server_files_uploaded": true,
+  "server_snapshot_created": true,
+  "staging_rehearsal_run": true,
+  "next_step_owner_authorization": "go ahead upload and continue your work",
+  "next_step_approval_resolved": true,
+  "staging_rehearsal_started": true,
+  "staging_rehearsal_finished": true,
+  "prior_next_step_automatic_review": "Rejected because read-only comparison approval does not authorize uploads or persistence of raw staging tables",
+  "rehearsal_status": "passed",
+  "rehearsal_result": "staging-native-rehearsal.json"
 }

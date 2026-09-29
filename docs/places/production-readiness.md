@@ -103,13 +103,23 @@ counts, checksums and conflicting public identities were permitted in the summar
 The staging catalogue has 9,928 stored rows; this is not an eligible or photo-covered
 destination count. No catalogue data changed.
 
-Automatic approval review separately rejected uploading rehearsal inputs and
-saving a raw server-only catalogue snapshot as broader than the approved check.
-Neither action executed. Specific approval for those steps and the rollback-only
-staging rehearsal is pending; it may temporarily block catalogue writes and advance
-ID sequences, without committing an import. Canary import, live API/reference and
-refresh/recovery checks remain open. Production requires a separate mapping and
-review of the concrete staging result.
+The owner subsequently approved the prepared upload, private server-only snapshot
+and full rollback-only staging rehearsal. That staging rehearsal passed for all
+4,643 records and 4,084 Composer identities, with no visibility losses and exact
+replay/table rollback. The prior upload/snapshot permission blocker is resolved.
+The target performance test has reproduced a serious first-page food/drink
+regression: p95 1.485 seconds before expansion versus 18.203 seconds after it.
+Two narrow query simplifications pass the 30-test grouping suite (116 assertions);
+the grouping-only candidate preserves all eight API payloads and improves p95
+to 3.605/2.960 seconds, but still fails the 20% regression gate. It is not deployed.
+A shared access-query rewrite has passed 2,664 synthetic equivalence cases and
+59 facts/grouping tests; full-catalogue and target speed verification continue.
+The replacement snapshot passed exact native-column reconstruction for all nine
+tables at 11:43 UTC after review caught a JSON-normalization limitation in the
+initial archive. This tests temporary-table reconstruction, not full-database recovery. See the [current report](staging-release/2026-09-29/REPORT.md).
+The proposed 100-record canary, its committed import and subsequent full batch
+remain pending those gates and concrete commit authorization. Production requires
+its own mapping and acceptance evidence. No production data changed.
 
 This contract supplements the frozen package and its preparation plan; it does
 not rewrite its data, checksums or measured results. It applies to subsequent

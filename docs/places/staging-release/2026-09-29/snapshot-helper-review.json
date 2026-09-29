@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-09-29T11:55:54.288101+00:00",
+  "reviewer": "staging_data_review",
+  "scope": "Static review plus separately executed staging reconstruction",
+  "findings": "No remaining findings after preserving native PostgreSQL column text and checking schema metadata",
+  "files": {
+    "column-snapshot.php": "3223707108604f5ad98b8e070f3af9e932dcd4fbfff64a4ea673e77a78d01c8c",
+    "column-restore.php": "9ea0c66b2832064fc09fe7c004fadcd95d36de32524907a412824a5de373d1d9"
+  },
+  "result": "snapshot-restore-summary.json",
+  "full_database_restore_tested": false
+}

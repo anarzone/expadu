@@ -21,30 +21,22 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
    deployment. Run `36470573038` passed application tests, browser tests, lint,
    image build and staging deployment. Verified the resulting image and `/up`.
    Preserve production and the existing unrelated worktree files.
-4. Pending specific approval for upload, server-only snapshot and rollback-only
-   staging rehearsal. Automatic approval review rejected the upload/snapshot
-   preparation before execution because it exceeds the comparison's scope.
-   The immutable inputs and reviewed no-commit verifier are prepared locally;
-   nothing was uploaded and no raw snapshot was created. Once authorized, run a
-   server-side transaction-only rehearsal of the full package, retaining detailed
-   backup/evidence on the server. Temporary catalogue locks and sequence gaps are
-   explicit operational effects. See `../2026-09-29/rehearsal-preparation.json`. Verify expected identities, every
-   shared fact contract, saved references, source refresh and exact rollback.
-   The prepared `../rehearse-staging-package.php` pins the frozen input, importer,
-   manifest and expected fingerprints. It has no commit mode. It compares
-   ordinary/activity visibility and independently expected Composer identities,
-   exercises Places APIs with a non-persisted synthetic user, repeats the import,
-   and verifies exact table restoration while retaining transaction locks.
-   Existing user accounts/plans are not loaded; feedback lookups are restricted
-   to the synthetic ID. Error reporting is confined to the execution environment.
-   Local verification does not authorize or establish a staging run.
-   Outcome: all 4,643 records, 4,084 Composer identities, eight category endpoints,
-   28 details, exact replay and rollback passed without new qualifications.
-   Run database-heavy checks sequentially; overlapping local test setup exhausted
-   shared-memory/lock capacity. The [29 September local diagnostic](../2026-09-29/REPORT.md)
-   identified JIT compilation as the dominant measured query cost; fresh statistics
-   alone did not resolve it. No runtime remedy has been adopted. Measure default
-   target behavior and resolve any repeatable regression before promotion claims.
+4. Completed on 29 September: the owner authorized upload, a private server-only
+   snapshot and the full rollback-only staging rehearsal. All 4,643 records,
+   4,084 Composer identities, eight category endpoints, 28 details, preserved
+   references, no visibility losses, exact replay and table rollback passed.
+   No catalogue import was committed. See the [current report](../2026-09-29/REPORT.md).
+   The original snapshot's normalized JSON is not accepted as typed recovery
+   evidence; a native-column-text replacement and temporary-table restore are
+   complete: all nine tables reconstructed with exact native column values.
+   The target speed test reproduced a severe food/drink slowdown:
+   first-page p95 rose from 1.485 to 18.203 seconds. A narrowly scoped query
+   simplification passes 30 grouping tests (116 assertions); the final two-part
+   query candidate improved p95 to 3.605/2.960 seconds but still fails the gate.
+   The next equivalent access-query rewrite passes 2,664 synthetic cases and
+   59 facts/grouping tests; full-catalogue and staging checks continue.
+   Locks, sequence gaps, cache isolation and planner-statistics cleanup are
+   recorded explicitly. The earlier upload/snapshot approval blocker is resolved.
 5. Promote a small, deterministic canary only after the rehearsal passes,
    then the rest of the unchanged manifest. Report new versus refreshed places,
    actual consumer/Composer eligibility, holds, source dates and approved media.
@@ -54,7 +46,7 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
    private users and plans inside the target environment. Production requires
    a separate reconciled manifest and review of the concrete staging result.
 
-## Useful-coverage work while staging permission is pending
+## Useful-coverage work alongside release verification
 
 1. Investigate 352 football-pitch identity holds using the already retained
    local public-data inventory and baseline. Many match source-null legacy
