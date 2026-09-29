@@ -34,7 +34,10 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
    simplification passes 30 grouping tests (116 assertions); the final two-part
    query candidate improved p95 to 3.605/2.960 seconds but still fails the gate.
    The next equivalent access-query rewrite passes 2,664 synthetic cases and
-   59 facts/grouping tests; full-catalogue and staging checks continue.
+   59 facts/grouping tests and the full 1,684-test suite. Its full expanded access
+   IDs and nine staging API payloads are identical, but V2 p95 is still too slow:
+   6.132/6.895 seconds versus 1.274/1.045 seconds. Rollback and cleanup passed.
+   The query-plan investigation continues; no candidate fix is deployed.
    Locks, sequence gaps, cache isolation and planner-statistics cleanup are
    recorded explicitly. The earlier upload/snapshot approval blocker is resolved.
 5. Promote a small, deterministic canary only after the rehearsal passes,

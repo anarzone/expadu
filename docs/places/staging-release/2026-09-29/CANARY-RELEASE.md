@@ -67,6 +67,6 @@ identity reconciliation, review and authorization.
 
 - Selection manifest prepared and independently cross-checked against the package.
 - Full staging rollback rehearsal passed; replacement typed snapshot reconstruction passed.
-- Final bounded-query candidate measurement is pending; earlier grouping-only speed gate failed. The fix is not deployed yet.
+- Both the grouping-only and bounded-query V2 candidate measurements failed the speed gate. Further query diagnosis is underway; the fix is not deployed.
 - Commit/recovery wrapper implementation and its focused rehearsal remain open.
 - No canary or full catalogue import has been committed.

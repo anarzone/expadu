@@ -27,7 +27,8 @@ any change requires a new checksum and review. Sequence allocations and
 cumulative analysis statistics are not transactionally restored.
 
 The first grouping candidate result is retained even though its speed gate failed.
-The later `batch-v2/` artifacts also bind a mechanically renamed PlaceFacts
+The later `batch-v2/` artifacts additionally measure keyed lookup and detail latency,
+compare a detail payload, and bind a mechanically renamed PlaceFacts
 subclass inside the verifier only. The manifest includes the two unchanged
 controller/grouping copies in this parent folder. Copy all three class files into
 the explicit private input directory for that run. The first batch-policy shape

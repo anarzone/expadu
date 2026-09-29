@@ -6,7 +6,8 @@ Refs EXP-69, EXP-70, EXP-72. Continues the [28 September release report](../2026
 All 4,643 prepared records passed the native staging check: 1,874 additions and
 2,769 refreshes inside the rollback transaction. Places and Composer use the same
 facts; 4,084 identities were retrieved by Composer and 559 remain outside automatic
-recommendations. Existing ordinary and activity visibility had zero losses.
+recommendations. Existing ordinary and activity visibility had zero losses. The expanded catalogue
+still fails response-time acceptance; source changes remain unreleased.
 
 The user authorized the prepared upload, private server-only snapshot and
 rollback-only rehearsal with “go ahead upload and continue your work”. The earlier
@@ -119,11 +120,24 @@ measurements; rollback-on-exit and independent statistics cleanup completed.
 The final shape retains the original bounded parent predicate and materializes
 only the root allowed-ID set. A SELECT-only local baseline comparison measured
 94.7 ms at estimated cost 15,518, with no JIT, versus 4,765.9 ms for the earlier
-shape. This is not expanded-data API p95; the final staging measurement is pending. No live access policy has changed.
+shape. This was not expanded-data API p95. The subsequent V2 staging measurement also
+failed the gate: food/drink p95 is 6,132.2 / 6,895.0 ms against the same-run deployed
+baseline of 1,273.8 / 1,045.1 ms. All nine full API payloads and the complete access-allowed ID set were identical.
+Nine-table rollback, statistics cleanup and unchanged runtime-source hashes passed.
+Keyed eligibility p95 rose from 3.0 to 1,090.9 ms; detail API p95 rose from 17.1
+to 231.0 ms. These compare current baseline data against expanded candidate data.
+The candidate is not accepted; an expanded local plan diagnostic is underway.
+[Full V2 result](staging-batch-v2-performance.json),
+[cleanup](staging-batch-v2-cleanup.json), [runtime](staging-batch-v2-runtime.json). No live access policy has changed.
 [Equivalence proof](access-policy-equivalence.json), [review](access-policy-review.json),
 [full local comparison](batch-access-local-comparison.json),
 [bounded-parent query plans](bounded-parent-plan-comparison.json),
 [stopped diagnostic cleanup](staging-batch-candidate-aborted.json).
+
+The final source implementation passed the full local suite: **1,684 tests, 7,039
+assertions, no skips**, with normal secret, formatting and commit-message hooks.
+That functional result does not override the failed target performance gate.
+[Test receipt](final-query-test-result.json).
 
 ## Recovery and the next batch
 
@@ -208,4 +222,6 @@ fresh staging export.
 
 EXP-69 and EXP-72 remain In Progress. Stadt Köln structured place data and its place
 media remain excluded under EXP-70. No new media approvals or activity qualifications
-were applied. The optional-photo design decision remains in effect.
+were applied. Photos remain optional in the data contract. The separate Places-page direction is
+under review in the 28 September connected design record; preserve the prototype.
+See the [data/interface assessment](UI-DATA-ASSESSMENT.md).

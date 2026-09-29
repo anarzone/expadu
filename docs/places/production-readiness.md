@@ -113,7 +113,12 @@ Two narrow query simplifications pass the 30-test grouping suite (116 assertions
 the grouping-only candidate preserves all eight API payloads and improves p95
 to 3.605/2.960 seconds, but still fails the 20% regression gate. It is not deployed.
 A shared access-query rewrite has passed 2,664 synthetic equivalence cases and
-59 facts/grouping tests; full-catalogue and target speed verification continue.
+59 facts/grouping tests and the full local 1,684-test suite (7,039 assertions,
+no skips). All nine V2 staging payload comparisons and the complete access-ID
+comparison passed, but p95 still failed at 6.132/6.895 seconds versus
+1.274/1.045 seconds. The single-place eligibility lookup also regressed. Exact
+rollback and cleanup passed; query-plan diagnosis continues and the candidate
+is not accepted for release.
 The replacement snapshot passed exact native-column reconstruction for all nine
 tables at 11:43 UTC after review caught a JSON-normalization limitation in the
 initial archive. This tests temporary-table reconstruction, not full-database recovery. See the [current report](staging-release/2026-09-29/REPORT.md).
@@ -125,7 +130,9 @@ This contract supplements the frozen package and its preparation plan; it does
 not rewrite its data, checksums or measured results. It applies to subsequent
 batches as well, with no fixed catalogue-size target or photo-based exclusion.
 
-The approved optional-photo design remains in effect. The earlier 75% image
+Photos remain optional in the data contract. The connected design record reopened
+the separate Places-page direction on 28 September; preserve the prototype until
+that product decision is made. The earlier 75% image
 coverage objective is still unmet, and this requirement does not waive it.
 The current EXP-70 source decision excludes Stadt Köln structured place data as
 well as its place media. Hosting municipal records on another provider's domain

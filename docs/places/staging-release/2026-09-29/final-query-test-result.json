@@ -1,0 +1,20 @@
+{
+  "source_commit": "ce0d579642581d053ef0a9625875711f813fe724",
+  "tests_passed": 1684,
+  "assertions": 7039,
+  "seconds": 277.33,
+  "skipped": 0,
+  "normal_commit_hooks": true,
+  "secret_scan": "passed",
+  "pint": "passed",
+  "commitlint": "passed",
+  "log_sha256": "63ac9d9c68fb910a150a4ea81232de2df2b954700621a4a9c10f5115a7339c16",
+  "source_sha256": {
+    "app/Places/DestinationGrouping.php": "b7b4f543f5d7092b608517c342f7527b81d95a58ec7b4f8038f0a0048f631f5b",
+    "app/Http/Controllers/Api/PlacesController.php": "c49a235039265a0aa6067ea5732a8bf2658dad09d66140ff7f3ea98c79659b90",
+    "app/Places/PlaceFacts.php": "0aac4a26a8160219056d42216b6d2df30cc30d79be9aac8161c0c29262091c2c",
+    "tests/Feature/Places/DestinationGroupingTest.php": "9dc5d5d9f9f91f09530e0f470e5288be883d21c6c6310fc224708dae0c58313c",
+    "tests/Feature/Places/PlaceFactsTest.php": "8b1966c73f00fdeaf467f9c2f2035e7c0a85a029c51add8135b4d683f71b3205"
+  },
+  "scope": "Full local application suite on isolated test database and task-only Redis; not a staging deployment receipt"
+}

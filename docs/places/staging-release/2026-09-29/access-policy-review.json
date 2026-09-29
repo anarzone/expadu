@@ -42,7 +42,9 @@
     "first_query_shape_slower": true
   },
   "final_query_shape": "Materialized allowed-ID set for catalogue roots; unchanged correlated policy for bounded destination-parent checks",
-  "target_p95_pending": true,
+  "target_p95_pending": false,
   "final_source_review": "exp69_laravel_patterns: no correctness issue; destination predicate exactly preserved apart from alias substitution; root and destination branches preserve all prior rules",
-  "narrow_lookup_tradeoff": "Catalogue-wide root materialization may add cost to keyed lookups; final staging verifier measures30 keyed and30 detail requests per condition and checks detail payload parity"
+  "narrow_lookup_tradeoff": "Catalogue-wide root materialization may add cost to keyed lookups; final staging verifier measures30 keyed and30 detail requests per condition and checks detail payload parity",
+  "target_p95_passed": false,
+  "target_result": "staging-batch-v2-performance.json"
 }
