@@ -1,0 +1,65 @@
+{
+  "status": "passed",
+  "scope": "Dedicated local zero-user database, final integrated recovery implementation",
+  "simulated_exit_after_commit_before_file_export": 77,
+  "phases": [
+    {
+      "created": "exp72_canary_recovery_lab_20260929_v2",
+      "source_users": 0,
+      "source_spots": 9928
+    },
+    {
+      "native_facts_projected": 100
+    },
+    {
+      "phase": "retry",
+      "status": "passed",
+      "scope": "Dedicated local zero-user public fixture only",
+      "database": "exp72_canary_recovery_lab_20260929_v2",
+      "operation": "e2ca9290-1991-4fda-9fab-dd7e740621fa",
+      "manifest_sha256": "badef6eb0727c6af779934742acba976b483fd98bdd9f1dfffcddae70ee33cf3",
+      "stored_spots": 9978,
+      "journal_state": "applied",
+      "new_ids_retained": 50,
+      "new_ids_inactive": 0,
+      "observations": 4162,
+      "staging_changed": false,
+      "checked_at": "2026-09-29T14:09:52+00:00"
+    },
+    {
+      "phase": "recover",
+      "status": "passed",
+      "scope": "Dedicated local zero-user public fixture only",
+      "database": "exp72_canary_recovery_lab_20260929_v2",
+      "operation": "e2ca9290-1991-4fda-9fab-dd7e740621fa",
+      "manifest_sha256": "badef6eb0727c6af779934742acba976b483fd98bdd9f1dfffcddae70ee33cf3",
+      "stored_spots": 9978,
+      "journal_state": "recovered",
+      "new_ids_retained": 50,
+      "new_ids_inactive": 50,
+      "observations": 4189,
+      "staging_changed": false,
+      "checked_at": "2026-09-29T14:09:57+00:00"
+    },
+    {
+      "phase": "verify-repeat",
+      "status": "passed",
+      "scope": "Dedicated local zero-user public fixture only",
+      "database": "exp72_canary_recovery_lab_20260929_v2",
+      "operation": "e2ca9290-1991-4fda-9fab-dd7e740621fa",
+      "manifest_sha256": "badef6eb0727c6af779934742acba976b483fd98bdd9f1dfffcddae70ee33cf3",
+      "stored_spots": 9978,
+      "journal_state": "recovered",
+      "new_ids_retained": 50,
+      "new_ids_inactive": 50,
+      "observations": 4189,
+      "staging_changed": false,
+      "checked_at": "2026-09-29T14:09:58+00:00"
+    }
+  ],
+  "helper_sha256": {
+    "GuardedCanary.php": "b1aa794c89975ca32a8228892616d6819dcba870a999462b1535fcc67a9eaef3",
+    "CanaryJournal.php": "b84744047209885ba994e5a151882d0dc2c7ebc127999edaab4cd4f1c39cbf13"
+  },
+  "staging_changed": false
+}
