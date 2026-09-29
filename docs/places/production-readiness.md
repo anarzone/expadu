@@ -72,17 +72,37 @@ and rights qualification. EXP-72 owns the recorded release acceptance result.
 ## Current evidence and remaining work
 
 The [28 September package report](production-pack/2026-09-28/REPORT.md) retains the
-original preparation measurements. The later [Composer implementation report](composer-readiness/2026-09-28/REPORT.md)
-checks all 4,643 prepared records through shared facts and verifies 4,100
-Composer identities after 16 proposed facility qualifications in a rolled-back
-local rehearsal. The relevant suite passes 374 tests / 1,600 assertions; the final saved-plan fix passes its 77-test endpoint/identity rerun.
-Explicit activity/radius and free-only requests, conditions, grouping and saved
-references now have application coverage.
+original preparation measurements. The later [staging release report](staging-release/2026-09-28/REPORT.md)
+records the current result: PR #57 is deployed and verified on staging, while the
+4,643-record package has not been imported into staging or production.
 
-This does not establish useful verified-free football coverage: the prepared
-package has 0 eligible places meeting that full request. New approved photos: 0.
-Staging and production are unchanged. Fresh environment reconciliation, live
-release/refresh/recovery checks and production approval remain required.
+The complete local rehearsal checked all 4,643 prepared records through the shared
+facts contract and retrieved 4,084 Composer identities without additional activity
+qualifications. The remaining 559 records stay outside automatic recommendations.
+Eight category endpoints, 28 detail samples, preserved references, exact no-op
+replay and exact table rollback passed. Earlier results mentioning 4,100 candidates
+included 16 provisional qualifications inside a rolled-back experiment; those
+qualifications are not approved or applied by the current package.
+
+Explicit activity/radius and free-only requests, conditions, grouping and saved
+references now have application coverage. The 28 September release evidence records
+1,677 passing tests, 7,009 assertions and two existing late-day weather skips.
+These local checks do not establish useful verified-free football coverage: the
+prepared package has zero eligible places meeting that full request. No new photos
+were approved. The [29 September local performance diagnostic](staging-release/2026-09-29/REPORT.md)
+identified expensive query compilation in the expanded catalogue. Fresh statistics
+alone did not remove it. A transaction-local diagnostic setting reduced the two
+measured queries from 5–6 seconds to about 0.56 seconds with identical results;
+this has not been adopted or verified as a target-environment fix. Target
+performance validation remains open.
+
+Automatic approval review rejected the read-only staging comparison and its
+summary export. Specific owner authorization is pending; no alternative execution
+path may bypass that rejection. The comparison would keep raw records on the
+server and return only counts, checksums and conflicting public place identities.
+Fresh reconciliation, server-side rehearsal, canary import, live API/reference and
+refresh/recovery checks remain required. Production requires a separate mapping
+and review of the concrete staging result.
 
 This contract supplements the frozen package and its preparation plan; it does
 not rewrite its data, checksums or measured results. It applies to subsequent
@@ -90,5 +110,9 @@ batches as well, with no fixed catalogue-size target or photo-based exclusion.
 
 The approved optional-photo design remains in effect. The earlier 75% image
 coverage objective is still unmet, and this requirement does not waive it.
-Excluded Stadt Köln place media and unapproved images must not be published or
-reintroduced through source refreshes. See the [shared design decisions](../../prototype/dev/design/connected/design-decisions.md).
+The current EXP-70 source decision excludes Stadt Köln structured place data as
+well as its place media. Hosting municipal records on another provider's domain
+does not make them eligible. Excluded data and unapproved images must not be
+published or reintroduced through source refreshes. The approved shared design reference is
+`prototype/dev/design/connected/design-decisions.md` in the primary design checkout
+(the prototype directory is not included in this release branch).

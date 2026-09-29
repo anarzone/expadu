@@ -37,7 +37,10 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
    Outcome: all 4,643 records, 4,084 Composer identities, eight category endpoints,
    28 details, exact replay and rollback passed without new qualifications.
    Run database-heavy checks sequentially; overlapping local test setup exhausted
-   shared-memory/lock capacity. Measure target API latency before promotion claims.
+   shared-memory/lock capacity. The [29 September local diagnostic](../2026-09-29/REPORT.md)
+   identified JIT compilation as the dominant measured query cost; fresh statistics
+   alone did not resolve it. No runtime remedy has been adopted. Measure default
+   target behavior and resolve any repeatable regression before promotion claims.
 5. Promote a small, deterministic canary only after the rehearsal passes,
    then the rest of the unchanged manifest. Report new versus refreshed places,
    actual consumer/Composer eligibility, holds, source dates and approved media.
