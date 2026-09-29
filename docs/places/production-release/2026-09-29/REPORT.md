@@ -1,6 +1,6 @@
 # Production Places qualification — 29 September 2026
 
-**Production comparison is complete. The release candidate is being tested; no
+**Production comparison is complete. The scoped release candidate is committed and locally verified; no
 production deployment or catalogue write has occurred.**
 
 Production has **8,798 stored records** and runs older code without the identity,
@@ -37,7 +37,9 @@ then passed 3 tests / 25 assertions. The first full fast suite passed 1,642 test
 the frontend build and type check passed. Review found two additional release
 defects: ungated monthly boundary jobs and incompatible older queued validation
 jobs. Both were reproduced, fixed and re-reviewed; 15 focused tests / 95 assertions
-passed afterward. Final normal commit hooks and remote CI remain pending.
+passed afterward. Normal commit hooks subsequently passed 1,644 tests / 6,835 assertions with two
+existing late-day weather skips, formatting and secret scanning. The code commit is
+`846546df20eef53d0f0874e6ac1940da43a56135`; remote CI remains pending.
 
 ## Release gates remaining
 

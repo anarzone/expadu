@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-29T20:54:40.555982+00:00",
-  "status": "reviewed_candidate_local_checks_passed_commit_and_ci_pending",
+  "updated_at": "2026-09-29T21:10:43.198175+00:00",
+  "status": "committed_release_candidate_remote_ci_pending",
   "production_database_changed": false,
   "production_deployed": false,
   "production_import_qualified": false,
@@ -62,7 +62,19 @@
     "typescript": "passed",
     "frontend_build": "passed",
     "eslint": "passed with one existing app-sidebar-layout hook dependency warning",
-    "review": "No remaining critical/important findings in read-only re-review"
+    "review": "No remaining critical/important findings in read-only re-review",
+    "normal_commit_hooks": {
+      "passed": true,
+      "tests": 1644,
+      "assertions": 6835,
+      "skipped": 2,
+      "seconds": 183.3,
+      "parallel_processes": 10,
+      "secret_scan": "passed; 60 exact verified public sample-label false positives documented",
+      "skips": "Existing late-day weather test conditions"
+    },
+    "harness_correction": "Parallel Redis base changed from15 to0 so worker offsets fit the service capacity; 46 affected Composer endpoint tests/217assertions then passed, followed by all normal commit checks."
   },
-  "retained_fixture_compatibility": "resources/js/pages/dev/cards.tsx adds required Place data fields only"
+  "retained_fixture_compatibility": "resources/js/pages/dev/cards.tsx adds required Place data fields only",
+  "code_commit": "846546df20eef53d0f0874e6ac1940da43a56135"
 }

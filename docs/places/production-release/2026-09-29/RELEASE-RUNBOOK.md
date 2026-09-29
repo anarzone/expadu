@@ -69,6 +69,14 @@ queue state and avoid overlapping qualification with unrelated writes.
    journal snapshots and real candidate membership. Enable only the automation
    workflows whose source, identity, recovery and media behaviour passed.
 
+## Health probe qualification
+
+The production container's configured probe requests `http://127.0.0.1:8080`,
+which returns 404. The actual `http://127.0.0.1:8080/up` health endpoint was checked
+inside the same container and returned 200. Correct the managed probe during the
+release operation and verify the running app directly; the old Docker status is
+not evidence of an application outage. No host configuration was changed here.
+
 ## Recovery and stop conditions
 
 Stop on source-key ambiguity, drift, unexpected rows, missing evidence, request
