@@ -8,6 +8,7 @@ use App\Places\PlaceFacts;
 use App\Places\ReconcilePlace;
 use App\Places\RecordPlaceObservation;
 use App\Places\ReviewPlaceFacts;
+use App\Places\WithdrawPlaceObservation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -895,6 +896,7 @@ test('fact history prevents catalogue snapshot replacement', function () {
 });
 
 test('catalogue access eligibility scans source observations once for a batch of places', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-29T12:00:00Z'));
     $spots = Spot::factory()->count(40)->create([
         'category' => 'park', 'source' => 'osm', 'tags' => null,
         'is_active' => true, 'is_recommendable' => true,
@@ -908,7 +910,12 @@ test('catalogue access eligibility scans source observations once for a batch of
             'ingestion_key' => "access-batch-{$spot->id}",
             'payload' => ['access' => ['raw' => $index % 2 === 0 ? 'yes' : 'private']],
         ]);
-        if ($index % 2 === 0) {
+        if ($index < 2) {
+            $source = PlaceFactObservation::where('spot_id', $spot->id)->sole();
+            $withdrawal = app(WithdrawPlaceObservation::class);
+            $withdrawal->apply($source->id, $withdrawal->preview($source->id)['fingerprint'], 'test-operator', 'Withdraw an initial observation while preserving the single-scan access policy.');
+        }
+        if ($index % 2 === 0 || $index === 1) {
             $expected[] = $spot->id;
         }
     }

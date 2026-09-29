@@ -40,13 +40,8 @@ class PlaceFacts
 
         // Resolve access once per query, preserving the same current-source
         // and correction rules without repeating the history scan per place.
-        $policy = <<<'SQL'
-            WITH current_observations AS MATERIALIZED (
-                SELECT DISTINCT ON (spot_id, provider, provider_record_id)
-                    spot_id, provider, provider_record_id, observed_at, payload
-                FROM place_fact_observations
-                ORDER BY spot_id, provider, provider_record_id, observed_at DESC, id DESC
-            ), observation_access AS MATERIALIZED (
+        $policy = str_replace('__CURRENT_OBSERVATIONS__', PlaceObservationHistory::currentSql(), <<<'SQL'
+            WITH __CURRENT_OBSERVATIONS__, observation_access AS MATERIALIZED (
                 SELECT observations.spot_id,
                     bool_or(jsonb_exists(payload, 'access')) AS has_access,
                     max(observed_at) FILTER (
@@ -81,7 +76,7 @@ class PlaceFacts
                 ELSE LOWER(COALESCE(access_spot.tags->>'access', '')) NOT IN ('private', 'no', 'customers', 'members', 'permit')
                     AND NOT COALESCE(jsonb_exists(access_spot.tags::jsonb, 'access:conditional'), false)
             END
-            SQL;
+            SQL);
 
         return $query->whereRaw('spots.id IN (WITH allowed_places AS MATERIALIZED ('.$policy.') SELECT id FROM allowed_places)');
     }
@@ -184,7 +179,7 @@ class PlaceFacts
     private function resolveLoaded(Spot $spot, int $revision): array
     {
         /** @var Collection<int, PlaceFactObservation> $observations */
-        $observations = $spot->factObservations;
+        $observations = PlaceObservationHistory::active($spot->factObservations);
         $corrections = $spot->factCorrections
             ->filter(fn (PlaceFactCorrection $correction): bool => $correction->revoked_at === null)
             ->groupBy('field');
@@ -659,15 +654,9 @@ class PlaceFacts
     /** Same access policy for the single parent inside a reviewed-membership check. */
     private function destinationAccessPolicy(): string
     {
-        return str_replace('spots.', 'destination.', <<<'SQL'
+        return str_replace(['spots.', '__CURRENT_OBSERVATIONS__'], ['destination.', PlaceObservationHistory::currentSql('destination.id')], <<<'SQL'
             (
-                WITH current_observations AS MATERIALIZED (
-                    SELECT DISTINCT ON (provider, provider_record_id)
-                        provider, provider_record_id, observed_at, payload
-                    FROM place_fact_observations
-                    WHERE spot_id = spots.id
-                    ORDER BY provider, provider_record_id, observed_at DESC, id DESC
-                ), active_corrections AS MATERIALIZED (
+                WITH __CURRENT_OBSERVATIONS__, active_corrections AS MATERIALIZED (
                     SELECT value, reviewed_at
                     FROM place_fact_corrections
                     WHERE spot_id = spots.id AND field = 'access' AND revoked_at IS NULL
