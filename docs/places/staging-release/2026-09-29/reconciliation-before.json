@@ -1,0 +1,45 @@
+{
+  "checked_at": "2026-09-29T09:35:37+00:00",
+  "environment": "staging",
+  "read_only": true,
+  "raw_records_exported": false,
+  "package_records": 4643,
+  "catalogue_rows": 9928,
+  "unchanged_existing": 2769,
+  "new_source_identities": 1874,
+  "conflicts": [],
+  "table_digests": {
+    "spots": {
+      "count": 9928,
+      "sha256": "cbb6abc6bc06767d8a4bd4295e2c20788c10d6d500889a534317bf170337cabc"
+    },
+    "place_fact_observations": {
+      "count": 4085,
+      "sha256": "ef3566e80afd37ae72e23831291b907a94e038aa42965a3832247a46ee2caa1d"
+    },
+    "place_fact_corrections": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_fact_revisions": {
+      "count": 1,
+      "sha256": "9622626792fced3b80f748ba412e79b3fee2e3f2e7315ded261a191567dd3e6f"
+    },
+    "place_destination_reviews": {
+      "count": 12,
+      "sha256": "e4ae75abd8c6f62c6f1618dfc1562f98b52cd180548dd10770aa4cc7a9b874ec"
+    },
+    "place_reconciliations": {
+      "count": 798,
+      "sha256": "d199c25ce5ca83e9da51b36f38db2ecd40a976daab0f49ac14791babf97e658c"
+    },
+    "media_assets": {
+      "count": 588,
+      "sha256": "b122582424bebb9c7e43df073429721e61a7dd5c0423f882a2fbd638fe50dc4e"
+    },
+    "media_attachments": {
+      "count": 1680,
+      "sha256": "cb524354810497f3d32fe1d956e4da3531de40ce6028f943e7a62ee6b56d64bd"
+    }
+  }
+}

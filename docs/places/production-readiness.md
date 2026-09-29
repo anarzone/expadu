@@ -96,13 +96,20 @@ measured queries from 5–6 seconds to about 0.56 seconds with identical results
 this has not been adopted or verified as a target-environment fix. Target
 performance validation remains open.
 
-Automatic approval review rejected the read-only staging comparison and its
-summary export. Specific owner authorization is pending; no alternative execution
-path may bypass that rejection. The comparison would keep raw records on the
-server and return only counts, checksums and conflicting public place identities.
-Fresh reconciliation, server-side rehearsal, canary import, live API/reference and
-refresh/recovery checks remain required. Production requires a separate mapping
-and review of the concrete staging result.
+The owner explicitly approved the staging comparison, which passed on 29 September
+at 09:35:37 UTC: 2,769 expected existing records match, 1,874 proposed new identities
+are absent, and there are zero conflicts. Raw records stayed on the server; only
+counts, checksums and conflicting public identities were permitted in the summary.
+The staging catalogue has 9,928 stored rows; this is not an eligible or photo-covered
+destination count. No catalogue data changed.
+
+Automatic approval review separately rejected uploading rehearsal inputs and
+saving a raw server-only catalogue snapshot as broader than the approved check.
+Neither action executed. Specific approval for those steps and the rollback-only
+staging rehearsal is pending; it may temporarily block catalogue writes and advance
+ID sequences, without committing an import. Canary import, live API/reference and
+refresh/recovery checks remain open. Production requires a separate mapping and
+review of the concrete staging result.
 
 This contract supplements the frozen package and its preparation plan; it does
 not rewrite its data, checksums or measured results. It applies to subsequent

@@ -2,11 +2,34 @@
 
 Refs EXP-69, EXP-72. Continues the [28 September release report](../2026-09-28/REPORT.md).
 
-**The prepared 4,643-record package is still not imported into staging or
-production.** The application release is already on staging. The specific
-read-only staging comparison remains pending owner approval after automatic
-approval review rejected the data inspection and summary export. No alternative
-remote inspection was attempted in this continuation.
+**The read-only staging comparison passed at 09:35:37 UTC on 29 September.**
+The owner explicitly approved the data check and summary export. All 2,769
+expected existing records match their frozen fingerprints; all 1,874 proposed new
+source identities are still absent. There are **zero conflicts** across the
+4,643-entry package. Staging currently contains 9,928 stored place rows; that is
+not a count of newly prepared, unique eligible or photographed destinations.
+
+Only counts, checksums and any conflicting public identities were exported. Raw
+records and private user information stayed on the server. The check was read-only
+and changed no catalogue data. A local fingerprint-helper memory limit initially
+prevented execution before connection; correcting that local limit allowed the
+approved check to complete. The running staging image still matches the verified
+28 September release. PR #58's documentation CI run 36549377114 has passed.
+
+The package remains **unimported**. Preparing the next step was separately rejected
+by automatic approval review: the approved comparison does not authorize uploading
+files or retaining a raw snapshot of multiple staging tables. No upload, snapshot
+or rehearsal ran. Specific approval has now been requested for all three concrete
+steps: upload the unchanged reviewed inputs, save a private server-only catalogue
+snapshot, and run the reviewed rollback-only rehearsal. That rehearsal temporarily
+locks catalogue tables and may advance sequences, but has no commit mode. Production
+is outside this scope. The snapshot can include internal review metadata; it stays
+on the server and excludes user accounts and plans.
+
+The approved comparison is complete and must not be described as still awaiting
+permission. The broader rehearsal has its own pending approval. Evidence:
+[comparison](reconciliation-before.json), [authorization status](approval-status.json)
+and [prepared rehearsal scope](rehearsal-preparation.json).
 
 ## Local performance finding
 
@@ -52,8 +75,8 @@ fresh staging export.
 
 1. Keep the target performance gate open. Do not describe the diagnostic
    `jit=off` sample as an adopted or verified live fix.
-2. After the approved staging comparison and environment reconciliation, measure
-   the default target queries with current statistics. If the same compilation
+2. The package comparison has passed. After permission for the broader staging
+   rehearsal, measure the default target queries with current statistics. If the same compilation
    overhead occurs, prepare and review a narrowly scoped remedy, preserving every
    eligibility, identity, feedback and grouping condition. Validate pagination,
    representative filters and Composer before rollout.

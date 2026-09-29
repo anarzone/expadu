@@ -1,0 +1,17 @@
+{
+  "action": "Read staging Places tables and export only counts, checksums and conflicting public source/place IDs",
+  "owner_authorization": "I explicitly approve this staging data check and its summary export",
+  "approval_resolved": true,
+  "check_executed": true,
+  "checked_at": "2026-09-29T09:35:37+00:00",
+  "read_only": true,
+  "raw_records_exported": false,
+  "conflicts": 0,
+  "local_preflight_failure": "PHP memory limit was raised for the local fingerprint helper; first attempt stopped before connecting",
+  "next_step": "Server-side snapshot and rollback-only rehearsal; separate specific approval requested after automatic review rejected the broader scope",
+  "next_step_attempt_executed": false,
+  "next_step_automatic_review": "Rejected because read-only comparison approval does not authorize uploads or persistence of raw staging tables",
+  "server_files_uploaded": false,
+  "server_snapshot_created": false,
+  "staging_rehearsal_run": false
+}

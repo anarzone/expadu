@@ -10,21 +10,25 @@ in PR #57 at `a18f5c31c2b65fc131f3fb814984ff6646ae1bc7`.
    Six deployed implementation files match the tested source; `/up` returns 200.
    The existing container probe targets `/` and returns 404; distinguish that
    probe configuration from application availability.
-2. Reconcile all 4,643 immutable package entries against current staging rows.
-   Every update must match its expected row fingerprint; every new source
-   identity must still be absent. Do not force mismatches or transfer raw
-   staging records. Automatic approval review rejected both the raw export and
-   the proposed aggregate-only check; explicit owner approval for the latter
-   is pending. A renewed attempt following the owner's “go” was rejected before
-   execution because automatic review still required specific authorization for
-   inspection and summary export. The exact-scope approval question remains
-   pending; do not retry through another execution path. See `approval-status.json`.
+2. Completed on 29 September at 09:35:37 UTC: the specifically approved read-only
+   comparison checked all 4,643 immutable package entries. All 2,769 existing
+   fingerprints match; all 1,874 new source identities remain absent; zero
+   conflicts. Raw records stayed on the server. See
+   [current comparison and approval evidence](../2026-09-29/REPORT.md).
+   Earlier automatic-review rejections in `approval-status.json` are historical;
+   the owner has now explicitly authorized and completed this check.
 3. Completed: release the tested application to staging through its normal CI
    deployment. Run `36470573038` passed application tests, browser tests, lint,
    image build and staging deployment. Verified the resulting image and `/up`.
    Preserve production and the existing unrelated worktree files.
-4. Run a server-side transaction-only rehearsal of the full package, retaining
-   detailed backup/evidence on the server. Verify expected identities, every
+4. Pending specific approval for upload, server-only snapshot and rollback-only
+   staging rehearsal. Automatic approval review rejected the upload/snapshot
+   preparation before execution because it exceeds the comparison's scope.
+   The immutable inputs and reviewed no-commit verifier are prepared locally;
+   nothing was uploaded and no raw snapshot was created. Once authorized, run a
+   server-side transaction-only rehearsal of the full package, retaining detailed
+   backup/evidence on the server. Temporary catalogue locks and sequence gaps are
+   explicit operational effects. See `../2026-09-29/rehearsal-preparation.json`. Verify expected identities, every
    shared fact contract, saved references, source refresh and exact rollback.
    The prepared `../rehearse-staging-package.php` pins the frozen input, importer,
    manifest and expected fingerprints. It has no commit mode. It compares
