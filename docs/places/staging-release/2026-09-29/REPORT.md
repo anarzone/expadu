@@ -9,12 +9,36 @@ facts; 4,084 identities were retrieved by Composer and 559 remain outside automa
 recommendations. Existing ordinary and activity visibility had zero losses. **The corrected target
 performance rehearsal also passed** at 13:12 UTC: expanded food/drink API p95
 470/487 ms versus deployed current-catalogue baseline 1,055/1,694 ms. The source
-fix is uploaded in PR #58; application release verification remains outstanding.
+fix is deployed from merged PR #58 and verified on the running staging application at 13:51 UTC.
 
 The user authorized the prepared upload, private server-only snapshot and
 rollback-only rehearsal with “go ahead upload and continue your work”. The earlier
 automatic-review rejection is resolved. No repeat approval is required for that
 scope. Committed catalogue imports and production changes have not been performed.
+
+## Application released; private storage corrected
+
+PR #58 merged as `0741c491150929297a0eaf81951f62868562e42c`. Staging workflow
+36576262123 passed on attempt 2. Attempt 1 was blocked by a pre-existing real-clock
+expiry test whose unexpired fixture lasted only one second; it passed in isolation,
+and the failed CI job passed on retry. The recovery follow-up freezes that test's
+clock without changing message-retention behavior.
+
+The running source hashes match the reviewed query fix. All nine running API
+routes returned 200, with valid nonempty unique IDs and the expected food-page
+sizes/totals. Food page reads took 352/253 ms; these are individual smoke checks,
+not p95. External `/up` returned 200. Staging still has 9,928 stored rows; no
+catalogue import was committed. [Live verification](live-query-release.json).
+
+Deployment recreated the application container, which had no persistent private
+storage mount. Consequently the earlier container-only package and raw snapshots
+were lost. They were not a durable backup. The unchanged public package now lives
+in a private directory on the staging host outside the container lifecycle. A
+fresh native-column snapshot was captured there, kept server-only and verified by
+temporary-table reconstruction for all nine catalogue tables. This fresh snapshot
+replaces the unavailable raw artifact for subsequent work; it is not the historical
+pre-rehearsal snapshot. Frozen package checksums still match. The host folder and
+raw snapshot have private permissions. [Persistence and restore evidence](persistent-staging-storage.json).
 
 ## Verified on staging
 
@@ -96,8 +120,7 @@ p95. [Local comparison](local-query-simplification.json).
 The grouping-only candidate completed on staging at 12:07 UTC with the full
 package and normal JIT settings. Food/drink p95 improved to **3,604.7 ms** for
 page one and **2,959.9 ms** for page two, but still exceeded the current deployed
-baseline (1,365.1 / 1,006.0 ms) by more than 20%. **The release speed gate remains
-failed.** All eight original/candidate full API payloads were identical; pagination,
+baseline (1,365.1 / 1,006.0 ms) by more than 20%. **That measurement failed the release speed gate.** All eight original/candidate full API payloads were identical; pagination,
 nine-table rollback, statistics cleanup and unchanged deployed-source checks passed.
 Diagnostic copies ran only inside the verifier process. The query fix is not deployed.
 [Candidate result](staging-candidate-performance.json),
@@ -270,22 +293,61 @@ reproduction scripts are retained locally under
 recorded in the summary. They contain the controlled local diagnostic, not a
 fresh staging export.
 
+## Exact 100-record canary — staging rollback verified
+
+The final action-bound runner repeated the pass at 14:23:38–14:23:48 UTC.
+The earlier recorded run was at 14:18:10–14:18:21 UTC on 29 September, the reviewed canary passed against the
+live staging application. Its 50 additions and 50 refreshes span 22 categories,
+97 OSM records and three Overture records. Nine entries from the first proposal
+were replaced because native recovery requires an earlier same-source observation.
+Tennis and skateparks are not represented in this smaller recovery-safe selection.
+
+All 100 actual detail API responses matched the shared facts and expected names,
+coordinates, source tags, categories and unknown-fee behavior. Exact frozen
+expectations matched: 86 ordinary discovery identities and 87 activity/Composer
+identities, with 13 deliberately held. The selected existing records contribute
+42 ordinary and 43 activity identities before import, so the canary adds 44 to
+each discovery set. No unselected record lost or gained visibility.
+
+Inside the transaction, stored rows rose from 9,928 to 9,978. Native recovery
+restored 27 changed source streams and withdrew the 50 new places while retaining
+IDs and audit history; all 50 refreshed records recovered their substantive facts
+and eligibility. The exact canary had zero alias-history deltas. Recovery was
+then rolled back to the imported state, and a repeated apply returned the same
+journal without extra writes. Finally the entire canary was rolled back, with
+seven catalogue-table fingerprints checked while outer locks were still held.
+No catalogue import was committed. Database sequences may advance on rehearsals.
+
+The final recovery implementation also passed a separate durable, zero-user local
+database test: deliberate process exit after commit and before file export,
+fresh-process retry, recovery, and repeated recovery. A database journal is the
+source of truth; losing a file receipt cannot cause a duplicate import. This is
+an application recovery test, not proof of full-database disaster recovery.
+
+The package, exact operator bundle and private prepared receipt are retained on
+the staging host outside container replacement. Only aggregate results and hashes
+were copied locally. See [final staging evidence](staging-canary-final-verification.json),
+[local restart evidence](local-durable-canary-final.json),
+[frozen acceptance](canary-acceptance.json) and
+[operator runbook](verification/canary/README.md).
+
 ## Remaining acceptance work
 
-1. Target query/API performance and equivalence now pass. Complete final evidence
-   CI and verify the adopted application fix in the staging release.
-2. Typed snapshot reconstruction passed; finalize a guarded, batch-specific recovery procedure.
-   Temporary-table reconstruction does not exercise external foreign keys,
-   application triggers, user references or full-database disaster recovery.
-3. Review and authorize the concrete committed staging canary, then check its live
-   APIs and refresh stability before the remaining package.
-4. Continue the source-evidence work separately. The package adds no approved
-   photos and establishes no verified free/public football result. Its 46 explicit
-   free candidates are not 46 free football locations. The 10,234 other held source
+1. Release the empty operation-journal migration and reviewed operator bundle.
+   The query performance fix is already deployed and verified through nine APIs.
+2. Obtain authorization for the concrete committed 100-record staging canary,
+   then verify committed API results, journal persistence and repeat stability.
+   Prior approval covers uploads and rollback checks, not a persistent data import.
+3. Roll out the remaining 4,543 records in separately checked batches. The full
+   package includes 374 refreshes without prior same-source observations; these
+   need a distinct audited recovery rule before they can be committed safely.
+4. Continue source-evidence work separately. No approved photos or verified
+   free/public football result are added by this package. Its 46 explicit free
+   candidates are not 46 free football locations. The 10,234 other held source
    candidates and the 75% photo objective remain open.
 
 EXP-69 and EXP-72 remain In Progress. Stadt Köln structured place data and its place
 media remain excluded under EXP-70. No new media approvals or activity qualifications
-were applied. Photos remain optional in the data contract. The separate Places-page direction is
-under review in the 28 September connected design record; preserve the prototype.
-See the [data/interface assessment](UI-DATA-ASSESSMENT.md).
+were applied. Photos remain optional in the data contract. The separate Places-page
+direction is under review in the 28 September connected design record; preserve
+the prototype. See the [data/interface assessment](UI-DATA-ASSESSMENT.md).

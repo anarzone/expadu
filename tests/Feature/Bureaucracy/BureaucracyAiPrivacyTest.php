@@ -195,6 +195,7 @@ test('accepted raw messages are encrypted hidden and expire within thirty days',
 });
 
 test('expired raw messages are pruned while unexpired messages remain', function () {
+    $this->freezeTime();
     [, $case] = privacyAiFixture();
     $expired = BureaucracyCaseMessage::factory()->for($case, 'case')->create([
         'expires_at' => now()->subSecond(),
