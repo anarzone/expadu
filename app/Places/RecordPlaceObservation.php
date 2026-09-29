@@ -39,22 +39,26 @@ class RecordPlaceObservation
                 ->lockForUpdate()
                 ->first();
 
+            $history = PlaceFactObservation::query()
+                ->where('spot_id', $canonical->id)
+                ->where('provider', $validated['provider'])
+                ->where('provider_record_id', $validated['provider_record_id'])
+                ->orderBy('observed_at')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            $active = PlaceObservationHistory::active($history);
             if ($existing !== null) {
+                if (! $active->contains('id', $existing->id)) {
+                    throw new DomainException('A withdrawn ingestion key cannot be replayed; new evidence requires a new ingestion key.');
+                }
                 if (! hash_equals($existing->payload_hash, $payloadHash)) {
                     throw new DomainException('An ingestion key cannot be replayed with different place facts.');
                 }
 
                 return;
             }
-
-            $latest = PlaceFactObservation::query()
-                ->where('spot_id', $canonical->id)
-                ->where('provider', $validated['provider'])
-                ->where('provider_record_id', $validated['provider_record_id'])
-                ->orderByDesc('observed_at')
-                ->orderByDesc('id')
-                ->lockForUpdate()
-                ->first();
+            $latest = $active->last();
 
             if ($latest !== null && hash_equals($latest->payload_hash, $payloadHash)
                 && $validated['observed_at']->greaterThanOrEqualTo($latest->observed_at)) {
@@ -82,13 +86,18 @@ class RecordPlaceObservation
     public function previewRestore(int $observationId): array
     {
         $target = PlaceFactObservation::query()->findOrFail($observationId);
-        $current = PlaceFactObservation::query()
+        $history = PlaceFactObservation::query()
             ->where('spot_id', $target->spot_id)
             ->where('provider', $target->provider)
             ->where('provider_record_id', $target->provider_record_id)
-            ->orderByDesc('observed_at')
-            ->orderByDesc('id')
-            ->firstOrFail();
+            ->orderBy('observed_at')
+            ->orderBy('id')
+            ->get();
+        $active = PlaceObservationHistory::active($history);
+        if (! $active->contains('id', $target->id)) {
+            throw new DomainException('A withdrawal marker or withdrawn source observation cannot be restored.');
+        }
+        $current = $active->last();
 
         return [
             'spot_id' => $target->spot_id,
@@ -132,14 +141,19 @@ class RecordPlaceObservation
                 throw new DomainException('The source observation moved while preparing the restore; preview again.');
             }
 
-            $current = PlaceFactObservation::query()
+            $history = PlaceFactObservation::query()
                 ->where('spot_id', $canonical->id)
                 ->where('provider', $target->provider)
                 ->where('provider_record_id', $target->provider_record_id)
-                ->orderByDesc('observed_at')
-                ->orderByDesc('id')
+                ->orderBy('observed_at')
+                ->orderBy('id')
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->get();
+            $active = PlaceObservationHistory::active($history);
+            if (! $active->contains('id', $target->id)) {
+                throw new DomainException('A withdrawal marker or withdrawn source observation cannot be restored.');
+            }
+            $current = $active->last();
 
             if ($current->record_kind === 'restore'
                 && $current->restores_observation_id === $target->id

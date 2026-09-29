@@ -36,7 +36,7 @@ class PlaceCapabilities
     {
         // Older ingestion versions kept these tags only on the spot. Once a
         // primary observation has the new complete field, omissions mean unknown.
-        $hasNativeHistory = $spot->factObservations->contains(fn (PlaceFactObservation $row): bool => $row->provider === $spot->source && $row->provider_record_id === $spot->source_id
+        $hasNativeHistory = PlaceObservationHistory::active($spot->factObservations)->contains(fn (PlaceFactObservation $row): bool => $row->provider === $spot->source && $row->provider_record_id === $spot->source_id
             && array_key_exists('practical', $row->payload));
         $rows = $observations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('practical', $row->payload))
             ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at->getTimestamp(), $row->id]);

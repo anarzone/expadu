@@ -8,6 +8,7 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Places\PlaceFacts;
 use App\Places\RecordPlaceObservation;
+use App\Places\WithdrawPlaceObservation;
 use Illuminate\Support\Facades\DB;
 
 require_once dirname(__DIR__, 3).'/docs/places/staging-release/2026-09-29/verification/canary/GuardedCanary.php';
@@ -207,4 +208,57 @@ it('refuses to drop an operation journal containing recovery evidence', function
     $migration = require base_path('database/migrations/2026_09_29_155011_create_place_catalogue_operations_table.php');
     expect(fn () => $migration->down())->toThrow(RuntimeException::class, 'recovery evidence');
     expect(DB::table('place_catalogue_operations')->where('id', $operation)->exists())->toBeTrue();
+});
+
+it('recovers an initial-source refresh exactly through the versioned durable journal', function (bool $independentSource) {
+    require_once base_path('docs/places/staging-release/2026-09-29/verification/canary/CanaryJournalV2.php');
+    [$spot, $records, $baseline] = canaryFixture();
+    PlaceFactObservation::query()->delete();
+    if ($independentSource) {
+        app(RecordPlaceObservation::class)->record($spot, ['provider' => 'other_open_source', 'provider_record_id' => 'independent-1', 'source_url' => 'https://example.test/place', 'observed_at' => now()->subDays(2)->toIso8601String(), 'ingestion_key' => 'independent', 'payload' => ['name' => 'Independent source name', 'fee' => ['raw' => null]]]);
+    }
+    $review = PlaceFactCorrection::factory()->create(['spot_id' => $spot->id, 'field' => 'name', 'value' => ['value' => 'Reviewed cafe']]);
+    $before = app(PlaceFacts::class)->resolve($spot->fresh());
+    $journal = new CanaryJournalV2;
+    $helper = new GuardedCanaryV2;
+    $operation = 'f593998b-f5c3-4b91-8819-9665f9d59a52';
+    $context = array_fill_keys(['package_sha256', 'manifest_sha256', 'application_sha256', 'importer_sha256'], str_repeat('b', 64));
+    $receipt = $journal->apply($operation, $context, $records, $baseline, 'test-operator');
+    expect($receipt['previous_observations']['osm:node/70001'])->toBeNull();
+    $applied = $helper->snapshot(array_column($receipt['mapping'], 'id'));
+    $proof = $journal->rehearseRecovery($operation, $context, 'test-operator', 'Prove first source withdrawal reproduces the prior legacy and independent facts.');
+    expect($proof['withdrawn_source_observations'])->toBe(1)->and($proof['retained_alias_history_changes'])->toBe(0)
+        ->and($helper->snapshot(array_column($receipt['mapping'], 'id')))->toBe($applied);
+    $saved = SpotFeedback::factory()->create(['spot_id' => $spot->id]);
+    $attachment = MediaAttachment::factory()->accepted()->create(['mediable_type' => Spot::class, 'mediable_id' => $spot->id]);
+    $references = [$saved->fresh()->getRawOriginal(), $attachment->fresh()->getRawOriginal(), $review->fresh()->getRawOriginal()];
+    $recovery = $journal->recover($operation, $context, 'test-operator', 'Restore the initial source refresh without removing audit history or saved references.');
+    $after = app(PlaceFacts::class)->resolve($spot->fresh());
+    unset($before['revision'], $after['revision']);
+    expect($after)->toBe($before)->and($recovery['withdrawn_source_observations'])->toBe(1)
+        ->and(PlaceFactObservation::where('record_kind', 'withdrawal')->count())->toBe(1)
+        ->and([$saved->fresh()->getRawOriginal(), $attachment->fresh()->getRawOriginal(), $review->fresh()->getRawOriginal()])->toBe($references)
+        ->and($journal->recover($operation, $context, 'test-operator', 'Read back the completed recovery without repeating changes.'))->toBe($recovery);
+})->with([false, true]);
+
+it('refuses changed initial-source recovery atomically', function () {
+    require_once base_path('docs/places/staging-release/2026-09-29/verification/canary/GuardedCanaryV2.php');
+    [$spot, $records, $baseline] = canaryFixture();
+    PlaceFactObservation::query()->delete();
+    $helper = new GuardedCanaryV2;
+    $receipt = $helper->apply($records, $baseline, str_repeat('b', 64));
+    PlaceFactCorrection::factory()->create(['spot_id' => $spot->id, 'field' => 'name']);
+    $applied = $helper->snapshot(array_column($receipt['mapping'], 'id'));
+    expect(fn () => $helper->recover($receipt, 'test-operator', 'Refuse to undo an initial import after a later review.'))->toThrow(DomainException::class, 'changed since')
+        ->and($helper->snapshot(array_column($receipt['mapping'], 'id')))->toBe($applied);
+});
+
+it('requires separate review before importing a previously withdrawn stream', function () {
+    require_once base_path('docs/places/staging-release/2026-09-29/verification/canary/GuardedCanaryV2.php');
+    [$spot, $records, $baseline] = canaryFixture();
+    $observation = PlaceFactObservation::sole();
+    $withdrawal = app(WithdrawPlaceObservation::class);
+    $withdrawal->apply($observation->id, $withdrawal->preview($observation->id)['fingerprint'], 'test-operator', 'Withdraw this first observation before a separate source refresh is reviewed.');
+    expect(fn () => (new GuardedCanaryV2)->apply($records, $baseline, str_repeat('b', 64)))->toThrow(DomainException::class, 'previously withdrawn')
+        ->and(Spot::count())->toBe(1);
 });
