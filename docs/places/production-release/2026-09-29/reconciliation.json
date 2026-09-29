@@ -1,0 +1,253 @@
+{
+  "checked_at": "2026-09-29T20:21:21+00:00",
+  "scope": "Production read-only source-key reconciliation, no application eligibility qualification",
+  "transaction_read_only": "on",
+  "raw_rows_exported": false,
+  "user_tables_read": false,
+  "database_changed": false,
+  "input_records": 4643,
+  "input_package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+  "stored_records": 8798,
+  "legacy_flag_counts": [
+    {
+      "is_active": false,
+      "is_recommendable": false,
+      "records": 1356
+    },
+    {
+      "is_active": true,
+      "is_recommendable": false,
+      "records": 3123
+    },
+    {
+      "is_active": true,
+      "is_recommendable": true,
+      "records": 4319
+    }
+  ],
+  "source_counts": [
+    {
+      "source": "osm",
+      "source_group": "attraction",
+      "records": 99,
+      "legacy_flagged_eligible": 97
+    },
+    {
+      "source": "osm",
+      "source_group": "bbq",
+      "records": 6,
+      "legacy_flagged_eligible": 1
+    },
+    {
+      "source": "osm",
+      "source_group": "cafe",
+      "records": 308,
+      "legacy_flagged_eligible": 306
+    },
+    {
+      "source": "osm",
+      "source_group": "coworking",
+      "records": 11,
+      "legacy_flagged_eligible": 11
+    },
+    {
+      "source": "osm",
+      "source_group": "dog_park",
+      "records": 50,
+      "legacy_flagged_eligible": 24
+    },
+    {
+      "source": "osm",
+      "source_group": "gallery",
+      "records": 66,
+      "legacy_flagged_eligible": 65
+    },
+    {
+      "source": "osm",
+      "source_group": "library",
+      "records": 30,
+      "legacy_flagged_eligible": 30
+    },
+    {
+      "source": "osm",
+      "source_group": "museum",
+      "records": 50,
+      "legacy_flagged_eligible": 49
+    },
+    {
+      "source": "osm",
+      "source_group": "park",
+      "records": 117,
+      "legacy_flagged_eligible": 117
+    },
+    {
+      "source": "osm",
+      "source_group": "picnic",
+      "records": 218,
+      "legacy_flagged_eligible": 1
+    },
+    {
+      "source": "osm",
+      "source_group": "pitch",
+      "records": 1525,
+      "legacy_flagged_eligible": 26
+    },
+    {
+      "source": "osm",
+      "source_group": "playground",
+      "records": 1553,
+      "legacy_flagged_eligible": 148
+    },
+    {
+      "source": "osm",
+      "source_group": "sports_centre",
+      "records": 47,
+      "legacy_flagged_eligible": 47
+    },
+    {
+      "source": "osm",
+      "source_group": "swimming",
+      "records": 9,
+      "legacy_flagged_eligible": 9
+    },
+    {
+      "source": "osm",
+      "source_group": "viewpoint",
+      "records": 19,
+      "legacy_flagged_eligible": 19
+    },
+    {
+      "source": "osm",
+      "source_group": "zoo",
+      "records": 10,
+      "legacy_flagged_eligible": 10
+    },
+    {
+      "source": null,
+      "source_group": null,
+      "records": 4680,
+      "legacy_flagged_eligible": 3359
+    }
+  ],
+  "duplicate_source_keys": [],
+  "legacy_quality_flags": {
+    "empty_name": 0,
+    "invalid_coordinates": 0,
+    "outside_loose_cologne_bbox": 0,
+    "parent_links": 1283,
+    "legacy_photo_url_present": 42
+  },
+  "media_asset_status": [
+    {
+      "provider": "koeln-de",
+      "rights_status": "pending",
+      "health_status": "active",
+      "assets": 177
+    },
+    {
+      "provider": "osm-image",
+      "rights_status": "pending",
+      "health_status": "pending",
+      "assets": 11
+    },
+    {
+      "provider": "stadt-koeln",
+      "rights_status": "pending",
+      "health_status": "active",
+      "assets": 134
+    },
+    {
+      "provider": "stadt-koeln",
+      "rights_status": "pending",
+      "health_status": "broken",
+      "assets": 2
+    },
+    {
+      "provider": "wikimedia-commons",
+      "rights_status": "approved",
+      "health_status": "active",
+      "assets": 159
+    },
+    {
+      "provider": "wikimedia-commons",
+      "rights_status": "approved",
+      "health_status": "broken",
+      "assets": 1
+    },
+    {
+      "provider": "wikimedia-commons",
+      "rights_status": "approved",
+      "health_status": "pending",
+      "assets": 2
+    },
+    {
+      "provider": "wikimedia-commons",
+      "rights_status": "pending",
+      "health_status": "active",
+      "assets": 7
+    },
+    {
+      "provider": "wikimedia-commons",
+      "rights_status": "pending",
+      "health_status": "broken",
+      "assets": 1
+    },
+    {
+      "provider": "wikimedia-commons",
+      "rights_status": "pending",
+      "health_status": "pending",
+      "assets": 5
+    }
+  ],
+  "attachment_types": [
+    {
+      "mediable_type": "App\\Models\\Event",
+      "attachments": 1234
+    },
+    {
+      "mediable_type": "App\\Models\\Spot",
+      "attachments": 225
+    },
+    {
+      "mediable_type": "App\\Models\\Venue",
+      "attachments": 56
+    }
+  ],
+  "legacy_media_attachment_counts": {
+    "stored_records_with_approved_active_attachment": 187,
+    "legacy_eligible_with_approved_active_attachment": 169
+  },
+  "reconciliation": {
+    "missing_source_keys": 3265,
+    "unique_existing_source_keys": 1378,
+    "ambiguous_source_keys": 0,
+    "staging_additions_already_exist": 9,
+    "staging_refreshes_missing": 1400,
+    "same_numeric_id_as_staging": 176,
+    "different_numeric_id_from_staging": 1193,
+    "name_changes": 536,
+    "category_changes": 2,
+    "coordinate_missing": 0,
+    "coordinate_move_over_10m": 127,
+    "coordinate_move_over_100m": 0,
+    "coordinate_move_over_1000m": 0,
+    "matched_inactive": 21,
+    "matched_not_recommendable": 538
+  },
+  "public_identity_conflicts": [],
+  "server_state_mapping_sha256": "c97d1d1acd1f18b732c576def23674b385b874cd3eeff17ca4e7256f06dec22f",
+  "unqualified_maximum_stored_count_if_all_missing_keys_were_distinct": 12063,
+  "limits": [
+    "Legacy eligibility/photo counts do not meet the new publication qualification.",
+    "Loose bounding-box count is diagnostic, not city containment acceptance.",
+    "No raw names, coordinates, contact fields, source payloads or numeric production mapping exported.",
+    "Missing source keys require cross-provider ambiguity review; they are not approved additions.",
+    "All mapping fingerprints must be rebuilt after schema deployment; no production import is qualified."
+  ],
+  "container_image": "sha256:e7502ea4c098ed031bbc3ffa46dd3f6c48fe189791b9257fd3e83c212626d4a4",
+  "verifier_sha256": "152dee00ad1940d29a88b710340ab7df9074b974e86f326793403bb5d2ffb11e",
+  "template_sha256": "49392534bfcab81293812db8e61785b0374ae1d221bc823b72a5d5ca1a917a42",
+  "public_input_sha256": "a96e12e70bc0050216afaa44b63e23e889f1fcee7480d91a47d43a3497b16f2c",
+  "production_import_qualified": false,
+  "private_mapping_retained": false
+}

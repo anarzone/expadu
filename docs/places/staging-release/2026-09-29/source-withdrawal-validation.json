@@ -1,0 +1,46 @@
+{
+  "scope": "Application recovery support; held staging updates not yet applied",
+  "affected_suite": {
+    "tests": 433,
+    "assertions": 1838,
+    "log": "/tmp/exp69-withdrawal-regressions.log",
+    "note": "Before cancelled-key replay fix"
+  },
+  "final_focused_suite": {
+    "tests": 84,
+    "assertions": 397,
+    "log": "/tmp/exp69-withdrawal-replay-green.log"
+  },
+  "red_green_verified": [
+    "initial source withdrawal",
+    "versioned batch journal",
+    "cancelled ingestion key replay"
+  ],
+  "review": "Cancelled-key issue fixed; application and versioned helper read-only review reports no remaining blocker",
+  "performance": {
+    "food_first": {
+      "samples": 30,
+      "p95_ms": 470.901667,
+      "median_ms": 359.207937,
+      "max_ms": 496.0445,
+      "payload_sha256": "96ddf5aeb2fece528752a5f4b1097e1afcff14ba1b2f4fc81e8c14fc6c221060"
+    },
+    "food_second": {
+      "samples": 30,
+      "p95_ms": 412.612459,
+      "median_ms": 342.557416,
+      "max_ms": 462.79475,
+      "payload_sha256": "d41e5ed9276edb8e830ae2540689c62425c08d1a91ef4f0ee737aa193765a0c4"
+    },
+    "detail": {
+      "samples": 30,
+      "p95_ms": 20.002875,
+      "median_ms": 17.308353500000003,
+      "max_ms": 20.01575,
+      "payload_sha256": "ca5f01bd234e6654557edb8e20c107226330f56465ab7e17466708e79c511aab"
+    }
+  },
+  "schema_changed": false,
+  "frozen_helpers_changed": false,
+  "production_changed": false
+}

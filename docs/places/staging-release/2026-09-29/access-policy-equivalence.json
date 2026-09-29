@@ -1,0 +1,24 @@
+{
+    "scope": "isolated local temporary-table differential test; no application policy replacement",
+    "original_policy_sha256": "6eb3d7612f8f5a3bef81913a557b62cb2a8192948704cf5be125be184060cbc5",
+    "candidate_sql_sha256": "e2c9a9391cfe860d3d942abc9c5b38dc1f7d4c20b9ec97fcc754b0f547f41022",
+    "temporary_fixture_rows": 2664,
+    "live_tables_written": false,
+    "application_files_changed": false,
+    "observation_rows": 2952,
+    "correction_rows": 3256,
+    "original": {
+        "elapsed_ms": 1121.645291,
+        "result_sha256": "d1a48e974702d39e44028268f2d3c483534316e176ab769febf7f3e09f119233"
+    },
+    "candidate": {
+        "elapsed_ms": 31.641125,
+        "result_sha256": "d1a48e974702d39e44028268f2d3c483534316e176ab769febf7f3e09f119233"
+    },
+    "identical_for_every_fixture": true,
+    "allowed": 956,
+    "denied": 1708,
+    "status": "passed",
+    "temporary_tables_removed": true,
+    "completed_at": "2026-09-29T12:12:11+00:00"
+}

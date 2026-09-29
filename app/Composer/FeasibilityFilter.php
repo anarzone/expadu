@@ -26,6 +26,45 @@ class FeasibilityFilter
         ));
     }
 
+    public function matchesBudget(Constraints $constraints, Candidate $candidate): bool
+    {
+        return match ($constraints->budget) {
+            'free' => $candidate->costTier === 'free',
+            'low' => in_array($candidate->costTier, ['free', 'low'], true),
+            default => true,
+        };
+    }
+
+    /** Fact constraints are applied before retrieval caps and again before scoring. */
+    public function matchesDiscovery(Constraints $constraints, Candidate $candidate): bool
+    {
+        if (! $this->matchesBudget($constraints, $candidate)) {
+            return false;
+        }
+        if ($constraints->radiusKm !== null
+            && ($candidate->distanceKmFromOrigin === null || $candidate->distanceKmFromOrigin > $constraints->radiusKm)) {
+            return false;
+        }
+        if ($constraints->activities !== []) {
+            $facts = $candidate->placeFacts;
+            if (array_intersect($constraints->activities, $facts['activities'] ?? []) === []
+                || ($facts['access']['value'] ?? 'unknown') !== 'public'
+                || ($facts['access']['status'] ?? 'unknown') !== 'known'
+                || ($facts['access']['conditional'] ?? null) !== null) {
+                return false;
+            }
+            foreach (['reservation', 'booking', 'reservation:conditional', 'booking:conditional', 'opening_hours:conditional'] as $key) {
+                $fact = $facts['practical'][$key] ?? [];
+                if (($fact['status'] ?? 'unknown') === 'conflicting'
+                    || (isset($fact['value']) && ! in_array(mb_strtolower($fact['value']), ['no', 'optional', 'recommended'], true))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     /**
      * Expand the requested categories to the fine values a candidate actually
      * carries. A request may name a coarse bucket ("culture") or a fine
@@ -55,10 +94,7 @@ class FeasibilityFilter
     private function fits(Constraints $constraints, Candidate $candidate, array $allowedCategories): bool
     {
         // Budget: a "free" plan excludes anything that costs money.
-        if ($constraints->budget === 'free' && $candidate->costTier !== 'free') {
-            return false;
-        }
-        if ($constraints->budget === 'low' && $candidate->costTier === 'normal') {
+        if (! $this->matchesDiscovery($constraints, $candidate)) {
             return false;
         }
 
@@ -74,11 +110,6 @@ class FeasibilityFilter
             return false;
         }
 
-        // Real opening hours say the venue is shut on the plan's day.
-        if (! $candidate->isFixedTime() && $candidate->closedToday) {
-            return false;
-        }
-
         // Fixed-time events must start inside the window with room to attend.
         if ($candidate->isFixedTime()) {
             return $candidate->fixedStart->greaterThanOrEqualTo($constraints->windowStart)
@@ -86,17 +117,6 @@ class FeasibilityFilter
                     ->lessThanOrEqualTo($constraints->windowEnd);
         }
 
-        // Venue must be open for at least its typical duration inside the window.
-        $visitStart = $constraints->windowStart;
-        if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($visitStart)) {
-            $visitStart = $candidate->opensAt;
-        }
-
-        $visitEnd = $constraints->windowEnd;
-        if ($candidate->closesAt !== null && $candidate->closesAt->lessThan($visitEnd)) {
-            $visitEnd = $candidate->closesAt;
-        }
-
-        return $visitStart->diffInMinutes($visitEnd, false) >= $candidate->typicalDurationMin;
+        return $candidate->nextVisitStart($constraints->windowStart, $constraints->windowEnd) !== null;
     }
 }

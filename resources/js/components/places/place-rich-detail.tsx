@@ -60,6 +60,27 @@ function modeLabel(place: Place): string {
     return 'Walk';
 }
 
+function accessLabel(place: Place): string {
+    const access = place.place_facts.access;
+
+    if (access.status === 'conflicting') {
+        return 'Access information needs review';
+    }
+
+    if (access.value === 'unknown' && access.conditional) {
+        return `Conditional — ${access.conditional}`;
+    }
+
+    return {
+        public: 'Public access',
+        private: 'Private access',
+        customers: 'Customers only',
+        members: 'Members only',
+        permit: 'Permit required',
+        unknown: 'Access not verified',
+    }[access.value];
+}
+
 function ModeIcon({ place }: { place: Place }) {
     const Icon =
         place.distance_mode === 'bike'
@@ -159,8 +180,8 @@ export function PlaceRichDetail({
         onNavigate({
             name: place.name,
             emoji: place.emoji ?? undefined,
-            lat: place.lat,
-            lng: place.lng,
+            lat: place.routing_lat,
+            lng: place.routing_lng,
         });
 
     function openNearby(nearby: NearbyPlace) {
@@ -180,7 +201,7 @@ export function PlaceRichDetail({
 
     const price =
         place.price_text?.toLowerCase() === 'free'
-            ? 'Free public access'
+            ? 'Free entry'
             : place.price_text;
     const routeEstimate =
         place.distance_min != null
@@ -189,6 +210,7 @@ export function PlaceRichDetail({
               ? `${place.distance_km.toFixed(1)} km from your start`
               : 'Live route calculated when you continue';
     const usefulFacts = [
+        { label: 'Access', value: accessLabel(place) },
         place.opening_hours_text
             ? { label: 'Opening', value: place.opening_hours_text }
             : null,
@@ -206,12 +228,9 @@ export function PlaceRichDetail({
         )
         .slice(0, 6);
     const description =
+        place.place_facts.description.value ??
         place.tip ??
-        [
-            `A ${place.fine_label?.toLowerCase() ?? place.category.replaceAll('_', ' ')} in`,
-            place.veedel ?? 'Cologne',
-            'with the practical details Expadu currently has for planning a visit.',
-        ].join(' ');
+        'We are still verifying a useful description for this place.';
 
     const main = (
         <div>

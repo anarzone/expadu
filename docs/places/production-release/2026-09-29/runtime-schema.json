@@ -1,0 +1,427 @@
+{
+  "checked_at": "2026-09-29T20:18:11+00:00",
+  "environment": "production",
+  "database": "expadu",
+  "app_url": "https://app.expadu.com",
+  "transaction_read_only": "on",
+  "raw_rows_exported": false,
+  "user_tables_read": false,
+  "tables": {
+    "spots": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "name",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "category",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "description",
+          "data_type": "text"
+        },
+        {
+          "column_name": "address",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "wifi_speed",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "noise_level",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "time_limit_mins",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "opening_hours",
+          "data_type": "json"
+        },
+        {
+          "column_name": "rating",
+          "data_type": "numeric"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp without time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp without time zone"
+        },
+        {
+          "column_name": "location",
+          "data_type": "USER-DEFINED"
+        },
+        {
+          "column_name": "lat",
+          "data_type": "numeric"
+        },
+        {
+          "column_name": "lng",
+          "data_type": "numeric"
+        },
+        {
+          "column_name": "cuisine",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "price_range",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "tags",
+          "data_type": "json"
+        },
+        {
+          "column_name": "source",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "source_id",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "phone",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "website",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "is_verified",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "veedel",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "tip",
+          "data_type": "text"
+        },
+        {
+          "column_name": "photo_url",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "park_name",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "photo_attribution",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "source_group",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "last_seen_at",
+          "data_type": "timestamp without time zone"
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "is_recommendable",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "parent_spot_id",
+          "data_type": "bigint"
+        }
+      ],
+      "count": 8798
+    },
+    "place_fact_observations": {
+      "columns": [],
+      "count": null
+    },
+    "place_fact_corrections": {
+      "columns": [],
+      "count": null
+    },
+    "place_activity_reviews": {
+      "columns": [],
+      "count": null
+    },
+    "place_components": {
+      "columns": [],
+      "count": null
+    },
+    "place_identities": {
+      "columns": [],
+      "count": null
+    },
+    "place_identity_operations": {
+      "columns": [],
+      "count": null
+    },
+    "place_catalogue_operations": {
+      "columns": [],
+      "count": null
+    },
+    "media_assets": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "type",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "provider",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "provider_asset_id",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "source_key",
+          "data_type": "character"
+        },
+        {
+          "column_name": "remote_url",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "source_page_url",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "author",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "attribution",
+          "data_type": "text"
+        },
+        {
+          "column_name": "license_code",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "license_url",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "mime_type",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "width",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "height",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "checksum",
+          "data_type": "character"
+        },
+        {
+          "column_name": "rights_status",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "health_status",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "failure_count",
+          "data_type": "smallint"
+        },
+        {
+          "column_name": "last_error",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "last_seen_at",
+          "data_type": "timestamp without time zone"
+        },
+        {
+          "column_name": "last_verified_at",
+          "data_type": "timestamp without time zone"
+        },
+        {
+          "column_name": "metadata",
+          "data_type": "jsonb"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp without time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp without time zone"
+        }
+      ],
+      "count": 499
+    },
+    "media_attachments": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "media_asset_id",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "mediable_type",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "mediable_id",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "role",
+          "data_type": "character varying"
+        },
+        {
+          "column_name": "priority",
+          "data_type": "smallint"
+        },
+        {
+          "column_name": "is_primary",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "is_manually_locked",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp without time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp without time zone"
+        }
+      ],
+      "count": 1515
+    },
+    "media_providers": {
+      "columns": [],
+      "count": null
+    }
+  },
+  "application_files": {
+    "app/Models/Spot.php": "4ed79ba192ee87c35ffee966ce5b4c9e6af62abdbdf048076678bdb5de80412a",
+    "app/Composer/CandidateRepository.php": "5dcde6a1c4ba69659905d37b4b6f189ee60859ba32affd3a5b39945f0158fa1c",
+    "app/Places/PlaceFacts.php": null,
+    "app/Places/PlaceCapabilities.php": null,
+    "app/Places/WithdrawPlaceObservation.php": null,
+    "app/Http/Controllers/Api/PlacesController.php": "2f3d4ff701b812f9b46ee0cb0cce66876343acf23e70ce39f92054a96dd1c27d",
+    "app/Http/Resources/PlaceResource.php": "88c6bd3938525f97f7571f6f315cce61e203e5cfc6bf967d11856c14a36ebe2c",
+    "config/media.php": "b2b1fc22e1db71b7d3fd6c03fa65d459a225f6606765481e3e960a7d45de1c9e"
+  },
+  "migrations": [
+    "0001_01_01_000000_create_users_table",
+    "0001_01_01_000001_create_cache_table",
+    "0001_01_01_000002_create_jobs_table",
+    "2025_08_14_170933_add_two_factor_columns_to_users_table",
+    "2026_03_25_000001_add_onboarding_fields_to_users_table",
+    "2026_03_25_000002_create_user_places_table",
+    "2026_03_25_000003_create_tasks_table",
+    "2026_03_25_000004_create_user_tasks_table",
+    "2026_03_25_000005_create_appointments_table",
+    "2026_03_25_000006_create_spots_table",
+    "2026_03_25_000007_create_spot_checkins_table",
+    "2026_03_25_000008_create_events_table",
+    "2026_03_25_000009_create_event_attendees_table",
+    "2026_03_25_000010_create_language_partners_table",
+    "2026_03_25_000011_create_conversations_table",
+    "2026_03_25_000012_create_messages_table",
+    "2026_03_25_000013_create_alerts_table",
+    "2026_03_25_000014_create_user_events_table",
+    "2026_03_25_100001_create_routines_table",
+    "2026_03_26_224320_create_gtfs_tables",
+    "2026_03_26_225604_create_slot_monitors_table",
+    "2026_03_26_225908_create_push_subscriptions_table",
+    "2026_03_27_175138_add_lat_lng_to_spots_table",
+    "2026_03_28_100125_add_arrive_by_to_user_places_table",
+    "2026_03_28_111856_create_city_news_table",
+    "2026_03_28_130057_add_disruption_fields_to_city_news_table",
+    "2026_03_28_130058_add_enrichment_fields_to_events_table",
+    "2026_03_28_130058_create_services_table",
+    "2026_03_28_180327_create_gtfs_calendar_table",
+    "2026_03_28_182152_create_gtfs_calendar_dates_table",
+    "2026_03_28_200405_add_category_to_user_places_table",
+    "2026_03_29_122525_add_active_days_to_user_places_table",
+    "2026_04_04_182959_create_notification_preferences_table",
+    "2026_04_04_190113_create_notifications_table",
+    "2026_04_05_001355_create_reviews_table",
+    "2026_04_05_111429_add_subtype_to_alerts_table",
+    "2026_04_06_141646_create_user_settings_table",
+    "2026_04_07_165450_add_price_text_to_events_table",
+    "2026_04_12_142642_add_food_fields_to_spots_table",
+    "2026_04_12_164444_add_is_admin_to_users_table",
+    "2026_04_12_171235_add_is_verified_to_spots_table",
+    "2026_04_18_120453_add_social_login_to_users_table",
+    "2026_05_05_133754_create_user_route_caches_table",
+    "2026_05_05_141352_add_embedding_columns_to_content_tables",
+    "2026_05_20_193446_add_perf_indexes_and_backfill_spot_location",
+    "2026_05_20_231256_bureaucracy_framing_b_extensions",
+    "2026_06_11_002656_drop_v1_feature_tables",
+    "2026_06_11_010027_drop_embedding_columns",
+    "2026_06_11_010615_drop_user_route_caches_table",
+    "2026_06_11_011930_drop_appointments_table",
+    "2026_06_11_013413_add_profile_fields_to_users_table",
+    "2026_06_11_013432_add_v2_fields_to_tasks_table",
+    "2026_06_11_082513_add_veedel_to_spots_and_create_veedels_table",
+    "2026_06_11_083829_add_v2_fields_to_events_table",
+    "2026_06_11_164231_add_places_content_fields_to_spots",
+    "2026_06_11_232858_create_park_areas_and_spot_park_name",
+    "2026_06_12_002253_add_photo_attribution_to_spots",
+    "2026_06_12_004507_extend_events_for_composer_and_create_venues",
+    "2026_06_12_155620_add_bureaucracy_v2_columns",
+    "2026_06_12_220436_add_attribute_engine_columns",
+    "2026_06_12_225142_add_trigger_event_to_tasks",
+    "2026_06_12_232626_add_appointment_at_to_user_tasks",
+    "2026_06_13_010733_drop_slot_monitors_table",
+    "2026_06_14_214844_add_interests_to_users_table",
+    "2026_06_15_234459_create_spot_feedback_table",
+    "2026_06_17_223412_add_has_deutschlandticket_to_users_table",
+    "2026_06_22_101139_add_transport_mode_to_users_table",
+    "2026_06_30_213102_add_classification_to_alerts_table",
+    "2026_07_02_004837_create_journey_recents_table",
+    "2026_07_03_003649_add_group_key_to_alerts",
+    "2026_07_03_185800_create_active_trips_table",
+    "2026_07_08_104444_backfill_transit_deep_links_to_timetable",
+    "2026_07_08_162650_backfill_existing_users_as_verified",
+    "2026_07_12_002918_add_import_integrity_fields_to_spots_table",
+    "2026_07_12_005712_add_classification_input_hash_to_events_table",
+    "2026_07_12_011509_quarantine_unprovenanced_legacy_spots",
+    "2026_07_12_212246_restore_legacy_spots_when_no_authoritative_catalogue_exists",
+    "2026_07_13_010507_create_waitlist_signups_table",
+    "2026_07_14_232344_create_media_assets_table",
+    "2026_07_14_232345_create_media_attachments_table",
+    "2026_07_28_133706_add_destination_parenting_to_spots_and_park_areas",
+    "2026_08_03_210000_create_bureaucracy_cases_table",
+    "2026_08_03_210001_create_bureaucracy_case_facts_table",
+    "2026_08_03_210002_create_bureaucracy_fact_conflicts_table",
+    "2026_08_03_210003_create_bureaucracy_case_questions_table",
+    "2026_08_03_210004_create_bureaucracy_plan_snapshots_table",
+    "2026_08_04_001824_add_verification_metadata_to_tasks_table",
+    "2026_08_04_124618_add_encrypted_value_to_bureaucracy_case_facts_table",
+    "2026_08_04_162859_create_bureaucracy_case_messages_table"
+  ]
+}

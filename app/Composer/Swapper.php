@@ -55,6 +55,12 @@ class Swapper
             fn (PlanSlot $slot, int $i) => $i !== $slotIndex,
             ARRAY_FILTER_USE_BOTH,
         ));
+        $occupiedGroups = [];
+        foreach ($neighbors as $slot) {
+            if ($slot->candidate->destinationGroupId !== null) {
+                $occupiedGroups[$slot->candidate->destinationGroupId] = true;
+            }
+        }
 
         $best = null;
         $bestScore = -INF;
@@ -63,11 +69,14 @@ class Swapper
             if ($candidate->isFixedTime() || in_array($candidate->id, $excluded, true)) {
                 continue;
             }
+            if ($candidate->destinationGroupId !== null && isset($occupiedGroups[$candidate->destinationGroupId])) {
+                continue;
+            }
 
             $travelMin = $this->travel->minutesBetween($cursorLat, $cursorLng, $candidate->lat, $candidate->lng);
-            $start = $cursor->addMinutes($travelMin);
-            if ($candidate->opensAt !== null && $candidate->opensAt->greaterThan($start)) {
-                $start = $candidate->opensAt;
+            $start = $candidate->nextVisitStart($cursor->addMinutes($travelMin), $gapEnd);
+            if ($start === null) {
+                continue;
             }
             $end = $start->addMinutes($candidate->typicalDurationMin);
 

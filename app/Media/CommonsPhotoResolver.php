@@ -2,6 +2,7 @@
 
 namespace App\Media;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -32,7 +33,7 @@ class CommonsPhotoResolver
     public function geoSearchFile(float $lat, float $lng, string $name, ?callable $onError = null, array $extraStopWords = []): ?string
     {
         try {
-            $pages = Http::withUserAgent(self::USER_AGENT)->timeout(20)
+            $response = Http::withUserAgent(self::USER_AGENT)->timeout(20)
                 ->get('https://commons.wikimedia.org/w/api.php', [
                     'action' => 'query',
                     'generator' => 'geosearch',
@@ -43,8 +44,15 @@ class CommonsPhotoResolver
                     'prop' => 'imageinfo',
                     'iiprop' => 'mediatype',
                     'format' => 'json',
-                ])
-                ->json('query.pages', []);
+                ]);
+            if (! $response->successful()) {
+                if ($onError !== null) {
+                    $onError(self::httpError($response));
+                }
+
+                return null;
+            }
+            $pages = $response->json('query.pages', []);
         } catch (\Exception $e) {
             if ($onError !== null) {
                 $onError($e->getMessage());
@@ -155,7 +163,7 @@ class CommonsPhotoResolver
         $meta = [];
         foreach (array_chunk($files, self::BATCH) as $chunk) {
             try {
-                $pages = Http::withUserAgent(self::USER_AGENT)->timeout(30)
+                $response = Http::withUserAgent(self::USER_AGENT)->timeout(30)
                     ->get('https://commons.wikimedia.org/w/api.php', [
                         'action' => 'query',
                         'titles' => implode('|', array_map(fn (string $f) => "File:{$f}", $chunk)),
@@ -163,8 +171,15 @@ class CommonsPhotoResolver
                         'iiprop' => 'url|mime|size|sha1|extmetadata',
                         'iiurlwidth' => 1200,
                         'format' => 'json',
-                    ])
-                    ->json('query.pages', []);
+                    ]);
+                if (! $response->successful()) {
+                    if ($onError !== null) {
+                        $onError('commons metadata batch failed: '.self::httpError($response));
+                    }
+
+                    continue;
+                }
+                $pages = $response->json('query.pages', []);
             } catch (\Exception $e) {
                 if ($onError !== null) {
                     $onError("commons metadata batch failed: {$e->getMessage()}");
@@ -198,15 +213,19 @@ class CommonsPhotoResolver
                 $mimeType = is_string($imageInfo['mime'] ?? null) ? $imageInfo['mime'] : null;
                 $width = filter_var($imageInfo['thumbwidth'] ?? $imageInfo['width'] ?? null, FILTER_VALIDATE_INT) ?: null;
                 $height = filter_var($imageInfo['thumbheight'] ?? $imageInfo['height'] ?? null, FILTER_VALIDATE_INT) ?: null;
-                $healthStatus = MediaAssetValidator::supportsMimeType($mimeType)
-                    && MediaAssetValidator::isAllowedProviderUrl('wikimedia-commons', $remoteUrl)
-                    && $width !== null && $width >= (int) config('media.validation.min_width')
-                    && $height !== null && $height >= (int) config('media.validation.min_height')
-                    ? 'active'
-                    : 'pending';
+                $healthStatus = 'pending';
 
+                $provenance = [
+                    'artist' => (string) ($ext['Artist']['value'] ?? ''),
+                    'credit' => (string) ($ext['Credit']['value'] ?? ''),
+                    'permission' => (string) ($ext['Permission']['value'] ?? ''),
+                ];
+                $excludedOrigin = app(MediaSourcePolicy::class)->excludes(
+                    'wikimedia-commons', $artist, $sourcePageUrl, $remoteUrl,
+                    ['source_provenance' => $provenance],
+                );
                 $isPublicDomain = in_array(mb_strtoupper($licence), ['PUBLIC DOMAIN', 'PD'], true);
-                $rightsStatus = $this->isOpenLicense($licence)
+                $rightsStatus = ! $excludedOrigin && $this->isOpenLicense($licence)
                     && $sourcePageUrl !== ''
                     && ($isPublicDomain || $licenceUrl !== null)
                     && (! str_starts_with(mb_strtoupper($licence), 'CC BY') || $artist !== '')
@@ -232,8 +251,10 @@ class CommonsPhotoResolver
                     'mime_type' => $mimeType,
                     'width' => $width,
                     'height' => $height,
-                    'checksum' => is_string($imageInfo['sha1'] ?? null) ? $imageInfo['sha1'] : null,
+                    'checksum' => null,
+                    'commons_original_sha1' => is_string($imageInfo['sha1'] ?? null) ? $imageInfo['sha1'] : null,
                     'rights_status' => $rightsStatus,
+                    'source_provenance' => $provenance,
                     'health_status' => $healthStatus,
                 ];
             }
@@ -254,13 +275,25 @@ class CommonsPhotoResolver
             });
     }
 
+    public static function httpError(Response $response): string
+    {
+        $retryAfter = trim((string) $response->header('Retry-After'));
+
+        return 'http_status_'.$response->status().($retryAfter === '' ? '' : ';retry_after='.$retryAfter);
+    }
+
     /**
      * Build the standard Commons media candidate from resolved metadata.
      *
      * @param  array{remote_url: string, source_page_url: string, author: ?string, attribution: string, license_code: ?string, license_url: ?string, mime_type: ?string, width: ?int, height: ?int, checksum: ?string, rights_status: string, health_status: string}  $metadata
      */
-    public function candidate(string $canonicalFile, array $metadata): MediaCandidate
-    {
+    public function candidate(
+        string $canonicalFile,
+        array $metadata,
+        string $matchStatus = 'pending',
+        ?string $matchMethod = null,
+        ?array $matchEvidence = null,
+    ): MediaCandidate {
         return new MediaCandidate(
             provider: 'wikimedia-commons',
             remoteUrl: $metadata['remote_url'],
@@ -279,9 +312,12 @@ class CommonsPhotoResolver
             width: $metadata['width'],
             height: $metadata['height'],
             checksum: $metadata['checksum'],
-            metadata: ['commons_file' => $canonicalFile],
-            shouldValidate: $metadata['health_status'] !== 'active',
+            metadata: ['commons_file' => $canonicalFile, 'commons_original_sha1' => $metadata['commons_original_sha1'] ?? null, 'source_provenance' => $metadata['source_provenance'] ?? []],
+            shouldValidate: true,
             authoritativeEvidence: true,
+            matchStatus: $matchStatus,
+            matchMethod: $matchMethod,
+            matchEvidence: $matchEvidence,
         );
     }
 }

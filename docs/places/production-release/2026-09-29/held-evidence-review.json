@@ -1,0 +1,37 @@
+{
+  "scope": "All 559 descriptive-name package records; source facts only, no new qualifications or claims",
+  "records": 559,
+  "categories": {
+    "table_tennis": 71,
+    "picnic": 53,
+    "basketball": 10,
+    "playground": 149,
+    "boules": 3,
+    "pitch": 17,
+    "tennis": 256
+  },
+  "sources": {
+    "osm": 559
+  },
+  "access_raw": {
+    "None": 469,
+    "yes": 90
+  },
+  "fee_raw": {
+    "None": 559
+  },
+  "sports": {
+    "table_tennis": 71,
+    "None": 199,
+    "chess": 2,
+    "basketball": 10,
+    "boules": 3,
+    "soccer": 10,
+    "nine_mens_morris;mensch_aergere_dich_nicht": 1,
+    "tennis": 256,
+    "multi": 6,
+    "soccer;american_football": 1
+  },
+  "source_reports_free_and_public": [],
+  "qualification_applied": false
+}

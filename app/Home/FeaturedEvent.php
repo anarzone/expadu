@@ -32,7 +32,7 @@ class FeaturedEvent
             // last so a photographed event wins — it makes the richest card.
             ->sortBy(fn (array $o) => $o['starts_at']->getTimestamp())
             ->sortBy(fn (array $o) => ($o['event']->summary_en || $o['event']->description_en) ? 0 : 1)
-            ->sortBy(fn (array $o) => $o['event']->venue?->place?->photo_url ? 0 : 1)
+            ->sortBy(fn (array $o) => $this->presenter->photo($o['event'])['url'] ? 0 : 1)
             ->first();
 
         return $best

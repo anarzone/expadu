@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-09-29T20:37:38.206364+00:00",
+  "scope": "Production qualification cohorts, not an approved import manifest",
+  "total": 4643,
+  "identity_ambiguity_records": 749,
+  "identity_ambiguity_named": 749,
+  "identity_ambiguity_descriptive": 0,
+  "no_detected_identity_ambiguity_named": 3335,
+  "no_detected_identity_ambiguity_descriptive": 559,
+  "all_need_post_schema_reconciliation": true,
+  "production_import_qualified": false
+}

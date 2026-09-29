@@ -1,0 +1,39 @@
+{
+  "environment": "disposable local staging restore",
+  "production_or_staging_data_modified": false,
+  "query_before_ms": 17644.775,
+  "query_after_ms": 1125.161,
+  "identical_result_count": 57,
+  "grouping": {
+    "reviewed_components": 10,
+    "destinations": 7,
+    "requests_per_list_snapshot": 44,
+    "applied_general_component_ids": [],
+    "explicit_activity_ids": [
+      4944,
+      5034,
+      5035,
+      5073,
+      5159,
+      6033,
+      6034,
+      6076,
+      7982,
+      8011
+    ],
+    "outer_rollback": {
+      "all_spot_rows_restored_exactly": true,
+      "audit_rows_restored_exactly": true,
+      "postgres_sequence_gaps_possible": true
+    },
+    "committed": false,
+    "evidence_sha256": "d926f5ffa5b65a7c161fc4157f81e8864fe4ee0836573fc175b47b4511a4d9dc"
+  },
+  "source_crosswalk": {
+    "current_staging_rows": 8472,
+    "source_null_rows": 4356,
+    "osm_rows": 4116,
+    "research_photo_groups_matching_single_current_row": 109,
+    "notes": "Research candidates; not validated publication coverage. No citywide ready-place claim."
+  }
+}

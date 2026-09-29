@@ -1,0 +1,90 @@
+{
+  "checked_at": "2026-09-29T10:55:49+00:00",
+  "environment": "staging",
+  "mode": "transaction_rehearsal_only",
+  "input_checksums": {
+    "records.jsonl": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+    "manifest.json": "fb9a648002cc6130d38b9f658da6558cff609caa5b511bdcdf996a58566e1ce9",
+    "apply-pack.php": "cd2fc73545d2255d64a6ac80f590df5fb54c9db458022bfc36444af47e8b5a66",
+    "fingerprints.json": "e63adc8463317a11a74b46653e1e1d63513fd79eb38e089ac02713edb8e89f2f"
+  },
+  "verification_code_sha256": "9a85863dc124cba94e7b4f6e646b013ce66f0a54b1e8560219424e0f9845945d",
+  "raw_records_exported": false,
+  "production_changed": false,
+  "catalogue_commit_attempted": false,
+  "existing_user_accounts_or_plans_loaded": false,
+  "feedback_lookup_scope": "non-persisted synthetic user ID only",
+  "synthetic_user_persisted": false,
+  "activity_qualifications_applied": 0,
+  "preflight_records": 4643,
+  "general_visibility_losses": [],
+  "activity_visibility_losses": [],
+  "prepared_records_verified": 4643,
+  "created_in_transaction": 1874,
+  "refreshed_in_transaction": 2769,
+  "composer_identities": 4084,
+  "not_composer_eligible": 559,
+  "explicit_free_candidates": 46,
+  "verified_free_public_football": 0,
+  "places_api_totals": {
+    "food_drink": 3456,
+    "culture": 243,
+    "park": 264,
+    "pitch": 366,
+    "court": 666,
+    "playground": 1198,
+    "dog_park": 48,
+    "swimming": 8
+  },
+  "detail_api_samples": 28,
+  "checks": {
+    "all_existing_ids_preserved": true,
+    "identity_grouping_media_unchanged": true,
+    "unrelated_places_unchanged": true,
+    "source_history_preserved": true,
+    "shared_facts_equal": true,
+    "synthetic_saved_references_preserved": true,
+    "replay_exact": true,
+    "rollback_exact": true
+  },
+  "before_table_digests": {
+    "spots": {
+      "count": 9928,
+      "sha256": "443e38d902175eca69f44a86b041be0e8ba45b8fe1e17fe40c86869ef40840e4"
+    },
+    "veedels": {
+      "count": 86,
+      "sha256": "18e43715a76634f449795efa80e37fda3f7de39582b9b122239182886ec30caf"
+    },
+    "place_fact_observations": {
+      "count": 4085,
+      "sha256": "e68858e199e7ee371d5f7a80533ab85591f346061ed9b1059924ebdbbe1db87c"
+    },
+    "place_fact_corrections": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_fact_revisions": {
+      "count": 1,
+      "sha256": "e6f10061ed7146a598e27af2dbc35e5b80627a4ac6744118d4553fac9e0228f9"
+    },
+    "place_destination_reviews": {
+      "count": 12,
+      "sha256": "2826f25ab45f6494f9fc7d73568b0e038b8ecc9311e726b5ab4cff45182103cd"
+    },
+    "place_reconciliations": {
+      "count": 798,
+      "sha256": "701772695c48ec0a7e2f791ca9112e628ea24dce2729ce1fc82b15e65a6b5d18"
+    },
+    "media_assets": {
+      "count": 588,
+      "sha256": "08c3cbd6664018416e82d9cea64adedd6a5680fac1b2703e08cc9293c97f55fe"
+    },
+    "media_attachments": {
+      "count": 1680,
+      "sha256": "3af8fc5c81a3ce5c1eed92603b85071473b9cfade4fbdd56460e66ffad438e51"
+    }
+  },
+  "status": "passed",
+  "sequence_note": "PostgreSQL sequence allocations are not transactional; no sequence is reset. Table contents are restored exactly."
+}

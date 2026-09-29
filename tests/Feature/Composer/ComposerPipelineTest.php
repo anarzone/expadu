@@ -4,6 +4,7 @@ use App\Composer\Archetype;
 use App\Composer\Candidate;
 use App\Composer\Constraints;
 use App\Composer\FeasibilityFilter;
+use App\Composer\Plan;
 use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
@@ -284,6 +285,69 @@ test('two same-named spots far apart are both eligible (distinct places, not a s
 
     expect(array_map(fn ($s) => $s->candidate->id, $plan->slots))
         ->toEqualCanonicalizing(['spot:near', 'spot:south']);
+});
+
+test('automatic filling selects one activity per destination group', function (array $roles) {
+    $candidates = [
+        makeCandidate(['id' => 'spot:park', 'name' => 'Destination park', 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:court', 'name' => 'Tennis courts', 'category' => 'tennis', 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:playground', 'name' => 'Adventure playground', 'category' => 'playground', 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:museum', 'category' => 'museum', 'outdoor' => false, 'destinationGroupId' => 'spot:museum']),
+    ];
+
+    $plan = filler()->fill(defaultConstraints(), $candidates, neutralContext(), 50.9442, 6.9329, $roles);
+
+    expect(collect($plan->slots)->pluck('candidate.destinationGroupId')->all())
+        ->toEqualCanonicalizing(['spot:park', 'spot:museum']);
+})->with([
+    'automatic picks' => [[new Role([], 6)]],
+    'relaxed fallback' => [[new Role(['bakery'], 6)]],
+]);
+
+test('a pinned destination activity blocks automatic parent and sibling picks', function (string $pinnedId) {
+    $candidates = [
+        makeCandidate(['id' => 'spot:park', 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:court', 'category' => 'tennis', 'lat' => 50.9451, 'lng' => 6.9338, 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:playground', 'category' => 'playground', 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:independent', 'category' => 'museum', 'destinationGroupId' => 'spot:independent']),
+    ];
+    $context = new ScoringContext(rainExpected: false, preferredAreas: [], pinnedIds: [$pinnedId]);
+
+    $plan = filler()->fill(defaultConstraints(), $candidates, $context, 50.9442, 6.9329, [new Role([], 6)]);
+
+    expect(collect($plan->slots)->pluck('candidate.id')->all())->toEqualCanonicalizing([$pinnedId, 'spot:independent'])
+        ->and($plan->slots[0]->candidate)->toBe(collect($candidates)->firstWhere('id', $pinnedId));
+})->with(['parent' => 'spot:park', 'child' => 'spot:court']);
+
+test('feasible explicit picks in one destination group remain separate visits', function (array $pinnedIds) {
+    $candidates = [
+        makeCandidate(['id' => 'spot:park', 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:court', 'category' => 'tennis', 'destinationGroupId' => 'spot:park']),
+        makeCandidate(['id' => 'spot:playground', 'category' => 'playground', 'destinationGroupId' => 'spot:park']),
+    ];
+    $context = new ScoringContext(rainExpected: false, preferredAreas: [], pinnedIds: $pinnedIds);
+
+    $plan = filler()->fill(defaultConstraints(), $candidates, $context, 50.9442, 6.9329, [new Role([], 6)]);
+
+    expect(collect($plan->slots)->pluck('candidate.id')->all())->toBe($pinnedIds)
+        ->and($plan->slots[1]->startAt->greaterThanOrEqualTo($plan->slots[0]->endAt))->toBeTrue();
+})->with([
+    'parent and child' => [['spot:park', 'spot:court']],
+    'siblings' => [['spot:court', 'spot:playground']],
+]);
+
+test('null destination groups keep events appointments and independent candidates placeable', function () {
+    $candidates = [
+        makeCandidate(['id' => 'appointment:1', 'type' => 'appointment', 'fixedStart' => saturday('16:00'), 'typicalDurationMin' => 30]),
+        makeCandidate(['id' => 'event:1', 'type' => 'event', 'fixedStart' => saturday('18:00'), 'typicalDurationMin' => 30]),
+        makeCandidate(['id' => 'spot:1', 'typicalDurationMin' => 30]),
+        makeCandidate(['id' => 'spot:2', 'typicalDurationMin' => 30]),
+    ];
+
+    $plan = filler()->fill(defaultConstraints(), $candidates, neutralContext(), 50.9442, 6.9329, [new Role([], 6)]);
+
+    expect(collect($plan->slots)->pluck('candidate.id')->all())
+        ->toEqualCanonicalizing(['appointment:1', 'event:1', 'spot:1', 'spot:2']);
 });
 
 // ── Repeat cap + anchor-around roles ───────────────────────────────────
@@ -649,6 +713,50 @@ test('a pinned pick is placed even when a fixed event would fill the window', fu
 });
 
 // ── Swapper ────────────────────────────────────────────────────────────
+
+test('swap excludes destination groups occupied by any other slot', function (int $targetIndex) {
+    $park = makeCandidate(['id' => 'spot:park', 'destinationGroupId' => 'spot:park']);
+    $other = makeCandidate(['id' => 'spot:other', 'destinationGroupId' => 'spot:other']);
+    $placed = $targetIndex === 0 ? [$other, $park] : [$park, $other];
+    $plan = new Plan(defaultConstraints(), [
+        new PlanSlot($placed[0], saturday('14:01'), saturday('15:16'), 1),
+        new PlanSlot($placed[1], saturday('16:00'), saturday('17:15'), 1),
+    ]);
+    $child = makeCandidate(['id' => 'spot:court', 'category' => 'tennis', 'destinationGroupId' => 'spot:park']);
+    $swapper = new Swapper(new PlanScorer(new TravelEstimator), new TravelEstimator);
+
+    expect($swapper->swap($plan, $targetIndex, [$child], neutralContext(), 50.9442, 6.9329))->toBeNull();
+
+    $alternative = makeCandidate(['id' => 'spot:alternative', 'destinationGroupId' => 'spot:alternative']);
+    $swapped = $swapper->swap($plan, $targetIndex, [$child, $alternative], neutralContext(), 50.9442, 6.9329);
+
+    expect($swapped->slots[$targetIndex]->candidate->id)->toBe('spot:alternative')
+        ->and($swapped->slots[1 - $targetIndex])->toBe($plan->slots[1 - $targetIndex]);
+})->with(['following slot' => 0, 'previous slot' => 1]);
+
+test('swap can replace its own destination with another activity when no other slot occupies it', function (?string $groupId) {
+    $original = makeCandidate(['id' => 'spot:park', 'destinationGroupId' => $groupId]);
+    $plan = new Plan(defaultConstraints(), [new PlanSlot($original, saturday('14:01'), saturday('15:16'), 1)]);
+    $child = makeCandidate(['id' => 'spot:court', 'category' => 'tennis', 'lat' => 50.9451, 'lng' => 6.9338, 'destinationGroupId' => $groupId]);
+    $swapper = new Swapper(new PlanScorer(new TravelEstimator), new TravelEstimator);
+
+    $swapped = $swapper->swap($plan, 0, [$child], neutralContext(), 50.9442, 6.9329);
+
+    expect($swapped->slots[0]->candidate)->toBe($child);
+})->with(['same destination' => 'spot:park', 'ungrouped' => null]);
+
+test('swapping a repeated explicit destination still respects its other occupied slot', function () {
+    $park = makeCandidate(['id' => 'spot:park', 'destinationGroupId' => 'spot:park']);
+    $court = makeCandidate(['id' => 'spot:court', 'destinationGroupId' => 'spot:park']);
+    $plan = new Plan(defaultConstraints(), [
+        new PlanSlot($park, saturday('14:01'), saturday('15:16'), 1),
+        new PlanSlot($court, saturday('16:00'), saturday('17:15'), 1),
+    ]);
+    $sibling = makeCandidate(['id' => 'spot:playground', 'destinationGroupId' => 'spot:park']);
+    $swapper = new Swapper(new PlanScorer(new TravelEstimator), new TravelEstimator);
+
+    expect($swapper->swap($plan, 0, [$sibling], neutralContext(), 50.9442, 6.9329))->toBeNull();
+});
 
 test('swap replaces only the target slot and freezes neighbors', function () {
     $travel = new TravelEstimator;

@@ -6,6 +6,8 @@ use App\Composer\FeasibilityFilter;
 use App\Enums\SpotCategory;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Places\RecordPlaceObservation;
+use App\Places\ReviewPlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -115,19 +117,70 @@ test('the pool is the nearest spots to the origin, not arbitrary citywide rows',
         ->and($pitchNames)->not->toContain('Far Pitch 12'); // the farthest fell outside the cap
 });
 
-test('public outdoor facilities count as free; paid venues do not', function () {
-    spotWithHours(['name' => 'Boule', 'category' => 'boules']);
-    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis']);
-    spotWithHours(['name' => 'Tennis', 'category' => 'tennis']);
+test('fee evidence determines Composer cost while missing fees remain unknown', function () {
+    spotWithHours(['name' => 'Boule', 'category' => 'boules', 'tags' => ['fee' => 'no']]);
+    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis', 'tags' => ['fee' => 'no']]);
+    spotWithHours(['name' => 'Tennis', 'category' => 'tennis', 'tags' => ['fee' => 'yes']]);
     spotWithHours(['name' => 'Picknick', 'category' => 'picnic']);
-    spotWithHours(['name' => 'Späti Bar', 'category' => 'bar']);
+    spotWithHours(['name' => 'Späti Bar', 'category' => 'bar', 'price_range' => '€€']);
 
     $c = app(CandidateRepository::class)->candidatesFor(mondayWindow());
 
-    foreach (['Boule', 'Tisch', 'Tennis', 'Picknick'] as $free) {
+    foreach (['Boule', 'Tisch'] as $free) {
         expect(collect($c)->firstWhere('name', $free)->costTier)->toBe('free');
     }
-    expect(collect($c)->firstWhere('name', 'Späti Bar')->costTier)->toBe('normal');
+    expect(collect($c)->firstWhere('name', 'Tennis')->costTier)->toBe('normal')
+        ->and(collect($c)->firstWhere('name', 'Picknick')->costTier)->toBe('unknown')
+        ->and(collect($c)->firstWhere('name', 'Späti Bar')->costTier)->toBe('normal');
+});
+
+test('Composer receives reviewed names routing entrances and evidence-backed facts', function () {
+    $spot = spotWithHours([
+        'name' => 'Source projection',
+        'category' => 'park',
+        'source' => 'osm',
+        'source_id' => 'way/992',
+        'description' => null,
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/992',
+        'source_url' => 'https://www.openstreetmap.org/way/992',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-composer-992',
+        'payload' => [
+            'name' => 'Source park name',
+            'location' => ['lat' => 50.94, 'lng' => 6.95, 'kind' => 'source_center', 'boundary_reference' => 'way/992'],
+            'access' => ['raw' => 'yes', 'conditional' => null],
+            'fee' => ['raw' => 'no'],
+            'hours' => ['raw' => 'Mo 09:00-18:00'],
+            'description' => 'A source-backed factual description.',
+            'negative_facts' => ['wheelchair' => 'no'],
+        ],
+    ]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = [
+        'name' => 'Friendly reviewed park',
+        'entrance_point' => ['lat' => 50.9404, 'lng' => 6.9505],
+    ];
+    $preview = $review->preview($spot->id, $changes);
+    $review->apply($spot->id, $changes, $preview['fingerprint'], 'https://official.example.test/park-992', 'reviewer@example.test');
+
+    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.94, 6.95))
+        ->firstWhere('id', "spot:{$spot->id}");
+
+    expect($candidate)->not->toBeNull()
+        ->and($candidate->name)->toBe('Friendly reviewed park')
+        ->and($candidate->lat)->toBe(50.9404)
+        ->and($candidate->lng)->toBe(6.9505)
+        ->and($candidate->costTier)->toBe('free')
+        ->and($candidate->access)->toBe('public')
+        ->and($candidate->opensAt?->format('H:i'))->toBe('09:00')
+        ->and($candidate->closesAt?->format('H:i'))->toBe('18:00')
+        ->and($candidate->hoursAssumed)->toBeFalse()
+        ->and($candidate->description)->toBe('A source-backed factual description.')
+        ->and($candidate->tags)->toContain('negative:wheelchair', 'no')
+        ->and($candidate->factRevision)->toBeGreaterThan(0);
 });
 
 test('wikidata or wikipedia tags mark a spot as a landmark', function () {
@@ -352,4 +405,30 @@ test('recurring occurrences have stable unique candidate ids', function () {
 
     expect($occurrences)->toHaveCount(2)
         ->and($occurrences->pluck('id')->unique())->toHaveCount(2);
+});
+
+test('food and drink filtering preserves independent cafes contained in parks', function () {
+    $park = spotWithHours(['name' => 'Parent park', 'category' => 'park']);
+    $cafe = spotWithHours(['name' => 'Independent cafe', 'category' => 'cafe', 'parent_spot_id' => $park->id]);
+    $restaurant = spotWithHours(['name' => 'Separate restaurant', 'category' => 'restaurant']);
+    $constraints = new Constraints(
+        windowStart: mondayWindow()->windowStart,
+        windowEnd: mondayWindow()->windowEnd,
+        categories: ['food_drink'],
+    );
+    $repository = app(CandidateRepository::class);
+    $candidates = $repository->candidatesFor($constraints);
+    $filtered = app(FeasibilityFilter::class)->filter($constraints, $candidates);
+    expect(collect($filtered)->pluck('id')->all())->toContain('spot:'.$cafe->id, 'spot:'.$restaurant->id)
+        ->not->toContain('spot:'.$park->id);
+    $loaded = collect($repository->byIds(['spot:'.$park->id, 'spot:'.$cafe->id], $constraints->windowStart));
+    expect($loaded->pluck('destinationGroupId')->unique()->count())->toBe(2);
+});
+
+test('an overnight source interval survives a closed calendar-day entry', function () {
+    $spot = spotWithHours(['name' => 'Late Monday cafe', 'category' => 'cafe', 'tags' => ['opening_hours' => 'Mo 22:00-02:00; Tu off']]);
+    $start = CarbonImmutable::parse('2026-09-29 00:30', 'Europe/Berlin');
+    $constraints = new Constraints($start, $start->setTime(2, 0), categories: ['cafe']);
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    expect(array_column(app(FeasibilityFilter::class)->filter($constraints, $candidates), 'id'))->toBe(["spot:{$spot->id}"]);
 });

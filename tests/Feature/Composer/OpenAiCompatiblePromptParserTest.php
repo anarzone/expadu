@@ -124,3 +124,30 @@ test('an invalid model date falls back to the heuristic parser', function () {
     expect($result->source)->toBe('heuristic')
         ->and($result->plan->areas)->toBe(['Ehrenfeld']);
 });
+
+test('the driver preserves the food and drink category filter', function () {
+    $now = CarbonImmutable::parse('2026-06-10 09:00', 'Europe/Berlin');
+    fakeToolCall([
+        'intent' => 'plan_day',
+        'window_start' => $now->addHours(2)->toIso8601String(),
+        'window_end' => $now->addHours(6)->toIso8601String(),
+        'categories' => ['food_drink'],
+    ]);
+
+    $result = llmParser()->parse('find somewhere to eat or drink', llmProfile(), $now);
+
+    expect($result->plan->categories)->toBe(['food_drink']);
+});
+
+test('the model parser retains explicit activity requirements even when the model omits them', function () {
+    $now = CarbonImmutable::parse('2026-09-28 09:00', 'Europe/Berlin');
+    fakeToolCall([
+        'intent' => 'plan_day', 'window_start' => $now->addHour()->toIso8601String(),
+        'window_end' => $now->addHours(6)->toIso8601String(), 'categories' => ['pitch'],
+        'activities' => ['moonwalk', ['nested']], 'radius_km' => 999,
+    ]);
+    $result = llmParser()->parse('recommend free football nearby within 2 km', llmProfile(), $now);
+    expect($result->plan->activities)->toBe(['soccer'])
+        ->and($result->plan->radiusKm)->toBe(2.0)
+        ->and($result->plan->budget)->toBe('free');
+});

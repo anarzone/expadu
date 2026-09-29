@@ -1,0 +1,81 @@
+{
+  "checked_at": "2026-09-29T13:51:58+00:00",
+  "scope": "Running staging application, current committed catalogue, synthetic API reads",
+  "application_source_sha256": {
+    "app/Places/PlaceFacts.php": "0aac4a26a8160219056d42216b6d2df30cc30d79be9aac8161c0c29262091c2c",
+    "app/Places/DestinationGrouping.php": "b7b4f543f5d7092b608517c342f7527b81d95a58ec7b4f8038f0a0048f631f5b",
+    "app/Http/Controllers/Api/PlacesController.php": "c49a235039265a0aa6067ea5732a8bf2658dad09d66140ff7f3ea98c79659b90"
+  },
+  "catalogue_import_committed_by_this": false,
+  "raw_records_exported": false,
+  "api": {
+    "food_first": {
+      "status": 200,
+      "duration_ms": 351.578036,
+      "total": 1805,
+      "payload_sha256": "4fd8a9151ff1e4742547c0c55de8aa39f5d87fbfbab37dcf7d140f9d7b6f98a4"
+    },
+    "food_second": {
+      "status": 200,
+      "duration_ms": 252.927241,
+      "total": 1805,
+      "payload_sha256": "bc44b76ba0ca23d392259d20965b2038e280b3c040e4f22dd76edc1bc13acde1"
+    },
+    "detail": {
+      "status": 200,
+      "duration_ms": 12.172942,
+      "total": null,
+      "payload_sha256": "2c18821713e1c076a5d5db30ef9b032c590ffc9455ceccbd272684b2562e3ac3"
+    },
+    "pitch": {
+      "status": 200,
+      "duration_ms": 249.136036,
+      "total": 366,
+      "payload_sha256": "d066ca885fa07c948ff658a4678ab667773ba0193f2468988f63ed2d6c5987c6"
+    },
+    "court": {
+      "status": 200,
+      "duration_ms": 255.40751,
+      "total": 666,
+      "payload_sha256": "a6e19cbeaf910cf4928140cd803021d90e94db3a1bde276541ee6f27f92bf985"
+    },
+    "park": {
+      "status": 200,
+      "duration_ms": 142.631109,
+      "total": 263,
+      "payload_sha256": "60db3b9c5569a978c6a031f5f92c08c5d9cf32948e75f923f98aab73d450f5e3"
+    },
+    "playground": {
+      "status": 200,
+      "duration_ms": 385.989559,
+      "total": 1197,
+      "payload_sha256": "4f70752d160f5b5d63037abd68f768e2f5584b4d6ba18608a084dd564a017d81"
+    },
+    "tennis": {
+      "status": 200,
+      "duration_ms": 158.910781,
+      "total": 169,
+      "payload_sha256": "b8ab3ecf2ce98c0f79debd70df6b9792d7568f478ebbd8102dc63dc1c8301a44"
+    },
+    "cafe": {
+      "status": 200,
+      "duration_ms": 222.315082,
+      "total": 648,
+      "payload_sha256": "296b040b9d2a6b4b20198c8dd3206e6f1095acb1126b9eda3eb96bf406d8d07f"
+    }
+  },
+  "stored_spots": 9928,
+  "status": "passed",
+  "note": "API durations are single smoke reads through the Laravel kernel, not p95 or external-network timings. This verifies the application deployment, not a catalogue import.",
+  "helper_sha256": "a8ce0e35c811b26431459b0f6dd48ddf21e295f852ff6008ed2311cf5c023a08",
+  "container_image": "sha256:4c49c1460b6f2815eb3d9023fbf1c2f085bb63f27f39484a78c6bb88642feae4",
+  "deployment": {
+    "commit": "0741c491150929297a0eaf81951f62868562e42c",
+    "pull_request": 58,
+    "ci_run": 36576262123,
+    "attempt": 2,
+    "conclusion": "success",
+    "initial_failure": "One-second real-clock expiry fixture in BureaucracyAiPrivacyTest; isolated retry passed and failing CI job retry passed",
+    "external_health_status": 200
+  }
+}
