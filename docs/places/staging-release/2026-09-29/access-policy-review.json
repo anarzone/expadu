@@ -1,0 +1,50 @@
+{
+  "recorded_at": "2026-09-29T12:16:39.051979+00:00",
+  "reviewer": "exp69_laravel_patterns",
+  "finding": "No material semantic difference under current database constraints; outer alias must be spots.id or destination.id IN candidate allowed IDs",
+  "preserved_rules": [
+    "Latest observation by place/provider/record with observed_at then id tie-break",
+    "All restricted access values and nonblank conditional restrictions",
+    "Strictly newer source restrictions override a single older review; equal timestamps preserve prior behavior",
+    "Multiple active corrections fail closed; revoked corrections ignored",
+    "Null correction and observation values retain existing interpretation",
+    "Matching provider/source-ID omission and legacy-tag fallback",
+    "All values read from same statement snapshot"
+  ],
+  "automatic_review": {
+    "initial_local_edit_rejected": true,
+    "reason": "Possible exposure of restricted places from shared policy rewrite",
+    "new_evidence": "2,664 exact fixture comparisons and independent static equivalence review",
+    "reconsidered_local_edit_accepted": true,
+    "live_release_authorized_by_this": false
+  },
+  "focused_regression_before": {
+    "failed": 1,
+    "assertions": 4,
+    "observed_history_scans": 40,
+    "required_maximum": 1
+  },
+  "focused_suites_after": {
+    "passed": 59,
+    "assertions": 352,
+    "seconds": 26.19
+  },
+  "production_or_staging_application_changed": false,
+  "real_catalogue_comparison_pending": false,
+  "source_sha256": {
+    "app/Places/PlaceFacts.php": "0aac4a26a8160219056d42216b6d2df30cc30d79be9aac8161c0c29262091c2c",
+    "tests/Feature/Places/PlaceFactsTest.php": "8b1966c73f00fdeaf467f9c2f2035e7c0a85a029c51add8135b4d683f71b3205"
+  },
+  "real_catalogue_equivalence": {
+    "compared_spots": 11802,
+    "allowed": 11271,
+    "all_ids_identical": true,
+    "first_query_shape_slower": true
+  },
+  "final_query_shape": "Materialized allowed-ID set for catalogue roots; unchanged correlated policy for bounded destination-parent checks",
+  "target_p95_pending": false,
+  "final_source_review": "exp69_laravel_patterns: no correctness issue; destination predicate exactly preserved apart from alias substitution; root and destination branches preserve all prior rules",
+  "narrow_lookup_tradeoff": "Catalogue-wide root materialization may add cost to keyed lookups; final staging verifier measures30 keyed and30 detail requests per condition and checks detail payload parity",
+  "target_p95_passed": false,
+  "target_result": "staging-batch-v2-performance.json"
+}

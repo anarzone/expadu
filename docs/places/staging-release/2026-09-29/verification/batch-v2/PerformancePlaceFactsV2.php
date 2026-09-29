@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 
-class PlaceFacts
+class PerformancePlaceFactsV2 extends PlaceFacts
 {
     public const SNAPSHOT_RELATION = 'placeFactsSnapshot';
 

@@ -1,0 +1,70 @@
+{
+    "scope": "same committed expanded local public fixture; identical SQL result comparisons",
+    "variants": {
+        "original_deployed_query": [
+            {
+                "execution_ms": 7697.572,
+                "estimated_cost": 565536.48,
+                "jit": {
+                    "Functions": 263,
+                    "Options": {
+                        "Inlining": true,
+                        "Optimization": true,
+                        "Expressions": true,
+                        "Deforming": true
+                    },
+                    "Timing": {
+                        "Generation": 44.039,
+                        "Inlining": 226.29,
+                        "Optimization": 4280.982,
+                        "Emission": 2494.661,
+                        "Total": 7045.972
+                    }
+                },
+                "query_sha256": "640544aac43332662379581a4fc62e4a533865ff1a23ef38220254c38102282e",
+                "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+            },
+            {
+                "execution_ms": 6588.62,
+                "estimated_cost": 565615.09,
+                "jit": {
+                    "Functions": 268,
+                    "Options": {
+                        "Inlining": true,
+                        "Optimization": true,
+                        "Expressions": true,
+                        "Deforming": true
+                    },
+                    "Timing": {
+                        "Generation": 17.203,
+                        "Inlining": 34.225,
+                        "Optimization": 4246.419,
+                        "Emission": 2187.992,
+                        "Total": 6485.839
+                    }
+                },
+                "query_sha256": "e722fa69563e7275352154091d0e845cd1c60b0672dc9ede4f6fb821ed340a06",
+                "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+            }
+        ],
+        "candidate_query": [
+            {
+                "execution_ms": 144.469,
+                "estimated_cost": 19423.02,
+                "jit": null,
+                "query_sha256": "37ce86a6ac50587037809598d991e70e769b102958e22b27fe441c238ba5f0cb",
+                "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+            },
+            {
+                "execution_ms": 148.972,
+                "estimated_cost": 19501.64,
+                "jit": null,
+                "query_sha256": "3788e77b423a4f2bd213e533a778cce9f5927ebe5b435498edbb9ab1fceb630d",
+                "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+            }
+        ]
+    },
+    "all_results_identical": true,
+    "status": "passed",
+    "completed_at": "2026-09-29T13:10:05+00:00"
+}

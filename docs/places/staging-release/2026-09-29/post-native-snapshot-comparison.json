@@ -1,0 +1,54 @@
+{
+  "checked_at": "2026-09-29T11:12:02+00:00",
+  "environment": "staging",
+  "read_only": true,
+  "raw_records_exported": false,
+  "snapshot_captured_at": "2026-09-29T10:55:10+00:00",
+  "tables": {
+    "spots": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": true,
+      "current_count": 9928
+    },
+    "veedels": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": true,
+      "current_count": 86
+    },
+    "place_fact_observations": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": true,
+      "current_count": 4085
+    },
+    "place_fact_corrections": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": true,
+      "current_count": 0
+    },
+    "place_fact_revisions": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": true,
+      "current_count": 1
+    },
+    "place_destination_reviews": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": true,
+      "current_count": 12
+    },
+    "place_reconciliations": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": true,
+      "current_count": 798
+    },
+    "media_assets": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": false,
+      "current_count": 588
+    },
+    "media_attachments": {
+      "snapshot_equals_native_before": true,
+      "current_equals_native_before": false,
+      "current_count": 1680
+    }
+  }
+}

@@ -72,23 +72,75 @@ and rights qualification. EXP-72 owns the recorded release acceptance result.
 ## Current evidence and remaining work
 
 The [28 September package report](production-pack/2026-09-28/REPORT.md) retains the
-original preparation measurements. The later [Composer implementation report](composer-readiness/2026-09-28/REPORT.md)
-checks all 4,643 prepared records through shared facts and verifies 4,100
-Composer identities after 16 proposed facility qualifications in a rolled-back
-local rehearsal. The relevant suite passes 374 tests / 1,600 assertions; the final saved-plan fix passes its 77-test endpoint/identity rerun.
-Explicit activity/radius and free-only requests, conditions, grouping and saved
-references now have application coverage.
+original preparation measurements. The later [staging release report](staging-release/2026-09-28/REPORT.md)
+records the current result: PR #57 is deployed and verified on staging, while the
+4,643-record package has not been imported into staging or production.
 
-This does not establish useful verified-free football coverage: the prepared
-package has 0 eligible places meeting that full request. New approved photos: 0.
-Staging and production are unchanged. Fresh environment reconciliation, live
-release/refresh/recovery checks and production approval remain required.
+The complete local rehearsal checked all 4,643 prepared records through the shared
+facts contract and retrieved 4,084 Composer identities without additional activity
+qualifications. The remaining 559 records stay outside automatic recommendations.
+Eight category endpoints, 28 detail samples, preserved references, exact no-op
+replay and exact table rollback passed. Earlier results mentioning 4,100 candidates
+included 16 provisional qualifications inside a rolled-back experiment; those
+qualifications are not approved or applied by the current package.
+
+Explicit activity/radius and free-only requests, conditions, grouping and saved
+references now have application coverage. The 28 September release evidence records
+1,677 passing tests, 7,009 assertions and two existing late-day weather skips.
+These local checks do not establish useful verified-free football coverage: the
+prepared package has zero eligible places meeting that full request. No new photos
+were approved. The [29 September local performance diagnostic](staging-release/2026-09-29/REPORT.md)
+identified expensive query compilation in the expanded catalogue. Fresh statistics
+alone did not remove it. A transaction-local diagnostic setting reduced the two
+measured queries from 5–6 seconds to about 0.56 seconds with identical results;
+this has not been adopted or verified as a target-environment fix. Target
+performance validation remains open.
+
+The owner explicitly approved the staging comparison, which passed on 29 September
+at 09:35:37 UTC: 2,769 expected existing records match, 1,874 proposed new identities
+are absent, and there are zero conflicts. Raw records stayed on the server; only
+counts, checksums and conflicting public identities were permitted in the summary.
+The staging catalogue has 9,928 stored rows; this is not an eligible or photo-covered
+destination count. No catalogue data changed.
+
+The owner subsequently approved the prepared upload, private server-only snapshot
+and full rollback-only staging rehearsal. That staging rehearsal passed for all
+4,643 records and 4,084 Composer identities, with no visibility losses and exact
+replay/table rollback. The prior upload/snapshot permission blocker is resolved.
+The target performance test has reproduced a serious first-page food/drink
+regression: p95 1.485 seconds before expansion versus 18.203 seconds after it.
+Two narrow query simplifications pass the 30-test grouping suite (116 assertions);
+the grouping-only candidate preserves all eight API payloads and improves p95
+to 3.605/2.960 seconds, but still fails the 20% regression gate. It is not deployed.
+A shared access-query rewrite has passed 2,664 synthetic equivalence cases and
+59 facts/grouping tests and the full local 1,684-test suite (7,039 assertions,
+no skips). All nine V2 staging payload comparisons and the complete access-ID
+comparison passed, but p95 still failed at 6.132/6.895 seconds versus
+1.274/1.045 seconds. The single-place eligibility lookup also regressed. Exact
+rollback and cleanup passed. Investigation then isolated a retained-savepoint
+rehearsal artifact. On the same completed local public fixture the original and
+revised queries returned identical results in 6.6–7.7 seconds versus 144–149 ms.
+Corrected V3 staging p95 passed at 470/487 ms versus 1,055/1,694 ms, with all nine
+full API payloads and access IDs identical, exact rollback and cleanup. The fix
+awaits final evidence CI and application release verification.
+The replacement snapshot passed exact native-column reconstruction for all nine
+tables at 11:43 UTC after review caught a JSON-normalization limitation in the
+initial archive. This tests temporary-table reconstruction, not full-database recovery. See the [current report](staging-release/2026-09-29/REPORT.md).
+The proposed 100-record canary, its committed import and subsequent full batch
+remain pending those gates and concrete commit authorization. Production requires
+its own mapping and acceptance evidence. No production data changed.
 
 This contract supplements the frozen package and its preparation plan; it does
 not rewrite its data, checksums or measured results. It applies to subsequent
 batches as well, with no fixed catalogue-size target or photo-based exclusion.
 
-The approved optional-photo design remains in effect. The earlier 75% image
+Photos remain optional in the data contract. The connected design record reopened
+the separate Places-page direction on 28 September; preserve the prototype until
+that product decision is made. The earlier 75% image
 coverage objective is still unmet, and this requirement does not waive it.
-Excluded Stadt Köln place media and unapproved images must not be published or
-reintroduced through source refreshes. See the [shared design decisions](../../prototype/dev/design/connected/design-decisions.md).
+The current EXP-70 source decision excludes Stadt Köln structured place data as
+well as its place media. Hosting municipal records on another provider's domain
+does not make them eligible. Excluded data and unapproved images must not be
+published or reintroduced through source refreshes. The approved shared design reference is
+`prototype/dev/design/connected/design-decisions.md` in the primary design checkout
+(the prototype directory is not included in this release branch).

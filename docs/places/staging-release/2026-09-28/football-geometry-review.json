@@ -1,0 +1,173 @@
+{
+  "scope": "Four specific public geometry identity checks, no catalogue changes",
+  "records": [
+    {
+      "venue_source_id": 88404,
+      "source_id": "way/799303429",
+      "osm_source_url": "https://www.openstreetmap.org/way/799303429",
+      "geometry_api_url": "https://api.openstreetmap.org/api/0.6/way/799303429/full.json",
+      "license_url": "https://www.openstreetmap.org/copyright",
+      "retrieved_at": "2026-09-28T19:29:03.441563+00:00",
+      "response_sha256": "6f0ee528cbe22954750ab2169c32e81184dd9a6a38c068bbb325810f5338c97b",
+      "osm_version": 2,
+      "osm_timestamp": "2023-07-10T17:43:58Z",
+      "sport": "soccer",
+      "closed_polygon": true,
+      "provider_map_point": [
+        50.87229971139052,
+        6.951182159893799
+      ],
+      "source_point_inside_osm_polygon": true,
+      "geometry": [
+        [
+          50.8723959,
+          6.951058
+        ],
+        [
+          50.8720186,
+          6.9509864
+        ],
+        [
+          50.8719973,
+          6.9512679
+        ],
+        [
+          50.8723746,
+          6.9513396
+        ],
+        [
+          50.8723959,
+          6.951058
+        ]
+      ]
+    },
+    {
+      "venue_source_id": 89815,
+      "source_id": "way/256063144",
+      "osm_source_url": "https://www.openstreetmap.org/way/256063144",
+      "geometry_api_url": "https://api.openstreetmap.org/api/0.6/way/256063144/full.json",
+      "license_url": "https://www.openstreetmap.org/copyright",
+      "retrieved_at": "2026-09-28T19:29:03.541784+00:00",
+      "response_sha256": "3e9dce96668f1f60d8249f3c68ac1486372f3da19793d43e84d6d386eed0c5ff",
+      "osm_version": 4,
+      "osm_timestamp": "2021-06-06T07:24:07Z",
+      "sport": "soccer",
+      "closed_polygon": true,
+      "provider_map_point": [
+        50.94607216232465,
+        6.917264391958606
+      ],
+      "source_point_inside_osm_polygon": false,
+      "geometry": [
+        [
+          50.9461705,
+          6.917136
+        ],
+        [
+          50.9463095,
+          6.9172701
+        ],
+        [
+          50.9461918,
+          6.917577
+        ],
+        [
+          50.9461618,
+          6.9176501
+        ],
+        [
+          50.9460228,
+          6.917516
+        ],
+        [
+          50.9461342,
+          6.9172328
+        ],
+        [
+          50.9461705,
+          6.917136
+        ]
+      ]
+    },
+    {
+      "venue_source_id": 88553,
+      "source_id": "way/966035665",
+      "osm_source_url": "https://www.openstreetmap.org/way/966035665",
+      "geometry_api_url": "https://api.openstreetmap.org/api/0.6/way/966035665/full.json",
+      "license_url": "https://www.openstreetmap.org/copyright",
+      "retrieved_at": "2026-09-28T19:29:03.653560+00:00",
+      "response_sha256": "bfc4d68d5462fd9b3245896f28fd8accad2f7fe6906e1ee380b19ac9364266a0",
+      "osm_version": 3,
+      "osm_timestamp": "2024-09-12T11:41:39Z",
+      "sport": "soccer",
+      "closed_polygon": true,
+      "provider_map_point": [
+        50.93043010173522,
+        6.844579766382068
+      ],
+      "source_point_inside_osm_polygon": false,
+      "geometry": [
+        [
+          50.9299565,
+          6.8445075
+        ],
+        [
+          50.9299281,
+          6.84491
+        ],
+        [
+          50.9294927,
+          6.8448326
+        ],
+        [
+          50.9295212,
+          6.8444301
+        ],
+        [
+          50.9299565,
+          6.8445075
+        ]
+      ]
+    },
+    {
+      "venue_source_id": 89938,
+      "source_id": "way/188350646",
+      "osm_source_url": "https://www.openstreetmap.org/way/188350646",
+      "geometry_api_url": "https://api.openstreetmap.org/api/0.6/way/188350646/full.json",
+      "license_url": "https://www.openstreetmap.org/copyright",
+      "retrieved_at": "2026-09-28T19:29:03.826543+00:00",
+      "response_sha256": "90a52b81c899860a32a92e4b84eb1fdf522230bc0a17f022d472013b3c36bdb0",
+      "osm_version": 4,
+      "osm_timestamp": "2023-03-22T08:55:14Z",
+      "sport": "soccer",
+      "closed_polygon": true,
+      "provider_map_point": [
+        50.99200904598198,
+        6.921361318489155
+      ],
+      "source_point_inside_osm_polygon": false,
+      "geometry": [
+        [
+          50.9920324,
+          6.9217622
+        ],
+        [
+          50.9919969,
+          6.9223202
+        ],
+        [
+          50.9913094,
+          6.9222097
+        ],
+        [
+          50.991345,
+          6.9216517
+        ],
+        [
+          50.9920324,
+          6.9217622
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "recorded_at": "2026-09-29T12:51:41.139092+00:00",
+  "plane_workitems": [
+    "EXP-69",
+    "EXP-72"
+  ],
+  "states": "In Progress",
+  "bookstack_page_ids": [
+    33,
+    36
+  ],
+  "readback_verified": true,
+  "plane_normalization": "Adds rel=noopener noreferrer to links; remaining HTML matched",
+  "checkpoint": "Upload/native rehearsal/typed snapshot passed; V2 full API/access parity passed but speed gate failed; full local suite1684/7039; expanded local query diagnosis continues",
+  "programme_done": false
+}

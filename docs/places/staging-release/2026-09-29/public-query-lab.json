@@ -1,0 +1,14 @@
+{
+  "database": "exp69_expanded_query_lab_20260929",
+  "scope": "Dedicated local public-data fixture only; no staging or production changes",
+  "native_package_records": 4643,
+  "baseline_spots": 9928,
+  "expanded_spots": 11802,
+  "users": 0,
+  "preparation_committed_in_local_fixture": true,
+  "package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+  "executed_preparation_sha256": "33adc0f387ed33e0ce58f70a4a4235bd3b8d82f4395a2c39f927c765fa461d6c",
+  "documentation_correction": "Executed temporary script retained an inaccurate always-rolls-back comment from its ancestor. CLI accepted only --local and database guard allowed only the dedicated query lab. Execution intentionally committed the public fixture, as stated in tool authorization. Corrected comment afterward; recorded original executed bytes separately.",
+  "fresh_connection_read_measurement_pending": false,
+  "result": "committed-public-fixture-performance.json"
+}

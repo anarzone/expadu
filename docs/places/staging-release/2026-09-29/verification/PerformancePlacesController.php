@@ -9,7 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
-use App\Places\DestinationGrouping;
+use App\Places\PerformanceDestinationGrouping as DestinationGrouping;
 use App\Places\PlaceFacts;
 use App\Services\NearbyPlaces;
 use App\Services\UserLocationService;
@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
  * (UserLocationService::context — live fix / picked or browsed area, else
  * none); transit_hint is the nearest GTFS stop (our static data).
  */
-class PlacesController extends Controller
+class PerformancePlacesController extends Controller
 {
     public function __construct(
         private readonly UserLocationService $locations,

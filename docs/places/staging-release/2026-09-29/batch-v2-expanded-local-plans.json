@@ -1,0 +1,24 @@
+{
+  "scope": "isolated_local_expanded_package_rollback_only",
+  "started_at": "2026-09-29T12:44:34+00:00",
+  "completed_at": "2026-09-29T12:54:12+00:00",
+  "status": "passed",
+  "rollback_exact": true,
+  "source_commit": "ce0d579642581d053ef0a9625875711f813fe724",
+  "variant": "materialized_root_bounded_parent",
+  "queries": [
+    {
+      "execution_ms": 1506.602,
+      "estimated_cost": 19916.94,
+      "jit": null,
+      "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+    },
+    {
+      "execution_ms": 1657.338,
+      "estimated_cost": 22231.82,
+      "jit": null,
+      "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+    }
+  ],
+  "full_local_plan_sha256": "7b2e66b686e803765ca384ef92be9c209bb9bafce378eea24568dec402d3b73c"
+}

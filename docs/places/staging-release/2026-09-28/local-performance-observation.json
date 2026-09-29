@@ -1,0 +1,16 @@
+{
+  "recorded_at": "2026-09-28T20:45:56.328267+00:00",
+  "environment": "isolated local public-data rehearsal",
+  "observation": "A Places pagination SELECT was still active after 23 seconds during the expanded-data API verification.",
+  "sampled_query_seconds": 23,
+  "blocking_sessions": 0,
+  "query_prefix": "select * from (select *, NULL::float8 as distance_km, count(*) over (partition by name, veedel, roun",
+  "production_or_staging_measurement": false,
+  "end_to_end_latency_or_p95": false,
+  "conditions": [
+    "Uncommitted full-package import",
+    "Dedicated local PostgreSQL database",
+    "No ANALYZE added after the import by this rehearsal wrapper"
+  ],
+  "next_step": "Profile a controlled target-environment run with current table statistics before making a production performance claim."
+}

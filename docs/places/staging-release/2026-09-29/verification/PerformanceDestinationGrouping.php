@@ -7,7 +7,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
-class DestinationGrouping
+class PerformanceDestinationGrouping
 {
     public const DESTINATIONS = ['park', 'sports_centre'];
 
