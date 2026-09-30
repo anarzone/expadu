@@ -1,7 +1,7 @@
 # EXP-69 current staging Places readiness proposal
 
 Date: 2026-09-30. Based on staging commit `89289db9641bb75a563e74b44be9b4717bd61b22`.
-Status: implementation and local/read-only staging verification complete; review and draft release publication pending. No code deployment.
+Status: implementation, one independent review/fix pass and final local/read-only staging verification complete; draft publication and exact-head CI pending. No code deployment.
 
 This scoped backend port fixes retained-detail availability, explicit reviewed facility discovery, access-bound qualification and uncontrolled legacy seeding/scheduled catalogue writes. It preserves the current staging design and newer source-withdrawal behavior. It does not replace staging with the older production candidate.
 
@@ -16,9 +16,9 @@ No new photos, source observations, live facility approvals or source-null data 
 
 ## Verification
 
-Test-first failures reproduced six missing detail-status cases, eleven category/access cases, and two startup/schedule failures before fixes. Focused verification passed: 53 Places API tests; 153 API/facts/map/Composer/withdrawal/recovery tests; 13 startup/scheduling/media revalidation tests. The complete fast suite passed **1,747 tests**, with **2 skipped**, **7,334 assertions**, using PHP 8.4.23 and Node 22.23.1 on dedicated local test databases. Fifteen changed PHP files pass Pint; lockfiles and frontend source are unchanged.
+Test-first failures reproduced six missing detail-status cases, eleven category/access cases, and two startup/schedule failures before fixes. Focused verification passed: 53 Places API tests; 153 API/facts/map/Composer/withdrawal/recovery tests; 13 startup/scheduling/media revalidation tests. The complete fast suite passed **1,754 tests**, with **2 skipped**, **7,349 assertions**, using PHP 8.4.23 and Node 22.23.1 on dedicated local test databases. Fifteen changed PHP files pass Pint; lockfiles and frontend source are unchanged.
 
-At **21:33:17 UTC**, the port's isolated API kernel read actual staging data under a guarded, repeatable, READ ONLY snapshot. It booted against the separate empty lab database, used an unsaved synthetic user, faked outbound side effects and refused six attempts to leave read-only/catalogue scope. Query logging was disabled. No real user records or raw rows were exported.
+At **21:58:43 UTC**, the port's isolated API kernel read actual staging data under a guarded, repeatable, READ ONLY snapshot. It booted against the separate empty lab database, used an unsaved synthetic user, faked outbound side effects and refused six attempts to leave read-only/catalogue scope. Query logging was disabled. No real user records or raw rows were exported.
 
 | Check | Fresh result |
 |---|---:|
@@ -37,9 +37,13 @@ Seven other retained aliases point to already ineligible canonical records; they
 
 All **11,802 stored records remain retained** after the separately committed source hold. That stored count is not a claim that all 11,802 are ready for recommendation or production. Shared eligible facts remain: access 123 public / 4,112 unknown; fee 49 free / 37 paid / 4,149 unknown. Unknown values were preserved.
 
-At 21:33:19 UTC the canonical `soccer`/`pitch` discovery request within 3 km of the labeled sample Cologne-centre origin returned **0 free candidates and 0 without the budget filter**. It does not establish a citywide absence. The earlier unsupported `football`-label probe was corrected in the source-hold evidence; it is not the basis for this result.
+At 21:58:44 UTC the canonical `soccer`/`pitch` discovery request within 3 km of the labeled sample Cologne-centre origin returned **0 free candidates and 0 without the budget filter**. It does not establish a citywide absence. The earlier unsupported `football`-label probe was corrected in the source-hold evidence; it is not the basis for this result.
 
-The runtime fingerprint is `ebfb01428da8d24e76cc29a3db1d47acad2a27e3f488dd35edc172506d3e4924`, covering 570 application/config/route/migration/lock/bootstrap files. A separate isolated public-source copy was used; the running image and pinned recovery lab were preserved. See the aggregate JSON summaries and `verify-evidence.py`.
+The runtime fingerprint is `b7bbb275a67111744a9cc785005f89b06a5757d272628a05bbfd0050fa71fb0c`, covering 570 application/config/route/migration/lock/bootstrap files. A separate isolated public-source copy was used; the running image and pinned recovery lab were preserved. See the aggregate JSON summaries and `verify-evidence.py`.
+
+## Independent review
+
+One fresh read-only reviewer found a real upgrade defect: missing access-history bindings in old facility qualifications were treated as zero. Seven failing regressions reproduced the leak across Places, map and Composer before the single fix pass. Those old approvals now require fresh review. The related suite passed160tests/805assertions, and the full normal fix-commit hooks passed1,754tests/2skips/7,349assertions. There were no Critical or deferred Minor findings. See review-result.md and execution-decisions.md for the review boundary and all eight rulings.
 
 ## Release boundary and remaining work
 
@@ -47,6 +51,6 @@ This verifies the proposed source against staging data. It does **not** verify a
 
 `PLACES_AUTOMATION_ENABLED=false` pauses the catalogue/boundary/photo schedules **and media health revalidation**. A release must deliberately choose this setting and its validation/refresh operating procedure; long-term disabled automation stops remote-health freshness checks. `PLACES_CURATED_SEEDING_ENABLED=false` prevents legacy name-only seeds. Manual commands are still available; these controls do not claim to block every possible writer.
 
-The pending 90 source-reviewed facility qualifications need a fresh post-hold preview and combined recovery verification before any apply. The 21 changed legacy source projections, 469 facilities with uncertain access, useful free/public football coverage and media growth remain open. The 75% photo objective remains unmet. Production needs an independent package, recovery/backup qualification, explicit release approval and acceptance checks.
+At21:58:50UTC, all90 pending source-reviewed facilities passed new post-hold native previews, retained unavailable detail checks and Composer by-ID exclusions:74playgrounds,11table-tennis facilities,3basketball courts and2pitches. All90 preserve known unconditional public access and unknown fees. The source evidence was fetched at11:35:58UTC and remained within its24-hour window; this check did not refetch it. No qualification or new apply package was written. Exact target-package preparation and combined recovery verification remain before any apply. The 21 changed legacy source projections, 469 facilities with uncertain access, useful free/public football coverage and media growth remain open. The 75% photo objective remains unmet. Production needs an independent package, recovery/backup qualification, explicit release approval and acceptance checks.
 
 EXP-69 and EXP-72 remain In Progress. Only a private branch and draft PR against staging will be published; no merge or deployment is included.

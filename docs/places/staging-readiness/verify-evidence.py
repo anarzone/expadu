@@ -13,6 +13,7 @@ def digest(path):
 setup=read('setup-summary.json')
 contracts=read('consumers-summary.json')
 football=read('football-summary.json')
+facilities=read('post-hold-facilities-summary.json')
 tests=read('local-tests-summary.json')
 files={}
 for directory in ['app','config','routes','database/migrations']:
@@ -47,9 +48,17 @@ assert football['status']=='passed' and football['activities']==['soccer'] and f
 assert football['free_football_candidates']==football['football_candidates_without_budget_filter']==0
 assert football['staging_transaction_read_only'] and not football['staging_changed'] and not football['production_changed']
 assert not football['real_user_rows_read'] and not football['raw_rows_exported']
-assert tests['status']=='passed' and tests['passed']==1747 and tests['skipped']==2 and tests['assertions']==7334
+assert tests['status']=='passed' and tests['passed']==1754 and tests['skipped']==2 and tests['assertions']==7349
 assert not tests['application_data_changed'] and not tests['staging_changed'] and not tests['production_changed']
-assert tests['observed_regression_red']=={'held_details_failed_before_fix':6,'facility_access_failed_before_fix':11,'startup_schedule_failed_before_fix':2}
+assert tests['observed_regression_red']=={'held_details_failed_before_fix':6,'facility_access_failed_before_fix':11,'startup_schedule_failed_before_fix':2,'legacy_access_binding_failed_before_fix':7}
+assert facilities['runtime_sha256']==runtime and facilities['status']=='post_hold_native_facility_previews_passed'
+assert facilities['reviewed_facility_previews']==facilities['known_public_unconditional_access']==facilities['unknown_fees_preserved']==90
+assert facilities['retained_unavailable_details_checked']==facilities['composer_by_id_exclusions_checked']==90
+assert facilities['categories']=={'basketball':3,'table_tennis':11,'pitch':2,'playground':74}
+assert facilities['guard_refusals_verified']==6 and facilities['same_backend_and_snapshot_verified'] and facilities['staging_transaction_read_only']
+assert not facilities['raw_rows_exported'] and not facilities['real_user_rows_read'] and not facilities['synthetic_user_persisted']
+assert not facilities['staging_changed'] and not facilities['production_changed'] and facilities['facility_qualifications_applied']==0
+assert not facilities['target_apply_package_prepared'] and not facilities['stacked_recovery_rehearsed_by_this_check'] and not facilities['sources_refetched_by_this_check']
 print(json.dumps({'status':'passed','runtime_sha256':runtime,'eligible_contracts_checked':4235,
     'eligible_aliases_checked':791,'held_unavailable_details_checked':12,'tests_passed':tests['passed'],
     'code_deployed':False,'production_changed':False,'photo_coverage_percent':2.817}))

@@ -78,12 +78,12 @@
 **Files:** Add docs/places/staging-readiness/REPORT.md plus sanitized evidence summaries. Maintain the spec/plan and use only this plan's .superpowers workspace for scratch ledger.
 **Interfaces:** Consumes Tasks 1-3 code and tests. Produces a scoped release proposal and draft PR against staging; no deployment.
 
-- [ ] Format the changed PHP and check scoped diff; no unrelated application or design changes.
-- [ ] Run the complete fast Pest suite using the dedicated local test DB, then retain exact counts. If a pre-existing unrelated failure occurs, reproduce it on the unmodified current staging base before attributing or changing unrelated code.
-- [ ] Prepare a separate isolated remote code copy for this port without modifying the pinned recovery lab or live app. Verify all eligible shared contracts and retained held details with the existing guarded read-only consumer harness; use soccer for football probes.
+- [x] Format the changed PHP and check scoped diff; no unrelated application or design changes.
+- [x] Run the complete fast Pest suite using the dedicated local test DB, then retain exact counts. If a pre-existing unrelated failure occurs, reproduce it on the unmodified current staging base before attributing or changing unrelated code.
+- [x] Prepare a separate isolated remote code copy for this port without modifying the pinned recovery lab or live app. Verify all eligible shared contracts and retained held details with the existing guarded read-only consumer harness; use soccer for football probes.
   Expected: current denominator re-read, retained held status unavailable, zero staging/production writes, no raw rows/private files exported. Do not reuse old counts as current evidence.
-- [ ] Commit the task changes with normal hooks and Refs EXP-69. Generate a whole-branch review package against 89289db9641bb75a563e74b44be9b4717bd61b22. Dispatch one fresh native reviewer using the Review Focus above.
-- [ ] Re-grade every finding; one Critical/Important test-first fix pass, no repeat reviewer; record every Ruling and deferred Minor.
+- [x] Commit the task changes with normal hooks and Refs EXP-69. Generate a whole-branch review package against 89289db9641bb75a563e74b44be9b4717bd61b22. Dispatch one fresh native reviewer using the Review Focus above.
+- [x] Re-grade every finding; one Critical/Important test-first fix pass, no repeat reviewer; record every Ruling and deferred Minor.
 - [ ] Push only the private codex/EXP-69-staging-readiness branch; create and attach a draft PR with base staging. Check CI at that exact head. Do not merge or deploy.
 - [ ] Update EXP-69/EXP-72 and their existing BookStack Work Log pages with exact results and remaining release/data/media limits; read back complete histories. Preserve In Progress and the original production draft PR.
 - [ ] Preserve completed evidence and rulings in tracked docs, remove only this plan's scratch workspace after completion.
