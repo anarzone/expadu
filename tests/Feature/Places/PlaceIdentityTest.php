@@ -120,7 +120,8 @@ test('old saved feedback survives canonical detail and clearing removes the whol
     SpotFeedback::factory()->create(['user_id' => $user->id, 'spot_id' => $alias->id, 'state' => 'saved']);
     reconcileIdentity($alias, $canonical);
     $this->actingAs($user)->getJson("/api/places/{$alias->id}")->assertOk()
-        ->assertJsonPath('data.id', $canonical->id)->assertJsonPath('data.feedback_state', 'saved');
+        ->assertJsonPath('data.id', $canonical->id)->assertJsonPath('data.feedback_state', 'saved')
+        ->assertJsonPath('data.recommendation_status', 'available');
     $this->postJson("/api/places/{$alias->id}/feedback", ['action' => 'clear'])->assertOk();
 
     expect(SpotFeedback::query()->where('user_id', $user->id)->count())->toBe(0);

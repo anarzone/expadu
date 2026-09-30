@@ -1067,3 +1067,70 @@ test('a pre-release Today snapshot without constraints is not trusted as a curre
     expect(app(TodayPlanStore::class)->get($user))->toBeNull();
     expect(Cache::get('composer:today:'.$user->id)['slots'][0]['id'])->toBe('spot:'.$place->id);
 });
+
+test('held saved plans retain a display-only review state without stale visit claims', function () {
+    $user = composerUser();
+    $this->actingAs($user);
+    $place = Spot::factory()->create(['name' => 'Saved park', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['access' => 'yes', 'fee' => 'no']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(),
+        'budget' => 'free', 'categories' => ['park'],
+    ]])->assertSuccessful();
+    $this->postJson('/composer/save', ['prompt' => 'An afternoon outside'])->assertSuccessful();
+    $store = app(TodayPlanStore::class);
+    expect($store->getForDisplay($user)['status'])->toBe('ready');
+    $snapshot = Cache::get('composer:today:'.$user->id);
+    $place->update(['is_active' => false, 'is_recommendable' => false]);
+    expect($store->get($user))->toBeNull()
+        ->and($store->getForDisplay($user))->toMatchArray([
+            'status' => 'needs_review', 'prompt' => 'An afternoon outside', 'slots' => [],
+        ])
+        ->and(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+    $this->get('/dashboard')->assertInertia(fn ($page) => $page
+        ->where('savedPlan.status', 'needs_review')
+        ->where('savedPlan.slots', [])
+        ->where('savedPlan.prompt', 'An afternoon outside'));
+    $place->update(['is_active' => true, 'is_recommendable' => true]);
+    expect($store->getForDisplay($user)['status'])->toBe('ready')
+        ->and(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+    $store->forget($user);
+    expect($store->getForDisplay($user))->toBeNull();
+});
+
+test('a legacy saved snapshot gets a review notice without exposing stale claims', function () {
+    $user = composerUser();
+    $snapshot = ['window_start' => now()->toIso8601String(), 'prompt' => 'Free park',
+        'slots' => [['id' => 'spot:123', 'name' => 'Old snapshot name', 'cost_tier' => 'free']]];
+    Cache::put('composer:today:'.$user->id, $snapshot, 300);
+    expect(app(TodayPlanStore::class)->get($user))->toBeNull()
+        ->and(app(TodayPlanStore::class)->getForDisplay($user))->toMatchArray(['status' => 'needs_review', 'slots' => []])
+        ->and(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+    $other = composerUser();
+    expect(app(TodayPlanStore::class)->getForDisplay($other))->toBeNull();
+});
+
+test('saved family plans recheck companion suitability after source category corrections', function (string $category) {
+    $user = composerUser();
+    $this->actingAs($user);
+    $place = Spot::factory()->create(['name' => 'Changing category', 'category' => 'cafe', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['opening_hours' => 'Mo-Su 09:00-20:00']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(),
+        'categories' => ['cafe'], 'companions' => 'kids',
+    ]])->assertSuccessful()->assertJsonPath('plan.slots.0.id', 'spot:'.$place->id);
+    $this->postJson('/composer/save')->assertSuccessful();
+    $store = app(TodayPlanStore::class);
+    $snapshot = Cache::get('composer:today:'.$user->id);
+    expect($store->getForDisplay($user)['status'])->toBe('ready');
+
+    $place->update(['category' => $category]);
+    expect($store->get($user))->toBeNull()
+        ->and($store->getForDisplay($user))->toMatchArray(['status' => 'needs_review', 'slots' => []]);
+    $this->postJson('/composer/save')->assertConflict();
+    expect(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+
+    $place->update(['category' => 'cafe']);
+    expect($store->getForDisplay($user)['status'])->toBe('ready');
+    $this->postJson('/composer/save')->assertSuccessful();
+})->with(['bar', 'coworking']);

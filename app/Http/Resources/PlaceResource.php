@@ -23,6 +23,7 @@ class PlaceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $recommendationAvailable = $this->resource->getAttribute('recommendation_available') !== false;
         $fine = $this->categoryEnum();
         $coarse = $fine?->coarse() ?? 'park';
         $mediaSelector = app(PublishedMediaSelector::class);
@@ -34,6 +35,7 @@ class PlaceResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'recommendation_status' => $this->whenHas('recommendation_available', fn () => $this->recommendation_available ? 'available' : 'unavailable'),
             'name' => $placeFacts['name']['value'] ?? $this->name,
             'category' => $coarse,
             'fine_label' => $fine?->label(),
@@ -51,13 +53,13 @@ class PlaceResource extends JsonResource
             'distance_min' => $this->travel_min !== null ? (int) $this->travel_min : null,
             'distance_mode' => $this->travel_mode ?? $request->user()?->transport_mode?->value,
             'distance_km' => $this->distance_km !== null ? round((float) $this->distance_km, 1) : null,
-            'open_now' => $this->resolveOpenNow($placeFacts['hours']),
+            'open_now' => $recommendationAvailable ? $this->resolveOpenNow($placeFacts['hours']) : null,
             'opening_hours_text' => $placeFacts['hours']['raw'],
-            'price_text' => match ($placeFacts['fee']['value']) {
+            'price_text' => $recommendationAvailable ? match ($placeFacts['fee']['value']) {
                 'free' => 'free',
                 'paid' => $this->paidPriceText($placeFacts['fee']),
                 default => null,
-            },
+            } : null,
             'feature_chips' => $this->resolveFeatureChips($placeFacts['practical']),
             'tip' => null,
             'tip_is_generic' => false,

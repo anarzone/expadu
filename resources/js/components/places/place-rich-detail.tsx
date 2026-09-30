@@ -127,7 +127,13 @@ export function PlaceRichDetail({
         data: PlaceEvents;
     } | null>(null);
 
+    const unavailable = place.recommendation_status === 'unavailable';
+
     useEffect(() => {
+        if (unavailable) {
+            return;
+        }
+
         let cancelled = false;
 
         fetch(`/api/places/${place.id}/context`, {
@@ -169,7 +175,7 @@ export function PlaceRichDetail({
         return () => {
             cancelled = true;
         };
-    }, [place.id]);
+    }, [place.id, unavailable]);
 
     const context =
         contextResult?.placeId === place.id ? contextResult.data : null;
@@ -197,6 +203,44 @@ export function PlaceRichDetail({
             )
             .then((json) => onOpenPlace(json.data))
             .catch(() => onNavigate(nearby));
+    }
+
+    if (unavailable) {
+        return (
+            <div className="px-5 py-5 sm:px-7 sm:py-7">
+                {onBack && backLabel && (
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="mb-3 inline-flex min-h-10 cursor-pointer items-center rounded-full border border-border bg-card px-3 text-[12.5px] font-semibold text-primary"
+                    >
+                        ← Back to {backLabel}
+                    </button>
+                )}
+                <h1 className="font-display text-[30px] leading-tight font-medium">
+                    {place.name}
+                </h1>
+                <div
+                    role="status"
+                    className="mt-4 rounded-[12px] border border-border bg-secondary p-4 text-[13px] leading-relaxed text-text-2"
+                >
+                    <b className="mb-1 block text-foreground">
+                        Details need checking
+                    </b>
+                    This place is currently unavailable for recommendations.
+                    Your saved reference is kept, but please check the place
+                    before planning a visit.
+                </div>
+                {feedback && (
+                    <PlaceFeedbackBar
+                        state={feedback.state}
+                        rating={feedback.rating}
+                        onAction={feedback.onAction}
+                        label={place.name}
+                    />
+                )}
+            </div>
+        );
     }
 
     const price =

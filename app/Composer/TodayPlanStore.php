@@ -105,6 +105,29 @@ class TodayPlanStore
         ];
     }
 
+    /** @return array{status: string, weekday: string, prompt: ?string, slots: list<array<string, mixed>>}|null */
+    public function getForDisplay(User $user): ?array
+    {
+        $plan = $this->get($user);
+        if ($plan !== null) {
+            return ['status' => 'ready', ...$plan];
+        }
+
+        $snapshot = Cache::get($this->key($user));
+        if (! is_array($snapshot) || empty($snapshot['slots'])) {
+            return null;
+        }
+
+        return [
+            'status' => 'needs_review',
+            'weekday' => is_string($snapshot['window_start'] ?? null)
+                ? CarbonImmutable::parse($snapshot['window_start'])->isoFormat('dddd')
+                : 'day',
+            'prompt' => is_string($snapshot['prompt'] ?? null) ? $snapshot['prompt'] : null,
+            'slots' => [],
+        ];
+    }
+
     public function forget(User $user): void
     {
         Cache::forget($this->key($user));

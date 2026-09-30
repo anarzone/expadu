@@ -99,6 +99,7 @@ type PreviewSlot = {
 
 /** The plan pinned to Today via the composer's "Save to Today". */
 type SavedPlan = {
+    status?: 'ready' | 'needs_review';
     weekday: string;
     prompt: string | null;
     slots: {
@@ -1020,6 +1021,17 @@ export default function Dashboard() {
                             </button>
                         </div>
 
+                        {savedPlan.status === 'needs_review' && (
+                            <p
+                                role="status"
+                                className="mb-3 text-[13px] leading-relaxed text-text-2"
+                            >
+                                Your saved plan needs an update. We can no
+                                longer confirm one or more places for this
+                                visit. Your saved reference is kept. Open
+                                Composer to create an updated plan.
+                            </p>
+                        )}
                         <div className="flex flex-col gap-2.5">
                             {savedPlan.slots.map((pick) => (
                                 <div
@@ -1053,7 +1065,9 @@ export default function Dashboard() {
                             onClick={() => openComposer(savedPlan.prompt ?? '')}
                             className="mt-4 w-full cursor-pointer rounded-[11px] border border-border bg-card py-[11px] text-[14px] font-semibold text-foreground transition-colors hover:border-primary"
                         >
-                            Open in Composer →
+                            {savedPlan.status === 'needs_review'
+                                ? 'Update in Composer →'
+                                : 'Open in Composer →'}
                         </button>
                     </div>
                 )}

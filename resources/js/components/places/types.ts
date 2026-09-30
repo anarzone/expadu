@@ -55,6 +55,7 @@ export type PlaceFactSnapshot = {
 };
 
 export type Place = {
+    recommendation_status?: 'available' | 'unavailable';
     id: number;
     name: string;
     category: string;

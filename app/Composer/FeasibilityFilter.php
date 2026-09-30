@@ -38,6 +38,12 @@ class FeasibilityFilter
     /** Fact constraints are applied before retrieval caps and again before scoring. */
     public function matchesDiscovery(Constraints $constraints, Candidate $candidate): bool
     {
+        // A day with kids never routes through a bar or a coworking space.
+        if ($constraints->companions === 'kids'
+            && in_array($candidate->category, ['bar', 'coworking'], true)) {
+            return false;
+        }
+
         if (! $this->matchesBudget($constraints, $candidate)) {
             return false;
         }
@@ -101,12 +107,6 @@ class FeasibilityFilter
         // Category filter (empty = all), coarse buckets already expanded to fines.
         if ($allowedCategories !== []
             && ! in_array($candidate->category, $allowedCategories, true)) {
-            return false;
-        }
-
-        // A day with kids never routes through a bar or a coworking space.
-        if ($constraints->companions === 'kids'
-            && in_array($candidate->category, ['bar', 'coworking'], true)) {
             return false;
         }
 

@@ -58,6 +58,10 @@ class PlacesController extends Controller
      */
     public function show(Request $request, Spot $spot): PlaceResource
     {
+        $eligibility = $spot->destination_spot_id === null
+            ? Spot::query()->recommendationEligible(true)->whereNull('destination_spot_id')
+            : app(DestinationGrouping::class)->eligible(Spot::query(), true);
+        $spot->recommendation_available = $eligibility->whereKey($spot->id)->exists();
         $spot->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
         $origin = $this->locations->context($request->user(), $request);
 

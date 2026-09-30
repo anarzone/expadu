@@ -824,3 +824,44 @@ test('nearby same named food venues retain their distinct identities', function 
         ->and($places->pluck('cluster_size')->all())->toBe([1, 1, 1]);
     $this->getJson('/api/places/'.$first->id)->assertOk()->assertJsonPath('data.cluster_size', 1);
 });
+
+test('retained place details state when recommendations are unavailable', function (array $attributes) {
+    $place = Spot::factory()->create(['name' => 'Retained place', 'category' => 'park', ...$attributes]);
+    $this->getJson('/api/places/'.$place->id)->assertSuccessful()
+        ->assertJsonPath('data.id', $place->id)
+        ->assertJsonPath('data.recommendation_status', 'unavailable');
+    $this->assertModelExists($place);
+})->with([
+    'inactive legacy record' => [['is_active' => false, 'is_recommendable' => false]],
+    'recommendation hold' => [['is_active' => true, 'is_recommendable' => false]],
+    'access restriction' => [['is_active' => true, 'is_recommendable' => true, 'tags' => ['access' => 'private']]],
+]);
+
+test('eligible place details remain available without claiming verified opening hours', function () {
+    $place = Spot::factory()->create(['category' => 'park', 'tags' => []]);
+    $this->getJson('/api/places/'.$place->id)->assertSuccessful()
+        ->assertJsonPath('data.recommendation_status', 'available')
+        ->assertJsonPath('data.open_now', null);
+});
+
+test('an unavailable detail never describes a retained schedule as currently closed', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-30 23:00:00', 'Europe/Berlin'));
+    $place = Spot::factory()->create(['category' => 'park', 'is_active' => false, 'is_recommendable' => false,
+        'tags' => ['opening_hours' => 'Mo-Su 09:00-18:00', 'fee' => 'no']]);
+    $this->getJson('/api/places/'.$place->id)->assertSuccessful()
+        ->assertJsonPath('data.recommendation_status', 'unavailable')
+        ->assertJsonPath('data.open_now', null)
+        ->assertJsonPath('data.price_text', null);
+});
+
+test('activity-qualified facility details use the shared recommendation policy', function () {
+    $place = Spot::factory()->create(['category' => 'pitch', 'name' => 'Source pitch',
+        'source' => 'osm', 'source_id' => 'way/987654321', 'is_recommendable' => false,
+        'tags' => ['sport' => 'soccer', 'access' => 'yes', 'fee' => 'no']]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['activity_discovery' => true];
+    $preview = $review->preview($place->id, $changes);
+    $review->apply($place->id, $changes, $preview['fingerprint'], 'Verified public activity facility with stable source identity.', 'test-reviewer');
+    $this->getJson('/api/places/'.$place->id)->assertSuccessful()
+        ->assertJsonPath('data.recommendation_status', 'available');
+});
