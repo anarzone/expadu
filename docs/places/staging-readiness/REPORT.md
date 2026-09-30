@@ -1,7 +1,7 @@
 # EXP-69 current staging Places readiness proposal
 
 Date: 2026-09-30. Based on staging commit `89289db9641bb75a563e74b44be9b4717bd61b22`.
-Status: implementation, one independent review/fix pass and final local/read-only staging verification complete; draft PR #62 published; final CI calendar correction awaits exact-head verification. No code deployment.
+Status: implementation, one independent review/fix pass and final local/read-only staging verification complete; draft PR #62 published; code-head CI/security and complete tracker/wiki readbacks pass. Staging deployment remains unapproved. No code deployment.
 
 This scoped backend port fixes retained-detail availability, explicit reviewed facility discovery, access-bound qualification and uncontrolled legacy seeding/scheduled catalogue writes. It preserves the current staging design and newer source-withdrawal behavior. It does not replace staging with the older production candidate.
 
@@ -57,4 +57,10 @@ EXP-69 and EXP-72 remain In Progress. [Draft PR #62](https://github.com/anarzone
 
 ## CI calendar correction
 
-The first PR CI run 36783202670 passed server tests and lint, but an unchanged bureaucracy browser assertion failed after local midnight at the September/October boundary. The app generated a 1 December relative fixture date in Berlin; Node expected 30 November in UTC. The exact unchanged staging config/persona/browser helper reproduced that mismatch at 2026-09-30T22:05:00Z. The browser job now derives its runner time zone from config/app.php. Executing that exact workflow step makes both labels 1 December. Product bureaucracy rules, fees, sources and frontend are untouched. See ci-calendar-summary.json; a fresh exact-head CI run is still required.
+The first PR CI run 36783202670 passed server tests and lint, but an unchanged bureaucracy browser assertion failed after local midnight at the September/October boundary. The app generated a 1 December relative fixture date in Berlin; Node expected 30 November in UTC. The exact unchanged staging config/persona/browser helper reproduced that mismatch at 2026-09-30T22:05:00Z. The browser job now derives its runner time zone from config/app.php. Executing that exact workflow step makes both labels 1 December. Product bureaucracy rules, fees, sources and frontend are untouched. See ci-calendar-summary.json; CI run 36784986627 passed Lint, Test and Browser Tests for code head d0a35992eb265cb55684b396f1787fb0a1622eb9; GitGuardian also passed. Image builds and both deployments were skipped. Documentation-only follow-up heads must pass their own checks; the current PR check status is the live release gate.
+
+## Publication and concrete release proposal
+
+EXP-69 and EXP-72 and their existing BookStack pages 33/36 contain the implementation, counts, limitations, calendar correction and green code-head CI. Full readbacks preserved every earlier history exactly (Plane only adds its normal safe-link attribute). Both tickets remain In Progress and PR #62 remains draft against staging; production proposal #61 is unchanged. The dated receipt is publication-readback-summary.json.
+
+RELEASE.md names the staging configuration, retained-data boundaries, authenticated acceptance checks and the required photo-health operating decision. Source-null recovery remains a separate action; the 90 facilities still require target packages and combined recovery before a distinct live approval. No merge, deployment, new facility qualification or photo-health data write was performed.

@@ -84,6 +84,14 @@
   Expected: current denominator re-read, retained held status unavailable, zero staging/production writes, no raw rows/private files exported. Do not reuse old counts as current evidence.
 - [x] Commit the task changes with normal hooks and Refs EXP-69. Generate a whole-branch review package against 89289db9641bb75a563e74b44be9b4717bd61b22. Dispatch one fresh native reviewer using the Review Focus above.
 - [x] Re-grade every finding; one Critical/Important test-first fix pass, no repeat reviewer; record every Ruling and deferred Minor.
-- [ ] Push only the private codex/EXP-69-staging-readiness branch; create and attach a draft PR with base staging. Check CI at that exact head. Do not merge or deploy.
-- [ ] Update EXP-69/EXP-72 and their existing BookStack Work Log pages with exact results and remaining release/data/media limits; read back complete histories. Preserve In Progress and the original production draft PR.
-- [ ] Preserve completed evidence and rulings in tracked docs, remove only this plan's scratch workspace after completion.
+- [x] Push only the private codex/EXP-69-staging-readiness branch; create and attach a draft PR with base staging. Check CI at that exact head. Do not merge or deploy.
+- [x] Update EXP-69/EXP-72 and their existing BookStack Work Log pages with exact results and remaining release/data/media limits; read back complete histories. Preserve In Progress and the original production draft PR.
+- [x] Preserve completed evidence and rulings in tracked docs, remove only this plan's scratch workspace after completion.
+
+## Final verification and release boundary
+
+One fresh native review found one Important legacy-access-binding defect, fixed in one seven-regression RED-to-GREEN pass. Full normal hooks:1,754passed/2skipped/7,349assertions. Final guarded staging API evidence:4,235contracts/791aliases/3,558heldexclusions/12unavailabledetails;90post-hold previews still unqualified. Runtime remains b7bbb275a67111744a9cc785005f89b06a5757d272628a05bbfd0050fa71fb0c.
+
+CI's unrelated calendar fixture failed at the UTC/local month boundary on unchanged base source. The exact base fixture reproduced RED; the new CI step derives timezone from app configuration and produced GREEN. No product bureaucracy rule or frontend changed. Corrected CI run36784986627 and GitGuardian passed code head d0a35992eb265cb55684b396f1787fb0a1622eb9. Full Jira/wiki/PR readbacks pass; histories preserved and tickets remain In Progress.
+
+All nine rulings and the absence of deferred Minor findings are retained in execution-decisions.md. RELEASE.md is the concrete staging proposal. Any final documentation commit must pass its own CI before the branch is offered for a release decision. No production/staging deployment, facility apply or media-health write is included.

@@ -55,5 +55,8 @@
   "scope": "CI runner timezone only, derived from application configuration",
   "product_bureaucracy_rules_changed": false,
   "application_runtime_changed": false,
-  "new_exact_head_ci_pending": true
+  "new_exact_head_ci_pending": false,
+  "verified_run": 36784986627,
+  "verified_head": "d0a35992eb265cb55684b396f1787fb0a1622eb9",
+  "verified_conclusion": "success"
 }

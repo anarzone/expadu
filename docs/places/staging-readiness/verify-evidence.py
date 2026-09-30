@@ -15,6 +15,9 @@ contracts=read('consumers-summary.json')
 football=read('football-summary.json')
 facilities=read('post-hold-facilities-summary.json')
 tests=read('local-tests-summary.json')
+calendar=read('ci-calendar-summary.json')
+ci=read('ci-summary.json')
+publication=read('publication-readback-summary.json')
 files={}
 for directory in ['app','config','routes','database/migrations']:
     for path in (PROJECT/directory).rglob('*.php'):
@@ -59,6 +62,26 @@ assert facilities['guard_refusals_verified']==6 and facilities['same_backend_and
 assert not facilities['raw_rows_exported'] and not facilities['real_user_rows_read'] and not facilities['synthetic_user_persisted']
 assert not facilities['staging_changed'] and not facilities['production_changed'] and facilities['facility_qualifications_applied']==0
 assert not facilities['target_apply_package_prepared'] and not facilities['stacked_recovery_rehearsed_by_this_check'] and not facilities['sources_refetched_by_this_check']
+assert not calendar['red']['labels_match'] and calendar['green']['labels_match']
+assert calendar['red']['unchanged_base']==calendar['green']['unchanged_base']=='89289db9641bb75a563e74b44be9b4717bd61b22'
+for path, sha in calendar['red']['base_source_sha256'].items():
+    assert sha==calendar['green']['base_source_sha256'][path]==digest(PROJECT/path)
+assert calendar['verified_conclusion']=='success' and not calendar['product_bureaucracy_rules_changed'] and not calendar['application_runtime_changed']
+assert ci['status']=='success' and ci['head']==publication['ci_head']==calendar['verified_head']
+assert ci['run_id']==publication['ci_run']==calendar['verified_run']==36784986627
+assert ci['runtime_sha256']==publication['application_runtime_sha256']==runtime
+jobs={j['name']:j for j in ci['jobs']}
+for name in ['Lint','Test','Browser Tests']:
+    assert jobs[name]['status']=='completed' and jobs[name]['conclusion']=='success'
+for name in ['Build & Push Image','Build & Push pgsql Image','Deploy to Staging','Deploy to Production']:
+    assert jobs[name]['conclusion']=='skipped'
+assert ci['security_check']['status']=='completed' and ci['security_check']['conclusion']=='success'
+assert publication['status']=='verified' and publication['security_conclusion']=='success'
+assert len(publication['proofs'])==5
+assert all(p.get('readback_verified',p.get('body_readback_verified',False)) for p in publication['proofs'])
+assert all(p['full_history_preserved'] for p in publication['proofs'] if p['type'] in ['ticket','wiki'])
+assert all(p['in_progress'] for p in publication['proofs'] if p['type']=='ticket')
+assert not publication['production_changed'] and not publication['code_deployed']
 print(json.dumps({'status':'passed','runtime_sha256':runtime,'eligible_contracts_checked':4235,
     'eligible_aliases_checked':791,'held_unavailable_details_checked':12,'tests_passed':tests['passed'],
     'code_deployed':False,'production_changed':False,'photo_coverage_percent':2.817}))
