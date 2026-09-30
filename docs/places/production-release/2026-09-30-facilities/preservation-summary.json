@@ -51,6 +51,31 @@
       "bytes": 13987727,
       "sha256": "c840b0e8b2c498b9745cf6c1b74aee3140a64ab4b9e1d5f63d9a3d240255658c",
       "mode": "0o600"
+    },
+    "legacy-journal-package-private.json": {
+      "bytes": 627982,
+      "sha256": "c7e1598bfb7893e91e439970f516154759ee4c8e22ec3d376dec826708ba52a9",
+      "mode": "0o600"
+    },
+    "legacy-journal-applied-private.json": {
+      "bytes": 10225470,
+      "sha256": "169b940fee6f1beed71aca40263eaa6c65db739753211265c67571f42afecd53",
+      "mode": "0o600"
+    },
+    "legacy-journal-recovered-private.json": {
+      "bytes": 6331839,
+      "sha256": "17b56874da1c7df7efdf373f94648a2a8689ea85546a85fa98cdce9ffce9db18",
+      "mode": "0o600"
+    },
+    "legacy-code-manifest.json": {
+      "bytes": 54070,
+      "sha256": "636525fedf5ea5b5bca250fde9c9c14f4a2b9346f8a2237239c0f14a1178b60e",
+      "mode": "0o600"
+    },
+    "LegacyReferenceJournal.php": {
+      "bytes": 18482,
+      "sha256": "73d9a38b85247da17f1d8a702a54bf645929f89561fd1d546096037a502013b3",
+      "mode": "0o600"
     }
   },
   "private_data_exported": false,

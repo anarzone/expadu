@@ -1,6 +1,6 @@
 {
     "status": "passed",
-    "checked_at": "2026-09-30T12:53:17+00:00",
+    "checked_at": "2026-09-30T14:02:05+00:00",
     "transaction_read_only": true,
     "production_catalogue_matches_original": true,
     "production_migrations_unchanged": 89,

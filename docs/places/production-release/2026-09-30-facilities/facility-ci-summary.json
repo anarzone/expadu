@@ -1,0 +1,49 @@
+{
+  "status": "completed",
+  "conclusion": "success",
+  "headSha": "c65075fa96088c1eec7278d4977238a61bda6d0b",
+  "url": "https://github.com/anarzone/expadu/actions/runs/36719797988",
+  "run_id": 36719797988,
+  "jobs": [
+    {
+      "name": "Browser Tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Lint",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Detect path changes",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Build & Push Image",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Build & Push pgsql Image",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Deploy to Production",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Deploy to Staging",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ]
+}

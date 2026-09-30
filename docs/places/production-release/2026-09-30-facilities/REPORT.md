@@ -86,8 +86,28 @@ retrieval. Each old ID resolved to its source-backed counterpart in the trial.
 Native identity audit entries were created; every source/place/identity/parent/venue
 row was restored by outer rollback. No automatic source assignment or live merge
 occurred. These are **484 recoverable older references, zero additional unique
-places**. A durable operator recovery protocol for this separate identity batch
-still needs preparation before a live alias operation.
+places**. The separate durable operator protocol is now implemented and its all-pair
+trial passed: all 484 applied API details and Composer saved IDs resolved correctly,
+and all 484 recovered details returned to their original held state with Composer
+exclusion. The final review-fixed trial passed at14:16UTC. New-instance apply/recovery replay
+matched. Native identity audit entries
+were retained; the final outer rollback restored all **14** protected tables and
+left zero synthetic users. Recovery preserves source facts, reviews, feedback,
+media and saved references; later changes cause refusal. The journal/native test
+set passed **100 tests / 439 assertions** after review fixes. Independent review
+found blank/relative timestamp acceptance; seven regressions now require absolute
+ISO timestamps with explicit timezone and valid dates. Two further regressions
+bound drift checks to READ COMMITTED; other isolation modes are explicitly held.
+One endpoint-level save-after-link test remains a deferred Minor coverage item;
+the reviewer found no current ownership or recovery defect. See legacy-review-result.md.
+
+Fresh geometry proof now uses the documented original point method: 312 source
+nodes, 134 representative way points and 38 earlier Overpass bounding-box centres.
+Both way methods were independently computed from current complete nodes. A
+bounding-box midpoint is not substituted for an area representative point, and
+the exact stored/effective coordinate guard was not relaxed. No coordinates moved.
+The operator remains bounded to 500 disjoint pairs; aliases with earlier native
+audit events or incoming child/reference/fact history require separate handling.
 
 The remaining **72** candidate links stay held: **40** native identity refusals,
 **20** differing source projections, **10** relation-geometry reviews and **2**
@@ -101,8 +121,13 @@ The useful reviewed facility candidate is **4,245 eligible places during trial**
 The existing photo checkpoint remains separate (65 verified associations during
 its reversible trial); Stadt Köln exclusions and all media rights gates remain.
 
-Independent review and its single fix pass are complete. Finish normal hooks
-and exact-head CI, then refresh
+Facility independent review and its single fix pass are complete. Facility normal
+hooks passed **1,706 tests, one skipped / 7,115 assertions** and exact-head CI
+[36719797988](https://github.com/anarzone/expadu/actions/runs/36719797988) passed
+`c65075fa`; Lint, Test and Browser Tests passed, while image builds and deployments
+were skipped. The separate legacy journal's review and single fix pass are complete. Its normal
+hooks and exact-head CI are recorded on PR61 and the linked work-log pages after
+commit; this document does not attribute executor checks to the reviewer. Before any live operation, refresh
 the intended target's source/backup/drift evidence and approve its exact deployment
 and import. Keep EXP-69/72 In Progress and PR61 draft until the release conditions
 are met. Continue the identity holds with current evidence; never bulk re-enable
@@ -114,7 +139,9 @@ unknown-origin records or infer access, price or identity from proximity.
 - source-summary.json and target-summary.json contain the 559 source/target checks.
 - rehearsal-summary.json records actual facility discovery and native recovery.
 - legacy-identity-summary.json, legacy-fresh-source-summary.json and
-  legacy-links-summary.json record the separate legacy-reference work.
+  legacy-links-summary.json record the initial legacy-reference screening.
+- legacy-journal-summary.json, legacy-code-install-summary.json and the separate
+  LEGACY-REFERENCE-SPEC.md/PLAN.md record all-pair durable recovery verification.
 - Detailed source geometry, target rows and native receipts remain private in the
   existing isolated lab. Existing private evidence permissions and hashes were
 verified in place; no private rows or credentials were copied. Automatic approval
@@ -122,7 +149,7 @@ review rejected a new private archive because it could include private rows and
 credentials without specific payload/destination authorization. Only aggregate
 and public-source evidence is exported.
 
-Read-only verification at 12:53 UTC confirmed the original production catalogue
+Read-only verification at 14:02 UTC confirmed the original production catalogue
 and all 89 production migrations are unchanged. Both live application images
 match the earlier checkpoint; see live-preservation-summary.json and
 preservation-summary.json. The lab count includes the prepared package and

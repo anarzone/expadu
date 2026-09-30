@@ -1,10 +1,12 @@
 {
-  "candidate_base": "75b2e6f8adf88894aa949ca4de876838fc39f51d",
+  "candidate_facility_base": "75b2e6f8adf88894aa949ca4de876838fc39f51d",
+  "candidate_legacy_runtime_base": "c65075fa96088c1eec7278d4977238a61bda6d0b",
   "facility_helper_sha256": "68d13b7a4df3ee7d0d39dee59870573f57c95d559ac3d5a367142f2bc5ee88db",
+  "legacy_helper_sha256": "73d9a38b85247da17f1d8a702a54bf645929f89561fd1d546096037a502013b3",
   "files": {
     "PLAN.md": "2a72d11f5b3c771f6abca548331f07bad699ba88984653d484da3efa8f2b84d7",
-    "REPORT.md": "1ef3b255bf9491b10942103b89fc40d88ee379847821179f5ada3a07135dc936",
-    "STATUS.json": "184344fdf34fcab2dd31a32c007106e681b55a810b41948acdefe13c1e921582",
+    "REPORT.md": "213daed7ce4fffe63e8930bdc8b508aaa91fdeeb4f04df2f52e2ff1d61c796d2",
+    "STATUS.json": "b8fc6e87b5936daab68f25370490421198bedaca4b3174ded9d6ed462a84d6b6",
     "source-summary.json": "f9026e2a44eab26c264da52e3ae0923eb066872755d2c7016e0bc61c4df15374",
     "target-summary.json": "5768e4d526085fb94fbd62f22b7d1fde89661c8e265c30b2cf84e5880bb85c0f",
     "rehearsal-summary.json": "7265b2c7ce0a1cb65fb6a7508d8d0feb6795cc696c52fbb18682b1d67ae7d13b",
@@ -15,8 +17,15 @@
     "legacy-hold-summary.json": "48886e8474072454ca608dd9d5ab3867802736ed99bfd4037bb1e5bd89913ec9",
     "review-result.md": "93d0e9e51903787eac1dcbcefb7f64ff52071ed2a145919155f5cebafd70e582",
     "code-install-receipt.json": "4b5d96f453debbd32794488fb2e2af06ce69b27e10be733f1c8af88851037ee5",
-    "live-preservation-summary.json": "b6a09f1fd7c59ffc851a34b76e3e43cdbdef0cf53dd30136f754e7ae1315bf51",
-    "preservation-summary.json": "2f8a69c35556266eb697de7c23c79208ff1ea42f9b68ef61815ed3620a28575c"
+    "live-preservation-summary.json": "6e249692918e7c62c3673114927c68af25049c54eedccff38a9f0ae86e5c1535",
+    "preservation-summary.json": "01dab2dd9732aedff958929959b5190d4d1c0ffacab5c89d170587db522641f6",
+    "LEGACY-REFERENCE-PLAN.md": "87685fd21a30efb8a1f7568f961242f0b50e3380aaac610621ed17a20cfdf835",
+    "LEGACY-REFERENCE-SPEC.md": "f96d2d84dfe90560f4da46d6c030fc038c18078f6eea1cb4d8cd2c2ca08d4b44",
+    "legacy-journal-summary.json": "0111f8af98e4e44377b62d166b89a24fffea1af78addd2c1af06b799461ead64",
+    "legacy-code-install-summary.json": "d6ae168dd8a089b5ba1f218870bb41ec2b1c85c0083916ec26e8d4de76360f31",
+    "legacy-review-result.md": "d6e230b1a27b8fe155f24d385a7368795cc160b282a566176f0113d39e9e9345",
+    "legacy-execution-decisions.md": "99cda032ea93622d4623a6059ea3411e316ddf2d9a92494c619b155b5c5add2a",
+    "facility-ci-summary.json": "01614ace8f2b3fe0377168659701fc47c76f4a759672c19992c2f931729a34db"
   },
-  "full_runtime_manifest": "Verified privately in the isolated lab; digest is in preservation-summary.json."
+  "full_runtime_manifests": "Verified privately in the isolated lab; aggregate digests are in preservation-summary.json."
 }

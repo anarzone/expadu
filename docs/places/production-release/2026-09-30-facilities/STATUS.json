@@ -1,5 +1,5 @@
 {
-  "status": "review_and_api_rehearsal_passed_hooks_ci_pending",
+  "status": "review_and_final_api_rehearsal_passed_normal_hooks_ci_recorded_externally",
   "candidate_base": "75b2e6f8adf88894aa949ca4de876838fc39f51d",
   "pr": "https://github.com/anarzone/expadu/pull/61",
   "journal_tests": 21,
@@ -10,7 +10,7 @@
   "facility_api_and_composer_discovery_verified": 90,
   "legacy_links_rehearsed": 484,
   "added_unique_places_from_legacy_links": 0,
-  "durable_legacy_recovery_prepared": false,
+  "durable_legacy_recovery_prepared": true,
   "production_changed": false,
   "staging_changed": false,
   "persistent_qualifications_added": 0,
@@ -29,5 +29,33 @@
   "live_production_catalogue_unchanged": true,
   "live_images_unchanged": true,
   "new_private_archive_created": false,
-  "aggregate_only_publication": true
+  "aggregate_only_publication": true,
+  "candidate_facility_commit": "c65075fa96088c1eec7278d4977238a61bda6d0b",
+  "legacy_applied_api_details_verified": 484,
+  "legacy_applied_composer_saved_ids_verified": 484,
+  "legacy_recovered_api_details_verified": 484,
+  "legacy_recovered_composer_exclusions_verified": 484,
+  "legacy_protected_tables_restored": 14,
+  "legacy_journal_native_tests": 100,
+  "legacy_journal_native_assertions": 439,
+  "facility_normal_hooks": {
+    "tests_passed": 1706,
+    "skipped": 1,
+    "assertions": 7115
+  },
+  "facility_ci_run": 36719797988,
+  "facility_ci_conclusion": "success",
+  "legacy_final_review": {
+    "critical": 0,
+    "important": 1,
+    "declined_regraded_important": 1,
+    "deferred_minor": 1,
+    "fix_passes": 1,
+    "red_regressions": 9,
+    "dispositions": "legacy-review-result.md"
+  },
+  "deployment_executed": false,
+  "legacy_final_rehearsal_at": "2026-09-30T14:16:37+00:00",
+  "legacy_helper_sha256": "73d9a38b85247da17f1d8a702a54bf645929f89561fd1d546096037a502013b3",
+  "validation_location": "PR61 and EXP69/72 work logs record normal hooks and latest exact-head CI after commit"
 }

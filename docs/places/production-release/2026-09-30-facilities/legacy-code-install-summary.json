@@ -1,0 +1,9 @@
+{
+  "status": "installed_in_isolated_copy_only",
+  "candidate_runtime_commit": "c65075fa96088c1eec7278d4977238a61bda6d0b",
+  "runtime_files_locally_verified": 467,
+  "helper_sha256": "73d9a38b85247da17f1d8a702a54bf645929f89561fd1d546096037a502013b3",
+  "production_changed": false,
+  "staging_changed": false,
+  "private_data_exported": false
+}
