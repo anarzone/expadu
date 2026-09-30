@@ -1,0 +1,30 @@
+{
+  "status": "read_only_native_baseline_prepared",
+  "database": "expadu_staging",
+  "source_null_records": 4356,
+  "active_source_null_rows": 3359,
+  "recommendable_source_null_rows": 3359,
+  "active_recommendable_unlinked_source_null_rows": 2561,
+  "existing_source_null_aliases": 798,
+  "evidence_rows_by_table": {
+    "place_fact_observations": 0,
+    "place_fact_corrections": 0,
+    "place_reconciliations": 798,
+    "place_destination_reviews": 0,
+    "incoming_spots": 0,
+    "incoming_park_areas": 0,
+    "incoming_venues": 1
+  },
+  "package_sha256": "5993618124c8f226bce574dc8347385694366c8c4f1f34e15f8703b98a6c9e72",
+  "application_sha256": "8889773f5f3b539f5fbce4a67f8e5560bac68dc80600cce57c187479aeb16c72",
+  "importer_sha256": "98c03f5e62ceedae24ca4da7c8217d0fa812051e4caad1ead272c64b36cb1399",
+  "catalogue_select_queries": 11,
+  "safety_guard_refusals_verified": 6,
+  "read_only_transaction": true,
+  "raw_rows_exported": false,
+  "real_user_rows_returned": false,
+  "live_hold_applied": false,
+  "staging_changed": false,
+  "production_changed": false,
+  "checked_at": "2026-09-30T18:15:11+00:00"
+}
