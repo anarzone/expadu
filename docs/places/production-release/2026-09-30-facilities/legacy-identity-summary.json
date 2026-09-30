@@ -1,0 +1,19 @@
+{
+  "status": "completed",
+  "checked_at": "2026-09-30T12:11:12+00:00",
+  "legacy_records_checked": 4680,
+  "public_source_records_compared": 7712,
+  "nearby_pairs_screened": 6674,
+  "reason_counts": {
+    "nearby_only_insufficient_identity_evidence": 2771,
+    "no_nearby_supported_osm_candidate": 1353,
+    "unique_bidirectional_candidate_pending_fresh_review": 556
+  },
+  "unique_bidirectional_identity_review_candidates": 556,
+  "already_have_source_backed_counterpart": 556,
+  "require_source_binding_review": 0,
+  "automatic_merges": 0,
+  "automatic_source_assignments": 0,
+  "database_changed": false,
+  "raw_rows_exported": false
+}

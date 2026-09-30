@@ -90,7 +90,9 @@ class PlaceFacts
             (SELECT count(*) = 1 AND bool_and(value->>'value' = 'true'
                 AND value->'basis' = __BASIS__
                 AND (value->>'observation_id')::bigint = COALESCE((SELECT max(o.id) FROM place_fact_observations o
-                    WHERE o.spot_id = spots.id), 0))
+                    WHERE o.spot_id = spots.id), 0)
+                AND COALESCE((value->>'access_correction_id')::bigint, 0) = COALESCE((SELECT max(a.id)
+                    FROM place_fact_corrections a WHERE a.spot_id = spots.id AND a.field = 'access'), 0))
              FROM place_fact_corrections c
              WHERE c.spot_id = spots.id AND c.field = 'activity_discovery' AND c.revoked_at IS NULL)
             SQL));

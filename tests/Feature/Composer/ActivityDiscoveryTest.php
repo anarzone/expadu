@@ -63,7 +63,7 @@ test('unnamed facilities require explicit auditable qualification and remain out
     $review->apply($qualified->id, $changes, $preview['fingerprint'], 'Source geometry and soccer capability checked for this public facility.', 'readiness-test');
     $repository = app(CandidateRepository::class);
     expect(array_column($repository->candidatesFor(activityWindow(), 50.95, 6.95), 'id'))->toBe(["spot:{$qualified->id}"])
-        ->and(array_column($repository->candidatesFor(activityWindow(['activities' => []]), 50.95, 6.95), 'id'))->toBe([])
+        ->and(array_column($repository->candidatesFor(activityWindow(['activities' => [], 'categories' => []]), 50.95, 6.95), 'id'))->toBe([])
         ->and(array_column($repository->byIds(["spot:{$qualified->id}"], CarbonImmutable::now()), 'id'))->toBe(["spot:{$qualified->id}"])
         ->and($qualified->fresh()->is_recommendable)->toBeFalse();
     $changes = ['activity_discovery' => false];
@@ -151,4 +151,64 @@ test('nearest discovery does not resolve the whole city once the eligible catego
     $result = app(CandidateRepository::class)->candidatesFor(activityWindow(['categories' => ['cafe'], 'budget' => null, 'activities' => [], 'radius_km' => null]), 50.95, 6.95);
     expect(array_column($result, 'id'))->toBe($near->map(fn ($p) => "spot:{$p->id}")->all())
         ->and($facts->resolved)->toBeLessThan(100);
+});
+
+test('explicit facility categories discover reviewed descriptive places without inventing a sport or price', function (string $category) {
+    $place = Spot::factory()->create(['name' => 'Descriptive facility', 'category' => $category,
+        'source' => 'osm', 'source_id' => 'way/98765432', 'is_recommendable' => false,
+        'lat' => 50.95, 'lng' => 6.95, 'price_range' => null, 'tags' => ['access' => 'yes']]);
+    $unreviewed = Spot::factory()->create(['category' => $category, 'is_recommendable' => false,
+        'lat' => 50.95, 'lng' => 6.95, 'price_range' => null, 'tags' => ['access' => 'yes']]);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($place->id, ['activity_discovery' => true]);
+    $review->apply($place->id, ['activity_discovery' => true], $preview['fingerprint'],
+        'Current source identity, category, geometry and explicit public access checked.', 'readiness-test');
+    $repository = app(CandidateRepository::class);
+    $constraints = activityWindow(['categories' => [$category], 'activities' => [], 'budget' => null]);
+    $candidates = $repository->candidatesFor($constraints, 50.95, 6.95);
+    expect(array_column($candidates, 'id'))->toBe(["spot:{$place->id}"])
+        ->and($candidates[0]->placeFacts['activities'])->toBe([])
+        ->and($candidates[0]->placeFacts['fee']['value'])->toBe('unknown')
+        ->and($candidates[0]->costTier)->toBe('unknown')
+        ->and($place->fresh()->is_recommendable)->toBeFalse()
+        ->and($repository->candidatesFor(activityWindow(['categories' => [$category], 'activities' => [], 'budget' => 'free']), 50.95, 6.95))->toBe([])
+        ->and($repository->candidatesFor(activityWindow(['categories' => [], 'activities' => [], 'budget' => null]), 50.95, 6.95))->toBe([]);
+    $place->update(['tags' => ['access' => 'private']]);
+    expect($repository->candidatesFor($constraints, 50.95, 6.95))->toBe([]);
+})->with(['playground', 'pitch', 'table_tennis']);
+
+test('a mixed broad and fine request qualifies only the explicitly selected facility category', function () {
+    $review = app(ReviewPlaceFacts::class);
+    $places = [];
+    foreach (['playground' => 'Playground', 'picnic' => 'Picnic area'] as $category => $name) {
+        $place = Spot::factory()->create(['name' => $name, 'category' => $category, 'is_recommendable' => false,
+            'lat' => 50.95, 'lng' => 6.95, 'price_range' => null, 'tags' => ['access' => 'yes']]);
+        $preview = $review->preview($place->id, ['activity_discovery' => true]);
+        $review->apply($place->id, ['activity_discovery' => true], $preview['fingerprint'],
+            'This public activity facility has been reviewed against its current source.', 'readiness-test');
+        $places[$category] = $place;
+    }
+    $constraints = activityWindow(['categories' => ['park', 'playground'], 'activities' => [], 'budget' => null]);
+    expect(array_column(app(CandidateRepository::class)->candidatesFor($constraints, 50.95, 6.95), 'id'))->toBe(['spot:'.$places['playground']->id]);
+});
+
+test('a later access review invalidates qualification until a fresh public review', function () {
+    $place = activityPitch(['is_recommendable' => false]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['activity_discovery' => true];
+    $preview = $review->preview($place->id, $changes);
+    $review->apply($place->id, $changes, $preview['fingerprint'], 'Verified public source geometry for this football facility.', 'readiness-test');
+    $repository = app(CandidateRepository::class);
+    $constraints = activityWindow(['activities' => [], 'budget' => null]);
+    expect(array_column($repository->candidatesFor($constraints, 50.95, 6.95), 'id'))->toBe(['spot:'.$place->id]);
+    $preview = $review->preview($place->id, ['access' => 'unknown']);
+    $review->apply($place->id, ['access' => 'unknown'], $preview['fingerprint'], 'Later evidence no longer confirms public access to this facility.', 'other-reviewer');
+    expect($repository->candidatesFor($constraints, 50.95, 6.95))->toBe([])
+        ->and($repository->byIds(['spot:'.$place->id], CarbonImmutable::now()))->toBe([]);
+    $preview = $review->preview($place->id, ['access' => null]);
+    $review->apply($place->id, ['access' => null], $preview['fingerprint'], 'Withdraw the access review while keeping its audit history.', 'other-reviewer');
+    expect($repository->candidatesFor($constraints, 50.95, 6.95))->toBe([]);
+    $preview = $review->preview($place->id, $changes);
+    $review->apply($place->id, $changes, $preview['fingerprint'], 'Rechecked current source and public access after the access review.', 'readiness-test');
+    expect(array_column($repository->candidatesFor($constraints, 50.95, 6.95), 'id'))->toBe(['spot:'.$place->id]);
 });

@@ -85,8 +85,13 @@ class CandidateRepository
     {
         $grouping = app(DestinationGrouping::class);
         $requested = array_values(array_unique(array_merge([], ...array_map(SpotCategory::finesForSelector(...), $constraints->categories))));
-        $includeFacilities = $constraints->activities !== [];
+        $requestedFacilities = array_values(array_filter(
+            $constraints->categories,
+            fn (string $category): bool => SpotCategory::tryFrom($category)?->isActivityFacility() ?? false,
+        ));
+        $includeFacilities = $constraints->activities !== [] || $requestedFacilities !== [];
         $query = $grouping->eligible(Spot::query(), $includeFacilities)
+            ->when($constraints->activities === [] && $requestedFacilities !== [], fn ($query) => $query->where(fn ($where) => $where->where('spots.is_recommendable', true)->orWhereIn('spots.category', $requestedFacilities)))
             ->when(! $includeFacilities, fn ($query) => $query->where(fn ($where) => $where->whereNull('destination_spot_id')->orWhereIn('category', $requested)))
             ->when($requested !== [], fn ($query) => $query->whereIn('category', $requested));
         $selected = [];

@@ -937,3 +937,30 @@ test('catalogue access eligibility scans source observations once for a batch of
     expect($observationScans)->not->toBeEmpty()
         ->and(array_sum($observationScans))->toBeLessThanOrEqual(1);
 });
+
+test('activity qualification refuses unknown access without leaving a correction', function () {
+    $place = Spot::factory()->create(['category' => 'playground', 'is_recommendable' => false, 'tags' => []]);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($place->id, ['activity_discovery' => true]);
+    expect(fn () => $review->apply($place->id, ['activity_discovery' => true], $preview['fingerprint'],
+        'This evidence does not establish public access to the facility.', 'test-reviewer'))
+        ->toThrow(DomainException::class, 'Activity qualification requires current known public access.');
+    expect(PlaceFactCorrection::where('spot_id', $place->id)->count())->toBe(0);
+});
+
+test('a combined access and activity review qualifies against the access it just reviewed', function () {
+    $place = Spot::factory()->create(['category' => 'playground', 'is_recommendable' => false, 'tags' => ['access' => 'private']]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['access' => 'public', 'activity_discovery' => true];
+    $preview = $review->preview($place->id, $changes);
+    $review->apply($place->id, $changes, $preview['fingerprint'], 'Verified public access after correcting this private legacy projection.', 'test-reviewer');
+    expect(Spot::query()->recommendationEligible(true)->whereKey($place->id)->exists())->toBeTrue();
+    $changes = ['access' => 'unknown', 'activity_discovery' => true];
+    $preview = $review->preview($place->id, $changes);
+    $before = PlaceFactCorrection::where('spot_id', $place->id)->orderBy('id')->get()->toArray();
+    expect(fn () => $review->apply($place->id, $changes, $preview['fingerprint'],
+        'This combined review no longer establishes public access.', 'test-reviewer'))
+        ->toThrow(DomainException::class, 'Activity qualification requires current known public access.');
+    expect(PlaceFactCorrection::where('spot_id', $place->id)->orderBy('id')->get()->toArray())->toBe($before)
+        ->and(Spot::query()->recommendationEligible(true)->whereKey($place->id)->exists())->toBeTrue();
+});

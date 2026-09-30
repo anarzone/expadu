@@ -865,3 +865,33 @@ test('activity-qualified facility details use the shared recommendation policy',
     $this->getJson('/api/places/'.$place->id)->assertSuccessful()
         ->assertJsonPath('data.recommendation_status', 'available');
 });
+
+test('an explicit playground request includes a qualified facility and preserves unknown fees', function () {
+    $place = Spot::factory()->create(['name' => 'Playground', 'category' => 'playground',
+        'source' => 'osm', 'source_id' => 'way/98765432', 'is_recommendable' => false,
+        'lat' => 50.948, 'lng' => 6.921, 'price_range' => null, 'tags' => ['access' => 'yes']]);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($place->id, ['activity_discovery' => true]);
+    $review->apply($place->id, ['activity_discovery' => true], $preview['fingerprint'],
+        'Current source category and public playground geometry have been checked.', 'readiness-test');
+    expect(array_column($this->getJson('/api/places')->assertSuccessful()->json('data'), 'id'))->not->toContain($place->id);
+    $this->getJson('/api/places?activity=playground')->assertSuccessful()
+        ->assertJsonPath('data.0.id', $place->id)
+        ->assertJsonPath('data.0.place_facts.fee.value', 'unknown')
+        ->assertJsonPath('data.0.price_text', null);
+    $place->update(['name' => 'Changed source name']);
+    expect(array_column($this->getJson('/api/places?activity=playground')->assertSuccessful()->json('data'), 'id'))->not->toContain($place->id);
+});
+
+test('a later unknown access review removes a qualified facility from Places and available details', function () {
+    $place = Spot::factory()->create(['category' => 'playground', 'is_recommendable' => false,
+        'lat' => 50.948, 'lng' => 6.921, 'tags' => ['access' => 'yes']]);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($place->id, ['activity_discovery' => true]);
+    $review->apply($place->id, ['activity_discovery' => true], $preview['fingerprint'], 'Verified current public source and playground geometry.', 'readiness-test');
+    $this->getJson('/api/places?activity=playground')->assertSuccessful()->assertJsonPath('data.0.id', $place->id);
+    $preview = $review->preview($place->id, ['access' => 'unknown']);
+    $review->apply($place->id, ['access' => 'unknown'], $preview['fingerprint'], 'Later evidence cannot confirm public access to this playground.', 'other-reviewer');
+    expect(array_column($this->getJson('/api/places?activity=playground')->assertSuccessful()->json('data'), 'id'))->not->toContain($place->id);
+    $this->getJson('/api/places/'.$place->id)->assertSuccessful()->assertJsonPath('data.recommendation_status', 'unavailable');
+});

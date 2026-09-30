@@ -1,0 +1,22 @@
+{
+  "candidate_base": "75b2e6f8adf88894aa949ca4de876838fc39f51d",
+  "facility_helper_sha256": "68d13b7a4df3ee7d0d39dee59870573f57c95d559ac3d5a367142f2bc5ee88db",
+  "files": {
+    "PLAN.md": "2a72d11f5b3c771f6abca548331f07bad699ba88984653d484da3efa8f2b84d7",
+    "REPORT.md": "1ef3b255bf9491b10942103b89fc40d88ee379847821179f5ada3a07135dc936",
+    "STATUS.json": "184344fdf34fcab2dd31a32c007106e681b55a810b41948acdefe13c1e921582",
+    "source-summary.json": "f9026e2a44eab26c264da52e3ae0923eb066872755d2c7016e0bc61c4df15374",
+    "target-summary.json": "5768e4d526085fb94fbd62f22b7d1fde89661c8e265c30b2cf84e5880bb85c0f",
+    "rehearsal-summary.json": "7265b2c7ce0a1cb65fb6a7508d8d0feb6795cc696c52fbb18682b1d67ae7d13b",
+    "legacy-identity-summary.json": "7a027242686924a9ea9f231f4e66a535e0436ce7d9fc77ba2e63462cf07dfddf",
+    "legacy-source-preparation-summary.json": "117c6bc3adbe0972060b882fdc21496e095f7e7800cb790d9270e26d828843c8",
+    "legacy-fresh-source-summary.json": "c9a141aaa22dc170ae986a87aaaae53a0d2ae9b80c6dee603dd6b63301e5faa8",
+    "legacy-links-summary.json": "a767e89ef378f5886e15fedc25faa36be4753a81ec0dfcf3565fe9ef62931851",
+    "legacy-hold-summary.json": "48886e8474072454ca608dd9d5ab3867802736ed99bfd4037bb1e5bd89913ec9",
+    "review-result.md": "93d0e9e51903787eac1dcbcefb7f64ff52071ed2a145919155f5cebafd70e582",
+    "code-install-receipt.json": "4b5d96f453debbd32794488fb2e2af06ce69b27e10be733f1c8af88851037ee5",
+    "live-preservation-summary.json": "b6a09f1fd7c59ffc851a34b76e3e43cdbdef0cf53dd30136f754e7ae1315bf51",
+    "preservation-summary.json": "2f8a69c35556266eb697de7c23c79208ff1ea42f9b68ef61815ed3620a28575c"
+  },
+  "full_runtime_manifest": "Verified privately in the isolated lab; digest is in preservation-summary.json."
+}

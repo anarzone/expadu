@@ -1,0 +1,30 @@
+{
+    "status": "passed",
+    "checked_at": "2026-09-30T12:53:17+00:00",
+    "transaction_read_only": true,
+    "production_catalogue_matches_original": true,
+    "production_migrations_unchanged": 89,
+    "verified": {
+        "veedels": {
+            "rows": 86,
+            "sha256": "d9993b535e79d7e52e7f5ea8f1d891fb87ee791762fb794e4c4d5ad46b679be9"
+        },
+        "spots": {
+            "rows": 8798,
+            "sha256": "2e9523810bb1d30fa96340d83e474c0e0b8913d4700667811ff3f58da30fbea1"
+        },
+        "park_areas": {
+            "rows": 231,
+            "sha256": "e5312ad019f802ff46c98dad6c1a5705d4627c358c7b29e02bb57d3abac724ea"
+        },
+        "media_assets": {
+            "rows": 145,
+            "sha256": "56e79e2d75982d84bbfd91640f1ddbdf4257cdbdd9e19652a8b8497ae6b7efac"
+        },
+        "media_attachments": {
+            "rows": 225,
+            "sha256": "b998a87164bfbbe950f6003e8030a7e20ace284d805ad7339e07e4147e96412b"
+        }
+    },
+    "raw_rows_exported": false
+}

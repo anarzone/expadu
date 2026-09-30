@@ -1,0 +1,43 @@
+{
+    "status": "passed",
+    "checked_at": "2026-09-30T12:53:19+00:00",
+    "application_files_verified": 467,
+    "stored_records": 12063,
+    "source_records_checked": 559,
+    "source_backed_prepared_records": 4719,
+    "qualified_facilities_in_trial": 90,
+    "categories": {
+        "basketball": 3,
+        "table_tennis": 11,
+        "pitch": 2,
+        "playground": 74
+    },
+    "unknown_access_facilities_held": 469,
+    "eligible_before": 4155,
+    "eligible_in_trial": 4245,
+    "general_destinations_before_and_after": 4155,
+    "api_details_verified": 90,
+    "map_category_discovery_verified": 90,
+    "composer_nearby_category_discovery_verified": 90,
+    "places_paginated_category_discovery_verified": 90,
+    "strict_free_exclusions_verified": 90,
+    "qualification_reviews_added_in_trial": 90,
+    "audit_entries_after_recovery_in_trial": 180,
+    "recovered_unavailable_details_verified": 90,
+    "apply_replay_identical": true,
+    "recovery_replay_identical": true,
+    "recovery_from_database_journal_with_new_service_instance": true,
+    "actual_process_crash_tested": false,
+    "context": {
+        "database": "exp69_prod_rehearsal_20260930",
+        "package_sha256": "fec35da345a00dee912f863df8bbb34dec3cd3d2bb3bf9e4aaa3a77636b6d294",
+        "application_sha256": "2eb6207834d3d41d6a73cef43f9bef0142b5178767b58df485af9438e446b075",
+        "importer_sha256": "68d13b7a4df3ee7d0d39dee59870573f57c95d559ac3d5a367142f2bc5ee88db"
+    },
+    "outer_transaction_rolled_back": true,
+    "production_changed": false,
+    "staging_changed": false,
+    "persistent_qualifications_added": 0,
+    "raw_rows_exported": false,
+    "all_source_place_review_journal_rows_restored": true
+}

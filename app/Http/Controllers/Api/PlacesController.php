@@ -136,7 +136,7 @@ class PlacesController extends Controller
         $grouping = app(DestinationGrouping::class);
         $query = empty($validated['activity'])
             ? $grouping->general(Spot::query())
-            : $grouping->eligible(Spot::query());
+            : $grouping->eligible(Spot::query(), SpotCategory::from($validated['activity'])->isActivityFacility());
 
         $query->whereNotNull('lat')
             ->whereNotNull('lng')

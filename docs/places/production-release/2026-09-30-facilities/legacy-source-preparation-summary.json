@@ -1,0 +1,14 @@
+{
+  "source_types": {
+    "node": 322,
+    "way": 224,
+    "relation": 10
+  },
+  "fresh_checks_prepared": 546,
+  "native_preview_reasons": {
+    "native_preview_available": 501,
+    "The reviewed pair must have matching names and categories within 10 metres.": 40,
+    "This reconciliation path requires a source-null legacy record and an active OSM target.": 5
+  },
+  "database_changed": false
+}

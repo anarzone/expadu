@@ -1,0 +1,64 @@
+{
+  "lab_path": "/tmp/exp69-production-rehearsal-20260930",
+  "parent_mode": "0700",
+  "existing_private_evidence_verified": {
+    "facility-qualification-package-private.json": {
+      "bytes": 91656,
+      "sha256": "f81f721e4a3f46d71b47aa2c5f16d39dc704fbe100ea6f82c91c1e3b959a685e",
+      "mode": "0o600"
+    },
+    "facility-qualification-applied-private.json": {
+      "bytes": 716099,
+      "sha256": "35d95a89195e365662efd1c9ab8208e1402502e21beab72157b43c9bc7f2fba0",
+      "mode": "0o600"
+    },
+    "facility-qualification-recovered-private.json": {
+      "bytes": 496508,
+      "sha256": "ab8059b2edb9e2e2f398858a1e07e68c56b7ef6d418580d239112ee7214411df",
+      "mode": "0o600"
+    },
+    "facility-source-private.json": {
+      "bytes": 1225448,
+      "sha256": "a57faf84bd13f9461790720cd8f5b5ec331b49d613743802b09523789bfb529b",
+      "mode": "0o600"
+    },
+    "facility-target-private.json": {
+      "bytes": 9558180,
+      "sha256": "4484c7354dd0c5b99eedfa27286a6c14957c1d04b760b6d516f118eabcea2760",
+      "mode": "0o600"
+    },
+    "facility-code-manifest.json": {
+      "bytes": 53903,
+      "sha256": "4e2dd868f3be1ae8c7049b4c5737fe778769c22dd2624b6992dd659ca7637766",
+      "mode": "0o644"
+    },
+    "FacilityQualificationJournal.php": {
+      "bytes": 14574,
+      "sha256": "68d13b7a4df3ee7d0d39dee59870573f57c95d559ac3d5a367142f2bc5ee88db",
+      "mode": "0o600"
+    },
+    "legacy-links-package-private.json": {
+      "bytes": 3875320,
+      "sha256": "1591549ce1f2bd126737ebec4de028682efc8b44afba3e0c9644dd6f408adc33",
+      "mode": "0o600"
+    },
+    "legacy-fresh-source-private.json": {
+      "bytes": 2263253,
+      "sha256": "b1815953b99b8540f8be17e0f398792ae87a4872dea21ac52b74ba528a314c19",
+      "mode": "0o600"
+    },
+    "legacy-identity-private.json": {
+      "bytes": 13987727,
+      "sha256": "c840b0e8b2c498b9745cf6c1b74aee3140a64ab4b9e1d5f63d9a3d240255658c",
+      "mode": "0o600"
+    }
+  },
+  "private_data_exported": false,
+  "credentials_read_or_copied": false,
+  "new_private_archive_created": false,
+  "new_archive_blocked_by_automatic_review": true,
+  "live_images_unchanged": {
+    "staging": "sha256:3cbfc8b82cae73cf6f8b5d4534e7bd7c56736214e048e45fe8fd0a2bc39d0d24",
+    "production": "sha256:e7502ea4c098ed031bbc3ffa46dd3f6c48fe189791b9257fd3e83c212626d4a4"
+  }
+}
