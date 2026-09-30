@@ -1,0 +1,55 @@
+"""Verify the staging proposal's public aggregate evidence against this checkout."""
+import hashlib
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+PROJECT = ROOT.parents[2]
+def read(name):
+    return json.loads((ROOT/name).read_text())
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+setup=read('setup-summary.json')
+contracts=read('consumers-summary.json')
+football=read('football-summary.json')
+tests=read('local-tests-summary.json')
+files={}
+for directory in ['app','config','routes','database/migrations']:
+    for path in (PROJECT/directory).rglob('*.php'):
+        if path.is_file():
+            files[path.relative_to(PROJECT).as_posix()]=digest(path)
+for name in ['composer.lock','bootstrap/app.php']:
+    files[name]=digest(PROJECT/name)
+runtime=hashlib.sha256(json.dumps(files,sort_keys=True,separators=(',',':')).replace('/', '\\/').encode()).hexdigest()
+assert runtime == setup['runtime_sha256'] == contracts['runtime_sha256']
+assert len(files) == setup['runtime_files_hashed'] == 570
+assert setup['composer_lock_sha256'] == digest(PROJECT/'composer.lock')
+assert setup['runtime_helper_sha256'] == '98c03f5e62ceedae24ca4da7c8217d0fa812051e4caad1ead272c64b36cb1399'
+assert not setup['private_environment_copied'] and not setup['pinned_recovery_lab_modified']
+assert not setup['live_application_booted'] and not setup['production_changed']
+assert contracts['status']=='passed' and contracts['runtime']=='staging_port_candidate'
+assert contracts['eligible_rows']==contracts['shared_contract_records_checked']==4235
+assert contracts['general_destinations']==4224 and contracts['api_list_total']==4139
+assert contracts['unknown_origin_eligible_rows']==0 and contracts['existing_source_null_aliases']==798
+assert contracts['eligible_alias_api_checks']==contracts['eligible_alias_composer_checks']==791
+assert contracts['held_unlinked_composer_exclusion_checks']==3558
+assert contracts['held_unlinked_detail_api_checks']==12 and contracts['held_detail_missing_availability_field']==0
+assert contracts['general_destinations_with_policy_publishable_hero']==119
+assert contracts['policy_photo_coverage_percent']==round(119/4224*100,3)==2.817
+assert contracts['readonly_guard_refusals_verified']==6 and contracts['staging_transaction_read_only']
+assert contracts['query_logging_disabled'] and not contracts['synthetic_user_persisted']
+assert not contracts['real_user_rows_read'] and not contracts['raw_rows_exported']
+assert not contracts['staging_changed'] and not contracts['production_changed']
+assert not contracts['external_authenticated_http_verified'] and not contracts['deployed_source_code_verified']
+assert not contracts['photo_urls_freshly_revalidated'] and not contracts['every_source_freshly_reverified']
+assert football['status']=='passed' and football['activities']==['soccer'] and football['categories']==['pitch']
+assert football['free_football_candidates']==football['football_candidates_without_budget_filter']==0
+assert football['staging_transaction_read_only'] and not football['staging_changed'] and not football['production_changed']
+assert not football['real_user_rows_read'] and not football['raw_rows_exported']
+assert tests['status']=='passed' and tests['passed']==1747 and tests['skipped']==2 and tests['assertions']==7334
+assert not tests['application_data_changed'] and not tests['staging_changed'] and not tests['production_changed']
+assert tests['observed_regression_red']=={'held_details_failed_before_fix':6,'facility_access_failed_before_fix':11,'startup_schedule_failed_before_fix':2}
+print(json.dumps({'status':'passed','runtime_sha256':runtime,'eligible_contracts_checked':4235,
+    'eligible_aliases_checked':791,'held_unavailable_details_checked':12,'tests_passed':tests['passed'],
+    'code_deployed':False,'production_changed':False,'photo_coverage_percent':2.817}))

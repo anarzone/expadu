@@ -1,0 +1,19 @@
+{
+  "status": "public_source_isolated",
+  "runtime_sha256": "ebfb01428da8d24e76cc29a3db1d47acad2a27e3f488dd35edc172506d3e4924",
+  "code_branch": "codex/EXP-69-staging-readiness",
+  "base_commit": "89289db9641bb75a563e74b44be9b4717bd61b22",
+  "read_app_directory": "/tmp/exp69-staging-port-read-20260930/app",
+  "public_files_copied": 592,
+  "runtime_files_hashed": 570,
+  "composer_lock_sha256": "ef604d75965660e8ec8a106659eaa0ef240a20ad961f932f388d7494e639aa1c",
+  "private_environment_copied": false,
+  "pinned_recovery_lab_modified": false,
+  "production_changed": false,
+  "live_application_booted": false,
+  "bootstrap_sha256": "ca5287ebe1754517501975c6cf045e62aa10fc9e043dd855352b8dce32a819e2",
+  "guard_sha256": "cfb71a4ce09025d7e1300e26b2afdbfb5799bb7b5544e61833d1db097c2435aa",
+  "runtime_helper_sha256": "98c03f5e62ceedae24ca4da7c8217d0fa812051e4caad1ead272c64b36cb1399",
+  "consumer_probe_sha256": "b93f34324731781ddf30bc87a2c06d5104e365d67b97026ca5b69b710093588b",
+  "football_probe_sha256": "787ca2493f0b582988abd72a0125d0c37f99f52b3c0935b8188de2e9f58c93ba"
+}

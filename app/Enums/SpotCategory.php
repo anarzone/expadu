@@ -36,6 +36,13 @@ enum SpotCategory: string
     case Bar = 'bar';
     case Bakery = 'bakery';
 
+    public function isActivityFacility(): bool
+    {
+        return in_array($this, [self::Playground, self::Pitch, self::Basketball,
+            self::Tennis, self::TableTennis, self::Boules, self::DogPark,
+            self::Bbq, self::Picnic, self::Skatepark], true);
+    }
+
     public function isOutdoor(): bool
     {
         return match ($this) {
