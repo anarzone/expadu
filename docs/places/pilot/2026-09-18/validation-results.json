@@ -1,0 +1,79 @@
+{
+  "scope": "local disposable staging restore; in-process real Laravel HTTP kernel, not public staging network",
+  "metrics": {
+    "before": {
+      "destinations": 100,
+      "http_200": 100,
+      "selected_photos": 3,
+      "eligible": 98,
+      "websites": 0,
+      "access_known": 16,
+      "fee_known": 10,
+      "hours_known": 16,
+      "verified_entrances": 0,
+      "p95_ms": 214.411,
+      "mean_ms": 91.132
+    },
+    "after": {
+      "destinations": 100,
+      "http_200": 100,
+      "selected_photos": 30,
+      "eligible": 98,
+      "websites": 35,
+      "access_known": 17,
+      "fee_known": 11,
+      "hours_known": 15,
+      "verified_entrances": 0,
+      "p95_ms": 3863.803,
+      "mean_ms": 1501.117
+    },
+    "after_performance_fix": {
+      "destinations": 100,
+      "http_200": 100,
+      "selected_photos": 30,
+      "eligible": 98,
+      "websites": 35,
+      "access_known": 17,
+      "fee_known": 11,
+      "hours_known": 15,
+      "verified_entrances": 0,
+      "p95_ms": 21.044,
+      "mean_ms": 17.957,
+      "max_ms": 89.508
+    }
+  },
+  "media_replay": {
+    "operations": 30,
+    "all_skipped": true,
+    "full_before_after_unchanged": true,
+    "downloads": 0
+  },
+  "tests": {
+    "media_focused_passed": 13,
+    "media_assertions": 53,
+    "fast_suite_passed": 1609,
+    "fast_suite_assertions": 6652,
+    "fast_suite_skipped": 1,
+    "grouping_focused_passed": 26,
+    "grouping_assertions": 96,
+    "after_performance_fix_fast_suite": {
+      "passed": 1611,
+      "assertions": 6658,
+      "skipped": 1
+    }
+  },
+  "grouping": {
+    "children_reviewed": 199,
+    "first_slice_proposed": 10,
+    "applied": 0,
+    "legacy_identity_holds": 81
+  },
+  "production_or_staging_data_applied": false,
+  "release_gate": "HOLD_INCOMPLETE_GROUPING_DISCOVERY_COMPOSER_ROLLBACK_AND_LIVE_ACCEPTANCE",
+  "performance_payload_comparison": {
+    "places": 100,
+    "differences_excluding_elapsed_ms": 0
+  },
+  "performance_p95_ratio_before_fix": 18.02,
+  "performance_p95_ratio_after_fix": 0.0981
+}

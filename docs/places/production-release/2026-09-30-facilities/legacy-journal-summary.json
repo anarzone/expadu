@@ -1,0 +1,39 @@
+{
+    "status": "passed",
+    "checked_at": "2026-09-30T14:16:37+00:00",
+    "runtime_files_verified": 467,
+    "candidate_runtime_commit": "c65075fa96088c1eec7278d4977238a61bda6d0b",
+    "context": {
+        "database": "exp69_prod_rehearsal_20260930",
+        "package_sha256": "18dd190397599516fe1ac213026b4391114a0a43014181cd54c57f474827deb5",
+        "application_sha256": "6237a4d80268235442a5fa3d78ffa45d657515b3f1f4e60d39b6e41f50fae495",
+        "importer_sha256": "73d9a38b85247da17f1d8a702a54bf645929f89561fd1d546096037a502013b3"
+    },
+    "stored_records": 12063,
+    "source_backed_prepared_records": 4719,
+    "reviewed_legacy_links": 484,
+    "candidate_links_held": 72,
+    "fresh_geometry_methods": {
+        "source_node": 312,
+        "source_geometry_point_on_surface": 134,
+        "source_geometry_bounding_box_center": 38
+    },
+    "eligible_unique_places_before_and_after": 4155,
+    "general_destinations_before_and_after": 4155,
+    "added_unique_places": 0,
+    "applied_api_details_verified": 484,
+    "applied_composer_saved_ids_verified": 484,
+    "recovered_unavailable_api_details_verified": 484,
+    "recovered_composer_exclusions_verified": 484,
+    "native_identity_audit_entries_retained_after_recovery": 484,
+    "durable_operator_recovery_prepared": true,
+    "new_instance_apply_and_recovery_replay_identical": true,
+    "actual_process_crash_tested": false,
+    "outer_transaction_rolled_back": true,
+    "live_reconciliations_applied": 0,
+    "production_changed": false,
+    "staging_changed": false,
+    "raw_rows_exported": false,
+    "all_protected_tables_restored": true,
+    "protected_tables_checked": 14
+}

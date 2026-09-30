@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Imports mapped Cologne destination areas from OSM and stamps each contained
- * leisure facility with a stable parent spot. Parks and named sports centres
- * become one destination; their pitches/courts remain activities, never cards.
+ * leisure facility with a stable geometric parent. Reviewed destination
+ * membership is separate and remains untouched by these polygon refreshes.
  */
 class ImportParkAreas extends Command
 {

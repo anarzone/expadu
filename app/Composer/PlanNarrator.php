@@ -41,6 +41,10 @@ class PlanNarrator
                 : "🚶 {$slot->travelMinFromPrevious} min away";
         }
 
+        if ($candidate->type === 'spot' && (($candidate->placeFacts['hours']['status'] ?? null) === 'unknown' || $candidate->hoursAssumed)) {
+            $parts[] = 'Opening hours unconfirmed';
+        }
+
         // Only verified opening hours are stated as fact — assumed category
         // defaults shape the plan but are never claimed to the user.
         if ($candidate->closesAt !== null && ! $candidate->hoursAssumed) {

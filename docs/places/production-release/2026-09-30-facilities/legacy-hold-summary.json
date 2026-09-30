@@ -1,0 +1,941 @@
+{
+  "status": "completed",
+  "checked_at": "2026-09-30T12:27:46+00:00",
+  "held_candidates": 72,
+  "native_reason_counts": {
+    "The reviewed pair must have matching names and categories within 10 metres.": 44,
+    "native_preview_available": 23,
+    "This reconciliation path requires a source-null legacy record and an active OSM target.": 5
+  },
+  "differing_source_tag_fields": {
+    "leisure": 10,
+    "name": 21,
+    "operator": 5,
+    "addr:city": 7,
+    "addr:housenumber": 7,
+    "addr:postcode": 7,
+    "addr:street": 7,
+    "check_date": 5,
+    "contact:email": 1,
+    "contact:phone": 1,
+    "mapillary": 1,
+    "source": 4,
+    "website": 5,
+    "amenity": 4,
+    "note": 2,
+    "ref:isil": 1,
+    "addr:country": 4,
+    "opening_hours": 2,
+    "toilets:wheelchair": 4,
+    "abandoned:shop": 1,
+    "tourism": 7,
+    "healthcare": 1,
+    "description": 2,
+    "level": 2,
+    "start_date": 1,
+    "building": 3,
+    "building:use": 2,
+    "FIXME": 1,
+    "opening_hours:url": 1,
+    "alt_name": 2,
+    "bicycle": 1,
+    "check_date:opening_hours": 1,
+    "dog": 1,
+    "email": 1,
+    "fax": 1,
+    "fee": 1,
+    "phone": 2,
+    "abandoned:military": 1,
+    "bunker_type": 1,
+    "historic": 2,
+    "alt_name_1": 1,
+    "building:architecture": 1,
+    "building:colour": 1,
+    "building:material": 1,
+    "charge": 1,
+    "charge:conditional": 1,
+    "denomination": 1,
+    "denotation": 1,
+    "diocese": 1,
+    "fee:conditional": 1,
+    "height": 1,
+    "heritage": 1,
+    "heritage:operator": 1,
+    "importance": 1,
+    "layer": 1,
+    "name:cs": 1,
+    "name:en": 1,
+    "name:eo": 1,
+    "name:es": 1,
+    "name:et": 1,
+    "name:fi": 1,
+    "name:fr": 1,
+    "name:he": 1,
+    "name:hu": 1,
+    "name:it": 1,
+    "name:ja": 1,
+    "name:nl": 1,
+    "name:pl": 1,
+    "name:ru": 1,
+    "name:zh": 1,
+    "opening_hours:note": 1,
+    "place_of_worship": 1,
+    "ref:whc": 1,
+    "religion": 1,
+    "service_times": 1,
+    "service_times:url": 1,
+    "url:miserend": 1,
+    "whc:inscription_date": 1,
+    "wheelchair:description": 1,
+    "disused:amenity": 1,
+    "vehicle": 1
+  },
+  "public_source_outcomes": [
+    {
+      "source_id": "way/4532046",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/4532738",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/24300632",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/24462744",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/26207240",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/26731834",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/27755145",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/28373995",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/28865730",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/32323305",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/38698578",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/44443729",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/51571511",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/56452270",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/57674762",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/130165210",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/150031301",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/151503336",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/155328236",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/166521153",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/284497134",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/285632970",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/327137117",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/327590883",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/392792497",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/426316883",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/1382858399",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/1140573",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/1151574",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/3096872",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/8704013",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/9269068",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/22903165",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/30417189",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name",
+        "operator"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/44905477",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/129848326",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "addr:city",
+        "addr:housenumber",
+        "addr:postcode",
+        "addr:street",
+        "check_date",
+        "contact:email",
+        "contact:phone",
+        "leisure",
+        "mapillary",
+        "name",
+        "operator",
+        "source",
+        "website"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/3482450180",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "amenity",
+        "check_date",
+        "name",
+        "note",
+        "operator",
+        "ref:isil"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/614234065",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "This reconciliation path requires a source-null legacy record and an active OSM target.",
+      "source_tag_fields_differing": [
+        "addr:city",
+        "addr:country",
+        "addr:housenumber",
+        "addr:postcode",
+        "addr:street",
+        "amenity",
+        "check_date",
+        "name",
+        "opening_hours",
+        "source",
+        "website"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": false
+    },
+    {
+      "source_id": "node/633181834",
+      "screen_reason": "fresh_source_changed",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "toilets:wheelchair"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/5922151293",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "This reconciliation path requires a source-null legacy record and an active OSM target.",
+      "source_tag_fields_differing": [
+        "abandoned:shop",
+        "addr:city",
+        "addr:housenumber",
+        "addr:postcode",
+        "addr:street",
+        "amenity",
+        "name"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": false
+    },
+    {
+      "source_id": "node/10578278851",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "name",
+        "note",
+        "tourism"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/5152021448",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "addr:city",
+        "addr:housenumber",
+        "addr:postcode",
+        "addr:street",
+        "healthcare",
+        "leisure",
+        "name"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/73097249",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/9314933338",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/2303617",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/3416691017",
+      "screen_reason": "fresh_source_changed",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "check_date",
+        "name",
+        "opening_hours"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/4199955641",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "description",
+        "level",
+        "name",
+        "start_date",
+        "tourism"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/35449630",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "This reconciliation path requires a source-null legacy record and an active OSM target.",
+      "source_tag_fields_differing": [
+        "addr:city",
+        "addr:country",
+        "addr:housenumber",
+        "addr:postcode",
+        "addr:street",
+        "building",
+        "building:use",
+        "FIXME",
+        "name",
+        "opening_hours:url",
+        "tourism"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": false
+    },
+    {
+      "source_id": "relation/938988",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/965473",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/4595998",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/4936527",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "addr:city",
+        "addr:country",
+        "addr:housenumber",
+        "addr:postcode",
+        "addr:street",
+        "alt_name",
+        "bicycle",
+        "check_date:opening_hours",
+        "dog",
+        "email",
+        "fax",
+        "fee",
+        "name",
+        "phone",
+        "source",
+        "toilets:wheelchair",
+        "tourism",
+        "website"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "node/4426148123",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "abandoned:military",
+        "building",
+        "bunker_type",
+        "historic",
+        "name",
+        "operator",
+        "tourism",
+        "website"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/4532022",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "This reconciliation path requires a source-null legacy record and an active OSM target.",
+      "source_tag_fields_differing": [
+        "addr:city",
+        "addr:country",
+        "addr:housenumber",
+        "addr:postcode",
+        "addr:street",
+        "alt_name",
+        "alt_name_1",
+        "amenity",
+        "building",
+        "building:architecture",
+        "building:colour",
+        "building:material",
+        "building:use",
+        "charge",
+        "charge:conditional",
+        "denomination",
+        "denotation",
+        "diocese",
+        "fee:conditional",
+        "height",
+        "heritage",
+        "heritage:operator",
+        "importance",
+        "layer",
+        "level",
+        "name",
+        "name:cs",
+        "name:en",
+        "name:eo",
+        "name:es",
+        "name:et",
+        "name:fi",
+        "name:fr",
+        "name:he",
+        "name:hu",
+        "name:it",
+        "name:ja",
+        "name:nl",
+        "name:pl",
+        "name:ru",
+        "name:zh",
+        "opening_hours:note",
+        "phone",
+        "place_of_worship",
+        "ref:whc",
+        "religion",
+        "service_times",
+        "service_times:url",
+        "toilets:wheelchair",
+        "tourism",
+        "url:miserend",
+        "website",
+        "whc:inscription_date",
+        "wheelchair:description"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": false
+    },
+    {
+      "source_id": "way/217931069",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "This reconciliation path requires a source-null legacy record and an active OSM target.",
+      "source_tag_fields_differing": [
+        "check_date",
+        "description",
+        "disused:amenity",
+        "historic",
+        "name",
+        "source",
+        "tourism",
+        "vehicle"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": false
+    },
+    {
+      "source_id": "way/51794692",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/73858981",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/103410857",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name",
+        "toilets:wheelchair"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/126829960",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/748835972",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/151060428",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/161266359",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/202252737",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/243977651",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/264324531",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/540158485",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/548336401",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/688146071",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/696898446",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/1207021069",
+      "screen_reason": "native_identity_guard_refused",
+      "native_reason": "The reviewed pair must have matching names and categories within 10 metres.",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "way/1354580289",
+      "screen_reason": "source_projection_differs",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [
+        "leisure",
+        "name",
+        "operator"
+      ],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    },
+    {
+      "source_id": "relation/2804705",
+      "screen_reason": "relation_geometry_requires_separate_review",
+      "native_reason": "native_preview_available",
+      "source_tag_fields_differing": [],
+      "name_matches_exactly": true,
+      "category_matches": true,
+      "source_target_active": true
+    }
+  ],
+  "database_changed": false,
+  "raw_rows_exported": false
+}

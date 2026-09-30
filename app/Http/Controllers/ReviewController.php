@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Spot;
+use App\Places\PlaceIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -10,7 +11,7 @@ class ReviewController extends Controller
 {
     public function index(Spot $spot): JsonResponse
     {
-        $reviews = $spot->reviews()
+        $reviews = $spot->effectiveReviews()
             ->with('user:id,name')
             ->orderByDesc('created_at')
             ->paginate(10);
@@ -25,13 +26,16 @@ class ReviewController extends Controller
             'body' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $review = $spot->reviews()->updateOrCreate(
-            ['user_id' => $request->user()->id],
-            $validated,
-        );
+        $review = app(PlaceIdentity::class)->withCanonicalLock($spot->id, function (Spot $canonical) use ($request, $validated) {
+            $review = $canonical->reviews()->updateOrCreate(
+                ['user_id' => $request->user()->id],
+                $validated,
+            );
+            $review->touch();
+            $canonical->updateRating();
 
-        // Recalculate spot's average rating
-        $spot->updateRating();
+            return $review;
+        });
 
         return response()->json($review, 201);
     }

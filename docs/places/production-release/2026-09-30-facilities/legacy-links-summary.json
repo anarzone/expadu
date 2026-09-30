@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "checked_at": "2026-09-30T12:21:27+00:00",
+  "legacy_records_screened": 4680,
+  "unique_identity_candidates": 556,
+  "fresh_source_elements_checked": 546,
+  "fresh_source_unchanged": 544,
+  "source_confirmed_eligible_links_rehearsed": 484,
+  "remaining_candidate_hold_reasons": {
+    "native_identity_guard_refused": 40,
+    "source_projection_differs": 20,
+    "relation_geometry_requires_separate_review": 10,
+    "fresh_source_changed": 2
+  },
+  "candidate_links_held": 72,
+  "legacy_api_links_verified": 484,
+  "composer_saved_references_verified": 484,
+  "native_identity_audit_entries_added_in_trial": 484,
+  "unique_eligible_places_before_and_after": 4155,
+  "added_unique_places": 0,
+  "stored_records": 12063,
+  "outer_transaction_rolled_back": true,
+  "durable_operator_recovery_for_legacy_links_prepared": false,
+  "live_reconciliations_applied": 0,
+  "production_changed": false,
+  "staging_changed": false,
+  "raw_rows_exported": false,
+  "all_source_place_identity_reference_rows_restored": true
+}

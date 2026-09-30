@@ -60,6 +60,27 @@ function modeLabel(place: Place): string {
     return 'Walk';
 }
 
+function accessLabel(place: Place): string {
+    const access = place.place_facts.access;
+
+    if (access.status === 'conflicting') {
+        return 'Access information needs review';
+    }
+
+    if (access.value === 'unknown' && access.conditional) {
+        return `Conditional — ${access.conditional}`;
+    }
+
+    return {
+        public: 'Public access',
+        private: 'Private access',
+        customers: 'Customers only',
+        members: 'Members only',
+        permit: 'Permit required',
+        unknown: 'Access not verified',
+    }[access.value];
+}
+
 function ModeIcon({ place }: { place: Place }) {
     const Icon =
         place.distance_mode === 'bike'
@@ -106,7 +127,13 @@ export function PlaceRichDetail({
         data: PlaceEvents;
     } | null>(null);
 
+    const unavailable = place.recommendation_status === 'unavailable';
+
     useEffect(() => {
+        if (unavailable) {
+            return;
+        }
+
         let cancelled = false;
 
         fetch(`/api/places/${place.id}/context`, {
@@ -148,7 +175,7 @@ export function PlaceRichDetail({
         return () => {
             cancelled = true;
         };
-    }, [place.id]);
+    }, [place.id, unavailable]);
 
     const context =
         contextResult?.placeId === place.id ? contextResult.data : null;
@@ -159,8 +186,8 @@ export function PlaceRichDetail({
         onNavigate({
             name: place.name,
             emoji: place.emoji ?? undefined,
-            lat: place.lat,
-            lng: place.lng,
+            lat: place.routing_lat,
+            lng: place.routing_lng,
         });
 
     function openNearby(nearby: NearbyPlace) {
@@ -178,9 +205,47 @@ export function PlaceRichDetail({
             .catch(() => onNavigate(nearby));
     }
 
+    if (unavailable) {
+        return (
+            <div className="px-5 py-5 sm:px-7 sm:py-7">
+                {onBack && backLabel && (
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="mb-3 inline-flex min-h-10 cursor-pointer items-center rounded-full border border-border bg-card px-3 text-[12.5px] font-semibold text-primary"
+                    >
+                        ← Back to {backLabel}
+                    </button>
+                )}
+                <h1 className="font-display text-[30px] leading-tight font-medium">
+                    {place.name}
+                </h1>
+                <div
+                    role="status"
+                    className="mt-4 rounded-[12px] border border-border bg-secondary p-4 text-[13px] leading-relaxed text-text-2"
+                >
+                    <b className="mb-1 block text-foreground">
+                        Details need checking
+                    </b>
+                    This place is currently unavailable for recommendations.
+                    Your saved reference is kept, but please check the place
+                    before planning a visit.
+                </div>
+                {feedback && (
+                    <PlaceFeedbackBar
+                        state={feedback.state}
+                        rating={feedback.rating}
+                        onAction={feedback.onAction}
+                        label={place.name}
+                    />
+                )}
+            </div>
+        );
+    }
+
     const price =
         place.price_text?.toLowerCase() === 'free'
-            ? 'Free public access'
+            ? 'Free entry'
             : place.price_text;
     const routeEstimate =
         place.distance_min != null
@@ -189,6 +254,7 @@ export function PlaceRichDetail({
               ? `${place.distance_km.toFixed(1)} km from your start`
               : 'Live route calculated when you continue';
     const usefulFacts = [
+        { label: 'Access', value: accessLabel(place) },
         place.opening_hours_text
             ? { label: 'Opening', value: place.opening_hours_text }
             : null,
@@ -206,12 +272,9 @@ export function PlaceRichDetail({
         )
         .slice(0, 6);
     const description =
+        place.place_facts.description.value ??
         place.tip ??
-        [
-            `A ${place.fine_label?.toLowerCase() ?? place.category.replaceAll('_', ' ')} in`,
-            place.veedel ?? 'Cologne',
-            'with the practical details Expadu currently has for planning a visit.',
-        ].join(' ');
+        'We are still verifying a useful description for this place.';
 
     const main = (
         <div>

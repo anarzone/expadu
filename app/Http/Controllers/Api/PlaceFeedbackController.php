@@ -6,6 +6,7 @@ use App\Enums\SpotFeedbackState;
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
+use App\Places\PlaceIdentity;
 use App\Services\EventTrackingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,34 +30,37 @@ class PlaceFeedbackController extends Controller
 
         $user = $request->user();
 
-        if ($validated['action'] === 'clear') {
-            SpotFeedback::query()
-                ->where('user_id', $user->id)
-                ->where('spot_id', $spot->id)
-                ->delete();
+        return app(PlaceIdentity::class)->withCanonicalLock($spot->id, function (Spot $spot) use ($validated, $user, $tracking): JsonResponse {
+            if ($validated['action'] === 'clear') {
+                SpotFeedback::query()
+                    ->where('user_id', $user->id)
+                    ->whereIn('spot_id', app(PlaceIdentity::class)->familyIds($spot->id))
+                    ->delete();
 
-            return response()->json(['state' => null, 'rating' => null]);
-        }
+                return response()->json(['state' => null, 'rating' => null]);
+            }
 
-        $state = SpotFeedbackState::from($validated['action']);
-        $rating = $state === SpotFeedbackState::Been ? ($validated['rating'] ?? null) : null;
+            $state = SpotFeedbackState::from($validated['action']);
+            $rating = $state === SpotFeedbackState::Been ? ($validated['rating'] ?? null) : null;
 
-        SpotFeedback::updateOrCreate(
-            ['user_id' => $user->id, 'spot_id' => $spot->id],
-            ['state' => $state, 'rating' => $rating],
-        );
+            $feedback = SpotFeedback::updateOrCreate(
+                ['user_id' => $user->id, 'spot_id' => $spot->id],
+                ['state' => $state, 'rating' => $rating],
+            );
+            $feedback->touch();
 
-        // Emit the ranking signal through the same pipeline as every other
-        // intent signal, keyed on category × Veedel (what IntentWeights reads).
-        if ($eventType = $this->signalFor($state, $rating)) {
-            $tracking->track($user, $eventType, [
-                'category' => $this->categoryValue($spot),
-                'veedel' => $spot->veedel,
-                'spot_id' => $spot->id,
-            ]);
-        }
+            // Emit the ranking signal through the same pipeline as every other
+            // intent signal, keyed on category × Veedel (what IntentWeights reads).
+            if ($eventType = $this->signalFor($state, $rating)) {
+                $tracking->track($user, $eventType, [
+                    'category' => $this->categoryValue($spot),
+                    'veedel' => $spot->veedel,
+                    'spot_id' => $spot->id,
+                ]);
+            }
 
-        return response()->json(['state' => $state->value, 'rating' => $rating]);
+            return response()->json(['state' => $state->value, 'rating' => $rating]);
+        });
     }
 
     /**

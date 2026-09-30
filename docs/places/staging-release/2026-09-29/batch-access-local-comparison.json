@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "scope": "isolated_local_expanded_package_rollback_only",
+  "started_at": "2026-09-29T12:13:21+00:00",
+  "completed_at": "2026-09-29T12:20:38+00:00",
+  "all_expanded_access_ids_identical": true,
+  "allowed_count": 11271,
+  "compared_spots": 11802,
+  "rollback_exact": true,
+  "candidate_sql_sha256": "e2c9a9391cfe860d3d942abc9c5b38dc1f7d4c20b9ec97fcc754b0f547f41022",
+  "raw_profile_sha256": "b69e5fff1a8492e2abf046e4b9af87d66140198363e6359f40372252d24d46ef",
+  "variants": {
+    "original": [
+      {
+        "query": 0,
+        "execution_ms": 660.088,
+        "estimated_cost": 445915.43,
+        "jit_ms": 199.009,
+        "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+      },
+      {
+        "query": 1,
+        "execution_ms": 661.616,
+        "estimated_cost": 448230.36,
+        "jit_ms": 167.034,
+        "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+      }
+    ],
+    "batch_access": [
+      {
+        "query": 0,
+        "execution_ms": 5450.144,
+        "estimated_cost": 24542810.55,
+        "jit_ms": 4015.301,
+        "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+      },
+      {
+        "query": 1,
+        "execution_ms": 4929.543,
+        "estimated_cost": 24545125.42,
+        "jit_ms": 3482.076,
+        "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+      }
+    ]
+  },
+  "interpretation": "First batch-query shape preserved results but regressed performance; superseded. Do not treat this as the final candidate."
+}

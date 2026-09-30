@@ -1,0 +1,105 @@
+{
+  "scope": "isolated_local_expanded_package_rollback_only",
+  "started_at": "2026-09-29T11:31:55+00:00",
+  "completed_at": "2026-09-29T11:39:24+00:00",
+  "verification_code_sha256": "7975059a18f51288c18379068efe2edc3b28596b54295b34e7de3c2febb97863",
+  "status": "passed",
+  "identical_results": true,
+  "rollback_exact": true,
+  "limitation": "Single SQL executions on isolated local data. First simplification only; excludes the later non-null component predicate. Not full API latency, p95, or staging evidence.",
+  "variants": {
+    "original": [
+      {
+        "query": "count",
+        "execution_ms": 6688.469,
+        "jit": {
+          "Functions": 263,
+          "Options": {
+            "Inlining": true,
+            "Optimization": true,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 25.395,
+            "Inlining": 168.682,
+            "Optimization": 3719.544,
+            "Emission": 2181.22,
+            "Total": 6094.841
+          }
+        },
+        "estimated_total_cost": 738617.86,
+        "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+      },
+      {
+        "query": "page",
+        "execution_ms": 6182.126,
+        "jit": {
+          "Functions": 268,
+          "Options": {
+            "Inlining": true,
+            "Optimization": true,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 15.083,
+            "Inlining": 27.174,
+            "Optimization": 3498.25,
+            "Emission": 2028.718,
+            "Total": 5569.225
+          }
+        },
+        "estimated_total_cost": 740932.74,
+        "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+      }
+    ],
+    "simplified": [
+      {
+        "query": "count",
+        "execution_ms": 1217.291,
+        "jit": {
+          "Functions": 189,
+          "Options": {
+            "Inlining": false,
+            "Optimization": false,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 12.542,
+            "Inlining": 0,
+            "Optimization": 10.917,
+            "Emission": 165.373,
+            "Total": 188.832
+          }
+        },
+        "estimated_total_cost": 448025.19,
+        "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+      },
+      {
+        "query": "page",
+        "execution_ms": 1266.823,
+        "jit": {
+          "Functions": 194,
+          "Options": {
+            "Inlining": false,
+            "Optimization": false,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 26.85,
+            "Inlining": 0,
+            "Optimization": 23.958,
+            "Emission": 376.81,
+            "Total": 427.618
+          }
+        },
+        "estimated_total_cost": 450340.12,
+        "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+      }
+    ]
+  },
+  "full_local_profile_sha256": "dfbd0fab363f0d09d844b72ab567945bb57c58dbe97175b8c5dc96f6a719f0dd"
+}

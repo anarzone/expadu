@@ -1,0 +1,33 @@
+{
+    "started_at": "2026-09-29T14:16:11+00:00",
+    "scope": "Local public baseline, rollback-only 100-record canary and native recovery",
+    "manifest_sha256": "badef6eb0727c6af779934742acba976b483fd98bdd9f1dfffcddae70ee33cf3",
+    "stored_before": 9928,
+    "catalogue_commit_attempted": false,
+    "acceptance": {
+        "general": 86,
+        "activity": 87,
+        "composer": 87,
+        "unselected_visibility_unchanged": true
+    },
+    "stored_after_apply": 9978,
+    "applied": 100,
+    "journal_replay_noop": true,
+    "precommit_recovery_proof": {
+        "restored_streams": 27,
+        "withdrawn_additions": 50,
+        "retained_alias_history_changes": 0,
+        "recovery_receipt_sha256": "c18f8c15610db2fa7d2fe7cfe9148f649d837f5a95966b5cc8d1e485598266ef",
+        "caller_boundary_retained": true,
+        "applied_state_restored": true
+    },
+    "restored_source_streams": 27,
+    "withdrawn_additions": 50,
+    "retained_alias_history_changes": 0,
+    "recovery_replay_noop": true,
+    "journal_state": "recovered",
+    "recovered_fact_and_eligibility_checks": 50,
+    "status": "passed",
+    "rollback": true,
+    "finished_at": "2026-09-29T14:16:46+00:00"
+}

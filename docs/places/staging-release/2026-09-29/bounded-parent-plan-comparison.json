@@ -1,0 +1,34 @@
+{
+    "scope": "existing isolated local baseline; SELECT-only plan comparison",
+    "variants": {
+        "root_batch": {
+            "execution_ms": 806.026,
+            "estimated_cost": 156113.69,
+            "jit": {
+                "Functions": 204,
+                "Options": {
+                    "Inlining": false,
+                    "Optimization": false,
+                    "Expressions": true,
+                    "Deforming": true
+                },
+                "Timing": {
+                    "Generation": 28.349,
+                    "Inlining": 0,
+                    "Optimization": 28.971,
+                    "Emission": 374.533,
+                    "Total": 431.852
+                }
+            },
+            "result_sha256": "fd29aedd3abaee0279776166b404245650b8a48265bfd5de94e638cf8dbbf85a"
+        },
+        "root_materialized_allowed_set": {
+            "execution_ms": 94.691,
+            "estimated_cost": 15517.62,
+            "jit": null,
+            "result_sha256": "fd29aedd3abaee0279776166b404245650b8a48265bfd5de94e638cf8dbbf85a"
+        }
+    },
+    "status": "passed",
+    "completed_at": "2026-09-29T12:24:13+00:00"
+}

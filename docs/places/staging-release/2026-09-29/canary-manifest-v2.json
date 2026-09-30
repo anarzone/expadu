@@ -1,0 +1,823 @@
+{
+  "prepared_at": "2026-09-29T13:31:47.856414+00:00",
+  "status": "revised_proposed_canary_local_recovery_screened_not_imported",
+  "source_package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+  "selection_rule": "Keep 91 original entries. Replace nine refreshes lacking same-source prior observations using restorable refreshes, prefer same category then same name kind, then rank by sha256(package_hash|source_key). Source records are unchanged. Local screen must be repeated on staging.",
+  "records": 100,
+  "operations": {
+    "create": 50,
+    "refresh": 50
+  },
+  "by_category": {
+    "attraction": 2,
+    "bakery": 5,
+    "bar": 7,
+    "basketball": 1,
+    "boules": 1,
+    "cafe": 10,
+    "coworking": 2,
+    "dog_park": 1,
+    "fast_food": 20,
+    "gallery": 3,
+    "library": 2,
+    "museum": 3,
+    "park": 5,
+    "picnic": 5,
+    "pitch": 1,
+    "playground": 7,
+    "restaurant": 18,
+    "sports_centre": 3,
+    "swimming": 1,
+    "table_tennis": 1,
+    "viewpoint": 1,
+    "zoo": 1
+  },
+  "by_source": {
+    "osm": 97,
+    "overture": 3
+  },
+  "by_name_kind": {
+    "descriptive": 13,
+    "source": 87
+  },
+  "entries": [
+    {
+      "key": "osm:node/10594951408",
+      "existing_id": 10351,
+      "category": "restaurant",
+      "name_kind": "source",
+      "record_sha256": "3d86c82b11ac676fb72a0278a9e2f8a5816a6c537d56fcd4eb2dda07ddf49a52"
+    },
+    {
+      "key": "osm:node/11113764693",
+      "existing_id": 8729,
+      "category": "picnic",
+      "name_kind": "descriptive",
+      "record_sha256": "ff0eba0049aae25c468589b323ff3f7d30dffe0908bc0eebb99eeb695cd887a0"
+    },
+    {
+      "key": "osm:node/11158148309",
+      "existing_id": 8740,
+      "record_sha256": "f1d255aafaaa16d72fbf9de9636d97e8a9bc545dc58f4e25f7f6ca674440ca06",
+      "category": "picnic",
+      "name_kind": "descriptive"
+    },
+    {
+      "key": "osm:node/11225614193",
+      "existing_id": null,
+      "record_sha256": "dc6fc90ac2326565c05a0d50b71f0df298175823bb612cf1346485e5f106b15b",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/11866955764",
+      "existing_id": null,
+      "record_sha256": "5e0affd9959e7ca9a203b53aabdd83e7850a432a16ec8f4e431e52fa63efbe22",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/11962929956",
+      "existing_id": null,
+      "record_sha256": "7e11b1c5d12d2431cecf7b1151530cbcf3effb874c88ca7641cf18fa564b40d1",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/12126214031",
+      "existing_id": 8484,
+      "record_sha256": "48cdce39eea98b20ced53149009abfbe5c592ec3e351d9c6fd2a6e6a865eb800",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/12326810007",
+      "existing_id": 8487,
+      "record_sha256": "763d841594aa8d75428b0ff61cf7dae7694406aa70ceeafde017d63ed886831e",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/12686489761",
+      "existing_id": 8786,
+      "category": "picnic",
+      "name_kind": "descriptive",
+      "record_sha256": "2c5e5d72118e3c227a870f375e22a6b81692b47230bef49f2be395cf46f63922"
+    },
+    {
+      "key": "osm:node/13161944557",
+      "existing_id": null,
+      "record_sha256": "62a841768e377ab5e192c583dd790986778f8e2f53cd8d85d1720e1631b2c80b",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/13192499997",
+      "existing_id": null,
+      "record_sha256": "904cd7432c1a8406b88948804354af538aacfe7076351ba0ec2adc60480f7814",
+      "category": "bar",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/13650691986",
+      "existing_id": 9197,
+      "record_sha256": "924fa90759703deaab6494f0defb8d3a15aa7ab7a2d2627aa382786d5c7c6cd5",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/14075096970",
+      "existing_id": null,
+      "record_sha256": "299af0459feea0dd1e9566a99b7a056c7397b7c2e85051a30cb577635d9b2a09",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/14110607429",
+      "existing_id": null,
+      "record_sha256": "7e7fb279e290386ca0c3c600cdd0b05eb7d74db878b434160a93c479fd429342",
+      "category": "table_tennis",
+      "name_kind": "descriptive"
+    },
+    {
+      "key": "osm:node/14120378125",
+      "existing_id": null,
+      "record_sha256": "b68f37daad583da33bc7ae28efb0c5ccc7300aa4879258cd976e0cb898b0e6e9",
+      "category": "picnic",
+      "name_kind": "descriptive"
+    },
+    {
+      "key": "osm:node/14129626721",
+      "existing_id": null,
+      "record_sha256": "1946d21335fdcfe2095bfa76b4367857cdba4664793312abcce994d622bc79c3",
+      "category": "museum",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/1431926135",
+      "existing_id": 8595,
+      "record_sha256": "a17b0c9276ceac3157b175deb1ea08ed9f5feacbf4bcf5ad1c9653fa95c8c218",
+      "category": "library",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/1442632673",
+      "existing_id": null,
+      "record_sha256": "6fc8dd7f1ac606db56af9f6194e869497fb580867819d3d95271964bca313131",
+      "category": "sports_centre",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/1478239387",
+      "existing_id": 9726,
+      "record_sha256": "3c0dc83b63dd7c2cbf1a86876a7e94c097d3065d5b8734b105faf5c6c1247d00",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/1614233344",
+      "existing_id": 9742,
+      "record_sha256": "b44963681054a8b6b7694795709a56d036f4879d1d1d8dd860a47a3ac2ca40ac",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/1701309490",
+      "existing_id": 9006,
+      "record_sha256": "ffb97174b2ded3ca038ba889522dace1eae54f97a7a3bcf63f99b12fd36b28e3",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/2079251169",
+      "existing_id": 9018,
+      "record_sha256": "6388804ebc2002e31d17fe0331328121d513d52695331cdc7fc729278e5d0d37",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/2248763797",
+      "existing_id": 8534,
+      "record_sha256": "36904a6330e4149f2c15a172ffd4c6168c78873c4624b457840654c80442ef40",
+      "category": "gallery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/2301210583",
+      "existing_id": null,
+      "record_sha256": "40ed3896fa28921376a99eb3df023cb05043955124257f9c6b13d58f2c249f5d",
+      "category": "viewpoint",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/2346950515",
+      "existing_id": null,
+      "record_sha256": "7f916abbd0ca6d16d36da7454a981bb6ee2563c2b574760f3f60fe683a6d34f0",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/2419064962",
+      "existing_id": null,
+      "record_sha256": "b5d5382f894679aab7f55a7fc3cf7ed112df2d3c6129746a273e492fd76d90fc",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/2460737331",
+      "existing_id": null,
+      "record_sha256": "4bb25353f613b6c633a5094951b587746ee5ff89128f7274764fee79ddb2117f",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/2465163535",
+      "existing_id": 8633,
+      "category": "picnic",
+      "name_kind": "descriptive",
+      "record_sha256": "b75cd356f27cf4f8161f5a43babd61fc8937c326a8d85927e3043473a6bcffe5"
+    },
+    {
+      "key": "osm:node/2979064645",
+      "existing_id": null,
+      "record_sha256": "ed4842144669f5c3dce8a512f319cbd6b5116556d30557d30aeb0d5993d6695d",
+      "category": "bar",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/322797145",
+      "existing_id": null,
+      "record_sha256": "9f01d2fbb0544eecc48d6e78512fc6195cc11de36c1f975c4a1bbd47cd56bef4",
+      "category": "bar",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/3376526780",
+      "existing_id": null,
+      "record_sha256": "543b995ffd543fbeaf06be4bf3d4f69a5d1e8977b935a092691d9156409dce40",
+      "category": "bar",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/343471444",
+      "existing_id": null,
+      "record_sha256": "7c10d0909b1ea46734a12c38c19bacbc2f5d4ddc8de4d7840ca60dcf3184602c",
+      "category": "bakery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/377684620",
+      "existing_id": null,
+      "record_sha256": "2ca6e6221a2166d1246ba9f43f5621f92bee65d148b6090f57ab3b08d37a0921",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/4163331989",
+      "existing_id": null,
+      "record_sha256": "0ea4f569de54f5d8522e4aa5399c307f95b55ddfe6394544664ba7994100adee",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/4264453712",
+      "existing_id": null,
+      "record_sha256": "1fa602422ab525bd9b2238bd63d89b57bca8ce7c6e596dcf7b526f0b4a917f58",
+      "category": "bar",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/438042767",
+      "existing_id": null,
+      "record_sha256": "1d50cf8d6dcd5c49dae4e4cba9d4e4e7a8e490599526d1e133a4f402997090d6",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/4422075991",
+      "existing_id": null,
+      "record_sha256": "563eb2ec677d4fd3d042ebdd0d6ae86219656043396010f1d7a4fc8c48927e53",
+      "category": "bakery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/4440733100",
+      "existing_id": 8393,
+      "record_sha256": "b57cb5760f0a6df35abf2f49cdf6e254f3994716dba980ee566c8c7941d0b53f",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/448400559",
+      "existing_id": 8239,
+      "record_sha256": "4e4cbdd8bd08ee13f5ec0a9dbf8de6bd330710f9d5266451f4220be6e625e4ed",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/4511247604",
+      "existing_id": null,
+      "record_sha256": "0602ea77c764041d0f0005494b5566586908e93060ee92c445b7afe06b7f8f06",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/455959386",
+      "existing_id": 9449,
+      "record_sha256": "edf35efb113fc7609283906fdf5a0b2fdf2276b339be804b71ef16f74524f72f",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/533914801",
+      "existing_id": null,
+      "record_sha256": "5e19b4d519368851870a22ba6663b0aa740aaa32c464b5142b8e2f07dd6e379d",
+      "category": "bakery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/5357065860",
+      "existing_id": null,
+      "record_sha256": "2930faf6df7130de68ab506aa60643f0dd0e034c5b79d6bc9f33805d02d17a8c",
+      "category": "bar",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/5492264456",
+      "existing_id": 8539,
+      "record_sha256": "41135e1617bff3725a2d266c14ac5936dd30080874912625b2475409d3d67e95",
+      "category": "gallery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/571787802",
+      "existing_id": 9501,
+      "record_sha256": "055c695547c4b746916202fcea0fd408c9e63a438e95d8cb940c0bf169c292d0",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/593246947",
+      "existing_id": 9514,
+      "record_sha256": "8aa708926f1d13d3b00f9be0c900fc41671aa14d15237dfd9d7d1d2871e35d17",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/5995290795",
+      "existing_id": null,
+      "record_sha256": "fcf77ad1886b2df578623ded4c643b4316d15f0ad777a963032ef16ca353045a",
+      "category": "gallery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/603316689",
+      "existing_id": null,
+      "record_sha256": "828d80559758b64011285b4b70c673d3abae636932aaee2c6ef76f55d34725cb",
+      "category": "bar",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/603582311",
+      "existing_id": 8052,
+      "category": "museum",
+      "name_kind": "source",
+      "record_sha256": "8665c18a1538f35bb7edf756d8e806e816557b404db6cd156099f175ba40a7cc"
+    },
+    {
+      "key": "osm:node/6116180289",
+      "existing_id": null,
+      "record_sha256": "5982ec477cfe94e87ec299f809d568108ef527678adc137697cf9e3c5075c8fe",
+      "category": "coworking",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/612111745",
+      "existing_id": null,
+      "record_sha256": "a30c6b9224508d705ddf56c7cfd39e5d30096b6cf5c7cebc69bbeb9f6b68d4c4",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/617197898",
+      "existing_id": null,
+      "record_sha256": "33133537ffa77b0ff19292acd50294791c6b3dd68df56a0bc8894d00155f8ee6",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/6240480851",
+      "existing_id": 8070,
+      "record_sha256": "861cacfc4ffee934324101986a571212ff5333853a7b75d5493ad4d2b38b3aba",
+      "category": "museum",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/633181805",
+      "existing_id": 9534,
+      "record_sha256": "e57f4f6344f3688b7cac93826782e17c40b813bbb82c1b367301edad543d6283",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/6385427387",
+      "existing_id": null,
+      "record_sha256": "60c8578eafb05db8a0bd7a377d5492e120bbbc7f45c1ea0a705f151ca85fc8e9",
+      "category": "bakery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/6407729258",
+      "existing_id": 10173,
+      "category": "restaurant",
+      "name_kind": "source",
+      "record_sha256": "9c86affbc8bfeffd2adc2699016eeafb0badffb0ffea710c76c8889699f1479f"
+    },
+    {
+      "key": "osm:node/6408759486",
+      "existing_id": 8427,
+      "record_sha256": "e7d3fc1e45c0da11945c381764bc8f98aeaf1a9814bc738131aad81df037b7e5",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/6528394385",
+      "existing_id": 10187,
+      "record_sha256": "ac2ef77ee1b29d7b644a08f3770cbd15e1855122160155d738cceeed70a3be31",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/6539940547",
+      "existing_id": 10188,
+      "record_sha256": "50cc991b707816dce2650f31828f2db006c8fcf55d76b2f79b94b4baa7ee3af2",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/659459591",
+      "existing_id": null,
+      "record_sha256": "404da622b40b43d01b04606c99b527d9ebfa438f318fa377872e2ab6806abbe9",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/661055164",
+      "existing_id": null,
+      "record_sha256": "d0b335a79a4843b3dbb5a30f9935173cbd443aa9db78ce3ecaf2f8528a426030",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/6749736316",
+      "existing_id": 8516,
+      "record_sha256": "468d2035f40cd58d48199ce3a0429c4d22fe02c46a1f5a2ee531c1d7d7b1bfca",
+      "category": "coworking",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/6772145993",
+      "existing_id": 10209,
+      "record_sha256": "01a097c5448adb8000c78fbaf5b22545c8c1b7a8ee6e381778722cb7a58876fb",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/7008951486",
+      "existing_id": null,
+      "record_sha256": "db0d431bdf2f5452b5351aeecfcfbae1b826dbc53d1e46ce5bd9b579c015c861",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/7254954241",
+      "existing_id": 10233,
+      "record_sha256": "9a932baaa11b79968140cc80cd9809a5ed9c5da609cad1001c7cc25e120fb4bc",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/7463520385",
+      "existing_id": 10240,
+      "record_sha256": "5c4511d06cf22a328a83ce84aa717541751e05219e6ad523ea87ef3a37e04adf",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/7658912425",
+      "existing_id": 8444,
+      "record_sha256": "f64adf70e3a6e80646fd913ec5f29e6d94994b3acc36a9054dfd45ec6070c1b7",
+      "category": "cafe",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/823682874",
+      "existing_id": 9615,
+      "record_sha256": "157afa4ea8a119dbea226957881430c8f811523373bbc104183ca7e84b2053d6",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/8514900867",
+      "existing_id": 10283,
+      "record_sha256": "756e1a40c2c5713d79ca72c4e90429dea4ec8b05489069f3a7fa723715b3f0d4",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/9055557116",
+      "existing_id": null,
+      "record_sha256": "2173e8e0517bfd8b3aa30ad9237c875dda8bb63a1a3a6ade38dad58c56a02213",
+      "category": "bakery",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/9251404277",
+      "existing_id": null,
+      "record_sha256": "4ae08d3e326098cba83afbc259e6a8da22d4418b49b0a953bb70864192bc1dc2",
+      "category": "library",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/9452155471",
+      "existing_id": null,
+      "record_sha256": "8665f8be0a221af4bede36edb0cc3bc86fcb9859fafb565b855f7d4358931bea",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:node/992860605",
+      "existing_id": null,
+      "record_sha256": "bef5759dde16739871bd7b400778ee130f2b2865753c495c57cc4fd0708f0386",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/103595738",
+      "existing_id": 7981,
+      "record_sha256": "444748d9bccb9e7e5195f9a65ee0526511098f0196e66e20bb529c9834d9f7e6",
+      "category": "dog_park",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/118107690",
+      "existing_id": 8044,
+      "record_sha256": "02c405d8b71f29a6b70e2be41a123e69d5875d221e7b6e8d254c15dd58b2c486",
+      "category": "swimming",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/124893551",
+      "existing_id": null,
+      "record_sha256": "1dfabba1abf5614381a846dd94b09aa823d55d5a6d6b65722b3ff999c272e8f3",
+      "category": "pitch",
+      "name_kind": "descriptive"
+    },
+    {
+      "key": "osm:way/1353386633",
+      "existing_id": null,
+      "record_sha256": "7e6a171fb5a696b76a43aeaa0a03dcd4b38f65b5fa787da5ef9081e7cf17b647",
+      "category": "boules",
+      "name_kind": "descriptive"
+    },
+    {
+      "key": "osm:way/141252994",
+      "existing_id": 4865,
+      "record_sha256": "abbe2f6a5fb22878e48dcdd26f62f0751f22810fe34040a692f714bc6768cedb",
+      "category": "park",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/1544655789",
+      "existing_id": null,
+      "record_sha256": "1a1963d165f1012d18260b981cedec8e84498743f8a60668dc953d8b44e27d8f",
+      "category": "playground",
+      "name_kind": "descriptive"
+    },
+    {
+      "key": "osm:way/1544655790",
+      "existing_id": null,
+      "record_sha256": "b58e4675c77406e84e54af5eb0c70a3a8695263466f0d0a848802ba75a0ba2be",
+      "category": "basketball",
+      "name_kind": "descriptive"
+    },
+    {
+      "key": "osm:way/160130857",
+      "existing_id": 5183,
+      "record_sha256": "7e6c8e2801363394a50bfc2fa21d97fb11529ff280211ae804f51fea827d4cb4",
+      "category": "playground",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/193160837",
+      "existing_id": null,
+      "record_sha256": "702fe6842d95decdb7b2862a43c0835aec62a0160119b6a453a70393dd7077e0",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/22789243",
+      "existing_id": 4811,
+      "record_sha256": "f944c70e1b4bbaaf79957019b557779d4d0bffbb9b9f5dd00be6eef200d51595",
+      "category": "park",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/24464463",
+      "existing_id": 4825,
+      "record_sha256": "b4b151e7c269450abbf907d4fdcc46bad0d8a8115e1d5f7dc52af46eb71fe989",
+      "category": "park",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/248729479",
+      "existing_id": null,
+      "record_sha256": "c9f874b2307465e0b541aefa3a2a74f3e484c360b0fdeb0092aa814c92325ab7",
+      "category": "sports_centre",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/262911472",
+      "existing_id": 8201,
+      "record_sha256": "914f769aca6461dd7b8c3866ecfc2858761d677c369190d204bd2d06424a22d7",
+      "category": "zoo",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/265788724",
+      "existing_id": 5329,
+      "record_sha256": "fac13c669c3e03b91b350f4bb6647ff40a32261427cdbaad413bdb5e26f5d078",
+      "category": "playground",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/29034626",
+      "existing_id": 8143,
+      "record_sha256": "dfb6f4b9eeacc9759b63955a724b5d806efd92b1d80ca4e72dbc2e950b9de7b5",
+      "category": "attraction",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/29211512",
+      "existing_id": 4993,
+      "category": "playground",
+      "name_kind": "descriptive",
+      "record_sha256": "9006726cf30a938e3bd1ba7cc990618ee5961927c708a252f0380981e07fb7fd"
+    },
+    {
+      "key": "osm:way/31026200",
+      "existing_id": null,
+      "record_sha256": "fe924215ae7b1896bd8e37ee173ecf2b87780c881865862ec7f328bf5e3fbf22",
+      "category": "fast_food",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/327590883",
+      "existing_id": 4895,
+      "record_sha256": "a2001bf019b36eef18568e911c402ca6ad5a503b95f1b18f2e37e5a8c23f19ac",
+      "category": "park",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/365201197",
+      "existing_id": null,
+      "record_sha256": "62f7647172cb49a21f97b13623c1250c44190ff6fe5c0ab9bf4d6e5d0aa5444e",
+      "category": "attraction",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/37000682",
+      "existing_id": 4843,
+      "record_sha256": "3e0671c756328ae10bba191ad0133899d24447d77afb246d79e8178825f8e122",
+      "category": "park",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/457542236",
+      "existing_id": 8865,
+      "record_sha256": "026f5ea029739acd2e456f375e1698c3a114be58091fc81cb8fad81b448f1d84",
+      "category": "sports_centre",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/5235304",
+      "existing_id": 4944,
+      "record_sha256": "03a064d80b6565d1c86c27c2af8a554b3b72c61e4979a50a9150108de7534d16",
+      "category": "playground",
+      "name_kind": "source"
+    },
+    {
+      "key": "osm:way/870584334",
+      "existing_id": 5722,
+      "category": "playground",
+      "name_kind": "descriptive",
+      "record_sha256": "1089301637e442f4dd05364a2c6547ab641e861d793396d3c2eee1402f54612e"
+    },
+    {
+      "key": "osm:way/991631118",
+      "existing_id": 6114,
+      "category": "playground",
+      "name_kind": "descriptive",
+      "record_sha256": "d153f623246317261f5a20f4c004d21dc533bc6bb1a61e3e2dc2215d67e91dea"
+    },
+    {
+      "key": "overture:4fb55d73-51ce-4d40-af50-2672b7baf2f9",
+      "existing_id": null,
+      "record_sha256": "ca1c466dea52a275f7b45ff8ab25ef8a37997fc69be2d8c1e5074eac32512bc9",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "overture:7e855167-e9fb-4267-8682-440864716c5f",
+      "existing_id": null,
+      "record_sha256": "e896ed19c931127ae97a1c58d84c1861df306c757c67454cd5b51ede20a9341b",
+      "category": "restaurant",
+      "name_kind": "source"
+    },
+    {
+      "key": "overture:b392d0fe-f904-4762-bcb8-7de7b1abcb4a",
+      "existing_id": null,
+      "record_sha256": "d029402c9cbf01f61e69a0105060e5072599060941c34e2191f36d18432691ef",
+      "category": "fast_food",
+      "name_kind": "source"
+    }
+  ],
+  "committed_import_authorized": false,
+  "gates": [
+    "Target performance gate passes on adopted runtime implementation",
+    "Fresh expected fingerprints match under import locks",
+    "Recovery procedure reviewed against current schema and concurrent data",
+    "Concrete commit action authorized"
+  ],
+  "supersedes_manifest_sha256": "eb027aa1c0beeafe632816e78de1562a53b98cc792c39814e9de23362b171b05",
+  "replacements": [
+    {
+      "removed_key": "osm:node/12979980912",
+      "replacement_key": "osm:way/991631118",
+      "previous_category": "basketball",
+      "replacement_category": "playground",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:node/13948124049",
+      "replacement_key": "osm:node/2465163535",
+      "previous_category": "boules",
+      "replacement_category": "picnic",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:node/3060757479",
+      "replacement_key": "osm:node/603582311",
+      "previous_category": "viewpoint",
+      "replacement_category": "museum",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:node/3060757481",
+      "replacement_key": "osm:node/6407729258",
+      "previous_category": "viewpoint",
+      "replacement_category": "restaurant",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:node/4922225998",
+      "replacement_key": "osm:node/11113764693",
+      "previous_category": "table_tennis",
+      "replacement_category": "picnic",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:way/1070453228",
+      "replacement_key": "osm:node/12686489761",
+      "previous_category": "tennis",
+      "replacement_category": "picnic",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:way/1215427825",
+      "replacement_key": "osm:way/870584334",
+      "previous_category": "pitch",
+      "replacement_category": "playground",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:way/51794692",
+      "replacement_key": "osm:node/10594951408",
+      "previous_category": "skatepark",
+      "replacement_category": "restaurant",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    },
+    {
+      "removed_key": "osm:way/857641087",
+      "replacement_key": "osm:way/29211512",
+      "previous_category": "tennis",
+      "replacement_category": "playground",
+      "reason": "Prior same-source observation unavailable for native recovery in local baseline"
+    }
+  ],
+  "not_in_canary_categories": [
+    "skatepark",
+    "tennis"
+  ],
+  "unsupported_refresh_count_in_full_package": 374
+}

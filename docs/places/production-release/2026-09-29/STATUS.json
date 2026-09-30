@@ -1,0 +1,80 @@
+{
+  "updated_at": "2026-09-29T21:10:43.198175+00:00",
+  "status": "committed_release_candidate_remote_ci_pending",
+  "production_database_changed": false,
+  "production_deployed": false,
+  "production_import_qualified": false,
+  "worktree": "/Users/anar/.codex/worktrees/places-production/expadu-app",
+  "branch": "codex/EXP-72-production-qualification",
+  "baseline_commit": "8f7eb597b073c025fb8ab0f0011eb1313657d6ac",
+  "baseline_tests": 229,
+  "baseline_assertions": 750,
+  "new_gate_regressions": {
+    "red_failed": 2,
+    "red_passed": 1,
+    "green_passed": 3,
+    "green_assertions": 25
+  },
+  "retained_source_commits": [
+    "fe61dafc",
+    "b04762ba",
+    "5ae0a2ed",
+    "f2399fca",
+    "882227ee",
+    "7e070054",
+    "0273e467",
+    "b25eaf83",
+    "40240d0e",
+    "ca931927",
+    "d7f0e0eb",
+    "53e3221a",
+    "a18f5c31",
+    "ce0d5796",
+    "7d00ad06",
+    "d544da92"
+  ],
+  "excluded_unrelated_paths": [
+    "tests/Feature/Bureaucracy/BureaucracyAiPrivacyTest.php"
+  ],
+  "review_findings": [
+    {
+      "issue": "Monthly boundary jobs bypassed default-off gate",
+      "resolution": "All eight catalogue/media schedules now gated; regression verifies off/on/off"
+    },
+    {
+      "issue": "Queued jobs from production main lack new required properties",
+      "resolution": "Nullable defaults preserve old unique lock and safely snapshot current validation inputs; old-payload regressions added"
+    }
+  ],
+  "local_verification": {
+    "first_full_fast_suite": {
+      "passed": 1642,
+      "skipped": 2,
+      "assertions": 6818,
+      "seconds": 544.52
+    },
+    "review_regressions": {
+      "red_failed": 3,
+      "red_passed": 12,
+      "green_passed": 15,
+      "green_assertions": 95
+    },
+    "typescript": "passed",
+    "frontend_build": "passed",
+    "eslint": "passed with one existing app-sidebar-layout hook dependency warning",
+    "review": "No remaining critical/important findings in read-only re-review",
+    "normal_commit_hooks": {
+      "passed": true,
+      "tests": 1644,
+      "assertions": 6835,
+      "skipped": 2,
+      "seconds": 183.3,
+      "parallel_processes": 10,
+      "secret_scan": "passed; 60 exact verified public sample-label false positives documented",
+      "skips": "Existing late-day weather test conditions"
+    },
+    "harness_correction": "Parallel Redis base changed from15 to0 so worker offsets fit the service capacity; 46 affected Composer endpoint tests/217assertions then passed, followed by all normal commit checks."
+  },
+  "retained_fixture_compatibility": "resources/js/pages/dev/cards.tsx adds required Place data fields only",
+  "code_commit": "846546df20eef53d0f0874e6ac1940da43a56135"
+}

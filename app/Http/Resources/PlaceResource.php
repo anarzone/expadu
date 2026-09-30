@@ -5,72 +5,86 @@ namespace App\Http\Resources;
 use App\Enums\SpotCategory;
 use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
+use App\Places\PlaceFacts;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * The Places page contract. Most fields are derived best-effort from
- * OSM-seeded data; missing pieces resolve to friendly category-level
- * defaults so the card never renders an empty/broken row.
+ * The Places page contract. User-visible facts are resolved from source
+ * observations and reviewed corrections; unknown values stay explicit.
  *
  * @mixin Spot
  */
 class PlaceResource extends JsonResource
 {
-    /** Free, publicly accessible coarse categories. */
-    private const FREE_OUTDOOR = ['park', 'pitch', 'court', 'playground', 'dog_park'];
-
-    /** Category-level fallback tips — generic guidance, never a factual claim. */
-    private const CATEGORY_TIPS = [
-        'park' => 'Bring a blanket — the lawns fill up fast on the first sunny afternoon.',
-        'pitch' => 'Evenings and weekends get busy — mornings are your best shot at a free pitch.',
-        'court' => 'Quietest before 17:00; bring your own ball, nets are often missing.',
-        'swimming' => 'Check the day ticket price and lane times before you go — they vary by season.',
-        'playground' => 'Most lively late afternoon; shade is limited, so pack a hat in summer.',
-        'dog_park' => 'Busiest at dawn and after work — calmer in the early afternoon.',
-        'culture' => 'Check opening days before you go — most Cologne museums close on Mondays.',
-    ];
-
     /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
+        $recommendationAvailable = $this->resource->getAttribute('recommendation_available') !== false;
         $fine = $this->categoryEnum();
         $coarse = $fine?->coarse() ?? 'park';
         $mediaSelector = app(PublishedMediaSelector::class);
         $media = $mediaSelector->select($this->resource, 'hero');
-        $allowLegacyMedia = ! $mediaSelector->hasManagedMedia($this->resource);
+        $placeFacts = app(PlaceFacts::class)->resolve($this->resource);
+        $mapPoint = $placeFacts['location']['map_point'];
+        $entrancePoint = $placeFacts['location']['entrance_point'];
+        $routingPoint = $entrancePoint['status'] === 'verified' ? $entrancePoint : $mapPoint;
 
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'recommendation_status' => $this->whenHas('recommendation_available', fn () => $this->recommendation_available ? 'available' : 'unavailable'),
+            'name' => $placeFacts['name']['value'] ?? $this->name,
             'category' => $coarse,
             'fine_label' => $fine?->label(),
             'emoji' => $fine?->emoji(),
             'veedel' => $this->veedel,
             'park' => $this->park_name,
-            'lat' => (float) $this->lat,
-            'lng' => (float) $this->lng,
-            'photo_url' => $media?->remote_url ?? ($allowLegacyMedia ? $this->photo_url : null),
-            'photo_attribution' => $media?->attribution ?? ($allowLegacyMedia ? $this->photo_attribution : null),
+            'lat' => $mapPoint['lat'] !== null ? (float) $mapPoint['lat'] : null,
+            'lng' => $mapPoint['lng'] !== null ? (float) $mapPoint['lng'] : null,
+            'routing_lat' => $routingPoint['lat'] !== null ? (float) $routingPoint['lat'] : null,
+            'routing_lng' => $routingPoint['lng'] !== null ? (float) $routingPoint['lng'] : null,
+            'photo_url' => $media?->remote_url,
+            'photo_attribution' => $media?->attribution,
             'photo_source_url' => $media?->source_page_url,
             'photo_license_url' => $media?->license_url,
             'distance_min' => $this->travel_min !== null ? (int) $this->travel_min : null,
             'distance_mode' => $this->travel_mode ?? $request->user()?->transport_mode?->value,
             'distance_km' => $this->distance_km !== null ? round((float) $this->distance_km, 1) : null,
-            'open_now' => $this->resolveOpenNow($coarse),
-            'opening_hours_text' => $this->resolveHoursText($coarse),
-            'price_text' => $this->resolvePriceText($coarse),
-            'feature_chips' => $this->resolveFeatureChips(),
-            'tip' => $this->tip ?: (self::CATEGORY_TIPS[$coarse] ?? null),
-            'tip_is_generic' => ! $this->tip,
+            'open_now' => $recommendationAvailable ? $this->resolveOpenNow($placeFacts['hours']) : null,
+            'opening_hours_text' => $placeFacts['hours']['raw'],
+            'price_text' => $recommendationAvailable ? match ($placeFacts['fee']['value']) {
+                'free' => 'free',
+                'paid' => $this->paidPriceText($placeFacts['fee']),
+                default => null,
+            } : null,
+            'feature_chips' => $this->resolveFeatureChips($placeFacts['practical']),
+            'tip' => null,
+            'tip_is_generic' => false,
             'cluster_size' => (int) ($this->cluster_size ?? 1),
             'activities' => $this->activities ?? [],
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
-            'facts' => $this->resolveFacts(),
+            'facts' => $this->resolveFacts($placeFacts['practical']),
+            'place_facts' => [
+                'identity' => $placeFacts['identity'],
+                'name_kind' => $placeFacts['name_kind'],
+                'aliases' => $placeFacts['aliases'],
+                'location' => $placeFacts['location'],
+                'access' => $placeFacts['access'],
+                'fee' => $placeFacts['fee'],
+                'hours' => $placeFacts['hours'],
+                'contact' => $placeFacts['contact'],
+                'description' => $placeFacts['description'],
+                'negative_facts' => $placeFacts['negative_facts'],
+                'practical' => $placeFacts['practical'],
+                'activities' => $placeFacts['activities'],
+                'conflicts' => $placeFacts['conflicts'],
+                'revision' => $placeFacts['revision'],
+            ],
         ];
     }
 
@@ -83,61 +97,76 @@ class PlaceResource extends JsonResource
         return SpotCategory::tryFrom((string) $this->category);
     }
 
-    private function resolveOpenNow(string $coarse): ?bool
+    /** @param array<string, mixed> $hours */
+    private function resolveOpenNow(array $hours): ?bool
     {
-        // A named sports centre may be indoor, paid, or have restricted
-        // opening hours. Its child court category must never manufacture a
-        // free/open claim for the whole destination.
-        if ($this->categoryEnum() === SpotCategory::SportsCentre) {
+        $week = $hours['parsed'] ?? null;
+        if (($hours['status'] ?? 'unknown') !== 'known' || ! is_array($week)) {
             return null;
         }
 
-        // Free public outdoor spots are open-access; pools/indoor vary → unknown.
-        return in_array($coarse, self::FREE_OUTDOOR, true) ? true : null;
+        $now = CarbonImmutable::now('Europe/Berlin');
+        $minute = ((int) $now->format('G') * 60) + (int) $now->format('i');
+        $today = strtolower($now->format('D'));
+        $yesterday = strtolower($now->subDay()->format('D'));
+        if (! array_key_exists($today, $week)) {
+            return null;
+        }
+
+        foreach (is_array($week[$today]) ? $week[$today] : [] as $interval) {
+            $bounds = $this->intervalMinutes($interval);
+            if ($bounds === null) {
+                continue;
+            }
+            [$start, $end] = $bounds;
+            if (($end > $start && $minute >= $start && $minute < $end)
+                || ($end <= $start && $minute >= $start)) {
+                return true;
+            }
+        }
+
+        foreach (is_array($week[$yesterday] ?? null) ? $week[$yesterday] : [] as $interval) {
+            $bounds = $this->intervalMinutes($interval);
+            if ($bounds === null) {
+                continue;
+            }
+            [$start, $end] = $bounds;
+            if ($end <= $start && $minute < $end) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    private function resolveHoursText(string $coarse): ?string
+    /** @return array{0: int, 1: int}|null */
+    private function intervalMinutes(mixed $interval): ?array
     {
-        $tags = is_array($this->tags) ? $this->tags : [];
-
-        // A real OSM opening_hours string beats the category default
-        // (matters for pools and fenced facilities).
-        if (! empty($tags['opening_hours']) && $tags['opening_hours'] !== '24/7') {
-            return (string) $tags['opening_hours'];
-        }
-
-        if ($this->categoryEnum() === SpotCategory::SportsCentre) {
+        if (! is_array($interval) || count($interval) < 2) {
             return null;
         }
 
-        if (in_array($coarse, self::FREE_OUTDOOR, true)) {
-            return 'Open access';
-        }
+        $minutes = static function (mixed $time): int {
+            [$hour, $minute] = array_pad(array_map('intval', explode(':', (string) $time)), 2, 0);
 
-        return null;
-    }
-
-    private function resolvePriceText(string $coarse): ?string
-    {
-        if ($this->categoryEnum() === SpotCategory::SportsCentre) {
-            return null;
-        }
-
-        if (in_array($coarse, self::FREE_OUTDOOR, true)) {
-            return 'free';
-        }
-
-        $tags = is_array($this->tags) ? $this->tags : [];
-        if (($tags['fee'] ?? null) === 'no') {
-            return 'free';
-        }
-
-        return match ($this->price_range) {
-            '€' => '€',
-            '€€' => '€€',
-            '€€€' => '€€€',
-            default => null,
+            return ($hour * 60) + $minute;
         };
+
+        return [$minutes($interval[0]), $minutes($interval[1])];
+    }
+
+    /** @param array<string, mixed> $fee */
+    private function paidPriceText(array $fee): string
+    {
+        if (! is_numeric($fee['amount'] ?? null) || ! is_string($fee['currency'] ?? null)) {
+            return 'paid';
+        }
+
+        $amount = rtrim(rtrim(number_format((float) $fee['amount'], 2, '.', ''), '0'), '.');
+
+        return mb_strtoupper($fee['currency']) === 'EUR'
+            ? '€'.$amount
+            : $amount.' '.mb_strtoupper($fee['currency']);
     }
 
     /**
@@ -145,9 +174,9 @@ class PlaceResource extends JsonResource
      *
      * @return list<string>
      */
-    private function resolveFeatureChips(): array
+    private function resolveFeatureChips(array $practical): array
     {
-        $tags = is_array($this->tags) ? $this->tags : [];
+        $tags = array_map(fn (array $fact): mixed => $fact['status'] === 'known' ? $fact['value'] : null, $practical);
         $chips = [];
 
         if (($tags['lit'] ?? null) === 'yes') {
@@ -175,9 +204,9 @@ class PlaceResource extends JsonResource
      *
      * @return list<array{label: string, value: string}>
      */
-    private function resolveFacts(): array
+    private function resolveFacts(array $practical): array
     {
-        $tags = is_array($this->tags) ? $this->tags : [];
+        $tags = array_map(fn (array $fact): mixed => $fact['status'] === 'known' ? $fact['value'] : null, $practical);
         $facts = [];
 
         $map = [

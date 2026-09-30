@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-09-29T21:04:47.975840+00:00",
+  "production_changed": false,
+  "configured_probe": "http://127.0.0.1:8080",
+  "configured_probe_result": "404 recorded in Docker health logs",
+  "actual_health_endpoint": "http://127.0.0.1:8080/up",
+  "actual_health_endpoint_http_status": 200,
+  "diagnosis": "Container probe checks an unrouted root path; the application health endpoint succeeds. This does not establish catalogue acceptance."
+}

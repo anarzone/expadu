@@ -1,0 +1,35 @@
+{
+  "prepared_locally": true,
+  "uploaded": true,
+  "snapshot_created": true,
+  "rehearsal_executed": true,
+  "catalogue_commit_possible": false,
+  "destination": "staging-app private Places research directory",
+  "raw_records_leave_server": false,
+  "tables": [
+    "spots",
+    "veedels",
+    "place_fact_observations",
+    "place_fact_corrections",
+    "place_fact_revisions",
+    "place_destination_reviews",
+    "place_reconciliations",
+    "media_assets",
+    "media_attachments"
+  ],
+  "private_users_and_plans_included": false,
+  "rehearsal_code_sha256": "9a85863dc124cba94e7b4f6e646b013ce66f0a54b1e8560219424e0f9845945d",
+  "snapshot_script_sha256": "15f55f04047e78264494bceb84889f395d9181679a2e67381f94c99836eeff17",
+  "input_archive_sha256": "b31b1c2d9cf1685486f9ad7a8dfb5a41b1c920697711c43b60a95c2d0016d304",
+  "operational_effects": [
+    "Temporary table locks block catalogue writes during the rehearsal",
+    "Sequence allocations may advance despite table rollback",
+    "Raw public-catalogue records and internal review metadata would be retained privately on server",
+    "The original verifier isolated cache after provider boot; synthetic-user rate-limit counters may remain until expiry. Nine-table rollback does not cover cache state."
+  ],
+  "approval": "Owner authorized upload, server-only snapshot and rollback-only rehearsal after the specific request",
+  "production_changed": false,
+  "rehearsal_finished": true,
+  "rehearsal_status": "passed",
+  "rehearsal_result": "staging-native-rehearsal.json"
+}

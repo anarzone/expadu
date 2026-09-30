@@ -1,0 +1,147 @@
+{
+  "status": "completed",
+  "checked_at": "2026-09-30T12:15:39.592643+00:00",
+  "requested": 546,
+  "outcomes": {
+    "unchanged": 544,
+    "review": 2
+  },
+  "reason_counts": {
+    "tags_changed": 2
+  },
+  "current_access_raw": {
+    "unknown": 424,
+    "private": 6,
+    "permissive": 1,
+    "yes": 107,
+    "customers": 5,
+    "permit": 1,
+    "no": 1,
+    "members": 1
+  },
+  "current_fee_raw": {
+    "unknown": 485,
+    "no": 41,
+    "yes": 20
+  },
+  "geometry_nodes_checked": 5357,
+  "requests": [
+    {
+      "type": "way",
+      "requested": 224,
+      "status": 200,
+      "sha256": "3cc1494029f455aefec23abe4427fce6d9a8fcc871f7557290eb85dfa5e38945",
+      "checked_at": "2026-09-30T12:15:21.485484+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "191110633f86d8f66409f2d5bcc100206cb1b0d392a0558cd407c74c5b06a8a1",
+      "checked_at": "2026-09-30T12:15:22.654739+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "bf62dbaabf0ed184db2b8c1f013d6cdf1987f0025e9ee1a6e4a2b9b0e7c99d7c",
+      "checked_at": "2026-09-30T12:15:23.785287+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "77370b361e39954aaf3f7eecabe143292809e51aa45f61f337e0e323fa41e32d",
+      "checked_at": "2026-09-30T12:15:24.948436+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "72b7fadd6e32c94dc2bbb92b5dc9b768498d05db0c85a574f2f236bc1683d967",
+      "checked_at": "2026-09-30T12:15:26.078214+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "988275e6154809d24e589937ad1b20d1f7cc44188fbcbbe93340ac7d414ed240",
+      "checked_at": "2026-09-30T12:15:27.209488+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "12cbb6d91b5dc31cb0ecdd7f3e8a5aac511ca7a7c341caf7b0089efae71028c5",
+      "checked_at": "2026-09-30T12:15:28.319600+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "d8484d70ace7d6c4ef1acaae7592262db0a25dfeabef5d856b189ea9e5716640",
+      "checked_at": "2026-09-30T12:15:29.453399+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "83e578f31bdc4c3ad4e4f516ca7b5e88aea6afc11a4156b0deb2a00c9a35b663",
+      "checked_at": "2026-09-30T12:15:30.569857+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "ba959f006f9280fb3566ce55c9611554b7734d43b1bdaa689aba46d9e2b1d879",
+      "checked_at": "2026-09-30T12:15:31.719254+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "d64a77697da852f74c9f57932254f027961c7dd3c83b2aec58540cd829508e27",
+      "checked_at": "2026-09-30T12:15:32.867776+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "3aa92fd5aec751932bcc3a92becb140751386b3d74c457d88321382f02980b9a",
+      "checked_at": "2026-09-30T12:15:33.993485+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "a313143374a15a3d30e41193917fb6d5f55366bd0cc01243a9ba6050665088f0",
+      "checked_at": "2026-09-30T12:15:35.106500+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "4452fd03e42302f058c83bbc52e31f24b5017aa37b1dc200be18fa90f9e7a8e2",
+      "checked_at": "2026-09-30T12:15:36.255562+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 157,
+      "status": 200,
+      "sha256": "984ec6d579558b5d4a9fc3ad767c75abbe392cbd6f9c8d7e030d072f823d9bd9",
+      "checked_at": "2026-09-30T12:15:37.382462+00:00"
+    },
+    {
+      "type": "way",
+      "requested": 224,
+      "status": 200,
+      "sha256": "1c236583c2f3b58929113508db70a4b7f8e2a83b353333b45327af83738eddb2",
+      "checked_at": "2026-09-30T12:15:38.546462+00:00"
+    }
+  ],
+  "source": "https://api.openstreetmap.org/api/0.6",
+  "geometry_meaning": "source node or recomputed way bounding-box centre; no entrance verification",
+  "contributor_identity_retained": false,
+  "database_changed": false,
+  "raw_rows_exported": false
+}

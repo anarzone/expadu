@@ -41,7 +41,24 @@ test('media persistence stores reusable assets and polymorphic attachments', fun
             'priority',
             'is_primary',
             'is_manually_locked',
+            'match_status',
+            'match_method',
+            'match_evidence',
+            'match_reviewed_at',
         ]))->toBeTrue();
+
+    expect(Schema::hasColumns('media_match_reviews', [
+        'id',
+        'media_attachment_id',
+        'previous_status',
+        'new_status',
+        'match_method',
+        'evidence',
+        'reviewer',
+        'fingerprint',
+        'snapshot',
+        'created_at',
+    ]))->toBeTrue();
 });
 
 test('media asset and attachment models are available', function () {

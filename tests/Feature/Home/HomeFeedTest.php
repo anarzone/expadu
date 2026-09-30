@@ -132,10 +132,16 @@ test('tonight rail cards carry the real event category and rights-approved media
     $pending = MediaAsset::factory()->create(['remote_url' => 'https://www.stadt-koeln.de/quarantined.jpg']);
     $approved = MediaAsset::factory()->approved()->create([
         'remote_url' => 'https://upload.wikimedia.org/approved.jpg',
+        'source_page_url' => 'https://commons.wikimedia.org/wiki/File:Approved.jpg',
+        'license_url' => 'https://creativecommons.org/licenses/by/4.0/',
         'attribution' => 'Approved credit',
     ]);
     $jazz->mediaAttachments()->create(['media_asset_id' => $pending->id, 'role' => 'poster', 'priority' => 1, 'is_primary' => true]);
-    $jazz->mediaAttachments()->create(['media_asset_id' => $approved->id, 'role' => 'poster', 'priority' => 2]);
+    $jazz->mediaAttachments()->create([
+        'media_asset_id' => $approved->id,
+        'role' => 'poster',
+        'priority' => 2,
+    ]);
 
     $bare = eventAtTonight('Random Meetup', now()->addHours(4));
     $bare->update(['category' => 'sports']);
@@ -147,11 +153,15 @@ test('tonight rail cards carry the real event category and rights-approved media
         ->and($jazzCard['category'])->toBe('culture')
         // The quarantined stadt-koeln image never leaks — only approved media shows.
         ->and($jazzCard['photo_url'])->toBe('https://upload.wikimedia.org/approved.jpg')
-        ->and($jazzCard['photo_attribution'])->toBe('Approved credit');
+        ->and($jazzCard['photo_attribution'])->toBe('Approved credit')
+        ->and($jazzCard['photo_source_url'])->toBe('https://commons.wikimedia.org/wiki/File:Approved.jpg')
+        ->and($jazzCard['photo_license_url'])->toBe('https://creativecommons.org/licenses/by/4.0/');
 
     $bareCard = $cards->firstWhere('name', 'Random Meetup');
     expect($bareCard['category'])->toBe('sports')
-        ->and($bareCard['photo_url'])->toBeNull();
+        ->and($bareCard['photo_url'])->toBeNull()
+        ->and($bareCard['photo_source_url'])->toBeNull()
+        ->and($bareCard['photo_license_url'])->toBeNull();
 });
 
 test('only still-applicable open tasks reach the urgent tile and paperwork rail', function () {

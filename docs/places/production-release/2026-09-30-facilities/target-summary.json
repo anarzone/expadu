@@ -1,0 +1,94 @@
+{
+  "status": "completed",
+  "checked_at": "2026-09-30T11:40:36+00:00",
+  "records": 559,
+  "reason_counts": {
+    "public_access_not_established": 469,
+    "ready_for_qualification_review": 90
+  },
+  "qualification_review_categories": {
+    "basketball": 3,
+    "table_tennis": 11,
+    "pitch": 2,
+    "playground": 74
+  },
+  "legacy_provenance_hints": {
+    "source_groups": [
+      {
+        "source_group": null,
+        "records": 4680
+      }
+    ],
+    "tagged_rows": 3431,
+    "existing_observations": [],
+    "tag_keys": [
+      {
+        "key": "sport",
+        "records": 1544
+      },
+      {
+        "key": "access",
+        "records": 1327
+      },
+      {
+        "key": "surface",
+        "records": 806
+      },
+      {
+        "key": "lit",
+        "records": 578
+      },
+      {
+        "key": "wheelchair",
+        "records": 541
+      },
+      {
+        "key": "opening_hours",
+        "records": 350
+      },
+      {
+        "key": "covered",
+        "records": 126
+      },
+      {
+        "key": "wikidata",
+        "records": 120
+      },
+      {
+        "key": "wikipedia",
+        "records": 100
+      },
+      {
+        "key": "fee",
+        "records": 98
+      },
+      {
+        "key": "barrier",
+        "records": 46
+      },
+      {
+        "key": "hoops",
+        "records": 46
+      },
+      {
+        "key": "indoor",
+        "records": 22
+      },
+      {
+        "key": "drinking_water",
+        "records": 3
+      },
+      {
+        "key": "wikimedia_commons",
+        "records": 2
+      },
+      {
+        "key": "image",
+        "records": 2
+      }
+    ]
+  },
+  "stored_records": 12063,
+  "database_changed": false,
+  "raw_rows_exported": false
+}

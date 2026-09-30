@@ -47,6 +47,7 @@ class VenueResolver
     private function placeWithin50m(string $venueName, float $lat, float $lng): ?Spot
     {
         $candidates = Spot::query()
+            ->canonical()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->whereRaw(

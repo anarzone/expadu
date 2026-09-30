@@ -20,7 +20,7 @@ class HomeFeedController extends Controller
             'chips' => $feed->chips($user),
             // The plan the user pinned via the composer's "Save to Today" — a
             // cheap Redis read, reloadable on its own (router.reload).
-            'savedPlan' => $todayPlan->get($user),
+            'savedPlan' => $todayPlan->getForDisplay($user),
             // Urgency tiles and discovery rails defer — they hit the DB/feed
             // and resolve from a single shared build per request. The weather
             // chip + right-panel widgets are now shared globally (see

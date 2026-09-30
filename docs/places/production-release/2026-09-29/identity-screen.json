@@ -1,0 +1,6769 @@
+{
+  "checked_at": "2026-09-29T20:28:44+00:00",
+  "scope": "Existing frozen identity ambiguity rules applied server-side to production; flags only, no merge or release approval",
+  "container_image": "sha256:e7502ea4c098ed031bbc3ffa46dd3f6c48fe189791b9257fd3e83c212626d4a4",
+  "public_package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+  "matching_rules_sha256": "a2096ffc0baaa4eb04cce4c938c238ac12873120c538e69d02638497596a94e2",
+  "read_only": true,
+  "stored_rows_examined": 8798,
+  "package_records": 4643,
+  "classification": {
+    "missing_source_key_without_screen_match": 3265,
+    "matched_source_key_with_ambiguity": 749,
+    "matched_source_key_without_screen_match": 629
+  },
+  "held_public_source_keys": [
+    {
+      "source_key": "osm:node/10039777337",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1013141580",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10178408952",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10202340572",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10202382429",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10202382433",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1020616644",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1025197040",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1033499764",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/104272811",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1049076004",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10656291082",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10797132384",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10831661264",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10867972719",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10905370549",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10915920980",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/10963396563",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11016254137",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11101584116",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11136716914",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11142051721",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1116969397",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11212354686",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11248225838",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1140751964",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1140753690",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1141113102",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11420279619",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11425063989",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1151500324",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1151500510",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11536738969",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11638699116",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11850409895",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11876676047",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11896441747",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11961648069",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11962709462",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11962709463",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11962709464",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11970170296",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/11980761747",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1198931030",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12065898869",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12107679876",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12125508045",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12126214031",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12128079499",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1214863295",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12157963065",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12175372490",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12175372492",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12190265275",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12193146617",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12211671475",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12217538701",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12269061607",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12290494147",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12304427136",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12314086625",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12326810007",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12327485201",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1233484707",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1233497108",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1242256441",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12492797255",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12520720125",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12531474701",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1265004373",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12795259498",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12802319475",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12928063036",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/12999808808",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13013480896",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13042604034",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13058008005",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13107798701",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13128371962",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13157902847",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13162040399",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1316368397",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1316368399",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13201479444",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1327646867",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13282577754",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13301958413",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13396033603",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13398593581",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1341316048",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13430238117",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13593899345",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13650679958",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13654736502",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13669701201",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13695474254",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1370091341",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13701148691",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13718240822",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13764202980",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13808040589",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1382830320",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13839957263",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/13895665448",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1420001047",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1431911473",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1431926133",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1431926134",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1431926135",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1432011911",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1439231908",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1442229398",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1472018613",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1473125366",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1514253044",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1562396467",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1572582913",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1598829078",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/160695366",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1609172952",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1644011313",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1679641146",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1681486382",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1681486387",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1681486419",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1685794499",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1713216429",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1726589904",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1754820808",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1787350862",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1854024566",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1879147303",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1900594267",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1919890525",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1927906555",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1966869734",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1967036080",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1975412683",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/1975412691",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2042747185",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2085007699",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2105476955",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2114659500",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2116073281",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2125707037",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/215210722",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2159902971",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2159951484",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2225404718",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2248763797",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2273748537",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2279123378",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2286488276",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2292327656",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2330814917",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2355940050",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2378929028",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2419064963",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/243917364",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2449858704",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2453044702",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/251203614",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/255279145",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2561177960",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2578761800",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2586325827",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2629071463",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2647328857",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2653841921",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/266560570",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2670730719",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2672188770",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2682334991",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/280843747",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/286420721",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2865852452",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2882782471",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2899546402",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/2922080153",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/294116840",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3006373720",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3014649621",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/304562381",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/305161562",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3060757478",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3060757479",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3060757480",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3060757481",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/306098540",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3097141267",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/310405284",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/310814716",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3140017500",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/314556466",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3191751684",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3275522805",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3305876579",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/332368434",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3344462774",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3364570531",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/336687360",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/338579822",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3396039255",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3416583867",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3416691017",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3426389407",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3427255193",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3451918698",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/347539409",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/347539412",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3503756635",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/357199403",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/359862708",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/362555341",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3633792220",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3635872203",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/363744354",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3639413325",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3654773858",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3682433383",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3698446468",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/370842056",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/371085749",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/375780126",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3809490088",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3809493091",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3809495199",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/387293276",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/388316730",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3909642885",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/3912933837",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/394948609",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4045312023",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4085306199",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/410124702",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4112354216",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/412645535",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/413152029",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4253271283",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/427087678",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4275055556",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/428574355",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4294224257",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4294247171",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/435575965",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4387616014",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/442135084",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4424617595",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/442702962",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4440733100",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/444316932",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/444782789",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/444782802",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/445355941",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4459414299",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/446769225",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4475825145",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/448300897",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/448400559",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/448400578",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/448400698",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4490199293",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/452736516",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4531193584",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4531193585",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4531193586",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4560339792",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/456372580",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/458599339",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/458790816",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/458790829",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4639554291",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4687550155",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4693880321",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4696401291",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/476407013",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4845697988",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/486063878",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/4931145602",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5022778620",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5115480921",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5133288969",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5147933162",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5150270561",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/517231322",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5236136884",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5247513377",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5266113696",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/530646507",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/538242620",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5409821471",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5492264456",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5493368822",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5519815124",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5659289126",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/566149013",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/567404736",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5677574353",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5696834982",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/570692365",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/570693110",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/570693673",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/570694021",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/570779447",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/579530540",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/579538541",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5807346953",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/581936182",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/582654009",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5892473515",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5902525724",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/591538577",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5968417970",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/5981016832",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/602134092",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/603582311",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6068922630",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6116180288",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6130150512",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/614215778",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/614237718",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/617197874",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/618164720",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6191204235",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6191204236",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6191204238",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6191204239",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/619389907",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6227667062",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6240480851",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6271814477",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/633181821",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/633181834",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/633181872",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/633181879",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/633480736",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6339572723",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/634987652",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/635830169",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/635884679",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/635897065",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6408759486",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/643068699",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6447272685",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6460886885",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/648263118",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6483503602",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/649065294",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6509520614",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/652560707",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/653733473",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6547648629",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/655166543",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6576696449",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6576696450",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/659034167",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/659589753",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/661055188",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6617409485",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/662763200",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6635197792",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6649684501",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6657406285",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6749736316",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6875760037",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6960216315",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/6976716059",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7006986592",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7006986599",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7018269085",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7027833132",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/704452964",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7069122069",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/710564986",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7145545685",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7158896958",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/717639965",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/717677100",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7178007585",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7183789719",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7216623485",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7271584657",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7497397385",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7653554687",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7658912425",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7685019863",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/772522951",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/778429505",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/781793053",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7844238385",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/78605265",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/787101178",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/790036021",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/7985563092",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8084305310",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8104229528",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/823682739",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8278629058",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8308325851",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8333998269",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/848967415",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8601743149",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8923250627",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8935035750",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/894361064",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/8954951826",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/901366870",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9044804518",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9249103298",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9280089724",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9347120388",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/937535734",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/940040784",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9405346372",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/942678129",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9439626455",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9505271840",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9581170987",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/960118095",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/960119259",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9693015066",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9719795906",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9751997017",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9751997019",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9751997117",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9775190117",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9803272017",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:node/9911069617",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/1151574",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/18612362",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/2087312",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/2088644",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/3096872",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/4595998",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/6168214",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/7769947",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/8704013",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/9269068",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/938988",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/9425158",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:relation/965473",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1012161642",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/103595738",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1057770971",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/108095300",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/108095306",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1082470147",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1097044632",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1104537791",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1106454544",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1106461844",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/114449273",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/114979719",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/116462458",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1169754628",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1171724390",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/118021894",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/118107690",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1196402771",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1207021069",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1214217452",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/122628380",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1231131911",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/124894518",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/126625391",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/126625682",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/126829960",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1268566027",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1275043188",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1284866708",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1284866709",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/128504203",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/130165210",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1304321266",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/132405287",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/132630772",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/134642410",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1382858399",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1386289893",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/13969251",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/141252994",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/143542029",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/145128810",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/1460227896",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/150031301",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/150031304",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/151060428",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/151178226",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/151178557",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/151503336",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/153966593",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/154337338",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/154502597",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/154559032",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/155328236",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/155328270",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/155430661",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/156166965",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/160130857",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/161266359",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/166521153",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/167136366",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/17104455",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/175595642",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/179561804",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/185734525",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/188350646",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/188631267",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/188634136",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/192698542",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/19373817",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/195444239",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/202252737",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/216235190",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/216635201",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/218587070",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/225589634",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/225956366",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/22698731",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/22789243",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/22903165",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/22914525",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/230322117",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23145909",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23222614",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/232241142",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23482434",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23489772",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23490607",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/235159803",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/235482036",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23574840",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23648268",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23648295",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23649900",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23686061",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/23824322",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24234398",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24300632",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24390541",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/243977647",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/244267949",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24456687",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24462436",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24464148",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24464463",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24538501",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/24538507",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/245408298",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/247083610",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/247571501",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/249181383",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/250535779",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/250619093",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/251849415",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/252657752",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/254059887",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/25477579",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/255712151",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/256426091",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/25869590",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/259995399",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26031254",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/260655433",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26207240",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26231414",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/262911472",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/264324531",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/264592186",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/264595797",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26556167",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/265788724",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26731834",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26777944",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26792209",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/26802888",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/27007887",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/273992890",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/27755145",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/27989906",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/281423008",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28373995",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/284497134",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28450303",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28492007",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/285632970",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/285715949",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28687366",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28712330",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28806342",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28865730",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28876784",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/28973824",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/29025356",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/294582447",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/298044240",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/300558490",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/301113115",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/302794800",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/310811030",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/31129023",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/313542233",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/31722298",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/318920366",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/319929499",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/321137618",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/32323305",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/323641302",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/325388054",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/327043916",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/327137117",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/327590883",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/32883883",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/332017306",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/33433637",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/334606061",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/33526152",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/338018531",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/345152381",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/35006256",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/35413356",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/35827166",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/358825207",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/358825214",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/36728770",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/37000682",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/37086885",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/37285026",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/37881792",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/38053861",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/38246033",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/38446078",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/386349068",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/38698578",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/38804785",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/392792497",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/416180042",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/416555716",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/417516060",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/426316883",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/42693266",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/43483626",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/442950473",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/44439498",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/44443729",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/44590987",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/448614391",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/448615321",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/44905477",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/44905847",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/4532046",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/4532738",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/46424134",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/464406425",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/47014396",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/48359832",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/4979357",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/49811231",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/50012838",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/501402087",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/504577811",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/51570458",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/51571511",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/51571607",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/51573946",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/51794692",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/52168886",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/523479591",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/5235248",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/5235304",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/534462887",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/540158485",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/540178988",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/541512039",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/542051445",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/549801997",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/551498052",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/56014880",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/56272850",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/56452270",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/57674762",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/58844461",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/590274818",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/590591525",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/591858490",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/59298854",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/60358008",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/60441765",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/605675716",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/624380868",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/624380870",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/624380871",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/637557900",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/637559843",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/637563268",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/644863660",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/683231630",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/683231632",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/683231634",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/683438724",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/687750744",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/688146071",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/689369441",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/690337665",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/696898446",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/700522223",
+      "source_key_already_exists": true,
+      "reasons": [
+        "same_category_same_point"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/700687296",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/700689093",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/706160475",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/710519424",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/712608325",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/712610119",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/712664245",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/712668898",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/73052731",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/73097249",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/733917848",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/738302951",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/73858981",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/746211022",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/783613349",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/788202083",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/793235343",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/793248335",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/83711151",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/85511245",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/886168288",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/887444741",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/887461669",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/887772069",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/887881589",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/88836490",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/888912293",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/901797725",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/906093919",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/90977785",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/916510270",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/923207827",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/931872617",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/937893886",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/944846777",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/944848058",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/965081706",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/976485276",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/977083948",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/977980885",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/980367829",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/980715149",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    },
+    {
+      "source_key": "osm:way/983672618",
+      "source_key_already_exists": true,
+      "reasons": [
+        "similar_name_nearby"
+      ],
+      "has_unknown_origin_legacy_match": true,
+      "matching_rows": 1
+    }
+  ],
+  "reason_counts": {
+    "similar_name_nearby": 748,
+    "same_category_same_point": 1
+  },
+  "records_with_unknown_origin_legacy_match": 749,
+  "raw_rows_exported": false,
+  "raw_rows_written_to_disk": false,
+  "user_tables_read": false,
+  "database_changed": false,
+  "production_import_qualified": false,
+  "runner_sha256": "73a3eac5aa06038dbbf4878c2e5b5618fe0ff08901dab71ba321cc369c3c30bc"
+}

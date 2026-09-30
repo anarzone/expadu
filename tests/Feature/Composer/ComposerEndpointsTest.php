@@ -1,6 +1,7 @@
 <?php
 
 use App\Composer\TodayPlanStore;
+use App\Enums\LocationSource;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\Task;
@@ -8,9 +9,12 @@ use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
 use App\Models\UserTask;
+use App\Places\ReviewPlaceFacts;
+use App\Services\LocationContext;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use App\Transit\Contracts\RouteService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -665,12 +669,10 @@ test('compose rejects windows beyond 72 hours', function () {
     $response->assertUnprocessable();
 });
 
-test('a thin filter combination still returns a plan instead of nothing', function () {
+test('a thin filter combination preserves free requirements when price evidence is missing', function () {
     $user = composerUser();
 
-    // The Merkenich + pitches + "make a day of it" combination from the bug
-    // report: a shaped day with no hero/meal/wind-down to fill. It must not
-    // dead-end at "nothing fits".
+    // Missing prices cannot be treated as free just to fill a shaped day.
     Spot::factory()->create(['name' => 'Bolzplatz Merkenich', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.039, 'lng' => 6.930]);
     Spot::factory()->create(['name' => 'Sportplatz Fühlingen', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.041, 'lng' => 6.932]);
 
@@ -688,8 +690,8 @@ test('a thin filter combination still returns a plan instead of nothing', functi
     ]);
 
     $response->assertOk();
-    expect($response->json('plan.slots'))->not->toBeEmpty();
-    expect(collect($response->json('notices'))->pluck('text')->implode(' '))->toContain('widened');
+    expect($response->json('plan.slots'))->toBe([]);
+    expect(collect($response->json('notices'))->pluck('text')->implode(' '))->toContain('No verified places');
 });
 
 test('a solo activity composes an anchored day plus a browse list, not six of the same', function () {
@@ -886,3 +888,249 @@ test('the origin leg uses the real travel matrix in the composer', function () {
     $response->assertOk();
     expect($response->json('plan.slots.0.travel_min_from_previous'))->toBe(42);
 });
+
+test('compose accepts the food and drink category filter it offers', function () {
+    $this->actingAs(composerUser());
+    Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.924]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => [],
+            'categories' => ['food_drink'],
+        ],
+    ])->assertOk();
+
+    $food = collect($response->json('facets.categories'))->firstWhere('value', 'food_drink');
+    expect($food)->not->toBeNull()
+        ->and($food['label'])->toBe('Food & drink');
+});
+
+test('an explicit free budget never relaxes into paid or unknown places', function (array $tags) {
+    $this->actingAs(composerUser());
+    Spot::factory()->create([
+        'name' => 'Nearby pitch', 'category' => 'pitch',
+        'lat' => 50.949, 'lng' => 6.924, 'tags' => $tags,
+    ]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'categories' => ['pitch'], 'budget' => 'free',
+        ],
+    ])->assertSuccessful();
+
+    expect($response->json('plan.slots'))->toBe([])
+        ->and($response->json('options'))->toBe([])
+        ->and($response->json('plan.constraints.budget'))->toBe('free');
+})->with([
+    'paid' => [['fee' => 'yes', 'access' => 'yes']],
+    'unknown' => [['access' => 'yes']],
+]);
+
+test('a paid pinned place cannot bypass an explicit free budget', function () {
+    $this->actingAs(composerUser());
+    $paid = Spot::factory()->create([
+        'name' => 'Paid pinned court', 'category' => 'tennis',
+        'lat' => 50.949, 'lng' => 6.924, 'tags' => ['fee' => 'yes', 'access' => 'yes'],
+    ]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+
+    $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'budget' => 'free',
+        ],
+        'pins' => ["spot:{$paid->id}"],
+    ])->assertUnprocessable()->assertJsonValidationErrors('pins');
+});
+
+test('free football works from parse through compose swap and save without photos', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-28 10:00', 'Europe/Berlin'));
+    $user = composerUser();
+    $this->actingAs($user);
+    $places = collect(range(1, 3))->map(fn ($i) => Spot::factory()->create([
+        'name' => 'Bolzplatz · Ehrenfeld '.$i, 'category' => 'pitch', 'is_recommendable' => false,
+        'lat' => 50.949 + $i * 0.001, 'lng' => 6.924,
+        'source' => 'osm', 'source_id' => 'way/'.(990100 + $i),
+        'tags' => ['sport' => 'soccer', 'access' => 'yes', 'fee' => 'no', 'surface' => 'artificial_turf', 'lit' => 'no'],
+    ]));
+    foreach ($places as $place) {
+        $review = app(ReviewPlaceFacts::class);
+        $changes = ['activity_discovery' => true];
+        $preview = $review->preview($place->id, $changes);
+        $review->apply($place->id, $changes, $preview['fingerprint'], 'Verified public soccer facility with source geometry and stable identity.', 'readiness-test');
+    }
+    Spot::factory()->create(['name' => 'Wrong sport', 'category' => 'pitch', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['sport' => 'basketball', 'access' => 'yes', 'fee' => 'no']]);
+    $prompt = 'recommend free football nearby tomorrow afternoon within 2 km';
+    $parsed = $this->postJson('/composer/parse', ['text' => $prompt])->assertSuccessful()
+        ->assertJsonPath('constraints.activities', ['soccer'])
+        ->assertJsonPath('constraints.budget', 'free');
+    $composed = $this->postJson('/composer/compose', ['constraints' => $parsed->json('constraints')])->assertSuccessful();
+    $slots = $composed->json('plan.slots');
+    expect($slots)->not->toBeEmpty()
+        ->and(count($composed->json('options')))->toBe(3);
+    $first = $slots[0];
+    expect($first['cost_tier'])->toBe('free')
+        ->and($first['place_facts']['activities'])->toBe(['soccer'])
+        ->and($first['place_facts']['practical']['lit']['value'])->toBe('no')
+        ->and($first['hours_assumed'])->toBeTrue()
+        ->and($first['why'])->toContain('Opening hours unconfirmed');
+    $this->getJson('/api/places/'.substr($first['id'], 5))->assertSuccessful()
+        ->assertJsonPath('data.photo_url', null)
+        ->assertJsonPath('data.place_facts.practical', $first['place_facts']['practical']);
+    $swapped = $this->postJson('/composer/swap', ['slot' => 0])->assertSuccessful()
+        ->assertJsonPath('plan.constraints.activities', ['soccer'])
+        ->assertJsonPath('plan.constraints.radius_km', 2)
+        ->assertJsonPath('plan.slots.0.cost_tier', 'free');
+    expect($swapped->json('plan.slots.0.id'))->not->toBe($first['id']);
+    $this->postJson('/composer/save', ['prompt' => $prompt])->assertSuccessful();
+    $saved = app(TodayPlanStore::class)->get($user);
+    expect($saved['slots'][0]['id'])->toBe($swapped->json('plan.slots.0.id'))
+        ->and($saved['slots'][0]['place_facts']['activities'])->toBe(['soccer']);
+});
+
+test('a plan cannot be saved after its free price evidence changes', function () {
+    $this->actingAs(composerUser());
+    $place = Spot::factory()->create(['name' => 'Initially free park', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['fee' => 'no', 'access' => 'yes']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(),
+        'budget' => 'free', 'categories' => ['park'],
+    ]])->assertSuccessful()->assertJsonPath('plan.slots.0.cost_tier', 'free');
+    $place->update(['tags' => ['fee' => 'yes', 'access' => 'yes']]);
+    $this->postJson('/composer/save')->assertConflict();
+});
+
+test('a saved Today plan stops recommending a place after its access becomes private', function () {
+    $user = composerUser();
+    $this->actingAs($user);
+    $place = Spot::factory()->create(['name' => 'Public park', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['access' => 'yes']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(),
+        'categories' => ['park'],
+    ]])->assertSuccessful();
+    $this->postJson('/composer/save')->assertSuccessful();
+    expect(app(TodayPlanStore::class)->get($user))->not->toBeNull();
+    $place->update(['tags' => ['access' => 'private']]);
+    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
+});
+
+test('saved visits are revalidated against changed opening hours', function () {
+    $user = composerUser();
+    $this->actingAs($user);
+    $place = Spot::factory()->create(['name' => 'Changing hours', 'category' => 'cafe', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['opening_hours' => 'Mo-Su 09:00-20:00']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(), 'categories' => ['cafe'],
+    ]])->assertSuccessful();
+    $this->postJson('/composer/save')->assertSuccessful();
+    $place->update(['tags' => ['opening_hours' => 'Mo-Su 09:00-12:00']]);
+    $this->postJson('/composer/save')->assertConflict();
+    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
+});
+
+test('a composed visit respects split opening intervals instead of crossing a closure', function () {
+    $this->actingAs(composerUser());
+    Spot::factory()->create(['name' => 'Lunch break cafe', 'category' => 'cafe', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['opening_hours' => 'Mo-Su 09:00-12:00,15:00-20:00']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(13, 0);
+    $response = $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(), 'categories' => ['cafe'],
+    ]])->assertSuccessful();
+    expect($response->json('plan.slots.0.start_time'))->toBe('15:00');
+});
+
+test('nearby composition requires a known starting point', function () {
+    $this->actingAs(User::factory()->onboarded()->create(['veedel' => null]));
+    $this->mock(UserLocationService::class)->shouldReceive('context')->once()->andReturn(new LocationContext(null, null, LocationSource::None));
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(4)->toIso8601String(),
+        'activities' => ['soccer'], 'radius_km' => 2,
+    ]])->assertUnprocessable()->assertJsonValidationErrors('origin');
+});
+
+test('a pre-release Today snapshot without constraints is not trusted as a current recommendation', function () {
+    $user = composerUser();
+    $place = Spot::factory()->create(['category' => 'park', 'tags' => ['access' => 'private']]);
+    Cache::put('composer:today:'.$user->id, [
+        'window_start' => now()->toIso8601String(), 'prompt' => 'Free public park',
+        'slots' => [['id' => 'spot:'.$place->id, 'name' => $place->name, 'cost_tier' => 'free']],
+        'saved_at' => now()->subHour()->toIso8601String(),
+    ], 300);
+    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
+    expect(Cache::get('composer:today:'.$user->id)['slots'][0]['id'])->toBe('spot:'.$place->id);
+});
+
+test('held saved plans retain a display-only review state without stale visit claims', function () {
+    $user = composerUser();
+    $this->actingAs($user);
+    $place = Spot::factory()->create(['name' => 'Saved park', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['access' => 'yes', 'fee' => 'no']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(),
+        'budget' => 'free', 'categories' => ['park'],
+    ]])->assertSuccessful();
+    $this->postJson('/composer/save', ['prompt' => 'An afternoon outside'])->assertSuccessful();
+    $store = app(TodayPlanStore::class);
+    expect($store->getForDisplay($user)['status'])->toBe('ready');
+    $snapshot = Cache::get('composer:today:'.$user->id);
+    $place->update(['is_active' => false, 'is_recommendable' => false]);
+    expect($store->get($user))->toBeNull()
+        ->and($store->getForDisplay($user))->toMatchArray([
+            'status' => 'needs_review', 'prompt' => 'An afternoon outside', 'slots' => [],
+        ])
+        ->and(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+    $this->get('/dashboard')->assertInertia(fn ($page) => $page
+        ->where('savedPlan.status', 'needs_review')
+        ->where('savedPlan.slots', [])
+        ->where('savedPlan.prompt', 'An afternoon outside'));
+    $place->update(['is_active' => true, 'is_recommendable' => true]);
+    expect($store->getForDisplay($user)['status'])->toBe('ready')
+        ->and(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+    $store->forget($user);
+    expect($store->getForDisplay($user))->toBeNull();
+});
+
+test('a legacy saved snapshot gets a review notice without exposing stale claims', function () {
+    $user = composerUser();
+    $snapshot = ['window_start' => now()->toIso8601String(), 'prompt' => 'Free park',
+        'slots' => [['id' => 'spot:123', 'name' => 'Old snapshot name', 'cost_tier' => 'free']]];
+    Cache::put('composer:today:'.$user->id, $snapshot, 300);
+    expect(app(TodayPlanStore::class)->get($user))->toBeNull()
+        ->and(app(TodayPlanStore::class)->getForDisplay($user))->toMatchArray(['status' => 'needs_review', 'slots' => []])
+        ->and(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+    $other = composerUser();
+    expect(app(TodayPlanStore::class)->getForDisplay($other))->toBeNull();
+});
+
+test('saved family plans recheck companion suitability after source category corrections', function (string $category) {
+    $user = composerUser();
+    $this->actingAs($user);
+    $place = Spot::factory()->create(['name' => 'Changing category', 'category' => 'cafe', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['opening_hours' => 'Mo-Su 09:00-20:00']]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String(),
+        'categories' => ['cafe'], 'companions' => 'kids',
+    ]])->assertSuccessful()->assertJsonPath('plan.slots.0.id', 'spot:'.$place->id);
+    $this->postJson('/composer/save')->assertSuccessful();
+    $store = app(TodayPlanStore::class);
+    $snapshot = Cache::get('composer:today:'.$user->id);
+    expect($store->getForDisplay($user)['status'])->toBe('ready');
+
+    $place->update(['category' => $category]);
+    expect($store->get($user))->toBeNull()
+        ->and($store->getForDisplay($user))->toMatchArray(['status' => 'needs_review', 'slots' => []]);
+    $this->postJson('/composer/save')->assertConflict();
+    expect(Cache::get('composer:today:'.$user->id))->toBe($snapshot);
+
+    $place->update(['category' => 'cafe']);
+    expect($store->getForDisplay($user)['status'])->toBe('ready');
+    $this->postJson('/composer/save')->assertSuccessful();
+})->with(['bar', 'coworking']);

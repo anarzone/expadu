@@ -330,6 +330,7 @@ jobs:
           # (it's public — shipped to browsers — but a secret keeps the log clean);
           # the environment is derived from the branch, the release from the sha.
           build-args: |
+            APP_COMMIT=${{ github.sha }}
             VITE_SENTRY_DSN_PUBLIC=${{ secrets.VITE_SENTRY_DSN_PUBLIC }}
             VITE_SENTRY_ENVIRONMENT=${{ steps.tag.outputs.tag == 'staging' && 'staging' || 'production' }}
             VITE_SENTRY_RELEASE=${{ github.sha }}

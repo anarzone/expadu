@@ -67,6 +67,8 @@ trait NormalisesConstraints
             budget: $constraints->budget,
             archetype: $constraints->archetype,
             vibe: $constraints->vibe,
+            activities: $constraints->activities,
+            radiusKm: $constraints->radiusKm,
         );
     }
 

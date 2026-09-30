@@ -2,7 +2,11 @@
 
 use App\Jobs\ValidateMediaAssetJob;
 use App\Models\MediaAsset;
+use App\Models\PlaceFactObservation;
 use App\Models\Spot;
+use App\Places\PlaceFacts;
+use App\Places\RecordPlaceObservation;
+use App\Places\ReviewPlaceFacts;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -136,6 +140,141 @@ test('osm import updates by stable identity and excludes points outside Cologne 
         ->is_recommendable->toBeFalse();
 });
 
+test('osm import records source facts once and advances the revision only when facts change', function () {
+    seedTestVeedelBoundary();
+    $element = [
+        'type' => 'way',
+        'id' => 12,
+        'center' => ['lat' => 50.951, 'lon' => 6.951],
+        'tags' => [
+            'name' => 'Quellenpark',
+            'name:en' => 'Source Park',
+            'alt_name' => 'Alter Parkname',
+            'short_name' => 'QP',
+            'access' => 'yes',
+            'access:conditional' => 'no @ (22:00-06:00)',
+            'fee' => 'no',
+            'opening_hours' => 'Mo-Su 06:00-22:00',
+            'contact:website' => 'https://official.example.test/quellenpark',
+            'contact:phone' => '+49 221 120',
+            'addr:street' => 'Parkweg',
+            'addr:housenumber' => '12',
+            'addr:city' => 'Köln',
+            'description' => 'A short source description.',
+            'wheelchair' => 'no',
+            'lit' => 'no',
+        ],
+    ];
+    $changed = $element;
+    $changed['tags']['name'] = 'Quellenpark am See';
+    $changed['tags']['fee'] = 'yes';
+    Http::fakeSequence()
+        ->push(['elements' => [$element]])
+        ->push(['elements' => [$element]])
+        ->push(['elements' => [$changed]]);
+
+    $this->artisan('osm:import --only=park')->assertSuccessful();
+
+    $spot = Spot::query()->where('source_id', 'way/12')->sole();
+    $observation = PlaceFactObservation::query()->sole();
+    $revision = app(PlaceFacts::class)->revision();
+
+    expect($observation->provider)->toBe('osm')
+        ->and($observation->provider_record_id)->toBe('way/12')
+        ->and($observation->source_url)->toBe('https://www.openstreetmap.org/way/12')
+        ->and($observation->payload)->toMatchArray([
+            'name' => 'Quellenpark',
+            'aliases' => ['Alter Parkname', 'QP', 'Source Park'],
+            'location' => [
+                'lat' => 50.951,
+                'lng' => 6.951,
+                'kind' => 'source_center',
+                'boundary_reference' => 'way/12',
+            ],
+            'access' => ['raw' => 'yes', 'conditional' => 'no @ (22:00-06:00)'],
+            'fee' => ['raw' => 'no', 'conditional' => null, 'charge' => null, 'charge_conditional' => null],
+            'practical' => ['lit' => 'no', 'wheelchair' => 'no'],
+            'hours' => ['raw' => 'Mo-Su 06:00-22:00'],
+            'contact' => [
+                'website' => 'https://official.example.test/quellenpark',
+                'phone' => '+49 221 120',
+                'address' => 'Parkweg 12, Köln',
+            ],
+            'description' => 'A short source description.',
+            'negative_facts' => ['lit' => 'no', 'wheelchair' => 'no'],
+        ]);
+
+    $this->artisan('osm:import --only=park')->assertSuccessful();
+
+    expect(PlaceFactObservation::query()->where('spot_id', $spot->id)->count())->toBe(1)
+        ->and(app(PlaceFacts::class)->revision())->toBe($revision);
+
+    $this->artisan('osm:import --only=park')->assertSuccessful();
+
+    expect(PlaceFactObservation::query()->where('spot_id', $spot->id)->count())->toBe(2)
+        ->and(PlaceFactObservation::query()->where('spot_id', $spot->id)->latest('id')->firstOrFail()->payload['name'])->toBe('Quellenpark am See')
+        ->and(app(PlaceFacts::class)->revision())->toBe($revision + 1);
+});
+
+test('osm import drops malformed contact urls without losing the place observation', function () {
+    seedTestVeedelBoundary();
+    Http::fake(['*' => Http::response(['elements' => [[
+        'type' => 'node',
+        'id' => 14,
+        'lat' => 50.951,
+        'lon' => 6.951,
+        'tags' => [
+            'name' => 'Park with malformed website',
+            'website' => 'javascript:alert(1)',
+        ],
+    ]]])]);
+
+    $this->artisan('osm:import --only=park')->assertSuccessful();
+
+    $spot = Spot::query()->where('source_id', 'node/14')->sole();
+    expect(PlaceFactObservation::query()->where('spot_id', $spot->id)->sole()->payload['contact']['website'])
+        ->toBeNull();
+});
+
+test('osm refresh preserves a reviewed display name and retains the changed source name', function () {
+    seedTestVeedelBoundary();
+    $spot = Spot::factory()->create([
+        'source' => 'osm',
+        'source_id' => 'node/13',
+        'source_group' => 'park',
+        'name' => 'Old source name',
+        'category' => 'park',
+        'lat' => 50.95,
+        'lng' => 6.95,
+    ]);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($spot->id, ['name' => 'Friendly reviewed name']);
+    $review->apply(
+        $spot->id,
+        ['name' => 'Friendly reviewed name'],
+        $preview['fingerprint'],
+        'Official evidence confirms the public display name.',
+        'places-reviewer@example.test',
+    );
+    Http::fake(['*' => Http::response(['elements' => [[
+        'type' => 'node',
+        'id' => 13,
+        'lat' => 50.952,
+        'lon' => 6.952,
+        'tags' => ['name' => 'New source name'],
+    ]]])]);
+
+    $this->artisan('osm:import --only=park')->assertSuccessful();
+
+    $spot->refresh();
+    $facts = app(PlaceFacts::class)->resolve($spot);
+    expect($spot->name)->toBe('Friendly reviewed name')
+        ->and($spot->lat)->toBe(50.952)
+        ->and($spot->lng)->toBe(6.952)
+        ->and($facts['name']['value'])->toBe('Friendly reviewed name')
+        ->and($facts['aliases'])->toContain('New source name');
+});
+
 test('bare microfacilities remain stored but are not recommendation destinations', function () {
     seedTestVeedelBoundary();
     Http::fake([
@@ -173,13 +312,22 @@ test('osm import captures exact Commons and source image tags with rights pendin
     $spot = Spot::query()->where('source_id', 'node/4242')->sole();
     $commons = MediaAsset::query()->where('provider', 'wikimedia-commons')->sole();
     $sourceImage = MediaAsset::query()->where('provider', 'osm-image')->sole();
+    $commonsAttachment = $spot->mediaAttachments()->where('media_asset_id', $commons->id)->sole();
+    $sourceAttachment = $spot->mediaAttachments()->where('media_asset_id', $sourceImage->id)->sole();
 
     expect($commons->provider_asset_id)->toBe('File:Stadtwald_Koeln.jpg')
         ->and($commons->remote_url)->toBe('https://commons.wikimedia.org/wiki/Special:FilePath/Stadtwald_Koeln.jpg')
         ->and($commons->source_page_url)->toBe('https://commons.wikimedia.org/wiki/File:Stadtwald_Koeln.jpg')
         ->and($commons->rights_status)->toBe('pending')
+        ->and($commonsAttachment->match_status)->toBe('accepted')
+        ->and($commonsAttachment->match_method)->toBe('osm_wikimedia_commons_tag')
+        ->and($commonsAttachment->match_evidence)->toMatchArray([
+            'source_id' => 'node/4242',
+            'tag' => 'File:Stadtwald_Koeln.jpg',
+        ])
         ->and($sourceImage->remote_url)->toBe('https://images.example.org/osm/park.jpg')
         ->and($sourceImage->rights_status)->toBe('pending')
+        ->and($sourceAttachment->match_status)->toBe('pending')
         ->and($spot->mediaAttachments()->count())->toBe(2);
 
     Queue::assertNotPushed(ValidateMediaAssetJob::class);
@@ -317,11 +465,20 @@ test('an invalid overpass payload never retires existing places', function () {
         'source' => 'osm', 'source_id' => 'node/88', 'source_group' => 'park',
         'last_seen_at' => now()->subDay(), 'is_active' => true, 'is_recommendable' => true,
     ]);
+    app(RecordPlaceObservation::class)->record($existing, [
+        'provider' => 'osm',
+        'provider_record_id' => 'node/88',
+        'source_url' => 'https://www.openstreetmap.org/node/88',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-existing-88',
+        'payload' => ['name' => 'Existing place'],
+    ]);
     Http::fake(['*' => Http::response(['remark' => 'runtime error'])]);
 
     $this->artisan('osm:import --only=park')->assertFailed();
 
-    expect($existing->fresh()->is_active)->toBeTrue();
+    expect($existing->fresh()->is_active)->toBeTrue()
+        ->and(PlaceFactObservation::query()->where('spot_id', $existing->id)->count())->toBe(1);
 });
 
 test('a valid empty overpass result retires that refreshed source group', function () {
@@ -330,11 +487,119 @@ test('a valid empty overpass result retires that refreshed source group', functi
         'source' => 'osm', 'source_id' => 'node/89', 'source_group' => 'park',
         'last_seen_at' => now()->subDay(), 'is_active' => true, 'is_recommendable' => true,
     ]);
+    app(RecordPlaceObservation::class)->record($existing, [
+        'provider' => 'osm',
+        'provider_record_id' => 'node/89',
+        'source_url' => 'https://www.openstreetmap.org/node/89',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-existing-89', // gitleaks:allow -- deterministic test fixture, not a credential
+        'payload' => ['name' => 'Existing place'],
+    ]);
     Http::fake(['*' => Http::response(['elements' => []])]);
 
     $this->artisan('osm:import --only=park')->assertSuccessful();
 
     expect($existing->fresh())
         ->is_active->toBeFalse()
-        ->is_recommendable->toBeFalse();
+        ->is_recommendable->toBeFalse()
+        ->and(PlaceFactObservation::query()->where('spot_id', $existing->id)->count())->toBe(1);
+});
+
+test('food imports cover citywide nodes ways and relations with stable identities', function (string $category, string $key, string $value) {
+    seedTestVeedelBoundary();
+    Queue::fake();
+    Http::fake(['*' => Http::response(['elements' => [
+        ['type' => 'node', 'id' => 771, 'lat' => 50.98, 'lon' => 6.95, 'tags' => ['name' => 'Northern node venue', $key => $value]],
+        ['type' => 'way', 'id' => 771, 'center' => ['lat' => 50.981, 'lon' => 6.951], 'tags' => ['name' => 'Northern way venue', $key => $value]],
+        ['type' => 'relation', 'id' => 771, 'center' => ['lat' => 50.982, 'lon' => 6.952], 'tags' => ['name' => 'Northern relation venue', $key => $value]],
+        ['type' => 'node', 'id' => 772, 'lat' => 51.20, 'lon' => 7.20, 'tags' => ['name' => 'Outside venue', $key => $value]],
+    ]])]);
+
+    $this->artisan('osm:import', ['--only' => $category])->assertSuccessful();
+
+    Http::assertSent(function ($request) use ($key, $value) {
+        $query = $request['data'];
+
+        return str_contains($query, 'nwr[')
+            && str_contains($query, '"'.$key.'"')
+            && str_contains($query, $value)
+            && str_contains($query, '(50.9,6.9,52.01,8.01)')
+            && str_contains($query, 'out center');
+    });
+    $venues = Spot::query()->where('source', 'osm')->where('category', $category)->get();
+    expect($venues)->toHaveCount(3)
+        ->and($venues->pluck('source_id')->all())->toContain('node/771', 'way/771', 'relation/771')
+        ->and($venues->every(fn (Spot $spot) => $spot->is_active && $spot->is_recommendable))->toBeTrue();
+    expect(PlaceFactObservation::query()->where('provider', 'osm')->count())->toBe(3);
+
+    $this->artisan('osm:import', ['--only' => $category])->assertSuccessful();
+    expect(Spot::query()->where('source', 'osm')->where('category', $category)->count())->toBe(3);
+})->with([
+    ['cafe', 'amenity', 'cafe'],
+    ['restaurant', 'amenity', 'restaurant'],
+    ['fast_food', 'amenity', 'fast_food'],
+    ['bar', 'amenity', 'bar'],
+    ['bakery', 'shop', 'bakery'],
+    ['library', 'amenity', 'library'],
+    ['coworking', 'office', 'coworking'],
+]);
+
+test('overlapping cafe bakery tags keep their category and refresh ownership across partial imports', function () {
+    seedTestVeedelBoundary();
+    Queue::fake();
+    Http::fake(['*' => Http::response(['elements' => [
+        ['type' => 'node', 'id' => 880, 'lat' => 50.98, 'lon' => 6.95, 'tags' => ['name' => 'Bakery cafe', 'amenity' => 'cafe', 'shop' => 'bakery']],
+    ]])]);
+
+    foreach (['cafe,bakery', 'cafe', 'bakery'] as $refresh) {
+        $this->artisan('osm:import', ['--only' => $refresh])->assertSuccessful();
+        $venue = Spot::query()->where('source', 'osm')->where('source_id', 'node/880')->sole();
+        expect($venue->getRawOriginal('category'))->toBe('cafe')
+            ->and($venue->source_group)->toBe('cafe')
+            ->and($venue->is_active)->toBeTrue();
+    }
+    expect(Spot::query()->where('source', 'osm')->count())->toBe(1);
+});
+
+test('attraction refreshes retain records beyond the former source response cap', function () {
+    seedTestVeedelBoundary();
+    $elements = array_map(static fn (int $id): array => [
+        'type' => 'node', 'id' => $id, 'lat' => 50.98, 'lon' => 6.95,
+        'tags' => ['name' => 'Attraction '.$id, 'tourism' => 'attraction'],
+    ], range(1, 205));
+    Http::fake(function ($request) use ($elements) {
+        $rows = preg_match('/out center\\s+(\\d+)/', $request['data'], $match) === 1
+            ? array_slice($elements, 0, (int) $match[1])
+            : $elements;
+
+        return Http::response(['elements' => $rows]);
+    });
+
+    $this->artisan('osm:import --only=attraction')->assertSuccessful();
+
+    expect(Spot::query()->where('source', 'osm')->where('category', 'attraction')->count())->toBe(205)
+        ->and(PlaceFactObservation::query()->where('provider', 'osm')->count())->toBe(205);
+});
+
+test('source acquisition includes accepted locations beyond the former eastern rectangle', function () {
+    seedTestVeedelBoundary();
+    Queue::fake();
+    $veedel = DB::table('veedels')->orderBy('id')->value('id');
+    DB::statement('UPDATE veedels SET boundary = ST_Multi(ST_GeomFromText(?, 4326)) WHERE id = ?', [
+        'POLYGON((6.90 50.85, 7.1621 50.85, 7.1621 51.00, 6.90 51.00, 6.90 50.85))', $veedel,
+    ]);
+    Http::fake(function ($request) {
+        preg_match('/\\(([-0-9.,]+)\\)/', $request['data'], $match);
+        $bounds = isset($match[1]) ? array_map('floatval', explode(',', $match[1])) : [];
+        $covered = count($bounds) === 4 && $bounds[0] <= 50.8685084 && $bounds[3] >= 7.1607594;
+
+        return Http::response(['elements' => $covered ? [[
+            'type' => 'node', 'id' => 2301210583, 'lat' => 50.8685084, 'lon' => 7.1607594,
+            'tags' => ['name' => 'Eastern viewpoint', 'tourism' => 'viewpoint'],
+        ]] : []]);
+    });
+
+    $this->artisan('osm:import --only=viewpoint')->assertSuccessful();
+    expect(Spot::query()->where('source_id', 'node/2301210583')->first())
+        ->not->toBeNull()->is_active->toBeTrue();
 });

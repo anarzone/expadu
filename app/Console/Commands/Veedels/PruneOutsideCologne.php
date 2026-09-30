@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Veedels;
 
+use App\Places\PlaceIdentity;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +60,13 @@ class PruneOutsideCologne extends Command
             return self::SUCCESS;
         }
 
-        $deleted = DB::table('spots')->whereRaw(self::OUTSIDE, [$boundary])->delete();
+        $query = DB::table('spots')->whereRaw(self::OUTSIDE, [$boundary]);
+        if (app(PlaceIdentity::class)->hasProtectedRecords($query)) {
+            $this->error('This selection contains retained place identities. Deactivate records instead of deleting their references.');
+
+            return self::FAILURE;
+        }
+        $deleted = $query->delete();
         $this->info("Deleted {$deleted} out-of-Cologne spot(s).");
 
         return self::SUCCESS;

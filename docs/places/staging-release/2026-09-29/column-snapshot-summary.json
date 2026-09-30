@@ -1,0 +1,59 @@
+{
+  "captured_at": "2026-09-29T11:42:59+00:00",
+  "environment": "staging",
+  "read_only": true,
+  "row_format": "postgresql_column_text_array",
+  "raw_data_retained_on_server": true,
+  "existing_user_accounts_or_plans_loaded": false,
+  "tables": {
+    "spots": {
+      "rows": 9928,
+      "columns": 38,
+      "row_text_sha256": "f511d2fead564fb82eb5b354e04fba19a3ea5dae8bfceba6c0637738f4b1186f"
+    },
+    "veedels": {
+      "rows": 86,
+      "columns": 8,
+      "row_text_sha256": "d12fa9043da837a4cf6d3c6ce30f505dac043e90dae5b803538b6f4875769732"
+    },
+    "place_fact_observations": {
+      "rows": 4085,
+      "columns": 15,
+      "row_text_sha256": "cc6243abc4925497f01b062b6f19bf6d2fc35e3686a85d54878a2bb94e8c5739"
+    },
+    "place_fact_corrections": {
+      "rows": 0,
+      "columns": 12,
+      "row_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "place_fact_revisions": {
+      "rows": 1,
+      "columns": 3,
+      "row_text_sha256": "ddd8cf1c6b40abec83cb008c0e13912e959406207eb435e2c102410a2fdc748d"
+    },
+    "place_destination_reviews": {
+      "rows": 12,
+      "columns": 7,
+      "row_text_sha256": "eb4b40a2b78a8f67a3bc26a0e651ad85574148195832697b7605594e47df45b5"
+    },
+    "place_reconciliations": {
+      "rows": 798,
+      "columns": 7,
+      "row_text_sha256": "394b8da5464ff1d6c8a655a34e5444dc59ecb226bc57dd2038fe6fdae9a85913"
+    },
+    "media_assets": {
+      "rows": 588,
+      "columns": 29,
+      "row_text_sha256": "de1046bf8971c240f1ffffd2e3f573ca72934eef798ef846103be36a70a7f65b"
+    },
+    "media_attachments": {
+      "rows": 1680,
+      "columns": 14,
+      "row_text_sha256": "8364964a103b81672d342378c91ec77dd905f0bf45173ef12cb007a2a5ebc255"
+    }
+  },
+  "snapshot_sha256": "1d76a549dc6064ac3d6c78c92a0363eb9fa11a722172a29ae556af11742803f9",
+  "native_column_text_preserved": true,
+  "full_database_restore_tested": false,
+  "capture_code_sha256": "3223707108604f5ad98b8e070f3af9e932dcd4fbfff64a4ea673e77a78d01c8c"
+}

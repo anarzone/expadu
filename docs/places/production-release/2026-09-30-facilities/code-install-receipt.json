@@ -1,0 +1,26 @@
+{
+  "app/Enums/SpotCategory.php": {
+    "before_sha256": "3af14599f7a980d55625e4917887d0e8f9420e27f5f4b886f346a8349b410cd0",
+    "after_sha256": "b6d58f20e62ebda3dda9c5022539b0ea71fe91eaa80cd298211ddb66de0e8af4"
+  },
+  "app/Composer/CandidateRepository.php": {
+    "before_sha256": "12863a896800e959cf3375593432eea413e8b5b70787a5c2844ba488fb73bcdb",
+    "after_sha256": "d8e72f8c94c1a78c669d97cb49ed106802b94f4020801aa406b0bd390c5d2a90"
+  },
+  "app/Http/Controllers/Api/PlacesController.php": {
+    "before_sha256": "493427a5b3b882dab520051a7bc217ae823c0fd0344ba006309b15ed368b6ead",
+    "after_sha256": "e18e062574625a852b6beec0e61be43f5e9d91e11ac2c9b41673f9b3d295eb5e"
+  },
+  "app/Http/Controllers/Api/SpotSearchController.php": {
+    "before_sha256": "2c8e54ad3d3ad5b9e00eedf22fa96edb506c89ff033caf13df21f5eb9bd3df60",
+    "after_sha256": "62dd2764842ca5890a613945fb1c43bbc8a4b6b09951b62de21e464452fba55d"
+  },
+  "app/Places/PlaceFacts.php": {
+    "before_sha256": "7a0d961c16accda9899babf60e6822407b6101e1e39b09d3386d6c1e21ddad12",
+    "after_sha256": "6e3b34f196d52b7190bc10319d430e1e4834ce0a4b862f151db401a956a71831"
+  },
+  "app/Places/ReviewPlaceFacts.php": {
+    "before_sha256": "98d5a780a27aaf7528690caceaf572431730da5045d53eabb7e9b205b2729985",
+    "after_sha256": "538dddeb84c302debf03f2a83b07a01c7a5d51c5a0889e3fdcf95779f0f8c05f"
+  }
+}
