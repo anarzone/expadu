@@ -1,6 +1,9 @@
 <?php
 
+use App\Composer\CandidateRepository;
+use App\Composer\Constraints;
 use App\Models\MediaAsset;
+use App\Models\PlaceFactCorrection;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -895,3 +898,50 @@ test('a later unknown access review removes a qualified facility from Places and
     expect(array_column($this->getJson('/api/places?activity=playground')->assertOk()->json('data'), 'id'))->not->toContain($place->id);
     $this->getJson('/api/places/'.$place->id)->assertOk()->assertJsonPath('data.recommendation_status', 'unavailable');
 });
+
+test('legacy qualification without access history stays held across consumers', function (string $consumer) {
+    $place = Spot::factory()->create(['name' => 'Playground', 'category' => 'playground',
+        'source' => 'osm', 'source_id' => 'way/98765432', 'is_recommendable' => false,
+        'lat' => 50.948, 'lng' => 6.921, 'price_range' => null, 'tags' => []]);
+    // The base revision wrote this shape and permitted unknown access.
+    $value = app(ReviewPlaceFacts::class)->preview($place->id, ['activity_discovery' => true])['changes']['activity_discovery'];
+    unset($value['access_correction_id']);
+    PlaceFactCorrection::create(['spot_id' => $place->id, 'field' => 'activity_discovery', 'value' => $value,
+        'evidence' => 'Legacy qualification recorded before public-access binding was required.',
+        'actor' => 'legacy-reviewer', 'reviewed_at' => now()->subDay()]);
+
+    if ($consumer === 'detail') {
+        $this->getJson('/api/places/'.$place->id)->assertOk()
+            ->assertJsonPath('data.recommendation_status', 'unavailable');
+    } elseif ($consumer === 'places') {
+        expect(array_column($this->getJson('/api/places?activity=playground')->assertOk()->json('data'), 'id'))
+            ->not->toContain($place->id);
+    } elseif ($consumer === 'map') {
+        $url = '/api/spots?'.http_build_query(['sw_lat' => 50.90, 'ne_lat' => 50.97,
+            'sw_lng' => 6.90, 'ne_lng' => 7.00, 'category' => 'playground']);
+        $this->getJson($url)->assertOk()->assertJsonCount(0);
+    } elseif ($consumer === 'composer-by-id') {
+        expect(app(CandidateRepository::class)->byIds(['spot:'.$place->id], CarbonImmutable::parse('2026-09-30')))->toBe([]);
+    } else {
+        $constraints = Constraints::fromArray(['window_start' => '2026-09-30T14:00:00+02:00',
+            'window_end' => '2026-09-30T18:00:00+02:00', 'categories' => ['playground'],
+            'activities' => [], 'budget' => null, 'radius_km' => 2]);
+        expect(app(CandidateRepository::class)->candidatesFor($constraints, 50.948, 6.921))->toBe([]);
+    }
+    $this->assertModelExists($place);
+})->with(['detail', 'places', 'map', 'composer-by-id', 'composer-discovery']);
+
+test('a missing or null legacy access binding cannot count as an explicit zero binding', function (string $binding) {
+    $place = Spot::factory()->create(['category' => 'playground', 'is_recommendable' => false,
+        'tags' => ['access' => 'yes']]);
+    $value = app(ReviewPlaceFacts::class)->preview($place->id, ['activity_discovery' => true])['changes']['activity_discovery'];
+    if ($binding === 'missing') {
+        unset($value['access_correction_id']);
+    } else {
+        $value['access_correction_id'] = null;
+    }
+    PlaceFactCorrection::create(['spot_id' => $place->id, 'field' => 'activity_discovery', 'value' => $value,
+        'evidence' => 'Legacy qualification does not bind the public access history explicitly.',
+        'actor' => 'legacy-reviewer', 'reviewed_at' => now()->subDay()]);
+    expect(Spot::query()->recommendationEligible(true)->whereKey($place->id)->exists())->toBeFalse();
+})->with(['missing', 'null']);
