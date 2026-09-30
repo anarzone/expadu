@@ -17,3 +17,5 @@ These are the exhaustive ledger rulings, in order. No deferred Minor findings. T
 7. Final: Ruling: historical alias-ID responses were outside review — preserve existing canonical route binding and saved-reference resolution as required, rather than change identity semantics — cost if wrong is an alias ID becoming its existing canonical ID for API clients.
 
 8. Final: Ruling: the reviewer did not independently certify remote/full-suite execution — executor observed commands and safeguards, commits retain aggregate evidence; describe review and execution verification separately — cost if wrong is reliance on executor-observed rather than independently repeated runs.
+
+9. Ruling: align only the CI browser runner calendar with config/app.php rather than change unrelated bureaucracy code — a pre-existing UTC/local-month-boundary failure blocks required release checks; cost if wrong is altered date-dependent test expectations, with product rules and runtime unchanged.

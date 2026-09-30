@@ -1,0 +1,59 @@
+{
+  "status": "CI calendar mismatch reproduced and configured step verified",
+  "failed_run": 36783202670,
+  "failed_head": "c34820e7fcaf31474a981dd101e8422e931b025e",
+  "server_tests": "success",
+  "lint": "success",
+  "browser_results": {
+    "passed": 61,
+    "skipped": 1,
+    "failed": 1
+  },
+  "failed_test": "Verified bureaucracy case plan derives verified deadlines and documents from active case plan",
+  "red": {
+    "mode": "--baseline",
+    "frozen_instant": "2026-09-30T22:05:00+00:00",
+    "unchanged_base": "89289db9641bb75a563e74b44be9b4717bd61b22",
+    "base_source_sha256": {
+      "config/app.php": "3fdce3d705ed42c860f9462b27c262876030eed32e84f18bf96dda60f675f959",
+      "app/Bureaucracy/BureaucracyPersonas.php": "e95ec8b6c3569e4ed140a333d6e673b1a674ec6e11ca062439d05323736e3d1e",
+      "tests/Browser/bureaucracy.spec.ts": "304a9220f607c72135a663cdc3b2ac479065b8c9208287aa9a46c19190eb14f1"
+    },
+    "server": {
+      "timezone": "Europe/Berlin",
+      "expiry": "2026-12-01",
+      "label": "1 Dec"
+    },
+    "test_runner": {
+      "label": "30 Nov",
+      "timezone": "UTC"
+    },
+    "labels_match": false,
+    "application_or_data_changed": false
+  },
+  "green": {
+    "mode": "--aligned",
+    "frozen_instant": "2026-09-30T22:05:00+00:00",
+    "unchanged_base": "89289db9641bb75a563e74b44be9b4717bd61b22",
+    "base_source_sha256": {
+      "config/app.php": "3fdce3d705ed42c860f9462b27c262876030eed32e84f18bf96dda60f675f959",
+      "app/Bureaucracy/BureaucracyPersonas.php": "e95ec8b6c3569e4ed140a333d6e673b1a674ec6e11ca062439d05323736e3d1e",
+      "tests/Browser/bureaucracy.spec.ts": "304a9220f607c72135a663cdc3b2ac479065b8c9208287aa9a46c19190eb14f1"
+    },
+    "server": {
+      "timezone": "Europe/Berlin",
+      "expiry": "2026-12-01",
+      "label": "1 Dec"
+    },
+    "test_runner": {
+      "label": "1 Dec",
+      "timezone": "Europe/Berlin"
+    },
+    "labels_match": true,
+    "application_or_data_changed": false
+  },
+  "scope": "CI runner timezone only, derived from application configuration",
+  "product_bureaucracy_rules_changed": false,
+  "application_runtime_changed": false,
+  "new_exact_head_ci_pending": true
+}

@@ -1,7 +1,7 @@
 # EXP-69 current staging Places readiness proposal
 
 Date: 2026-09-30. Based on staging commit `89289db9641bb75a563e74b44be9b4717bd61b22`.
-Status: implementation, one independent review/fix pass and final local/read-only staging verification complete; draft publication and exact-head CI pending. No code deployment.
+Status: implementation, one independent review/fix pass and final local/read-only staging verification complete; draft PR #62 published; final CI calendar correction awaits exact-head verification. No code deployment.
 
 This scoped backend port fixes retained-detail availability, explicit reviewed facility discovery, access-bound qualification and uncontrolled legacy seeding/scheduled catalogue writes. It preserves the current staging design and newer source-withdrawal behavior. It does not replace staging with the older production candidate.
 
@@ -43,7 +43,7 @@ The runtime fingerprint is `b7bbb275a67111744a9cc785005f89b06a5757d272628a05bbfd
 
 ## Independent review
 
-One fresh read-only reviewer found a real upgrade defect: missing access-history bindings in old facility qualifications were treated as zero. Seven failing regressions reproduced the leak across Places, map and Composer before the single fix pass. Those old approvals now require fresh review. The related suite passed160tests/805assertions, and the full normal fix-commit hooks passed1,754tests/2skips/7,349assertions. There were no Critical or deferred Minor findings. See review-result.md and execution-decisions.md for the review boundary and all eight rulings.
+One fresh read-only reviewer found a real upgrade defect: missing access-history bindings in old facility qualifications were treated as zero. Seven failing regressions reproduced the leak across Places, map and Composer before the single fix pass. Those old approvals now require fresh review. The related suite passed 160 tests / 805 assertions, and the full normal fix-commit hooks passed 1,754 tests / 2 skips / 7,349 assertions. There were no Critical or deferred Minor findings. See review-result.md and execution-decisions.md for the review boundary and all nine rulings.
 
 ## Release boundary and remaining work
 
@@ -51,6 +51,10 @@ This verifies the proposed source against staging data. It does **not** verify a
 
 `PLACES_AUTOMATION_ENABLED=false` pauses the catalogue/boundary/photo schedules **and media health revalidation**. A release must deliberately choose this setting and its validation/refresh operating procedure; long-term disabled automation stops remote-health freshness checks. `PLACES_CURATED_SEEDING_ENABLED=false` prevents legacy name-only seeds. Manual commands are still available; these controls do not claim to block every possible writer.
 
-At21:58:50UTC, all90 pending source-reviewed facilities passed new post-hold native previews, retained unavailable detail checks and Composer by-ID exclusions:74playgrounds,11table-tennis facilities,3basketball courts and2pitches. All90 preserve known unconditional public access and unknown fees. The source evidence was fetched at11:35:58UTC and remained within its24-hour window; this check did not refetch it. No qualification or new apply package was written. Exact target-package preparation and combined recovery verification remain before any apply. The 21 changed legacy source projections, 469 facilities with uncertain access, useful free/public football coverage and media growth remain open. The 75% photo objective remains unmet. Production needs an independent package, recovery/backup qualification, explicit release approval and acceptance checks.
+At 21:58:50UTC, all 90 pending source-reviewed facilities passed new post-hold native previews, retained unavailable detail checks and Composer by-ID exclusions:74 playgrounds,11 table-tennis facilities,3 basketball courts and2 pitches. All90 preserve known unconditional public access and unknown fees. The source evidence was fetched at11:35:58 UTC and remained within its24-hour window; this check did not refetch it. No qualification or new apply package was written. Exact target-package preparation and combined recovery verification remain before any apply. The 21 changed legacy source projections, 469 facilities with uncertain access, useful free/public football coverage and media growth remain open. The 75% photo objective remains unmet. Production needs an independent package, recovery/backup qualification, explicit release approval and acceptance checks.
 
-EXP-69 and EXP-72 remain In Progress. Only a private branch and draft PR against staging will be published; no merge or deployment is included.
+EXP-69 and EXP-72 remain In Progress. [Draft PR #62](https://github.com/anarzone/expadu/pull/62) targets staging; no merge or deployment is included.
+
+## CI calendar correction
+
+The first PR CI run 36783202670 passed server tests and lint, but an unchanged bureaucracy browser assertion failed after local midnight at the September/October boundary. The app generated a 1 December relative fixture date in Berlin; Node expected 30 November in UTC. The exact unchanged staging config/persona/browser helper reproduced that mismatch at 2026-09-30T22:05:00Z. The browser job now derives its runner time zone from config/app.php. Executing that exact workflow step makes both labels 1 December. Product bureaucracy rules, fees, sources and frontend are untouched. See ci-calendar-summary.json; a fresh exact-head CI run is still required.
