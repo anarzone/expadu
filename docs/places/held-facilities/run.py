@@ -58,6 +58,14 @@ elif action == 'fetch':
     result['summary']['selection_sha256'] = expected['selection_sha256']
     save(OUTPUT/'source-proof.json', result)
     report('source-summary.json', result['summary'] | {'source_proof_sha256': digest(OUTPUT/'source-proof.json')})
+elif action == 'freeze-runtime':
+    files = subprocess.check_output(['git', 'ls-files', 'app', 'config', 'bootstrap', 'routes'], cwd=APP, text=True).splitlines()
+    manifest = {'files': {name: digest(APP/name) for name in files if (APP/name).is_file()},
+                'facility_helper_sha256': digest(HERE.parent/'local-catalogue/FacilityQualificationJournal.php'),
+                'supersedes_runtime_sha256': digest(PRIVATE/'facility-code-manifest.json')}
+    save(OUTPUT/'runtime-manifest.json', manifest)
+    report('runtime-summary.json', {'runtime_manifest_sha256': digest(OUTPUT/'runtime-manifest.json'),
+                                   'runtime_files': len(manifest['files']), 'supersedes_runtime_sha256': manifest['supersedes_runtime_sha256']})
 elif action == 'rehearse':
     subprocess.run([sys.executable, str(HERE.parent/'local-catalogue/run.py'), '--source-root', str(SOURCE), 'held-public-facilities'], check=True)
 elif action == 'verify':
@@ -67,7 +75,11 @@ elif action == 'verify':
     assert digest(OUTPUT/'selection.json') == summary['selection_sha256']
     assert digest(OUTPUT/'source-proof.json') == summary['source_proof_sha256']
     assert digest(OUTPUT/'candidate-places.jsonl') == summary['candidate_export_sha256']
+    assert digest(OUTPUT/'runtime-manifest.json') == summary['runtime_manifest_sha256']
+    manifest = json.loads((OUTPUT/'runtime-manifest.json').read_text())
+    assert all(digest(APP/name) == sha for name, sha in manifest['files'].items())
+    assert digest(HERE.parent/'local-catalogue/FacilityQualificationJournal.php') == manifest['facility_helper_sha256']
     subprocess.run([sys.executable, str(HERE.parent/'local-catalogue/run.py'), '--source-root', str(SOURCE), 'verify-snapshot'], check=True)
     print(json.dumps({'status': 'passed', 'qualified_facilities': summary['qualified_facilities'], 'combined_candidates': summary['combined_candidates'], 'remote_changed': False}))
 else:
-    raise SystemExit('Choose select, fetch, rehearse or verify')
+    raise SystemExit('Choose select, fetch, freeze-runtime, rehearse or verify')

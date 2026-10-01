@@ -83,7 +83,7 @@ class ReviewPlaceFacts
                 if ($value === null && $active->isEmpty()) {
                     continue;
                 }
-                if ($value !== null && $latest !== null && $latest->value === $value && $active->count() === 1) {
+                if ($value !== null && $latest !== null && $this->comparableValue($latest->value) === $this->comparableValue($value) && $active->count() === 1) {
                     continue;
                 }
 
@@ -108,6 +108,25 @@ class ReviewPlaceFacts
                 app(PlaceFactRevision::class)->bump();
             }
         });
+    }
+
+    /** JSON object key order is not significant; list order and scalar types are. */
+    private function comparableValue(array $value): string
+    {
+        $sort = function (mixed $item) use (&$sort): mixed {
+            if (! is_array($item)) {
+                return $item;
+            }
+            if (! array_is_list($item)) {
+                ksort($item);
+            }
+
+            return array_map($sort, $item);
+        };
+
+        // Encoding also equates whole numeric values such as 8 and 8.0 after
+        // a JSONB round trip, without equating numbers to strings or booleans.
+        return json_encode($sort($value), JSON_THROW_ON_ERROR);
     }
 
     /**

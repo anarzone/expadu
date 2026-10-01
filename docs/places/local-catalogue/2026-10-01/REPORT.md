@@ -1,5 +1,7 @@
 # Places local preparation — 1 October 2026
 
+Later checkpoint: [the held-facility follow-on report](../../held-facilities/2026-10-01/REPORT.md) supersedes the candidate count below with **4,927 local candidates**, preserving this earlier 4,327-record evidence and export. It also records the new tested runtime after the approval-replay fix.
+
 The collected data and a fresh application baseline are now together in a reproducible local workspace. The combined candidate catalogue contains **4,327 native Places/Composer records**, verified through the actual application services and exported privately. This is a local proposal; staging and production were not changed.
 
 ## Measured counts

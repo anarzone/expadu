@@ -4,6 +4,7 @@ use App\Models\PlaceFactCorrection;
 use App\Models\PlaceFactObservation;
 use App\Models\Spot;
 use App\Models\User;
+use App\Places\PlaceFactRevision;
 use App\Places\PlaceFacts;
 use App\Places\ReconcilePlace;
 use App\Places\RecordPlaceObservation;
@@ -964,3 +965,61 @@ test('a combined access and activity review qualifies against the access it just
     expect(PlaceFactCorrection::where('spot_id', $place->id)->orderBy('id')->get()->toArray())->toBe($before)
         ->and(Spot::query()->recommendationEligible(true)->whereKey($place->id)->exists())->toBeTrue();
 });
+
+test('replaying an activity review preserves audit history after JSONB object key reordering', function () {
+    $place = Spot::factory()->create([
+        'category' => 'pitch', 'is_recommendable' => false,
+        'tags' => ['access' => 'yes', 'sport' => 'soccer;basketball', 'details' => ['surface' => 'grass', 'lit' => 'yes']],
+    ]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['activity_discovery' => true];
+    $review->apply($place->id, $changes, $review->preview($place->id, $changes)['fingerprint'],
+        'Verified current public access and both recorded sports at this facility.', 'test-reviewer');
+    $before = PlaceFactCorrection::where('spot_id', $place->id)->get()->toArray();
+    $revision = app(PlaceFactRevision::class)->current();
+    $preview = $review->preview($place->id, $changes);
+    // PostgreSQL stores JSON object keys in its own order; the value is unchanged.
+    expect(PlaceFactCorrection::where('spot_id', $place->id)->sole()->value)
+        ->toEqual($preview['changes']['activity_discovery'])
+        ->not->toBe($preview['changes']['activity_discovery']);
+    $review->apply($place->id, $changes, $preview['fingerprint'],
+        'Verified current public access and both recorded sports at this facility.', 'test-reviewer');
+    expect(PlaceFactCorrection::where('spot_id', $place->id)->get()->toArray())->toBe($before)
+        ->and(app(PlaceFactRevision::class)->current())->toBe($revision);
+});
+
+test('replaying equivalent contact and numeric fee facts preserves history', function () {
+    $place = Spot::factory()->create();
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['contact' => ['website' => 'https://example.org', 'phone' => '+492211234567'],
+        'fee' => ['value' => 'paid', 'amount' => 8.0, 'currency' => 'EUR']];
+    $review->apply($place->id, $changes, $review->preview($place->id, $changes)['fingerprint'],
+        'Verified contact details and the published eight euro admission price.', 'test-reviewer');
+    $before = PlaceFactCorrection::where('spot_id', $place->id)->orderBy('id')->get()->toArray();
+    $revision = app(PlaceFactRevision::class)->current();
+    $changes['contact'] = array_reverse($changes['contact'], true);
+    $review->apply($place->id, $changes, $review->preview($place->id, $changes)['fingerprint'],
+        'Verified contact details and the published eight euro admission price.', 'test-reviewer');
+    expect(PlaceFactCorrection::where('spot_id', $place->id)->orderBy('id')->get()->toArray())->toBe($before)
+        ->and(app(PlaceFactRevision::class)->current())->toBe($revision);
+});
+
+test('activity review comparison preserves list order and scalar types', function ($initial, $changed) {
+    $place = Spot::factory()->create(['category' => 'pitch', 'is_recommendable' => false,
+        'tags' => ['access' => 'yes', 'sport' => 'soccer', 'details' => $initial]]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['activity_discovery' => true];
+    $apply = fn () => $review->apply($place->id, $changes, $review->preview($place->id, $changes)['fingerprint'],
+        'Verified current public access against the changed source fact basis.', 'test-reviewer');
+    $apply();
+    $revision = app(PlaceFactRevision::class)->current();
+    $place->update(['tags' => ['access' => 'yes', 'sport' => 'soccer', 'details' => $changed]]);
+    $apply();
+    expect(PlaceFactCorrection::where('spot_id', $place->id)->count())->toBe(2)
+        ->and(PlaceFactCorrection::where('spot_id', $place->id)->whereNull('revoked_at')->count())->toBe(1)
+        ->and(app(PlaceFactRevision::class)->current())->toBe($revision + 1);
+})->with([
+    'ordered values' => [['one', 'two'], ['two', 'one']],
+    'number versus text' => [['value' => 1], ['value' => '1']],
+    'boolean versus number' => [['value' => false], ['value' => 0]],
+]);

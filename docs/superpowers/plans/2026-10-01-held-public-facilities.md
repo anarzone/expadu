@@ -33,36 +33,40 @@
 **Files:** docs/places/held-facilities/selection.py, test_selection.py, fetch.py, run.py, 2026-10-01/selection-summary.json, source-summary.json.
 **Interfaces:** `select_candidates(holds, edges, spots, records, observations)` returns selected normalized records with original hold evidence and reason-count summary; `fresh_evidence(record, current, after, nodes)` returns refusal reasons and geometry. Raw sources and snapshots remain unchanged.
 
-- [ ] Write failing independent fixtures for eligible held legacy edges and refusal of active/source-backed/aliased counterparts, missing edges, named or already eligible records, access/fee conflicts and withdrawal history. Expected: missing implementation failure, then all fixtures pass.
+- [x] Write failing independent fixtures for eligible held legacy edges and refusal of active/source-backed/aliased counterparts, missing edges, named or already eligible records, access/fee conflicts and withdrawal history. Expected: missing implementation failure, then all fixtures pass.
   ```python
   self.assertEqual(select_candidates(holds, edges, spots, records, observations)['records'][0]['existing_id'], 20)
   self.assertEqual(select_candidates(holds, active_edges, active_spots, records, observations)['records'], [])
   ```
-- [ ] Build a bounded private selection from verified immutable inputs. Preserve original ambiguity evidence, produce source/category/fee counts and every refusal. Expected: at most 602 candidates from this snapshot; the measured count is authoritative.
+- [x] Build a bounded private selection from verified immutable inputs. Preserve original ambiguity evidence, produce source/category/fee counts and every refusal. Expected: at most 602 candidates from this snapshot; the measured count is authoritative.
   ```sh
   python3 docs/places/held-facilities/run.py select
   ```
-- [ ] Add failing fixtures for source changes, incomplete nodes and changed way topology, implement public OSM reads with bounded batches/timeouts and no contributor identities, then fetch all selected objects plus geometry. Expected: no silent skipped source; every selected identity gets evidence or an explicit hold.
+- [x] Add failing fixtures for source changes, incomplete nodes and changed way topology, implement public OSM reads with bounded batches/timeouts and no contributor identities, then fetch all selected objects plus geometry. Expected: no silent skipped source; every selected identity gets evidence or an explicit hold.
   ```sh
   python3 docs/places/held-facilities/run.py fetch
   ```
-- [ ] Commit local code/tests/evidence with Refs EXP-69 and Refs EXP-72. Complete with `python3 -m unittest discover -s docs/places/held-facilities -p 'test_*.py'`.
+- [x] Commit local code/tests/evidence with Refs EXP-69 and Refs EXP-72. Complete with `python3 -m unittest discover -s docs/places/held-facilities -p 'test_*.py'`.
 
 ### Task 2: Native refresh, qualification and complete export
 
 **Files:** docs/places/held-facilities/rehearse.php, run.py, 2026-10-01/REPORT.md and aggregate receipts; existing tracker/work-log pages.
 **Interfaces:** consumes Task 1 selection/source proof and prior two-addition/90-facility proposal; produces complete combined native Places/Composer export, exact before/after and rollback evidence, every exclusion and source manifest.
 
-- [ ] Verify every selected source against the current local row and native geometry; reject newer/withdrawn observations, active reviews, source conflicts, unsupported access/fees, and unsupported category/point changes. Prepare exact existing-row fingerprints. Expected: native-supported subset only; no inferred names, access or fees.
-- [ ] Refresh accepted source records with applyPreparedPlaces while preserving eligibility. Preview and apply activity_discovery via ReviewPlaceFacts; repeat both operations and compare state. Expected: one source identity and stable repeated application; all legacy rows unchanged.
-- [ ] Check every qualified resource and Composer by-ID contract in batches; check every category through paginated Places and map plus near-origin Composer requests including football and strict-free cases. Expected: fees and activities match source evidence, unknown fees excluded from strict-free results, general discovery unchanged.
-- [ ] Rehearse the earlier proposal plus this cohort together and export all native eligible candidates. Roll back all tables, reviews and sequences, verify exact baseline and repeat source/package hashes. Expected: no persistent local qualification or live change.
+- [x] Verify every selected source against the current local row and native geometry; reject newer/withdrawn observations, active reviews, source conflicts, unsupported access/fees, and unsupported category/point changes. Prepare exact existing-row fingerprints. Expected: native-supported subset only; no inferred names, access or fees.
+- [x] Refresh accepted source records with applyPreparedPlaces while preserving eligibility. Preview and apply activity_discovery via ReviewPlaceFacts; repeat both operations and compare state. Expected: one source identity and stable repeated application; all legacy rows unchanged.
+- [x] Check every qualified resource and Composer by-ID contract in batches; check every category through paginated Places and map plus near-origin Composer requests including football and strict-free cases. Expected: fees and activities match source evidence, unknown fees excluded from strict-free results, general discovery unchanged.
+- [x] Rehearse the earlier proposal plus this cohort together and export all native eligible candidates. Roll back all tables, reviews and sequences, verify exact baseline and repeat source/package hashes. Expected: no persistent local qualification or live change.
   ```sh
   python3 docs/places/held-facilities/run.py rehearse
   ```
-- [ ] Record business/category/geometry cases found during selection as unresolved source-review work, without treating old names as newly verified.
+- [x] Record business/category/geometry cases found during selection as unresolved source-review work, without treating old names as newly verified.
 - [ ] Run normal commit hooks and one fresh independent review; fix substantive findings with regression evidence. Update existing EXP-69/72 and Work Log pages, preserve history, read back. Complete with `python3 docs/places/held-facilities/run.py verify`.
 
 ## Self-review
 
 The two tasks share exact immutable inputs and source keys; Task 2 rechecks the selection rather than trusting a count. No current application code or UI changes are planned. Explicit fee evidence is verified through existing native facts; no change to the older unknown-fee-only qualification journal. Fresh proof timestamps are required before later deployment. The broader business identity and image tasks remain open.
+
+## Recorded implementation deviation
+
+The native rehearsal reproduced an existing JSONB fact-review replay defect. A focused application fix now compares canonical JSON values, preserving object-key-order equivalence without conflating scalar types or list order; two failing and three already-protective regression cases preceded the fix. A new runtime manifest supersedes the historical one for this follow-on trial. Stored representative points permit a bounded25m refresh only when current complete source geometry independently agrees within1m; measured changes are at most11.881m. Native24/26m boundary checks cover that choice.

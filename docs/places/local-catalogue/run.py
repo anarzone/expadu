@@ -196,6 +196,8 @@ elif args.action == "verify-evidence":
         "raw_source_copy_sha256":source_copy_sha256,"runtime_files_verified":len(runtime_files),
         "runtime_manifest_sha256":sha(PRIVATE/"facility-code-manifest.json"),
         "evidence_sha256":{name:sha(REPORTS/(name+".json")) for name in names}})
+elif args.action == "held-public-facilities":
+    local_php("../held-facilities/rehearse.php")
 elif args.action == "setup":
     env = local_environment()
     code = """$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=postgres',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$s=$p->prepare('SELECT 1 FROM pg_database WHERE datname=?');$s->execute(['exp69_local_catalogue_20261001']);if(!$s->fetchColumn()){$p->exec('CREATE DATABASE exp69_local_catalogue_20261001');}$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=exp69_local_catalogue_20261001',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$p->exec('CREATE EXTENSION IF NOT EXISTS postgis');$p->exec('CREATE EXTENSION IF NOT EXISTS vector');echo 'Dedicated local catalogue database ready'.PHP_EOL;"""
