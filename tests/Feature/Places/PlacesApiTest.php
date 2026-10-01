@@ -945,3 +945,19 @@ test('a missing or null legacy access binding cannot count as an explicit zero b
         'actor' => 'legacy-reviewer', 'reviewed_at' => now()->subDay()]);
     expect(Spot::query()->recommendationEligible(true)->whereKey($place->id)->exists())->toBeFalse();
 })->with(['missing', 'null']);
+
+test('everyday venues keep independent nearby branches in list and detail', function (string $fine, string $coarse) {
+    $a = Spot::factory()->create(['name' => 'Same brand', 'category' => $fine, 'veedel' => 'Ehrenfeld', 'lat' => 50.94910, 'lng' => 6.92210]);
+    $b = Spot::factory()->create(['name' => 'Same brand', 'category' => $fine, 'veedel' => 'Ehrenfeld', 'lat' => 50.94915, 'lng' => 6.92215]);
+    $list = collect($this->getJson('/api/places?category='.$coarse)->assertSuccessful()->json('data'));
+    expect($list->pluck('id')->all())->toContain($a->id, $b->id);
+    expect($list->whereIn('id', [$a->id, $b->id])->pluck('cluster_size')->all())->toBe([1, 1]);
+    $this->getJson('/api/places/'.$a->id)->assertSuccessful()->assertJsonPath('data.cluster_size', 1);
+    $this->getJson('/api/places?activity='.$fine)->assertSuccessful()->assertJsonCount(2, 'data');
+    $a->update(['tags' => ['access' => 'private']]);
+    $list = collect($this->getJson('/api/places?category='.$coarse)->assertSuccessful()->json('data'));
+    expect($list->pluck('id')->all())->not->toContain($a->id);
+})->with([
+    ['supermarket', 'shopping'], ['hairdresser', 'services'], ['pharmacy', 'health'],
+    ['community_centre', 'community'], ['hotel', 'stay'], ['fitness_centre', 'fitness'], ['theatre', 'culture'],
+]);

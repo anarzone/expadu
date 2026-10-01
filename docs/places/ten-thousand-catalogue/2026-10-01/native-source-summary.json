@@ -1,0 +1,16 @@
+{
+    "status": "source_and_native_geometry_checked",
+    "prepared": 7365,
+    "held": 752,
+    "hold_reasons": {
+        "fresh_source_requires_review": 17,
+        "source_identity_tags_or_visibility_changed": 17,
+        "representative_geometry_changed": 735
+    },
+    "type_map_sha256": "b824c49c83a836fdf603479b6300abaf76f9ca2ce3e8fd800c0a504d5c66455c",
+    "native_preparation_sha256": "42151ca75da41e30ba1c3d2e5beb2ee57706111c6f82a46aad1d1a92f5f35553",
+    "selection_sha256": "e6f3b14cf2abecdb7b8d0060c3f227247cd5c09fc1a52a21353fd293c1ce622d",
+    "source_proof_sha256": "510b6c6cf7f6d8e2497cf79418465927ad03e30613532c2c48faa32c217f1180",
+    "database_changed": false,
+    "remote_changed": false
+}

@@ -192,3 +192,13 @@ test('a nearby football request uses structured activity retrieval without a tim
         ->and($result->plan->activities)->toBe(['soccer'])
         ->and($result->plan->radiusKm)->toBe(3.0);
 });
+
+test('everyday requests select a precise supported venue category', function (string $query, string $fine) {
+    $result = parsePrompt('recommend '.$query.' nearby');
+    expect($result->intent)->toBe(PromptIntent::PlanDay)
+        ->and($result->plan->categories)->toBe([$fine]);
+})->with([
+    ['pharmacies', 'pharmacy'], ['supermarkets', 'supermarket'], ['hairdressers', 'hairdresser'],
+    ['gyms', 'fitness_centre'], ['banks', 'bank'], ['post offices', 'post_office'],
+    ['bookshops', 'bookshop'], ['clothes shops', 'clothes'], ['theatres', 'theatre'],
+]);

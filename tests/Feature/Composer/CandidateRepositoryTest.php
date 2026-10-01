@@ -432,3 +432,11 @@ test('an overnight source interval survives a closed calendar-day entry', functi
     $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
     expect(array_column(app(FeasibilityFilter::class)->filter($constraints, $candidates), 'id'))->toBe(["spot:{$spot->id}"]);
 });
+
+test('everyday outdoor destination flags match their supported type', function () {
+    $spot = spotWithHours(['name' => 'Named market', 'category' => 'market']);
+    $candidate = app(CandidateRepository::class)->byIds(['spot:'.$spot->id], mondayWindow()->windowStart)[0];
+    expect($candidate->outdoor)->toBeTrue()
+        ->and($candidate->costTier)->toBe('unknown')
+        ->and($candidate->hoursAssumed)->toBeFalse();
+});

@@ -1,0 +1,20 @@
+{
+    "status": "passed",
+    "checked_at": "2026-10-01T13:12:11+00:00",
+    "table_counts": {
+        "veedels": 86,
+        "spots": 11802,
+        "park_areas": 231,
+        "place_fact_observations": 7810,
+        "place_fact_corrections": 0,
+        "place_fact_revisions": 1,
+        "place_reconciliations": 798,
+        "place_destination_reviews": 12,
+        "media_assets": 229,
+        "media_attachments": 341
+    },
+    "native_table_hashes_match": true,
+    "user_rows": 0,
+    "remote_changed": false,
+    "row_format": "postgresql_column_text"
+}

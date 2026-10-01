@@ -133,9 +133,7 @@ class ComposerController extends Controller
         $areas = collect(config('veedels', []))->flatten()->all();
         $categories = [
             ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
-            'court',
-            'culture',
-            'food_drink',
+            ...SpotCategory::placesCoarse(),
             'event',
         ];
 
