@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "code_commit": "ca7b9ddac3ef667ba50d9ba1784fa4a62c75529e",
+  "focused_php_tests": 66,
+  "focused_php_assertions": 179,
+  "compound_regressions_before_fix": {
+    "failed": 9,
+    "passed_separate_requests": 4,
+    "assertions": 13
+  },
+  "compound_requests_corrected": true,
+  "native_elapsed_time_replay_test_passed": true,
+  "python_tests_passed": 63,
+  "normal_commit_hooks": {
+    "secret_scan": "passed",
+    "formatting": "passed",
+    "php_tests_passed": 1821,
+    "php_tests_skipped": 1,
+    "php_assertions": 7592,
+    "duration_seconds": 161.31,
+    "bypassed": false,
+    "suite": "fast_php_excluding_slow_group"
+  },
+  "frontend_files_changed": false,
+  "remote_changed": false,
+  "compound_fix_focused_php_tests": 83,
+  "compound_fix_focused_php_assertions": 266,
+  "numeric_source_vocabulary_regressions_before_fix": {
+    "failed": 3,
+    "assertions": 15
+  },
+  "numeric_source_vocabulary_regressions_after_fix": {
+    "passed": 3,
+    "assertions": 15
+  },
+  "all_prepared_source_tag_vocabularies_checked": 7365,
+  "numeric_source_vocabulary_preserved": true
+}

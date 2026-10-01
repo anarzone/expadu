@@ -34,7 +34,7 @@ Replay the previous two additions and 690 facility qualifications using fresh co
 
 Export every unique eligible native record in bounded batches. For each, require a readable effective name, supported category, valid sourced point, matching PlaceResource/CandidateRepository identity and unchanged media selection. Verify representative fine/coarse nearby requests, strict-free exclusion for unknown fees and real Places/API access. Verify new additions replay without churn and previous candidate preservation. Require total >=10,000 and no duplicate source owner or candidate ID. Record coverage/completeness truthfully.
 
-Rollback all mutations, restore nontransactional sequence state and verify all ten baseline tables exactly. Repeat the complete run and compare catalogue payloads after ignoring only generated observation timestamps, using the same frozen source proof. Test forced failure cleanup. Keep previous exports unchanged.
+Rollback all mutations, restore nontransactional sequence state and verify all ten baseline tables exactly. Verify every accepted addition in a complete same-run replay with identical native row/observation hashes, then independently audit every exported source/Places/Composer contract and frozen-input digest. Test forced failure cleanup. Repeat an outer run only when a failure or changed input leaves an unresolved concern; view fields such as open_now legitimately depend on the query clock. Keep previous exports unchanged.
 
 ## Task 4: Final review, verification and project record
 
@@ -48,5 +48,7 @@ Fresh proofs with changed tags/nodes/geometry, unrecognized lifecycle/shop types
 
 - [x] Task 1: native category and selector contract
 - [x] Task 2: immutable selection and current source evidence
-- [ ] Task 3: verified >=10k native export and exact recovery
-- [ ] Task 4: final review, tests and tracker records
+- [x] Task 3: verified >=10k native export and exact recovery
+- [x] Task 4: final review, tests and tracker records
+
+Completed: 12,292 verified local records, including 11,591 standalone destinations; native replay/export, independent whole-file audit, forced recovery, one fresh final review and four project-record read-backs passed. The retained export is local; broader release/media work stays open in EXP-69 and EXP-72.

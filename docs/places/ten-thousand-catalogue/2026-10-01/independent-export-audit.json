@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "candidate_count": 12292,
+  "new_named_destinations": 7365,
+  "prior_candidates_preserved": 4927,
+  "unique_candidate_ids": 12292,
+  "unique_source_owners": 12292,
+  "all_place_composer_contracts_checked": true,
+  "all_new_frozen_points_names_types_checked": true,
+  "accepted_source_proof_and_runtime_digests_verified": true,
+  "excluded_provider_records_added": 0,
+  "independent_aggregate_and_completeness_counts_match": true,
+  "private_output_permissions_verified": true,
+  "candidate_export_sha256": "cfee38362754548fc2b5fe1c970e624962ff6f36a47729efbd6d8d47d3e33909",
+  "remote_changed": false,
+  "documented_public_name_and_composer_name_evidence_projection_verified": true,
+  "all_name_evidence_known_and_matches_display_names": true,
+  "altered_name_or_shared_fact_negative_cases_rejected": 6,
+  "auditor_sha256": "a03f61af7a3b4bf66934b55c0ba36adc74b17e6ffccb9f1b2223a8aa49db8320"
+}
