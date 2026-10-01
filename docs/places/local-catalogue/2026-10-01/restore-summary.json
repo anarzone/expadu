@@ -1,0 +1,22 @@
+{
+    "status": "restored_and_verified",
+    "database": "exp69_local_catalogue_20261001",
+    "checked_at": "2026-10-01T09:19:39+00:00",
+    "snapshot_exported_at": "2026-10-01T09:18:34+00:00",
+    "table_counts": {
+        "veedels": 86,
+        "spots": 11802,
+        "park_areas": 231,
+        "place_fact_observations": 7810,
+        "place_fact_corrections": 0,
+        "place_fact_revisions": 1,
+        "place_reconciliations": 798,
+        "place_destination_reviews": 12,
+        "media_assets": 229,
+        "media_attachments": 341
+    },
+    "native_table_hashes_match": true,
+    "private_user_rows": 0,
+    "remote_changed": false,
+    "scope": "Places and Composer place candidates; no event/user catalogue imported"
+}

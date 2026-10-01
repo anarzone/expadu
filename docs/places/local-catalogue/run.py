@@ -1,0 +1,103 @@
+"""Local-first Places preparation. Raw catalogue data never enters Git or stdout."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+
+APP = Path(__file__).resolve().parents[3]
+HERE = Path(__file__).resolve().parent
+DATABASE = "exp69_local_catalogue_20261001"
+PHP = "/Users/anar/Library/Application Support/Herd/bin/php"
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--source-root", type=Path, default=Path(os.environ.get("PLACES_SOURCE_ROOT", APP)))
+parser.add_argument("action")
+args, extra = parser.parse_known_args()
+SOURCE = args.source_root.resolve()
+PRIVATE = SOURCE / "storage/app/private/places-local/2026-10-01"
+REPORTS = HERE / "2026-10-01"
+os.umask(0o077)
+PRIVATE.mkdir(parents=True, exist_ok=True)
+REPORTS.mkdir(parents=True, exist_ok=True)
+snapshot_path = PRIVATE / "catalogue.json"
+
+
+def sha(path):
+    with path.open("rb") as handle:
+        return hashlib.file_digest(handle, "sha256").hexdigest()
+
+
+def summary(name, value):
+    (REPORTS / name).write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+    print(json.dumps(value, ensure_ascii=False), flush=True)
+
+
+def local_environment():
+    values = {}
+    for line in (SOURCE / ".env").read_text().splitlines():
+        if line and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            values[key] = value.strip('\\\"\'')
+    env = os.environ.copy()
+    for key in ["DB_CONNECTION", "DB_HOST", "DB_PORT", "DB_USERNAME", "DB_PASSWORD"]:
+        if key in values:
+            env[key] = values[key]
+    if env.get("DB_HOST") not in {"127.0.0.1", "localhost", "::1"}:
+        raise RuntimeError("Only loopback local database access is allowed")
+    env.update(APP_ENV="testing", APP_KEY="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        DB_URL="", DB_DATABASE=DATABASE, CACHE_STORE="array", SESSION_DRIVER="array", QUEUE_CONNECTION="sync",
+        PLACES_LOCAL_PRIVATE=str(PRIVATE), PLACES_LOCAL_REPORTS=str(REPORTS),
+        PLACES_SOURCE_ROOT=str(SOURCE), PLACES_AUTOMATION_ENABLED="false", PLACES_CURATED_SEEDING_ENABLED="false")
+    env["PATH"] = str(Path(PHP).parent) + ":" + env["PATH"]
+    return env
+
+
+def local_php(script, *arguments):
+    result = subprocess.run([PHP, "-d", "memory_limit=1G", str(HERE/script), *arguments],
+        cwd=APP, env=local_environment())
+    if result.returncode:
+        raise SystemExit(result.returncode)
+
+
+if args.action == "snapshot":
+    if snapshot_path.exists():
+        raise SystemExit("Snapshot already exists; preserve it and use verify-snapshot.")
+    policy = (HERE/"SnapshotPolicy.php").read_text().replace("<?php", "", 1).replace("declare(strict_types=1);", "", 1)
+    schema_text = (HERE/"schema.json").read_text()
+    policy = policy.replace("file_get_contents(__DIR__.'/schema.json')", "'" + schema_text.replace("\\","\\\\").replace("'", "\\'") + "'")
+    body = (HERE/"snapshot.php").read_text().replace("<?php", "", 1).replace("declare(strict_types=1);", "", 1)
+    php = "<?php\ndeclare(strict_types=1);\n" + policy + "\n" + body
+    command = ["ssh","-o","BatchMode=yes","hetzner",shlex.join(["docker","exec","-i","staging-app","php","-d","memory_limit=1G"])]
+    temporary = PRIVATE/"catalogue.partial.json"
+    with temporary.open("xb") as output, (PRIVATE/"snapshot-diagnostics.txt").open("wb") as errors:
+        result = subprocess.run(command, input=php.encode(), stdout=output, stderr=errors, timeout=180)
+    if result.returncode:
+        raise SystemExit("Catalogue snapshot refused; diagnostics retained privately.")
+    document = json.loads(temporary.read_text())
+    schema = json.loads(schema_text)
+    assert document["columns"] == schema and set(document["tables"]) == set(schema)
+    assert document["transaction_read_only"] and not document["staging_changed"]
+    for table, rows in document["tables"].items():
+        expected = document["table_hashes"][table]
+        observed = hashlib.sha256(json.dumps(rows,ensure_ascii=False,separators=(",",":")).encode()).hexdigest()
+        assert observed == expected, "Snapshot serialization mismatch: "+table
+    temporary.rename(snapshot_path)
+    summary("snapshot-summary.json", {
+        "status":"captured_catalogue_only","exported_at":document["exported_at"],
+        "application_commit":document["application_commit"],"snapshot_sha256":sha(snapshot_path),
+        "row_format":document["row_format"],"table_counts":{k:len(v) for k,v in document["tables"].items()},
+        "redacted_rows":document["redactions"],"table_hashes":document["table_hashes"],
+        "user_tables_exported":False,"source_actors_exported":False,"snapshot_in_git":False,
+        "staging_changed":False,"production_changed":False})
+elif args.action == "setup":
+    env = local_environment()
+    code = """$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=postgres',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$s=$p->prepare('SELECT 1 FROM pg_database WHERE datname=?');$s->execute(['exp69_local_catalogue_20261001']);if(!$s->fetchColumn()){$p->exec('CREATE DATABASE exp69_local_catalogue_20261001');}$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=exp69_local_catalogue_20261001',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$p->exec('CREATE EXTENSION IF NOT EXISTS postgis');$p->exec('CREATE EXTENSION IF NOT EXISTS vector');echo 'Dedicated local catalogue database ready'.PHP_EOL;"""
+    subprocess.run([PHP,"-r",code],env=env,check=True,cwd=APP)
+    subprocess.run([PHP,"artisan","migrate","--force","--no-interaction"],env=env,check=True,cwd=APP)
+elif args.action in {"restore","verify-snapshot","verify-native","rehearse"}:
+    local_php({"verify-snapshot":"verify-snapshot.php","verify-native":"verify-native.php"}.get(args.action,args.action+".php"),*extra)
+else:
+    raise SystemExit("Unsupported local catalogue operation: "+args.action)

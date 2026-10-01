@@ -1,0 +1,48 @@
+{
+  "status": "captured_catalogue_only",
+  "exported_at": "2026-10-01T09:18:34+00:00",
+  "application_commit": "89289db9641bb75a563e74b44be9b4717bd61b22",
+  "snapshot_sha256": "e46d38199007add85a73e4901015cad8e7ae1b1282909055194435dd4dfe947d",
+  "row_format": "postgresql_column_text",
+  "table_counts": {
+    "veedels": 86,
+    "spots": 11802,
+    "park_areas": 231,
+    "place_fact_observations": 7810,
+    "place_fact_corrections": 0,
+    "place_fact_revisions": 1,
+    "place_reconciliations": 798,
+    "place_destination_reviews": 12,
+    "media_assets": 229,
+    "media_attachments": 341
+  },
+  "redacted_rows": {
+    "veedels": 0,
+    "spots": 0,
+    "park_areas": 0,
+    "place_fact_observations": 0,
+    "place_fact_corrections": 0,
+    "place_fact_revisions": 0,
+    "place_reconciliations": 0,
+    "place_destination_reviews": 0,
+    "media_assets": 83,
+    "media_attachments": 80
+  },
+  "table_hashes": {
+    "veedels": "106568845c8fad9a8010aa01d0df92abdf4297bc39d64cc8a849b0e92fa9a67e",
+    "spots": "666e05e0f9c6b4b0b1d7cb4eb53cc027e34286cd86a91d1dc36ef759e6f699f1",
+    "park_areas": "23a47f87317e03129bcfde66fe522dd02e40e819597697dc2524073db833cd97",
+    "place_fact_observations": "743f63ae720da0b6b8754608479e723041b73e4381c9559d6d96595cf5a17f72",
+    "place_fact_corrections": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "place_fact_revisions": "5c0158be307b2cf89ea230ff32f80dc286ecc1012b938675b94aac4947c42223",
+    "place_reconciliations": "4c708f3d6b61acca31411976026cad90f695712ac5e201113e99e8c4db932510",
+    "place_destination_reviews": "d4270695dc6e65cd8a8ef6cbe9d13ab1cde4fb5ae8e886f47bdd37692ad3a644",
+    "media_assets": "d356b38daa0e56933e2eb2688c6cd15529e1925ccce491e3b36bf842d30fdff2",
+    "media_attachments": "265b1dc86d28bfe14683a88f99c827475906fd9d175b22c09dcd2318418fa2c5"
+  },
+  "user_tables_exported": false,
+  "source_actors_exported": false,
+  "snapshot_in_git": false,
+  "staging_changed": false,
+  "production_changed": false
+}
