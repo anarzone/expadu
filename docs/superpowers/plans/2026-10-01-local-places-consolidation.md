@@ -1,6 +1,6 @@
 # Local Places Consolidation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Consolidate the full collected source inventory and a fresh catalogue-only staging snapshot into a reproducible local workspace, then verify the supported release data through the real Places and Composer code before another deployment.
 
@@ -43,25 +43,25 @@
 - Consumes: approved catalogue table/column policy, staging `89289db9641bb75a563e74b44be9b4717bd61b22`, primary checkout's local connection settings (never exported).
 - Produces: ignored `storage/app/private/places-local/2026-10-01/catalogue.json`, table counts/hashes and a dedicated restored local DB. Snapshot document has `schema_version`, `exported_at`, `application_commit`, `tables`, `columns`, `redactions`, and `scope`.
 
-- [ ] Write and run behavior tests before implementing the policy. Unknown tables/columns and non-place attachment targets must be refused or excluded; admin actors are replaced, IDs/evidence/revocations retained.
+- [x] Write and run behavior tests before implementing the policy. Unknown tables/columns and non-place attachment targets must be refused or excluded; admin actors are replaced, IDs/evidence/revocations retained.
   ```php
   assert(SnapshotPolicy::sanitize('place_fact_corrections', ['id'=>7,'actor'=>'private-reviewer','revoked_at'=>null])['actor'] === 'local-catalogue-review');
   assert(SnapshotPolicy::allowsTable('users') === false);
   ```
   Expected: policy behavior tests fail before implementation, then pass.
-- [ ] Implement the explicit catalogue policy, fixed SQL queries and a read-only export with wrong-database/commit refusal. Verify the schema before fetching rows, and write privately on the local host without printing data.
+- [x] Implement the explicit catalogue policy, fixed SQL queries and a read-only export with wrong-database/commit refusal. Verify the schema before fetching rows, and write privately on the local host without printing data.
   ```sh
   python3 docs/places/local-catalogue/run.py snapshot
   ```
   Expected: staging unchanged, zero user/private table reads, one complete snapshot and counts/checksum receipt.
-- [ ] Create/migrate only the dedicated local database; restore all selected rows and relationship links transactionally, with sequence reset and empty-user assertion.
+- [x] Create/migrate only the dedicated local database; restore all selected rows and relationship links transactionally, with sequence reset and empty-user assertion.
   ```sh
   python3 docs/places/local-catalogue/run.py setup
   python3 docs/places/local-catalogue/run.py restore
   ```
   Expected: every selected table count matches; held flags, aliases, reviews and media policy inputs preserved; zero real users.
-- [ ] Commit only the tool/test/aggregate files with `Refs EXP-69` and `Refs EXP-72`; keep raw snapshot ignored.
-- [ ] Complete verification command: `python3 docs/places/local-catalogue/run.py verify-snapshot`.
+- [x] Commit only the tool/test/aggregate files with `Refs EXP-69` and `Refs EXP-72`; keep raw snapshot ignored.
+- [x] Complete verification command: `python3 docs/places/local-catalogue/run.py verify-snapshot`.
 
 ### Task 2: Whole-inventory reconciliation and searchable local data
 
@@ -74,25 +74,25 @@
 - Consumes: Task 1 catalogue snapshot plus the immutable research inventory and its recorded SHA-256.
 - Produces: ignored local SQLite registry containing complete source rows, existing app links, retained app-only rows, roles, facts, existing review/hold status, explicit source links and containment. Summary separates raw rows, candidate roles, exact links, unsupported categories, ambiguity and actual app eligibility.
 
-- [ ] Write RED tests for exact source linking, retained aliases, overlapping independent sources, missing names, supporting features, restricted/closed records, and strict unknown-fee exclusion.
+- [x] Write RED tests for exact source linking, retained aliases, overlapping independent sources, missing names, supporting features, restricted/closed records, and strict unknown-fee exclusion.
   ```python
   self.assertEqual(result['exact_links'], [{'source_key': 'osm:node/10', 'spot_id': 4, 'canonical_spot_id': 2}])
   self.assertEqual(search_result['confirmed_free_public'], [])
   self.assertEqual(len(search_result['needs_checking']), 1)
   ```
   Expected: genuine missing-behavior failures, then GREEN after implementation.
-- [ ] Build the complete index without modifying source inputs; count and checksum every source family and snapshot input.
+- [x] Build the complete index without modifying source inputs; count and checksum every source family and snapshot input.
   ```sh
   python3 docs/places/local-catalogue/run.py consolidate
   ```
   Expected: every source record preserved exactly once; no automatic cross-source merge, source-null reactivation or photo approval.
-- [ ] Run queries covering café/restaurant destinations and named/unnamed sports facilities across central and outer origins. Return friendly source/descriptive labels, source/date, location meaning, distance kind and explicit uncertainty.
+- [x] Run queries covering café/restaurant destinations and named/unnamed sports facilities across central and outer origins. Return friendly source/descriptive labels, source/date, location meaning, distance kind and explicit uncertainty.
   ```sh
   python3 docs/places/local-catalogue/run.py query-checks
   ```
   Expected: results distinguish confirmed free/public matches from uncertain candidates; supporting map features do not inflate destination counts.
-- [ ] Rebuild into a second temporary output and compare semantic table hashes; reject corrupt inputs and an existing output rather than silently replace it.
-- [ ] Commit the implementation/tests/aggregate results locally; completion command: `python3 -m unittest discover -s docs/places/local-catalogue -p 'test_*.py'`.
+- [x] Rebuild into a second temporary output and compare semantic table hashes; reject corrupt inputs and an existing output rather than silently replace it.
+- [x] Commit the implementation/tests/aggregate results locally; completion command: `python3 -m unittest discover -s docs/places/local-catalogue -p 'test_*.py'`.
 
 ### Task 3: Native supported-catalogue rehearsal, evidence and review
 
@@ -105,19 +105,23 @@
 - Consumes: restored baseline and full reconciliation registry. Supported selection must target the new snapshot and retain all review holds.
 - Produces: measured before/after native API/Composer contracts, exact local import/replay/rollback proof, explicit remaining issues and one final review. Server data is unchanged.
 
-- [ ] Verify the restored baseline through all eligible Places/Composer contracts and retained aliases; check held details, unknown facts and publication-policy photo associations.
+- [x] Verify the restored baseline through all eligible Places/Composer contracts and retained aliases; check held details, unknown facts and publication-policy photo associations.
   ```sh
   python3 docs/places/local-catalogue/run.py verify-native
   ```
   Expected: parity with the fresh snapshot, or a named reproducible discrepancy that is fixed before proceeding.
-- [ ] Prepare a new dated supported-source package against the fresh baseline, excluding stale observations and existing unresolved review cases. Rehearse selected records through native services inside a local transaction, then repeat and roll back.
+- [x] Prepare a new dated supported-source package against the fresh baseline, excluding stale observations and existing unresolved review cases. Rehearse selected records through native services inside a local transaction, then repeat and roll back.
   ```sh
   python3 docs/places/local-catalogue/run.py prepare
   python3 docs/places/local-catalogue/run.py rehearse
   ```
   Expected: zero unsupported claims or lost relationships; repeat input is stable; rollback restores exact baseline table hashes. Unready source records remain in the complete local registry.
-- [ ] Refresh public source evidence for the existing 559 held facilities and rehearse only unchanged, independently public-access facilities with the existing qualification journal. Prove strict-free exclusions, native discovery, replay/recovery and complete local rollback. Keep unsupported access and fees unknown.
-- [ ] Run relevant regression suites and normal commit hooks for touched PHP behavior. Keep immutable package output distinct from deployed state.
-- [ ] Obtain one fresh whole-change review, fix substantive findings with failing-to-passing regression evidence, and record outstanding limitations.
-- [ ] Update existing EXP-69/EXP-72 descriptions and Work Log pages with local-first direction and measured results; preserve history and read back updates.
-- [ ] Leave draft PR #62 unmerged. Completion command: `python3 docs/places/local-catalogue/run.py verify-evidence`.
+- [x] Refresh public source evidence for the existing 559 held facilities and rehearse only unchanged, independently public-access facilities with the existing qualification journal. Prove strict-free exclusions, native discovery, replay/recovery and complete local rollback. Keep unsupported access and fees unknown.
+- [x] Run relevant regression suites and normal commit hooks for touched PHP behavior. Keep immutable package output distinct from deployed state.
+- [x] Obtain one fresh whole-change review, fix substantive findings with failing-to-passing regression evidence, and record outstanding limitations.
+- [x] Update existing EXP-69/EXP-72 descriptions and Work Log pages with local-first direction and measured results; preserve history and read back updates.
+- [x] Leave draft PR #62 unmerged. Completion command: `python3 docs/places/local-catalogue/run.py verify-evidence`.
+
+## Completion
+
+All three tasks passed their completion commands. Final fix commit: `a7c91f7ed47607fb90afdf48bd0265e1b2e2c8f6`. Task 3 final evidence check passed on 1 October at 10:35:08 UTC. See `docs/places/local-catalogue/2026-10-01/REPORT.md`, `review-result.md`, `execution-progress.md` and `publication-readback.json`. Keep the branch/worktree locally; draft PR #62 remains unmerged. Broader EXP-69/EXP-72 acceptance remains open.
