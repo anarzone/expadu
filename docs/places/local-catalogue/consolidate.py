@@ -104,6 +104,16 @@ def entry(row):
             row["role"],app_category,state,canonical(sorted(set(reasons))),0)
 
 
+def source_hash(db):
+    result=hashlib.sha256()
+    for table,order in [("source_records","id"),("capabilities","record_id,activity"),
+                        ("containment","child_id,parent_id"),("source_links","from_id,to_id,basis")]:
+        result.update(table.encode()+b"\n")
+        for row in db.execute("SELECT * FROM "+table+" ORDER BY "+order):
+            result.update(canonical(list(row)).encode()+b"\n")
+    return result.hexdigest()
+
+
 def semantic_hash(db):
     hash_value=hashlib.sha256()
     for table,order in [("app_records","spot_id"),("app_source_links","source_record_id,spot_id"),

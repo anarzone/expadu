@@ -1,0 +1,21 @@
+{
+    "status": "passed",
+    "checked_at": "2026-10-01T09:59:24+00:00",
+    "baseline_sha256": "b8cd63c8e757e697a529fc693368aa0b34bac2e1ffb77aab1bdc1af10da0c9ef",
+    "records_sha256": "8685d90d555524528607f7f2222e91cbfb65a11f855225152a680dc751c26471",
+    "records_verified": 4645,
+    "creates": 2,
+    "refreshes": 4643,
+    "eligible_before": 4235,
+    "eligible_during_rehearsal": 4237,
+    "general_before": 4224,
+    "general_during_rehearsal": 4226,
+    "selected_composer_candidates_verified": 4086,
+    "kernel_api_samples": 31,
+    "replay_exact_no_op": true,
+    "protected_identity_and_media_unchanged": true,
+    "new_photos_approved": 0,
+    "remote_changed": false,
+    "exact_baseline_and_sequence_restore_verified": true,
+    "real_users_imported": 0
+}

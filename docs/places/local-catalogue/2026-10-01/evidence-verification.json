@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "scope": "local_preparation_and_rehearsal",
+  "raw_source_records_preserved": 255949,
+  "stored_app_records_preserved": 11802,
+  "unchanged_source_refreshes_avoided": 4643,
+  "prepared_additions": 2,
+  "locally_rehearsed_public_access_facilities": 90,
+  "validated_candidate_export_records": 4327,
+  "baseline_restored": true,
+  "staging_changed": false,
+  "production_changed": false,
+  "raw_source_copy_sha256": "ef556ed1dc9eb236bf382f14e2ec0fcd0d14ca0519677a492356ca4d44493a61",
+  "runtime_files_verified": 471,
+  "runtime_manifest_sha256": "6180f37c8e432bd924eb3d4d9b97a399854e4e346c6b15abe9df6cc2686dc844",
+  "evidence_sha256": {
+    "snapshot-summary": "40fef725bab686df94fb079ba8eddb89da1abd10d41286bb164bec8250fdebbb",
+    "consolidation-summary": "47ddbf63be807f461958ab4a77d8ed86d9725d262d8827e13dfde26aedcd0249",
+    "rebuild-verification": "916f37ed861ee7519b71d81b21b72ef396adca5800842b1b5c67119fcbbb12c9",
+    "query-verification": "e998c2d3b73ae97cbcfca5127dab7f89b2088911867c9dc3978da6df80747900",
+    "native-verification": "8dae8b00bed94b610337530c3dff5bbba1c4a53b1a21cf1d6f01c493a1bc2d52",
+    "preparation-summary": "5fb1ae4d6f9c35022f6d6cd91489af4d070a5f2a10c15b653851a6fb77aaae92",
+    "rehearsal-summary": "0d238a30832f6c2d7d3c3ba6cbb5322bc9043bc78b339f4b925bdeb62d4df072",
+    "facility-rehearsal-summary": "c512aab0678c994e619e20eb6b4b3d80888932d8d7cc4d6f6d4f1629d859daa1",
+    "combined-rehearsal-summary": "205ea1c72f4c3ed3a943987f216177b7c84cba2da718b45deb1c5b93923f70b0"
+  }
+}

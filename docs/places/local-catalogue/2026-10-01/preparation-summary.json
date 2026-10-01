@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "prepared_at": "2026-10-01T10:01:26.183855+00:00",
+  "status": "prepared_against_current_local_catalogue_pending_native_rehearsal",
+  "live_changed": false,
+  "input_counts": {
+    "osm:inside_city": 163240,
+    "osm:not_in_current_category_contract": 155528,
+    "overture:inside_city": 88760,
+    "overture:not_in_current_category_contract": 81595
+  },
+  "baseline_exported_at": "2026-10-01T09:18:34+00:00",
+  "baseline_sha256": "b8cd63c8e757e697a529fc693368aa0b34bac2e1ffb77aab1bdc1af10da0c9ef",
+  "inventory_sha256": "e89849ab76a6cd640a2561af8ed5a77accd2f5d923694b4bd7381f63b2f82d64",
+  "records_sha256": "dd8a6876704906125e4f204aeee0a67a728738fe3e1c71e6c4f2a5f6933e15a1",
+  "records": 2,
+  "named_records": 2,
+  "destinations": 2,
+  "activity_facilities": 0,
+  "descriptively_named_facilities": 0,
+  "creates": 2,
+  "refreshes": 0,
+  "by_source": {
+    "osm": 1,
+    "overture": 1
+  },
+  "by_category": {
+    "fast_food": 1,
+    "restaurant": 1
+  },
+  "held": 10232,
+  "hold_reasons": {
+    "identity_ambiguity": 2691,
+    "existing_category_change": 17,
+    "missing_or_invalid_name": 416,
+    "restricted_or_conditional_access": 283,
+    "existing_inactive_identity": 13,
+    "previous_identity_review_unresolved": 12,
+    "lifecycle_requires_review": 17,
+    "closed_hours": 7,
+    "free_activity_without_public_access_evidence": 2,
+    "booking_or_membership_requires_supported_constraints": 2,
+    "dated_lifecycle_requires_review": 1,
+    "existing_location_moved_over_100m": 6,
+    "conditional_fee_not_supported_by_deployed_resolver": 2,
+    "not_reported_open": 4930,
+    "existence_confidence_below_0.95": 4724,
+    "insufficient_contact_and_address": 896,
+    "manual_category_or_venue_identity_review": 15
+  },
+  "containment_evidence": 0,
+  "containment_promoted_automatically": false,
+  "photos_approved": 0,
+  "licensing": {
+    "osm": "https://www.openstreetmap.org/copyright",
+    "overture": "https://docs.overturemaps.org/attribution/#places"
+  },
+  "unchanged_current_source_records": 4643,
+  "unchanged_records_are_not_a_readiness_count": true,
+  "freshness_holds": {}
+}

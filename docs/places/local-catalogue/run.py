@@ -32,7 +32,7 @@ def sha(path):
 
 def summary(name, value):
     (REPORTS / name).write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
-    print(json.dumps(value, ensure_ascii=False), flush=True)
+    print(json.dumps({k:v for k,v in value.items() if k not in {"runtime_files_sha256","evidence_sha256"}}, ensure_ascii=False), flush=True)
 
 
 def local_environment():
@@ -132,12 +132,76 @@ elif args.action == "query-checks":
                 "descriptive_labels_in_displayed_results":sum(x["name_kind"]=="descriptive" for x in found["results"])})
     summary("query-verification.json",{"status":"passed","scope":"local_source_research_not_production_composer",
         "queries":results,"unique_destinations_established":False,"remote_changed":False})
+elif args.action == "rehearse-facilities":
+    files=subprocess.check_output(["git","ls-files","app","config","bootstrap","routes"],cwd=APP,text=True).splitlines()
+    manifest={"files":{name:sha(APP/name) for name in files if (APP/name).is_file()},
+        "facility_helper_sha256":sha(HERE/"FacilityQualificationJournal.php")}
+    (PRIVATE/"facility-code-manifest.json").write_text(json.dumps(manifest))
+    local_php("inspect-facilities.php")
+    summary("facility-source-summary.json",json.loads((PRIVATE/"facility-source-summary.json").read_text()))
+    summary("facility-target-summary.json",json.loads((PRIVATE/"facility-target-summary.json").read_text()))
+    local_php("rehearse-facilities.php")
+elif args.action == "prepare":
+    from prepare_local import prepare
+    local_php("export-baseline.php")
+    result=prepare(SOURCE/"docs/places/cologne-expansion/2026-09-28/inventory.sqlite",PRIVATE/"places-only.json",PRIVATE/"supported-package")
+    summary("preparation-summary.json",result)
+elif args.action == "verify-evidence":
+    subprocess.run([sys.executable,"-m","unittest","discover","-s",str(HERE),"-p","test_*.py"],cwd=APP,check=True)
+    subprocess.run([PHP,str(HERE/"test-snapshot.php")],cwd=APP,check=True)
+    local_php("verify-snapshot.php")
+    from consolidate import semantic_hash, source_hash
+    import sqlite3
+    names=["snapshot-summary","consolidation-summary","rebuild-verification","query-verification",
+        "native-verification","preparation-summary","rehearsal-summary","facility-rehearsal-summary","combined-rehearsal-summary"]
+    evidence={name:json.loads((REPORTS/(name+".json")).read_text()) for name in names}
+    registry=evidence["consolidation-summary"]
+    assert sha(snapshot_path)==registry["snapshot_sha256"]==evidence["snapshot-summary"]["snapshot_sha256"]
+    assert sha(SOURCE/"docs/places/cologne-expansion/2026-09-28/inventory.sqlite")==registry["inventory_sha256"]
+    connection=sqlite3.connect((PRIVATE/"registry.sqlite").as_uri()+"?mode=ro",uri=True)
+    assert semantic_hash(connection)==registry["semantic_sha256"]==evidence["rebuild-verification"]["semantic_sha256"]
+    original=sqlite3.connect((SOURCE/"docs/places/cologne-expansion/2026-09-28/inventory.sqlite").as_uri()+"?mode=ro",uri=True)
+    source_copy_sha256=source_hash(connection)
+    assert source_copy_sha256==source_hash(original),"Registry raw source copy changed"
+    connection.close(); original.close()
+    runtime_files=json.loads((PRIVATE/"facility-code-manifest.json").read_text())["files"]
+    assert all(sha(APP/name)==digest for name,digest in runtime_files.items()),"Native application files changed"
+    for name in ["rebuild-verification","query-verification","native-verification","rehearsal-summary","facility-rehearsal-summary","combined-rehearsal-summary"]:
+        assert evidence[name]["status"]=="passed",name
+    preparation=evidence["preparation-summary"]; rehearsal=evidence["rehearsal-summary"]
+    assert sha(PRIVATE/"supported-package/records.jsonl")==preparation["records_sha256"]==rehearsal["records_sha256"]
+    assert sha(PRIVATE/"places-only.json")==preparation["baseline_sha256"]==rehearsal["baseline_sha256"]
+    assert preparation["records"]==rehearsal["records_verified"]
+    assert rehearsal["replay_exact_no_op"] and rehearsal["exact_baseline_and_sequence_restore_verified"]
+    facility=evidence["facility-rehearsal-summary"]
+    assert facility["qualified_facilities_in_trial"]==90 and facility["unknown_access_facilities_held"]==469
+    assert facility["source_proof_sha256"]==sha(PRIVATE/"facility-source-private.json")
+    assert facility["exact_native_catalogue_restore_verified"] and facility["all_source_place_review_journal_rows_restored"]
+    combined=evidence["combined-rehearsal-summary"]
+    assert combined["exact_baseline_restore_verified"] and combined["facility_apply_and_recovery_replay_identical"]
+    assert combined["candidate_export_sha256"]==sha(PRIVATE/"candidate-places.jsonl")
+    candidate_ids=set()
+    for line in (PRIVATE/"candidate-places.jsonl").read_text().splitlines():
+        record=json.loads(line)
+        assert record["id"] not in candidate_ids and record["place"]["name"]==record["composer"]["name"]
+        assert record["scope"]=="local_candidate_catalogue_not_deployed"
+        candidate_ids.add(record["id"])
+    assert len(candidate_ids)==combined["exported_native_candidates"]==combined["eligible_in_combined_trial"]
+    assert all(not item.get("remote_changed",False) and not item.get("staging_changed",False) and not item.get("production_changed",False) for item in evidence.values())
+    summary("evidence-verification.json",{"status":"passed","scope":"local_preparation_and_rehearsal",
+        "raw_source_records_preserved":registry["source_records"],"stored_app_records_preserved":registry["app_records"],
+        "unchanged_source_refreshes_avoided":preparation["unchanged_current_source_records"],
+        "prepared_additions":preparation["creates"],"locally_rehearsed_public_access_facilities":90,
+        "validated_candidate_export_records":len(candidate_ids),"baseline_restored":True,"staging_changed":False,"production_changed":False,
+        "raw_source_copy_sha256":source_copy_sha256,"runtime_files_verified":len(runtime_files),
+        "runtime_manifest_sha256":sha(PRIVATE/"facility-code-manifest.json"),
+        "evidence_sha256":{name:sha(REPORTS/(name+".json")) for name in names}})
 elif args.action == "setup":
     env = local_environment()
     code = """$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=postgres',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$s=$p->prepare('SELECT 1 FROM pg_database WHERE datname=?');$s->execute(['exp69_local_catalogue_20261001']);if(!$s->fetchColumn()){$p->exec('CREATE DATABASE exp69_local_catalogue_20261001');}$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=exp69_local_catalogue_20261001',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$p->exec('CREATE EXTENSION IF NOT EXISTS postgis');$p->exec('CREATE EXTENSION IF NOT EXISTS vector');echo 'Dedicated local catalogue database ready'.PHP_EOL;"""
     subprocess.run([PHP,"-r",code],env=env,check=True,cwd=APP)
     subprocess.run([PHP,"artisan","migrate","--force","--no-interaction"],env=env,check=True,cwd=APP)
-elif args.action in {"restore","verify-snapshot","verify-native","rehearse"}:
+elif args.action in {"restore","verify-snapshot","verify-native","rehearse","rehearse-combined"}:
     local_php({"verify-snapshot":"verify-snapshot.php","verify-native":"verify-native.php"}.get(args.action,args.action+".php"),*extra)
 else:
     raise SystemExit("Unsupported local catalogue operation: "+args.action)

@@ -116,6 +116,7 @@
   python3 docs/places/local-catalogue/run.py rehearse
   ```
   Expected: zero unsupported claims or lost relationships; repeat input is stable; rollback restores exact baseline table hashes. Unready source records remain in the complete local registry.
+- [ ] Refresh public source evidence for the existing 559 held facilities and rehearse only unchanged, independently public-access facilities with the existing qualification journal. Prove strict-free exclusions, native discovery, replay/recovery and complete local rollback. Keep unsupported access and fees unknown.
 - [ ] Run relevant regression suites and normal commit hooks for touched PHP behavior. Keep immutable package output distinct from deployed state.
 - [ ] Obtain one fresh whole-change review, fix substantive findings with failing-to-passing regression evidence, and record outstanding limitations.
 - [ ] Update existing EXP-69/EXP-72 descriptions and Work Log pages with local-first direction and measured results; preserve history and read back updates.

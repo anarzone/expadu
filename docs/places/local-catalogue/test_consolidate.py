@@ -174,6 +174,13 @@ class ConsolidationTest(unittest.TestCase):
         self.assertEqual(digest(self.inventory),source_before)
         self.assertEqual(digest(self.snapshot),snapshot_before)
 
+    def test_raw_source_hash_detects_a_changed_registry_copy(self):
+        self.build()
+        with sqlite3.connect(self.inventory) as source, sqlite3.connect(self.output) as registry:
+            self.assertEqual(self.builder.source_hash(source),self.builder.source_hash(registry))
+            registry.execute("UPDATE source_records SET name='Changed source copy' WHERE id='osm:node/10'")
+            self.assertNotEqual(self.builder.source_hash(source),self.builder.source_hash(registry))
+
     def test_refuses_changed_input_and_existing_output(self):
         self.build()
         with self.assertRaises(FileExistsError):
