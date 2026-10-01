@@ -61,7 +61,7 @@
   python3 docs/places/held-facilities/run.py rehearse
   ```
 - [x] Record business/category/geometry cases found during selection as unresolved source-review work, without treating old names as newly verified.
-- [ ] Run normal commit hooks and one fresh independent review; fix substantive findings with regression evidence. Update existing EXP-69/72 and Work Log pages, preserve history, read back. Complete with `python3 docs/places/held-facilities/run.py verify`.
+- [x] Run normal commit hooks and one fresh independent review; fix substantive findings with regression evidence. Update existing EXP-69/72 and Work Log pages, preserve history, read back. Complete with `python3 docs/places/held-facilities/run.py verify`.
 
 ## Self-review
 

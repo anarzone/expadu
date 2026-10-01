@@ -51,7 +51,7 @@ Photo coverage across this full candidate set is 2.42%. This denominator now inc
 
 - 14 selection/source-proof regression tests, 24 existing consolidation tests and 17 snapshot-policy checks pass.
 - 36 native Places-fact tests / 259 assertions pass, including five new replay/type/order cases. The original bug produced two failing tests before the fix.
-- Normal commit hooks passed the secret scan, formatting and **1,761 native fast tests / 7,369 assertions**. Independent review and disposition are recorded separately in `review-result.md`.
+- Normal commit hooks passed the secret scan, formatting and **1,765 native fast tests / 7,376 assertions**. Independent review and disposition are recorded separately in `review-result.md`.
 - Independent review found one frozen-way-topology guard gap; it is fixed with Python and native regressions. Both tightened guards rechecked all 600 records, including 542 ways; the prepared payload and exported catalogue are unchanged. See `review-result.md`.
 - `selection-summary.json`, `source-summary.json`, `runtime-summary.json`, `rehearsal-summary.json` and `completeness-summary.json` bind the inputs, fresh proof, new runtime and full export by checksums. The previous runtime manifest remains historical evidence; it was not overwritten.
 - Private full data remains under `storage/app/private/places-local/2026-10-01/held-public-facilities/` in the primary checkout. `candidate-places.jsonl` contains all 4,927 records. The earlier export is preserved separately.
@@ -62,7 +62,7 @@ Of the 2,428 existing identity-held records screened for this pass, 1,828 were n
 
 The broader source/identity gaps, 469 prior facilities without public-access evidence, 23 unresolved category/business/large-point cases and useful confirmed-free football coverage remain open. No full LLM conversation, event-candidate or live authenticated HTTP acceptance is claimed by the Places candidate checks.
 
-Before a single later release: refresh time-bounded source evidence; prepare and rehearse durable target-bound apply/recovery operations for the entire agreed proposal; qualify the actual staging target; deploy and verify the authorized coherent release. A committed-process crash-recovery drill is not established by this rolled-back local trial. Production needs separate target checks. EXP-69/72 remain In Progress.
+Before a single later release: refresh time-bounded source evidence; prepare and rehearse durable target-bound apply/recovery operations for the entire agreed proposal; qualify the actual staging target; deploy and verify the authorized coherent release. A committed-process crash-recovery drill is not established by this rolled-back local trial. Production needs separate target checks. EXP-69/72 remain In Progress. Both tracker descriptions and Work Log pages 33/36 were updated and fully read back, preserving their earlier history. This bounded local preparation plan is complete; the broader catalogue/release work is not.
 
 ## Decisions recorded for continuity
 
