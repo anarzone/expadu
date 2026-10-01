@@ -1,0 +1,44 @@
+{
+  "status": "complete_local_registry_pending_native_qualification",
+  "built_at": "2026-10-01T09:38:12.765977+00:00",
+  "source_records": 255949,
+  "by_source": {
+    "osm": 163362,
+    "overture": 88760,
+    "wikidata": 3827
+  },
+  "by_role": {
+    "activity_facility": 3827,
+    "destination_or_service": 110055,
+    "entity_enrichment": 3827,
+    "heritage_or_information_feature": 2685,
+    "outdoor_area": 4040,
+    "supporting_feature": 124752,
+    "transport_feature": 6763
+  },
+  "by_source_state": {
+    "inactive": 4659,
+    "outside_city": 118,
+    "requires_booking_review": 4,
+    "requires_currentness_review": 3,
+    "restricted": 13687,
+    "source_candidate": 112776,
+    "supporting_context": 124702
+  },
+  "app_records": 11802,
+  "exact_source_links": 7401,
+  "retained_app_aliases": 798,
+  "app_only_records": 4401,
+  "source_backed_app_rows_without_inventory_match": 45,
+  "identity_review_pairs": 1161,
+  "containment_evidence": 955,
+  "explicit_source_links": 874,
+  "semantic_sha256": "4f58f32d73244c81d62291a380984078a7d284ed6181a149258cd7dc4a8ceef0",
+  "inventory_sha256": "e89849ab76a6cd640a2561af8ed5a77accd2f5d923694b4bd7381f63b2f82d64",
+  "snapshot_sha256": "e46d38199007add85a73e4901015cad8e7ae1b1282909055194435dd4dfe947d",
+  "source_records_are_not_unique_places": true,
+  "all_source_records_retained": true,
+  "new_identity_merges": 0,
+  "new_media_approvals": 0,
+  "remote_changed": false
+}

@@ -92,6 +92,46 @@ if args.action == "snapshot":
         "redacted_rows":document["redactions"],"table_hashes":document["table_hashes"],
         "user_tables_exported":False,"source_actors_exported":False,"snapshot_in_git":False,
         "staging_changed":False,"production_changed":False})
+elif args.action == "consolidate":
+    from consolidate import build
+    inventory=SOURCE/"docs/places/cologne-expansion/2026-09-28/inventory.sqlite"
+    frozen=json.loads((REPORTS/"snapshot-summary.json").read_text())
+    result=build(inventory,snapshot_path,PRIVATE/"registry.sqlite",
+        inventory_sha256="e89849ab76a6cd640a2561af8ed5a77accd2f5d923694b4bd7381f63b2f82d64",
+        snapshot_sha256=frozen["snapshot_sha256"])
+    summary("consolidation-summary.json",result)
+elif args.action == "verify-rebuild":
+    from consolidate import build
+    first=json.loads((REPORTS/"consolidation-summary.json").read_text())
+    second_path=PRIVATE/"registry-rebuild.sqlite"
+    second=build(SOURCE/"docs/places/cologne-expansion/2026-09-28/inventory.sqlite",snapshot_path,second_path,
+        inventory_sha256=first["inventory_sha256"],snapshot_sha256=first["snapshot_sha256"])
+    if first["semantic_sha256"]!=second["semantic_sha256"]:
+        raise RuntimeError("Whole-source rebuild differs.")
+    summary("rebuild-verification.json",{"status":"passed","source_records":second["source_records"],
+        "semantic_sha256":second["semantic_sha256"],"inputs_unchanged":True,"remote_changed":False})
+    second_path.unlink()
+elif args.action == "query-checks":
+    from query import search
+    results=[]
+    for origin,lat,lon in [("central",50.9384,6.9600),("north",51.0470,6.8830),("east",50.9600,7.0690)]:
+        for field,value in [("category","cafe"),("category","restaurant"),("activity","soccer"),
+                            ("activity","basketball"),("activity","tennis")]:
+            found=search(PRIVATE/"registry.sqlite",lat,lon,3,**{field:value},limit=200)
+            for item in found["results"]+found["confirmed_free_public"]:
+                assert item["display_name"] and item["source_url"] and item["collected_at"]
+                assert item["availability"]=="unknown"
+                assert item["role"] not in {"supporting_feature","transport_feature","heritage_or_information_feature","outdoor_area"}
+            for item in found["confirmed_free_public"]:
+                assert item["fee_status"]=="free_reported" and item["access_status"]=="public_reported"
+                assert item["identity_review_count"]==0
+            results.append({"origin":origin,"query":{field:value},"radius_km":3,
+                "matched_source_records":found["matched_source_records"],
+                "confirmed_free_public_source_evidence":found["confirmed_free_public_count"],
+                "needs_checking":found["needs_checking_count"],
+                "descriptive_labels_in_displayed_results":sum(x["name_kind"]=="descriptive" for x in found["results"])})
+    summary("query-verification.json",{"status":"passed","scope":"local_source_research_not_production_composer",
+        "queries":results,"unique_destinations_established":False,"remote_changed":False})
 elif args.action == "setup":
     env = local_environment()
     code = """$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=postgres',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$s=$p->prepare('SELECT 1 FROM pg_database WHERE datname=?');$s->execute(['exp69_local_catalogue_20261001']);if(!$s->fetchColumn()){$p->exec('CREATE DATABASE exp69_local_catalogue_20261001');}$p=new PDO('pgsql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname=exp69_local_catalogue_20261001',getenv('DB_USERNAME'),getenv('DB_PASSWORD'),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$p->exec('CREATE EXTENSION IF NOT EXISTS postgis');$p->exec('CREATE EXTENSION IF NOT EXISTS vector');echo 'Dedicated local catalogue database ready'.PHP_EOL;"""
