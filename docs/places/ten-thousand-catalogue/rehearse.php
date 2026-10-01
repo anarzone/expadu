@@ -91,6 +91,7 @@ $success = $expectedFailure = false;
 $report = [];
 DB::beginTransaction();
 try {
+    DB::statement('ANALYZE spots, place_fact_observations, place_fact_corrections');
     [$prepared, $held] = namedPreparedRecords($read($output.'/selection.json'), $read($output.'/source-proof.json'), $before, $read($output.'/type-map.json'));
     localCheck(preparedPlaceRowFingerprint(['records' => $prepared, 'held' => $held]) === preparedPlaceRowFingerprint($read($output.'/native-preparation.json')), 'Native source preparation changed.');
     [$oldPrepared, $oldHeld] = heldPreparedRecords($oldHeldSelection, $oldHeldProof, $before);
@@ -140,6 +141,7 @@ try {
         localCheck(localHash(localTypedRows($table)) === $protectedHashes[$table], 'Protected catalogue/media relationships changed.');
     }
     localCheck($grouping->eligible(Spot::query(), true)->whereIn('spots.id', $idBySource)->count() === count($added), 'Some new source identities are not native candidates.');
+    DB::statement('ANALYZE spots, place_fact_observations, place_fact_corrections');
     $samples = [];
     foreach ($prepared as $record) {
         $samples[$record['category']] ??= $record;
@@ -205,7 +207,7 @@ try {
                     && $facts['fee']['value'] === $expected['fee'] && $body['photo_url'] === $expected['photo_url'], 'Previous candidate contract changed.');
             } else {
                 localCheck($facts['name_kind'] === 'source' && $facts['conflicts'] === [] && $spot->price_range === null
-                    && array_all($spot->tags ?? [], static fn (mixed $value, string $tag): bool => ! is_scalar($value) || (in_array($tag, $candidate->tags, true) && in_array((string) $value, $candidate->tags, true))), 'New venue lost source facts or gained inferred prices.');
+                    && array_all($spot->tags ?? [], static fn (mixed $value, string $tag): bool => ! is_scalar($value) || (in_array($tag, $candidate->tags, true) && in_array((string) $value, $candidate->tags, true))), 'New venue lost source facts or gained inferred prices: '.$key);
                 localCheck(app(FeasibilityFilter::class)->matchesDiscovery($constraints($candidate->category, 'free', null), $candidate) === ($facts['fee']['value'] === 'free'), 'All-record strict-free evidence differs.');
             }
             fwrite($handle, json_encode(['schema_version' => 1, 'id' => $key, 'source' => ['provider' => $spot->source, 'record_id' => $spot->source_id], 'place' => $body, 'composer' => $candidate, 'scope' => 'local_candidate_catalogue_not_deployed', 'source_currentness' => 'per_field_evidence_dates'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
@@ -224,7 +226,7 @@ try {
         echo json_encode(['phase' => 'native_contracts', 'verified' => $count, 'total' => count($ids)]).PHP_EOL;
     }
     localCheck($count === count($ids) && array_diff(array_keys($prior), array_keys($seen)) === [], 'Export omitted native candidates.');
-    $report = ['status' => 'passed', 'checked_at' => gmdate('c'), 'combined_candidates' => $count, 'new_named_destinations' => count($added), 'previous_candidates_preserved' => count($prior), 'general_destinations' => $grouping->general(Spot::query())->count(), 'new_source_objects_held' => count($held), 'native_detail_and_composer_type_samples' => count($samples), 'query_checks' => $queries, 'by_category' => $categories, 'by_coarse' => $coarseCounts, 'by_neighbourhood' => $veedels, 'name_kinds' => $nameKinds, 'fees' => $fees, 'access' => $access, 'opening_hours' => $hours, 'addresses' => $addresses, 'websites' => $websites, 'phones' => $phones, 'descriptions' => $descriptions, 'verified_entrances' => $entrances, 'policy_publishable_hero_associations' => $photos, 'photo_coverage_percent' => round($photos / $count * 100, 3), 'new_media_approvals' => 0, 'additive_replay_identical' => true, 'all_records_place_and_composer_verified' => true, 'all_new_fee_constraints_verified' => count($added), 'source_checked_at' => $sourceSummary['checked_at'], 'selection_sha256' => $selectionSummary['selection_sha256'], 'source_proof_sha256' => $sourceSummary['source_proof_sha256'], 'runtime_manifest_sha256' => $runtimeSummary['runtime_manifest_sha256'], 'remote_changed' => false];
+    $report = ['status' => 'passed', 'checked_at' => gmdate('c'), 'combined_candidates' => $count, 'new_named_destinations' => count($added), 'previous_candidates_preserved' => count($prior), 'general_destinations' => $grouping->general(Spot::query())->count(), 'new_source_objects_held' => count($held), 'native_detail_and_composer_type_samples' => count($samples), 'query_checks' => $queries, 'by_category' => $categories, 'by_coarse' => $coarseCounts, 'by_neighbourhood' => $veedels, 'name_kinds' => $nameKinds, 'fees' => $fees, 'access' => $access, 'opening_hours' => $hours, 'addresses' => $addresses, 'websites' => $websites, 'phones' => $phones, 'descriptions' => $descriptions, 'verified_entrances' => $entrances, 'policy_publishable_hero_associations' => $photos, 'photo_coverage_percent' => round($photos / $count * 100, 3), 'new_media_approvals' => 0, 'additive_replay_identical' => true, 'all_records_place_and_composer_verified' => true, 'all_new_fee_constraints_verified' => count($added), 'source_checked_at' => $sourceSummary['checked_at'], 'selection_sha256' => $selectionSummary['selection_sha256'], 'source_proof_sha256' => $sourceSummary['source_proof_sha256'], 'runtime_manifest_sha256' => $runtimeSummary['runtime_manifest_sha256'], 'planner_statistics_refreshed_on_owned_clone' => true, 'remote_changed' => false];
     $success = true;
 } catch (Throwable $error) {
     if ($failureMode && $error->getMessage() === 'Expected forced rollback after additive import.') {
@@ -242,6 +244,7 @@ try {
     if (! $success && is_file($temporary)) {
         unlink($temporary);
     }
+    DB::statement('ANALYZE spots, place_fact_observations, place_fact_corrections');
 }
 try {
     localVerify(localPdo(), $snapshot);

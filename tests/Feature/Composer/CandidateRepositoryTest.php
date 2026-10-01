@@ -440,3 +440,21 @@ test('everyday outdoor destination flags match their supported type', function (
         ->and($candidate->costTier)->toBe('unknown')
         ->and($candidate->hoursAssumed)->toBeFalse();
 });
+
+test('composer preserves distinct numeric source tag text', function (array $numericTags, array $expectedValues) {
+    $spot = spotWithHours([
+        'name' => 'Numeric source shop',
+        'category' => SpotCategory::Supermarket,
+        'tags' => ['name' => 'Numeric source shop', ...$numericTags],
+    ]);
+
+    $candidates = app(CandidateRepository::class)->byIds(['spot:'.$spot->id], mondayWindow()->windowStart);
+
+    expect($candidates)->toHaveCount(1)
+        ->and($candidates[0]->tags)->toContain(...array_keys($numericTags))
+        ->and($candidates[0]->tags)->toContain(...$expectedValues);
+})->with([
+    'measured values' => [['height' => '3.0', 'roof:height' => '3'], ['3.0', '3']],
+    'formatted identifiers' => [['ref' => '01', 'level' => '1'], ['01', '1']],
+    'zero values' => [['level' => '0', 'height' => '0.0'], ['0', '0.0']],
+]);

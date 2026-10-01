@@ -396,7 +396,7 @@ class CandidateRepository
         return collect($values)
             ->filter(fn (mixed $tag): bool => is_scalar($tag))
             ->map(fn (mixed $tag): string => (string) $tag)
-            ->unique()
+            ->uniqueStrict()
             ->values()
             ->all();
     }
