@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\PlaceFactObservation;
 use App\Models\Spot;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $mask = umask();
@@ -64,4 +66,31 @@ test('additional venue proof rejects an existing source owner and stale evidence
     expect($accepted)->toBe([])->and($held[0]['reasons'])->toContain('source_identity_already_owned');
     $proof['summary']['checked_at'] = now()->subDays(2)->toIso8601String();
     expect(fn () => namedPreparedRecords(['records' => [$record]], $proof, [], $types))->toThrow(RuntimeException::class, 'Fresh absolute source proof required');
+});
+
+test('prepared venue replay preserves native rows and observations after elapsed time', function () {
+    $this->freezeTime();
+    DB::table('veedels')->insert([
+        'name' => 'Replay Quarter', 'bezirk' => 'Test district',
+        'boundary' => DB::raw("ST_Multi(ST_GeomFromText('POLYGON((6.94 50.93,6.96 50.93,6.96 50.95,6.94 50.95,6.94 50.93))',4326))"),
+    ]);
+    [$record, $proof, $types] = additionalSourceFixture();
+    $record['tags'] += ['addr:street' => 'Test Street', 'website' => 'https://example.com', 'opening_hours' => 'Mo-Fr 09:00-18:00'];
+    $record += ['address' => 'Test Street', 'website' => 'https://example.com', 'phone' => null];
+    $record['observation'] = ['name' => $record['name'], 'location' => ['lat' => $record['lat'], 'lng' => $record['lng'], 'kind' => 'source_center'], 'fee' => ['raw' => null], 'access' => ['raw' => null], 'hours' => ['raw' => $record['tags']['opening_hours']], 'contact' => ['address' => $record['address'], 'website' => $record['website'], 'phone' => null]];
+    $proof['records'][0]['current']['tags'] = $record['tags'];
+    $proof['records'][0]['after'] = $proof['records'][0]['current'];
+    [$accepted, $held] = namedPreparedRecords(['records' => [$record]], $proof, [], $types);
+    expect($held)->toBe([]);
+    $hash = hash('sha256', 'replay-test');
+    $mapping = applyPreparedPlaces($accepted, [], $hash);
+    $id = $mapping[$record['key']]['id'];
+    $row = static fn (): array => json_decode(DB::selectOne('SELECT row_to_json(s)::text AS raw FROM spots s WHERE id=?', [$id])->raw, true, flags: JSON_THROW_ON_ERROR);
+    $before = $row();
+    $observations = PlaceFactObservation::query()->get()->toArray();
+    $this->travel(2)->seconds();
+    $accepted[0]['existing_id'] = $id;
+    applyPreparedPlaces($accepted, [$id => $before], $hash);
+    expect(preparedPlaceRowFingerprint($row()))->toBe(preparedPlaceRowFingerprint($before))
+        ->and(PlaceFactObservation::query()->get()->toArray())->toBe($observations);
 });

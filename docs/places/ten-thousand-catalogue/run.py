@@ -55,7 +55,7 @@ def local_environment():
             env[key] = values[key].strip('\"\'')
     if env.get('DB_HOST') not in {'127.0.0.1','localhost','::1'}:
         raise ValueError('Dedicated loopback database required')
-    env.update(APP_ENV='testing',APP_KEY='base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',DB_URL='',DB_DATABASE='exp69_local_catalogue_20261001',CACHE_STORE='array',SESSION_DRIVER='array',QUEUE_CONNECTION='sync',PLACES_LOCAL_PRIVATE=str(PRIVATE),PLACES_SOURCE_ROOT=str(SOURCE),PLACES_LOCAL_REPORTS=str(REPORTS),PLACES_AUTOMATION_ENABLED='false',PLACES_CURATED_SEEDING_ENABLED='false')
+    env.update(APP_ENV='testing',APP_KEY='base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',DB_URL='',DB_PORT='15434',DB_DATABASE='exp69_local_catalogue_20261001',CACHE_STORE='array',SESSION_DRIVER='array',QUEUE_CONNECTION='sync',PLACES_LOCAL_PRIVATE=str(PRIVATE),PLACES_SOURCE_ROOT=str(SOURCE),PLACES_LOCAL_REPORTS=str(REPORTS),PLACES_AUTOMATION_ENABLED='false',PLACES_CURATED_SEEDING_ENABLED='false')
     env['PATH']='/Users/anar/Library/Application Support/Herd/bin:'+env['PATH']
     return env
 

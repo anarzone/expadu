@@ -356,27 +356,37 @@ class HeuristicPromptParser implements ParsesPrompt
      */
     private function extractCategories(string $t): array
     {
-        $categories = [];
-        foreach (self::CATEGORY_SYNONYMS as $term => $canonical) {
-            // Match the term and its plural so "museums"/"galleries" land too
-            // (regular -s and -y→-ies). The map stays singular.
+        $terms = self::CATEGORY_SYNONYMS;
+        uksort($terms, static fn (string $left, string $right): int => strlen($right) <=> strlen($left));
+        $remaining = $t;
+        $matched = [];
+        foreach ($terms as $term => $canonical) {
+            // A specific phrase owns its words; separate requests still match.
             $variants = [$term, $term.'s'];
             if (str_ends_with($term, 'y')) {
                 $variants[] = substr($term, 0, -1).'ies';
             }
-            if ($this->containsWord($t, $variants)) {
+            $pattern = '/\\b(?:'.implode('|', array_map(static fn (string $variant): string => preg_quote($variant, '/'), $variants)).')\\b/u';
+            if (preg_match($pattern, $remaining)) {
+                $matched[$term] = true;
+                $remaining = preg_replace_callback($pattern, static fn (array $match): string => str_repeat(' ', strlen($match[0])), $remaining);
+            }
+        }
+
+        $categories = [];
+        foreach (self::CATEGORY_SYNONYMS as $term => $canonical) {
+            if (isset($matched[$term])) {
                 $categories[] = $canonical;
             }
         }
 
-        // "sport(s)" is an umbrella the 1:1 synonym map can't express.
-        if ($this->containsWord($t, ['sport', 'sports'])) {
+        // Standalone "sport(s)" fans out without widening a sports-shop request.
+        if ($this->containsWord($remaining, ['sport', 'sports'])) {
             array_push($categories, 'pitch', 'basketball', 'tennis', 'table_tennis', 'skatepark', 'boules');
         }
 
-        // "outdoors / outside / fresh air" — the open-air umbrella, the same way.
-        if ($this->containsWord($t, ['outdoors', 'outdoor', 'outside', 'nature'])
-            || str_contains($t, 'fresh air')) {
+        if ($this->containsWord($remaining, ['outdoors', 'outdoor', 'outside', 'nature'])
+            || str_contains($remaining, 'fresh air')) {
             array_push($categories, 'park', 'lake', 'playground', 'pitch', 'basketball', 'dog_park', 'skatepark');
         }
 

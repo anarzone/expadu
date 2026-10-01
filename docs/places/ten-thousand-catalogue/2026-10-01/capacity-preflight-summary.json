@@ -1,0 +1,13 @@
+{
+  "status": "refused_no_export",
+  "reason": "local_postgresql_shared_lock_memory_limit_on_full_additive_replay",
+  "first_application_native_facts_projected": 7365,
+  "replay_processed_before_refusal": 3500,
+  "accepted_export_count": 0,
+  "original_ten_table_baseline_hashes_restored": true,
+  "user_rows": 0,
+  "recovery_checked_at": "2026-10-01T14:16:19+00:00",
+  "remote_changed": false,
+  "resolution": "task_owned_loopback_postgresql_instance_on_port_15434_with_max_locks_per_transaction_4096_and_max_connections_20",
+  "shared_development_instance_changed": false
+}
