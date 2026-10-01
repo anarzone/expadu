@@ -33,6 +33,10 @@ def fresh_evidence(record, current, after, nodes):
             elif metres(point, [record['lat'], record['lng']]) > 1:
                 reasons.append('source_point_moved')
         elif kind == 'way':
+            raw = record.get('raw')
+            frozen_nodes = raw.get('nodes') if isinstance(raw, dict) else None
+            if not isinstance(frozen_nodes, list) or len(frozen_nodes) < 2 or current.get('nodes') != frozen_nodes:
+                reasons.append('frozen_way_topology_missing_or_changed')
             if after != current:
                 reasons.append('way_changed_during_fetch')
             geometry = [nodes.get(i) for i in current.get('nodes', [])]

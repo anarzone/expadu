@@ -64,6 +64,11 @@ function heldPreparedRecords(array $selection, array $proof, array $before): arr
             || preparedPlaceRowFingerprint($current['tags']) !== preparedPlaceRowFingerprint($record['tags'])) {
             $reasons[] = 'source_identity_tags_or_visibility_changed';
         } elseif ($current['type'] === 'way') {
+            $frozenNodes = $record['raw']['nodes'] ?? null;
+            if (! is_array($frozenNodes) || ! array_is_list($frozenNodes) || count($frozenNodes) < 2
+                || ($current['nodes'] ?? null) !== $frozenNodes) {
+                $reasons[] = 'frozen_way_topology_missing_or_changed';
+            }
             $nodes = $proof['geometry_nodes'];
             $xy = [];
             foreach ($current['nodes'] as $id) {

@@ -196,6 +196,8 @@ elif args.action == "verify-evidence":
         "raw_source_copy_sha256":source_copy_sha256,"runtime_files_verified":len(runtime_files),
         "runtime_manifest_sha256":sha(PRIVATE/"facility-code-manifest.json"),
         "evidence_sha256":{name:sha(REPORTS/(name+".json")) for name in names}})
+elif args.action == "held-public-facilities-proof":
+    local_php("../held-facilities/verify-source-proof.php")
 elif args.action == "held-public-facilities":
     local_php("../held-facilities/rehearse.php")
 elif args.action == "setup":

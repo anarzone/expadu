@@ -79,6 +79,13 @@ elif action == 'verify':
     manifest = json.loads((OUTPUT/'runtime-manifest.json').read_text())
     assert all(digest(APP/name) == sha for name, sha in manifest['files'].items())
     assert digest(HERE.parent/'local-catalogue/FacilityQualificationJournal.php') == manifest['facility_helper_sha256']
+    from fetch import fresh_evidence
+    selected = json.loads((OUTPUT/'selection.json').read_text())['records']
+    proof = json.loads((OUTPUT/'source-proof.json').read_text())
+    evidence = {row['source_id']: row for row in proof['records']}
+    nodes = {int(k): value for k, value in proof['geometry_nodes'].items()}
+    assert all(not fresh_evidence(row, evidence[row['source_id']]['current'], evidence[row['source_id']]['after'], nodes)['reasons'] for row in selected)
+    subprocess.run([sys.executable, str(HERE.parent/'local-catalogue/run.py'), '--source-root', str(SOURCE), 'held-public-facilities-proof'], check=True)
     subprocess.run([sys.executable, str(HERE.parent/'local-catalogue/run.py'), '--source-root', str(SOURCE), 'verify-snapshot'], check=True)
     print(json.dumps({'status': 'passed', 'qualified_facilities': summary['qualified_facilities'], 'combined_candidates': summary['combined_candidates'], 'remote_changed': False}))
 else:

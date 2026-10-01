@@ -1,0 +1,12 @@
+{
+    "status": "passed",
+    "checked_at": "2026-10-01T11:32:55+00:00",
+    "native_source_records_rechecked": 600,
+    "frozen_way_topologies_rechecked": 542,
+    "prepared_records_unchanged": true,
+    "transaction_read_only": true,
+    "remote_changed": false,
+    "selection_sha256": "980567848a9f34ddedfd1dbedcab34ce7d28045b964c0c3c94b7f3fa4d25474b",
+    "source_proof_sha256": "94672c8e2b30f9f7fb06bf8c1ed426277cae879abf8462fa6a0c21be145c6e94",
+    "native_guard_sha256": "e137b9203d98cc55314cf46ca5110bd6f92b3b3c582122ab60d72304f940fcab"
+}

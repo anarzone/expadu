@@ -117,7 +117,7 @@ class FreshEvidenceTests(unittest.TestCase):
     def setUp(self):
         self.code = module('fetch')
         self.assertIsNotNone(self.code, 'Independent source proof is not implemented')
-        self.record = {'source_id': 'way/20', 'tags': {'access': 'yes'}, 'lat': 50.94, 'lng': 6.95}
+        self.record = {'source_id': 'way/20', 'tags': {'access': 'yes'}, 'lat': 50.94, 'lng': 6.95, 'raw': {'nodes': [1,2,3,1]}}
         self.way = {'type': 'way', 'id': 20, 'visible': True, 'version': '2', 'tags': {'access': 'yes'}, 'nodes': [1, 2, 3, 1]}
         self.nodes = {i: {'visible': True, 'lat': 50.94 + i*.00001, 'lon': 6.95} for i in [1,2,3]}
 
@@ -137,6 +137,13 @@ class FreshEvidenceTests(unittest.TestCase):
                 if change=='hidden':current['visible']=False
                 if change=='missing':current=None
                 self.assertTrue(self.code.fresh_evidence(self.record,current,after,nodes)['reasons'])
+
+    def test_two_matching_fresh_reads_do_not_replace_frozen_way_topology(self):
+        for raw in [{'nodes': [1, 3, 2, 1]}, {}, {'nodes': []}, None]:
+            with self.subTest(raw=raw):
+                record = {**self.record, 'raw': raw}
+                result = self.code.fresh_evidence(record, self.way, self.way, self.nodes)
+                self.assertIn('frozen_way_topology_missing_or_changed', result['reasons'])
 
     def test_moved_node_is_refused(self):
         record={**self.record,'source_id':'node/1'}

@@ -1,0 +1,17 @@
+{
+  "status": "automated_checks_passed_independent_review_pending",
+  "implementation_commit": "6c101dc37cc5e78a4954466cf310ca454d31dfb5",
+  "native_fast_tests": 1761,
+  "native_fast_assertions": 7369,
+  "focused_facts_tests": 36,
+  "focused_facts_assertions": 259,
+  "selection_source_tests": 13,
+  "consolidation_tests": 24,
+  "snapshot_policy_checks": 17,
+  "normal_hooks": true,
+  "secret_scan_passed": true,
+  "runtime_manifest_sha256": "79ed07a75947ebdd697974346df43d5cdbcd7efece377208c68283ce21ebabd0",
+  "candidate_export_sha256": "f08bb5f0e1e5d794b1e1687041b3662ad1b48fb85a5cf54a603f9a648d975939",
+  "native_rehearsal_checked_at": "2026-10-01T11:20:01+00:00",
+  "remote_changed": false
+}

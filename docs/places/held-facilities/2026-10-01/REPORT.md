@@ -17,7 +17,7 @@
 | Measure | Result |
 |---|---:|
 | Existing application records preserved | 11,802 |
-| Raw collected source records preserved | 255,949 |
+| Raw collected source records preserved (not unique places) | 255,949 |
 | Earlier candidate records retained exactly by ID | 4,327 |
 | Newly qualified activity records in the local trial | 600 |
 | Combined native candidate records exported | 4,927 |
@@ -49,13 +49,16 @@ Photo coverage across this full candidate set is 2.42%. This denominator now inc
 
 ## Evidence and verification
 
-- 13 selection/source-proof regression tests, 24 existing consolidation tests and 17 snapshot-policy checks pass.
+- 14 selection/source-proof regression tests, 24 existing consolidation tests and 17 snapshot-policy checks pass.
 - 36 native Places-fact tests / 259 assertions pass, including five new replay/type/order cases. The original bug produced two failing tests before the fix.
-- Full normal commit hooks and independent branch review: recorded in the final verification note alongside this report.
+- Normal commit hooks passed the secret scan, formatting and **1,761 native fast tests / 7,369 assertions**. Independent review and disposition are recorded separately in `review-result.md`.
+- Independent review found one frozen-way-topology guard gap; it is fixed with Python and native regressions. Both tightened guards rechecked all 600 records, including 542 ways; the prepared payload and exported catalogue are unchanged. See `review-result.md`.
 - `selection-summary.json`, `source-summary.json`, `runtime-summary.json`, `rehearsal-summary.json` and `completeness-summary.json` bind the inputs, fresh proof, new runtime and full export by checksums. The previous runtime manifest remains historical evidence; it was not overwritten.
 - Private full data remains under `storage/app/private/places-local/2026-10-01/held-public-facilities/` in the primary checkout. `candidate-places.jsonl` contains all 4,927 records. The earlier export is preserved separately.
 
 ## Remaining work
+
+Of the 2,428 existing identity-held records screened for this pass, 1,828 were not selected; 1,818 carried a missing-public-access reason, often alongside other reasons. These counts describe this screening cohort and must not be added to other hold counts without checking overlap.
 
 The broader source/identity gaps, 469 prior facilities without public-access evidence, 23 unresolved category/business/large-point cases and useful confirmed-free football coverage remain open. No full LLM conversation, event-candidate or live authenticated HTTP acceptance is claimed by the Places candidate checks.
 
