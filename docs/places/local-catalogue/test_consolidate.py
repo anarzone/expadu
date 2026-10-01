@@ -143,6 +143,54 @@ class ConsolidationTest(unittest.TestCase):
         self.assertNotIn("osm:node/13",{x["id"] for x in cafes["results"]})
         self.assertNotIn("osm:node/18",{x["id"] for x in cafes["results"]})
 
+    def test_whitespace_padded_closure_and_restriction_tags_are_excluded(self):
+        self.spots=[]
+        cases=[{"opening_hours":" closed "},{"opening_hours":" OFF "},
+               {"disused":" YES "},{"access":" private "}]
+        for number,tags in enumerate(cases):
+            self.rows.append(source("padded-"+str(number), sports=["soccer"],
+                fee="free_reported",access="public_reported",
+                tags={"leisure":"pitch","sport":"soccer","access":"yes","fee":"no",**tags}))
+        self.build()
+        result=self.query.search(self.output,50.94,6.95,3,activity="soccer")
+        ids={x["id"] for x in result["results"]}
+        for number in range(len(cases)):
+            with self.subTest(tags=cases[number]):
+                self.assertNotIn("osm:padded-"+str(number),ids)
+        self.assertEqual([x["id"] for x in result["confirmed_free_public"]],["osm:node/16"])
+
+    def test_conflicting_exact_application_targets_require_identity_review(self):
+        self.spots=[
+            {"id":"20","source":"osm","source_id":"node/16","name":"Active pitch","category":"pitch",
+             "canonical_spot_id":None,"is_active":"t","is_recommendable":"t","lat":"50.95","lng":"6.95"},
+            {"id":"21","source":"osm","source_id":"node/16","name":"Held pitch","category":"pitch",
+             "canonical_spot_id":None,"is_active":"f","is_recommendable":"f","lat":"50.95","lng":"6.95"},
+        ]
+        self.build()
+        result=self.query.search(self.output,50.94,6.95,3,activity="soccer")
+        self.assertEqual(result["confirmed_free_public"],[])
+        item=next(x for x in result["needs_checking"] if x["id"]=="osm:node/16")
+        self.assertEqual({x["spot_id"] for x in item["application_links"]},{20,21})
+        self.assertGreater(item["identity_review_count"],0)
+        self.assertIn("conflicting_exact_application_targets",item["review_reasons"])
+        with sqlite3.connect(self.output) as db:
+            self.assertEqual(db.execute("SELECT spot_id,canonical_spot_id,is_active,is_recommendable FROM app_records ORDER BY spot_id").fetchall(),
+                [(20,None,1,1),(21,None,0,0)])
+        db.close()
+
+    def test_exact_links_to_one_canonical_target_do_not_create_false_conflict(self):
+        self.spots=[
+            {"id":"20","source":"osm","source_id":"node/16","name":"Active pitch","category":"pitch",
+             "canonical_spot_id":None,"is_active":"t","is_recommendable":"t","lat":"50.95","lng":"6.95"},
+            {"id":"21","source":"osm","source_id":"node/16","name":"Alias pitch","category":"pitch",
+             "canonical_spot_id":"20","is_active":"f","is_recommendable":"f","lat":"50.95","lng":"6.95"},
+        ]
+        self.build()
+        result=self.query.search(self.output,50.94,6.95,3,activity="soccer")
+        self.assertEqual([x["id"] for x in result["confirmed_free_public"]],["osm:node/16"])
+        self.assertEqual(result["confirmed_free_public"][0]["identity_review_count"],0)
+        self.assertEqual(len(result["confirmed_free_public"][0]["application_links"]),2)
+
     def test_strict_free_selection_happens_before_display_limit(self):
         self.spots=[]
         self.build()

@@ -15,7 +15,7 @@
   "runtime_manifest_sha256": "6180f37c8e432bd924eb3d4d9b97a399854e4e346c6b15abe9df6cc2686dc844",
   "evidence_sha256": {
     "snapshot-summary": "40fef725bab686df94fb079ba8eddb89da1abd10d41286bb164bec8250fdebbb",
-    "consolidation-summary": "47ddbf63be807f461958ab4a77d8ed86d9725d262d8827e13dfde26aedcd0249",
+    "consolidation-summary": "62dc6fd8854be2ecdef05a1f7d3930492bdb224d96777c0ab99018488177c35c",
     "rebuild-verification": "916f37ed861ee7519b71d81b21b72ef396adca5800842b1b5c67119fcbbb12c9",
     "query-verification": "e998c2d3b73ae97cbcfca5127dab7f89b2088911867c9dc3978da6df80747900",
     "native-verification": "8dae8b00bed94b610337530c3dff5bbba1c4a53b1a21cf1d6f01c493a1bc2d52",

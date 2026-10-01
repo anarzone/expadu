@@ -29,6 +29,22 @@ All 255,949 source rows were retained. Their role counts are 110,055 destination
 4. Fixed redundant preparation: PostgreSQL's second precision and PHP's empty negative-fact representation made an unchanged capture look newer. The final package preserves 4,643 unchanged captures and avoids writing duplicate observations. Newer observations, withdrawal/restore history and conflicting same-time evidence are held.
 5. Refetched the existing 559 facilities directly from OSM, including 2,442 geometry nodes and a second way-topology check. Native geometry and facts checks qualified a 90-facility proposal and retained 469 access holds.
 6. Rehearsed source additions and facility qualification together, verified all 4,327 eligible native resource/Composer contracts, and exported their exact candidate representation. Qualification recovery preserved the unrelated source additions; the outer rollback restored the complete baseline.
+7. Fixed both independent-review findings with failing-to-passing tests: padded closure/access values cannot bypass exclusion, and conflicting exact application targets require identity review. Same-target aliases remain intact.
+
+## Field completeness in the 4,327-record proposal
+
+| Evidence | Present / known | Unknown |
+|---|---:|---:|
+| Source name / descriptive label | 4,237 / 90 | 0 missing display labels |
+| Fee | 49 free, 37 paid | 4,241 |
+| Public access | 213 | 4,114 |
+| Opening hours | 1,452 | 2,875 |
+| Website | 1,722 | 2,605 |
+| Address | 2,371 | 1,956 |
+| Phone | 1,466 | 2,861 |
+| Verified entrance point | 0 | 4,327 |
+
+These are recorded facts, not a promise that a venue is currently open or that its entrance has been surveyed. Unknown public access at a business is not treated as a claim of public/free recreational use. Coordinates retain their source-point meaning. Dynamic fields in the exported native representation reflect the 1 October rehearsal context and must be recomputed by the application for the actual request.
 
 ## Verification
 
@@ -39,6 +55,7 @@ All 255,949 source rows were retained. Their role counts are 110,055 destination
 - Final additions: both records passed native resources, kernel API, Composer, exact replay and table/sequence rollback.
 - Facilities: all 90 passed detail, map, paginated activity discovery, nearby Composer category discovery, strict-free exclusion and recovery checks. Apply/recovery replays were identical.
 - Combined proposal: all 4,327 records passed the native Places/Composer contract; apply/recovery replay and exact baseline restoration passed.
+- Full native fast suite: **1,756 passed / 7,354 assertions**, through normal commit hooks. Final local suite: **24 Python tests and 17 snapshot-policy checks passed**. Independent review findings are fixed; see `review-result.md`.
 - Regression tests cover policy filtering, identity preservation, unknown/restricted facts, member-only reservations, changed checksums, reproducibility and source chronology/representation.
 - API/kernel verification was used as requested. No UI changes were made.
 
@@ -61,7 +78,7 @@ The aggregate JSON files beside this report provide the counts, checksums and ve
 - Complete source/identity review for held or unsupported rows; the full source collection is available locally, but is not all consumer-ready. The 21 previously changed legacy source projections remain a separate review item.
 - The 469 facilities without public-access evidence cannot be represented as public or free. The new 90 have unknown fees. Useful confirmed-free football coverage remains unproven.
 - Photo coverage remains far below 75%; no new image acquisition or rights approval was part of this work. The accepted photo-optional direction still needs honest presentation of missing images.
-- Complete the final branch review and record its findings. Keep EXP-69 and EXP-72 In Progress until their broader acceptance criteria are met.
+- EXP-69 and EXP-72 remain In Progress until their broader acceptance criteria are met. This local preparation plan and its final review are complete; no broader catalogue-completion claim is made.
 - Before any live release: refresh time-bounded proofs, prepare exact live-target operations/recovery, and perform authorized staging acceptance. Production needs its own target qualification. PR #62 remains draft and unmerged.
 
 Full Composer conversations, event candidates, live authenticated server traffic and a committed-process crash recovery drill are not claimed by these local checks.

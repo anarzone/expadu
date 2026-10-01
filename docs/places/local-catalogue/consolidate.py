@@ -66,11 +66,11 @@ def entry(row):
     inactive=(row["operating_status"] in {"inactive_reported","permanently_closed","ended_reported"}
               or facts.get("inactive_reported") is True
               or any(k.startswith(("disused:","abandoned:","demolished:","construction:")) for k in tags)
-              or any(str(tags.get(k,"")).lower()=="yes" for k in ("disused","abandoned","demolished","construction"))
-              or str(tags.get("opening_hours","")).lower() in {"closed","off"})
+              or any(str(tags.get(k,"")).strip().casefold()=="yes" for k in ("disused","abandoned","demolished","construction"))
+              or str(tags.get("opening_hours","")).strip().casefold() in {"closed","off"})
     restricted=(facts.get("access_status") in {"restricted_reported","conditional"}
                 or bool(tags.get("access:conditional"))
-                or str(tags.get("access","")).lower() in _preparation.RESTRICTED)
+                or str(tags.get("access","")).strip().casefold() in _preparation.RESTRICTED)
     booking=facts.get("reservation") not in (None,"","no","yes","recommended") or facts.get("membership") not in (None,"","no")
     if inactive:
         state="inactive"
@@ -193,6 +193,13 @@ def build(inventory,snapshot,output,*,inventory_sha256,snapshot_sha256):
             buckets[key].append(row)
         db.execute("""UPDATE registry_entries SET identity_review_count=(
             SELECT count(*) FROM identity_candidates i WHERE i.left_id=registry_entries.record_id OR i.right_id=registry_entries.record_id)""")
+        exact_conflicts=db.execute("""SELECT source_record_id FROM app_source_links
+            GROUP BY source_record_id HAVING count(DISTINCT coalesce(canonical_spot_id,spot_id))>1""").fetchall()
+        for (record_id,) in exact_conflicts:
+            reasons=json.loads(db.execute("SELECT reasons_json FROM registry_entries WHERE record_id=?",(record_id,)).fetchone()[0])
+            reasons.append("conflicting_exact_application_targets")
+            db.execute("""UPDATE registry_entries SET identity_review_count=identity_review_count+1,
+                reasons_json=? WHERE record_id=?""",(canonical(sorted(set(reasons))),record_id))
         source_counts=dict(db.execute("SELECT source,count(*) FROM source_records GROUP BY source"))
         source_count=sum(source_counts.values())
         if db.execute("SELECT count(*) FROM registry_entries").fetchone()[0]!=source_count:
@@ -208,6 +215,7 @@ def build(inventory,snapshot,output,*,inventory_sha256,snapshot_sha256):
             "retained_app_aliases":db.execute("SELECT count(*) FROM app_records WHERE canonical_spot_id IS NOT NULL").fetchone()[0],
             "app_only_records":db.execute("SELECT count(*) FROM app_records a WHERE NOT EXISTS(SELECT 1 FROM app_source_links l WHERE l.spot_id=a.spot_id)").fetchone()[0],
             "source_backed_app_rows_without_inventory_match":db.execute("SELECT count(*) FROM app_records a WHERE a.source IS NOT NULL AND NOT EXISTS(SELECT 1 FROM app_source_links l WHERE l.spot_id=a.spot_id)").fetchone()[0],
+            "conflicting_exact_application_groups":len(exact_conflicts),
             "identity_review_pairs":db.execute("SELECT count(*) FROM identity_candidates").fetchone()[0],
             "containment_evidence":db.execute("SELECT count(*) FROM containment").fetchone()[0],
             "explicit_source_links":db.execute("SELECT count(*) FROM source_links").fetchone()[0],

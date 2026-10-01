@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "scope": "local_preparation_review_completion",
+  "history_preserved": true,
+  "ticket_html_server_wrapper": "one outer div",
+  "tickets": [
+    {
+      "id": "f86787e7-a0e6-4cb9-971c-6c7205d8aeac",
+      "identifier": "EXP-69",
+      "updated_at": "2026-10-01T10:32:31.127205Z",
+      "state": "In Progress",
+      "full_description_readback_verified": true
+    },
+    {
+      "id": "8b28e050-bd90-496c-8119-d43f29909c2a",
+      "identifier": "EXP-72",
+      "updated_at": "2026-10-01T10:32:40.270342Z",
+      "state": "In Progress",
+      "full_description_readback_verified": true
+    }
+  ],
+  "pages": [
+    {
+      "id": 33,
+      "url": "https://docs.anar.to/books/work-log/page/exp-69-preserve-place-names-location-evidence-and-practical-facts",
+      "updated_at": "2026-10-01T10:32:45.000000Z",
+      "full_content_readback_verified": true
+    },
+    {
+      "id": 36,
+      "url": "https://docs.anar.to/books/work-log/page/exp-72-validate-a-100-destination-staging-catalogue-pilot",
+      "updated_at": "2026-10-01T10:32:50.000000Z",
+      "full_content_readback_verified": true
+    }
+  ],
+  "staging_changed": false,
+  "production_changed": false
+}

@@ -1,0 +1,41 @@
+{
+  "scope": "combined_local_candidate_catalogue",
+  "records": 4327,
+  "facts": {
+    "name_kind": {
+      "source": 4237,
+      "descriptive": 90
+    },
+    "fee": {
+      "unknown": 4241,
+      "free": 49,
+      "paid": 37
+    },
+    "access": {
+      "unknown": 4114,
+      "public": 213
+    },
+    "hours": {
+      "unknown": 2875,
+      "known": 1452
+    },
+    "entrance": {
+      "unknown": 4327
+    },
+    "website": {
+      "unknown": 2605,
+      "present": 1722
+    },
+    "address": {
+      "unknown": 1956,
+      "present": 2371
+    },
+    "phone": {
+      "unknown": 2861,
+      "present": 1466
+    }
+  },
+  "live_changed": false,
+  "candidate_export_sha256": "f305c9324f762c43a4420baeb1d4a28c63c7fcaf47a2c93ec4ed970fff28104b",
+  "context": "Native projection captured on 1 October 2026; date/origin-dependent fields must be recomputed by the application at request time."
+}

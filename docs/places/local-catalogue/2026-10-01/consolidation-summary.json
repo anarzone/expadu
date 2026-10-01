@@ -1,6 +1,6 @@
 {
   "status": "complete_local_registry_pending_native_qualification",
-  "built_at": "2026-10-01T09:38:12.765977+00:00",
+  "built_at": "2026-10-01T10:29:09.958830+00:00",
   "source_records": 255949,
   "by_source": {
     "osm": 163362,
@@ -30,6 +30,7 @@
   "retained_app_aliases": 798,
   "app_only_records": 4401,
   "source_backed_app_rows_without_inventory_match": 45,
+  "conflicting_exact_application_groups": 0,
   "identity_review_pairs": 1161,
   "containment_evidence": 955,
   "explicit_source_links": 874,
