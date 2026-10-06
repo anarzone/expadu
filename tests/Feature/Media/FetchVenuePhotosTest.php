@@ -73,7 +73,10 @@ test('wikidata name search resolves a photo only for the coordinate-verified ent
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
 
-    $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
+    $attachment = $venue->mediaAttachments()->with('mediaAsset')->sole();
+    $media = $attachment->mediaAsset;
+    expect($attachment->match_status)->toBe('pending')
+        ->and(app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero'))->toBeNull();
     expect($media?->remote_url)->toContain('Special:FilePath/K')
         ->and($media?->remote_url)->toContain('Philharmonie_Saal.jpg')
         ->and($media?->attribution)->toBe('Raimond · CC BY-SA 4.0 · Wikimedia Commons')
@@ -108,7 +111,10 @@ test('falls back to name-matched geosearch when no wikidata entity verifies', fu
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
 
-    $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
+    $attachment = $venue->mediaAttachments()->with('mediaAsset')->sole();
+    $media = $attachment->mediaAsset;
+    expect($attachment->match_status)->toBe('pending')
+        ->and(app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero'))->toBeNull();
     expect($media?->remote_url)->toContain('Konzertsaal_B');
     expect($media?->attribution)->toBe('Foto Fan · CC BY 4.0 · Wikimedia Commons');
 });
@@ -193,7 +199,10 @@ test('stripping the locative phrase keeps matching on the identity part of the n
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
 
-    $media = app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero');
+    $attachment = $venue->mediaAttachments()->with('mediaAsset')->sole();
+    $media = $attachment->mediaAsset;
+    expect($attachment->match_status)->toBe('pending')
+        ->and(app(PublishedMediaSelector::class)->select($venue->fresh(), 'hero'))->toBeNull();
     expect($media?->remote_url)->toContain('Gilden_im_Zims');
 });
 
@@ -248,7 +257,7 @@ test('parenthetical clarifiers in the venue name are not identity evidence', fun
     expect($venue->fresh()->mediaAttachments()->count())->toBe(0);
 });
 
-test('an event with no own media inherits the venue commons photo through the api', function () {
+test('an event inherits the venue commons photo only after its match is reviewed', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-12 10:00', 'Europe/Berlin'));
     $this->actingAs(User::factory()->onboarded()->create());
 
@@ -282,6 +291,14 @@ test('an event with no own media inherits the venue commons photo through the ap
     });
 
     $this->artisan('venues:fetch-photos')->assertSuccessful();
+
+    $this->getJson('/api/events?window=today')->assertOk()->assertJsonPath('data.0.photo_url', null);
+    $venue->mediaAttachments()->sole()->update([
+        'match_status' => 'accepted',
+        'match_method' => 'manual_review',
+        'match_evidence' => ['subject' => 'Kölner Philharmonie'],
+        'match_reviewed_at' => now(),
+    ]);
 
     $data = $this->getJson('/api/events?window=today')->assertOk()->json('data.0');
 

@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\EnsureUserIsOnboarded;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PerfTrackMiddleware;
@@ -48,7 +47,6 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            EnsureUserIsOnboarded::class,
             SetCacheHeaders::class,
             // Web-wide per-user/IP ceiling (see AppServiceProvider limiters);
             // sits after StartSession so the authenticated user is resolvable.

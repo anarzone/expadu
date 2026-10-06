@@ -8,6 +8,7 @@ use App\Models\EventReminder;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * "🔔 Remind me" on an event occurrence. POST sets (or re-times) the
@@ -24,7 +25,12 @@ class EventReminderController extends Controller
             'offset' => ['required', 'in:1h,3h,morning'],
         ]);
 
-        $occurrenceStart = CarbonImmutable::parse($validated['occurrence_start']);
+        $occurrenceStart = CarbonImmutable::parse($validated['occurrence_start'])->setTimezone('Europe/Berlin');
+        $occurrence = Event::occurringBetween($occurrenceStart->startOfDay(), $occurrenceStart->endOfDay(), [(int) $validated['event_id']])
+            ->first(fn ($item) => $item['starts_at']->equalTo($occurrenceStart));
+        if (! $occurrence || ! $occurrenceStart->isFuture()) {
+            throw ValidationException::withMessages(['occurrence_start' => 'This event occurrence is no longer available for a reminder.']);
+        }
 
         [$offsetMinutes, $remindAt] = match ($validated['offset']) {
             '1h' => [60, $occurrenceStart->subHour()],

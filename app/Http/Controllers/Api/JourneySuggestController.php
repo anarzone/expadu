@@ -7,9 +7,11 @@ use App\Models\JourneyRecent;
 use App\Models\UserPlace;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
+use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Place;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Journey search suggestions.
@@ -38,6 +40,9 @@ class JourneySuggestController extends Controller
         }
 
         $bias = app(UserLocationService::class)->context($user, $request)->toGeoPoint();
+        $useSearchDefault = $bias === null;
+        $searchDefault = config('geocoding.search_default');
+        $bias ??= new GeoPoint((float) $searchDefault['lat'], (float) $searchDefault['lng']);
 
         // The user's own vocabulary ("Home", "Gym") outranks the city.
         $saved = $user->places()
@@ -55,7 +60,17 @@ class JourneySuggestController extends Controller
                 'emoji' => $place->emoji,
             ]);
 
-        $hits = collect($routes->geocode($query, $bias))
+        $matches = collect($routes->geocode($query, $bias));
+
+        if ($useSearchDefault) {
+            $aliases = collect([$searchDefault['city'], ...$searchDefault['aliases']])
+                ->filter(fn ($alias) => is_string($alias) && trim($alias) !== '')
+                ->map(fn (string $alias) => mb_strtolower(trim($alias)))
+                ->all();
+            $matches = $matches->sortBy(fn (Place $place) => Str::contains(mb_strtolower($place->name.' '.$place->area), $aliases) ? 0 : 1);
+        }
+
+        $hits = $matches
             ->map(fn (Place $place) => [
                 'kind' => $place->kind ?? 'place',
                 'name' => $place->name,

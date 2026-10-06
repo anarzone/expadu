@@ -135,6 +135,19 @@ test('rain fuses with the day: an outdoor plan after the rain earns a plan-at-ri
         ->and($weather['subtitle'])->toContain('Rheinpark');
 });
 
+test('a retained unavailable stop does not turn rain into a plan recommendation', function () {
+    $user = User::factory()->onboarded()->create();
+    app(ActionBus::class)->insert($user, busAction('weather_alert', 50.0, [
+        'alert' => ['title' => 'Rain expected from 16:00', 'description' => 'x', 'kind' => 'advisory', 'from' => '16:00'],
+    ]));
+    $now = CarbonImmutable::parse('2026-07-05 10:00', 'Europe/Berlin');
+    $slot = ['id' => 'spot:42', 'outdoor' => true, 'name' => 'Retained park', 'start_at' => $now->setTime(17, 0)->toIso8601String(), 'recommendation_status' => 'unavailable'];
+    $context = homeContext($user, ['now' => $now, 'todayPlanSlots' => [$slot]]);
+
+    expect(collect(app(TileComposer::class)->tiles($context))->pluck('type'))->not->toContain('weather_alert')
+        ->and($context->todayPlanSlots)->toBe([$slot]);
+});
+
 test('rain with nothing outdoors to spoil stays off Today (Alerts-only)', function () {
     $user = User::factory()->onboarded()->create();
 

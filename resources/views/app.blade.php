@@ -69,19 +69,8 @@
 
         <script>
             if ('serviceWorker' in navigator) {
-                // Reload once when a new service worker takes control after a
-                // deploy, so an open tab never keeps running stale JS. Only when
-                // the page is already controlled — the first-ever install also
-                // fires controllerchange, and that isn't an update worth a reload.
-                if (navigator.serviceWorker.controller) {
-                    let reloading = false;
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        if (reloading) return;
-                        reloading = true;
-                        window.location.reload();
-                    });
-                }
-
+                // A worker update can clear stale caches without reloading an
+                // open draft or active journey. New page visits load new assets.
                 window.addEventListener('load', () => {
                     navigator.serviceWorker
                         .register('/sw.js', { scope: '/' })

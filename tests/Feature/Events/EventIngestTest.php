@@ -8,6 +8,10 @@ use App\Services\ClassifiesEvents;
 use App\Services\VenueResolver;
 use Illuminate\Support\Facades\DB;
 
+beforeEach(function () {
+    config()->set('events.classification.enabled', true);
+});
+
 function fakeClassifier(array $result): object
 {
     $fake = new class implements ClassifiesEvents
@@ -47,6 +51,27 @@ function classification(array $overrides = []): array
         'tip_en' => 'Come early.',
     ], $overrides);
 }
+
+test('disabled classification skips the model but keeps deterministic enrichment', function () {
+    fakeClassifier(classification(['__throw' => true]));
+    config()->set('events.classification.enabled', false);
+
+    $event = Event::factory()->create([
+        'title' => 'English newcomer meetup',
+        'is_free' => true,
+        'location_name' => null,
+        'address' => null,
+        'summary_en' => null,
+    ]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    $event->refresh();
+    expect($event->is_expat_relevant)->toBeTrue()
+        ->and($event->tags)->toContain('free')
+        ->and($event->title_en)->toBeNull()
+        ->and($event->summary_en)->toBeNull();
+});
 
 test('a confident classification stores every AI field once', function () {
     fakeClassifier(classification());

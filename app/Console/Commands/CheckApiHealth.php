@@ -25,8 +25,13 @@ class CheckApiHealth extends Command
         $this->check('Weather (Bright Sky)', fn () => $this->checkBrightSky());
         $this->check('Geocoding (Photon)', fn () => $this->checkPhoton());
         $this->check('Rhine Level (WSV)', fn () => $this->checkRhine());
-        $this->check('Resend (Email)', fn () => $this->checkResend());
-        $this->check('MOTIS (Routing)', fn () => $this->checkMotis());
+        $mailer = (string) config('mail.default', 'log');
+        $this->check("Mail ({$mailer})", fn () => $this->checkMail($mailer));
+
+        if (filled(config('services.motis.url'))) {
+            $this->check('MOTIS (Routing)', fn () => $this->checkMotis());
+        }
+
         $this->check('Transitous (Routing Failover)', fn () => $this->checkTransitous());
 
         $this->table(
@@ -171,6 +176,15 @@ class CheckApiHealth extends Command
         return $level.'cm';
     }
 
+    private function checkMail(string $mailer): string
+    {
+        if ($mailer === 'resend') {
+            return $this->checkResend();
+        }
+
+        return "{$mailer} transport configured";
+    }
+
     private function checkResend(): string
     {
         $key = config('services.resend.key');
@@ -181,6 +195,10 @@ class CheckApiHealth extends Command
         $response = Http::timeout(5)
             ->withToken($key)
             ->get('https://api.resend.com/domains');
+
+        if ($response->status() === 401 && $response->json('name') === 'restricted_api_key') {
+            return 'Send-only API key valid';
+        }
 
         throw_unless($response->successful(), new \RuntimeException('HTTP '.$response->status()));
 

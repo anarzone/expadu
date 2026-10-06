@@ -114,6 +114,11 @@ class ActionBus
                 continue;
             }
             $action = ScoredAction::fromArray($data);
+            if ($action->type === 'permanent_residency_eligible') {
+                // Suppress stored legacy estimates as well as the disabled
+                // producer. Preserve the record until its ordinary expiry.
+                continue;
+            }
             if ($action->isExpired()) {
                 $expired[] = $member;
 

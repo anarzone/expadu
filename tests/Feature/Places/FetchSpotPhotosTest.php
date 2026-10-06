@@ -57,7 +57,10 @@ test('resolves photos from wikidata P18 claims with commons attribution', functi
     $this->artisan('spots:fetch-photos')->assertSuccessful();
 
     $spot->refresh();
-    $media = app(PublishedMediaSelector::class)->select($spot, 'hero');
+    $attachment = $spot->mediaAttachments()->with('mediaAsset')->sole();
+    $media = $attachment->mediaAsset;
+    expect($attachment->match_status)->toBe('pending')
+        ->and(app(PublishedMediaSelector::class)->select($spot, 'hero'))->toBeNull();
     expect($spot->photo_url)->toBeNull();
     expect($media?->remote_url)->toContain('Special:FilePath/Museum_Ludwig_K');
     expect($media?->remote_url)->toContain('width=1200');
@@ -99,7 +102,10 @@ test('falls back to the wikipedia page image, surviving redirects and underscore
     $this->artisan('spots:fetch-photos')->assertSuccessful();
 
     $spot->refresh();
-    $media = app(PublishedMediaSelector::class)->select($spot, 'hero');
+    $attachment = $spot->mediaAttachments()->with('mediaAsset')->sole();
+    $media = $attachment->mediaAsset;
+    expect($attachment->match_status)->toBe('pending')
+        ->and(app(PublishedMediaSelector::class)->select($spot, 'hero'))->toBeNull();
     expect($spot->photo_url)->toBeNull();
     expect($media?->remote_url)->toContain('Special:FilePath/Bluecherpark_Pavillon.jpg');
     expect($media?->attribution)->toBe('Max · CC BY 4.0 · Wikimedia Commons');
@@ -224,6 +230,14 @@ test('an authoritative Commons refresh revokes publishing when rights become res
     });
 
     $this->artisan('spots:fetch-photos --geo=0')->assertSuccessful();
+    expect(app(PublishedMediaSelector::class)->select($spot->fresh(), 'hero'))->toBeNull();
+    // Rights alone do not prove a photo depicts this place. Simulate its review.
+    $spot->mediaAttachments()->sole()->update([
+        'match_status' => 'accepted',
+        'match_method' => 'manual_review',
+        'match_evidence' => ['subject' => 'Changing rights park'],
+        'match_reviewed_at' => now(),
+    ]);
     expect(app(PublishedMediaSelector::class)->select($spot->fresh(), 'hero'))->not->toBeNull();
 
     $this->artisan('spots:fetch-photos --force --geo=0')->assertSuccessful();
@@ -261,7 +275,10 @@ test('geosearch backfills a large outdoor place with the nearest commons photo',
 
     $park->refresh();
     // Picks the nearest BITMAP, never the SVG map.
-    $media = app(PublishedMediaSelector::class)->select($park, 'hero');
+    $attachment = $park->mediaAttachments()->with('mediaAsset')->sole();
+    $media = $attachment->mediaAsset;
+    expect($attachment->match_status)->toBe('pending')
+        ->and(app(PublishedMediaSelector::class)->select($park, 'hero'))->toBeNull();
     expect($park->photo_url)->toBeNull()
         ->and($media?->remote_url)->toContain('Special:FilePath/Stadtwald_K')
         ->and($media?->attribution)->toBe('Foto Fan · CC BY-SA 3.0 · Wikimedia Commons');

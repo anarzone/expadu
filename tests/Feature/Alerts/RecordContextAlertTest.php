@@ -60,7 +60,7 @@ test('it records the alert even when push was never granted (the old blind spot)
         ->and($alert->deep_link)->toBe('/bureaucracy?focus=5');
 });
 
-test('a permanent-residency success action lands in the Good news lane', function () {
+test('an unreviewed legacy permanent-residency action is not published', function () {
     $user = User::factory()->create();
     // What PermanentResidencyEvaluator emits when a permit clears the NE bar.
     $action = contextAction('permanent_residency_eligible', 'success', ['dashboard', 'alert_page'], [
@@ -71,13 +71,7 @@ test('a permanent-residency success action lands in the Good news lane', functio
 
     app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $action));
 
-    $alert = Alert::where('user_id', $user->id)->firstOrFail();
-    expect($alert->subtype)->toBe('permanent_residency')
-        ->and($alert->category)->toBe('bureau')
-        ->and($alert->lane)->toBe('good')
-        ->and($alert->severity)->toBe('success')
-        ->and($alert->deep_link)->toBe('/bureaucracy')
-        ->and($alert->title)->toContain('permanent residency');
+    expect(Alert::where('user_id', $user->id)->count())->toBe(0);
 });
 
 test('a dashboard-only action never reaches the center', function () {

@@ -7,7 +7,7 @@
 <div class="wrap prose">
     <span class="eyebrow">Privacy</span>
     <h1>Datenschutzerklärung / Privacy policy</h1>
-    <p class="meta">Last updated: 18 July 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
+    <p class="meta">Last updated: 5 October 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
 
     <h2>1. Who is responsible</h2>
     <p>
@@ -63,8 +63,17 @@
     <p>
         If you grant browser location access, your position is used to compute departures, routes
         and nearby suggestions. Recent positions are retained for at most 7 days to power these
-        features and then deleted automatically. Route and departure calculations run on our own
-        servers in Germany — your location is not sent to third-party routing services.
+        features and then deleted automatically.
+    </p>
+    <p>
+        Route and place searches use the configured routing and search providers. Self-hosted
+        MOTIS is used when configured; requests can also go to Transitous and the configured
+        TRIAS service. Requests can include starting-point and destination coordinates, search
+        text, travel mode and requested departure or arrival times.
+    </p>
+    <p>
+        When you open a map, your browser loads map styles and tiles directly from OpenFreeMap.
+        These requests share your IP address and the requested map areas with that provider.
     </p>
     <p>
         Application errors are monitored with Sentry to keep the service reliable (legitimate

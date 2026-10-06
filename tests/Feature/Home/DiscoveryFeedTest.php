@@ -3,6 +3,7 @@
 use App\Home\DiscoveryFeed;
 use App\Home\PromptSuggestions;
 use App\Models\Event;
+use App\Models\MediaAsset;
 use App\Models\Spot;
 use App\Models\User;
 use App\Profile\CategoryAffinity;
@@ -155,10 +156,10 @@ test('the global spot catalogue scan is cached as plain rows', function () {
     Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
 
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
-    expect(Cache::has('discovery:spot-scan'))->toBeTrue();
+    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0:facts:0'))->toBeTrue();
     // Plain rows, not Eloquent models — so the cache round-trips on any driver
     // (a serialised model collection can come back as __PHP_Incomplete_Class).
-    expect(Cache::get('discovery:spot-scan')[0])->toBeArray();
+    expect(Cache::get('discovery:spot-scan:identity:0:grouping:0:facts:0')[0])->toBeArray();
     // A second call hits the cache and still builds the feed.
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
 });
@@ -218,7 +219,7 @@ test('a spot never repeats across rails', function () {
     expect($rails->pluck('key'))->toContain('made_for_today', 'with_kids', 'around_home');
 });
 
-test('a spot photo and its attribution flow through to the rail card', function () {
+test('an unmanaged spot photo and its attribution stay private in the rail card', function () {
     $user = feedUser();
     Spot::factory()->create([
         'name' => 'Rheinpark',
@@ -235,8 +236,32 @@ test('a spot photo and its attribution flow through to the rail card', function 
         ->firstWhere('name', 'Rheinpark');
 
     expect($card)->not->toBeNull()
-        ->and($card['photo_url'])->toContain('Special:FilePath')
-        ->and($card['photo_attribution'])->toContain('CC BY-SA 4.0');
+        ->and($card['photo_url'])->toBeNull()
+        ->and($card['photo_attribution'])->toBeNull();
+});
+
+test('discovery checks media approval again on a warm catalogue cache', function () {
+    $user = feedUser();
+    $spot = Spot::factory()->create([
+        'name' => 'Reviewed park', 'category' => 'park', 'veedel' => 'Ehrenfeld',
+        'lat' => 50.95, 'lng' => 6.92,
+    ]);
+    $asset = MediaAsset::factory()->approved()->create([
+        'remote_url' => 'https://media.example.test/approved.jpg',
+        'source_page_url' => 'https://media.example.test/approved',
+        'attribution' => 'Reviewed test image · CC BY 4.0',
+    ]);
+    $spot->mediaAttachments()->create([
+        'media_asset_id' => $asset->id, 'role' => 'hero',
+        'match_status' => 'accepted', 'match_method' => 'reviewed_source',
+        'match_evidence' => ['source_url' => $asset->source_page_url], 'match_reviewed_at' => now(),
+    ]);
+    $card = fn () => collect(app(DiscoveryFeed::class)->for(homeContext($user)))
+        ->flatMap(fn ($rail) => $rail['cards'])->firstWhere('name', 'Reviewed park');
+
+    expect($card()['photo_url'])->toBe($asset->remote_url);
+    $asset->update(['rights_status' => 'pending']);
+    expect($card()['photo_url'])->toBeNull();
 });
 
 test('a just-arrived user gets a get-oriented rail of landmarks', function () {

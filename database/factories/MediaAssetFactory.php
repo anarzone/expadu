@@ -36,6 +36,8 @@ class MediaAssetFactory extends Factory
         return $this->state(fn (): array => [
             'rights_status' => 'approved',
             'health_status' => 'active',
+            'attribution' => 'Example photographer · CC BY 4.0',
+            'source_page_url' => 'https://commons.wikimedia.org/wiki/File:Example.jpg',
             'license_code' => 'CC BY 4.0',
             'license_url' => 'https://creativecommons.org/licenses/by/4.0/',
             'last_verified_at' => now(),

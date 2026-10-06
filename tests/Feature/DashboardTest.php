@@ -16,12 +16,13 @@ test('authenticated onboarded users can visit the dashboard', function () {
     $response->assertOk();
 });
 
-test('authenticated non-onboarded users are redirected to onboarding', function () {
+test('authenticated new users enter Today without a questionnaire', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
-    $response->assertRedirect(route('onboarding'));
+    $response->assertOk();
+    expect($user->fresh()->onboarded_at)->toBeNull();
 });
 
 test('dashboard defers tiles and weather', function () {

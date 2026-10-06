@@ -6,6 +6,8 @@ use App\Composer\FeasibilityFilter;
 use App\Enums\SpotCategory;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
+use App\Places\ReviewPlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -74,6 +76,37 @@ test('an open venue keeps real hours and survives feasibility', function () {
         ->toContain('Open Museum');
 });
 
+test('composer prefers a ready English place enrichment over a raw source description', function () {
+    $spot = spotWithHours([
+        'name' => 'Composer Enriched Museum',
+        'category' => 'museum',
+        'description' => 'Original German source description.',
+    ]);
+    SpotEnrichment::factory()->create([
+        'spot_id' => $spot->id,
+        'status' => 'ready',
+        'summary' => 'An English summary from the current source snapshot.',
+    ]);
+
+    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow()))
+        ->firstWhere('id', "spot:{$spot->id}");
+
+    expect($candidate?->description)->toBe('An English summary from the current source snapshot.');
+});
+
+test('composer does not send an untranslated raw place description to the English ranker', function () {
+    $spot = spotWithHours([
+        'name' => 'Composer Unenriched Museum',
+        'category' => 'museum',
+        'description' => 'Eine deutsche Quellbeschreibung.',
+    ]);
+
+    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow()))
+        ->firstWhere('id', "spot:{$spot->id}");
+
+    expect($candidate?->description)->toBeNull();
+});
+
 test('a raw-string opening_hours does not break the candidate pool', function () {
     // Scraped restaurants store a raw OSM string ("Mo-Fr 09:00-18:00"), which
     // the array cast returns as a string rather than the importer's structured
@@ -115,19 +148,132 @@ test('the pool is the nearest spots to the origin, not arbitrary citywide rows',
         ->and($pitchNames)->not->toContain('Far Pitch 12'); // the farthest fell outside the cap
 });
 
-test('public outdoor facilities count as free; paid venues do not', function () {
-    spotWithHours(['name' => 'Boule', 'category' => 'boules']);
-    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis']);
-    spotWithHours(['name' => 'Tennis', 'category' => 'tennis']);
+test('a broad composer request excludes generic micro facilities', function () {
+    $genericPitch = spotWithHours([
+        'name' => 'Bolzplatz · Test Street',
+        'category' => 'pitch',
+        'is_recommendable' => true,
+    ]);
+    $museum = spotWithHours([
+        'name' => 'Composer Test Museum',
+        'category' => 'museum',
+        'is_recommendable' => true,
+    ]);
+
+    $candidateIds = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow()))->pluck('id');
+
+    expect($candidateIds)
+        ->toContain("spot:{$museum->id}")
+        ->not->toContain("spot:{$genericPitch->id}");
+});
+
+test('an explicit activity request keeps its generic micro facilities', function () {
+    $genericPitch = spotWithHours([
+        'name' => 'Bolzplatz · Test Street',
+        'category' => 'pitch',
+        'is_recommendable' => false,
+        'source' => 'osm', 'source_id' => 'way/990501',
+        'tags' => ['sport' => 'soccer', 'access' => 'yes'],
+    ]);
+    $genericTennisCourt = spotWithHours([
+        'name' => 'Tennisplatz · Test Street',
+        'category' => 'tennis',
+        'is_recommendable' => true,
+    ]);
+    $constraints = new Constraints(
+        windowStart: CarbonImmutable::parse('2026-06-15 10:00', 'Europe/Berlin'),
+        windowEnd: CarbonImmutable::parse('2026-06-15 18:00', 'Europe/Berlin'),
+        categories: ['pitch'],
+    );
+
+    expect(array_column(app(CandidateRepository::class)->candidatesFor($constraints), 'id'))->not->toContain("spot:{$genericPitch->id}");
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['activity_discovery' => true];
+    $preview = $review->preview($genericPitch->id, $changes);
+    $review->apply($genericPitch->id, $changes, $preview['fingerprint'], 'Reviewed public soccer facility with stable source identity.', 'composer-test');
+
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    $feasibleIds = collect(app(FeasibilityFilter::class)->filter($constraints, $candidates))->pluck('id');
+
+    expect($feasibleIds)
+        ->toContain("spot:{$genericPitch->id}")
+        ->not->toContain("spot:{$genericTennisCourt->id}");
+});
+
+test('a broad multi-category request excludes generic micro facilities', function () {
+    $genericPitch = spotWithHours([
+        'name' => 'Bolzplatz · Test Street',
+        'category' => 'pitch',
+        'is_recommendable' => true,
+    ]);
+    $genericPlayground = spotWithHours([
+        'name' => 'Spielplatz · Test Street',
+        'category' => 'playground',
+        'is_recommendable' => true,
+    ]);
+    $constraints = new Constraints(
+        windowStart: CarbonImmutable::parse('2026-06-15 10:00', 'Europe/Berlin'),
+        windowEnd: CarbonImmutable::parse('2026-06-15 18:00', 'Europe/Berlin'),
+        categories: ['park', 'pitch', 'playground'],
+    );
+
+    $candidateIds = collect(app(CandidateRepository::class)->candidatesFor($constraints))->pluck('id');
+
+    expect($candidateIds)
+        ->not->toContain("spot:{$genericPitch->id}")
+        ->not->toContain("spot:{$genericPlayground->id}");
+});
+
+test('outdoor facilities count as free only with explicit fee evidence', function () {
+    spotWithHours(['name' => 'Boule', 'category' => 'boules', 'tags' => ['fee' => 'no', 'access' => 'yes']]);
+    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis', 'tags' => ['fee' => 'no', 'access' => 'yes']]);
+    spotWithHours(['name' => 'Tennis', 'category' => 'tennis', 'tags' => ['fee' => 'yes']]);
     spotWithHours(['name' => 'Picknick', 'category' => 'picnic']);
-    spotWithHours(['name' => 'Späti Bar', 'category' => 'bar']);
+    spotWithHours(['name' => 'Library', 'category' => 'library']);
+    spotWithHours(['name' => 'Späti Bar', 'category' => 'bar', 'price_range' => '€€']);
 
     $c = app(CandidateRepository::class)->candidatesFor(mondayWindow());
 
-    foreach (['Boule', 'Tisch', 'Tennis', 'Picknick'] as $free) {
+    foreach (['Boule', 'Tisch'] as $free) {
         expect(collect($c)->firstWhere('name', $free)->costTier)->toBe('free');
     }
+    expect(collect($c)->firstWhere('name', 'Tennis')->costTier)->toBe('normal');
+    expect(collect($c)->firstWhere('name', 'Picknick')->costTier)->toBe('unknown');
+    expect(collect($c)->firstWhere('name', 'Library')->costTier)->toBe('unknown');
     expect(collect($c)->firstWhere('name', 'Späti Bar')->costTier)->toBe('normal');
+});
+
+test('free football recommendations require fee and access evidence without arrangements', function () {
+    $examples = [
+        'Public free pitch' => ['fee' => 'no', 'access' => 'yes', 'sport' => 'soccer'],
+        'Unknown pitch' => ['sport' => 'soccer'],
+        'Paid pitch' => ['fee' => 'yes', 'access' => 'yes'],
+        'Private pitch' => ['fee' => 'no', 'access' => 'private'],
+        'Conditional pitch' => ['fee' => 'no', 'access' => 'yes', 'fee:conditional' => 'yes @ (Sa-Su)'],
+        'Conditional access' => ['fee' => 'no', 'access' => 'yes', 'access:conditional' => 'private @ (Mo-Fr)'],
+        'Booking required' => ['fee' => 'no', 'access' => 'yes', 'reservation' => 'required'],
+        'Unknown access' => ['fee' => 'no'],
+        'Optional booking' => ['fee' => 'no', 'access' => 'yes', 'sport' => 'soccer', 'reservation' => 'yes'],
+    ];
+    foreach ($examples as $name => $tags) {
+        spotWithHours(['name' => $name, 'category' => 'pitch', 'tags' => $tags]);
+    }
+    $constraints = new Constraints(mondayWindow()->windowStart, mondayWindow()->windowEnd, categories: ['pitch'], budget: 'free');
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    $feasible = app(FeasibilityFilter::class)->filter($constraints, $candidates);
+
+    expect(collect($feasible)->pluck('name')->all())->toBe(['Public free pitch', 'Optional booking'])
+        ->and($feasible[0]->sourceFacts['sport'])->toBe('soccer')
+        ->and($feasible[0]->sourceFacts['availability'])->toBe('unknown');
+});
+
+test('unknown costs cannot qualify for a low budget', function () {
+    spotWithHours(['name' => 'Unknown cost', 'category' => 'park']);
+    spotWithHours(['name' => 'Known low cost', 'category' => 'cafe', 'price_range' => '€']);
+    $constraints = new Constraints(mondayWindow()->windowStart, mondayWindow()->windowEnd, budget: 'low');
+    $feasible = app(FeasibilityFilter::class)->filter($constraints, app(CandidateRepository::class)->candidatesFor($constraints));
+
+    expect(collect($feasible)->pluck('name')->all())->toBe(['Known low cost']);
 });
 
 test('wikidata or wikipedia tags mark a spot as a landmark', function () {
@@ -353,3 +499,55 @@ test('recurring occurrences have stable unique candidate ids', function () {
     expect($occurrences)->toHaveCount(2)
         ->and($occurrences->pluck('id')->unique())->toHaveCount(2);
 });
+
+test('food and drink filtering preserves independent cafes contained in parks', function () {
+    $park = spotWithHours(['name' => 'Parent park', 'category' => 'park']);
+    $cafe = spotWithHours(['name' => 'Independent cafe', 'category' => 'cafe', 'parent_spot_id' => $park->id]);
+    $restaurant = spotWithHours(['name' => 'Separate restaurant', 'category' => 'restaurant']);
+    $constraints = new Constraints(
+        windowStart: mondayWindow()->windowStart,
+        windowEnd: mondayWindow()->windowEnd,
+        categories: ['food_drink'],
+    );
+    $repository = app(CandidateRepository::class);
+    $candidates = $repository->candidatesFor($constraints);
+    $filtered = app(FeasibilityFilter::class)->filter($constraints, $candidates);
+    expect(collect($filtered)->pluck('id')->all())->toContain('spot:'.$cafe->id, 'spot:'.$restaurant->id)
+        ->not->toContain('spot:'.$park->id);
+    $loaded = collect($repository->byIds(['spot:'.$park->id, 'spot:'.$cafe->id], $constraints->windowStart));
+    expect($loaded->pluck('destinationGroupId')->unique()->count())->toBe(2);
+});
+
+test('an overnight source interval survives a closed calendar-day entry', function () {
+    $spot = spotWithHours(['name' => 'Late Monday cafe', 'category' => 'cafe', 'tags' => ['opening_hours' => 'Mo 22:00-02:00; Tu off']]);
+    $start = CarbonImmutable::parse('2026-09-29 00:30', 'Europe/Berlin');
+    $constraints = new Constraints($start, $start->setTime(2, 0), categories: ['cafe']);
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    expect(array_column(app(FeasibilityFilter::class)->filter($constraints, $candidates), 'id'))->toBe(["spot:{$spot->id}"]);
+});
+
+test('everyday outdoor destination flags match their supported type', function () {
+    $spot = spotWithHours(['name' => 'Named market', 'category' => 'market']);
+    $candidate = app(CandidateRepository::class)->byIds(['spot:'.$spot->id], mondayWindow()->windowStart)[0];
+    expect($candidate->outdoor)->toBeTrue()
+        ->and($candidate->costTier)->toBe('unknown')
+        ->and($candidate->hoursAssumed)->toBeFalse();
+});
+
+test('composer preserves distinct numeric source tag text', function (array $numericTags, array $expectedValues) {
+    $spot = spotWithHours([
+        'name' => 'Numeric source shop',
+        'category' => SpotCategory::Supermarket,
+        'tags' => ['name' => 'Numeric source shop', ...$numericTags],
+    ]);
+
+    $candidates = app(CandidateRepository::class)->byIds(['spot:'.$spot->id], mondayWindow()->windowStart);
+
+    expect($candidates)->toHaveCount(1)
+        ->and($candidates[0]->tags)->toContain(...array_keys($numericTags))
+        ->and($candidates[0]->tags)->toContain(...$expectedValues);
+})->with([
+    'measured values' => [['height' => '3.0', 'roof:height' => '3'], ['3.0', '3']],
+    'formatted identifiers' => [['ref' => '01', 'level' => '1'], ['01', '1']],
+    'zero values' => [['level' => '0', 'height' => '0.0'], ['0', '0.0']],
+]);

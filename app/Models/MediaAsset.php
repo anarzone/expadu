@@ -43,7 +43,21 @@ class MediaAsset extends Model
     {
         return $query
             ->where('rights_status', 'approved')
-            ->where('health_status', 'active');
+            ->where('health_status', 'active')
+            ->whereNotNull('attribution')
+            ->whereRaw('btrim(media_assets.attribution) <> ?', [''])
+            ->whereNotNull('source_page_url')
+            ->whereRaw('btrim(media_assets.source_page_url) <> ?', ['']);
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->rights_status === 'approved'
+            && $this->health_status === 'active'
+            && is_string($this->attribution)
+            && trim($this->attribution) !== ''
+            && is_string($this->source_page_url)
+            && trim($this->source_page_url) !== '';
     }
 
     /** @return HasMany<MediaAttachment, $this> */

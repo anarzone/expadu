@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands\Events;
 
+use App\Models\Event;
 use App\Models\EventReminder;
 use App\Notifications\EventOccurrenceReminder;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
 /**
@@ -35,6 +37,17 @@ class SendOccurrenceReminders extends Command
             }
 
             if (method_exists($reminder->user, 'wantsNotification') && ! $reminder->user->wantsNotification('events')) {
+                $reminder->update(['sent_at' => now()]);
+
+                continue;
+            }
+
+            $occurrenceStart = CarbonImmutable::instance($reminder->occurrence_start);
+            $occurrence = Event::occurringBetween($occurrenceStart->startOfDay(), $occurrenceStart->endOfDay(), [$reminder->event_id])
+                ->first(fn (array $item): bool => $item['starts_at']->equalTo($occurrenceStart));
+            if ($occurrence === null) {
+                // Retain the user's history and retire stale delivery just as
+                // we do when notification preferences suppress a reminder.
                 $reminder->update(['sent_at' => now()]);
 
                 continue;

@@ -31,7 +31,8 @@ class ContextNotificationFactory
             'rhine_level' => $this->buildRhine($action),
             'market_closure' => $this->buildMarketClosure($action),
             'bureaucracy_task' => $this->buildBureaucracyTask($action),
-            'permanent_residency_eligible' => $this->buildPermanentResidency($action),
+            // Old queued/cached estimates have no approved rule evidence.
+            'permanent_residency_eligible' => null,
             default => null,
         };
     }

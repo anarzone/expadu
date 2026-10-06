@@ -73,7 +73,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
-            'unreadAlertCount' => fn () => $request->user()?->alerts()->whereNull('read_at')->count() ?? 0,
+            'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
             // The sidebar's Bureaucracy badge: open action tasks that need
             // attention now (overdue or due within two weeks), never a fixed
             // placeholder. See OpenTaskCount for why it isn't "every open task".

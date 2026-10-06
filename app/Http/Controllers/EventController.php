@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Venue;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,8 +19,12 @@ class EventController extends Controller
 {
     public function index(Request $request): Response
     {
+        $input = $request->validate(['date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01']]);
+
         return Inertia::render('events', [
+            'savedOnly' => $request->boolean('saved'),
             'filters' => [
+                'date' => $input['date'] ?? null,
                 'window' => in_array($request->query('window'), ['today', 'tomorrow', 'weekend', 'week'], true)
                     ? $request->query('window')
                     : 'today',
@@ -52,12 +57,21 @@ class EventController extends Controller
      */
     public function show(Request $request, Event $event): RedirectResponse
     {
-        return redirect()->route('events');
+        abort_unless(Event::query()->visible()->whereKey($event->id)->exists(), 404);
+        $input = $request->validate(['start' => ['nullable', 'date', 'after_or_equal:2000-01-01', 'before:2100-01-01']]);
+        $start = isset($input['start']) ? CarbonImmutable::parse($input['start'])->setTimezone('Europe/Berlin') : null;
+        if ($start === null) {
+            $now = CarbonImmutable::now('Europe/Berlin');
+            $start = Event::occurringBetween($now->startOfDay(), $now->addYear(), [$event->id])
+                ->first(fn ($item) => $item['starts_at']->isFuture())['starts_at'] ?? CarbonImmutable::parse($event->starts_at);
+        }
+
+        return redirect()->route('events', ['event' => $event->id, 'start' => $start->toIso8601String(), 'date' => $start->toDateString()]);
     }
 
     public function saved(Request $request): RedirectResponse
     {
-        return redirect()->route('events');
+        return redirect()->route('events', ['saved' => 1]);
     }
 
     public function join(Request $request, Event $event): RedirectResponse

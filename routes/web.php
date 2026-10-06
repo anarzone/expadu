@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AlertController;
+use App\Http\Controllers\Api\EventBookmarkController;
 use App\Http\Controllers\Api\EventReminderController;
 use App\Http\Controllers\Api\EventsController;
 use App\Http\Controllers\Api\GeocodeController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Api\PlaceContextController;
 use App\Http\Controllers\Api\PlaceFeedbackController;
 use App\Http\Controllers\Api\PlacesController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
+use App\Http\Controllers\Api\SavedJourneyController;
 use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TakeMeThereController;
@@ -26,8 +28,10 @@ use App\Http\Controllers\BureaucracyCaseTaskDocumentsController;
 use App\Http\Controllers\BureaucracyController;
 use App\Http\Controllers\BureaucracyDemoController;
 use App\Http\Controllers\ComposerController;
+use App\Http\Controllers\ComposerWorkspaceController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeFeedController;
+use App\Http\Controllers\LocalReviewController;
 use App\Http\Controllers\Marketing\BlogController;
 use App\Http\Controllers\Marketing\LandingController;
 use App\Http\Controllers\Marketing\SitemapController;
@@ -104,6 +108,9 @@ Route::middleware(['guest', 'throttle:social'])->group(function () {
 });
 
 $appRoutes = function () use ($appDomain) {
+    // Opt-in loopback-only entry for a designated synthetic review account.
+    Route::get('dev/review', LocalReviewController::class)->name('dev.review');
+
     // App root redirects to dashboard (only in production with subdomain)
     if ($appDomain) {
         Route::get('/', fn () => redirect('/dashboard'));
@@ -124,6 +131,8 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/places/{spot}', [PlacesController::class, 'show'])->name('api.places.show');
         Route::post('api/places/{spot}/feedback', PlaceFeedbackController::class)->name('api.places.feedback');
         Route::get('api/events', [EventsController::class, 'index'])->name('api.events');
+        Route::get('api/event-bookmarks', [EventBookmarkController::class, 'index'])->name('api.event-bookmarks.index');
+        Route::post('api/event-bookmarks', [EventBookmarkController::class, 'store'])->middleware('throttle:60,1')->name('api.event-bookmarks.store');
         Route::get('api/reminders', [EventReminderController::class, 'index'])->name('api.reminders.index');
         Route::post('api/reminders', [EventReminderController::class, 'store'])->name('api.reminders.store');
         Route::delete('api/reminders/{event}', [EventReminderController::class, 'destroy'])->name('api.reminders.destroy');
@@ -134,6 +143,9 @@ $appRoutes = function () use ($appDomain) {
         Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
         Route::get('api/journey', TakeMeThereController::class)->middleware('throttle:journey')->name('api.journey');
         Route::get('api/journey/suggest', JourneySuggestController::class)->middleware('throttle:search')->name('api.journey.suggest');
+        Route::get('api/saved-journeys', [SavedJourneyController::class, 'index'])->name('api.saved-journeys.index');
+        Route::post('api/saved-journeys', [SavedJourneyController::class, 'store'])->name('api.saved-journeys.store');
+        Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::class, 'destroy'])->whereNumber('savedJourney')->name('api.saved-journeys.destroy');
         // Live trip session — persists the chosen journey across screens/closes.
         Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.start');
         Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
@@ -151,6 +163,11 @@ $appRoutes = function () use ($appDomain) {
 
         // Day Composer
         Route::get('composer', [ComposerController::class, 'page'])->name('composer');
+        Route::get('composer/workspace', [ComposerWorkspaceController::class, 'show'])->name('composer.workspace.show');
+        Route::post('composer/workspace', [ComposerWorkspaceController::class, 'update'])->name('composer.workspace.update');
+        Route::get('composer/event', [ComposerWorkspaceController::class, 'event'])->name('composer.event');
+        Route::get('composer/guidance', [ComposerWorkspaceController::class, 'guidance'])->name('composer.guidance');
+        Route::get('composer/catalogue', [ComposerWorkspaceController::class, 'catalogue'])->name('composer.catalogue');
         Route::post('composer/parse', [ComposerController::class, 'parse'])
             ->middleware('throttle:composer-parse')
             ->name('composer.parse');
@@ -201,6 +218,7 @@ $appRoutes = function () use ($appDomain) {
         Route::post('mutes/thumbs-down', [MuteController::class, 'thumbsDown'])->name('mutes.thumbs-down');
 
         // Push subscriptions
+        Route::post('push/status', [PushSubscriptionController::class, 'status'])->name('push.status');
         Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
         Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 

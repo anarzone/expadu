@@ -5,10 +5,14 @@ namespace App\Home;
 use App\Composer\CategoryAppeal;
 use App\Enums\EventCategory;
 use App\Enums\SpotFeedbackState;
+use App\Media\PublishedMediaSelector;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\UserTask;
+use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
+use App\Places\PlaceIdentity;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Services\NearbyPlaces;
@@ -57,6 +61,7 @@ class DiscoveryFeed
     public function __construct(
         private readonly NearbyPlaces $nearby,
         private readonly EventOccurrencePresenter $eventPresenter,
+        private readonly PublishedMediaSelector $mediaSelector,
     ) {}
 
     /**
@@ -297,6 +302,7 @@ class DiscoveryFeed
 
             $reason = $cardReason
                 ?? ($rain && ! in_array($x['category'], self::OUTDOOR, true) ? 'dry pick' : null);
+            $media = $this->mediaSelector->select($x['spot'], 'hero');
 
             $cards[] = [
                 'id' => "spot:{$x['spot']->id}",
@@ -310,8 +316,8 @@ class DiscoveryFeed
                 'kind' => 'spot',
                 'href' => null,
                 'reason' => $reason,
-                'photo_url' => $x['spot']->photo_url,
-                'photo_attribution' => $x['spot']->photo_attribution,
+                'photo_url' => $media?->remote_url,
+                'photo_attribution' => $media?->attribution,
             ];
         }
 
@@ -417,13 +423,13 @@ class DiscoveryFeed
         // Cache plain rows (not Eloquent models) and re-hydrate — serialising
         // a model collection is fragile across cache drivers (it can come back
         // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
-        $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution'];
+        $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating'];
+        $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision().':grouping:'.app(DestinationGrouping::class)->revision().':facts:'.app(PlaceFacts::class)->revision();
 
         // No origin (GPS declined, nothing remembered): the old global, lowest-id
         // pool, cached once for everyone.
         if ($originLat === null || $originLng === null) {
-            $rows = Cache::remember(self::SCAN_CACHE_KEY, self::SCAN_TTL, fn () => Spot::query()
-                ->recommendationEligible()
+            $rows = Cache::remember($cacheKey, self::SCAN_TTL, fn () => app(DestinationGrouping::class)->general(Spot::query())
                 ->select($columns)
                 ->whereNotNull('lat')
                 ->whereNotNull('lng')
@@ -432,7 +438,10 @@ class DiscoveryFeed
                 ->get()
                 ->toArray());
 
-            return Spot::hydrate($rows);
+            $spots = Spot::hydrate($rows)->load(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
+            app(PlaceFacts::class)->project($spots);
+
+            return $spots;
         }
 
         // Nearest-first to the user, cached per ~1km cell (rounded so nearby
@@ -442,12 +451,15 @@ class DiscoveryFeed
         $cellLng = round($originLng, 2);
 
         $rows = Cache::remember(
-            self::SCAN_CACHE_KEY.":{$cellLat},{$cellLng}",
+            $cacheKey.":{$cellLat},{$cellLng}",
             self::SCAN_TTL,
             fn () => $this->nearby->nearest($cellLat, $cellLng, self::POOL, null, $columns)->toArray(),
         );
 
-        return Spot::hydrate($rows);
+        $spots = Spot::hydrate($rows)->load(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
+        app(PlaceFacts::class)->project($spots);
+
+        return $spots;
     }
 
     private function category(Spot $spot): string

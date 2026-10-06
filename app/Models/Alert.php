@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AlertType;
 use Database\Factories\AlertFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,14 @@ class Alert extends Model
 
     /** How long a live card keeps coalescing recurrences of the same subject. */
     private const COALESCE_WINDOW_HOURS = 24;
+
+    /** Hide legacy legal estimates that have no reviewed publication evidence. */
+    public function scopePublishable(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $visible) => $visible
+            ->whereNull('subtype')
+            ->orWhere('subtype', '!=', 'permanent_residency'));
+    }
 
     /**
      * Record an alert, GROUPING recurrences of the same subject onto one card.

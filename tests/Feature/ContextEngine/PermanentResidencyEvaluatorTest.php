@@ -1,10 +1,11 @@
 <?php
 
+use App\Bureaucracy\PermanentResidencyEligibility;
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\Evaluators\PermanentResidencyEvaluator;
-use App\ContextEngine\ScoredAction;
 use App\Models\Alert;
 use App\Models\User;
+use App\Profile\ProfileEngine;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;
@@ -47,29 +48,22 @@ function eligibleResident(): User
     ]);
 }
 
-test('an eligible resident gets a success action on the alert_page channel', function () {
+test('legacy elapsed-time estimates cannot publish an eligibility action', function () {
     $user = eligibleResident();
 
     app(PermanentResidencyEvaluator::class)->evaluate($user);
 
-    $action = collect(app(ActionBus::class)->topK($user->id, 10))
-        ->firstWhere('type', 'permanent_residency_eligible');
-
-    expect($action)->not->toBeNull()
-        ->and($action->severity)->toBe('success')
-        ->and($action->deliverChannels)->toContain(ScoredAction::CHANNEL_ALERT_PAGE);
+    expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty();
+    Notification::assertNothingSent();
 });
 
-test('the eligibility milestone lands in the Good news lane', function () {
+test('legacy residency dates do not produce an unreviewed Good news alert', function () {
     $user = eligibleResident();
 
     app(PermanentResidencyEvaluator::class)->evaluate($user);
 
-    $alert = Alert::where('user_id', $user->id)->firstOrFail();
-    expect($alert->lane)->toBe('good')
-        ->and($alert->category)->toBe('bureau')
-        ->and($alert->severity)->toBe('success')
-        ->and($alert->title)->toContain('permanent residency');
+    expect(Alert::where('user_id', $user->id)->count())->toBe(0);
+    expect(app(PermanentResidencyEligibility::class)->for(app(ProfileEngine::class)->build($user)))->toBeNull();
 });
 
 test('a resident below the track threshold gets nothing', function () {
@@ -95,11 +89,11 @@ test('an EU citizen never gets the hint even past five years', function () {
     expect(Alert::where('user_id', $user->id)->count())->toBe(0);
 });
 
-test('eligibility is announced only once per threshold', function () {
+test('daily repeats cannot re-enable legacy eligibility publication', function () {
     $user = eligibleResident();
 
     app(PermanentResidencyEvaluator::class)->evaluate($user);
     app(PermanentResidencyEvaluator::class)->evaluate($user);
 
-    expect(Alert::where('user_id', $user->id)->count())->toBe(1);
+    expect(Alert::where('user_id', $user->id)->count())->toBe(0);
 });

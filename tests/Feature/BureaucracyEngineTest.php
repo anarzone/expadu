@@ -618,58 +618,28 @@ test('a booked appointment becomes the effective deadline and feeds reminders', 
 
 // ── Permanent-residency eligibility hint ───────────────────────────────
 
-test('the NE hint appears once the permit has been held past the track threshold', function () {
+// The legacy elapsed-time estimate has no reviewed publication evidence, so it
+// stays withheld even past the old thresholds (see LegacyEligibilityPublicationTest).
+test('the legacy NE hint is withheld even past the old track thresholds', function (array $attributes) {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
-    // Standard employee, 4 years in → past the 36-month skilled-worker mark.
-    $eligible = User::factory()->onboarded()->create([
-        'situation' => 'non_eu_employee',
-        'profile_attributes' => ['permit_held_since' => now()->subYears(4)->toDateString()],
-    ]);
-
-    $this->actingAs($eligible);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
-        $hint = $page->toArray()['props']['eligibility'];
-
-        expect($hint)->not->toBeNull();
-        expect($hint['threshold_months'])->toBe(36);
-        expect($hint['track_note'])->toContain('Skilled workers');
-
-        return true;
-    });
-
-    // One year in → no hint; never recorded → no hint.
-    $early = User::factory()->onboarded()->create([
-        'situation' => 'non_eu_employee',
-        'profile_attributes' => ['permit_held_since' => now()->subYear()->toDateString()],
-    ]);
-    $this->actingAs($early);
+    $this->actingAs(User::factory()->onboarded()->create($attributes));
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         expect($page->toArray()['props']['eligibility'])->toBeNull();
 
         return true;
     });
-});
-
-test('Blue Card holders cross the NE mark at 21 months', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
-
-    $user = User::factory()->onboarded()->create([
+})->with([
+    'skilled worker, 4 years' => [[
+        'situation' => 'non_eu_employee',
+        'profile_attributes' => ['permit_held_since' => now()->subYears(4)->toDateString()],
+    ]],
+    'Blue Card, 22 months' => [[
         'situation' => 'non_eu_employee',
         'bureaucracy_path' => 'non_eu_employee_blue_card',
         'profile_attributes' => ['permit_held_since' => now()->subMonths(22)->toDateString()],
-    ]);
-
-    $this->actingAs($user);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
-        $hint = $page->toArray()['props']['eligibility'];
-
-        expect($hint)->not->toBeNull();
-        expect($hint['threshold_months'])->toBe(21);
-
-        return true;
-    });
-});
+    ]],
+]);
 
 // ── Journey reset (testing tool) ───────────────────────────────────────
 
@@ -696,8 +666,8 @@ test('user:reset-journey sends a user back through onboarding for a clean replay
     expect($user->userTasks()->count())->toBe(0);
     expect($user->attributeChanges()->count())->toBe(0);
 
-    // The middleware sends them straight back to onboarding…
-    $this->get(route('explore'))->assertRedirect(route('onboarding'));
+    // Onboarding is optional, so the app stays reachable after a reset…
+    $this->get(route('explore'))->assertOk();
 
     // …and a different persona replays cleanly on the same account.
     $this->post(route('onboarding.complete'), [
@@ -709,7 +679,7 @@ test('user:reset-journey sends a user back through onboarding for a clean replay
         'address_registration_status' => 'registrable',
         'moved_in_at' => now()->subDays(3)->toDateString(),
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard')); // finished onboarding lands on Today
 
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');

@@ -1,7 +1,10 @@
 <?php
 
+use App\Enums\SpotCategory;
+use App\Http\Resources\PlaceResource;
 use App\Models\MediaAsset;
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserPlace;
@@ -25,6 +28,23 @@ beforeEach(function () {
     $this->actingAs($this->user);
 });
 
+test('places page offers every supported catalogue filter from the server', function () {
+    $this->get('/explore?category=shopping')->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('places')
+            ->where('filters.category', 'shopping')
+            ->where('categories', function ($options): bool {
+                $options = collect($options);
+
+                expect($options->pluck('id')->all())->toEqualCanonicalizing(SpotCategory::placesCoarse())
+                    ->and($options->firstWhere('id', 'shopping')['label'])->toBe('Shopping')
+                    ->and($options->firstWhere('id', 'services')['label'])->toBe('Local services')
+                    ->and($options->firstWhere('id', 'health')['label'])->toBe('Health');
+
+                return $options->every(fn ($option) => filled($option['emoji']));
+            }));
+});
+
 test('lists leisure places with the full contract shape', function () {
     Spot::factory()->create([
         'name' => 'Grüngürtel court',
@@ -38,17 +58,55 @@ test('lists leisure places with the full contract shape', function () {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'tip', 'transit_hint', 'facts']],
+        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'summary', 'tip', 'transit_hint', 'facts']],
         'meta' => ['total'],
     ]);
     // basketball rolls up to the coarse 'court' bucket but keeps its fine identity
     $response->assertJsonPath('data.0.category', 'court');
     $response->assertJsonPath('data.0.fine_label', 'Basketball court');
     $response->assertJsonPath('data.0.emoji', '🏀');
-    $response->assertJsonPath('data.0.open_now', true);
-    $response->assertJsonPath('data.0.price_text', 'free');
-    // no per-place tip stored → the category fallback is marked generic
-    $response->assertJsonPath('data.0.tip_is_generic', true);
+    $response->assertJsonPath('data.0.open_now', null);
+    $response->assertJsonPath('data.0.price_text', null);
+    $response->assertJsonPath('data.0.opening_hours_text', null);
+    $response->assertJsonPath('data.0.tip', null);
+    $response->assertJsonPath('data.0.tip_is_generic', false);
+});
+
+test('outdoor place API respects explicit fees and conditional restrictions', function (array $tags, ?string $price, ?bool $open) {
+    $spot = Spot::factory()->create(['category' => 'pitch', 'name' => 'Source-backed pitch', 'lat' => 50.949, 'lng' => 6.922, 'tags' => $tags]);
+
+    $this->getJson("/api/places/{$spot->id}")->assertOk()
+        ->assertJsonPath('data.price_text', $price)
+        ->assertJsonPath('data.open_now', $open);
+})->with([
+    'explicit public free' => [['fee' => 'no', 'access' => 'yes', 'opening_hours' => '24/7'], 'free', true],
+    'paid facility' => [['fee' => 'yes'], 'paid', null],
+    'conditional fee' => [['fee' => 'no', 'fee:conditional' => 'yes @ (Sa-Su)'], null, null],
+    'conflicting fee' => [['fee' => 'no', 'charge' => '5 EUR'], null, null],
+    'conditional access' => [['access' => 'yes', 'opening_hours' => '24/7', 'access:conditional' => 'private @ (Mo-Fr)'], null, null],
+]);
+
+test('places expose ready or stale English enrichment without overwriting source fields', function () {
+    $spot = Spot::factory()->create([
+        'description' => 'Original German source description.',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+    ]);
+    SpotEnrichment::factory()->create([
+        'spot_id' => $spot->id,
+        'status' => 'stale',
+        'summary' => 'An English summary from the last checked source snapshot.',
+        'tip' => 'Bring a blanket for the lawns.',
+    ]);
+
+    $place = $this->getJson('/api/places')->assertOk()->json('data.0');
+
+    expect($place['summary'])->toBe('An English summary from the last checked source snapshot.')
+        ->and($place['tip'])->toBe('Bring a blanket for the lawns.')
+        ->and($place['tip_is_generic'])->toBeFalse()
+        ->and($spot->fresh()->description)->toBe('Original German source description.');
 });
 
 test('place cards expose only approved active media and prefer it over legacy columns', function () {
@@ -76,6 +134,10 @@ test('place cards expose only approved active media and prefer it over legacy co
         'media_asset_id' => $approved->id,
         'role' => 'hero',
         'priority' => 2,
+        'match_status' => 'accepted',
+        'match_method' => 'reviewed_source',
+        'match_evidence' => ['source_url' => 'https://commons.wikimedia.org/wiki/File:Place.jpg'],
+        'match_reviewed_at' => now(),
     ]);
 
     $place = $this->getJson('/api/places')->assertOk()->json('data.0');
@@ -301,10 +363,10 @@ test('OSM tags surface as facts, chips and real opening hours', function () {
     expect(collect($place['facts'])->firstWhere('label', 'floodlit')['value'])->toBe('Yes');
 });
 
-test('facilities inside a park collapse into the park card with activity chips', function () {
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.962, 'lng' => 6.930]);
-    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'veedel' => 'Neuehrenfeld', 'lat' => 50.9622, 'lng' => 6.9301]);
-    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'veedel' => 'Neuehrenfeld', 'lat' => 50.9623, 'lng' => 6.9302]);
+test('reviewed facilities inside a park collapse into the park card with activity chips', function () {
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'veedel' => 'Neuehrenfeld', 'lat' => 50.962, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'veedel' => 'Neuehrenfeld', 'lat' => 50.9622, 'lng' => 6.9301]);
+    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'veedel' => 'Neuehrenfeld', 'lat' => 50.9623, 'lng' => 6.9302]);
     // Standalone facility outside any park stays its own card
     Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => null, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
 
@@ -321,8 +383,8 @@ test('facilities inside a park collapse into the park card with activity chips',
 });
 
 test('an activity filter returns parks containing it plus standalone facilities', function () {
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
-    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'lat' => 50.9622, 'lng' => 6.9301]);
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Tennisplatz', 'category' => 'tennis', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.9622, 'lng' => 6.9301]);
     Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'lat' => 50.945, 'lng' => 6.935]); // park without tennis
     $standalone = Spot::factory()->create(['name' => 'Tennisclub Süd', 'category' => 'tennis', 'park_name' => null, 'lat' => 50.92, 'lng' => 6.94]);
 
@@ -335,7 +397,7 @@ test('an activity filter returns parks containing it plus standalone facilities'
     expect($standalone)->not->toBeNull();
 });
 
-test('facilities inside a mapped sports centre collapse into one destination card', function () {
+test('reviewed facilities inside a mapped sports centre collapse into one destination card', function () {
     $complex = Spot::factory()->create([
         'name' => 'Sportanlage Nippes',
         'category' => 'sports_centre',
@@ -347,6 +409,10 @@ test('facilities inside a mapped sports centre collapse into one destination car
         'name' => 'Tennisplatz',
         'category' => 'tennis',
         'parent_spot_id' => $complex->id,
+        'destination_spot_id' => $complex->id,
+        'destination_reviewed_parent_id' => $complex->id,
+        'destination_reviewed_at' => now(),
+        'destination_grouping_evidence' => 'Reviewed component fixture',
         'veedel' => 'Nippes',
         'lat' => 50.9642,
         'lng' => 6.9541,
@@ -355,6 +421,10 @@ test('facilities inside a mapped sports centre collapse into one destination car
         'name' => 'Bolzplatz',
         'category' => 'pitch',
         'parent_spot_id' => $complex->id,
+        'destination_spot_id' => $complex->id,
+        'destination_reviewed_parent_id' => $complex->id,
+        'destination_reviewed_at' => now(),
+        'destination_grouping_evidence' => 'Reviewed component fixture',
         'veedel' => 'Nippes',
         'lat' => 50.9643,
         'lng' => 6.9542,
@@ -397,6 +467,10 @@ test('a mapped sports centre context lists only its contained facilities', funct
         'name' => 'Tennisplatz',
         'category' => 'tennis',
         'parent_spot_id' => $complex->id,
+        'destination_spot_id' => $complex->id,
+        'destination_reviewed_parent_id' => $complex->id,
+        'destination_reviewed_at' => now(),
+        'destination_grouping_evidence' => 'Reviewed component fixture',
         'lat' => 50.969,
         'lng' => 6.954,
     ]);
@@ -439,7 +513,7 @@ test("a park's context lists the facilities inside it", function () {
     Http::fake();
 
     $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
-    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'lat' => 50.9685, 'lng' => 6.930]); // ~700m, still inside
+    Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.9685, 'lng' => 6.930]); // ~700m, still inside
     Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'park_name' => null, 'lat' => 50.9621, 'lng' => 6.9301]); // close but outside
 
     $nearby = $this->getJson("/api/places/{$park->id}/context")->json('nearby');
@@ -473,10 +547,11 @@ test('shows a single place with the full card contract', function () {
 
 test('context prefers facilities in the same park over the 300m radius', function () {
     Http::fake();
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
 
-    $court = Spot::factory()->create(['name' => 'Basketballplatz', 'category' => 'basketball', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
+    $court = Spot::factory()->create(['name' => 'Basketballplatz', 'category' => 'basketball', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.962, 'lng' => 6.930]);
     // Same park but ~700m away → still listed (the park is the venue)
-    $farPitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'lat' => 50.9685, 'lng' => 6.930]);
+    $farPitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.9685, 'lng' => 6.930]);
     // 100m away but NOT in the park → excluded in park mode
     Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'park_name' => null, 'lat' => 50.9621, 'lng' => 6.9312]);
 
@@ -680,4 +755,23 @@ test('the list carries feedback state and hides not-interested places', function
     expect($data->pluck('name')->all())->toContain('Saved park');
     expect($data->pluck('name')->all())->not->toContain('Hidden park');
     expect($data->firstWhere('name', 'Saved park')['feedback_state'])->toBe('saved');
+});
+
+test('unmanaged legacy photos do not bypass the publication rights gate', function () {
+    Spot::factory()->create([
+        'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.922,
+        'photo_url' => 'https://legacy.example/unreviewed.jpg',
+        'photo_attribution' => 'Unreviewed credit',
+    ]);
+    $this->getJson('/api/places')->assertOk()
+        ->assertJsonPath('data.0.photo_url', null)
+        ->assertJsonPath('data.0.photo_attribution', null);
+});
+
+test('missing place coordinates remain missing rather than becoming zero', function () {
+    $spot = Spot::factory()->create(['category' => 'park']);
+    $spot->lat = null;
+    $spot->lng = null;
+    $data = (new PlaceResource($spot))->toArray(request());
+    expect($data['lat'])->toBeNull()->and($data['lng'])->toBeNull();
 });

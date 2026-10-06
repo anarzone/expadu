@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\NoiseLevel;
 use App\Enums\SpotCategory;
+use App\Places\PlaceFacts;
+use App\Places\PlaceIdentity;
 use Database\Factories\SpotFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
@@ -36,19 +39,71 @@ class Spot extends Model
             'last_seen_at' => 'datetime',
             'is_active' => 'boolean',
             'is_recommendable' => 'boolean',
+            'canonical_spot_id' => 'integer',
+            'destination_spot_id' => 'integer',
+            'destination_reviewed_parent_id' => 'integer',
+            'destination_reviewed_at' => 'datetime',
         ];
     }
 
     /** @param Builder<Spot> $query */
-    public function scopeRecommendationEligible(Builder $query): Builder
+    public function scopeRecommendationEligible(Builder $query, bool $includeActivityFacilities = false): Builder
     {
-        return $query->where('is_active', true)->where('is_recommendable', true);
+        return app(PlaceFacts::class)->publiclyRecommendable(
+            $query->canonical()->where('spots.is_active', true)->where(function (Builder $eligible) use ($includeActivityFacilities): void {
+                $eligible->where('spots.is_recommendable', true);
+                if ($includeActivityFacilities) {
+                    $eligible->orWhere(fn (Builder $qualified): Builder => app(PlaceFacts::class)->activityQualified($qualified));
+                }
+            }),
+        );
+    }
+
+    /** @param Builder<Spot> $query */
+    public function scopeCanonical(Builder $query): Builder
+    {
+        return $query->whereNull('spots.canonical_spot_id');
+    }
+
+    public function delete()
+    {
+        return DB::transaction(function () {
+            self::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+            return parent::delete();
+        });
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $spot = parent::resolveRouteBinding($value, $field);
+
+        return $spot?->canonical_spot_id ? self::query()->find($spot->canonical_spot_id) : $spot;
+    }
+
+    /** @return HasMany<Spot, $this> */
+    public function identityAliases(): HasMany
+    {
+        return $this->hasMany(self::class, 'canonical_spot_id');
     }
 
     /** @return HasMany<Review, $this> */
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    /** @return Builder<Review> */
+    public function effectiveReviews(): Builder
+    {
+        $ids = DB::table('reviews')
+            ->whereIn('spot_id', app(PlaceIdentity::class)->familyIds($this->id))
+            ->selectRaw('DISTINCT ON (user_id) id')
+            ->orderBy('user_id')->orderByDesc('updated_at')
+            ->orderByRaw('case when spot_id = ? then 0 else 1 end', [$this->canonical_spot_id ?? $this->id])
+            ->orderByDesc('id');
+
+        return Review::query()->whereIn('id', $ids);
     }
 
     /** @return BelongsTo<Spot, $this> */
@@ -63,6 +118,34 @@ class Spot extends Model
         return $this->hasMany(self::class, 'parent_spot_id');
     }
 
+    /** @return HasMany<PlaceFactObservation, $this> */
+    public function factObservations(): HasMany
+    {
+        return $this->hasMany(PlaceFactObservation::class)
+            ->orderBy('observed_at')
+            ->orderBy('id');
+    }
+
+    /** @return HasMany<PlaceFactCorrection, $this> */
+    public function factCorrections(): HasMany
+    {
+        return $this->hasMany(PlaceFactCorrection::class)
+            ->orderBy('reviewed_at')
+            ->orderBy('id');
+    }
+
+    /** @return HasMany<SpotEnrichment, $this> */
+    public function enrichments(): HasMany
+    {
+        return $this->hasMany(SpotEnrichment::class);
+    }
+
+    /** @return HasOne<SpotEnrichment, $this> */
+    public function englishEnrichment(): HasOne
+    {
+        return $this->hasOne(SpotEnrichment::class)->visibleEnglish();
+    }
+
     /** @return MorphMany<MediaAttachment, $this> */
     public function mediaAttachments(): MorphMany
     {
@@ -72,7 +155,7 @@ class Spot extends Model
     /** Recalculate average rating from reviews */
     public function updateRating(): void
     {
-        $avg = $this->reviews()->avg('rating');
+        $avg = $this->effectiveReviews()->avg('rating');
         $this->update(['rating' => $avg ? round($avg, 2) : null]);
     }
 
@@ -98,6 +181,9 @@ class Spot extends Model
     protected static function booted(): void
     {
         static::deleting(function (Spot $spot): void {
+            if (app(PlaceIdentity::class)->hasProtectedRecords(DB::table('spots')->where('id', $spot->id))) {
+                throw new \DomainException('Retained place identities cannot be deleted; deactivate the place instead.');
+            }
             $spot->mediaAttachments()->delete();
         });
 
@@ -109,6 +195,30 @@ class Spot extends Model
                     [(float) $spot->lng, (float) $spot->lat, $spot->id]
                 );
             }
+
+            if ($spot->sourceAttributesWereChanged()) {
+                SpotEnrichment::markReadyAsStaleForSpots([$spot->id]);
+            }
         });
+    }
+
+    private function sourceAttributesWereChanged(): bool
+    {
+        return $this->wasChanged([
+            'name',
+            'category',
+            'cuisine',
+            'tags',
+            'description',
+            'address',
+            'veedel',
+            'park_name',
+            'opening_hours',
+            'is_active',
+            'is_recommendable',
+            'is_verified',
+            'phone',
+            'website',
+        ]);
     }
 }

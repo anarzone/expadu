@@ -24,6 +24,9 @@ final readonly class Constraints
         public ?string $budget = null,     // free | low | normal
         public ?Archetype $archetype = null, // day shape; null = Balanced
         public ?string $vibe = null,         // chill | active
+        /** @var list<string> */
+        public array $activities = [],
+        public ?float $radiusKm = null,
     ) {}
 
     public function windowMinutes(): int
@@ -34,13 +37,13 @@ final readonly class Constraints
     /** Same constraints with the budget cap lifted — used when a filter combination leaves nothing feasible. */
     public function withoutBudget(): self
     {
-        return new self($this->windowStart, $this->windowEnd, $this->areas, $this->categories, $this->companions, null, $this->archetype, $this->vibe);
+        return new self($this->windowStart, $this->windowEnd, $this->areas, $this->categories, $this->companions, null, $this->archetype, $this->vibe, $this->activities, $this->radiusKm);
     }
 
     /** Same constraints with the category filter lifted — the deepest relaxation before giving up. */
     public function withoutCategories(): self
     {
-        return new self($this->windowStart, $this->windowEnd, $this->areas, [], $this->companions, $this->budget, $this->archetype, $this->vibe);
+        return new self($this->windowStart, $this->windowEnd, $this->areas, [], $this->companions, $this->budget, $this->archetype, $this->vibe, $this->activities, $this->radiusKm);
     }
 
     /**
@@ -51,7 +54,7 @@ final readonly class Constraints
      */
     public function withCategories(array $categories): self
     {
-        return new self($this->windowStart, $this->windowEnd, $this->areas, array_values($categories), $this->companions, $this->budget, $this->archetype, $this->vibe);
+        return new self($this->windowStart, $this->windowEnd, $this->areas, array_values($categories), $this->companions, $this->budget, $this->archetype, $this->vibe, $this->activities, $this->radiusKm);
     }
 
     /**
@@ -68,6 +71,8 @@ final readonly class Constraints
             'budget' => $this->budget,
             'archetype' => $this->archetype?->value,
             'vibe' => $this->vibe,
+            'activities' => $this->activities,
+            'radius_km' => $this->radiusKm,
         ];
     }
 
@@ -85,6 +90,8 @@ final readonly class Constraints
             budget: $data['budget'] ?? null,
             archetype: isset($data['archetype']) ? Archetype::tryFrom((string) $data['archetype']) : null,
             vibe: $data['vibe'] ?? null,
+            activities: array_values((array) ($data['activities'] ?? [])),
+            radiusKm: isset($data['radius_km']) ? (float) $data['radius_km'] : null,
         );
     }
 }

@@ -56,8 +56,9 @@ test('legacy detail and saved URLs redirect to the events page', function () {
     $this->actingAs(User::factory()->onboarded()->create());
     $event = Event::factory()->create();
 
-    $this->get(route('events.show', $event))->assertRedirect(route('events'));
-    $this->get(route('events.saved'))->assertRedirect(route('events'));
+    $response = $this->get(route('events.show', $event))->assertRedirect();
+    expect($response->headers->get('Location'))->toStartWith(route('events').'?event='.$event->id.'&start=');
+    $this->get(route('events.saved'))->assertRedirect(route('events', ['saved' => 1]));
 });
 
 test('user can join an event', function () {

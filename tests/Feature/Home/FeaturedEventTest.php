@@ -2,6 +2,7 @@
 
 use App\Home\FeaturedEvent;
 use App\Models\Event;
+use App\Models\MediaAsset;
 use App\Models\Spot;
 use App\Models\Venue;
 use Carbon\CarbonImmutable;
@@ -54,7 +55,7 @@ it('only draws from the curated (visible) set', function () {
     expect(app(FeaturedEvent::class)->forToday())->toBeNull();
 });
 
-it('prefers the event with a photo over a sooner one without', function () {
+it('prefers the event with an approved photo over a sooner one without', function () {
     Event::factory()->create([ // sooner, no photo
         'title' => 'No photo', 'starts_at' => '2026-06-12 18:00:00', 'ends_at' => '2026-06-12 20:00:00', 'recurrence' => null,
     ]);
@@ -65,6 +66,15 @@ it('prefers the event with a photo over a sooner one without', function () {
         'photo_attribution' => 'Jane Doe · CC BY-SA 4.0',
     ]);
     $venue = featuredVenue(['name' => 'Volksgarten', 'place_id' => $place->id]);
+    $asset = MediaAsset::factory()->approved()->create(['remote_url' => $place->photo_url]);
+    $place->mediaAttachments()->create([
+        'media_asset_id' => $asset->id,
+        'role' => 'hero',
+        'match_status' => 'accepted',
+        'match_method' => 'manual_review',
+        'match_evidence' => ['subject' => 'Volksgarten'],
+        'match_reviewed_at' => now(),
+    ]);
     $withPhoto = Event::factory()->create([ // later, but has a photo
         'title' => 'Has photo', 'starts_at' => '2026-06-12 20:00:00', 'ends_at' => '2026-06-12 22:00:00',
         'recurrence' => null, 'venue_id' => $venue->id,

@@ -2,16 +2,15 @@
 
 namespace App\Composer;
 
+use App\Models\ComposerWorkspace;
 use App\Models\User;
+use App\Places\PlaceIdentity;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * The one plan a user has pinned to their Today screen. "Save to Today" in the
- * composer copies the live plan (already in composer:plan:{user}) into this
- * separate key so it survives navigation and shows on the home screen; the
- * Today screen reads it back. Lives in Redis until the end of the plan's day
- * (a "today" plan shouldn't linger), capped at the composer's 72h horizon.
+ * Reads today's confirmed workspace plan, with compatibility for the older
+ * cached Today pin. Dismissing this summary never cancels the underlying day.
  */
 class TodayPlanStore
 {
@@ -33,6 +32,10 @@ class TodayPlanStore
             return;
         }
 
+        $plan = app(PlaceIdentity::class)->normalizePlan($plan);
+        app(WorkspaceStore::class)->saveConfirmed($user, $plan + ['prompt' => $prompt]);
+
+        Cache::forget($this->key($user).':hidden');
         $start = $plan['constraints']['window_start'] ?? null;
         $until = is_string($start)
             ? CarbonImmutable::parse($start)->endOfDay()->addHours(6)
@@ -45,6 +48,8 @@ class TodayPlanStore
 
         Cache::put($this->key($user), [
             'window_start' => $start,
+            'constraints' => $plan['constraints'] ?? null,
+            'origin' => $plan['origin'] ?? null,
             'prompt' => $prompt,
             'slots' => array_values($plan['slots']),
             'saved_at' => CarbonImmutable::now()->toIso8601String(),
@@ -54,28 +59,58 @@ class TodayPlanStore
     /**
      * The Today screen's view of the pinned plan, or null when none is set.
      *
-     * @return array{weekday: string, prompt: ?string, slots: list<array<string, mixed>>}|null
+     * @return array{date: ?string, weekday: string, prompt: ?string, slots: list<array<string, mixed>>}|null
      */
     public function get(User $user): ?array
     {
+        $workspace = ComposerWorkspace::query()->where('user_id', $user->id)->first();
         $data = Cache::get($this->key($user));
+        $today = CarbonImmutable::now('Europe/Berlin')->format('Y-m-d');
+        $pinnedDate = is_array($data) && isset($data['window_start'])
+            ? CarbonImmutable::parse($data['window_start'])->setTimezone('Europe/Berlin')->format('Y-m-d') : null;
+        if ($workspace !== null) {
+            $date = isset($workspace->state['plans'][$today]) ? $today : ($pinnedDate ?? $today);
+            $plan = $workspace->state['plans'][$date] ?? null;
+            if ($plan && ! empty($plan['slots'])) {
+                if (Cache::get($this->key($user).':hidden') === hash('sha256', json_encode($plan))) {
+                    return null;
+                }
+
+                $plan = app(PlanCatalogue::class)->project($plan);
+
+                return ['date' => $date, 'weekday' => CarbonImmutable::parse($date)->isoFormat('dddd'), 'prompt' => $plan['prompt'] ?? null, 'slots' => $plan['slots']];
+            }
+            if (collect($workspace->state['versions'])->contains('date', $date)) {
+                return null;
+            }
+        }
         if (! is_array($data) || empty($data['slots'])) {
             return null;
         }
 
+        $data = app(PlanCatalogue::class)->project($data);
         $weekday = isset($data['window_start']) && is_string($data['window_start'])
             ? CarbonImmutable::parse($data['window_start'])->isoFormat('dddd')
             : 'day';
 
         return [
+            'date' => $pinnedDate,
             'weekday' => $weekday,
             'prompt' => is_string($data['prompt'] ?? null) ? $data['prompt'] : null,
             'slots' => array_values($data['slots']),
         ];
     }
 
+    /** Dismiss the Today summary without cancelling a saved day. */
     public function forget(User $user): void
     {
+        $state = ComposerWorkspace::query()->where('user_id', $user->id)->first()?->state ?? ['plans' => []];
+        $today = CarbonImmutable::now('Europe/Berlin')->format('Y-m-d');
+        $cached = Cache::get($this->key($user));
+        $date = isset($state['plans'][$today]) ? $today : (isset($cached['window_start']) ? CarbonImmutable::parse($cached['window_start'])->setTimezone('Europe/Berlin')->format('Y-m-d') : null);
+        if ($date && isset($state['plans'][$date])) {
+            Cache::put($this->key($user).':hidden', hash('sha256', json_encode($state['plans'][$date])), now()->addDays(4));
+        }
         Cache::forget($this->key($user));
     }
 }

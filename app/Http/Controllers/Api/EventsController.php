@@ -36,6 +36,7 @@ class EventsController extends Controller
     {
         $validated = $request->validate([
             'window' => ['nullable', 'in:today,tomorrow,weekend,week'],
+            'date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
             'category' => ['nullable', 'string', 'max:40'],
             'veedel' => ['nullable', 'string', 'max:100'],
             'free' => ['nullable', 'boolean'],
@@ -47,11 +48,12 @@ class EventsController extends Controller
         ]);
 
         $selectedWindow = $validated['window'] ?? 'today';
-        [$from, $to] = $this->window($selectedWindow);
+        $date = isset($validated['date']) ? CarbonImmutable::parse($validated['date'], 'Europe/Berlin') : null;
+        [$from, $to] = $date ? [$date->startOfDay(), $date->endOfDay()] : $this->window($selectedWindow);
 
         $occurrences = Event::occurringBetween($from, $to)
             ->when(
-                $selectedWindow === 'today' || ($selectedWindow === 'weekend' && $from->isToday()),
+                $from->isToday(),
                 fn ($occurrences) => $occurrences->filter($this->isCurrentOrUpcoming(...)),
             )
             ->when($validated['category'] ?? null, function ($occurrences, $category) {
@@ -205,8 +207,8 @@ class EventsController extends Controller
 
         return match ($window) {
             'tomorrow' => [$now->addDay()->startOfDay(), $now->addDay()->endOfDay()],
-            'weekend' => $now->isSaturday()
-                ? [$now->startOfDay(), $now->next('Sunday')->endOfDay()]
+            'weekend' => $now->isWeekend()
+                ? [$now->startOfDay(), $now->endOfWeek()->endOfDay()]
                 : [$now->next('Saturday')->startOfDay(), $now->next('Sunday')->endOfDay()],
             'week' => [$now, $now->addDays(7)->endOfDay()],
             default => [$now->startOfDay(), $now->endOfDay()],

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -57,6 +58,40 @@ test('the area importer attaches facilities to mapped parks and sports centres',
         ->parent_spot_id->toBeNull()
         ->and(DB::table('park_areas')->where('source_id', 'way/202')->value('kind'))
         ->toBe('sports_centre');
+});
+
+test('an unchanged destination assignment keeps a ready enrichment fresh', function () {
+    $park = Spot::factory()->create([
+        'name' => 'Stable Test Park',
+        'category' => 'park',
+        'source' => 'osm',
+        'source_id' => 'way/303',
+        'lat' => 50.9505,
+        'lng' => 6.9505,
+    ]);
+    $facility = Spot::factory()->create([
+        'name' => 'Stable Test Court',
+        'category' => 'tennis',
+        'lat' => 50.9504,
+        'lng' => 6.9504,
+    ]);
+    $response = ['elements' => [areaWay(303, 'Stable Test Park', 'park', 50.95, 6.95)]];
+    Http::fake(['*' => Http::response($response)]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+    expect($facility->fresh()->parent_spot_id)->toBe($park->id);
+
+    $enrichment = SpotEnrichment::factory()->create([
+        'spot_id' => $facility->id,
+        'status' => 'ready',
+        'summary' => 'A source-grounded English summary.',
+    ]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+
+    expect($enrichment->fresh())
+        ->status->toBe('ready')
+        ->stale_at->toBeNull();
 });
 
 /**

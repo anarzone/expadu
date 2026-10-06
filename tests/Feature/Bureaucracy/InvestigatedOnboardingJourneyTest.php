@@ -170,7 +170,7 @@ test('real onboarding and structured answers produce the reviewed case plan', fu
         'address_registration_status' => 'not_registrable',
         'interests' => [],
         ...$journey['onboarding'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     $user->refresh();
     expect($user->bureaucracy_path)->toBe($journey['expected_path']);

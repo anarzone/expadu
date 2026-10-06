@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use App\Services\OpeningHoursParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -47,11 +48,9 @@ class ImportOsmSpots extends Command
 
         $this->info('Querying Overpass API for Cologne spots...');
 
-        // Fetch each category separately to avoid timeouts. v2: physical
-        // leisure across the whole city is the primary content; indoor
-        // categories stay on the old inner-city bbox.
+        // Each supported category covers the full city; polygon assignment
+        // below rejects points outside the service area.
         $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
-        $innerBbox = '50.92,6.92,50.96,6.97'; // inner city (cafés etc.)
         $queries = [
             'park' => "[out:json][timeout:40];nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});out center;",
             // No `out` limit on playground/pitch: Cologne has ~2,300 playgrounds
@@ -73,11 +72,11 @@ class ImportOsmSpots extends Command
             'swimming' => "[out:json][timeout:40];(nwr[\"leisure\"=\"swimming_area\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"=\"swimming\"]({$bbox}););out center;",
             'museum' => "[out:json][timeout:40];nwr[\"tourism\"=\"museum\"][\"name\"]({$bbox});out center;",
             'gallery' => "[out:json][timeout:40];nwr[\"tourism\"=\"gallery\"][\"name\"]({$bbox});out center;",
-            'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center 200;",
+            'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center;",
             'zoo' => "[out:json][timeout:40];nwr[\"tourism\"=\"zoo\"][\"name\"]({$bbox});out center;",
-            'cafe' => "[out:json][timeout:25];node[\"amenity\"=\"cafe\"]({$innerBbox});out body;",
-            'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$innerBbox});node[\"office\"=\"coworking\"]({$innerBbox}););out body;",
-            'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
+            'cafe' => "[out:json][timeout:40];nwr[\"amenity\"=\"cafe\"]({$bbox});out center;",
+            'coworking' => "[out:json][timeout:40];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
+            'library' => "[out:json][timeout:40];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
         ];
 
         // Optionally re-import a subset (e.g. after a query fix) without
@@ -263,11 +262,19 @@ class ImportOsmSpots extends Command
         // A successful category refresh is also an authoritative deletion
         // signal. Rows absent from this run remain for audit/history but stop
         // competing in discovery and Composer immediately.
-        Spot::query()
+        $retiredSpotIds = Spot::query()
             ->where('source', 'osm')
             ->whereIn('source_group', array_unique($refreshedGroups))
             ->where(fn ($query) => $query->whereNull('last_seen_at')->orWhere('last_seen_at', '<', $refreshStartedAt))
-            ->update(['is_active' => false, 'is_recommendable' => false]);
+            ->pluck('id')
+            ->all();
+
+        if ($retiredSpotIds !== []) {
+            Spot::query()
+                ->whereKey($retiredSpotIds)
+                ->update(['is_active' => false, 'is_recommendable' => false]);
+            SpotEnrichment::markReadyAsStaleForSpots($retiredSpotIds);
+        }
 
         return self::SUCCESS;
     }
@@ -356,24 +363,15 @@ class ImportOsmSpots extends Command
     }
 
     /**
-     * OSM tags worth keeping — they feed the place detail's facts/chips;
-     * wikidata/wikipedia link to Commons photos (spots:fetch-photos).
-     */
-    private const KEPT_TAG_KEYS = [
-        'surface', 'lit', 'covered', 'indoor', 'access', 'fee', 'opening_hours',
-        'sport', 'hoops', 'wheelchair', 'drinking_water', 'barrier',
-        // Photo links resolved later by spots:fetch-photos. wikimedia_commons
-        // and image are mapper-provided photos of the place itself.
-        'wikidata', 'wikipedia', 'wikimedia_commons', 'image',
-    ];
-
-    /**
+     * Preserve source facts, including unfamiliar conditions, for later review.
+     * Displayed claims and media approval remain separately controlled.
+     *
      * @param  array<string, string>  $tags
      * @return array<string, string>
      */
     protected function keptTags(array $tags): array
     {
-        return array_intersect_key($tags, array_flip(self::KEPT_TAG_KEYS));
+        return array_filter($tags, fn (mixed $value): bool => is_string($value));
     }
 
     /**

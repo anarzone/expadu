@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Redis;
 
 class EventTrackingService
 {
-    public function __construct(private VeedelLocator $veedels) {}
+    public function __construct(private VeedelLocator $veedels, private LocationDataRetention $retention) {}
 
     /**
      * Track a user event with an optional payload.
@@ -19,10 +19,30 @@ class EventTrackingService
      */
     public function track(User $user, string $eventType, array $payload = []): void
     {
+        if ($eventType === 'location_ping') {
+            $this->retention->withUserLock($user->id, function () use ($user, $eventType, $payload): void {
+                // Serialize the permission check and writes with opt-out/deletion,
+                // so a ping already in flight cannot refill a purged history.
+                $user->load('userSetting');
+
+                if ($user->setting('share_location')) {
+                    $this->record($user, $eventType, $payload);
+                }
+            });
+
+            return;
+        }
+
+        $this->record($user, $eventType, $payload);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function record(User $user, string $eventType, array $payload): void
+    {
         UserEvent::create([
             'user_id' => $user->id,
             'event_type' => $eventType,
-            'payload' => $payload ?: null,
+            'payload' => in_array($eventType, ['location_ping', 'spot_proximity'], true) ? null : ($payload ?: null),
             'session_id' => session()->getId(),
         ]);
 
@@ -67,26 +87,20 @@ class EventTrackingService
             }
 
             // Throttle: skip if we recorded proximity to this spot in the last 30 min
-            $recentExists = UserEvent::where('user_id', $user->id)
-                ->where('event_type', 'spot_proximity')
-                ->where('created_at', '>=', now()->subMinutes(30))
-                ->whereRaw("payload->>'spot_id' = ?", [(string) $spot->id])
-                ->exists();
-
-            if ($recentExists) {
+            try {
+                $key = "location_proximity:{$user->id}:{$spot->id}";
+                if (Redis::exists($key)) {
+                    continue;
+                }
+                Redis::setex($key, 1800, '1');
+            } catch (\Throwable) {
                 continue;
             }
 
             UserEvent::create([
                 'user_id' => $user->id,
                 'event_type' => 'spot_proximity',
-                'payload' => [
-                    'spot_id' => $spot->id,
-                    'spot_name' => $spot->name,
-                    'lat' => $spot->lat,
-                    'lng' => $spot->lng,
-                    'distance_m' => round($dist),
-                ],
+                'payload' => null,
                 'session_id' => session()->getId(),
             ]);
         }
@@ -95,15 +109,9 @@ class EventTrackingService
     /**
      * Store location ping in Redis for 1-week history.
      *
-     * NOTICE: Location data is stored in Redis (not database) with a 30-day TTL.
-     * This is intentional for:
-     * - Analyzing movement patterns to improve commute suggestions
-     * - Detecting frequently visited places for routine auto-detection
-     * - Debugging location-related issues (e.g. wrong stop shown)
-     *
      * Data stored per entry: {lat, lng, accuracy, timestamp}
      * Key format: location_history:{user_id} (Redis sorted set, scored by timestamp)
-     * Auto-expires: 30 days from last write via TTL refresh
+     * The oldest member sets the whole key's maximum expiry, even without a scheduler.
      *
      * To query: Redis::zrangebyscore("location_history:{userId}", $from, $to)
      */
@@ -112,14 +120,15 @@ class EventTrackingService
         try {
             $key = "location_history:{$user->id}";
             $timestamp = now()->timestamp;
+            $this->retention->pruneHistory($key);
 
             // Deduplicate accepted readings: skip if last entry was <60s ago and <50m away
             // Always log rejected readings for debugging
             if (! $rejected) {
-                $lastEntries = Redis::zrevrange($key, 0, 0, 'WITHSCORES');
+                $lastEntries = Redis::zrevrange($key, 0, 0);
                 if (! empty($lastEntries)) {
-                    $lastJson = array_key_first($lastEntries);
-                    $lastScore = (int) $lastEntries[$lastJson];
+                    $lastJson = $lastEntries[0];
+                    $lastScore = (int) Redis::zscore($key, $lastJson);
 
                     if ($timestamp - $lastScore < 60) {
                         $last = json_decode($lastJson, true);
@@ -141,11 +150,7 @@ class EventTrackingService
 
             Redis::zadd($key, $timestamp, $entry);
 
-            // Remove entries older than 30 days
-            Redis::zremrangebyscore($key, 0, now()->subMonth()->timestamp);
-
-            // Refresh TTL to 30 days from now
-            Redis::expire($key, 2592000); // 30 * 24 * 60 * 60
+            $this->retention->pruneHistory($key);
         } catch (\Throwable) {
             // Redis unavailable — skip location storage silently
         }

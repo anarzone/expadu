@@ -40,7 +40,7 @@ test('onboarding can be completed with valid data', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('bureaucracy'));
+    $response->assertRedirect(route('dashboard'));
 
     $user->refresh();
     expect($user->situation->value)->toBe('non_eu_employee');
@@ -78,7 +78,7 @@ test('employee situations do not require the EU question', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('bureaucracy'));
+    $response->assertRedirect(route('dashboard'));
 });
 
 test('entry mode is offered but never required', function () {
@@ -113,7 +113,7 @@ test('german level is optional', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('bureaucracy'));
+    $response->assertRedirect(route('dashboard'));
 });
 
 test('interests are optional', function () {
@@ -129,7 +129,7 @@ test('interests are optional', function () {
         'interests' => [],
     ]);
 
-    $response->assertRedirect(route('bureaucracy'));
+    $response->assertRedirect(route('dashboard'));
     expect($user->fresh()->interests)->toBe([]);
 });
 
@@ -152,7 +152,7 @@ test('onboarding limits interests to the configured maximum', function () {
 test('onboarding derives address deadlines only from a registrable move-in', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
-    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => 'registrable', 'moved_in_at' => '2026-01-20', 'interests' => []])->assertRedirect(route('bureaucracy'));
+    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => 'registrable', 'moved_in_at' => '2026-01-20', 'interests' => []])->assertRedirect(route('dashboard'));
     $user->refresh();
     expect($user->profile_attributes['housing_status'])->toBe('long_term')->and($user->profile_attributes['moved_in_at'])->toBe('2026-01-20');
 });
@@ -160,7 +160,7 @@ test('onboarding derives address deadlines only from a registrable move-in', fun
 test('onboarding pauses address deadlines when registration is unknown or unavailable', function (string $status) {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
-    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => $status, 'interests' => []])->assertRedirect(route('bureaucracy'));
+    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => $status, 'interests' => []])->assertRedirect(route('dashboard'));
     $user->refresh();
     expect($user->profile_attributes['housing_status'] ?? null)->toBe($status === 'not_registrable' ? 'temporary' : null)->and($user->profile_attributes['moved_in_at'] ?? null)->toBeNull();
 })->with(['unsure' => 'unsure', 'unavailable' => 'not_registrable']);
@@ -281,12 +281,12 @@ test('onboarding fails with future arrival date', function () {
     $response->assertSessionHasErrors('arrival_date');
 });
 
-test('non-onboarded user is redirected from protected pages', function () {
+test('new users can explore before optional onboarding', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
     $response = $this->get(route('explore'));
-    $response->assertRedirect(route('onboarding'));
+    $response->assertOk();
 });
 
 test('onboarded user can access protected pages', function () {
@@ -309,7 +309,7 @@ test('entry mode and derived address status land in the attribute bag with audit
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'd_visa',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     $user->refresh();
     expect($user->profile_attributes['entry_mode'])->toBe('d_visa');
@@ -341,8 +341,8 @@ test('redo onboarding re-asks everything but keeps all progress', function () {
     expect($user->userTasks()->count())->toBe(1);
     expect($userTask->fresh()->documents_checked)->toBe(['Passport']);
 
-    // Protected pages bounce back to onboarding until it's completed again.
-    $this->get(route('explore'))->assertRedirect(route('onboarding'));
+    // Returning to the questionnaire never locks someone out of the app.
+    $this->get(route('explore'))->assertOk();
 
     $this->post(route('onboarding.complete'), [
         'situation' => 'student',
@@ -352,7 +352,7 @@ test('redo onboarding re-asks everything but keeps all progress', function () {
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     // The touched old-path task survives in the records lane.
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
@@ -376,7 +376,7 @@ test('planning mode completes onboarding with no arrival date', function () {
         'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
-    $response->assertRedirect(route('bureaucracy'));
+    $response->assertRedirect(route('dashboard'));
 
     $user->refresh();
     expect($user->onboarded_at)->not->toBeNull();
@@ -396,7 +396,7 @@ test('planning mode lands in the Before-you-fly phase with no firing deadlines',
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'visa_free',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $props = $page->toArray()['props'];
@@ -429,7 +429,7 @@ test('family D-visa onboarding confirms explicit canonical facts without inventi
         'case_goal' => 'family_reunification_permit',
         'sponsor_current_title' => 'blue_card',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     $case = $user->fresh()->bureaucracyCase;
     expect($case)->not->toBeNull();
@@ -469,7 +469,7 @@ test('Blue Card onboarding maps only the documented German level and derives the
         'german_level' => 'a2',
         'documented_german_level' => 'b1',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     $case = $user->fresh()->bureaucracyCase;
     expect($case)->not->toBeNull();
@@ -496,7 +496,7 @@ test('re-onboarding retires visa sponsor and refinement facts that are no longer
         'case_goal' => 'family_reunification_permit',
         'sponsor_current_title' => 'blue_card',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     $this->post(route('onboarding.complete'), [
         'situation' => 'eu_employee',
@@ -511,7 +511,7 @@ test('re-onboarding retires visa sponsor and refinement facts that are no longer
         'case_goal' => 'blue_card',
         'sponsor_current_title' => 'blue_card',
         'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
+    ])->assertRedirect(route('dashboard'));
 
     $case = $user->fresh()->bureaucracyCase;
     $store = app(CaseFactStore::class);
@@ -553,3 +553,19 @@ test('onboarding rolls back profile and canonical fact writes when required plac
     expect($user->bureaucracyCase)->toBeNull();
     expect($user->places()->count())->toBe(0);
 });
+
+test('onboarding returns to an intended app page without accepting external destinations', function (string $intended, string $expected) {
+    $user = User::factory()->notOnboarded()->create();
+    $this->actingAs($user)->withSession(['url.intended' => $intended]);
+
+    $this->post(route('onboarding.complete'), [
+        'situation' => 'eu_employee',
+        'veedel' => 'Nippes',
+        'arrival_planned' => true,
+    ])->assertRedirect($expected)->assertSessionMissing('url.intended');
+})->with([
+    'travel context' => ['/timetable?to_name=Museum', '/timetable?to_name=Museum'],
+    'external page' => ['https://outside.example/timetable', '/dashboard'],
+    'external host without scheme' => ['//outside.example/dashboard', '/dashboard'],
+    'authentication route' => ['/logout', '/dashboard'],
+]);

@@ -70,12 +70,12 @@ test('an authenticated user is bounced off the login screen with a flash', funct
         ->assertSessionHas('status');
 });
 
-test('an authenticated, not-yet-onboarded user is bounced off register to onboarding with a flash', function () {
+test('an authenticated, new user is returned from register to Today with a flash', function () {
     $user = User::factory()->notOnboarded()->create();
 
     $this->actingAs($user)
         ->get(route('register'))
-        ->assertRedirect(route('onboarding', absolute: false))
+        ->assertRedirect(route('dashboard', absolute: false))
         ->assertSessionHas('status');
 });
 
@@ -86,6 +86,7 @@ test('users can logout', function () {
 
     $this->assertGuest();
     $response->assertRedirect('/login');
+    $response->assertSessionHas('inertia.clear_history', true);
 });
 
 test('users are rate limited', function () {

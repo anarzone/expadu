@@ -32,7 +32,7 @@ class VrsTriasService
                     return null;
                 }
 
-                $cacheKey = "trias_departures_v2_{$globalId['id']}_{$limit}";
+                $cacheKey = "trias_departures_v3_{$globalId['id']}_{$limit}";
                 $cached = Cache::get($cacheKey);
                 if ($cached !== null) {
                     return $cached;
@@ -46,7 +46,7 @@ class VrsTriasService
                 $result = [
                     'stop_name' => $globalId['name'],
                     'source' => 'trias_rt',
-                    'departures' => $departures,
+                    ...$departures,
                 ];
 
                 Cache::put($cacheKey, $result, 60);
@@ -71,7 +71,7 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = 'trias_departures_nearby_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}";
+        $cacheKey = 'trias_departures_nearby_v2_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}"; // gitleaks:allow (cache key name, not a secret)
 
         // Return cached live data if available
         $cached = Cache::get($cacheKey);
@@ -93,7 +93,7 @@ class VrsTriasService
         $result = [
             'stop_name' => $globalId['name'],
             'source' => 'trias_rt',
-            'departures' => $departures,
+            ...$departures,
         ];
 
         Cache::put($cacheKey, $result, 60);
@@ -241,7 +241,7 @@ class VrsTriasService
     /**
      * Fetch stop events (departures) from TRIAS and parse into app format.
      *
-     * @return array<int, array>|null
+     * @return array{departures: array, observed_at: string}|null
      */
     private function fetchStopEvents(string $globalId, int $limit): ?array
     {
@@ -252,6 +252,7 @@ class VrsTriasService
             return null;
         }
 
+        $observedAt = now()->utc()->toIso8601String();
         $parsed = $this->parseXml($response);
         if (! $parsed) {
             return null;
@@ -278,7 +279,7 @@ class VrsTriasService
                 continue;
             }
 
-            $section = $service->ServiceSection ?? null;
+            $section = $service->ServiceSection ?? $service;
             $lineName = (string) ($section->PublishedLineName->Text ?? '');
             $dest = (string) ($service->DestinationText->Text ?? '');
             $ptMode = (string) ($section->Mode->PtMode ?? '');
@@ -288,7 +289,8 @@ class VrsTriasService
             }
 
             // Get times — prefer EstimatedTime (live), fall back to TimetabledTime
-            $departure = $call->CallAtStop->ServiceDeparture ?? null;
+            $stop = $call->CallAtStop;
+            $departure = $stop->ServiceDeparture ?? null;
             $scheduled = (string) ($departure->TimetabledTime ?? '');
             $estimated = (string) ($departure->EstimatedTime ?? '');
             $timeStr = $estimated ?: $scheduled;
@@ -309,6 +311,19 @@ class VrsTriasService
             $delayMin = $estimated && $scheduled
                 ? max(0, (int) round(($depTime->timestamp - $scheduledTime->timestamp) / 60))
                 : 0;
+            $cancelled = filter_var((string) ($service->Cancelled ?? ''), FILTER_VALIDATE_BOOLEAN)
+                || filter_var((string) ($stop->NotServicedStop ?? ''), FILTER_VALIDATE_BOOLEAN)
+                || filter_var((string) ($stop->NoBoardingAtStop ?? ''), FILTER_VALIDATE_BOOLEAN);
+            $stopId = trim((string) ($stop->StopPointRef ?? ''));
+            $stopName = trim((string) ($stop->StopPointName->Text ?? ''));
+            $platform = trim((string) ($stop->EstimatedBay->Text ?? $stop->PlannedBay->Text ?? ''));
+            $identity = implode('|', [
+                (string) ($service->OperatingDayRef ?? ''),
+                (string) ($service->JourneyRef ?? ''),
+                (string) ($section->LineRef ?? ''),
+                $lineName, $dest, $stopId ?: $globalId,
+                $scheduledTime->toIso8601String(),
+            ]);
 
             $type = $this->mapPtMode($ptMode, $lineName);
 
@@ -321,6 +336,7 @@ class VrsTriasService
                     'color' => '#1A4CD4',
                     'type' => $type,
                     'departures' => [],
+                    'services' => [],
                     'delay' => 0,
                     'cancelled' => false,
                     'disrupted' => $isDisrupted,
@@ -328,15 +344,35 @@ class VrsTriasService
                 ];
             }
 
-            if (count($grouped[$key]['departures']) < 5 && ! in_array($minsAway, $grouped[$key]['departures'], true)) {
-                $grouped[$key]['departures'][] = $minsAway;
-
-                // Use first departure's delay as the group indicator
-                if (count($grouped[$key]['departures']) === 1) {
-                    $grouped[$key]['delay'] = $delayMin;
-                }
-            }
+            $id = 'trias:'.sha1($identity);
+            $grouped[$key]['services'][$id] = [
+                'id' => $id,
+                'departure_at' => $depTime->toIso8601String(),
+                'scheduled_at' => $scheduled !== '' ? $scheduledTime->toIso8601String() : null,
+                'expected_at' => $estimated !== '' ? $depTime->toIso8601String() : null,
+                'time_basis' => $estimated !== '' ? 'realtime' : 'scheduled',
+                'delay' => $delayMin,
+                'cancelled' => $cancelled,
+                'boarding_point' => $stopId !== '' || $stopName !== '' ? [
+                    'id' => $stopId !== '' ? $stopId : null,
+                    'name' => $stopName !== '' ? $stopName : null,
+                    'platform' => $platform !== '' ? $platform : null,
+                ] : null,
+            ];
         }
+
+        foreach ($grouped as &$group) {
+            $services = array_values($group['services']);
+            usort($services, fn (array $a, array $b) => Carbon::parse($a['departure_at'])->timestamp <=> Carbon::parse($b['departure_at'])->timestamp);
+            $group['services'] = array_slice($services, 0, 5);
+            $group['departures'] = array_values(array_unique(array_map(
+                fn (array $item) => (int) $now->diffInMinutes(Carbon::parse($item['departure_at']), false),
+                $group['services'],
+            )));
+            $group['delay'] = $group['services'][0]['delay'] ?? 0;
+            $group['cancelled'] = $group['services'][0]['cancelled'] ?? false;
+        }
+        unset($group);
 
         // Filter out empty groups and sort: trams first, buses last, then by next departure
         $typeOrder = ['tram' => 0, 'subway' => 1, 'rail' => 2, 'bus' => 3];
@@ -351,7 +387,7 @@ class VrsTriasService
             return ($a['departures'][0] ?? 999) <=> ($b['departures'][0] ?? 999);
         });
 
-        return array_slice($results, 0, $limit);
+        return ['departures' => array_slice($results, 0, $limit), 'observed_at' => $observedAt];
     }
 
     /**
@@ -366,14 +402,14 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = "trias_stop_deps_{$globalId}_{$limit}";
+        $cacheKey = "trias_stop_deps_v2_{$globalId}_{$limit}";
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
-        $result = $this->fetchStopEvents($globalId, $limit);
+        $result = $this->fetchStopEvents($globalId, $limit)['departures'] ?? null;
         if ($result !== null) {
             Cache::put($cacheKey, $result, 60);
         }
@@ -393,7 +429,7 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = "trias_trip_stop_{$fromStopId}_{$toLat}_{$toLng}_{$departureTime}";
+        $cacheKey = "trias_trip_stop_v2_{$fromStopId}_{$toLat}_{$toLng}_{$departureTime}";
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
@@ -433,7 +469,7 @@ class VrsTriasService
                 return null;
             }
 
-            $cacheKey = "trias_trip_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
+            $cacheKey = "trias_trip_v2_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
 
             $cached = Cache::get($cacheKey);
             if ($cached !== null) {
@@ -505,6 +541,8 @@ class VrsTriasService
 
             $trips[] = [
                 'total_duration_min' => $this->isoDurationToMinutes($durationIso),
+                'departure_at' => $startTime ?: null,
+                'arrival_at' => $endTime ?: null,
                 'departure_time' => $startTime ? Carbon::parse($startTime)->format('H:i') : '',
                 'arrival_time' => $endTime ? Carbon::parse($endTime)->format('H:i') : '',
                 'transfers' => $interchanges,
@@ -576,6 +614,8 @@ class VrsTriasService
             'alighting_stop' => $alightShort,
             'boarding_stop_id' => $boardStopId,
             'alighting_stop_id' => $alightStopId,
+            'departure_at' => $depTime ?: null,
+            'arrival_at' => $arrTime ?: null,
             'departure_time' => $depTime ? Carbon::parse($depTime)->format('H:i') : '',
             'departure_time_scheduled' => $depSched ? Carbon::parse($depSched)->format('H:i') : '',
             'arrival_time' => $arrTime ? Carbon::parse($arrTime)->format('H:i') : '',

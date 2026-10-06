@@ -86,9 +86,9 @@ return [
 
     'motis' => [
         // Our self-hosted MOTIS (VRS GTFS+RT + NRW OSM). Primary routing
-        // provider; the public Transitous below is the dev/failover backstop.
-        // Defaults to the local benchmark instance for development.
-        'url' => env('MOTIS_URL', 'http://localhost:8080'),
+        // provider on staging/production. Leave it unset locally so the public
+        // Transitous adapter below is used without probing the Laravel app.
+        'url' => env('MOTIS_URL'),
     ],
 
     'transitous' => [

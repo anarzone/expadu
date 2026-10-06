@@ -381,7 +381,7 @@ class BureaucracyController extends Controller
             'key' => $task->key,
             'type' => $task->type,
             'title' => $task->title,
-            'description' => $task->description,
+            'description' => $task->descriptionFor($profile->attributes),
             'phase' => $task->phase,
             'urgency' => $task->urgency->value,
             'status' => $status->value,

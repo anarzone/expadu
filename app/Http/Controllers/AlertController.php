@@ -19,6 +19,7 @@ class AlertController extends Controller
         // now live on their own page (/settings/notifications); the right rail is
         // the shared widgets panel, so this only feeds the list + header count.
         $alerts = $request->user()->alerts()
+            ->publishable()
             ->whereNull('dismissed_at')
             // updated_at so a coalesced card (a weather warning refreshed this
             // poll) rises to the top instead of sitting at its first-seen time.
@@ -29,6 +30,7 @@ class AlertController extends Controller
         return Inertia::render('alerts', [
             'alerts' => $alerts->map(fn (Alert $alert) => $this->present($alert))->all(),
             'unreadCount' => $request->user()->alerts()
+                ->publishable()
                 ->whereNull('dismissed_at')
                 ->whereNull('read_at')
                 ->count(),

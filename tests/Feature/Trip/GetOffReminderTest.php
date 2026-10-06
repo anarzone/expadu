@@ -19,21 +19,25 @@ function reminderPayload(array $overrides = []): array
 
     return array_replace_recursive([
         'journey' => [
+            'depart_at' => now()->toIso8601String(),
+            'arrive_at' => now()->addMinutes(21)->toIso8601String(),
             'legs' => [
-                ['mode' => 'walk', 'to' => ['name' => 'Board Stop']],
+                ['mode' => 'walk', 'depart_at' => now()->toIso8601String(), 'arrive_at' => now()->addMinute()->toIso8601String(), 'to' => ['name' => 'Board Stop']],
                 [
                     'mode' => 'tram',
                     'line' => '12',
+                    'depart_at' => now()->addMinute()->toIso8601String(),
                     'arrive_at' => $change,
                     'to' => ['name' => 'Change Stop'],
                 ],
                 [
                     'mode' => 'bus',
                     'line' => '140',
+                    'depart_at' => $change,
                     'arrive_at' => $exit,
                     'to' => ['name' => 'Exit Stop'],
                 ],
-                ['mode' => 'walk', 'to' => ['name' => 'Destination']],
+                ['mode' => 'walk', 'depart_at' => $exit, 'arrive_at' => now()->addMinutes(21)->toIso8601String(), 'to' => ['name' => 'Destination']],
             ],
         ],
         'destination' => ['name' => 'Destination', 'lat' => 50.94, 'lng' => 6.95],
@@ -101,24 +105,13 @@ test('no reminders are scheduled when transit alerts are off', function () {
     Queue::assertNotPushed(SendTripStopReminder::class);
 });
 
-test('stops already in the past are not reminded about', function () {
+test('an ended route is rejected and cannot schedule reminders', function () {
     Queue::fake();
     subscribe($this->user);
 
-    // Self-contained payload (not the shared helper) — array_replace_recursive
-    // would merge legs index-wise and leak a future stop from the default.
-    $this->postJson('/api/trip/start', [
-        'journey' => ['legs' => [
-            ['mode' => 'walk', 'to' => ['name' => 'Board Stop']],
-            [
-                'mode' => 'tram',
-                'line' => '12',
-                'arrive_at' => now()->subMinutes(5)->toIso8601String(),
-                'to' => ['name' => 'Past Stop'],
-            ],
-        ]],
-        'destination' => ['name' => 'Destination', 'lat' => 50.94, 'lng' => 6.95],
-    ])->assertOk();
+    $payload = reminderPayload();
+    $this->travel(30)->minutes();
+    $this->postJson('/api/trip/start', $payload)->assertUnprocessable();
 
     Queue::assertNotPushed(SendTripStopReminder::class);
 });

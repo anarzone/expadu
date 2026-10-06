@@ -76,7 +76,8 @@ class HomeContext
     public function outdoorExposureAfter(CarbonImmutable $time): ?string
     {
         foreach ($this->todayPlanSlots as $slot) {
-            if (! ($slot['outdoor'] ?? false) || empty($slot['start_at'])) {
+            if (($slot['recommendation_status'] ?? null) === 'unavailable'
+                || ! ($slot['outdoor'] ?? false) || empty($slot['start_at'])) {
                 continue;
             }
             if (CarbonImmutable::parse($slot['start_at'])->gte($time)) {

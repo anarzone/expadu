@@ -53,8 +53,8 @@ test('the landing page links its free tools and cornerstone guides through named
 
     $response->assertOk();
     $response->assertSee(route('tools.dticket'), escape: false);
-    $response->assertSee(route('tools.residency'), escape: false);
-    $response->assertSee(route('tools.citizenship'), escape: false);
+    $response->assertDontSee('href="'.route('tools.residency').'"', escape: false);
+    $response->assertDontSee('href="'.route('tools.citizenship').'"', escape: false);
     $response->assertSee(route('tools.netto'), escape: false);
     $response->assertSee(route('blog.show', 'anmeldung-in-cologne-english-guide'), escape: false);
     $response->assertSee(route('blog.show', 'first-90-days-in-cologne-in-order'), escape: false);

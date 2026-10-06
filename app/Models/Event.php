@@ -83,12 +83,13 @@ class Event extends Model
      *
      * @return Collection<int, array{event: Event, starts_at: CarbonImmutable, ends_at: ?CarbonImmutable}>
      */
-    public static function occurringBetween(CarbonImmutable $from, CarbonImmutable $to): Collection
+    public static function occurringBetween(CarbonImmutable $from, CarbonImmutable $to, ?array $ids = null): Collection
     {
         $expander = app(RecurrenceExpander::class);
 
         $candidates = static::query()
             ->visible()
+            ->when($ids !== null, fn (Builder $query) => $query->whereIn('id', $ids))
             ->with([
                 'mediaAttachments.mediaAsset',
                 'venue.mediaAttachments.mediaAsset',

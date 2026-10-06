@@ -2,8 +2,10 @@
 
 use App\Models\ActiveTrip;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 
 beforeEach(function () {
+    $this->travelTo(CarbonImmutable::parse('2026-07-03T17:55:00+02:00'));
     $this->user = User::factory()->onboarded()->create();
     $this->actingAs($this->user);
 });
@@ -21,7 +23,7 @@ function tripPayload(array $overrides = []): array
             'duration_min' => 24,
             'transfers' => 1,
             'legs' => [
-                ['mode' => 'tram', 'line' => '12'],
+                ['mode' => 'tram', 'line' => '12', 'depart_at' => '2026-07-03T18:00:00+02:00', 'arrive_at' => '2026-07-03T18:24:00+02:00'],
             ],
         ],
         'destination' => [

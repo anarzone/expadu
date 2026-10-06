@@ -255,3 +255,22 @@ test('appointments and pinned choices remain ahead of llm preferences', function
         ->toContain('appointment:1')
         ->toContain('spot:pinned');
 });
+
+test('model input contains paired practical facts provenance and explicit activity constraints', function () {
+    Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
+    $constraints = Constraints::fromArray([...llmConstraints()->toArray(), 'activities' => ['soccer'], 'radius_km' => 2]);
+    $facts = ['activities' => ['soccer'], 'practical' => [
+        'lit' => ['value' => 'no', 'status' => 'known', 'source_url' => 'https://www.openstreetmap.org/way/123', 'observed_at' => '2026-09-28T10:00:00Z'],
+        'wheelchair' => ['value' => null, 'status' => 'unknown'],
+    ]];
+    app(AnthropicCandidateRanker::class)->rank($constraints, [llmCandidate('spot:real', ['placeFacts' => $facts])]);
+    Http::assertSent(function (Request $request): bool {
+        $payload = json_decode($request['messages'][0]['content'], true);
+
+        return ($payload['request']['activities'] ?? null) === ['soccer']
+            && ($payload['request']['radius_km'] ?? null) === 2
+            && ($payload['untrusted_candidates'][0]['place_facts']['practical']['lit']['value'] ?? null) === 'no'
+            && ($payload['untrusted_candidates'][0]['place_facts']['practical']['lit']['source_url'] ?? null) === 'https://www.openstreetmap.org/way/123'
+            && ($payload['untrusted_candidates'][0]['place_facts']['practical']['wheelchair']['status'] ?? null) === 'unknown';
+    });
+});

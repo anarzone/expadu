@@ -12,8 +12,10 @@ class GeocodingService
      *
      * @return array<int, array{name: string, street: string|null, city: string|null, lat: float, lng: float}>
      */
-    public function search(string $query, float $lat = 50.9375, float $lng = 6.9603): array
+    public function search(string $query, ?float $lat = null, ?float $lng = null): array
     {
+        $lat ??= (float) config('geocoding.search_default.lat');
+        $lng ??= (float) config('geocoding.search_default.lng');
         $cacheKey = 'geocode_'.md5("{$query}_{$lat}_{$lng}");
 
         return Cache::remember($cacheKey, 300, function () use ($query, $lat, $lng) {

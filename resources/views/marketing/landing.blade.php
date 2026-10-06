@@ -231,18 +231,18 @@
                 <p>Is €63/month worth it for how you actually move? Honest verdict, 2026 tariff.</p>
                 <span class="go">Check yours →</span> <span class="free">· free</span>
             </a>
-            <a class="tool" href="{{ route('tools.residency') }}">
+            <article class="tool">
                 <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
                 <h3>Permanent-residency timeline</h3>
-                <p>Your earliest Niederlassungserlaubnis date — and what can legally speed it up.</p>
-                <span class="go">See your date →</span> <span class="free">· free</span>
-            </a>
-            <a class="tool" href="{{ route('tools.citizenship') }}">
+                <p>Unavailable while its information is reviewed.</p>
+                <span class="free">Awaiting review</span>
+            </article>
+            <article class="tool">
                 <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15V8l8-4 8 4v7"/><path d="M8 21v-6a4 4 0 0 1 8 0v6"/></svg></div>
                 <h3>Citizenship quiz</h3>
-                <p>Are you on track for a German passport under the current rules? Five questions, sourced.</p>
-                <span class="go">Take the quiz →</span> <span class="free">· free</span>
-            </a>
+                <p>Unavailable while its information is reviewed.</p>
+                <span class="free">Awaiting review</span>
+            </article>
             <a class="tool" href="{{ route('tools.netto') }}">
                 <div class="glyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h9"/></svg></div>
                 <h3>Netto-brutto calculator</h3>

@@ -54,7 +54,7 @@ class HeuristicPromptParser implements ParsesPrompt
     /** Planning phrasings that imply "compose my time" even without a clock word. */
     private const PLANNING_VERBS = [
         'plan my', 'plan a', 'plan our', 'what should i do', 'what to do',
-        'something to do', 'fill my day', 'keep me busy', 'day out', 'free ',
+        'something to do', 'fill my day', 'keep me busy', 'day out', 'free ', 'recommend', 'where can i play',
     ];
 
     /** Synonym → canonical category from the closed activity vocabulary. */
@@ -67,7 +67,7 @@ class HeuristicPromptParser implements ParsesPrompt
         'bar' => 'bar', 'drinks' => 'bar', 'beer' => 'bar', 'pub' => 'bar',
         'cocktail' => 'bar', 'nightlife' => 'bar',
         'museum' => 'culture', 'gallery' => 'culture', 'art' => 'culture',
-        'culture' => 'culture', 'exhibition' => 'culture', 'theatre' => 'culture',
+        'culture' => 'culture', 'exhibition' => 'culture', 'theatre' => 'theatre',
         'library' => 'library', 'study' => 'library', 'read' => 'library',
         'basketball' => 'basketball', 'hoops' => 'basketball',
         'football' => 'pitch', 'soccer' => 'pitch', 'pitch' => 'pitch',
@@ -78,6 +78,120 @@ class HeuristicPromptParser implements ParsesPrompt
         'tennis' => 'tennis',
         'dog park' => 'dog_park',
         'concert' => 'event', 'gig' => 'event', 'live music' => 'event',
+        'supermarket' => 'supermarket',
+        'convenience shop' => 'convenience',
+        'convenience' => 'convenience',
+        'kiosk' => 'kiosk',
+        'clothes shop' => 'clothes',
+        'clothes' => 'clothes',
+        'shoe shop' => 'shoes',
+        'shoes' => 'shoes',
+        'jewellery shop' => 'jewelry',
+        'jewelry' => 'jewelry',
+        'department store' => 'department_store',
+        'shopping centre' => 'shopping_centre',
+        'general shop' => 'general_store',
+        'general store' => 'general_store',
+        'bicycle shop' => 'bicycle_shop',
+        'sports shop' => 'sports_shop',
+        'bookshop' => 'bookshop',
+        'stationery shop' => 'stationery',
+        'stationery' => 'stationery',
+        'electronics shop' => 'electronics',
+        'electronics' => 'electronics',
+        'phone shop' => 'phone_shop',
+        'computer shop' => 'computer_shop',
+        'furniture shop' => 'furniture',
+        'furniture' => 'furniture',
+        'homeware shop' => 'homeware',
+        'homeware' => 'homeware',
+        'hardware shop' => 'hardware',
+        'hardware' => 'hardware',
+        'garden centre' => 'garden_centre',
+        'florist' => 'florist',
+        'pet shop' => 'pet_shop',
+        'toy shop' => 'toy_shop',
+        'gift shop' => 'gift_shop',
+        'art shop' => 'art_shop',
+        'antiques shop' => 'antiques',
+        'antiques' => 'antiques',
+        'second-hand shop' => 'second_hand',
+        'second hand' => 'second_hand',
+        'music shop' => 'music_shop',
+        'drinks shop' => 'drinks_shop',
+        'coffee and tea shop' => 'coffee_tea_shop',
+        'coffee tea shop' => 'coffee_tea_shop',
+        'butcher' => 'butcher',
+        'greengrocer' => 'greengrocer',
+        'delicatessen' => 'delicatessen',
+        'seafood shop' => 'seafood_shop',
+        'confectionery shop' => 'confectionery',
+        'confectionery' => 'confectionery',
+        'car dealership' => 'car_dealer',
+        'car dealer' => 'car_dealer',
+        'car parts shop' => 'auto_parts',
+        'auto parts' => 'auto_parts',
+        'motorcycle shop' => 'motorcycle_shop',
+        'hairdresser' => 'hairdresser',
+        'beauty salon' => 'beauty',
+        'beauty' => 'beauty',
+        'laundry' => 'laundry',
+        'dry cleaner' => 'dry_cleaning',
+        'dry cleaning' => 'dry_cleaning',
+        'tailor' => 'tailor',
+        'shoe repair' => 'shoe_repair',
+        'car repair' => 'car_repair',
+        'travel agency' => 'travel_agency',
+        'ticket office' => 'ticket_shop',
+        'ticket shop' => 'ticket_shop',
+        'massage studio' => 'massage',
+        'massage' => 'massage',
+        'tattoo studio' => 'tattoo',
+        'tattoo' => 'tattoo',
+        'copy shop' => 'copy_shop',
+        'pet grooming' => 'pet_grooming',
+        'locksmith' => 'locksmith',
+        'bank' => 'bank',
+        'post office' => 'post_office',
+        'car rental' => 'car_rental',
+        'pharmacy' => 'pharmacy',
+        'drugstore' => 'drugstore',
+        'doctor' => 'doctor',
+        'dentist' => 'dentist',
+        'optician' => 'optician',
+        'hearing aid specialist' => 'hearing_aids',
+        'hearing aids' => 'hearing_aids',
+        'medical supplies' => 'medical_supply',
+        'medical supply' => 'medical_supply',
+        'clinic' => 'clinic',
+        'hospital' => 'hospital',
+        'veterinary clinic' => 'veterinary',
+        'veterinary' => 'veterinary',
+        'community centre' => 'community_centre',
+        'place of worship' => 'place_of_worship',
+        'language school' => 'language_school',
+        'music school' => 'music_school',
+        'hotel' => 'hotel',
+        'hostel' => 'hostel',
+        'guest house' => 'guest_house',
+        'motel' => 'motel',
+        'campsite' => 'campsite',
+        'gym' => 'fitness_centre',
+        'fitness centre' => 'fitness_centre',
+        'dance studio' => 'dance_studio',
+        'cinema' => 'cinema',
+        'arts centre' => 'arts_centre',
+        'escape room' => 'escape_room',
+        'ice cream shop' => 'ice_cream',
+        'ice cream' => 'ice_cream',
+        'market' => 'market',
+        'shopping' => 'shopping',
+        'local services' => 'services',
+        'health' => 'health',
+        'community' => 'community',
+        'places to stay' => 'stay',
+        'fitness' => 'fitness',
+
     ];
 
     public function parse(string $text, Profile $profile, CarbonImmutable $now): ParsedPrompt
@@ -99,7 +213,8 @@ class HeuristicPromptParser implements ParsesPrompt
         $hasTime = $this->containsWord($t, self::TIME_WORDS)
             || $this->containsAny($t, self::PLANNING_VERBS);
 
-        if ($hasTime) {
+        $placeRequest = $this->explicitPlaceRequirements($t);
+        if ($hasTime || ($placeRequest['activities'] !== [] && $placeRequest['radius_km'] !== null)) {
             return new ParsedPrompt(
                 PromptIntent::PlanDay,
                 plan: $this->buildConstraints($t, $profile, $now),
@@ -123,10 +238,38 @@ class HeuristicPromptParser implements ParsesPrompt
                 categories: $this->extractCategories($t),
                 companions: $this->extractCompanions($t),
                 budget: $this->extractBudget($t),
+                activities: $this->explicitPlaceRequirements($t)['activities'],
+                radiusKm: $this->explicitPlaceRequirements($t)['radius_km'],
             ),
             $profile,
             $now,
         );
+    }
+
+    /** Explicit requirements also constrain the model parser's output. */
+    public function explicitPlaceRequirements(string $text): array
+    {
+        $text = mb_strtolower($text);
+        $activities = [];
+        foreach ([
+            'soccer' => ['football', 'soccer', 'fußball', 'fussball'],
+            'basketball' => ['basketball'], 'table_tennis' => ['table tennis', 'tischtennis'],
+            'tennis' => ['tennis'], 'boules' => ['boules', 'bocce', 'pétanque'],
+            'skateboard' => ['skateboard', 'skateboarding'], 'swimming' => ['swimming'],
+            'volleyball' => ['volleyball'], 'badminton' => ['badminton'],
+        ] as $activity => $words) {
+            if ($this->containsWord($text, $words) && ! ($activity === 'tennis' && str_contains($text, 'table tennis'))) {
+                $activities[] = $activity;
+            }
+        }
+        $radius = null;
+        if (preg_match('/\bwithin\s+(\d+(?:[.,]\d+)?)\s*(km|kilomet(?:er|re)s?|m|met(?:er|re)s?)\b/u', $text, $match)) {
+            $radius = min(50.0, (float) str_replace(',', '.', $match[1]) / (str_starts_with($match[2], 'k') ? 1 : 1000));
+        } elseif ($this->containsAny($text, ['nearby', 'near me', 'close to me'])) {
+            $radius = (float) config('composer.nearby_radius_km');
+        }
+
+        return ['activities' => $activities, 'radius_km' => $radius, 'budget' => $this->extractBudget($text)];
     }
 
     private function resolveDay(string $t, CarbonImmutable $now): CarbonImmutable
@@ -213,27 +356,37 @@ class HeuristicPromptParser implements ParsesPrompt
      */
     private function extractCategories(string $t): array
     {
-        $categories = [];
-        foreach (self::CATEGORY_SYNONYMS as $term => $canonical) {
-            // Match the term and its plural so "museums"/"galleries" land too
-            // (regular -s and -y→-ies). The map stays singular.
+        $terms = self::CATEGORY_SYNONYMS;
+        uksort($terms, static fn (string $left, string $right): int => strlen($right) <=> strlen($left));
+        $remaining = $t;
+        $matched = [];
+        foreach ($terms as $term => $canonical) {
+            // A specific phrase owns its words; separate requests still match.
             $variants = [$term, $term.'s'];
             if (str_ends_with($term, 'y')) {
                 $variants[] = substr($term, 0, -1).'ies';
             }
-            if ($this->containsWord($t, $variants)) {
+            $pattern = '/\\b(?:'.implode('|', array_map(static fn (string $variant): string => preg_quote($variant, '/'), $variants)).')\\b/u';
+            if (preg_match($pattern, $remaining)) {
+                $matched[$term] = true;
+                $remaining = preg_replace_callback($pattern, static fn (array $match): string => str_repeat(' ', strlen($match[0])), $remaining);
+            }
+        }
+
+        $categories = [];
+        foreach (self::CATEGORY_SYNONYMS as $term => $canonical) {
+            if (isset($matched[$term])) {
                 $categories[] = $canonical;
             }
         }
 
-        // "sport(s)" is an umbrella the 1:1 synonym map can't express.
-        if ($this->containsWord($t, ['sport', 'sports'])) {
+        // Standalone "sport(s)" fans out without widening a sports-shop request.
+        if ($this->containsWord($remaining, ['sport', 'sports'])) {
             array_push($categories, 'pitch', 'basketball', 'tennis', 'table_tennis', 'skatepark', 'boules');
         }
 
-        // "outdoors / outside / fresh air" — the open-air umbrella, the same way.
-        if ($this->containsWord($t, ['outdoors', 'outdoor', 'outside', 'nature'])
-            || str_contains($t, 'fresh air')) {
+        if ($this->containsWord($remaining, ['outdoors', 'outdoor', 'outside', 'nature'])
+            || str_contains($remaining, 'fresh air')) {
             array_push($categories, 'park', 'lake', 'playground', 'pitch', 'basketball', 'dog_park', 'skatepark');
         }
 
@@ -254,7 +407,8 @@ class HeuristicPromptParser implements ParsesPrompt
     private function extractBudget(string $t): ?string
     {
         // Deliberately NOT the bare word "free" — "free Saturday" is time, not money.
-        if (str_contains($t, 'for free') || str_contains($t, 'free entry')
+        if (preg_match('/\bfree\s+(football|soccer|basketball|tennis|table tennis|courts?|pitches?|places?|entry|admission|activities)\b/u', $t)
+            || str_contains($t, 'for free') || str_contains($t, 'free entry')
             || str_contains($t, 'free admission') || str_contains($t, 'no cost')
             || str_contains($t, 'gratis')) {
             return 'free';

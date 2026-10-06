@@ -37,6 +37,8 @@ function fakeTriasTrips(): void
             'source' => 'trias',
             'trips' => [[
                 'total_duration_min' => 23,
+                'departure_at' => '2026-10-06T14:00:00+02:00',
+                'arrival_at' => '2026-10-06T14:23:00+02:00',
                 'departure_time' => '14:00',
                 'arrival_time' => '14:23',
                 'transfers' => 0,
@@ -49,6 +51,8 @@ function fakeTriasTrips(): void
                     'alighting_stop' => 'Dom/Hbf',
                     'boarding_stop_id' => 'S1',
                     'alighting_stop_id' => 'S2',
+                    'departure_at' => '2026-10-06T14:02:00+02:00',
+                    'arrival_at' => '2026-10-06T14:20:00+02:00',
                     'departure_time' => '14:02',
                     'arrival_time' => '14:20',
                     'duration_min' => 18,
@@ -91,6 +95,66 @@ test('falls back to Transitous when MOTIS fails', function () {
     );
 
     expect($result->source)->toBe('transitous');
+});
+
+test('skips MOTIS when it is not configured', function () {
+    config(['services.motis.url' => null]);
+    Http::fake([
+        'api.transitous.org/api/v3/plan*' => Http::response(motisPlanFixture()),
+    ]);
+
+    $service = app(RouteService::class);
+    $from = new GeoPoint(50.9513, 6.9185);
+
+    expect($service->plan($from, new GeoPoint(50.9413, 6.9583))->source)->toBe('transitous');
+    expect($service->plan($from, new GeoPoint(50.9414, 6.9584))->source)->toBe('transitous');
+    expect(app(CircuitBreaker::class)->isOpen('motis'))->toBeFalse();
+
+    Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'localhost:8080'));
+});
+
+test('geocoding skips MOTIS when it is not configured', function () {
+    config(['services.motis.url' => null]);
+    Http::fake([
+        'api.transitous.org/api/v1/geocode*' => Http::response([
+            ['type' => 'PLACE', 'name' => 'Neumarkt', 'lat' => 50.9365, 'lon' => 6.9478],
+        ]),
+    ]);
+
+    $service = app(RouteService::class);
+
+    expect($service->geocode('Neumarkt'))->toHaveCount(1);
+    expect($service->geocode('Ebertplatz'))->toHaveCount(1);
+    expect(app(CircuitBreaker::class)->isOpen('motis'))->toBeFalse();
+});
+
+test('reverse geocoding skips MOTIS when it is not configured', function () {
+    config(['services.motis.url' => null]);
+    Http::fake([
+        'api.transitous.org/api/v1/reverse-geocode*' => Http::response([
+            ['type' => 'PLACE', 'name' => 'Köln', 'lat' => 50.9413, 'lon' => 6.9583],
+        ]),
+    ]);
+
+    $service = app(RouteService::class);
+
+    expect($service->reverseGeocode(new GeoPoint(50.9413, 6.9583))?->name)->toBe('Köln');
+    expect($service->reverseGeocode(new GeoPoint(50.9414, 6.9584))?->name)->toBe('Köln');
+    expect(app(CircuitBreaker::class)->isOpen('motis'))->toBeFalse();
+});
+
+test('travelMatrix skips MOTIS when it is not configured', function () {
+    config(['services.motis.url' => null]);
+    test()->mock(MotisAdapter::class, function ($mock) {
+        $mock->shouldNotReceive('travelMatrix');
+    });
+
+    $minutes = app(RouteService::class)->travelMatrix(
+        new GeoPoint(50.9413, 6.9583),
+        [new GeoPoint(50.9513, 6.9185)],
+    );
+
+    expect($minutes)->toBe([null]);
 });
 
 test('the circuit breaker fails open when Redis is unavailable', function () {

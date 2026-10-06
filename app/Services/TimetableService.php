@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Transit\DepartureTime;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -38,7 +40,7 @@ class TimetableService
     public function boards(float $lat, float $lng): array
     {
         $boards = Cache::flexible(
-            sprintf('timetable:v2:%.3f_%.3f', $lat, $lng),
+            sprintf('timetable:v3:%.3f_%.3f', $lat, $lng),
             [25, 180],
             fn () => $this->build($lat, $lng),
         );
@@ -64,7 +66,7 @@ class TimetableService
      * Fold the coord-resolved tram + bus boards into the hub board for the "All"
      * tab. A hub NAME resolves to a single StopPlace — the rail station at Köln
      * Hbf — so without this "All" hides the tram + bus platforms the mode tabs
-     * surface. Dedup by line + destination + type (a plain stop resolves all
+     * surface. Dedup by line + destination + type + stop (a plain stop resolves all
      * three inputs to the same departures), drop the direction (the rows come
      * from different platforms, so per-stop lane grouping would be incoherent —
      * the mode tabs keep their lanes), and order soonest-first so the board
@@ -87,27 +89,49 @@ class TimetableService
         $seen = [];
         $rows = [];
 
-        foreach (array_filter([$all, $tram, $bus]) as $board) {
+        $inputs = collect(array_filter([$all, $tram, $bus]))->sortBy(fn ($board) => DepartureTime::parse($board['fetched_at'] ?? null)?->timestamp ?? 0)->all();
+        foreach ($inputs as $board) {
             foreach ($board['departures'] ?? [] as $dep) {
-                $key = ($dep['line'] ?? '').'|'.($dep['destination'] ?? '').'|'.($dep['type'] ?? '');
+                $key = ($dep['line'] ?? '').'|'.($dep['destination'] ?? '').'|'.($dep['type'] ?? '').'|'.($dep['stop_name'] ?? '');
                 if (isset($seen[$key])) {
+                    $index = $seen[$key];
+                    $rows[$index]['minutes'] = array_values(array_unique(array_merge($rows[$index]['minutes'], $dep['minutes'])));
+                    sort($rows[$index]['minutes']);
+                    $rows[$index]['services'] = array_values(array_replace(array_column($rows[$index]['services'] ?? [], null, 'id'), array_column($dep['services'] ?? [], null, 'id')));
+
                     continue;
                 }
 
-                $seen[$key] = true;
+                $seen[$key] = count($rows);
                 $dep['direction'] = null;
                 $rows[] = $dep;
             }
         }
 
+        $rows = array_map(fn ($row) => ! empty($row['services']) ? $this->withExactMinutes($row) : $row, $rows);
         usort($rows, fn (array $a, array $b) => ($a['minutes'][0] ?? PHP_INT_MAX) <=> ($b['minutes'][0] ?? PHP_INT_MAX));
+
+        $stale = collect($inputs)->contains(fn ($board) => (bool) ($board['is_stale'] ?? false));
+        $all['is_stale'] = $stale;
+        if ($stale) {
+            $all['time_basis'] = 'stale';
+        } elseif (collect($inputs)->contains(fn ($board) => ($board['time_basis'] ?? null) === 'scheduled' && ! empty($board['departures']))) {
+            $all['time_basis'] = 'scheduled';
+        }
+        $stops = collect(array_filter([$all, $tram, $bus]))->pluck('stop')->filter()->unique(fn ($stop) => $stop['id'] ?? ($stop['name'].'|'.$stop['lat'].'|'.$stop['lng']))->values()->all();
+        $all['stops'] = $stops;
+        $all['scope'] = count($stops) > 1 ? 'nearby' : 'stop';
+        $oldest = collect($inputs)->pluck('fetched_at')->filter()->first();
+        if ($oldest !== null) {
+            $all['fetched_at'] = $oldest;
+        }
 
         return ['departures' => $rows] + $all;
     }
 
     /**
      * Re-anchor a cached board to "now": subtract the cache age from every
-     * departure minute, drop what already left, and hide the stamp.
+     * departure minute and drop what already left; expose observation and countdown timestamps.
      *
      * @param  array<string, mixed>|null  $board
      * @return array<string, mixed>|null
@@ -118,23 +142,40 @@ class TimetableService
             return null;
         }
 
-        $elapsedMin = intdiv(max(0, time() - (int) ($board['fetched_at'] ?? time())), 60);
-        unset($board['fetched_at']);
-
-        if ($elapsedMin === 0) {
-            return $board;
-        }
+        $anchor = (int) ($board['fetched_at'] ?? now()->timestamp);
+        $observed = array_key_exists('observed_at', $board)
+            ? DepartureTime::parse($board['observed_at']) : Carbon::createFromTimestamp($anchor);
+        $elapsedMin = intdiv(max(0, now()->timestamp - $anchor), 60);
+        $source = $board['source'] ?? 'unavailable';
+        $liveSource = in_array($source, ['trias_rt', 'gtfs_rt'], true);
+        $stale = (bool) ($board['is_stale'] ?? false) || ($liveSource && ($observed === null || now()->timestamp - $observed->timestamp > 90));
+        $board['fetched_at'] = $observed?->toIso8601String();
+        $board['generated_at'] = now()->toIso8601String();
+        $board['is_stale'] = $stale;
+        $board['time_basis'] = $source === 'unavailable' ? 'unavailable'
+            : ($stale ? 'stale' : ($board['time_basis'] ?? ($liveSource ? 'realtime' : 'scheduled')));
+        unset($board['observed_at']);
 
         $board['departures'] = collect($board['departures'])
-            ->map(function (array $dep) use ($elapsedMin) {
+            ->map(function (array $dep) use ($elapsedMin, $stale) {
                 $dep['minutes'] = array_values(array_filter(
                     array_map(fn ($m) => $m - $elapsedMin, $dep['minutes']),
                     fn ($m) => $m >= 0,
                 ));
+                if (! empty($dep['services'])) {
+                    $dep['services'] = array_values(array_filter(array_map(function (array $service) use ($stale) {
+                        if ($stale) {
+                            $service['time_basis'] = 'stale';
+                        }
+
+                        return $service;
+                    }, $dep['services']), fn (array $service) => ($service['cancelled'] ?? false) || (DepartureTime::parse($service['departure_at'])?->timestamp ?? 0) >= now()->timestamp));
+                    $dep = $this->withExactMinutes($dep);
+                }
 
                 return $dep;
             })
-            ->filter(fn (array $dep) => $dep['minutes'] !== [] || $dep['cancelled'])
+            ->filter(fn (array $dep) => $dep['minutes'] !== [] || $dep['cancelled'] || ! empty($dep['services']))
             ->values()
             ->all();
 
@@ -188,9 +229,9 @@ class TimetableService
     {
         try {
             return Cache::flexible(
-                'board_stop:'.$name,
+                'board_stop:v2:'.$name,
                 [20, 300],
-                fn () => ['fetched_at' => time()] + $this->gtfs->getDepartures($name, 20),
+                fn () => $this->gtfs->getDepartures($name, 20) + ['countdown_at' => now()->timestamp],
             );
         } catch (\Throwable) {
             return ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
@@ -208,9 +249,9 @@ class TimetableService
     {
         try {
             return Cache::flexible(
-                sprintf('board_geo:%.4f_%.4f', $lat, $lng),
+                sprintf('board_geo:v2:%.4f_%.4f', $lat, $lng),
                 [20, 300],
-                fn () => ['fetched_at' => time()] + $this->gtfs->getDeparturesNearby($lat, $lng, 20),
+                fn () => $this->gtfs->getDeparturesNearby($lat, $lng, 20) + ['countdown_at' => now()->timestamp],
             );
         } catch (\Throwable) {
             return ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
@@ -283,9 +324,15 @@ class TimetableService
 
         return [
             'stop_name' => $stop['name'],
+            'stop' => $this->stopArea($stop),
+            'stops' => [$this->stopArea($stop)],
+            'scope' => 'stop',
             'walk_min' => max(1, (int) ceil(($stop['_km'] ?? 0) / self::WALK_KMH * 60)),
             'source' => $result['source'] ?? 'gtfs',
-            'fetched_at' => (int) ($result['fetched_at'] ?? time()),
+            'fetched_at' => (int) ($result['countdown_at'] ?? $result['fetched_at'] ?? now()->timestamp),
+            'observed_at' => array_key_exists('observed_at', $result) ? $result['observed_at'] : Carbon::createFromTimestamp((int) ($result['countdown_at'] ?? $result['fetched_at'] ?? now()->timestamp))->toIso8601String(),
+            'is_stale' => (bool) ($result['is_stale'] ?? false),
+            'time_basis' => $result['time_basis'] ?? null,
             'departures' => $departures,
         ];
     }
@@ -304,20 +351,31 @@ class TimetableService
     {
         return collect($result['departures'] ?? [])
             ->when($allowedTypes !== null, fn ($c) => $c->filter(fn ($d) => in_array($d['type'] ?? '', $allowedTypes, true)))
-            ->map(fn ($d) => [
-                'line' => (string) ($d['line'] ?? '?'),
-                'destination' => (string) ($d['direction'] ?? ''),
-                'type' => (string) ($d['type'] ?? ''),
-                'color' => $this->color($d),
-                'minutes' => array_values(array_filter(
-                    (array) ($d['departures'] ?? []),
-                    fn ($m) => is_numeric($m) && $m >= 0 && $m <= $maxMin,
-                )),
-                'delay' => (int) ($d['delay'] ?? 0),
-                'cancelled' => (bool) ($d['cancelled'] ?? false),
-                'disrupted' => (bool) ($d['disrupted'] ?? false),
-            ])
-            ->filter(fn ($d) => $d['minutes'] !== [])
+            ->map(function ($d) use ($maxMin, $stop, $result) {
+                $mapped = [
+                    'line' => (string) ($d['line'] ?? '?'),
+                    'stop_name' => $result['stop_name'] ?? $stop['name'],
+                    'stop' => $this->stopArea($stop),
+                    'destination' => (string) ($d['direction'] ?? ''),
+                    'type' => (string) ($d['type'] ?? ''),
+                    'color' => $this->color($d),
+                    'minutes' => array_values(array_filter(
+                        (array) ($d['departures'] ?? []),
+                        fn ($m) => is_numeric($m) && $m >= 0 && $m <= $maxMin,
+                    )),
+                    'services' => $this->servicesWithinWindow((array) ($d['services'] ?? []), $maxMin),
+                    'delay' => (int) ($d['delay'] ?? 0),
+                    'cancelled' => (bool) ($d['cancelled'] ?? false),
+                    'disrupted' => (bool) ($d['disrupted'] ?? false),
+                ];
+                foreach ($mapped['services'] as &$service) {
+                    $service['stop_name'] = $service['boarding_point']['name'] ?? $mapped['stop_name'];
+                }
+                unset($service);
+
+                return array_key_exists('services', $d) ? $this->withExactMinutes($mapped) : $mapped;
+            })
+            ->filter(fn ($d) => $d['minutes'] !== [] || $d['cancelled'] || $d['services'] !== [])
             ->map(function (array $d) use ($stop) {
                 // GTFS-static route context: travel direction (groups the board
                 // into lanes) + the next stops ridden ("via …"). Degrades to
@@ -332,6 +390,46 @@ class TimetableService
             })
             ->values()
             ->all();
+    }
+
+    private function stopArea(array $stop): array
+    {
+        return [
+            'id' => ! empty($stop['id']) ? 'kvb:'.$stop['id'] : null,
+            'name' => $stop['name'],
+            'lat' => isset($stop['lat']) ? (float) $stop['lat'] : null,
+            'lng' => isset($stop['lng']) ? (float) $stop['lng'] : null,
+            'coordinate_kind' => 'stop_area',
+            'boarding_confirmed' => false,
+        ];
+    }
+
+    private function withExactMinutes(array $departure): array
+    {
+        $departure['services'] = collect($departure['services'] ?? [])->sortBy(fn ($service) => DepartureTime::parse($service['departure_at'])?->timestamp ?? 0)->values()->all();
+        $departure['minutes'] = collect($departure['services'] ?? [])
+            ->filter(fn ($service) => ! ($service['cancelled'] ?? false))
+            ->map(fn ($service) => max(0, (int) floor(((DepartureTime::parse($service['departure_at'])?->timestamp ?? 0) - now()->timestamp) / 60)))
+            ->unique()->sort()->values()->all();
+        $departure['cancelled'] = ! empty($departure['services']) && collect($departure['services'])->every(fn ($service) => (bool) ($service['cancelled'] ?? false));
+
+        return $departure;
+    }
+
+    private function servicesWithinWindow(array $services, int $maxMinutes): array
+    {
+        return array_values(array_filter($services, function ($service) use ($maxMinutes): bool {
+            if (! is_array($service) || ! isset($service['id'], $service['departure_at'])) {
+                return false;
+            }
+            $at = DepartureTime::parse($service['departure_at'])?->timestamp;
+            if ($at === null) {
+                return false;
+            }
+            $seconds = $at - now()->timestamp;
+
+            return $seconds >= 0 && $seconds <= $maxMinutes * 60;
+        }));
     }
 
     /**

@@ -14,10 +14,10 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * The per-event half of the ingest pipeline: one AI classification
- * (stored forever — the read path makes zero AI calls), guardrails,
- * and venue resolution with the ≤50m place link. Idempotent: an
- * already-classified event is skipped.
+ * The per-event half of the ingest pipeline: deterministic enrichment,
+ * venue resolution with the ≤50m place link, and optional AI classification
+ * stored for zero-AI-call reads. Idempotent: an already-classified event is
+ * skipped.
  */
 class ProcessEventJob implements ShouldBeUnique, ShouldQueue
 {
@@ -47,6 +47,10 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
         app(EventEnrichmentService::class)->enrichEvent($event);
         $event->refresh();
         $this->resolveVenue($event);
+
+        if (! config('events.classification.enabled')) {
+            return;
+        }
 
         $inputHash = $this->inputHash($event);
         if ($this->translationsAreComplete($event)

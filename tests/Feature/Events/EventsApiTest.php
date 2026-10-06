@@ -203,7 +203,7 @@ test('placeholder venue text is never shown as a venue', function () {
     expect($data[0]['meta'])->not->toContain('Siehe');
 });
 
-test('the venue\'s place photo richens the card', function () {
+test('an unmanaged venue place photo stays private', function () {
     $place = Spot::factory()->create([
         'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
         'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
@@ -214,8 +214,8 @@ test('the venue\'s place photo richens the card', function () {
 
     $data = $this->getJson('/api/events?window=today')->assertOk()->json('data');
 
-    expect($data[0]['photo_url'])->toContain('Volksgarten.jpg');
-    expect($data[0]['photo_attribution'])->toContain('CC BY-SA');
+    expect($data[0]['photo_url'])->toBeNull();
+    expect($data[0]['photo_attribution'])->toBeNull();
 });
 
 test('an approved event poster takes precedence while pending media stays private', function () {
@@ -272,7 +272,7 @@ test('weekend window catches a weekly recurring stammtisch', function () {
     expect($data[0]['recurrence_text'])->toBe('Every Saturday');
 });
 
-test('weekend means the upcoming weekend when requested on Sunday', function () {
+test('weekend retains remaining Sunday events when requested on Sunday', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-14 12:00', 'Europe/Berlin'));
 
     Event::factory()->create([
@@ -293,10 +293,10 @@ test('weekend means the upcoming weekend when requested on Sunday', function () 
 
     $response = $this->getJson('/api/events?window=weekend')->assertOk();
 
-    expect($response->json('window.from'))->toContain('2026-06-20T00:00:00')
-        ->and($response->json('window.to'))->toContain('2026-06-21T23:59:59')
+    expect($response->json('window.from'))->toContain('2026-06-14T00:00:00')
+        ->and($response->json('window.to'))->toContain('2026-06-14T23:59:59')
         ->and(collect($response->json('data'))->pluck('title')->all())
-        ->toBe(['Next Saturday', 'Next Sunday']);
+        ->toBe(['This Sunday']);
 });
 
 test('category, veedel and free filters compose', function () {

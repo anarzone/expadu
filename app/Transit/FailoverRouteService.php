@@ -107,8 +107,16 @@ class FailoverRouteService implements RouteService
     private function planWithProviders(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, bool $arriveBy, bool $variety): array
     {
         $deadline = $this->now() + self::JOURNEY_BUDGET_SECONDS;
+        $providers = ['transitous' => $this->transitous, 'trias' => $this->trias];
+        if ($departAt !== null || $arriveBy) {
+            unset($providers['trias']);
+        }
 
-        foreach (['motis' => $this->motis, 'transitous' => $this->transitous, 'trias' => $this->trias] as $name => $adapter) {
+        if ($this->motisConfigured()) {
+            $providers = ['motis' => $this->motis] + $providers;
+        }
+
+        foreach ($providers as $name => $adapter) {
             if ($this->breaker->isOpen($name)) {
                 continue;
             }
@@ -153,7 +161,13 @@ class FailoverRouteService implements RouteService
         $cacheKey = 'geocode:'.md5($query.($bias ? "{$bias->lat},{$bias->lng}" : ''));
 
         $cached = Cache::remember($cacheKey, 7 * 24 * 3600, function () use ($query, $bias) {
-            foreach (['motis' => $this->motis, 'transitous' => $this->transitous] as $name => $adapter) {
+            $providers = ['transitous' => $this->transitous];
+
+            if ($this->motisConfigured()) {
+                $providers = ['motis' => $this->motis] + $providers;
+            }
+
+            foreach ($providers as $name => $adapter) {
                 if ($this->breaker->isOpen($name)) {
                     continue;
                 }
@@ -180,7 +194,13 @@ class FailoverRouteService implements RouteService
         $cacheKey = sprintf('revgeo:%.4f,%.4f', $point->lat, $point->lng);
 
         $cached = Cache::remember($cacheKey, 24 * 3600, function () use ($point) {
-            foreach (['motis' => $this->motis, 'transitous' => $this->transitous] as $name => $adapter) {
+            $providers = ['transitous' => $this->transitous];
+
+            if ($this->motisConfigured()) {
+                $providers = ['motis' => $this->motis] + $providers;
+            }
+
+            foreach ($providers as $name => $adapter) {
                 if ($this->breaker->isOpen($name)) {
                     continue;
                 }
@@ -213,7 +233,7 @@ class FailoverRouteService implements RouteService
         // best-effort: outside the service area, or when MOTIS is already
         // known-down (breaker open), skip straight to the caller's fallback
         // rather than wait on a doomed call.
-        if (! $this->withinServiceArea($origin) || $this->breaker->isOpen('motis')) {
+        if (! $this->motisConfigured() || ! $this->withinServiceArea($origin) || $this->breaker->isOpen('motis')) {
             return $nulls;
         }
 
@@ -252,6 +272,11 @@ class FailoverRouteService implements RouteService
     {
         return $p->lat >= self::NRW_BOUNDS['minLat'] && $p->lat <= self::NRW_BOUNDS['maxLat']
             && $p->lng >= self::NRW_BOUNDS['minLng'] && $p->lng <= self::NRW_BOUNDS['maxLng'];
+    }
+
+    private function motisConfigured(): bool
+    {
+        return filled(config('services.motis.url'));
     }
 
     /**

@@ -26,6 +26,15 @@ class PermanentResidencyEligibility
      */
     public function for(Profile $profile): ?array
     {
+        // Legacy elapsed-time arithmetic has no reviewed publication evidence.
+        // Authoritative guidance continues through CurrentCasePlan and its
+        // RuleSourcePolicy. Do not publish this estimate until it is integrated
+        // with those gates; retaining the old calculation is for review only.
+        return null;
+    }
+
+    private function legacyEstimate(Profile $profile): ?array
+    {
         // Already declared settled (and typically already holding PR) — don't
         // nudge them toward qualifying for what they have.
         if (($profile->attributes['settled_at'] ?? null) !== null) {

@@ -1,11 +1,48 @@
 <?php
 
+use App\Console\Commands\ImportOsmSpots;
 use App\Jobs\ValidateMediaAssetJob;
 use App\Models\MediaAsset;
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+
+test('osm import retains the conditions needed to answer free public football requests', function () {
+    $command = new class extends ImportOsmSpots
+    {
+        public function facts(array $tags): array
+        {
+            return $this->keptTags($tags);
+        }
+    };
+    $tags = [
+        'sport' => 'soccer;basketball', 'fee' => 'no', 'access' => 'yes',
+        'fee:conditional' => 'yes @ (Sa-Su)', 'charge:conditional' => '5 EUR @ (Sa)',
+        'access:conditional' => 'private @ (Mo-Fr)', 'charge' => '5 EUR',
+        'reservation' => 'required', 'membership' => 'yes',
+        'operator' => 'Sports club', 'check_date' => '2026-09-28',
+        'opening_hours:conditional' => 'closed @ (snow)', 'sport:soccer' => 'yes',
+        'description:de' => 'Nur nach Absprache', 'lit:opening_hours' => '16:00-22:00',
+    ];
+
+    expect($command->facts($tags))->toBe($tags);
+});
+
+test('cafes are collected city wide as points and mapped areas', function () {
+    seedTestVeedelBoundary();
+    Http::fake(['*' => Http::response(['elements' => [[
+        'type' => 'way', 'id' => 928001, 'center' => ['lat' => 50.98, 'lon' => 6.95],
+        'tags' => ['amenity' => 'cafe', 'name' => 'Outer district cafe'],
+    ]]])]);
+
+    $this->artisan('osm:import --only=cafe')->assertSuccessful();
+
+    expect(Spot::query()->where('source_id', 'way/928001')->exists())->toBeTrue();
+    Http::assertSent(fn ($request) => str_contains($request['data'], 'nwr["amenity"="cafe"]')
+        && str_contains($request['data'], '(50.83,6.77,51.09,7.16)'));
+});
 
 function seedTestVeedelBoundary(): void
 {
@@ -330,11 +367,20 @@ test('a valid empty overpass result retires that refreshed source group', functi
         'source' => 'osm', 'source_id' => 'node/89', 'source_group' => 'park',
         'last_seen_at' => now()->subDay(), 'is_active' => true, 'is_recommendable' => true,
     ]);
+    $enrichment = SpotEnrichment::factory()->create([
+        'spot_id' => $existing->id,
+        'status' => 'ready',
+        'summary' => 'A prior source-grounded English summary.',
+    ]);
     Http::fake(['*' => Http::response(['elements' => []])]);
 
     $this->artisan('osm:import --only=park')->assertSuccessful();
 
     expect($existing->fresh())
         ->is_active->toBeFalse()
-        ->is_recommendable->toBeFalse();
+        ->is_recommendable->toBeFalse()
+        ->and($enrichment->fresh())
+        ->status->toBe('stale')
+        ->stale_at->not->toBeNull()
+        ->summary->toBe('A prior source-grounded English summary.');
 });

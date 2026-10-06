@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\SpotCategory;
+use App\Models\SpotEnrichment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -175,12 +176,22 @@ class ImportParkAreas extends Command
             ->map(fn (string $category) => "'{$category}'")
             ->implode(', ');
 
-        DB::statement(
-            "UPDATE spots SET parent_spot_id = NULL, park_name = NULL
-             WHERE category IN ({$fines}) AND location IS NOT NULL",
-        );
+        $clearedSpotIds = collect(DB::select(
+            "UPDATE spots AS child
+             SET parent_spot_id = NULL, park_name = NULL
+             WHERE child.category IN ({$fines})
+               AND child.location IS NOT NULL
+               AND (child.parent_spot_id IS NOT NULL OR child.park_name IS NOT NULL)
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM park_areas AS area
+                   WHERE area.parent_spot_id IS NOT NULL
+                     AND ST_Covers(area.boundary, child.location::geometry)
+               )
+             RETURNING child.id",
+        ))->pluck('id')->map(static fn (int $id): int => $id)->all();
 
-        DB::statement(
+        $assignedSpotIds = collect(DB::select(
             "UPDATE spots AS child
              SET parent_spot_id = destination.parent_spot_id,
                  park_name = destination.name
@@ -198,8 +209,16 @@ class ImportParkAreas extends Command
                  WHERE candidate.category IN ({$fines})
                    AND candidate.location IS NOT NULL
              ) AS destination
-             WHERE child.id = destination.id",
-        );
+             WHERE child.id = destination.id
+               AND (child.parent_spot_id IS DISTINCT FROM destination.parent_spot_id
+                    OR child.park_name IS DISTINCT FROM destination.name)
+             RETURNING child.id",
+        ))->pluck('id')->map(static fn (int $id): int => $id)->all();
+
+        SpotEnrichment::markReadyAsStaleForSpots([
+            ...$clearedSpotIds,
+            ...$assignedSpotIds,
+        ]);
 
         return DB::table('spots')->whereNotNull('parent_spot_id')->count();
     }
