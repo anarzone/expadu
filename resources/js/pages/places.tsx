@@ -29,6 +29,7 @@ import type {
     TransportMode,
 } from '@/components/places/from-control';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
+import { placeRoutingPoint } from '@/components/places/place-evidence';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { PlacesMap } from '@/components/places/places-map';
 import type { Place, VeedelOption } from '@/components/places/types';
@@ -42,15 +43,7 @@ const CSRF = () =>
         .querySelector('meta[name="csrf-token"]')
         ?.getAttribute('content') || '';
 
-const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
-    { id: 'park', label: 'Parks', emoji: '🌳' },
-    { id: 'culture', label: 'Culture', emoji: '🏛️' },
-    { id: 'pitch', label: 'Pitches', emoji: '⚽' },
-    { id: 'court', label: 'Courts', emoji: '🏀' },
-    { id: 'swimming', label: 'Swimming', emoji: '🏊' },
-    { id: 'playground', label: 'Playgrounds', emoji: '🛝' },
-    { id: 'dog_park', label: 'Dog parks', emoji: '🐕' },
-];
+type CategoryOption = { id: string; label: string; emoji: string };
 
 const PLACE_MODES: ReadonlyArray<{
     id: TransportMode;
@@ -111,10 +104,10 @@ function placeChips(place: Place): CardChip[] {
     return chips;
 }
 
-function placeMetaMain(place: Place): string {
+function placeMetaMain(place: Place, categories: CategoryOption[]): string {
     const cat =
         place.fine_label ??
-        CATEGORIES.find((c) => c.id === place.category)?.label ??
+        categories.find((c) => c.id === place.category)?.label ??
         'Place';
 
     // The park is the venue — a more meaningful address than the Stadtteil
@@ -156,8 +149,8 @@ function sortPlaces(
     return copy;
 }
 
-function placeMeta(place: Place): string {
-    return [placeMetaMain(place), placeDistance(place)]
+function placeMeta(place: Place, categories: CategoryOption[]): string {
+    return [placeMetaMain(place, categories), placeDistance(place)]
         .filter(Boolean)
         .join(' · ');
 }
@@ -175,6 +168,7 @@ export default function Places() {
         bezirke,
         veedelsByBezirk,
         savedPlaces,
+        categories,
     } = usePage<{
         auth: { user: { transport_mode: TransportMode | null } };
         homeVeedel: string | null;
@@ -187,6 +181,7 @@ export default function Places() {
         bezirke?: VeedelOption[];
         veedelsByBezirk?: Record<string, string[]>;
         savedPlaces: SavedPlace[];
+        categories: CategoryOption[];
     }>().props;
 
     const [bezirk, setBezirk] = useState(filters.bezirk ?? 'all');
@@ -709,12 +704,19 @@ export default function Places() {
     }
 
     function takeMeThere(place: Place) {
+        const point = placeRoutingPoint(place);
+
+        if (!point) {
+            setLocateError('This place’s location is not verified yet.');
+
+            return;
+        }
+
         setDestination({
             name: place.name,
             backLabel: place.name,
             emoji: placeEmoji(place),
-            lat: place.lat,
-            lng: place.lng,
+            ...point,
             // Route from the same origin the card distances were measured from,
             // so the sheet's times match the card (and walk isn't dropped from a
             // far-away fallback). Only when the origin is actually known.
@@ -772,13 +774,16 @@ export default function Places() {
 
     const takeMeThereButton = (place: Place) => (
         <button
+            disabled={!placeRoutingPoint(place)}
             onClick={(e) => {
                 e.stopPropagation();
                 takeMeThere(place);
             }}
-            className="rounded-[9px] bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
+            className="rounded-[9px] bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-            → Take me there
+            {placeRoutingPoint(place)
+                ? '→ Take me there'
+                : 'Location not verified'}
         </button>
     );
 
@@ -822,7 +827,7 @@ export default function Places() {
                     className="mb-4 flex gap-2 overflow-x-auto pb-1"
                     style={{ scrollbarWidth: 'none' }}
                 >
-                    {CATEGORIES.map((c) => {
+                    {categories.map((c) => {
                         const on = category === c.id;
 
                         return (
@@ -1398,7 +1403,7 @@ export default function Places() {
                     <PlacesMap
                         places={places}
                         emojiFor={placeEmoji}
-                        metaFor={placeMeta}
+                        metaFor={(place) => placeMeta(place, categories)}
                         onOpen={openPlace}
                         onTakeMeThere={takeMeThere}
                         userLocation={userLoc}
@@ -1449,11 +1454,14 @@ export default function Places() {
                         <p className="text-sm text-muted-foreground">
                             No{' '}
                             {category
-                                ? CATEGORIES.find(
-                                      (c) => c.id === category,
-                                  )?.label.toLowerCase()
+                                ? categories
+                                      .find((c) => c.id === category)
+                                      ?.label.toLowerCase()
                                 : 'places'}{' '}
-                            in {areaLabel} yet — try nearby.
+                            listed in {areaLabel} yet.
+                            {category
+                                ? ' Try another category or show all places.'
+                                : ' Try a wider area.'}
                         </p>
                         <button
                             onClick={() => {
@@ -1462,7 +1470,9 @@ export default function Places() {
                             }}
                             className="mt-3 rounded-[9px] border border-border px-4 py-2 text-[13px] font-semibold text-primary"
                         >
-                            Show all of Cologne
+                            {category
+                                ? 'Show all places'
+                                : 'Show all of Cologne'}
                         </button>
                     </div>
                 ) : (
@@ -1481,7 +1491,7 @@ export default function Places() {
                                         variant="place"
                                         coarse={place.category}
                                         title={place.name}
-                                        meta={placeMetaMain(place)}
+                                        meta={placeMetaMain(place, categories)}
                                         distance={placeDistance(place)}
                                         chips={placeChips(place)}
                                         tip={
@@ -1530,7 +1540,7 @@ export default function Places() {
                 <PlaceDetailModal
                     place={detail}
                     isMobile={false}
-                    meta={placeMeta(detail)}
+                    meta={placeMeta(detail, categories)}
                     feedback={{
                         state: stateFor(detail.id) ?? detail.feedback_state,
                         rating: ratingFor(detail.id) ?? detail.feedback_rating,
@@ -1563,7 +1573,7 @@ export default function Places() {
                 <PlaceDetailModal
                     place={richPlace}
                     isMobile
-                    meta={placeMeta(richPlace)}
+                    meta={placeMeta(richPlace, categories)}
                     feedback={{
                         state:
                             stateFor(richPlace.id) ?? richPlace.feedback_state,

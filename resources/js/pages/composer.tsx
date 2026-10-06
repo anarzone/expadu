@@ -1,1844 +1,1908 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage, useRemember } from '@inertiajs/react';
 import {
-    IconAdjustmentsHorizontal,
-    IconArrowsShuffle,
-    IconBus,
-    IconChecklist,
-    IconCloudRain,
-    IconCurrencyEuro,
-    IconPin,
+    IconArrowUp,
+    IconArrowLeft,
+    IconArrowRight,
+    IconBookmark,
+    IconCalendar,
+    IconCheck,
+    IconChevronDown,
+    IconHistory,
     IconPlus,
-    IconRipple,
-    IconSearch,
+    IconShieldCheck,
     IconSparkles,
-    IconUsers,
+    IconTrash,
     IconX,
 } from '@tabler/icons-react';
-import type { IconProps } from '@tabler/icons-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ComponentType, CSSProperties, ReactNode } from 'react';
-import { categoryClass } from '@/components/ds/category';
+import { useEffect, useRef, useState } from 'react';
+import {
+    compose,
+    parse,
+} from '@/actions/App/Http/Controllers/ComposerController';
+import {
+    show,
+    event as selectedEvent,
+    update,
+} from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
+import { Catalogue } from '@/components/composer/catalogue';
+import {
+    readComposerEntry,
+    eventCandidate,
+    mergeRequest,
+    reviewTravelDestination,
+    withoutEntryContext,
+    validDay,
+} from '@/components/composer/entry-context';
+import type { ComposerEntry } from '@/components/composer/entry-context';
+import { Guidance } from '@/components/composer/guidance';
+import { ItemPreview } from '@/components/composer/item-preview';
+import type { ItemDetails } from '@/components/composer/item-preview';
+import { ComposerLoading } from '@/components/composer/loading';
+import { OriginPicker } from '@/components/composer/origin-picker';
+import type { PlanOrigin } from '@/components/composer/origin-picker';
+import { PlanCard } from '@/components/composer/plan-card';
+import { TimePicker } from '@/components/composer/time-picker';
+import { api, ApiError, dateLabel, today } from '@/components/composer/types';
+import type {
+    Command,
+    Plan,
+    Slot,
+    Workspace,
+} from '@/components/composer/types';
+import { SavedJourneys } from '@/components/departures/saved-journeys';
+import { travelDestinationParams } from '@/components/departures/travel-request';
+import {
+    eventDateLabel,
+    eventSchedule,
+} from '@/components/events/event-presentation';
+import { EventRichDetail } from '@/components/events/event-rich-detail';
+import { SavedEvents } from '@/components/events/saved-events';
+import type { EventOccurrence } from '@/components/events/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import { AreaPickerPanel } from '@/components/places/area-picker';
-import type { BezirkOption } from '@/components/places/area-picker';
-import { categoryEmoji } from '@/components/places/category-illustration';
-import { FromPanel } from '@/components/places/from-bar';
-import type {
-    FromTarget,
-    GeoResult,
-    SavedPlace,
-} from '@/components/places/from-bar';
-import type {
-    PlacesOrigin,
-    TransportMode,
-} from '@/components/places/from-control';
+import type { SavedPlace } from '@/components/places/from-bar';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
-import { FeedbackToast } from '@/components/places/place-feedback-menu';
-import { PlacesMap } from '@/components/places/places-map';
-import type { Place } from '@/components/places/types';
-import { ICON_STROKE } from '@/constants/icons';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useTracker } from '@/hooks/use-tracker';
 import AppLayout from '@/layouts/app-layout';
-import { berlinHour, berlinTimeOnDay } from '@/lib/berlin-time';
+import { bureaucracy, dashboard, timetable } from '@/routes';
+import '../../css/composer.css';
 
-type Constraints = {
-    window_start: string;
-    window_end: string;
-    areas: string[];
-    categories: string[];
-    companions: string | null;
-    budget: string | null;
-    archetype?: string | null;
-    vibe?: string | null;
-};
+type Panel =
+    | 'origin'
+    | 'plans'
+    | 'saved'
+    | 'history'
+    | 'browse'
+    | 'appointment'
+    | 'versions'
+    | null;
+type Swap = { slot: Slot; date: string; revision: number };
+const normal = (text: string) =>
+    text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/ue/g, 'u')
+        .replace(/oe/g, 'o')
+        .replace(/ae/g, 'a');
 
-type PlanSlot = {
-    id: string;
-    type: string;
-    name: string;
-    subtitle: string | null;
-    category: string;
-    veedel: string | null;
-    lat: number;
-    lng: number;
-    outdoor: boolean;
-    cost_tier: string;
-    is_appointment: boolean;
-    swappable: boolean;
-    start_time: string;
-    end_time: string;
-    travel_min_from_previous: number;
-    leave_by: string | null;
-    closes_at: string | null;
-    band: string;
-    duration_label: string;
-    why: string | null;
-    is_landmark: boolean;
-};
-
-type Plan = {
-    constraints: Constraints;
-    slots: PlanSlot[];
-};
-
-type Notice = { type: string; text: string };
-
-/** The single cyan "locating" weather line above the plan (v4 mock). */
-type WeatherNote = { text: string; rain: boolean };
-
-type Intent =
-    | 'plan_day'
-    | 'bureaucracy_q'
-    | 'find'
-    | 'take_me_there'
-    | 'unknown';
-
-type ParseResult = {
-    intent: Intent;
-    source: string;
-    constraints: Constraints | null;
-    query: string | null;
-};
-
-function slotEmoji(slot: PlanSlot): string {
-    return categoryEmoji(slot.is_appointment ? 'appointment' : slot.category);
-}
-
-/** Meta line for the detail modal — same shape as the Places / Today cards. */
-function detailMeta(place: Place): string {
-    const label =
-        place.fine_label ??
-        place.category.charAt(0).toUpperCase() + place.category.slice(1);
-
-    return [
-        label,
-        place.park ?? place.veedel,
-        place.distance_min != null ? `${place.distance_min} min away` : null,
-    ]
-        .filter(Boolean)
-        .join(' · ');
-}
-
-function csrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
+export default function ComposerPage({
+    workspace: initial,
+    prompt,
+    planDate,
+    pins = [],
+    savedPlaces = [],
+}: {
+    workspace: Workspace;
+    prompt?: string;
+    planDate?: string;
+    pins?: string[];
+    savedPlaces?: SavedPlace[];
+}) {
+    const page = usePage();
+    const userId = page.props.auth.user.id;
+    const [workspace, setWorkspace] = useState(initial);
+    const stateRef = useRef(initial);
+    const receivedUrl = useRef('');
+    const [entry, setEntry] = useState<ComposerEntry | null>(() =>
+        readComposerEntry(page.url),
     );
-}
-
-async function post<T>(url: string, body: unknown): Promise<T> {
-    const res = await fetch(url, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken(),
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-        throw new Error(`${res.status}`);
-    }
-
-    return res.json() as Promise<T>;
-}
-
-/**
- * The compose payload for an explicit "start from" pick: a saved place travels
- * by id (coordinates resolve server-side), a searched / pinned point carries
- * its own coordinates + label. No pick → the resolved origin (live/area) stands.
- */
-function fromParams(
-    target: FromTarget | null,
-): Record<string, string | number> {
-    if (target?.kind === 'place') {
-        return { from_place: target.id, from_label: target.label };
-    }
-
-    if (target?.kind === 'point') {
-        return {
-            lat: target.lat,
-            lng: target.lng,
-            from_label: target.label,
-        };
-    }
-
-    if (target?.kind === 'area') {
-        return { from_area: target.label };
-    }
-
-    return {};
-}
-
-type Facets = {
-    categories: { value: string; label: string }[];
-    areas: string[];
-};
-
-const COMPANION_OPTS = [
-    { value: '', label: 'Anyone' },
-    { value: 'alone', label: 'Just me' },
-    { value: 'partner', label: 'My partner' },
-    { value: 'friends', label: 'Friends' },
-    { value: 'kids', label: 'The kids' },
-];
-
-const BUDGET_OPTS = [
-    { value: '', label: 'Any budget' },
-    { value: 'free', label: 'Free only' },
-    { value: 'low', label: 'Low cost' },
-    { value: 'normal', label: 'Any price' },
-];
-
-const VIBE_OPTS = [
-    { value: '', label: 'Any vibe' },
-    { value: 'chill', label: 'Chill' },
-    { value: 'active', label: 'Active' },
-];
-
-const TIME_OPTS = [
-    { value: 'morning', label: 'Morning' },
-    { value: 'midday', label: 'Midday' },
-    { value: 'afternoon', label: 'Afternoon' },
-    { value: 'evening', label: 'Evening' },
-    { value: 'allday', label: 'All day' },
-];
-
-const TIME_RANGES: Record<string, [number, number]> = {
-    morning: [9, 12],
-    midday: [11, 15],
-    afternoon: [12, 18],
-    evening: [18, 22],
-    allday: [10, 20],
-};
-
-// Activities you do once, not all day — picking one of these reads as "find me
-// a pitch", so the result defaults to the browse list. Day-composable buckets
-// (park, culture, playground) default to the composed day instead.
-const BROWSE_FIRST = new Set(['pitch', 'court', 'swimming', 'dog_park']);
-
-function defaultAmount(categories: string[]): 'just' | 'few' | 'full' {
-    return categories.length === 1 && BROWSE_FIRST.has(categories[0])
-        ? 'few'
-        : 'full';
-}
-
-/**
- * Only meaningful cost tiers reach the card. "free" and "budget" tell you
- * something; "normal" is just the default "no known price" bucket — noise, so
- * it's hidden rather than shown as a confusing word.
- */
-function costLabel(tier: string): string | null {
-    return tier === 'free' ? 'free' : tier === 'low' ? 'budget' : null;
-}
-
-/**
- * A time preset → a window on the plan's existing day. The daypart is Cologne
- * wall-clock time (berlinTimeOnDay), not the device's local time — so a phone
- * still on another timezone composes the afternoon the user actually means.
- */
-function timeWindowPatch(preset: string, c: Constraints): Partial<Constraints> {
-    const [s, e] = TIME_RANGES[preset] ?? TIME_RANGES.afternoon;
-
-    return {
-        window_start: berlinTimeOnDay(c.window_start, s),
-        window_end: berlinTimeOnDay(c.window_start, e),
-    };
-}
-
-/** Which preset the current window reads as — for the chip + highlight. */
-function timePresetKey(c: Constraints): string {
-    const h = berlinHour(c.window_start);
-    const end = berlinHour(c.window_end);
-
-    if (end - h >= 9) {
-        return 'allday';
-    }
-
-    if (h < 11) {
-        return 'morning';
-    }
-
-    if (h < 12) {
-        return 'midday';
-    }
-
-    if (h < 17) {
-        return 'afternoon';
-    }
-
-    return 'evening';
-}
-
-function NoticeChips({ notices }: { notices: Notice[] }) {
-    if (notices.length === 0) {
-        return null;
-    }
-
-    return (
-        <div className="mb-4 flex flex-wrap gap-2">
-            {notices.map((notice, i) => (
-                <span
-                    key={i}
-                    className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
-                        notice.type === 'info'
-                            ? 'bg-accent-soft text-primary'
-                            : 'bg-warn-soft text-warn'
-                    }`}
-                >
-                    {notice.text}
-                </span>
-            ))}
-        </div>
-    );
-}
-
-/**
- * Interim routing for non-plan intents. Search and verified answers are
- * separate slices; until they land, the box still understands the intent
- * and points the user at the right page rather than composing a nonsense
- * plan or dead-ending.
- */
-function InterimRoute({ intent, query }: { intent: Intent; query: string }) {
-    const config: Record<
-        string,
-        {
-            Icon: ComponentType<IconProps>;
-            title: string;
-            body: string;
-            href: string;
-            cta: string;
+    const [entryEvent, setEntryEvent] = useState<EventOccurrence | null>(null);
+    const [entryError, setEntryError] = useState('');
+    const [entryRetry, setEntryRetry] = useState(0);
+    const [initialInput] = useState(() => {
+        try {
+            return (
+                sessionStorage.getItem(`expadu-composer-message-${userId}`) ||
+                prompt ||
+                ''
+            );
+        } catch {
+            return prompt || '';
         }
-    > = {
-        bureaucracy_q: {
-            Icon: IconChecklist,
-            title: 'That looks like a paperwork question',
-            body: 'Answers come from your verified checklist — never guessed. Open it to find the task.',
-            href: '/bureaucracy',
-            cta: 'Open your checklist →',
-        },
-        find: {
-            Icon: IconSearch,
-            title: 'Looks like you’re searching for a place',
-            body: 'The universal search lands next. For now, browse places and events.',
-            href: '/explore',
-            cta: 'Browse places →',
-        },
-        take_me_there: {
-            Icon: IconBus,
-            title: 'Looks like you want directions',
-            body: 'Find the place first and tap “take me there” on it.',
-            href: '/explore',
-            cta: 'Find a place →',
-        },
-    };
-
-    const c = config[intent] ?? config.find;
-    const RouteIcon = c.Icon;
-
-    return (
-        <div className="rounded-[14px] border border-border bg-card p-6 text-center">
-            <RouteIcon
-                size={32}
-                stroke={ICON_STROKE}
-                className="mx-auto mb-2 text-muted-foreground"
-            />
-            <p className="mb-1 text-[15px] font-semibold">{c.title}</p>
-            <p className="mb-4 text-sm text-muted-foreground">
-                {query ? `“${query}” — ${c.body}` : c.body}
-            </p>
-            <Link
-                href={c.href}
-                className="inline-block rounded-[9px] bg-primary px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
-            >
-                {c.cta}
-            </Link>
-        </div>
-    );
-}
-
-/**
- * Position a token's option popover directly under the tapped word, but clamp
- * it to the viewport so it never spills off a phone edge (the inline word can
- * sit anywhere on a wrapped line). Opens upward when the word is low on screen.
- */
-function tokenPopoverStyle(
-    btn: HTMLElement,
-    desiredWidth = 300,
-): CSSProperties {
-    const r = btn.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const width = Math.min(desiredWidth, vw - 24);
-    const left = Math.max(12, Math.min(r.left, vw - width - 12));
-    // Word in the lower part of the screen → open the menu above it.
-    const openUp = r.bottom > vh * 0.62;
-
-    return openUp
-        ? {
-              position: 'fixed',
-              left,
-              bottom: vh - r.top + 8,
-              maxHeight: Math.max(180, r.top - 24),
-              width,
-          }
-        : {
-              position: 'fixed',
-              left,
-              top: r.bottom + 8,
-              // leave room for the floating mobile dock at the bottom.
-              maxHeight: Math.max(180, vh - r.bottom - 96),
-              width,
-          };
-}
-
-export default function Composer() {
-    const {
-        prompt,
-        pins,
-        savedPlaces,
-        homeBezirk,
-        bezirke,
-        veedelsByBezirk,
-        auth,
-    } = usePage<{
-        prompt?: string;
-        pins?: string[];
-        savedPlaces?: SavedPlace[];
-        homeVeedel: string | null;
-        homeBezirk: string | null;
-        bezirke?: BezirkOption[];
-        veedelsByBezirk?: Record<string, string[]>;
-        auth: { user: { transport_mode: TransportMode | null } };
-    }>().props;
-    const { track } = useTracker();
-
-    const [constraints, setConstraints] = useState<Constraints | null>(null);
-    const [facets, setFacets] = useState<Facets>({
-        categories: [],
-        areas: [],
     });
-    const [plan, setPlan] = useState<Plan | null>(null);
-    // The browse list for "A few options" — for a solo activity these are the
-    // nearby picks of that category; for a broad day they mirror the itinerary.
-    const [options, setOptions] = useState<PlanSlot[]>([]);
-    const [notices, setNotices] = useState<Notice[]>([]);
-    const [weather, setWeather] = useState<WeatherNote | null>(null);
-    const [intent, setIntent] = useState<Intent>('plan_day');
-    const [parsing, setParsing] = useState(false);
-    const [composing, setComposing] = useState(false);
-    const [swappingSlot, setSwappingSlot] = useState<number | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [destination, setDestination] = useState<Destination | null>(null);
-    const [detail, setDetail] = useState<Place | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    // Archetype dropped in the v4 sentence model — compose with null.
-    const [archetype] = useState<string | null>(null);
-    const [locked, setLocked] = useState<string[]>([]);
-    // Picks the user has shuffled away — accumulated so Shuffle keeps rolling
-    // forward instead of re-offering something it discarded two shuffles ago.
-    const [excluded, setExcluded] = useState<string[]>([]);
-    const [origin, setOrigin] = useState<PlacesOrigin | null>(null);
-    const [locating, setLocating] = useState(false);
-    // Places-style area picker: the selected Bezirk ('all' | 'near' | a name).
-    // The Veedel drill rides inside constraints.areas (a single area === a Veedel).
-    const [bezirk, setBezirk] = useState(homeBezirk ?? 'all');
-    // The chosen travel mode, persisted globally (shared with Places). Drives
-    // the From pill glyph and the "min away" distances on every pick.
-    const [mode, setMode] = useState<TransportMode | null>(
-        auth.user.transport_mode,
+    const [input, setInput] = useRemember(
+        initialInput,
+        `composer-input-${userId}`,
     );
-    // From picker: address search query + results (reuses /api/geocode).
-    const [fromQuery, setFromQuery] = useState('');
-    const [fromResults, setFromResults] = useState<GeoResult[]>([]);
-    // The pick-on-map overlay (the area + From panels open from sentence words
-    // via openToken, like the other tappable words).
-    const [mapPickOpen, setMapPickOpen] = useState(false);
-    // v4 editable-sentence model — which token/extra popover is open, the
-    // add-filter panel, and how much day to show (a client view over the plan).
-    const [openToken, setOpenToken] = useState<string | null>(null);
-    // Computed at open time so a token popover sits under the tapped word and
-    // stays on-screen (set only for the sentence tokens, not the extra chips).
-    const [tokenPopStyle, setTokenPopStyle] = useState<CSSProperties | null>(
+    const [origin, setOrigin] = useRemember<PlanOrigin | null>(
         null,
+        `composer-origin-${userId}`,
     );
-    const [addOpen, setAddOpen] = useState(false);
-    const [amount, setAmount] = useState<'just' | 'few' | 'full'>('full');
-    const { stateFor, ratingFor, setFeedback, toast } = useFeedback();
+    const [busy, setBusy] = useState('');
+    const busyRef = useRef(false);
+    const [error, setError] = useState('');
+    const [retryMessage, setRetryMessage] = useState<string | null>(null);
+    const [panel, setPanel] = useState<Panel>(() =>
+        new URL(page.url, 'http://localhost').searchParams.get('panel') ===
+        'saved'
+            ? 'saved'
+            : null,
+    );
+    const [swap, setSwap] = useState<Swap | null>(null);
+    const [browseDate, setBrowseDate] = useState(today);
+    const [confirm, setConfirm] = useState<'cancel' | 'history' | null>(null);
+    const [detail, setDetail] = useState<ItemDetails | null>(null);
+    const [destination, setDestination] = useState<Destination | null>(null);
+    const [appointmentName, setAppointmentName] = useState('');
+    const [appointmentLocation, setAppointmentLocation] = useState('');
+    const [appointmentStart, setAppointmentStart] = useState('10:00');
+    const [appointmentEnd, setAppointmentEnd] = useState('11:00');
+    const [pendingText, setPendingText] = useState('');
+    const [newBelow, setNewBelow] = useState(false);
+    const root = useRef<HTMLDivElement>(null);
+    const feed = useRef<HTMLDivElement>(null);
+    const textarea = useRef<HTMLTextAreaElement>(null);
     const isMobile = useIsMobile();
-    // Guards against parsing the same prompt twice (React strict-mode
-    // double-invoke would otherwise fire two parse + compose round-trips).
-    const parsedPrompt = useRef<string | null>(null);
-    // The user's explicit "start from" pick (a saved place by id, or a searched
-    // / map-tapped point). Mirrored in a ref so every recompose closure reads
-    // the current value without re-creating runCompose. Cleared by live GPS.
-    const [fromOverride, setFromOverride] = useState<FromTarget | null>(null);
-    const fromOverrideRef = useRef<FromTarget | null>(null);
-    // Set the From pick + its ref together, so the next recompose sees it.
-    const setFrom = useCallback((next: FromTarget | null) => {
-        fromOverrideRef.current = next;
-        setFromOverride(next);
+    const feedback = useFeedback();
+    const conversation = workspace.conversations.find(
+        (item) => item.id === workspace.active,
+    )!;
+    const focused = workspace.focus
+        ? workspace.draft?.date === workspace.focus
+            ? workspace.draft
+            : workspace.plans[workspace.focus]
+        : null;
+    const activePlan = focused ?? workspace.draft;
+    const latestPlanMessage = [...conversation.messages]
+        .reverse()
+        .find(
+            (item) =>
+                item.kind === 'plan' && item.plan?.date === workspace.focus,
+        );
+
+    useEffect(() => {
+        function resize() {
+            if (!root.current) {
+                return;
+            }
+
+            const viewport = window.visualViewport;
+            root.current.style.setProperty(
+                '--composer-height',
+                `${viewport?.height ?? window.innerHeight}px`,
+            );
+        }
+        resize();
+        window.visualViewport?.addEventListener('resize', resize);
+        window.addEventListener('resize', resize);
+
+        return () => {
+            window.visualViewport?.removeEventListener('resize', resize);
+            window.removeEventListener('resize', resize);
+        };
     }, []);
-    // Debounce handle for the From address search.
-    const fromSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Bumped on every compose so a slower earlier request can't overwrite a
-    // newer one — rapid chip edits otherwise raced and could leave a plan that
-    // didn't match the chips on screen.
-    const composeGenRef = useRef(0);
+    useEffect(() => {
+        if (textarea.current) {
+            textarea.current.style.height = 'auto';
+            textarea.current.style.height = `${Math.min(160, textarea.current.scrollHeight)}px`;
+        }
+    }, [input]);
 
-    const runCompose = useCallback(
-        async (
-            next: Constraints,
-            opts: {
-                archetype?: string | null;
-                locked?: string[];
-                excluded?: string[];
-            } = {},
-        ) => {
-            const gen = ++composeGenRef.current;
-            setComposing(true);
-            setError(null);
+    function scrollBottom(force = false) {
+        const element = feed.current;
 
-            try {
-                const json = await post<{
-                    plan: Plan;
-                    options?: PlanSlot[];
-                    notices: Notice[];
-                    weather?: WeatherNote | null;
-                    facets?: Facets;
-                    origin?: PlacesOrigin;
-                }>('/composer/compose', {
-                    constraints: {
-                        ...next,
-                        archetype: opts.archetype ?? null,
-                    },
-                    pins: pins ?? [],
-                    locked: opts.locked ?? [],
-                    excluded: opts.excluded ?? [],
-                    // An explicit From wins as the origin: a saved place by id
-                    // (coords resolved server-side) or a searched / pinned point.
-                    ...fromParams(fromOverrideRef.current),
+        if (!element) {
+            return;
+        }
+
+        const nearEnd =
+            element.scrollHeight - element.scrollTop - element.clientHeight <
+            140;
+
+        if (nearEnd || force) {
+            requestAnimationFrame(() => {
+                element.scrollTo({
+                    top: element.scrollHeight,
+                    behavior: window.matchMedia(
+                        '(prefers-reduced-motion: reduce)',
+                    ).matches
+                        ? 'auto'
+                        : 'smooth',
                 });
+            });
+        } else {
+            setNewBelow(true);
+        }
+    }
+    function setState(state: Workspace) {
+        stateRef.current = state;
+        setWorkspace(state);
+    }
+    async function sendCommand(command: Command) {
+        try {
+            const result = await api<Workspace>(update.url(), {
+                revision: stateRef.current.revision,
+                ...command,
+            });
+            setState(result);
 
-                // A newer compose has started — drop this stale response.
-                if (gen !== composeGenRef.current) {
-                    return;
+            return result;
+        } catch (err) {
+            // Never automatically replay a mutation against a different plan version.
+            if (err instanceof ApiError && err.status === 409) {
+                setState(await api<Workspace>(show.url()));
+                setSwap(null);
+            }
+
+            throw err;
+        }
+    }
+    async function command(command: Command): Promise<boolean> {
+        if (busyRef.current) {
+            return false;
+        }
+
+        busyRef.current = true;
+        setBusy('Updating your plan…');
+        setError('');
+
+        try {
+            await sendCommand(command);
+
+            return true;
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Could not save. Try again.',
+            );
+
+            return false;
+        } finally {
+            busyRef.current = false;
+            setBusy('');
+        }
+    }
+    function openBrowse(saved = false) {
+        setBrowseDate(activePlan?.date ?? today());
+        setPanel(saved ? 'saved' : 'browse');
+    }
+    async function startSwap(slot: Slot) {
+        if (!activePlan) {
+            return;
+        }
+
+        if (await command({ action: 'message', text: `Swap ${slot.name}` })) {
+            setSwap({
+                slot,
+                date: activePlan.date,
+                revision: stateRef.current.revision,
+            });
+            scrollBottom(true);
+        }
+    }
+    async function choose(slot: Slot): Promise<boolean> {
+        if (swap && stateRef.current.revision !== swap.revision) {
+            setError(
+                'Your plan changed. Choose Swap place again to see current alternatives.',
+            );
+            setSwap(null);
+
+            return false;
+        }
+
+        const success = await command(
+            swap
+                ? { action: 'replace', id: swap.slot.id, candidate: slot.id }
+                : { action: 'add', candidate: slot.id, date: browseDate },
+        );
+
+        if (success && swap) {
+            setSwap(null);
+            setPanel(null);
+        }
+
+        if (success) {
+            scrollBottom();
+        }
+
+        return success;
+    }
+    async function send(text: string) {
+        if (!text.trim() || busyRef.current) {
+            return;
+        }
+
+        busyRef.current = true;
+        setBusy('Working on your request…');
+        setError('');
+        setRetryMessage(null);
+        setPendingText(text);
+        setInput('');
+        scrollBottom(true);
+
+        try {
+            await sendCommand({ action: 'message', text });
+            setPendingText('');
+            const state = stateRef.current;
+            const current = state.focus
+                ? state.draft?.date === state.focus
+                    ? state.draft
+                    : state.plans[state.focus]
+                : null;
+            const clean = normal(text);
+
+            if (/^(show|view|open)( me)?( my| the)? plan\b/.test(clean)) {
+                const dates = Object.keys(state.plans);
+                const date =
+                    state.focus ??
+                    state.draft?.date ??
+                    (dates.length === 1 ? dates[0] : null);
+
+                if (date) {
+                    await sendCommand({ action: 'open', date });
+                } else {
+                    setPanel('plans');
                 }
-
-                setPlan(json.plan);
-                setOptions(json.options ?? json.plan.slots);
-                setNotices(json.notices ?? []);
-                setWeather(json.weather ?? null);
-                setOrigin(json.origin ?? null);
-
-                if (
-                    json.origin?.source === 'none' &&
-                    fromOverrideRef.current === null &&
-                    next.areas.length === 0
-                ) {
-                    setBezirk('all');
-                }
-
-                if (json.facets) {
-                    setFacets(json.facets);
-                }
-            } catch {
-                if (gen !== composeGenRef.current) {
-                    return;
-                }
-
-                setError(
-                    'Could not compose your day. Try adjusting the chips.',
+            } else if (
+                current &&
+                /^(move|change|rename|remove|swap)\b/.test(clean)
+            ) {
+                const matched = current.slots.filter((slot) =>
+                    clean.includes(normal(slot.name)),
                 );
-            } finally {
-                // Only the latest compose clears the spinner, so a stale one
-                // finishing mid-flight can't hide that a newer one is running.
-                if (gen === composeGenRef.current) {
-                    setComposing(false);
+
+                if (matched.length !== 1) {
+                    throw new Error(
+                        'Choose an activity in the plan below, or include its full name so I know which one to change.',
+                    );
+                }
+
+                const slot = matched[0];
+                const times = text.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g);
+
+                if (clean.startsWith('swap')) {
+                    setSwap({
+                        slot,
+                        date: current.date,
+                        revision: stateRef.current.revision,
+                    });
+                } else if (clean.startsWith('remove')) {
+                    await sendCommand({ action: 'remove', id: slot.id });
+                } else if (
+                    /^(rename|change.*name)/.test(clean) &&
+                    /\s+to\s+/i.test(text)
+                ) {
+                    await sendCommand({
+                        action: 'edit',
+                        id: slot.id,
+                        name: text
+                            .split(/\s+to\s+/i)
+                            .slice(1)
+                            .join(' to '),
+                    });
+                } else if (times?.length === 2) {
+                    await sendCommand({
+                        action: 'edit',
+                        id: slot.id,
+                        start: times[0].padStart(5, '0'),
+                        end: times[1].padStart(5, '0'),
+                    });
+                } else {
+                    throw new Error(
+                        'Include both times, for example “move ' +
+                            slot.name +
+                            ' to 14:00–15:00”, or use Edit time.',
+                    );
+                }
+            } else {
+                const parsed = await api<{
+                    intent: string;
+                    constraints: Record<string, unknown> | null;
+                }>(parse.url(), { text });
+
+                if (parsed.intent === 'plan_day' && parsed.constraints) {
+                    if (state.draft) {
+                        throw new Error(
+                            'Apply or discard your unfinished changes before creating another plan.',
+                        );
+                    }
+
+                    setBusy('Putting your day together…');
+                    const result = await api<{
+                        handoff_token: string;
+                        plan: { slots: Slot[] };
+                    }>(compose.url(), {
+                        constraints: parsed.constraints,
+                        pins,
+                        ...(origin
+                            ? {
+                                  lat: origin.lat,
+                                  lng: origin.lng,
+                                  from_place: origin.from_place,
+                                  from_area: origin.from_area,
+                                  from_label: origin.label.slice(0, 80),
+                              }
+                            : {}),
+                    });
+
+                    if (result.plan.slots.length === 0) {
+                        throw new Error(
+                            'No suitable activities were found for that time. Try another date or browse places.',
+                        );
+                    }
+
+                    await sendCommand({
+                        action: 'proposal',
+                        token: result.handoff_token,
+                    });
+                } else {
+                    const kind =
+                        parsed.intent === 'bureaucracy_q'
+                            ? 'bureaucracy'
+                            : parsed.intent === 'take_me_there'
+                              ? 'journey'
+                              : parsed.intent === 'find'
+                                ? 'find'
+                                : 'unknown';
+                    await sendCommand({ action: 'reply', kind });
                 }
             }
-        },
-        [pins],
-    );
 
-    // Parse the prompt handed over from the Today screen, then — for a
-    // plan — compose straight away. A picked suggestion is high-confidence
-    // intent; making the user press a second "compose" button was a v1
-    // holdover. The chips stay above the plan for correction.
-    useEffect(() => {
-        if (!prompt || parsedPrompt.current === prompt) {
-            return;
-        }
-
-        parsedPrompt.current = prompt;
-
-        setParsing(true);
-        post<ParseResult>('/composer/parse', { text: prompt })
-            .then((result) => {
-                setIntent(result.intent);
-
-                if (result.intent === 'plan_day' && result.constraints) {
-                    setConstraints(result.constraints);
-                    setAmount(defaultAmount(result.constraints.categories));
-                    void runCompose(result.constraints);
-                }
-            })
-            .catch(() =>
-                setError('Could not understand that — edit the chips below.'),
-            )
-            .finally(() => setParsing(false));
-    }, [prompt, runCompose]);
-
-    // Editing any chip is an explicit "redo it this way" — merge the change and
-    // recompose (which also retries if the initial auto-compose failed).
-    function updateConstraint(patch: Partial<Constraints>) {
-        if (!constraints) {
-            return;
-        }
-
-        const next: Constraints = { ...constraints, ...patch };
-        setConstraints(next);
-        void runCompose(next, { archetype, locked, excluded });
-    }
-
-    async function swap(index: number) {
-        setSwappingSlot(index);
-
-        try {
-            const json = await post<{ plan: Plan; notices: Notice[] }>(
-                '/composer/swap',
-                { slot: index },
+            scrollBottom(true);
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Could not finish that request.',
             );
-            setPlan(json.plan);
-            setNotices(json.notices ?? []);
-        } catch {
-            setError('No alternative fits that slot.');
+            setRetryMessage(text);
+            setInput((existing) => existing || text);
         } finally {
-            setSwappingSlot(null);
+            setPendingText('');
+            setBusy('');
+            busyRef.current = false;
+            textarea.current?.focus({ preventScroll: true });
         }
     }
-
-    function takeMeThere(slot: PlanSlot) {
-        // Strongest intent signal — only for leisure, not appointments.
-        if (!slot.is_appointment) {
-            track('take_me_there', {
-                category: slot.category,
-                veedel: slot.veedel,
-            });
+    async function openPlan(plan: Plan) {
+        if (await command({ action: 'open', date: plan.date })) {
+            setPanel(null);
+            setSwap(null);
+            scrollBottom(true);
         }
-
-        setDestination({
-            name: slot.name,
-            emoji: slotEmoji(slot),
-            lat: slot.lat,
-            lng: slot.lng,
-            arriveBy: slot.is_appointment ? slot.start_time : undefined,
-            // Start the journey from the plan's OWN origin (e.g. "from Home"),
-            // the same point the plan measured "same area / N min" against — not
-            // a re-resolved live GPS fix that would silently make a 12-min hop
-            // read as an hour. "I'm here →" still overrides to the real position.
-            fromLat: origin?.lat ?? null,
-            fromLng: origin?.lng ?? null,
-            fromName: origin?.label ?? null,
-        });
     }
-
-    // Tapping a plan card opens the same rich detail modal as the Places / Today
-    // cards. Only real places (spot:*) have a detail page; appointments and
-    // fixed events aren't tappable. Falls back to the route sheet if the fetch
-    // fails.
-    function openSlotDetail(slot: PlanSlot) {
-        if (slot.is_appointment || !slot.id.startsWith('spot:')) {
-            return;
-        }
-
-        const spotId = slot.id.replace('spot:', '');
-        fetch(`/api/places/${spotId}`, { credentials: 'same-origin' })
-            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-            .then((json) => setDetail(json.data))
-            .catch(() => takeMeThere(slot));
+    function fullDetails(data: ItemDetails) {
+        setPanel(null);
+        setDetail(data);
     }
-
-    function toggleLock(id: string) {
-        setLocked((cur) =>
-            cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
-        );
-    }
-
-    function shuffle() {
-        if (!constraints || !plan) {
-            return;
-        }
-
-        // Re-roll the unlocked picks, accumulating them into the excluded set so
-        // repeated shuffles keep finding NEW picks instead of cycling back to one
-        // discarded earlier (keeping locked picks in place).
-        const unlocked = plan.slots
-            .filter((s) => s.swappable && !locked.includes(s.id))
-            .map((s) => s.id);
-        const next = [...new Set([...excluded, ...unlocked])];
-        setExcluded(next);
-        void runCompose(constraints, { archetype, locked, excluded: next });
-    }
-
-    // "My location": drop any explicit pick, take a fresh GPS fix, persist it as
-    // the shared "I'm here" anchor, then recompose so the plan starts from where
-    // you actually are.
-    function pickMyLocation() {
-        if (!('geolocation' in navigator) || !constraints) {
-            return;
-        }
-
-        // Live location overrides any previously picked place / point.
-        setFrom(null);
-        setOpenToken(null);
-        setFromQuery('');
-        setFromResults([]);
-        setLocating(true);
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const { latitude: lat, longitude: lng } = pos.coords;
-                post('/api/location/confirm', { lat, lng })
-                    .then(() =>
-                        runCompose(constraints, {
-                            archetype,
-                            locked,
-                            excluded,
-                        }),
-                    )
-                    .catch(() => {})
-                    .finally(() => setLocating(false));
-            },
-            () => setLocating(false),
-            { enableHighAccuracy: false, maximumAge: 120_000, timeout: 8000 },
-        );
-    }
-
-    // "Save to Today": persist the live plan to the home screen (carrying the
-    // prompt so it can be reopened), then land on Today where it now shows.
-    async function saveToToday() {
-        setSaving(true);
-
+    const preview = (slot: Slot, children: React.ReactNode) => (
+        <ItemPreview key={slot.id} slot={slot} onFull={fullDetails}>
+            {children}
+        </ItemPreview>
+    );
+    const lastVersion = workspace.versions.at(-1);
+    const entryCommand = useRef(command);
+    useEffect(() => {
+        entryCommand.current = command;
+    });
+    useEffect(() => {
         try {
-            await post('/composer/save', { prompt: prompt ?? null });
-            router.visit('/dashboard');
+            sessionStorage.setItem(`expadu-composer-message-${userId}`, input);
         } catch {
-            setError('Could not save to Today — try again.');
-            setSaving(false);
+            /* Message remains in memory. */
         }
-    }
-
-    // Apply an explicit From (saved place or searched / pinned point), then
-    // recompose so the plan starts from it and every "min away" measures from it.
-    function applyFrom(target: FromTarget) {
-        if (!constraints) {
+    }, [input, userId]);
+    useEffect(() => {
+        if (receivedUrl.current === page.url) {
             return;
         }
 
-        setFrom(target);
-        setOpenToken(null);
-        setFromQuery('');
-        setFromResults([]);
-        void runCompose(constraints, { archetype, locked, excluded });
-    }
+        receivedUrl.current = page.url;
 
-    // Persist the chosen transport mode globally (the server reads
-    // users.transport_mode), then recompose so distances recompute in that mode.
-    function persistMode(next: TransportMode) {
-        setMode(next);
-        post('/api/preferences/transport-mode', { mode: next })
-            .then(() => {
-                if (constraints) {
-                    return runCompose(constraints, {
-                        archetype,
-                        locked,
-                        excluded,
-                    });
+        if (
+            new URL(page.url, 'http://localhost').searchParams.get('panel') ===
+            'saved'
+        ) {
+            setPanel('saved');
+        }
+
+        const next = readComposerEntry(page.url);
+        setEntry(next);
+
+        if (next?.kind === 'appointment') {
+            setBrowseDate(next.date);
+
+            if (
+                !stateRef.current.draft ||
+                stateRef.current.draft.date === next.date
+            ) {
+                setPanel('appointment');
+            }
+        } else if (
+            planDate &&
+            validDay(planDate) &&
+            (stateRef.current.plans[planDate] ||
+                stateRef.current.draft?.date === planDate)
+        ) {
+            void entryCommand.current({ action: 'open', date: planDate });
+        }
+        // A URL is context for review, never permission to send a message.
+    }, [page.url, planDate]);
+    useEffect(() => {
+        setEntryEvent(null);
+        setEntryError('');
+
+        if (entry?.kind !== 'event') {
+            return;
+        }
+
+        const controller = new AbortController();
+        void api<EventOccurrence>(
+            selectedEvent.url({ query: { id: entry.id, start: entry.start } }),
+            undefined,
+            controller.signal,
+        )
+            .then((event) => {
+                if (!controller.signal.aborted) {
+                    setEntryEvent(event);
                 }
             })
-            .catch(() => {});
+            .catch((reason) => {
+                if (!controller.signal.aborted) {
+                    setEntryError(
+                        reason instanceof Error
+                            ? reason.message
+                            : 'This event could not be loaded.',
+                    );
+                }
+            });
+
+        return () => controller.abort();
+    }, [entry, entryRetry]);
+    const entryDate =
+        entry?.kind === 'travel'
+            ? entry.context.planDate || entry.context.requestedDate
+            : entry && 'date' in entry
+              ? entry.date
+              : undefined;
+    const otherDraft =
+        !!workspace.draft && !!entryDate && workspace.draft.date !== entryDate;
+    function clearEntry() {
+        setEntry(null);
+        setEntryEvent(null);
+        const url = withoutEntryContext(page.url);
+        receivedUrl.current = url;
+        router.replace({ url, preserveState: true, preserveScroll: true });
     }
+    function appendMessage(text: string) {
+        const next = mergeRequest(input, text);
 
-    // Debounced address search inside the From picker (reuses /api/geocode).
-    function searchFrom(q: string) {
-        setFromQuery(q);
-
-        if (fromSearchTimer.current) {
-            clearTimeout(fromSearchTimer.current);
-        }
-
-        if (q.trim().length < 3) {
-            setFromResults([]);
+        if (next.length > 500) {
+            setError(
+                'Your message is full. Send or shorten it before adding more.',
+            );
 
             return;
         }
 
-        fromSearchTimer.current = setTimeout(() => {
-            fetch(`/api/geocode?q=${encodeURIComponent(q.trim())}`, {
-                credentials: 'same-origin',
+        setInput(next);
+        textarea.current?.focus();
+    }
+    async function addSelectedEvent() {
+        if (entry?.kind !== 'event' || !entryEvent || otherDraft) {
+            return;
+        }
+
+        if (
+            await command({
+                action: 'add',
+                date: entry.date,
+                candidate: eventCandidate(entry, entryEvent.is_recurring),
             })
-                .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-                .then(
-                    (
-                        data: {
-                            name: string;
-                            street?: string;
-                            city?: string;
-                            lat: number;
-                            lng: number;
-                        }[],
-                    ) =>
-                        setFromResults(
-                            data.map((r) => ({
-                                name: r.name,
-                                address: [r.street, r.city]
-                                    .filter(Boolean)
-                                    .join(', '),
-                                lat: r.lat,
-                                lng: r.lng,
-                            })),
-                        ),
-                )
-                .catch(() => setFromResults([]));
-        }, 300);
+        ) {
+            clearEntry();
+        }
     }
+    function useTravelRequest() {
+        if (entry?.kind !== 'travel') {
+            return;
+        }
 
-    // "Pick on map" → open the map overlay; a tap on it sets a point origin.
-    function pickOnMap() {
-        setOpenToken(null);
-        setMapPickOpen(true);
-    }
+        const c = entry.context;
+        const request = `Help me review the journey${c.origin ? ` from ${c.origin.name}` : ''} to ${c.name}${c.requestedDate ? ` on ${c.requestedDate}` : ''}${c.requestedTime ? `, ${c.schedule === 'arrive' ? 'arrive by' : 'leave at'} ${c.requestedTime}` : ''}.`;
+        const merged = mergeRequest(input, request);
 
-    // A map tap: reverse-geocode for a readable label, then apply it as the From
-    // point and close the overlay.
-    function handleMapPick(lat: number, lng: number) {
-        fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`, {
-            credentials: 'same-origin',
-        })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) =>
-                applyFrom({
-                    kind: 'point',
-                    lat,
-                    lng,
-                    label: d?.address || 'Pinned location',
-                }),
-            )
-            .catch(() =>
-                applyFrom({
-                    kind: 'point',
-                    lat,
-                    lng,
-                    label: 'Pinned location',
-                }),
+        if (merged.length > 500) {
+            setError(
+                'Your message is full. Send or shorten it before adding journey details.',
             );
-        setMapPickOpen(false);
+
+            return;
+        }
+
+        setInput(merged);
+        textarea.current?.focus();
     }
-
-    const planMode = intent === 'plan_day';
-    const weekday = constraints
-        ? new Date(constraints.window_start).toLocaleDateString('en-GB', {
-              weekday: 'long',
-              timeZone: 'Europe/Berlin',
-          })
-        : null;
-
-    // Title + subtitle adapt to intent: only a plan is "composed", and the
-    // empty state must not read "Your Your day".
-    const title =
-        planMode && weekday
-            ? `Your ${weekday}`
-            : intent === 'bureaucracy_q'
-              ? 'Paperwork'
-              : intent === 'find'
-                ? 'Search'
-                : intent === 'take_me_there'
-                  ? 'Directions'
-                  : 'Day Composer';
-
-    const subtitle =
-        planMode && prompt
-            ? `composed from “${prompt}”`
-            : !planMode && prompt
-              ? `you asked: “${prompt}”`
-              : 'tell the composer what you want';
-
-    const showInterim = !parsing && intent !== 'plan_day' && !plan;
-
-    // ── Editable-sentence wiring (v4) — the kept "when" + "doing" tokens ──
-    const whenKey = constraints ? timePresetKey(constraints) : 'afternoon';
-    const whenLabel =
-        TIME_OPTS.find((o) => o.value === whenKey)?.label ?? 'Afternoon';
-    const doingValue = constraints?.categories[0] ?? '';
-    const doingLabel = doingValue
-        ? (facets.categories.find((c) => c.value === doingValue)?.label ??
-          doingValue)
-        : 'anything';
-    const doingTokenOpts = [
-        { value: '', label: 'Anything' },
-        ...facets.categories,
-    ];
-
-    // ── Places-style area picker + From control wiring ──
-    const places = savedPlaces ?? [];
-    // A single named area reads as a picked Veedel; the picker drills into it.
-    const veedel =
-        constraints?.areas?.length === 1 ? constraints.areas[0]! : null;
-    const areaLabel =
-        fromOverride?.kind === 'area'
-            ? fromOverride.label
-            : origin?.area
-              ? origin.area
-              : bezirk === 'near'
-                ? 'Near you'
-                : (veedel ?? (bezirk === 'all' ? 'Any area' : bezirk));
-    const originLabel = locating
-        ? 'Locating…'
-        : (origin?.label ?? 'Your location');
-    const railOptions = bezirke ?? [];
-    const chipOptions =
-        bezirk !== 'all' && bezirk !== 'near'
-            ? (veedelsByBezirk?.[bezirk] ?? [])
-            : [];
-    // Which From row reads as active: an explicit pick wins; otherwise a real
-    // GPS-derived origin highlights "My location".
-    const selectedKey =
-        fromOverride?.kind === 'place'
-            ? `place:${fromOverride.id}`
-            : fromOverride?.kind === 'point'
-              ? 'point'
-              : fromOverride?.kind === 'area'
-                ? `area:${fromOverride.label}`
-                : origin &&
-                    ['live', 'confirmed', 'ping'].includes(origin.source)
-                  ? 'live'
-                  : null;
-
-    const chipOptStyle = (sel: boolean, cyan: boolean) =>
-        sel
-            ? cyan
-                ? 'border-cyan bg-cyan-soft font-semibold text-cyan-h'
-                : 'border-primary bg-primary-soft font-semibold text-primary'
-            : 'border-border bg-card font-medium text-text-2 hover:border-primary';
-
-    /**
-     * A tappable word in the sentence whose popover is a rich panel (the
-     * Places-style area picker / From control) rather than a chip list. Same
-     * inline-word trigger + under-the-word positioning as renderToken.
-     */
-    function renderPanelToken(
-        key: string,
-        label: ReactNode,
-        cyan: boolean,
-        width: number,
-        panel: ReactNode,
-    ) {
-        const open = openToken === key;
-        const underline = cyan
-            ? 'border-cyan'
-            : open
-              ? 'border-primary'
-              : 'border-text-3';
-
-        return (
-            <span className="relative inline-block">
-                <button
-                    onClick={(e) => {
-                        if (open) {
-                            setOpenToken(null);
-                        } else {
-                            setTokenPopStyle(
-                                tokenPopoverStyle(e.currentTarget, width),
-                            );
-                            setOpenToken(key);
-                        }
-                    }}
-                    className={`inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`}
-                >
-                    {label}
-                </button>
-                {open && (
-                    <>
-                        <div
-                            className="fixed inset-0 z-[290]"
-                            onClick={() => setOpenToken(null)}
-                        />
-                        <div
-                            style={tokenPopStyle ?? undefined}
-                            className={`z-[300] overflow-y-auto rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'}`}
-                        >
-                            {panel}
-                        </div>
-                    </>
-                )}
-            </span>
-        );
-    }
-
-    /** One tappable word in the sentence + its inline option popover. */
-    function renderToken(
-        key: string,
-        label: string,
-        cyan: boolean,
-        title: string,
-        options: { value: string; label: string }[],
-        current: string,
-        onPick: (value: string) => void,
-    ) {
-        const open = openToken === key;
-        const underline = cyan
-            ? 'border-cyan'
-            : open
-              ? 'border-primary'
-              : 'border-text-3';
-
-        return (
-            <span className="relative inline-block">
-                <button
-                    onClick={(e) => {
-                        if (open) {
-                            setOpenToken(null);
-                        } else {
-                            setTokenPopStyle(
-                                tokenPopoverStyle(e.currentTarget),
-                            );
-                            setOpenToken(key);
-                        }
-                    }}
-                    className={`inline border-b-2 px-px font-semibold ${open ? 'border-solid' : 'border-dotted'} ${underline} ${cyan ? 'text-cyan-h' : open ? 'text-primary' : 'text-foreground'}`}
-                >
-                    {label}
-                </button>
-                {open && (
-                    <>
-                        <div
-                            className="fixed inset-0 z-[290]"
-                            onClick={() => setOpenToken(null)}
-                        />
-                        <div
-                            style={tokenPopStyle ?? undefined}
-                            className={`z-[300] overflow-y-auto rounded-[16px] border bg-card p-[15px] text-left shadow-[0_14px_40px_rgba(20,16,8,0.18)] ${cyan ? 'border-cyan-bd' : 'border-border'}`}
-                        >
-                            <div
-                                className={`mb-[11px] font-mono text-[10px] tracking-[0.1em] uppercase ${cyan ? 'text-cyan-h' : 'text-text-3'}`}
-                            >
-                                {title}
-                            </div>
-                            <div className="flex flex-wrap gap-[7px]">
-                                {options.map((o) => (
-                                    <button
-                                        key={o.value}
-                                        onClick={() => {
-                                            onPick(o.value);
-                                            setOpenToken(null);
-                                        }}
-                                        className={`rounded-full border px-3.5 py-2 text-[13.5px] transition-colors ${chipOptStyle(o.value === current, cyan)}`}
-                                    >
-                                        {o.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </>
-                )}
-            </span>
-        );
-    }
-
-    // Extra-filter chips that are currently set (Who with / Budget / Vibe).
-    const EXTRA_DEFS = [
-        {
-            field: 'companions' as const,
-            Icon: IconUsers,
-            label: 'Who with',
-            opts: COMPANION_OPTS,
-        },
-        {
-            field: 'budget' as const,
-            Icon: IconCurrencyEuro,
-            label: 'Budget',
-            opts: BUDGET_OPTS,
-        },
-        {
-            field: 'vibe' as const,
-            Icon: IconAdjustmentsHorizontal,
-            label: 'Vibe',
-            opts: VIBE_OPTS,
-        },
-    ];
-    const activeExtras = constraints
-        ? EXTRA_DEFS.filter((d) => constraints[d.field])
-        : [];
-    const addableExtras = constraints
-        ? EXTRA_DEFS.filter((d) => !constraints[d.field])
-        : [];
-    const openExtra = EXTRA_DEFS.find((d) => d.field === openToken) ?? null;
 
     return (
-        <AppLayout>
-            <Head title="Day Composer" />
-            <div className="mx-auto w-full max-w-[680px] px-4 pt-6 pb-24 md:px-6">
-                <h1 className="font-display text-[27px] font-medium tracking-[-0.02em]">
-                    {title}
-                </h1>
-                <p className="mt-[3px] mb-5 text-[14px] text-text-2">
-                    {subtitle}
-                </p>
-
-                {parsing && (
-                    <div className="mb-4 flex gap-2">
-                        {[1, 2, 3].map((i) => (
-                            <div
-                                key={i}
-                                className="h-8 w-28 animate-pulse rounded-full bg-secondary"
-                            />
-                        ))}
+        <AppLayout fullWidth rightPanel={null} hideMobileDock hideQaSwitcher>
+            <Head title="Composer" />
+            <div className="composer-app" ref={root}>
+                <header className="composer-header">
+                    <div>
+                        <Link
+                            href={dashboard()}
+                            aria-label="Back to Today"
+                            className="composer-back"
+                        >
+                            <IconArrowLeft size={18} />
+                        </Link>
+                        <IconSparkles size={19} />
+                        <h1>Composer</h1>
                     </div>
-                )}
+                    <span>Your day, connected</span>
+                </header>
+                <div
+                    className="composer-feed"
+                    ref={feed}
+                    onScroll={() => {
+                        const el = feed.current;
 
-                {showInterim && (
-                    <InterimRoute intent={intent} query={prompt ?? ''} />
-                )}
-
-                {constraints && (
-                    <>
-                        <div className="mt-5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
-                            I understood — tap any word
-                        </div>
-                        <div className="mt-[11px] text-[19px] leading-[1.7] tracking-[-0.01em] text-text-2">
-                            {renderToken(
-                                'when',
-                                whenLabel,
-                                false,
-                                'When?',
-                                TIME_OPTS,
-                                whenKey,
-                                (v) =>
-                                    updateConstraint(
-                                        timeWindowPatch(v, constraints),
-                                    ),
-                            )}{' '}
-                            around{' '}
-                            {renderPanelToken(
-                                'area',
-                                areaLabel,
-                                false,
-                                360,
-                                <AreaPickerPanel
-                                    bezirk={bezirk}
-                                    veedel={veedel}
-                                    railOptions={railOptions}
-                                    chipOptions={chipOptions}
-                                    onAllCologne={() => {
-                                        setBezirk('all');
-                                        updateConstraint({ areas: [] });
-                                        setOpenToken(null);
-                                    }}
-                                    onNearMe={() => {
-                                        setBezirk('near');
-                                        updateConstraint({ areas: [] });
-                                        pickMyLocation();
-                                    }}
-                                    onPickBezirk={(name) => {
-                                        setBezirk(name);
-                                        updateConstraint({
-                                            areas:
-                                                veedelsByBezirk?.[name] ?? [],
-                                        });
-                                    }}
-                                    onPickVeedel={(v) => {
-                                        updateConstraint({
-                                            areas: v
-                                                ? [v]
-                                                : bezirk !== 'all' &&
-                                                    bezirk !== 'near'
-                                                  ? (veedelsByBezirk?.[
-                                                        bezirk
-                                                    ] ?? [])
-                                                  : [],
-                                        });
-                                        setOpenToken(null);
-                                    }}
-                                />,
-                            )}
-                            , for{' '}
-                            {renderToken(
-                                'doing',
-                                doingLabel,
-                                false,
-                                'Doing what?',
-                                doingTokenOpts,
-                                doingValue,
-                                (v) => {
-                                    const cats = v ? [v] : [];
-                                    setAmount(defaultAmount(cats));
-                                    updateConstraint({ categories: cats });
-                                },
-                            )}{' '}
-                            — from{' '}
-                            {renderPanelToken(
-                                'origin',
-                                originLabel,
-                                true,
-                                300,
-                                <FromPanel
-                                    mode={mode}
-                                    locating={locating}
-                                    savedPlaces={places}
-                                    areas={facets.areas}
-                                    query={fromQuery}
-                                    results={fromResults}
-                                    selectedKey={selectedKey}
-                                    onSearch={searchFrom}
-                                    onApply={applyFrom}
-                                    onMyLocation={pickMyLocation}
-                                    onPickOnMap={pickOnMap}
-                                    onMode={persistMode}
-                                />,
-                            )}
-                            .
-                        </div>
-
-                        {/* Extra-filter chips + add */}
-                        <div className="mt-3.5 flex flex-wrap items-center gap-2">
-                            {activeExtras.map((d) => {
-                                const value = constraints[d.field];
-                                const optLabel =
-                                    d.opts.find((o) => o.value === value)
-                                        ?.label ?? value;
-                                const ExtraIcon = d.Icon;
-
-                                return (
-                                    <span
-                                        key={d.field}
-                                        className="inline-flex items-center gap-[7px] rounded-full border border-border bg-card py-[5px] pr-[7px] pl-3 text-[13px] font-semibold text-foreground shadow-card"
-                                    >
-                                        <button
-                                            onClick={() => {
-                                                setOpenToken(d.field);
-                                                setAddOpen(false);
-                                            }}
-                                            className="flex cursor-pointer items-center gap-1.5"
-                                        >
-                                            <ExtraIcon
-                                                size={14}
-                                                stroke={ICON_STROKE}
-                                                className="text-text-3"
-                                            />
-                                            {optLabel}
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                updateConstraint({
-                                                    [d.field]: null,
-                                                } as Partial<Constraints>)
-                                            }
-                                            aria-label={`Remove ${d.label}`}
-                                            className="flex size-[19px] items-center justify-center rounded-full bg-surface-2 text-text-3 transition-colors hover:text-foreground"
-                                        >
-                                            <IconX size={11} stroke={2.6} />
-                                        </button>
-                                    </span>
-                                );
-                            })}
-                            {addableExtras.length > 0 && (
-                                <button
-                                    onClick={() => {
-                                        setAddOpen((o) => !o);
-                                        setOpenToken(null);
-                                    }}
-                                    className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3.5 py-1.5 text-[13px] font-semibold text-text-3 transition-colors hover:border-primary hover:text-primary"
-                                >
-                                    <IconPlus size={13} stroke={ICON_STROKE} />
-                                    filter
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Extra-chip edit panel */}
-                        {openExtra && (
-                            <div className="mt-3.5 rounded-[14px] border border-border bg-card p-4 shadow-[0_12px_34px_rgba(20,16,8,0.14)]">
-                                <div className="mb-3 flex items-center justify-between">
-                                    <span className="font-mono text-[11px] tracking-[0.08em] text-text-2 uppercase">
-                                        {openExtra.label}
-                                    </span>
-                                    <button
-                                        onClick={() => setOpenToken(null)}
-                                        className="flex size-6 items-center justify-center rounded-full bg-surface-2 text-text-3"
-                                    >
-                                        <IconX size={13} stroke={ICON_STROKE} />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {openExtra.opts
-                                        .filter((o) => o.value)
-                                        .map((o) => (
-                                            <button
-                                                key={o.value}
-                                                onClick={() => {
-                                                    updateConstraint({
-                                                        [openExtra.field]:
-                                                            o.value,
-                                                    } as Partial<Constraints>);
-                                                    setOpenToken(null);
-                                                }}
-                                                className={`rounded-full border px-3.5 py-2 text-[13.5px] transition-colors ${chipOptStyle(constraints[openExtra.field] === o.value, false)}`}
-                                            >
-                                                {o.label}
-                                            </button>
-                                        ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Add-filter panel */}
-                        {addOpen && addableExtras.length > 0 && (
-                            <div className="mt-3.5 rounded-[14px] border border-border bg-card p-4 shadow-[0_12px_34px_rgba(20,16,8,0.14)]">
-                                <div className="mb-3 flex items-center justify-between">
-                                    <span className="font-mono text-[11px] tracking-[0.08em] text-text-2 uppercase">
-                                        Add a filter
-                                    </span>
-                                    <button
-                                        onClick={() => setAddOpen(false)}
-                                        className="flex size-6 items-center justify-center rounded-full bg-surface-2 text-text-3"
-                                    >
-                                        <IconX size={13} stroke={ICON_STROKE} />
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {addableExtras.map((d) => {
-                                        const ExtraIcon = d.Icon;
-
-                                        return (
-                                            <button
-                                                key={d.field}
-                                                onClick={() => {
-                                                    updateConstraint({
-                                                        [d.field]:
-                                                            d.opts.find(
-                                                                (o) => o.value,
-                                                            )?.value ?? null,
-                                                    } as Partial<Constraints>);
-                                                    setAddOpen(false);
-                                                }}
-                                                className="flex items-center gap-2.5 rounded-[11px] border border-border bg-card px-3 py-[11px] text-left text-[13.5px] font-medium text-text-2 transition-colors hover:border-primary"
-                                            >
-                                                <ExtraIcon
-                                                    size={16}
-                                                    stroke={ICON_STROKE}
-                                                    className="text-text-3"
-                                                />
-                                                {d.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Amount toggle */}
-                        <div className="mt-6 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
-                            How much day?
-                        </div>
-                        <div className="mt-2.5 flex max-w-[380px] gap-[3px] rounded-[12px] border border-border bg-surface-2 p-1">
-                            {(
-                                [
-                                    ['just', 'Just this'],
-                                    ['few', 'A few options'],
-                                    ['full', 'Full day'],
-                                ] as const
-                            ).map(([val, lbl]) => (
-                                <button
-                                    key={val}
-                                    onClick={() => setAmount(val)}
-                                    className={`flex-1 rounded-[8px] px-1.5 py-[9px] text-[12.5px] transition-colors ${amount === val ? 'bg-card font-semibold text-primary shadow-sm' : 'font-medium text-text-2'}`}
-                                >
-                                    {lbl}
-                                </button>
-                            ))}
-                        </div>
-                    </>
-                )}
-
-                {/* Cyan weather/river note — the plan's single "locating" line */}
-                {plan && weather && (
-                    <div className="mt-4 flex items-center gap-2.5 rounded-[11px] bg-cyan-soft px-[13px] py-2.5">
-                        {weather.rain ? (
-                            <IconCloudRain
-                                size={16}
-                                stroke={1.9}
-                                className="shrink-0 text-cyan-h"
-                            />
-                        ) : (
-                            <IconRipple
-                                size={16}
-                                stroke={1.9}
-                                className="shrink-0 text-cyan-h"
-                            />
-                        )}
-                        <span className="text-[13px] font-semibold text-cyan-h">
-                            {weather.text}
-                        </span>
-                    </div>
-                )}
-
-                {plan && <NoticeChips notices={notices} />}
-
-                {error && (
-                    <div className="mb-4 rounded-[9px] bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger">
-                        {error}
-                    </div>
-                )}
-
-                {composing && (
-                    <div className="flex flex-col gap-3">
-                        {[1, 2, 3].map((i) => (
-                            <div
-                                key={i}
-                                className="h-[104px] animate-pulse rounded-[14px] bg-secondary"
-                            />
-                        ))}
-                    </div>
-                )}
-
-                {/* Result — Just this / A few options / Full day */}
-                {plan && !composing && (
-                    <div className="mt-[18px]">
-                        {plan.slots.length === 0 ? (
-                            <div className="rounded-[14px] border border-border bg-card p-6 text-center text-sm text-text-2">
-                                Nothing’s open across that window — widen the
-                                time or try another day.
-                            </div>
-                        ) : amount === 'just' ? (
-                            (() => {
-                                const slot = plan.slots[0];
-
-                                return (
-                                    <div className="overflow-hidden rounded-[16px] border border-border bg-card shadow-card">
-                                        <div
-                                            className={`relative flex h-[120px] items-center justify-center ${categoryClass(slot.category)}`}
-                                            style={{
-                                                background:
-                                                    'var(--cat-tint, var(--surface-2))',
-                                            }}
-                                        >
-                                            <span className="text-[62px] leading-none">
-                                                {slotEmoji(slot)}
-                                            </span>
-                                            <span
-                                                className="absolute top-[13px] left-[14px] rounded-full bg-card px-[11px] py-[5px] font-mono text-[10px] font-semibold tracking-[0.06em] uppercase shadow-card"
-                                                style={{
-                                                    color: 'var(--cat-mark, var(--text-2))',
-                                                }}
-                                            >
-                                                {slot.category}
-                                            </span>
-                                            <span className="absolute top-[13px] right-[14px] rounded-full bg-card px-[11px] py-[5px] font-mono text-[12px] font-semibold text-text-2 shadow-card">
-                                                {slot.duration_label}
-                                            </span>
-                                        </div>
-                                        <div className="p-[18px]">
-                                            <h3 className="font-display text-[23px] leading-[1.05] font-medium tracking-[-0.015em]">
-                                                {slot.name}
-                                            </h3>
-                                            {slot.why && (
-                                                <p className="mt-[7px] text-[14px] leading-[1.5] text-text-2">
-                                                    {slot.why}
-                                                </p>
-                                            )}
-                                            <div className="mt-3 flex items-center gap-3 font-mono text-[12px] text-cyan-h">
-                                                {slot.travel_min_from_previous >
-                                                    0 && (
-                                                    <span>
-                                                        {
-                                                            slot.travel_min_from_previous
-                                                        }{' '}
-                                                        min away
-                                                    </span>
-                                                )}
-                                                {costLabel(slot.cost_tier) && (
-                                                    <span className="text-text-3">
-                                                        {costLabel(
-                                                            slot.cost_tier,
-                                                        )}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="mt-[17px] flex gap-2.5">
-                                                <button
-                                                    onClick={shuffle}
-                                                    className="inline-flex items-center justify-center gap-[7px] rounded-[11px] border border-border bg-card px-[15px] py-[11px] text-[13.5px] font-semibold text-text-2 transition-colors hover:border-primary"
-                                                >
-                                                    <IconArrowsShuffle
-                                                        size={15}
-                                                        stroke={ICON_STROKE}
-                                                    />
-                                                    Another
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        takeMeThere(slot)
-                                                    }
-                                                    className="flex flex-1 items-center justify-center gap-2 rounded-[11px] bg-primary py-[11px] text-[14px] font-semibold text-white transition-colors hover:bg-accent-hover"
-                                                >
-                                                    → Take me there
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })()
-                        ) : amount === 'few' ? (
-                            <>
-                                <div className="mb-[11px] font-mono text-[10px] tracking-[0.08em] text-text-3 uppercase">
-                                    {options.length} picks near {areaLabel} ·
-                                    tap to explore
-                                </div>
-                                {options.map((slot) => {
-                                    const tappable =
-                                        !slot.is_appointment &&
-                                        slot.id.startsWith('spot:');
-
-                                    return (
-                                        <button
-                                            key={slot.id}
-                                            onClick={() =>
-                                                tappable
-                                                    ? openSlotDetail(slot)
-                                                    : takeMeThere(slot)
-                                            }
-                                            className={`mb-2.5 flex w-full items-center gap-3.5 rounded-[14px] border border-border bg-card p-[15px] text-left shadow-card transition-colors hover:border-primary ${categoryClass(slot.category)}`}
-                                        >
-                                            <span
-                                                className="flex size-[46px] flex-none items-center justify-center rounded-[12px] text-[23px]"
-                                                style={{
-                                                    background:
-                                                        'var(--cat-tint, var(--surface-2))',
-                                                }}
-                                            >
-                                                {slotEmoji(slot)}
-                                            </span>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="font-display text-[17px] leading-[1.1] font-medium">
-                                                    {slot.name}
-                                                </div>
-                                                {slot.why && (
-                                                    <div className="mt-[3px] text-[13px] leading-[1.4] text-text-2">
-                                                        {slot.why}
-                                                    </div>
-                                                )}
-                                                <div className="mt-1.5 font-mono text-[11.5px] text-cyan-h">
-                                                    {[
-                                                        slot.veedel,
-                                                        slot.duration_label,
-                                                        costLabel(
-                                                            slot.cost_tier,
-                                                        ),
-                                                    ]
-                                                        .filter(Boolean)
-                                                        .join(' · ')}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </>
-                        ) : (
-                            <div>
-                                {plan.slots.map((slot, i) => {
-                                    const isLocked = locked.includes(slot.id);
-                                    const tappable =
-                                        !slot.is_appointment &&
-                                        slot.id.startsWith('spot:');
-
-                                    return (
-                                        <div
-                                            key={slot.id}
-                                            className="flex gap-3.5"
-                                        >
-                                            <div className="flex w-[54px] flex-none flex-col items-center pt-0.5">
-                                                <span className="font-mono text-[11px] font-semibold text-cyan-h">
-                                                    {slot.start_time}
-                                                </span>
-                                                <span className="mt-2 size-[11px] rounded-full border-[2.5px] border-cyan bg-card" />
-                                                {i < plan.slots.length - 1 && (
-                                                    <span
-                                                        className="mt-1 w-0.5 flex-1 bg-cyan-soft"
-                                                        style={{
-                                                            minHeight: 30,
-                                                        }}
-                                                    />
-                                                )}
-                                            </div>
-                                            <div
-                                                className={`mb-3.5 min-w-0 flex-1 rounded-[14px] border bg-card p-[15px] shadow-card ${isLocked ? 'border-primary' : 'border-border'} ${categoryClass(slot.category)}`}
-                                            >
-                                                <div className="mb-2 flex items-center gap-2">
-                                                    <span
-                                                        className="rounded-full px-[9px] py-[3px] font-mono text-[10px] font-semibold tracking-[0.06em] uppercase"
-                                                        style={{
-                                                            background:
-                                                                'var(--cat-tint, var(--surface-2))',
-                                                            color: 'var(--cat-mark, var(--text-2))',
-                                                        }}
-                                                    >
-                                                        {slot.band} ·{' '}
-                                                        {slot.category}
-                                                    </span>
-                                                    {isLocked && (
-                                                        <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-primary">
-                                                            <IconPin
-                                                                size={11}
-                                                                stroke={2.1}
-                                                            />
-                                                            locked
-                                                        </span>
-                                                    )}
-                                                    <span className="ml-auto font-mono text-[11px] text-text-3">
-                                                        {slot.duration_label}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    role={
-                                                        tappable
-                                                            ? 'button'
-                                                            : undefined
-                                                    }
-                                                    tabIndex={
-                                                        tappable ? 0 : undefined
-                                                    }
-                                                    onClick={
-                                                        tappable
-                                                            ? () =>
-                                                                  openSlotDetail(
-                                                                      slot,
-                                                                  )
-                                                            : undefined
-                                                    }
-                                                    onKeyDown={
-                                                        tappable
-                                                            ? (e) => {
-                                                                  if (
-                                                                      e.key ===
-                                                                          'Enter' ||
-                                                                      e.key ===
-                                                                          ' '
-                                                                  ) {
-                                                                      e.preventDefault();
-                                                                      openSlotDetail(
-                                                                          slot,
-                                                                      );
-                                                                  }
-                                                              }
-                                                            : undefined
-                                                    }
-                                                    className={`flex items-start gap-3 ${tappable ? 'cursor-pointer' : ''}`}
-                                                >
-                                                    <span
-                                                        className="flex size-[42px] flex-none items-center justify-center rounded-[11px] text-[21px]"
-                                                        style={{
-                                                            background:
-                                                                'var(--cat-tint, var(--surface-2))',
-                                                        }}
-                                                    >
-                                                        {slotEmoji(slot)}
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="font-display text-[17px] leading-[1.1] font-medium">
-                                                            {slot.name}
-                                                        </div>
-                                                        {slot.why && (
-                                                            <div className="mt-[3px] text-[12.5px] leading-[1.4] text-text-2">
-                                                                {slot.why}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="mt-3 flex gap-[7px]">
-                                                    <button
-                                                        onClick={() =>
-                                                            toggleLock(slot.id)
-                                                        }
-                                                        className={`inline-flex items-center gap-1.5 rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold transition-colors ${isLocked ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card text-text-2 hover:border-primary'}`}
-                                                    >
-                                                        <IconPin
-                                                            size={13}
-                                                            stroke={ICON_STROKE}
-                                                        />
-                                                        {isLocked
-                                                            ? 'Locked'
-                                                            : 'Lock'}
-                                                    </button>
-                                                    {slot.swappable && (
-                                                        <button
-                                                            onClick={() =>
-                                                                swap(i)
-                                                            }
-                                                            disabled={
-                                                                swappingSlot ===
-                                                                i
-                                                            }
-                                                            className="inline-flex items-center gap-1.5 rounded-[9px] border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-text-2 transition-colors hover:border-primary disabled:opacity-50"
-                                                        >
-                                                            <IconArrowsShuffle
-                                                                size={13}
-                                                                stroke={
-                                                                    ICON_STROKE
-                                                                }
-                                                            />
-                                                            Swap
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() =>
-                                                            takeMeThere(slot)
-                                                        }
-                                                        className="ml-auto inline-flex items-center gap-1.5 rounded-[9px] bg-cyan-soft px-3 py-2 text-[12.5px] font-semibold text-cyan-h"
-                                                    >
-                                                        → Go
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {/* Whole-plan actions */}
-                        {plan.slots.length > 0 && (
-                            <>
-                                <div className="mt-[18px] flex items-center gap-2.5">
-                                    <button
-                                        onClick={shuffle}
-                                        disabled={composing}
-                                        className="inline-flex items-center gap-2 rounded-[12px] border border-border bg-card px-4 py-3 text-[13.5px] font-semibold text-text-2 transition-colors hover:border-primary disabled:opacity-50"
-                                    >
-                                        <IconArrowsShuffle
-                                            size={15}
-                                            stroke={ICON_STROKE}
-                                        />
-                                        Shuffle
-                                    </button>
-                                    <button
-                                        onClick={saveToToday}
-                                        disabled={saving}
-                                        className="flex-1 rounded-[12px] border border-transparent bg-foreground py-[13px] text-[15px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60 dark:border-border dark:bg-secondary dark:text-foreground"
-                                    >
-                                        {saving ? 'Saving…' : 'Save to Today'}
-                                    </button>
-                                </div>
-                                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12px] text-text-3">
-                                    <IconPin size={12} stroke={ICON_STROKE} />
-                                    Locked picks stay when you shuffle.
-                                </p>
-                            </>
-                        )}
-                    </div>
-                )}
-
-                {!constraints && !parsing && !showInterim && (
-                    <div className="rounded-[14px] border border-border bg-card p-8 text-center">
-                        <IconSparkles
-                            size={32}
-                            stroke={ICON_STROKE}
-                            className="mx-auto mb-2 text-muted-foreground"
-                        />
-                        <p className="mb-4 text-sm text-muted-foreground">
-                            Tell me about your day and I'll compose it — or
-                            start from one of these:
-                        </p>
-                        <div className="flex flex-wrap justify-center gap-2">
-                            {[
-                                'Free afternoon nearby',
-                                'Something to do today',
-                                'Plan my weekend',
-                            ].map((starter) => (
-                                <button
-                                    key={starter}
-                                    onClick={() =>
-                                        router.visit(
-                                            `/composer?prompt=${encodeURIComponent(starter)}`,
-                                        )
-                                    }
-                                    className="rounded-full border border-border px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
-                                >
-                                    {starter}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {detail && (
-                <PlaceDetailModal
-                    place={detail}
-                    isMobile={isMobile}
-                    meta={detailMeta(detail)}
-                    feedback={{
-                        state: stateFor(detail.id) ?? detail.feedback_state,
-                        rating: ratingFor(detail.id) ?? detail.feedback_rating,
-                        onAction: (action, rating) =>
-                            setFeedback(detail.id, action, rating),
+                        if (
+                            el &&
+                            el.scrollHeight - el.scrollTop - el.clientHeight <
+                                140
+                        ) {
+                            setNewBelow(false);
+                        }
                     }}
+                >
+                    <div className="composer-feed-inner">
+                        {conversation.messages.length === 0 && !pendingText && (
+                            <section className="composer-welcome">
+                                <IconSparkles size={30} />
+                                <h2>What would make your day better?</h2>
+                                <p>
+                                    Plan a day, find somewhere to go, or get
+                                    help with the next step.
+                                </p>
+                                <div className="composer-starters">
+                                    <button
+                                        onClick={() => {
+                                            appendMessage('Plan my day');
+                                            textarea.current?.focus();
+                                        }}
+                                    >
+                                        <IconCalendar size={19} />
+                                        <span>
+                                            Plan my day
+                                            <small>
+                                                Make room for what matters
+                                            </small>
+                                        </span>
+                                    </button>
+                                    <button onClick={() => openBrowse()}>
+                                        <IconBookmark size={19} />
+                                        <span>
+                                            Find something to do
+                                            <small>
+                                                Places and events around you
+                                            </small>
+                                        </span>
+                                    </button>
+                                    <Link href={bureaucracy()}>
+                                        <IconShieldCheck size={19} />
+                                        <span>
+                                            Help with paperwork
+                                            <small>
+                                                Reviewed, sourced guidance
+                                            </small>
+                                        </span>
+                                    </Link>
+                                </div>
+                                <small>
+                                    Planning tools are connected. Open-ended AI
+                                    conversation is not enabled yet.
+                                </small>
+                            </section>
+                        )}
+                        {conversation.messages.length > 0 && (
+                            <p className="composer-conversation-date">
+                                {new Date(
+                                    conversation.created_at,
+                                ).toLocaleDateString('en-GB', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                })}
+                            </p>
+                        )}
+                        {conversation.messages.map((message) => {
+                            const live =
+                                message.id === latestPlanMessage?.id &&
+                                !!focused;
+
+                            return (
+                                <article
+                                    key={message.id}
+                                    className={`composer-message ${message.role === 'user' ? 'is-user' : ''}`}
+                                    id={
+                                        live
+                                            ? 'composer-current-plan'
+                                            : undefined
+                                    }
+                                >
+                                    <div className="composer-speaker">
+                                        {message.role === 'assistant' && (
+                                            <IconSparkles size={16} />
+                                        )}
+                                        {message.role === 'user'
+                                            ? 'You'
+                                            : 'Composer'}
+                                    </div>
+                                    {message.text && <p>{message.text}</p>}
+                                    {message.kind === 'plan' &&
+                                        message.plan &&
+                                        (live ? (
+                                            <>
+                                                <PlanCard
+                                                    plan={focused!}
+                                                    draft={
+                                                        workspace.draft
+                                                            ?.date ===
+                                                        focused!.date
+                                                    }
+                                                    busy={!!busy}
+                                                    command={command}
+                                                    swap={startSwap}
+                                                    preview={preview}
+                                                    onAdd={() => {
+                                                        setSwap(null);
+                                                        openBrowse();
+                                                    }}
+                                                    onCancel={() =>
+                                                        setConfirm('cancel')
+                                                    }
+                                                />
+                                                <div className="composer-plan-links">
+                                                    <button
+                                                        onClick={() =>
+                                                            setPanel('versions')
+                                                        }
+                                                    >
+                                                        <IconHistory
+                                                            size={16}
+                                                        />
+                                                        Version history ·{' '}
+                                                        {
+                                                            workspace.versions.filter(
+                                                                (version) =>
+                                                                    version.date ===
+                                                                    focused!
+                                                                        .date,
+                                                            ).length
+                                                        }
+                                                    </button>
+                                                    {lastVersion &&
+                                                        !lastVersion.undone &&
+                                                        !workspace.draft && (
+                                                            <button
+                                                                disabled={
+                                                                    !!busy
+                                                                }
+                                                                onClick={() =>
+                                                                    command({
+                                                                        action: 'undo',
+                                                                    })
+                                                                }
+                                                            >
+                                                                Undo last change
+                                                            </button>
+                                                        )}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <details className="composer-plan-reference">
+                                                <summary>
+                                                    <IconCalendar size={16} />
+                                                    {dateLabel(
+                                                        message.plan.date,
+                                                    )}{' '}
+                                                    ·{' '}
+                                                    {message.plan.slots.length}{' '}
+                                                    {message.plan.slots
+                                                        .length === 1
+                                                        ? 'activity'
+                                                        : 'activities'}
+                                                    <span>
+                                                        Earlier reference
+                                                    </span>
+                                                </summary>
+                                                <PlanCard
+                                                    plan={message.plan}
+                                                    readonly
+                                                />
+                                                {workspace.plans[
+                                                    message.plan.date
+                                                ] && (
+                                                    <button
+                                                        className="composer-text-button"
+                                                        disabled={!!busy}
+                                                        onClick={() =>
+                                                            openPlan(
+                                                                message.plan!,
+                                                            )
+                                                        }
+                                                    >
+                                                        Open current plan
+                                                        <IconArrowRight
+                                                            size={16}
+                                                        />
+                                                    </button>
+                                                )}
+                                            </details>
+                                        ))}
+                                    {message.kind === 'bureaucracy' && (
+                                        <Guidance query={message.query ?? ''} />
+                                    )}
+                                    {['find', 'journey'].includes(
+                                        message.kind ?? '',
+                                    ) && (
+                                        <button
+                                            className="composer-service-link"
+                                            onClick={() => {
+                                                setSwap(null);
+                                                openBrowse();
+                                            }}
+                                        >
+                                            <IconBookmark size={20} />
+                                            <span>
+                                                {message.kind === 'journey'
+                                                    ? 'Choose a destination'
+                                                    : 'Explore places and events'}
+                                                <small>
+                                                    {message.kind === 'journey'
+                                                        ? 'Check the actual route in the journey panel'
+                                                        : 'Add an activity without leaving this conversation'}
+                                                </small>
+                                            </span>
+                                            <IconArrowRight size={18} />
+                                        </button>
+                                    )}
+                                </article>
+                            );
+                        })}
+                        {pendingText && (
+                            <article className="composer-message is-user">
+                                <div className="composer-speaker">You</div>
+                                <p>{pendingText}</p>
+                            </article>
+                        )}
+                        {swap && (
+                            <article className="composer-message">
+                                <div className="composer-speaker">
+                                    <IconSparkles size={16} />
+                                    Composer
+                                </div>
+                                <p>
+                                    Alternatives for{' '}
+                                    <strong>{swap.slot.name}</strong>. Its time
+                                    stays {swap.slot.start_time}–
+                                    {swap.slot.end_time}.
+                                </p>
+                                <Catalogue
+                                    key={`${swap.slot.id}-${swap.revision}`}
+                                    date={swap.date}
+                                    replaceSlot={swap.slot}
+                                    compact
+                                    exclude={activePlan?.slots.map(
+                                        (slot) => slot.id,
+                                    )}
+                                    busy={!!busy}
+                                    onChoose={choose}
+                                    onFull={fullDetails}
+                                    onBrowse={() => {
+                                        setBrowseDate(swap.date);
+                                        setPanel('browse');
+                                    }}
+                                />
+                                <button
+                                    className="composer-text-button"
+                                    onClick={() => setSwap(null)}
+                                >
+                                    Keep this place
+                                </button>
+                            </article>
+                        )}
+                        {!!busy && (
+                            <div className="composer-working">
+                                <ComposerLoading label={busy} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="composer-input-area">
+                    {entry && (
+                        <section
+                            className="composer-entry-review"
+                            aria-label="Selected context"
+                        >
+                            <div className="composer-entry-heading">
+                                <strong>
+                                    {entry.kind === 'event'
+                                        ? entryEvent?.title || 'Selected event'
+                                        : entry.kind === 'travel'
+                                          ? entry.context.name
+                                          : entry.kind === 'request'
+                                            ? 'New request'
+                                            : 'Add a personal plan'}
+                                </strong>
+                                <button
+                                    type="button"
+                                    aria-label="Remove selected context"
+                                    onClick={clearEntry}
+                                >
+                                    <IconX size={17} />
+                                </button>
+                            </div>
+                            {entryDate && (
+                                <small>
+                                    {dateLabel(entryDate)} · For review
+                                </small>
+                            )}
+                            {entry.kind === 'event' &&
+                                (entryError ? (
+                                    <p role="alert">
+                                        {entryError}{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setEntryRetry((n) => n + 1)
+                                            }
+                                        >
+                                            Retry
+                                        </button>
+                                    </p>
+                                ) : entryEvent ? (
+                                    <>
+                                        <p>
+                                            {eventDateLabel(
+                                                entryEvent.occurrence_start,
+                                            )}{' '}
+                                            · {eventSchedule(entryEvent)}
+                                            {entryEvent.venue.name
+                                                ? ` · ${entryEvent.venue.name}`
+                                                : ''}
+                                        </p>
+                                        {!entryEvent.occurrence_end && (
+                                            <small>
+                                                Check the end time with the
+                                                organiser before adding it to
+                                                your day.
+                                            </small>
+                                        )}
+                                        <div className="composer-entry-actions">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    fullDetails({
+                                                        event: entryEvent,
+                                                    })
+                                                }
+                                            >
+                                                Details
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="composer-entry-primary"
+                                                disabled={
+                                                    !!busy ||
+                                                    otherDraft ||
+                                                    !entryEvent.occurrence_end ||
+                                                    Date.parse(
+                                                        entryEvent.occurrence_start,
+                                                    ) <= Date.now()
+                                                }
+                                                onClick={addSelectedEvent}
+                                            >
+                                                <IconPlus size={16} />
+                                                {workspace.approval ===
+                                                'routine'
+                                                    ? 'Add to saved plan'
+                                                    : 'Add to proposal'}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <ComposerLoading compact />
+                                ))}
+                            {entry.kind === 'travel' && (
+                                <>
+                                    <p>
+                                        {entry.context.origin
+                                            ? `${entry.context.origin.name} → `
+                                            : ''}
+                                        {entry.context.name}
+                                        {entry.context.requestedTime
+                                            ? ` · ${entry.context.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${entry.context.requestedTime}`
+                                            : ''}
+                                    </p>
+                                    {entry.context.route && (
+                                        <p className="composer-entry-route">
+                                            {entry.context.route.lines.length
+                                                ? `Line ${entry.context.route.lines.join(' · ')} · `
+                                                : ''}
+                                            {new Date(
+                                                entry.context.route.departAt,
+                                            ).toLocaleTimeString('en-GB', {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                timeZone: 'Europe/Berlin',
+                                            })}
+                                            {' → '}
+                                            {new Date(
+                                                entry.context.route.arriveAt,
+                                            ).toLocaleTimeString('en-GB', {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                timeZone: 'Europe/Berlin',
+                                            })}
+                                            {' · '}
+                                            {
+                                                entry.context.route
+                                                    .durationMinutes
+                                            }{' '}
+                                            min
+                                        </p>
+                                    )}
+                                    <small>
+                                        Journey details for review · check
+                                        current departures
+                                    </small>
+                                    <div className="composer-entry-actions">
+                                        <Link
+                                            href={timetable({
+                                                query: travelDestinationParams(
+                                                    reviewTravelDestination(
+                                                        entry.context,
+                                                    ),
+                                                ),
+                                            })}
+                                        >
+                                            Check journey
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={useTravelRequest}
+                                        >
+                                            Use in my message
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                            {entry.kind === 'request' && (
+                                <>
+                                    <p>{entry.text}</p>
+                                    <button
+                                        type="button"
+                                        className="composer-text-button"
+                                        onClick={() => {
+                                            const next = mergeRequest(
+                                                input,
+                                                entry.text,
+                                            );
+
+                                            if (next.length > 500) {
+                                                setError(
+                                                    'Your message is full. Send or shorten it first.',
+                                                );
+
+                                                return;
+                                            }
+
+                                            setInput(next);
+                                            clearEntry();
+                                            textarea.current?.focus();
+                                        }}
+                                    >
+                                        Use in my message
+                                    </button>
+                                </>
+                            )}
+                            {entry.kind === 'appointment' && !otherDraft && (
+                                <button
+                                    type="button"
+                                    className="composer-text-button"
+                                    onClick={() => {
+                                        setBrowseDate(entry.date);
+                                        setPanel('appointment');
+                                    }}
+                                >
+                                    Add details
+                                </button>
+                            )}
+                            {otherDraft && (
+                                <p className="composer-entry-conflict">
+                                    You have changes for{' '}
+                                    {dateLabel(workspace.draft!.date)}.{' '}
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            openPlan(workspace.draft!)
+                                        }
+                                    >
+                                        Review them first
+                                    </button>
+                                </p>
+                            )}
+                        </section>
+                    )}
+
+                    {newBelow && (
+                        <button
+                            className="composer-new-messages"
+                            onClick={() => {
+                                scrollBottom(true);
+                                setNewBelow(false);
+                            }}
+                        >
+                            Latest messages
+                            <IconChevronDown size={16} />
+                        </button>
+                    )}
+                    {error && (
+                        <div className="composer-error" role="alert">
+                            <span>{error}</span>
+                            {retryMessage && (
+                                <button
+                                    onClick={() => send(retryMessage)}
+                                    disabled={!!busy}
+                                >
+                                    Retry
+                                </button>
+                            )}
+                            <button
+                                aria-label="Dismiss error"
+                                onClick={() => setError('')}
+                            >
+                                <IconX size={17} />
+                            </button>
+                        </div>
+                    )}
+                    <form
+                        className="composer-input-box"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void send(input.trim());
+                        }}
+                    >
+                        {activePlan && (
+                            <div className="composer-context">
+                                <button
+                                    type="button"
+                                    disabled={!!busy}
+                                    onClick={() => openPlan(activePlan)}
+                                >
+                                    <IconCalendar size={15} />
+                                    {dateLabel(activePlan.date)}
+                                    <span>
+                                        {workspace.draft?.date ===
+                                        activePlan.date
+                                            ? 'Draft'
+                                            : 'Current plan'}
+                                    </span>
+                                </button>
+                            </div>
+                        )}
+                        <textarea
+                            ref={textarea}
+                            value={input}
+                            maxLength={500}
+                            rows={1}
+                            aria-label="Message Composer"
+                            placeholder="Ask or add a detail…"
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (
+                                    e.key === 'Enter' &&
+                                    !e.shiftKey &&
+                                    !e.nativeEvent.isComposing &&
+                                    !isMobile
+                                ) {
+                                    e.preventDefault();
+                                    void send(input.trim());
+                                }
+                            }}
+                        />
+                        <div className="composer-input-toolbar">
+                            <div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="composer-icon-button"
+                                            aria-label="Composer actions"
+                                            disabled={!!busy}
+                                        >
+                                            <IconPlus size={22} />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        side="top"
+                                        align="start"
+                                        className="composer-menu"
+                                    >
+                                        <DropdownMenuItem
+                                            onSelect={() => setPanel('plans')}
+                                        >
+                                            <IconCalendar size={17} />
+                                            My Plans
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() => {
+                                                setSwap(null);
+                                                openBrowse(true);
+                                            }}
+                                        >
+                                            <IconBookmark size={17} />
+                                            Saved
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() => {
+                                                setSwap(null);
+                                                openBrowse();
+                                            }}
+                                        >
+                                            <IconPlus size={17} />
+                                            Add a place or event
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() => {
+                                                setBrowseDate(
+                                                    activePlan?.date ?? today(),
+                                                );
+                                                setPanel('appointment');
+                                            }}
+                                        >
+                                            <IconCalendar size={17} />
+                                            Add an appointment
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() => setPanel('origin')}
+                                        >
+                                            <IconArrowRight size={17} />
+                                            Starting point
+                                            {origin ? ` · ${origin.label}` : ''}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onSelect={() => setPanel('history')}
+                                        >
+                                            <IconHistory size={17} />
+                                            History
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={async () => {
+                                                const previousInput = input;
+                                                setInput('');
+
+                                                if (
+                                                    await command({
+                                                        action: 'fresh',
+                                                    })
+                                                ) {
+                                                    setSwap(null);
+                                                    feed.current?.scrollTo({
+                                                        top: 0,
+                                                    });
+                                                } else {
+                                                    setInput(
+                                                        (current) =>
+                                                            current ||
+                                                            previousInput,
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            <IconPlus size={17} />
+                                            Start fresh
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="composer-approval"
+                                            disabled={!!busy}
+                                            aria-label="Change approval setting"
+                                        >
+                                            <IconShieldCheck size={16} />
+                                            <span>
+                                                {workspace.approval === 'ask'
+                                                    ? 'Ask before changes'
+                                                    : 'Routine changes allowed'}
+                                            </span>
+                                            <IconChevronDown size={12} />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        side="top"
+                                        align="start"
+                                        className="composer-menu composer-approval-menu"
+                                    >
+                                        <DropdownMenuLabel>
+                                            Plan changes
+                                        </DropdownMenuLabel>
+                                        {(['ask', 'routine'] as const).map(
+                                            (mode) => (
+                                                <DropdownMenuItem
+                                                    key={mode}
+                                                    onSelect={() =>
+                                                        command({
+                                                            action: 'approval',
+                                                            mode,
+                                                        })
+                                                    }
+                                                >
+                                                    <div>
+                                                        <strong>
+                                                            {mode === 'ask'
+                                                                ? 'Ask before changes'
+                                                                : 'Allow routine plan changes'}
+                                                        </strong>
+                                                        <small>
+                                                            {mode === 'ask'
+                                                                ? 'Review a proposal before it is saved.'
+                                                                : 'Save reversible edits automatically. Undo stays available.'}
+                                                        </small>
+                                                    </div>
+                                                    {workspace.approval ===
+                                                        mode && (
+                                                        <IconCheck size={17} />
+                                                    )}
+                                                </DropdownMenuItem>
+                                            ),
+                                        )}
+                                        <p>
+                                            Bookings, payments and submissions
+                                            always need separate confirmation.
+                                        </p>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                            <button
+                                type="submit"
+                                className="composer-send"
+                                aria-label="Send message"
+                                disabled={!input.trim() || !!busy}
+                            >
+                                {busy ? (
+                                    <ComposerLoading compact />
+                                ) : (
+                                    <IconArrowUp size={21} />
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                    <div className="composer-input-note">
+                        Plans are saved to your account · Times in Europe/Berlin
+                    </div>
+                </div>
+            </div>
+            <Dialog
+                open={panel !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPanel(null);
+                    }
+                }}
+            >
+                <DialogContent
+                    style={{ translate: 'none' }}
+                    className={`composer-panel ${panel === 'appointment' ? 'is-small' : ''}`}
+                >
+                    <DialogTitle>
+                        {panel === 'origin'
+                            ? 'Starting point'
+                            : panel === 'plans'
+                              ? 'My Plans'
+                              : panel === 'saved'
+                                ? 'Saved'
+                                : panel === 'history'
+                                  ? 'Conversations'
+                                  : panel === 'versions'
+                                    ? 'Version history'
+                                    : panel === 'appointment'
+                                      ? 'Add an appointment'
+                                      : swap
+                                        ? 'Replace a place'
+                                        : 'Add to your plan'}
+                    </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Your conversation stays here while you explore.
+                    </DialogDescription>
+                    {error && (
+                        <p className="composer-error" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <div className="composer-panel-scroll">
+                        {panel === 'origin' && (
+                            <OriginPicker
+                                saved={savedPlaces}
+                                onSelect={(pick) => {
+                                    setOrigin(pick);
+                                    setPanel(null);
+                                }}
+                            />
+                        )}
+
+                        {panel === 'plans' && (
+                            <>
+                                {workspace.draft && (
+                                    <button
+                                        className="composer-collection-item"
+                                        disabled={!!busy}
+                                        onClick={() =>
+                                            openPlan(workspace.draft!)
+                                        }
+                                    >
+                                        <IconPencilFallback />
+                                        <span>
+                                            Unfinished changes
+                                            <small>
+                                                {dateLabel(
+                                                    workspace.draft.date,
+                                                )}{' '}
+                                                · {workspace.draft.slots.length}{' '}
+                                                {workspace.draft.slots
+                                                    .length === 1
+                                                    ? 'activity'
+                                                    : 'activities'}
+                                            </small>
+                                        </span>
+                                        <IconArrowRight size={18} />
+                                    </button>
+                                )}
+                                {Object.values(workspace.plans)
+                                    .sort((a, b) =>
+                                        a.date.localeCompare(b.date),
+                                    )
+                                    .map((plan) => (
+                                        <button
+                                            key={plan.date}
+                                            className="composer-collection-item"
+                                            disabled={!!busy}
+                                            onClick={() => openPlan(plan)}
+                                        >
+                                            <IconCalendar size={20} />
+                                            <span>
+                                                {dateLabel(plan.date)}
+                                                <small>
+                                                    {plan.slots.length}{' '}
+                                                    {plan.slots.length === 1
+                                                        ? 'activity'
+                                                        : 'activities'}{' '}
+                                                    · In your plan
+                                                </small>
+                                            </span>
+                                            <IconArrowRight size={18} />
+                                        </button>
+                                    ))}
+                                {Object.keys(workspace.plans).length === 0 &&
+                                    !workspace.draft && (
+                                        <p className="composer-empty">
+                                            Your confirmed days will appear
+                                            here. Start with a request in
+                                            Composer.
+                                        </p>
+                                    )}
+                            </>
+                        )}
+                        {panel === 'history' && (
+                            <>
+                                {workspace.conversations
+                                    .toReversed()
+                                    .map((item) => (
+                                        <button
+                                            className="composer-collection-item"
+                                            key={item.id}
+                                            disabled={!!busy}
+                                            onClick={async () => {
+                                                if (
+                                                    await command({
+                                                        action: 'resume',
+                                                        id: item.id,
+                                                    })
+                                                ) {
+                                                    setPanel(null);
+                                                    setSwap(null);
+                                                    scrollBottom(true);
+                                                }
+                                            }}
+                                        >
+                                            <IconHistory size={20} />
+                                            <span>
+                                                {item.title}
+                                                <small>
+                                                    {new Date(
+                                                        item.created_at,
+                                                    ).toLocaleDateString()}{' '}
+                                                    · {item.messages.length}{' '}
+                                                    messages
+                                                </small>
+                                            </span>
+                                            {item.id === workspace.active && (
+                                                <IconCheck size={17} />
+                                            )}
+                                        </button>
+                                    ))}
+                                <p className="composer-panel-note">
+                                    Starting fresh keeps these conversations and
+                                    all your plans. Earlier conversations are
+                                    not used as automatic AI memory.
+                                </p>
+                                <button
+                                    className="composer-text-button is-danger"
+                                    onClick={() => setConfirm('history')}
+                                >
+                                    <IconTrash size={16} />
+                                    Delete conversation history
+                                </button>
+                            </>
+                        )}
+                        {panel === 'versions' && (
+                            <>
+                                {workspace.versions
+                                    .filter(
+                                        (version) =>
+                                            !workspace.focus ||
+                                            version.date === workspace.focus,
+                                    )
+                                    .toReversed()
+                                    .map((version) => (
+                                        <details
+                                            className="composer-version"
+                                            key={version.id}
+                                        >
+                                            <summary>
+                                                {dateLabel(version.date)}
+                                                <small>
+                                                    {new Date(
+                                                        version.created_at,
+                                                    ).toLocaleTimeString([], {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
+                                                    {version.undone
+                                                        ? ' · Undone'
+                                                        : version.after
+                                                          ? ' · Saved'
+                                                          : ' · Cancelled'}
+                                                </small>
+                                            </summary>
+                                            {version.after ? (
+                                                <PlanCard
+                                                    plan={version.after}
+                                                    readonly
+                                                />
+                                            ) : (
+                                                <p>This day was cancelled.</p>
+                                            )}
+                                            {version.before && (
+                                                <details>
+                                                    <summary>
+                                                        Before this change
+                                                    </summary>
+                                                    <PlanCard
+                                                        plan={version.before}
+                                                        readonly
+                                                    />
+                                                </details>
+                                            )}
+                                        </details>
+                                    ))}
+                                {workspace.versions.length === 0 && (
+                                    <p className="composer-empty">
+                                        Applied changes will appear here.
+                                    </p>
+                                )}
+                                {lastVersion && !lastVersion.undone && (
+                                    <button
+                                        className="composer-text-button"
+                                        disabled={!!busy || !!workspace.draft}
+                                        onClick={() =>
+                                            command({ action: 'undo' })
+                                        }
+                                    >
+                                        Undo latest applied change
+                                    </button>
+                                )}
+                            </>
+                        )}
+                        {(panel === 'browse' || panel === 'saved') && (
+                            <>
+                                <label className="composer-browse-date">
+                                    <IconCalendar size={17} />
+                                    {swap
+                                        ? `Replacing ${swap.slot.name}`
+                                        : 'Add to day'}
+                                    <input
+                                        type="date"
+                                        aria-label="Browse date"
+                                        value={browseDate}
+                                        disabled={!!swap || !!activePlan}
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                setBrowseDate(e.target.value);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                {panel === 'saved' && <SavedEvents />}
+                                {panel === 'saved' && <SavedJourneys />}
+                                <Catalogue
+                                    key={`${panel}-${browseDate}-${swap?.slot.id ?? 'add'}`}
+                                    date={browseDate}
+                                    replaceSlot={swap?.slot}
+                                    saved={panel === 'saved'}
+                                    exclude={activePlan?.slots.map(
+                                        (slot) => slot.id,
+                                    )}
+                                    busy={!!busy}
+                                    onChoose={choose}
+                                    onFull={fullDetails}
+                                />
+                            </>
+                        )}
+                        {panel === 'appointment' && (
+                            <form
+                                className="composer-appointment"
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
+
+                                    if (
+                                        await command({
+                                            action: 'appointment',
+                                            name: appointmentName.trim(),
+                                            location:
+                                                appointmentLocation.trim(),
+                                            date: browseDate,
+                                            start: appointmentStart,
+                                            end: appointmentEnd,
+                                        })
+                                    ) {
+                                        setPanel(null);
+                                        setAppointmentName('');
+                                        setAppointmentLocation('');
+
+                                        if (entry?.kind === 'appointment') {
+                                            clearEntry();
+                                        }
+
+                                        scrollBottom(true);
+                                    }
+                                }}
+                            >
+                                <label>
+                                    What’s the appointment?
+                                    <input
+                                        required
+                                        maxLength={120}
+                                        placeholder="e.g. Dentist"
+                                        value={appointmentName}
+                                        onChange={(e) =>
+                                            setAppointmentName(e.target.value)
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Where? <small>Optional</small>
+                                    <input
+                                        value={appointmentLocation}
+                                        maxLength={160}
+                                        placeholder="Place or neighbourhood"
+                                        onChange={(e) =>
+                                            setAppointmentLocation(
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Day
+                                    <input
+                                        type="date"
+                                        required
+                                        value={browseDate}
+                                        disabled={!!workspace.draft}
+                                        onChange={(e) =>
+                                            setBrowseDate(e.target.value)
+                                        }
+                                    />
+                                </label>
+                                <div className="composer-time-editor">
+                                    <TimePicker
+                                        label="From"
+                                        value={appointmentStart}
+                                        onChange={setAppointmentStart}
+                                    />
+                                    <span>–</span>
+                                    <TimePicker
+                                        label="Until"
+                                        value={appointmentEnd}
+                                        onChange={setAppointmentEnd}
+                                    />
+                                </div>
+                                <p className="composer-panel-note">
+                                    Adds a personal activity to your plan. It
+                                    does not book an appointment or schedule a
+                                    reminder.
+                                </p>
+                                <button
+                                    className="composer-primary"
+                                    disabled={!!busy || !appointmentName.trim()}
+                                >
+                                    {busy ? (
+                                        <ComposerLoading compact />
+                                    ) : (
+                                        <IconPlus size={17} />
+                                    )}
+                                    {workspace.approval === 'routine'
+                                        ? 'Add to saved plan'
+                                        : 'Add to proposal'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+            <Dialog
+                open={confirm !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setConfirm(null);
+                    }
+                }}
+            >
+                <DialogContent className="composer-confirm">
+                    <DialogTitle>
+                        {confirm === 'cancel'
+                            ? 'Cancel this day?'
+                            : 'Delete conversation history?'}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {confirm === 'cancel'
+                            ? 'The day will be removed from My Plans. You can undo this change.'
+                            : 'Your messages will be permanently deleted. Saved, plans and plan versions will remain.'}
+                    </DialogDescription>
+                    <div>
+                        <button
+                            className="composer-text-button"
+                            onClick={() => setConfirm(null)}
+                        >
+                            Keep it
+                        </button>
+                        <button
+                            className="composer-primary"
+                            disabled={!!busy}
+                            onClick={async () => {
+                                if (
+                                    await command(
+                                        confirm === 'cancel'
+                                            ? {
+                                                  action: 'approve',
+                                                  cancel: true,
+                                              }
+                                            : { action: 'delete_history' },
+                                    )
+                                ) {
+                                    setConfirm(null);
+                                    setPanel(null);
+                                }
+                            }}
+                        >
+                            {confirm === 'cancel'
+                                ? 'Cancel day'
+                                : 'Delete history'}
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+            {detail?.place && !destination && (
+                <PlaceDetailModal
+                    place={detail.place}
+                    isMobile={isMobile}
+                    meta={detail.place.veedel ?? ''}
                     onClose={() => setDetail(null)}
-                    onNavigate={(target) => {
-                        setDetail(null);
-                        // Start the route from the plan's own origin — the same
-                        // point the card's "N min away" was measured against —
-                        // just like the plan-slot take-me-there does, so the two
-                        // never contradict each other.
+                    onNavigate={(target) =>
                         setDestination({
                             ...target,
-                            fromLat: origin?.lat ?? null,
-                            fromLng: origin?.lng ?? null,
-                            fromName: origin?.label ?? null,
-                        });
+                            backLabel: detail.place.name,
+                        })
+                    }
+                    feedback={{
+                        state:
+                            feedback.stateFor(detail.place.id) ??
+                            detail.place.feedback_state,
+                        rating:
+                            feedback.ratingFor(detail.place.id) ??
+                            detail.place.feedback_rating,
+                        onAction: (action, rating) =>
+                            feedback.setFeedback(
+                                detail.place.id,
+                                action,
+                                rating,
+                            ),
                     }}
                 />
             )}
+            {detail?.event && !destination && (
+                <EventRichDetail
+                    occurrence={detail.event}
+                    isMobile={isMobile}
+                    breadcrumb="Composer"
+                    onClose={() => setDetail(null)}
+                    onNavigate={() => {
+                        const event = detail.event;
 
+                        if (
+                            event.venue.lat != null &&
+                            event.venue.lng != null
+                        ) {
+                            setDestination({
+                                name: event.venue.name ?? event.title,
+                                lat: event.venue.lat,
+                                lng: event.venue.lng,
+                                arriveBy: event.occurrence_start,
+                            });
+                        }
+                    }}
+                />
+            )}
             {destination && (
                 <TakeMeThereSheet
                     destination={destination}
                     onClose={() => setDestination(null)}
+                    onBack={() => setDestination(null)}
                 />
             )}
-
-            {/* Pick-on-map overlay — a tap sets the From point. */}
-            {mapPickOpen && (
-                <div
-                    className="fixed inset-0 z-[400] flex items-center justify-center bg-black/45 p-4"
-                    onClick={() => setMapPickOpen(false)}
-                >
-                    <div
-                        className="relative h-[80vh] w-full max-w-[680px] overflow-hidden rounded-[16px] border border-border bg-card"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <PlacesMap
-                            places={[]}
-                            emojiFor={() => ''}
-                            metaFor={() => ''}
-                            onOpen={() => {}}
-                            onTakeMeThere={() => {}}
-                            pickMode
-                            onMapPick={(lat, lng) =>
-                                void handleMapPick(lat, lng)
-                            }
-                            onCancelPick={() => setMapPickOpen(false)}
-                        />
-                    </div>
+            {feedback.toast && (
+                <div className="composer-toast" role="status">
+                    {feedback.toast}
                 </div>
             )}
-
-            <FeedbackToast message={toast} />
         </AppLayout>
     );
+}
+
+function IconPencilFallback() {
+    return <IconSparkles size={20} />;
 }

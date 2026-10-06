@@ -22,6 +22,7 @@ export type EventOccurrence = {
         place_name: string | null;
     };
     source_url: string | null;
+    venue_id?: number | null;
     is_recurring: boolean;
     recurrence_text: string | null;
     verified: boolean;

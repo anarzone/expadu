@@ -6,6 +6,8 @@ export type AppLayoutProps = {
     breadcrumbs?: BreadcrumbItem[];
     rightPanel?: ReactNode;
     fullWidth?: boolean;
+    hideMobileDock?: boolean;
+    hideQaSwitcher?: boolean;
     showBack?: boolean;
 };
 

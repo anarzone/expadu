@@ -1,7 +1,11 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    IconAlertTriangle,
+    IconSearch,
+    IconSparkles,
+    IconX,
+} from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
-import { BureaucracyRightPanel } from '@/components/bureaucracy/bureaucracy-right-panel';
 import type {
     CasePlan,
     CasePlanItem,
@@ -26,6 +30,7 @@ import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { ICON_STROKE } from '@/constants/icons';
 import { useTabState } from '@/hooks/use-tab-state';
 import AppLayout from '@/layouts/app-layout';
+import { composer, onboarding } from '@/routes';
 
 // One row of the derived document library: a unique document and every
 // task on the user's path that asks for it.
@@ -166,27 +171,39 @@ export default function Bureaucracy() {
     const [activeTab, setActiveTab] = useTabState('checklist');
     const [docSearch, setDocSearch] = useState('');
     const [destination, setDestination] = useState<Destination | null>(null);
+    const [officeError, setOfficeError] = useState('');
+    const [showOrientation, setShowOrientation] = useState(true);
+    const pageUrl = usePage().url;
 
     // Push deep-links land here as /bureaucracy?focus={task_id}.
     const focusTaskId = useMemo(() => {
-        const raw = new URLSearchParams(window.location.search).get('focus');
+        const raw = new URLSearchParams(pageUrl.split('?')[1] ?? '').get(
+            'focus',
+        );
 
         return raw ? Number(raw) : null;
-    }, []);
+    }, [pageUrl]);
 
     // "Take me there" on a task office: addresses are geocoded on tap via
     // the live geocoder — no hand-maintained coordinates to go stale.
     async function takeMeThereToOffice(office: TaskOffice, arriveBy?: string) {
+        setOfficeError('');
+
         try {
             const res = await fetch(
-                `/api/geocode?q=${encodeURIComponent(`${office.address}, Köln`)}`,
+                `/api/geocode?q=${encodeURIComponent(office.address)}`,
                 { headers: { Accept: 'application/json' } },
             );
+
+            if (!res.ok) {
+                throw new Error();
+            }
+
             const results: Array<{ lat: number; lng: number }> =
                 await res.json();
             const hit = results?.[0];
 
-            if (hit) {
+            if (hit && Number.isFinite(hit.lat) && Number.isFinite(hit.lng)) {
                 setDestination({
                     name: office.name,
                     emoji: '🏛️',
@@ -195,9 +212,13 @@ export default function Bureaucracy() {
                     address: office.address,
                     arriveBy,
                 });
+            } else {
+                throw new Error();
             }
         } catch {
-            // Geocoder down — the booking link remains the fallback.
+            setOfficeError(
+                'Directions could not be found for this office. Check the address in its official source and try again.',
+            );
         }
     }
 
@@ -246,6 +267,11 @@ export default function Bureaucracy() {
             no_longer_relevant: keep(taskBuckets.no_longer_relevant),
         };
     }, [taskBuckets, verifiedKeys]);
+    const hasGeneralContent =
+        Object.values(catalogue).some((items) => (items ?? []).length > 0) ||
+        (teasers?.length ?? 0) > 0 ||
+        !!eligibility ||
+        !!settledSuggestion;
 
     // Keep the progress ring consistent with what the catalogue actually lists.
     const catalogueProgress = useMemo(() => {
@@ -309,24 +335,21 @@ export default function Bureaucracy() {
     }, [derivedDocs, docSearch]);
 
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Bureaucracy', href: '/bureaucracy' }]}
-            rightPanel={
-                <BureaucracyRightPanel
-                    tasks={taskBuckets}
-                    casePlan={casePlan ?? null}
-                />
-            }
-            showBack
-        >
-            <Head title="Bureaucracy" />
-            <div className="mx-auto w-full max-w-[680px]">
+        <AppLayout fullWidth rightPanel={null}>
+            <Head title="Paperwork" />
+            <div className="mx-auto w-full max-w-[900px] pb-24">
                 {/* ── Sticky header: title + tabs ── */}
-                <div className="sticky top-0 z-50 border-b border-[#E2DFD6] bg-[rgba(246,245,241,0.94)] px-6 py-3.5 backdrop-blur-[16px] dark:border-[#3A3930] dark:bg-[rgba(15,14,12,0.94)]">
+                <div className="border-b border-border px-4 pt-4 pb-3 sm:px-6 sm:pt-6">
                     <div className="flex items-center justify-between gap-3">
-                        <span className="shrink-0 font-display text-xl font-medium tracking-[-0.01em]">
-                            Bureaucracy
-                        </span>
+                        <div>
+                            <h1 className="text-[28px] font-semibold tracking-[-.8px]">
+                                Paperwork
+                            </h1>
+                            <p className="mt-1 text-sm text-text-2">
+                                Your next steps, documents and recorded
+                                progress.
+                            </p>
+                        </div>
                         {preview && (
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className="shrink-0 rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#3A2A00] uppercase">
@@ -339,7 +362,7 @@ export default function Bureaucracy() {
                                             `/bureaucracy/demo?persona=${e.target.value}`,
                                         )
                                     }
-                                    className="min-w-0 flex-1 truncate rounded-[8px] border-[1.5px] border-border bg-card px-2 py-1 text-[12px] outline-none focus:border-primary"
+                                    className="min-h-11 min-w-0 flex-1 truncate rounded-[8px] border-[1.5px] border-border bg-card px-2 py-1 text-[12px] outline-none focus:border-primary"
                                     title="View the plan as a different expat persona"
                                 >
                                     {preview.personas.map((p) => (
@@ -351,15 +374,20 @@ export default function Bureaucracy() {
                             </div>
                         )}
                     </div>
-                    <div className="mt-2 flex gap-0">
+                    <div
+                        className="mt-3 flex gap-1 rounded-xl bg-secondary p-1"
+                        aria-label="Paperwork views"
+                    >
                         {TABS.map((t) => (
                             <button
                                 key={t.id}
+                                type="button"
+                                aria-pressed={activeTab === t.id}
                                 onClick={() => setActiveTab(t.id)}
-                                className={`cursor-pointer border-b-2 border-none bg-transparent px-3 py-2 text-[13px] font-semibold transition-all ${
+                                className={`min-h-11 flex-1 cursor-pointer rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors motion-reduce:transition-none ${
                                     activeTab === t.id
-                                        ? 'border-primary text-primary dark:border-primary dark:text-primary'
-                                        : 'border-transparent text-[#6B6860] dark:text-[#AAA89F]'
+                                        ? 'bg-card text-cyan-h shadow-sm'
+                                        : 'text-text-2 hover:bg-card/60'
                                 }`}
                             >
                                 {t.label}
@@ -367,6 +395,49 @@ export default function Bureaucracy() {
                         ))}
                     </div>
                 </div>
+                {!preview && showOrientation && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6">
+                        <span className="text-xs text-text-2">
+                            Start with what you need. You can browse before
+                            answering questions.
+                        </span>
+                        <Link
+                            href={composer({
+                                query: {
+                                    prompt: 'Help me find the reviewed paperwork information for my situation.',
+                                },
+                            })}
+                            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-[13px] font-semibold text-primary"
+                        >
+                            <IconSparkles size={16} />
+                            Help me get oriented
+                        </Link>
+                        <button
+                            type="button"
+                            aria-label="Dismiss orientation help"
+                            onClick={() => setShowOrientation(false)}
+                            className="flex size-11 shrink-0 items-center justify-center rounded-xl text-text-2 hover:bg-secondary"
+                        >
+                            <IconX size={16} />
+                        </button>
+                    </div>
+                )}
+                {officeError && (
+                    <div
+                        role="alert"
+                        className="mx-4 mb-3 flex items-start gap-2 rounded-xl bg-warn-soft p-3 text-sm text-foreground sm:mx-6"
+                    >
+                        <p className="min-w-0 flex-1">{officeError}</p>
+                        <button
+                            type="button"
+                            aria-label="Dismiss directions error"
+                            onClick={() => setOfficeError('')}
+                            className="flex size-11 shrink-0 items-center justify-center rounded-lg"
+                        >
+                            <IconX size={18} />
+                        </button>
+                    </div>
+                )}
 
                 <div className="flex items-start gap-2 border-b border-[#E4DFD3] bg-[#FFF8E8] px-6 py-2.5 text-[11px] leading-[1.45] text-[#705A2D] dark:border-[#3A3930] dark:bg-[#282318] dark:text-[#D8C395]">
                     <IconAlertTriangle
@@ -384,7 +455,7 @@ export default function Bureaucracy() {
 
                 {/* Demo mode is look-only: block every mutating action (they
                     would otherwise POST as the admin's own account). */}
-                <div className={preview ? 'pointer-events-none' : ''}>
+                <div inert={preview ? true : undefined}>
                     {/* ════ CHECKLIST TAB ════ */}
                     {activeTab === 'checklist' && (
                         <>
@@ -399,45 +470,70 @@ export default function Bureaucracy() {
                                 every situation without an approved rule (all but
                                 Blue Card and family reunification) rendered an
                                 empty plan. */}
-                            <section
-                                aria-labelledby="general-steps"
-                                className="px-4 pt-1 sm:px-6"
-                            >
-                                <h2
-                                    id="general-steps"
-                                    className="text-[16px] font-bold text-[#18170F] dark:text-[#F6F5F1]"
-                                >
-                                    General steps for your situation
-                                </h2>
-                                <div className="mt-2 flex items-start gap-2 rounded-[10px] border border-[#E4DED1] bg-[#F8F6F0] p-3 text-[11.5px] leading-5 text-[#6B6860] dark:border-[#454339] dark:bg-[#25241C] dark:text-[#AAA89F]">
-                                    <IconAlertTriangle
-                                        size={15}
-                                        stroke={ICON_STROKE}
-                                        className="mt-0.5 shrink-0"
-                                    />
-                                    <span>
-                                        These steps are <strong>not</strong>{' '}
-                                        part of the verified plan above and have
-                                        not been through source review yet. Use
-                                        them as a starting point and confirm
-                                        each one with the responsible authority.
-                                    </span>
-                                </div>
-                            </section>
+                            {hasGeneralContent && (
+                                <>
+                                    <section
+                                        aria-labelledby="general-steps"
+                                        className="px-4 pt-1 sm:px-6"
+                                    >
+                                        <h2
+                                            id="general-steps"
+                                            className="text-[16px] font-bold text-[#18170F] dark:text-[#F6F5F1]"
+                                        >
+                                            General steps for your situation
+                                        </h2>
+                                        <div className="mt-2 flex items-start gap-2 rounded-[10px] border border-[#E4DED1] bg-[#F8F6F0] p-3 text-[11.5px] leading-5 text-[#6B6860] dark:border-[#454339] dark:bg-[#25241C] dark:text-[#AAA89F]">
+                                            <IconAlertTriangle
+                                                size={15}
+                                                stroke={ICON_STROKE}
+                                                className="mt-0.5 shrink-0"
+                                            />
+                                            <span>
+                                                These steps are{' '}
+                                                <strong>not</strong> part of the
+                                                verified plan above and have not
+                                                been through source review yet.
+                                                Use them as a starting point and
+                                                confirm each one with the
+                                                responsible authority.
+                                            </span>
+                                        </div>
+                                    </section>
 
-                            <ChecklistFramingB
-                                situation={situation}
-                                progress={catalogueProgress}
-                                tasks={catalogue}
-                                path={path}
-                                teasers={teasers ?? []}
-                                phases={phases ?? null}
-                                lifeEvents={lifeEvents ?? {}}
-                                eligibility={eligibility ?? null}
-                                settledSuggestion={settledSuggestion ?? false}
-                                focusTaskId={focusTaskId}
-                                onTakeMeThere={takeMeThereToOffice}
-                            />
+                                    <ChecklistFramingB
+                                        situation={situation}
+                                        progress={catalogueProgress}
+                                        tasks={catalogue}
+                                        path={path}
+                                        teasers={teasers ?? []}
+                                        phases={phases ?? null}
+                                        lifeEvents={lifeEvents ?? {}}
+                                        eligibility={eligibility ?? null}
+                                        settledSuggestion={
+                                            settledSuggestion ?? false
+                                        }
+                                        focusTaskId={focusTaskId}
+                                        onTakeMeThere={takeMeThereToOffice}
+                                    />
+                                </>
+                            )}
+                            {!casePlan && !hasGeneralContent && (
+                                <section className="px-4 py-6 sm:px-6">
+                                    <h2 className="text-lg font-semibold">
+                                        No paperwork steps to show yet
+                                    </h2>
+                                    <p className="mt-1 text-sm text-text-2">
+                                        You can add details when you are ready,
+                                        or start with a request in Composer.
+                                    </p>
+                                    <Link
+                                        href={onboarding()}
+                                        className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-border bg-card px-3 text-sm font-semibold text-primary"
+                                    >
+                                        Update your situation
+                                    </Link>
+                                </section>
+                            )}
                         </>
                     )}
 
@@ -446,7 +542,7 @@ export default function Bureaucracy() {
                         <div className="px-6 py-5">
                             <div className="mb-1 flex items-center justify-between">
                                 <span className="text-[15px] font-bold">
-                                    Every document on your path
+                                    Documents in your tasks
                                 </span>
                                 <span className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
                                     {derivedDocs.length} documents
@@ -548,9 +644,22 @@ export default function Bureaucracy() {
                                     </div>
                                     <div className="text-[13px]">
                                         {derivedDocs.length === 0
-                                            ? 'Your tasks will list every paper you need.'
+                                            ? 'Documents appear here when they are listed in your tasks.'
                                             : 'Try a different search term'}
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            derivedDocs.length === 0
+                                                ? setActiveTab('checklist')
+                                                : setDocSearch('')
+                                        }
+                                        className="mt-3 min-h-11 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-primary"
+                                    >
+                                        {derivedDocs.length === 0
+                                            ? 'Back to checklist'
+                                            : 'Clear search'}
+                                    </button>
                                 </div>
                             )}
                         </div>

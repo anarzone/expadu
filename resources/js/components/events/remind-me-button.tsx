@@ -1,4 +1,5 @@
 import { IconBell, IconBellFilled } from '@tabler/icons-react';
+import { useRef, useState } from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,78 +35,111 @@ export function RemindMeButton({
     reminded: boolean;
     onChange: (reminded: boolean) => void;
 }) {
-    function setReminder(offset: '1h' | '3h' | 'morning') {
-        fetch('/api/reminders', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF(),
-            },
-            body: JSON.stringify({
-                event_id: eventId,
-                occurrence_start: occurrenceStart,
-                offset,
-            }),
-        })
-            .then((r) => (r.ok ? onChange(true) : undefined))
-            .catch(() => {});
-    }
+    const busy = useRef(false);
+    const [pending, setPending] = useState(false);
+    const [error, setError] = useState('');
 
-    function removeReminder() {
-        fetch(`/api/reminders/${eventId}`, {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF(),
-            },
-            body: JSON.stringify({ occurrence_start: occurrenceStart }),
-        })
-            .then((r) => (r.ok ? onChange(false) : undefined))
-            .catch(() => {});
+    async function updateReminder(offset?: '1h' | '3h' | 'morning') {
+        if (busy.current) {
+            return;
+        }
+
+        busy.current = true;
+        setPending(true);
+        setError('');
+
+        try {
+            const response = await fetch(
+                offset ? '/api/reminders' : `/api/reminders/${eventId}`,
+                {
+                    method: offset ? 'POST' : 'DELETE',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': CSRF(),
+                    },
+                    body: JSON.stringify({
+                        occurrence_start: occurrenceStart,
+                        ...(offset ? { event_id: eventId, offset } : {}),
+                    }),
+                },
+            );
+
+            if (!response.ok) {
+                throw new Error();
+            }
+
+            onChange(!!offset);
+        } catch {
+            setError(
+                `Could not ${offset ? 'set' : 'remove'} the reminder. Try again.`,
+            );
+        } finally {
+            busy.current = false;
+            setPending(false);
+        }
     }
 
     if (reminded) {
         return (
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    removeReminder();
-                }}
-                aria-label="Remove reminder"
-                title="Reminder set — tap to remove"
-                className="flex min-h-9 cursor-pointer items-center gap-1 rounded-[9px] px-2.5 py-1.5 text-[13px] font-semibold text-primary transition-opacity hover:opacity-75"
-            >
-                <IconBellFilled size={15} /> Set
-            </button>
+            <div>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        void updateReminder();
+                    }}
+                    type="button"
+                    disabled={pending}
+                    aria-label="Remove reminder"
+                    title="Reminder set — tap to remove"
+                    className="flex min-h-11 cursor-pointer items-center gap-1 rounded-[9px] px-2.5 py-1.5 text-[13px] font-semibold text-primary transition-opacity hover:opacity-75 disabled:opacity-50"
+                >
+                    <IconBellFilled size={15} /> Set
+                </button>
+                {error && (
+                    <p role="alert" className="text-xs text-danger">
+                        {error}
+                    </p>
+                )}
+            </div>
         );
     }
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label="Remind me"
-                    className="flex min-h-9 cursor-pointer items-center gap-1 rounded-[9px] px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-primary"
-                >
-                    <IconBell size={15} stroke={ICON_STROKE} /> Remind me
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-                align="end"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {OFFSETS.map((offset) => (
-                    <DropdownMenuItem
-                        key={offset.id}
-                        onClick={() => setReminder(offset.id)}
+        <div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button
+                        type="button"
+                        disabled={pending}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Remind me"
+                        className="flex min-h-11 cursor-pointer items-center gap-1 rounded-[9px] px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
                     >
-                        {offset.label}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+                        <IconBell size={15} stroke={ICON_STROKE} /> Remind me
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                    align="end"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {OFFSETS.map((offset) => (
+                        <DropdownMenuItem
+                            key={offset.id}
+                            onClick={() => {
+                                void updateReminder(offset.id);
+                            }}
+                        >
+                            {offset.label}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+            {error && (
+                <p role="alert" className="text-xs text-danger">
+                    {error}
+                </p>
+            )}
+        </div>
     );
 }

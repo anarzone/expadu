@@ -1,7 +1,10 @@
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import {
-    IconAlertTriangle,
     IconArrowRight,
+    IconClock,
+    IconCurrentLocation,
+    IconMapPin,
+    IconRoute,
     IconBan,
     IconBus,
     IconHistory,
@@ -12,45 +15,37 @@ import { useEffect, useRef, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
-import { TileField } from '@/components/departures/flip-digit';
 import { JourneyPlanner } from '@/components/departures/journey-planner';
 import type { SavedPlace } from '@/components/departures/journey-planner';
 import { PlaceGlyph } from '@/components/departures/place-glyph';
-import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { SavedJourneys } from '@/components/departures/saved-journeys';
+import {
+    suggestionSearchParams,
+    validSearchPoint,
+} from '@/components/departures/search-request';
+import { TimetableBoard } from '@/components/departures/timetable-board';
+import type { Boards } from '@/components/departures/timetable-board';
+import { TravelHelp } from '@/components/departures/travel-help';
+import {
+    parseTravelDestination,
+    parseTravelDraft,
+    travelDestinationParams,
+} from '@/components/departures/travel-request';
+import type {
+    TravelDestination as Destination,
+    TravelRequestDraft,
+} from '@/components/departures/travel-request';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { ICON_STROKE } from '@/constants/icons';
 import type { ActiveTrip } from '@/hooks/use-active-trip';
+import { useLocationSharingEnabled } from '@/hooks/use-geolocation';
 import AppLayout from '@/layouts/app-layout';
-
-type Departure = {
-    line: string;
-    destination: string;
-    type: string;
-    color: string;
-    minutes: number[];
-    delay: number;
-    cancelled: boolean;
-    disrupted: boolean;
-    /** GTFS travel direction (0/1) — groups the board into lanes. */
-    direction: number | null;
-    /** The next stops ridden after this one ("via …"). */
-    via: string[];
-};
 
 /** A city/transit disruption from the shared middleware prop. */
 type DisruptionItem = {
     title: string;
     severity?: string;
 };
-
-type Board = {
-    stop_name: string;
-    walk_min: number;
-    source: string;
-    departures: Departure[];
-} | null;
-
-type Boards = { all: Board; tram: Board; bus: Board; rail: Board };
 
 type Mode = 'all' | 'tram' | 'bus' | 'rail';
 
@@ -77,6 +72,27 @@ function csrfToken(): string {
         document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute('content') ?? ''
+    );
+}
+
+function usableDevicePosition(
+    position: GeolocationPosition,
+    maxAccuracy = 200,
+): boolean {
+    const { latitude, longitude, accuracy } = position.coords;
+    const age = Date.now() - position.timestamp;
+
+    return (
+        Number.isFinite(latitude) &&
+        Math.abs(latitude) <= 90 &&
+        Number.isFinite(longitude) &&
+        Math.abs(longitude) <= 180 &&
+        Number.isFinite(accuracy) &&
+        accuracy >= 0 &&
+        accuracy <= maxAccuracy &&
+        Number.isFinite(age) &&
+        age >= -5000 &&
+        age <= 120000
     );
 }
 
@@ -126,410 +142,13 @@ const MODE_TABS: ModeTab[] = [
  */
 function availableTabs(boards: Boards | undefined): ModeTab[] {
     return MODE_TABS.filter(
-        (t) => t.key === 'all' || (boards?.[t.key]?.departures.length ?? 0) > 0,
-    );
-}
-
-const VISIBLE = 6;
-
-/**
- * KVB line colours are tuned for a light card; a few read too dark on the board's
- * near-black surface, so lift them a touch (mirrors the prototype BOARD_TINT).
- */
-const BOARD_TINT: Record<string, string> = {
-    '#d2151a': '#e23b2e',
-    '#f39200': '#ff9e1f',
-    '#009640': '#1eb35e',
-    '#95288a': '#b455c0',
-    '#0099d8': '#27a8de',
-    '#e3001b': '#e23b2e',
-    '#5a287d': '#9a5bc0',
-    '#0067b3': '#2f8fd6',
-    '#f8ac00': '#ffc24d',
-};
-
-function boardTint(color: string): string {
-    return BOARD_TINT[color.toLowerCase()] ?? color;
-}
-
-/** The line badge is a fixed-width column so the numbers line up; the terminus
- *  flexes to fill the row. */
-const LINE_W = 3;
-
-/** Glyph colour for a time by urgency — white upcoming, amber ≤3 min, green now. */
-function timeInk(minutes: number): string {
-    return minutes <= 0 ? '#46d17f' : minutes <= 3 ? '#ffbf3f' : '#eef2f7';
-}
-
-/** Lift a colour toward white until it's legible on the near-black board. */
-function lift(hex: string, minLum = 130): string {
-    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-
-    if (!m) {
-        return '#e7ecf2';
-    }
-
-    const r = parseInt(m[1].slice(0, 2), 16);
-    const g = parseInt(m[1].slice(2, 4), 16);
-    const b = parseInt(m[1].slice(4, 6), 16);
-    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-    if (lum >= minLum) {
-        return `#${m[1].toLowerCase()}`;
-    }
-
-    const t = (minLum - lum) / (255 - lum);
-    const hex2 = (c: number) =>
-        Math.round(c + (255 - c) * t)
-            .toString(16)
-            .padStart(2, '0');
-
-    return `#${hex2(r)}${hex2(g)}${hex2(b)}`;
-}
-
-/** The line's brand colour, lifted to stay readable as glyphs on the board. */
-function lineInk(color: string): string {
-    return lift(boardTint(color));
-}
-
-type Alt = {
-    problemText: string;
-    altText: string;
-    altColor: string;
-    altLine: string;
-};
-
-/**
- * When a line is cancelled or running late, surface a calmer alternative — the
- * soonest on-time line heading a different way. Purely derived from the board.
- */
-function altSuggestion(deps: Departure[]): Alt | null {
-    const problem = deps.find((d) => d.cancelled || d.delay > 0);
-
-    if (!problem) {
-        return null;
-    }
-
-    const alt = deps.find(
-        (d) => !d.cancelled && d.delay === 0 && d.line !== problem.line,
-    );
-
-    if (!alt) {
-        return null;
-    }
-
-    const next = alt.minutes[0];
-
-    return {
-        problemText: problem.cancelled
-            ? `Line ${problem.line} → ${problem.destination || 'its terminus'} is cancelled`
-            : `Line ${problem.line} is running +${problem.delay} min late`,
-        altText: `Line ${alt.line} → ${alt.destination || 'its terminus'} is a calmer bet${
-            next != null ? ` — leaves in ${next} min` : ''
-        }`,
-        altColor: alt.color,
-        altLine: alt.line,
-    };
-}
-
-/** A ticking wall clock (HH:MM) — the board's "live" heartbeat. */
-function LiveClock() {
-    const [now, setNow] = useState(() => new Date());
-
-    useEffect(() => {
-        const id = setInterval(() => setNow(new Date()), 1000);
-
-        return () => clearInterval(id);
-    }, []);
-
-    return (
-        <>
-            {now.toLocaleTimeString('de-DE', {
-                hour: '2-digit',
-                minute: '2-digit',
-            })}
-        </>
-    );
-}
-
-/** A departure's clock time (HH:MM) = the board's reference moment + countdown. */
-function clockAt(base: Date, minutes: number): string {
-    const d = new Date(base.getTime());
-    d.setSeconds(0, 0);
-    d.setMinutes(d.getMinutes() + minutes);
-
-    return d.toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-/** One upcoming departure — a line's row exploded down to a single time. */
-type DepartureInstance = { dep: Departure; minute: number | null; key: string };
-
-/**
- * A real airport/train board shows one row per departure, not per line. Explode
- * each line's upcoming minutes into an instance each, then sort soonest-first so
- * the lane reads as a single time-ordered list. Cancelled lines ride once at the
- * bottom.
- */
-function explode(deps: Departure[]): DepartureInstance[] {
-    const out: DepartureInstance[] = [];
-
-    for (const dep of deps) {
-        if (dep.cancelled) {
-            out.push({
-                dep,
-                minute: null,
-                key: `${dep.line}-${dep.destination}-x`,
-            });
-
-            continue;
-        }
-
-        for (const m of dep.minutes) {
-            out.push({
-                dep,
-                minute: m,
-                key: `${dep.line}-${dep.destination}-${m}`,
-            });
-        }
-    }
-
-    return out.sort((x, y) => {
-        if (x.minute == null) {
-            return 1;
-        }
-
-        if (y.minute == null) {
-            return -1;
-        }
-
-        return x.minute - y.minute;
-    });
-}
-
-function BoardRow({ dep, minute }: { dep: Departure; minute: number | null }) {
-    // Absolute departure times are anchored to when the board loaded. (A long
-    // open session drifts with cache age; the clean fix is a server-sent
-    // generated-at stamp.)
-    const [base] = useState(() => new Date());
-    const cancelled = dep.cancelled;
-
-    // Line + terminus on the left, this departure's clock time on the right —
-    // NOW at the platform, --:-- when cancelled. One departure per row.
-    const heroText = cancelled
-        ? '--:--'
-        : minute == null
-          ? ''
-          : minute <= 0
-            ? 'NOW'
-            : clockAt(base, minute);
-    const heroTone = cancelled
-        ? '#ff6b54'
-        : minute == null
-          ? '#69727f'
-          : timeInk(minute);
-    const colon = heroText.indexOf(':');
-
-    return (
-        <div className="board-row">
-            <TileField
-                text={dep.line}
-                width={LINE_W}
-                align="right"
-                tone={lineInk(dep.color)}
-                label={`Line ${dep.line}`}
-            />
-            <div className="board-dest">
-                <TileField
-                    text={(dep.destination || 'Cologne').toUpperCase()}
-                    align="left"
-                    tone="#eef2f7"
-                    label={dep.destination || 'Cologne'}
-                />
-            </div>
-            <span
-                className="board-hero"
-                aria-label={
-                    cancelled
-                        ? 'cancelled'
-                        : heroText === 'NOW'
-                          ? 'departing now'
-                          : heroText
-                            ? `departs at ${heroText}`
-                            : 'no departures'
-                }
-            >
-                {colon < 0 ? (
-                    <TileField text={heroText} tone={heroTone} label="" />
-                ) : (
-                    <>
-                        <TileField
-                            text={heroText.slice(0, colon)}
-                            tone={heroTone}
-                            label=""
-                        />
-                        <span className="board-hero-colon">:</span>
-                        <TileField
-                            text={heroText.slice(colon + 1)}
-                            tone={heroTone}
-                            label=""
-                        />
-                    </>
-                )}
-            </span>
-        </div>
-    );
-}
-
-/** "Toward {top destinations}" for a direction lane. */
-function laneLabel(rows: DepartureInstance[]): string {
-    const dests = [
-        ...new Set(rows.map((r) => r.dep.destination).filter(Boolean)),
-    ].slice(0, 2);
-
-    return dests.length > 0 ? `Toward ${dests.join(' / ')}` : 'Departures';
-}
-
-function LaneHeader({
-    direction,
-    label,
-}: {
-    direction: number;
-    label: string;
-}) {
-    return (
-        <div className="flex items-center gap-2.5 border-y border-[var(--bd-line)] bg-[var(--bd-panel)] px-4 py-[11px] md:px-[18px]">
-            <IconArrowRight
-                size={14}
-                stroke={ICON_STROKE}
-                className={`shrink-0 ${direction === 1 ? 'rotate-180' : ''}`}
-                style={{ color: direction === 0 ? '#3ddc97' : '#ffc24d' }}
-            />
-            <span className="truncate font-mono text-[11px] tracking-[0.1em] text-[var(--bd-ink)] uppercase">
-                {label}
-            </span>
-        </div>
-    );
-}
-
-function DepartureBoard({ board }: { board: NonNullable<Board> }) {
-    const [expanded, setExpanded] = useState(false);
-    const kind = board.departures[0]?.type;
-    const platform =
-        kind === 'bus'
-            ? 'KVB Bus'
-            : kind === 'rail'
-              ? 'S-Bahn / Regional'
-              : 'KVB Stadtbahn';
-    // Honest indicator: pulsing LIVE only when times come from a realtime
-    // feed (TRIAS / GTFS-RT); schedule data says so instead of pretending.
-    const live = board.source === 'trias_rt' || board.source === 'gtfs_rt';
-
-    // Direction lanes (v4): only when GTFS matched both travel directions —
-    // otherwise the board stays a flat list. Rows without a matched direction
-    // ride along at the bottom of the grouped board.
-    const dir0 = explode(board.departures.filter((d) => d.direction === 0));
-    const dir1 = explode(board.departures.filter((d) => d.direction === 1));
-    const ungrouped = explode(
-        board.departures.filter((d) => d.direction == null),
-    );
-    const flat = explode(board.departures);
-    const grouped = dir0.length > 0 && dir1.length > 0;
-
-    const laneCap = Math.ceil(VISIBLE / 2);
-    // How many departure rows the collapsed board shows — the toggle renders
-    // whenever expanding reveals more (and stays visible to collapse again).
-    const collapsedShown = grouped
-        ? Math.min(dir0.length, laneCap) + Math.min(dir1.length, laneCap)
-        : Math.min(flat.length, VISIBLE);
-    const hidden = flat.length - collapsedShown;
-
-    const lanes: Array<{ direction: number; rows: DepartureInstance[] }> =
-        grouped
-            ? [
-                  {
-                      direction: 0,
-                      rows: expanded ? dir0 : dir0.slice(0, laneCap),
-                  },
-                  {
-                      direction: 1,
-                      rows: expanded ? dir1 : dir1.slice(0, laneCap),
-                  },
-              ]
-            : [];
-
-    return (
-        <div
-            className="board overflow-hidden rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)]"
-            style={{ boxShadow: '0 12px 34px rgba(20,16,8,.22)' }}
-        >
-            <div className="flex items-center justify-between border-b border-[var(--bd-line)] bg-[var(--bd-panel)] px-[18px] py-[13px]">
-                <span className="truncate font-mono text-[11px] tracking-[0.12em] text-[var(--bd-sub)] uppercase">
-                    {platform} · {board.stop_name}
-                </span>
-                {live ? (
-                    <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-[#3ddc97]">
-                        <span className="size-1.5 animate-pulse rounded-full bg-[#3ddc97]" />
-                        LIVE <LiveClock />
-                    </span>
-                ) : (
-                    <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-[var(--bd-sub)]">
-                        SCHEDULE <LiveClock />
-                    </span>
-                )}
-            </div>
-            {grouped ? (
-                <div>
-                    {lanes.map((lane) => (
-                        <div key={lane.direction}>
-                            <LaneHeader
-                                direction={lane.direction}
-                                label={laneLabel(
-                                    lane.direction === 0 ? dir0 : dir1,
-                                )}
-                            />
-                            {lane.rows.map((inst, i) => (
-                                <BoardRow
-                                    key={`${inst.key}-${i}`}
-                                    dep={inst.dep}
-                                    minute={inst.minute}
-                                />
-                            ))}
-                        </div>
-                    ))}
-                    {expanded &&
-                        ungrouped.map((inst, i) => (
-                            <BoardRow
-                                key={`u-${inst.key}-${i}`}
-                                dep={inst.dep}
-                                minute={inst.minute}
-                            />
-                        ))}
-                </div>
-            ) : (
-                <div>
-                    {(expanded ? flat : flat.slice(0, VISIBLE)).map(
-                        (inst, i) => (
-                            <BoardRow
-                                key={`${inst.key}-${i}`}
-                                dep={inst.dep}
-                                minute={inst.minute}
-                            />
-                        ),
-                    )}
-                </div>
-            )}
-            {hidden > 0 && (
-                <button
-                    onClick={() => setExpanded((e) => !e)}
-                    className="w-full cursor-pointer py-[11px] text-center font-mono text-[11px] tracking-[0.06em] text-[var(--bd-sub)] uppercase"
-                >
-                    {expanded ? 'Show fewer ▴' : 'Show more ▾'}
-                </button>
-            )}
-        </div>
+        (t) =>
+            t.key === 'all' ||
+            boards?.all?.departures.some(
+                (departure) =>
+                    departure.type === t.key ||
+                    (t.key === 'tram' && departure.type === 'subway'),
+            ),
     );
 }
 
@@ -569,17 +188,23 @@ function EmptyBoard({
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
             {locationRequired ? (
                 <>
-                    <p>Use your location to see live departures near you.</p>
+                    <p>
+                        Choose a starting point above or use your location to
+                        see nearby departures.
+                    </p>
                     <button
                         type="button"
                         onClick={onUseCurrentLocation}
-                        className="mt-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover"
+                        className="mt-3 min-h-11 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
                     >
                         Use my location
                     </button>
                 </>
             ) : (
-                <>No live {what} for your nearest stop right now.</>
+                <>
+                    No {what} are available for your nearest stop right now. Try
+                    again shortly or choose a destination in Plan a trip.
+                </>
             )}
         </div>
     );
@@ -619,57 +244,40 @@ function PlannedDisruptions({
     );
 }
 
-function AltCard({ alt }: { alt: Alt }) {
-    return (
-        <div className="mt-4 flex items-center gap-3.5 rounded-[14px] border border-l-[3px] border-warn-soft border-l-warn bg-warn-soft px-4 py-3.5">
-            <IconAlertTriangle
-                size={20}
-                stroke={ICON_STROKE}
-                className="shrink-0 text-warn"
-            />
-            <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold">
-                    {alt.problemText}
-                </div>
-                <div className="mt-0.5 text-[13px] text-muted-foreground">
-                    {alt.altText}
-                </div>
-            </div>
-            <span
-                className="flex h-[30px] min-w-[38px] shrink-0 items-center justify-center rounded-lg px-2 font-mono text-[13px] font-bold text-white"
-                style={{ background: alt.altColor }}
-            >
-                {alt.altLine}
-            </span>
-        </div>
-    );
-}
-
 /**
  * The "Where to?" card: the resolved origin, a typeable destination (Enter or
  * "Plan trip" opens the journey), and one-tap saved destinations.
  */
 function JourneyEntryCard({
-    stop,
+    destinationDraft,
     savedPlaces,
     recentDestinations,
     origin,
     onOriginChange,
+    onOriginEdit,
     onUseCurrentLocation,
     locating,
     busy,
-    onPlan,
+    onPlan: submitPlan,
 }: {
-    stop: string;
+    destinationDraft?: TravelRequestDraft | null;
     savedPlaces: SavedPlace[];
     recentDestinations: RecentDestination[];
     origin: Origin;
     onOriginChange: (origin: Origin) => void;
+    onOriginEdit: () => void;
     onUseCurrentLocation: () => void;
     locating: boolean;
     busy: boolean;
     onPlan: (target: Destination | { query: string }) => void;
 }) {
+    const [originUnresolved, setOriginUnresolved] = useState(false);
+    function onPlan(target: Destination | { query: string }) {
+        if (!originUnresolved) {
+            submitPlan(target);
+        }
+    }
+
     // Quick-launch pills: saved places first, recent destinations fill the
     // rest (deduplicated by name), four max.
     // Each pill carries its leading glyph (a saved place's emoji or category
@@ -679,6 +287,7 @@ function JourneyEntryCard({
         key: string;
         glyph: ReactNode;
         planEmoji: string | undefined;
+        destinationId?: string;
         name: string;
         lat: number;
         lng: number;
@@ -687,6 +296,7 @@ function JourneyEntryCard({
     for (const place of savedPlaces) {
         pills.push({
             key: `s-${place.id}`,
+            destinationId: `saved:${place.id}`,
             glyph: (
                 <PlaceGlyph
                     emoji={place.emoji}
@@ -704,7 +314,10 @@ function JourneyEntryCard({
     for (const recent of recentDestinations) {
         if (
             !pills.some(
-                (p) => p.name.toLowerCase() === recent.name.toLowerCase(),
+                (p) =>
+                    p.name.toLowerCase() === recent.name.toLowerCase() &&
+                    Math.abs(p.lat - recent.lat) < 0.00001 &&
+                    Math.abs(p.lng - recent.lng) < 0.00001,
             )
         ) {
             pills.push({
@@ -729,21 +342,34 @@ function JourneyEntryCard({
             <div className="flex items-center gap-3">
                 <button
                     type="button"
-                    onClick={onUseCurrentLocation}
+                    onClick={() => {
+                        setOriginUnresolved(false);
+                        onUseCurrentLocation();
+                    }}
                     disabled={locating}
                     aria-label="Use my current location"
                     title="Use my current location"
-                    className="-m-2 shrink-0 rounded-full p-2 transition hover:bg-cyan/10 disabled:opacity-50"
+                    className="grid size-11 shrink-0 place-items-center rounded-xl text-cyan-h transition-colors hover:bg-cyan/10 focus-visible:outline-2 focus-visible:outline-cyan disabled:opacity-50"
                 >
-                    <span
-                        className={`block size-2.5 rounded-full border-[3px] border-cyan ${locating ? 'animate-pulse' : ''}`}
+                    <IconCurrentLocation
+                        size={18}
+                        stroke={ICON_STROKE}
+                        className={locating ? 'motion-safe:animate-pulse' : ''}
                     />
                 </button>
                 <DestinationSearch
                     key={locating ? 'locating' : (origin?.name ?? 'live')}
                     initial={locating ? 'Locating…' : (origin?.name ?? '')}
-                    placeholder={`You · ${stop}`}
+                    placeholder="Your starting point"
                     role="origin"
+                    onUnresolvedChange={(unresolved) => {
+                        setOriginUnresolved(unresolved);
+
+                        if (unresolved) {
+                            onOriginEdit();
+                        }
+                    }}
+                    bias={origin}
                     withCurrentLocation
                     onSelect={(s: Suggestion) => {
                         if (s.kind === 'current') {
@@ -759,11 +385,22 @@ function JourneyEntryCard({
                 />
             </div>
             <div className="my-2 ml-1 h-px bg-border" />
+            {originUnresolved && (
+                <p role="status" className="mb-2 text-xs text-cyan-h">
+                    Choose a matching starting point from the suggestions before
+                    planning.
+                </p>
+            )}
             <div className="flex items-center gap-3">
-                <span className="size-2.5 shrink-0 rotate-45 rounded-[50%_50%_50%_0] bg-primary" />
+                <span className="grid size-11 shrink-0 place-items-center text-primary">
+                    <IconMapPin size={18} stroke={ICON_STROKE} />
+                </span>
                 <DestinationSearch
+                    initial={destinationDraft?.name ?? ''}
+                    requireSelection={!!destinationDraft}
                     placeholder="Where to?"
                     role="destination"
+                    bias={origin}
                     onSelect={(s: Suggestion) =>
                         onPlan({
                             name: s.name,
@@ -776,10 +413,10 @@ function JourneyEntryCard({
                     trailing={(submit) => (
                         <button
                             onClick={submit}
-                            disabled={busy}
-                            className="shrink-0 rounded-full bg-primary-soft px-3 py-1.5 font-mono text-[10.5px] font-semibold tracking-[0.06em] text-primary uppercase disabled:opacity-60"
+                            disabled={busy || originUnresolved}
+                            className="min-h-11 shrink-0 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
                         >
-                            {busy ? 'Planning…' : 'Plan trip →'}
+                            {busy ? 'Finding…' : 'Find route'}
                         </button>
                     )}
                 />
@@ -792,12 +429,13 @@ function JourneyEntryCard({
                             onClick={() =>
                                 onPlan({
                                     name: pill.name,
+                                    destinationId: pill.destinationId,
                                     emoji: pill.planEmoji,
                                     lat: pill.lat,
                                     lng: pill.lng,
                                 })
                             }
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1.5 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-2 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                         >
                             {pill.glyph}
                             {pill.name}
@@ -809,53 +447,10 @@ function JourneyEntryCard({
     );
 }
 
-/** The open plan encoded as URL query params (refresh-safe, shareable). */
-function destinationToParams(d: Destination): Record<string, string> {
-    const p: Record<string, string> = {
-        to_name: d.name,
-        to_lat: String(d.lat),
-        to_lng: String(d.lng),
-    };
-
-    if (d.fromLat != null && d.fromLng != null) {
-        p.from_lat = String(d.fromLat);
-        p.from_lng = String(d.fromLng);
-
-        if (d.fromName) {
-            p.from_name = d.fromName;
-        }
-    }
-
-    return p;
-}
-
-/** Restore an open plan from the URL on load — null when there's no plan. */
-function parseDestinationFromUrl(url: string): Destination | null {
-    const q = new URLSearchParams(url.split('?')[1] ?? '');
-    const lat = q.get('to_lat');
-    const lng = q.get('to_lng');
-    const name = q.get('to_name');
-
-    if (!lat || !lng || !name) {
-        return null;
-    }
-
-    const dest: Destination = { name, lat: Number(lat), lng: Number(lng) };
-    const fromLat = q.get('from_lat');
-    const fromLng = q.get('from_lng');
-
-    if (fromLat && fromLng) {
-        dest.fromLat = Number(fromLat);
-        dest.fromLng = Number(fromLng);
-        dest.fromName = q.get('from_name') ?? undefined;
-    }
-
-    return dest;
-}
-
-/** Whether the URL marks the picked-route (live journey) detail as open. */
 function routeDetailOpenFromUrl(url: string): boolean {
-    return new URLSearchParams(url.split('?')[1] ?? '').get('view') === 'route';
+    const params = new URLSearchParams(url.split('?')[1] ?? '');
+
+    return params.get('view') === 'route' || params.get('journey_open') === '1';
 }
 
 /** True when this plan's destination is the one the live trip runs to. */
@@ -881,6 +476,11 @@ export default function Timetable() {
         recentDestinations?: RecentDestination[];
         activeDisruptions?: DisruptionItem[];
         activeTrip?: ActiveTrip | null;
+        userLocation?: {
+            lat: number;
+            lng: number;
+            name?: string | null;
+        } | null;
     }>();
     const {
         boards,
@@ -890,33 +490,113 @@ export default function Timetable() {
         activeDisruptions = [],
         activeTrip = null,
     } = page.props;
+    const journeyReturnRef = useRef<HTMLElement | null>(null);
+    const locationSharingEnabled = useLocationSharingEnabled();
+    const locationSession = useRef<AbortController | null>(null);
+    useEffect(() => {
+        if (!locationSharingEnabled) {
+            return;
+        }
+
+        const controller = new AbortController();
+        locationSession.current = controller;
+
+        return () => {
+            controller.abort();
+            locationSession.current?.abort();
+            locationSession.current = null;
+        };
+    }, [locationSharingEnabled, page.props.auth.user.id]);
     const [mode, setMode] = useState<Mode>('all');
+    const [view, setView] = useState<'journey' | 'timetable'>(() =>
+        new URLSearchParams(page.url.split('?')[1]).get('view') === 'timetable'
+            ? 'timetable'
+            : 'journey',
+    );
+    const [boardError, setBoardError] = useState(false);
+    const [loadingBoards, setLoadingBoards] = useState(false);
     // The open plan and whether its route detail is showing both live in the
     // URL (refresh-safe, shareable) so a refresh restores the exact view
     // instead of jumping into the active trip.
     const [destination, setDestination] = useState<Destination | null>(() =>
-        parseDestinationFromUrl(page.url),
+        parseTravelDestination(page.url),
+    );
+    const [destinationDraft, setDestinationDraft] = useState(() =>
+        parseTravelDestination(page.url) ? null : parseTravelDraft(page.url),
     );
     const [routeDetailOpen, setRouteDetailOpen] = useState(() =>
         routeDetailOpenFromUrl(page.url),
     );
-    const destSynced = useRef(false);
+    // An explicitly chosen From (via the board's origin field); null = live location.
+    const [origin, setOrigin] = useState<Origin>(() => {
+        const requested = destination ?? destinationDraft;
 
-    // Reflect the open plan (and its route detail) into the URL (replace, no
-    // server round-trip) so a refresh restores it; clearing it returns to the
-    // plain board URL.
-    useEffect(() => {
-        if (!destSynced.current) {
-            destSynced.current = true;
-
-            return;
+        if (requested?.fromLat != null && requested.fromLng != null) {
+            return {
+                name: requested.fromName ?? 'Chosen starting point',
+                lat: requested.fromLat,
+                lng: requested.fromLng,
+            };
         }
 
-        const params = destination
-            ? new URLSearchParams(destinationToParams(destination))
-            : new URLSearchParams();
+        const params = new URLSearchParams(page.url.split('?')[1] ?? '');
+        const lat = params.get('lat');
+        const lng = params.get('lng');
+        const point =
+            lat?.trim() && lng?.trim()
+                ? { lat: Number(lat), lng: Number(lng) }
+                : null;
 
-        if (destination && routeDetailOpen) {
+        return validSearchPoint(point)
+            ? {
+                  ...point,
+                  name: params.get('from_label') || 'Chosen starting point',
+              }
+            : null;
+    });
+    const [planning, setPlanning] = useState(false);
+    const [locating, setLocating] = useState(false);
+    const [toast, setToast] = useState<string | null>(null);
+    // Live-follow: on once the board is rooted at the device's real location.
+    // followRef holds the position the board currently reflects; the board
+    // re-roots when the user moves clear of it.
+    const [following, setFollowing] = useState(() =>
+        origin || typeof window === 'undefined'
+            ? false
+            : window.sessionStorage.getItem('expadu:timetable-following') ===
+              'true',
+    );
+    const followRef = useRef<{ lat: number; lng: number } | null>(null);
+    const lastFollowRef = useRef(0);
+
+    // Keep the open request and the explicit board origin refresh-safe. Search
+    // bias is never persisted here: only a starting point the person chose.
+    useEffect(() => {
+        const params = destination
+            ? new URLSearchParams(travelDestinationParams(destination))
+            : destinationDraft
+              ? new URLSearchParams(page.url.split('?')[1] ?? '')
+              : new URLSearchParams();
+
+        params.delete('view');
+        params.delete('journey_open');
+        params.delete('lat');
+        params.delete('lng');
+        params.delete('from_label');
+
+        if (origin && !following) {
+            params.set('lat', String(origin.lat));
+            params.set('lng', String(origin.lng));
+            params.set('from_label', origin.name);
+        }
+
+        if (view === 'timetable') {
+            params.set('view', 'timetable');
+
+            if (routeDetailOpen) {
+                params.set('journey_open', '1');
+            }
+        } else if (destination && routeDetailOpen) {
             params.set('view', 'route');
         }
 
@@ -926,23 +606,15 @@ export default function Timetable() {
             '',
             `/timetable${search ? `?${search}` : ''}`,
         );
-    }, [destination, routeDetailOpen]);
-    // An explicitly chosen From (via the board's origin field); null = live location.
-    const [origin, setOrigin] = useState<Origin>(null);
-    const [planning, setPlanning] = useState(false);
-    const [locating, setLocating] = useState(false);
-    const [toast, setToast] = useState<string | null>(null);
-    // Live-follow: on once the board is rooted at the device's real location.
-    // followRef holds the position the board currently reflects; the board
-    // re-roots when the user moves clear of it.
-    const [following, setFollowing] = useState(() =>
-        typeof window === 'undefined'
-            ? false
-            : window.sessionStorage.getItem('expadu:timetable-following') ===
-              'true',
-    );
-    const followRef = useRef<{ lat: number; lng: number } | null>(null);
-    const lastFollowRef = useRef(0);
+    }, [
+        destination,
+        destinationDraft,
+        routeDetailOpen,
+        view,
+        page.url,
+        origin,
+        following,
+    ]);
 
     useEffect(() => {
         window.sessionStorage.setItem(
@@ -952,21 +624,27 @@ export default function Timetable() {
     }, [following]);
 
     useEffect(() => {
-        if (!following) {
+        if (!locationSharingEnabled || !following) {
             return;
         }
 
-        const reloadBoards = () => router.reload({ only: ['boards'] });
+        const reloadBoards = () =>
+            router.reload({ only: ['boards', 'locationRequired'] });
         window.addEventListener('expadu:location-stored', reloadBoards);
 
         return () =>
             window.removeEventListener('expadu:location-stored', reloadBoards);
-    }, [following]);
+    }, [following, locationSharingEnabled]);
 
     // Keep the board genuinely live: re-fetch the deferred boards prop every
     // 30s (matches the server-side cache TTL). usePoll throttles in background
     // tabs.
-    usePoll(30_000, { only: ['boards'], async: true });
+    usePoll(30_000, {
+        only: ['boards', 'locationRequired'],
+        async: true,
+        onError: () => setBoardError(true),
+        onSuccess: () => setBoardError(false),
+    });
 
     // During a partial reload Inertia momentarily reports the deferred prop as
     // undefined. Rendering through the last known value keeps the mounted
@@ -979,29 +657,91 @@ export default function Timetable() {
     }
 
     const liveBoards = boards ?? lastBoardsRef.current;
+    const hasBoardSnapshot = liveBoards !== undefined;
+
+    // Wait for the first deferred response, then load the selected origin. This
+    // prevents the initial location-less board from racing the manual choice.
+    useEffect(() => {
+        if (!origin || !hasBoardSnapshot) {
+            return;
+        }
+
+        let current = true;
+        let cancel: (() => void) | undefined;
+        router.reload({
+            only: ['boards', 'locationRequired'],
+            data: { lat: origin.lat, lng: origin.lng, from_label: origin.name },
+            onCancelToken: (token) => {
+                cancel = () => token.cancel();
+            },
+            onStart: () => {
+                if (current) {
+                    setLoadingBoards(true);
+                }
+            },
+            onSuccess: () => {
+                if (current) {
+                    setBoardError(false);
+                }
+            },
+            onError: () => {
+                if (current) {
+                    setBoardError(true);
+                }
+            },
+            onFinish: () => {
+                if (current) {
+                    setLoadingBoards(false);
+                }
+            },
+        });
+
+        return () => {
+            current = false;
+            cancel?.();
+        };
+    }, [origin, hasBoardSnapshot]);
 
     // Adaptive mode tabs: only offer modes that actually run near the user.
     const tabs = availableTabs(liveBoards);
 
-    // If the selected mode drops out (the last tram left, or a poll re-rooted
-    // the board at a bus-only stop), fall back to "All" so the view is never
-    // stuck on an empty, tab-less mode.
-    useEffect(() => {
-        if (!liveBoards) {
-            return;
-        }
+    if (!tabs.some((tab) => tab.key === mode)) {
+        const selectedTab = MODE_TABS.find((tab) => tab.key === mode);
 
-        const stillRunning =
-            mode === 'all' || (liveBoards[mode]?.departures.length ?? 0) > 0;
-
-        if (!stillRunning) {
-            setMode('all');
+        if (selectedTab) {
+            tabs.push(selectedTab);
         }
-    }, [liveBoards, mode]);
+    }
 
     function flash(message: string) {
         setToast(message);
         window.setTimeout(() => setToast(null), 2600);
+    }
+
+    function chooseOrigin(point: NonNullable<Origin>) {
+        cancelDeviceLocation();
+        setFollowing(false);
+        setOrigin(point);
+        setDestination((current) =>
+            current
+                ? {
+                      ...current,
+                      fromLat: point.lat,
+                      fromLng: point.lng,
+                      fromName: point.name,
+                      previousId: undefined,
+                      previousEnd: undefined,
+                  }
+                : null,
+        );
+    }
+
+    function cancelDeviceLocation() {
+        locationSession.current?.abort();
+        locationSession.current = locationSharingEnabled
+            ? new AbortController()
+            : null;
+        setLocating(false);
     }
 
     // Suggestions arrive with coordinates; raw text (Enter before the
@@ -1024,12 +764,22 @@ export default function Timetable() {
     // from the confirmed location, valid 2h and beating inferred sources) and
     // mirror it in the From field. The endpoint reverse-geocodes the point;
     // returns the street name shown instead of "Current location".
-    async function confirmLocation(lat: number, lng: number): Promise<string> {
+    async function confirmLocation(
+        lat: number,
+        lng: number,
+    ): Promise<string | null> {
+        const session = locationSession.current;
+
+        if (!session || session.signal.aborted) {
+            return null;
+        }
+
         let name = 'Current location';
 
         try {
             const res = await fetch('/api/location/confirm', {
                 method: 'POST',
+                signal: session.signal,
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1037,6 +787,11 @@ export default function Timetable() {
                 },
                 body: JSON.stringify({ lat, lng }),
             });
+
+            if (!res.ok) {
+                return null;
+            }
+
             const data = (await res.json()) as { name?: string };
 
             if (data.name) {
@@ -1044,10 +799,14 @@ export default function Timetable() {
             }
         } catch {
             // Best effort — the board keeps its last known anchor.
+            return null;
+        }
+
+        if (session.signal.aborted || locationSession.current !== session) {
+            return null;
         }
 
         setOrigin({ name, lat, lng });
-        router.reload({ only: ['boards'] });
 
         return name;
     }
@@ -1059,22 +818,33 @@ export default function Timetable() {
     // on failure, and (via its caller) sequenced after the first board load so
     // it never races the deferred fetch. Respects the never-prompt rule.
     function autoLocate(): void {
-        if (!navigator.geolocation) {
+        const session = locationSession.current;
+
+        if (!navigator.geolocation || !session || session.signal.aborted) {
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
+            async (pos) => {
                 // A wide fix would guess the wrong stop — leave the resolved
                 // location alone rather than mislead.
-                if (pos.coords.accuracy > 150) {
+                if (
+                    session.signal.aborted ||
+                    locationSession.current !== session ||
+                    !usableDevicePosition(pos, 150)
+                ) {
                     return;
                 }
 
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
 
-                void confirmLocation(lat, lng);
+                const name = await confirmLocation(lat, lng);
+
+                if (!name) {
+                    return;
+                }
+
                 followRef.current = { lat, lng };
                 lastFollowRef.current = Date.now();
                 setFollowing(true);
@@ -1092,6 +862,16 @@ export default function Timetable() {
     function requestDeviceLocation(
         then?: (coords: { lat: number; lng: number; name: string }) => void,
     ) {
+        const session = locationSession.current;
+
+        if (!locationSharingEnabled || !session || session.signal.aborted) {
+            flash(
+                'Location sharing is off. Choose a starting point, or turn it on in Settings.',
+            );
+
+            return;
+        }
+
         if (locating) {
             return;
         }
@@ -1103,20 +883,62 @@ export default function Timetable() {
         }
 
         setLocating(true);
+        session.signal.addEventListener('abort', () => setLocating(false), {
+            once: true,
+        });
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
+                if (
+                    session.signal.aborted ||
+                    locationSession.current !== session
+                ) {
+                    return;
+                }
+
+                if (!usableDevicePosition(pos)) {
+                    setLocating(false);
+                    flash(
+                        'This location isn’t precise enough. Choose your starting point instead.',
+                    );
+
+                    return;
+                }
+
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
                 const name = await confirmLocation(lat, lng);
 
+                if (
+                    session.signal.aborted ||
+                    locationSession.current !== session
+                ) {
+                    return;
+                }
+
                 setLocating(false);
+
+                if (!name) {
+                    flash(
+                        'Your location could not be saved. Choose a starting point or try again.',
+                    );
+
+                    return;
+                }
+
                 followRef.current = { lat, lng };
                 lastFollowRef.current = Date.now();
                 setFollowing(true);
                 then?.({ lat, lng, name });
             },
             (err) => {
+                if (
+                    session.signal.aborted ||
+                    locationSession.current !== session
+                ) {
+                    return;
+                }
+
                 setLocating(false);
                 flash(
                     err.code === err.PERMISSION_DENIED
@@ -1129,7 +951,7 @@ export default function Timetable() {
             // Coarse (WiFi/IP) location is plenty to pick the nearest stop and
             // is far more reliable on desktop than GPS-grade high accuracy;
             // accept a recent cached fix so a retry is instant.
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
         );
     }
 
@@ -1138,19 +960,34 @@ export default function Timetable() {
     // with the board visible and the tab foregrounded; coarse GPS plus a 20s
     // floor keep it light. Picking an explicit From turns following off.
     useEffect(() => {
-        if (!following || destination !== null || !navigator.geolocation) {
+        if (
+            !locationSharingEnabled ||
+            !following ||
+            destination !== null ||
+            !navigator.geolocation
+        ) {
             return;
         }
 
         let watchId: number | null = null;
+        let cancelled = false;
 
         const start = () => {
-            if (watchId !== null || document.hidden) {
+            if (cancelled || watchId !== null || document.hidden) {
                 return;
             }
 
             watchId = navigator.geolocation.watchPosition(
                 (pos) => {
+                    if (
+                        cancelled ||
+                        document.hidden ||
+                        !locationSession.current ||
+                        !usableDevicePosition(pos)
+                    ) {
+                        return;
+                    }
+
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
                     const from = followRef.current;
@@ -1195,10 +1032,11 @@ export default function Timetable() {
         document.addEventListener('visibilitychange', onVisibility);
 
         return () => {
+            cancelled = true;
             stop();
             document.removeEventListener('visibilitychange', onVisibility);
         };
-    }, [following, destination]);
+    }, [locationSharingEnabled, following, destination]);
 
     // On open, when location is ALREADY granted, root everything at the device's
     // position once — but only AFTER the first board has loaded, so it never
@@ -1207,7 +1045,12 @@ export default function Timetable() {
     // itself is accuracy-gated, non-sticky and silent.
     const autoLocatedRef = useRef(false);
     useEffect(() => {
-        if (autoLocatedRef.current || liveBoards === undefined) {
+        if (
+            !locationSharingEnabled ||
+            autoLocatedRef.current ||
+            liveBoards === undefined ||
+            origin
+        ) {
             return;
         }
 
@@ -1254,35 +1097,64 @@ export default function Timetable() {
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [liveBoards]);
+    }, [locationSharingEnabled, liveBoards, origin]);
 
     async function planTo(target: Destination | { query: string }) {
+        setView('journey');
+
         if ('lat' in target) {
-            if (target.fromLat === null) {
+            const resolvedTarget: Destination = destinationDraft
+                ? {
+                      ...destinationDraft,
+                      ...target,
+                      destinationId: target.destinationId,
+                      ...(origin
+                          ? {
+                                fromLat: origin.lat,
+                                fromLng: origin.lng,
+                                fromName: origin.name,
+                            }
+                          : {}),
+                  }
+                : target;
+            setDestinationDraft(null);
+
+            if (resolvedTarget.fromLat === null) {
                 // Explicit "Current location" from the planner — get the real
                 // device GPS, then replan this destination from it.
                 requestDeviceLocation(({ lat, lng, name }) =>
                     setDestination({
-                        ...target,
+                        ...resolvedTarget,
                         fromLat: lat,
                         fromLng: lng,
                         fromName: name,
                     }),
                 );
-            } else if (target.fromLat != null && target.fromLng != null) {
+            } else if (
+                resolvedTarget.fromLat != null &&
+                resolvedTarget.fromLng != null
+            ) {
                 // The planner chose an explicit origin — mirror it on the
                 // board's From field so both stay coherent, and stop following
                 // the device (the board is no longer rooted at "you").
                 setFollowing(false);
                 setOrigin({
-                    name: target.fromName ?? 'Origin',
-                    lat: target.fromLat,
-                    lng: target.fromLng,
+                    name: resolvedTarget.fromName ?? 'Origin',
+                    lat: resolvedTarget.fromLat,
+                    lng: resolvedTarget.fromLng,
                 });
-                setDestination(target);
+                setDestination(resolvedTarget);
             } else {
-                setDestination(withOrigin(target));
+                setDestination(withOrigin(resolvedTarget));
             }
+
+            return;
+        }
+
+        if (destinationDraft) {
+            flash(
+                'Choose the matching place from the suggestions to keep the exact location.',
+            );
 
             return;
         }
@@ -1290,22 +1162,37 @@ export default function Timetable() {
         setPlanning(true);
 
         try {
-            const res = await fetch(
-                `/api/journey/suggest?q=${encodeURIComponent(target.query)}`,
-                { credentials: 'same-origin' },
-            );
+            const params = suggestionSearchParams(target.query, 'destination', {
+                point: origin ?? page.props.userLocation,
+                area:
+                    typeof page.props.auth.user.veedel === 'string'
+                        ? page.props.auth.user.veedel
+                        : null,
+            });
+            const res = await fetch(`/api/journey/suggest?${params}`, {
+                credentials: 'same-origin',
+            });
             const results = (await res.json()) as GeoResult[];
 
-            if (results.length > 0) {
+            if (results.length === 1) {
                 const hit = results[0];
 
                 setDestination(
                     withOrigin({
+                        ...destination,
+                        activityId: undefined,
+                        planDate: undefined,
+                        backLabel: undefined,
+                        destinationId: undefined,
+                        previousId: undefined,
+                        previousEnd: undefined,
                         name: hit.name,
                         lat: hit.lat,
                         lng: hit.lng,
                     }),
                 );
+            } else if (results.length > 1) {
+                flash('Choose the matching place from the suggestions.');
             } else {
                 flash(`No match for "${target.query}"`);
             }
@@ -1316,139 +1203,335 @@ export default function Timetable() {
         }
     }
 
-    const board = liveBoards?.[mode] ?? null;
-    const alt = board ? altSuggestion(board.departures) : null;
-    const stop = board?.stop_name ?? 'your stop';
+    const board = liveBoards?.all ?? null;
     const walk = board?.walk_min ?? null;
 
     return (
         <AppLayout>
-            <Head title="Departures" />
-            <div className="mx-auto w-full max-w-[680px] px-4 pt-6 pb-24 md:px-6">
-                {destination ? (
-                    <JourneyPlanner
-                        key={`${destination.lat},${destination.lng},${destination.name},${destination.fromLat ?? ''},${destination.fromLng ?? ''}`}
-                        destination={destination}
-                        savedPlaces={savedPlaces}
-                        initialSelected={
-                            routeDetailOpen &&
-                            destinationMatchesTrip(destination, activeTrip)
-                                ? (activeTrip?.journey ?? null)
-                                : null
-                        }
-                        onDetailChange={setRouteDetailOpen}
-                        onPlan={planTo}
-                        onClose={() => {
-                            setDestination(null);
-                            setRouteDetailOpen(false);
-                        }}
-                    />
-                ) : (
-                    <>
-                        <div className="mb-[18px] flex items-end justify-between gap-3.5">
-                            <div className="min-w-0">
-                                <h1 className="font-display text-3xl font-medium tracking-tight">
-                                    Departures
-                                </h1>
-                                <p className="mt-1 text-[13.5px] text-muted-foreground">
-                                    {liveBoards === undefined ? (
-                                        // Genuinely still loading the deferred board.
-                                        'Finding your nearest stop…'
-                                    ) : board ? (
-                                        <>
-                                            Live from{' '}
-                                            <strong className="font-semibold text-foreground">
-                                                {stop}
-                                            </strong>
-                                            {walk != null && (
-                                                <>
-                                                    {' · '}
-                                                    <span className="font-semibold text-cyan-h">
-                                                        {walk} min walk from you
-                                                    </span>
-                                                </>
-                                            )}
-                                        </>
-                                    ) : locationRequired ? (
-                                        'Use your location to see nearby live departures'
-                                    ) : (
-                                        // Loaded, but the nearest stop has nothing running —
-                                        // say so instead of implying we're still searching.
-                                        'No live departures near you right now'
-                                    )}
-                                </p>
-                            </div>
-                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-xs font-semibold text-success">
-                                <span className="size-[7px] animate-pulse rounded-full bg-success" />
-                                <LiveClock />
-                            </span>
-                        </div>
-
-                        <JourneyEntryCard
-                            stop={stop}
+            <Head title="Travel" />
+            <div className="mx-auto w-full max-w-[1240px] px-4 pt-4 pb-24 md:px-6 md:pt-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <h1 className="font-sans text-[28px] font-semibold tracking-[-.8px]">
+                        Travel
+                    </h1>
+                </div>
+                <div
+                    className="mb-5 flex gap-1 border-b border-border"
+                    role="group"
+                    aria-label="Travel view"
+                >
+                    {(
+                        [
+                            ['journey', 'Plan a trip', IconRoute],
+                            ['timetable', 'Timetable', IconClock],
+                        ] as const
+                    ).map(([key, label, Icon]) => (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => setView(key)}
+                            aria-pressed={view === key}
+                            className={`relative flex min-h-11 items-center justify-center gap-2 px-4 pb-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-cyan motion-reduce:transition-none ${view === key ? 'text-cyan-h after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-cyan-h' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            <Icon size={18} stroke={ICON_STROKE} />
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                <div hidden={view !== 'journey'} data-travel-workspace>
+                    {destination ? (
+                        <JourneyPlanner
+                            key={`${destination.lat},${destination.lng},${destination.name},${destination.fromLat ?? ''},${destination.fromLng ?? ''}`}
+                            destination={destination}
                             savedPlaces={savedPlaces}
-                            recentDestinations={recentDestinations}
-                            origin={origin}
-                            onOriginChange={(o) => {
-                                // A hand-picked From means the board is no
-                                // longer rooted at "you" — stop following.
+                            restoreDetail={routeDetailOpen}
+                            initialSelected={
+                                routeDetailOpen &&
+                                destinationMatchesTrip(destination, activeTrip)
+                                    ? (activeTrip?.journey ?? null)
+                                    : null
+                            }
+                            onTimetable={(point) => {
+                                journeyReturnRef.current =
+                                    document.activeElement as HTMLElement;
+                                cancelDeviceLocation();
                                 setFollowing(false);
-                                setOrigin(o);
+                                setOrigin(point);
+                                setView('timetable');
                             }}
-                            onUseCurrentLocation={requestDeviceLocation}
-                            locating={locating}
-                            busy={planning}
+                            onDetailChange={setRouteDetailOpen}
+                            onRequestChange={setDestination}
                             onPlan={planTo}
+                            onClose={() => {
+                                setDestination(null);
+                                setRouteDetailOpen(false);
+                            }}
                         />
-
-                        <div className="mb-[18px] flex gap-2">
+                    ) : (
+                        <>
+                            {destinationDraft && (
+                                <div className="mb-3 rounded-xl bg-cyan/10 px-3 py-2 text-sm text-cyan-h">
+                                    <strong className="block">
+                                        For{' '}
+                                        {destinationDraft.backLabel ??
+                                            'your activity'}
+                                    </strong>
+                                    <span>
+                                        {destinationDraft.arriveBy
+                                            ? `Arrive by ${new Date(destinationDraft.arriveBy).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}. `
+                                            : ''}
+                                        Choose the matching place below to check
+                                        travel.
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setDestinationDraft(null)
+                                        }
+                                        className="ml-2 min-h-11 text-xs font-semibold underline"
+                                    >
+                                        Start another trip
+                                    </button>
+                                </div>
+                            )}
+                            <div className="grid gap-5 lg:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)] lg:gap-8">
+                                <section className="min-w-0">
+                                    <h2 className="mb-3 text-lg font-semibold">
+                                        Where are you heading?
+                                    </h2>
+                                    <JourneyEntryCard
+                                        key={
+                                            destinationDraft?.name ?? 'new-trip'
+                                        }
+                                        destinationDraft={destinationDraft}
+                                        savedPlaces={savedPlaces}
+                                        recentDestinations={recentDestinations}
+                                        origin={origin}
+                                        onOriginEdit={() => {
+                                            cancelDeviceLocation();
+                                            setFollowing(false);
+                                        }}
+                                        onOriginChange={(o) => {
+                                            if (o) {
+                                                chooseOrigin(o);
+                                            }
+                                        }}
+                                        onUseCurrentLocation={
+                                            requestDeviceLocation
+                                        }
+                                        locating={locating}
+                                        busy={planning}
+                                        onPlan={planTo}
+                                    />
+                                    <TravelHelp href="/composer" />
+                                </section>
+                                <section className="min-w-0 lg:border-l lg:border-border lg:pl-8">
+                                    <h2 className="mb-3 text-lg font-semibold">
+                                        Your journey
+                                    </h2>
+                                    <p className="mb-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+                                        Choose a destination to compare travel
+                                        times, changes and walking. Your route
+                                        and its stops will appear here.
+                                    </p>
+                                    {activeTrip && (
+                                        <button
+                                            type="button"
+                                            className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-cyan/10 px-4 text-left text-sm focus-visible:outline-2 focus-visible:outline-cyan"
+                                            onClick={() => {
+                                                setDestination({
+                                                    ...activeTrip.destination,
+                                                    emoji:
+                                                        activeTrip.destination
+                                                            .emoji ?? undefined,
+                                                    fromLat:
+                                                        activeTrip.origin?.lat,
+                                                    fromLng:
+                                                        activeTrip.origin?.lng,
+                                                    fromName:
+                                                        activeTrip.origin?.name,
+                                                });
+                                                setRouteDetailOpen(true);
+                                            }}
+                                        >
+                                            <IconRoute
+                                                size={20}
+                                                className="shrink-0 text-cyan-h"
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                                <strong className="block">
+                                                    Resume your journey
+                                                </strong>
+                                                <span className="block truncate text-muted-foreground">
+                                                    To{' '}
+                                                    {
+                                                        activeTrip.destination
+                                                            .name
+                                                    }
+                                                </span>
+                                            </span>
+                                            <IconArrowRight size={18} />
+                                        </button>
+                                    )}
+                                    <SavedJourneys />
+                                </section>
+                            </div>
+                        </>
+                    )}
+                </div>
+                <div hidden={view !== 'timetable'}>
+                    {destination && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setView('journey');
+                                window.requestAnimationFrame(() =>
+                                    journeyReturnRef.current?.focus(),
+                                );
+                            }}
+                            className="mb-3 flex min-h-11 w-full items-center gap-2 rounded-xl bg-cyan/10 px-3 text-left text-sm text-cyan-h"
+                        >
+                            <IconRoute size={17} />
+                            <span className="min-w-0 truncate">
+                                Back to your trip to {destination.name}
+                            </span>
+                            <IconArrowRight
+                                size={16}
+                                className="ml-auto shrink-0"
+                            />
+                        </button>
+                    )}
+                    <div className="mb-3 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5">
+                        <IconMapPin
+                            size={18}
+                            stroke={ICON_STROKE}
+                            className="shrink-0 text-cyan-h"
+                        />
+                        <DestinationSearch
+                            key={`board-origin-${origin?.name ?? ''}`}
+                            initial={origin?.name ?? ''}
+                            placeholder="Starting point or stop"
+                            role="origin"
+                            bias={origin}
+                            withCurrentLocation
+                            onSelect={(suggestion) => {
+                                if (suggestion.kind === 'current') {
+                                    requestDeviceLocation();
+                                } else {
+                                    chooseOrigin({
+                                        name: suggestion.name,
+                                        lat: suggestion.lat,
+                                        lng: suggestion.lng,
+                                    });
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            aria-label="Use my current location"
+                            disabled={locating}
+                            onClick={() => requestDeviceLocation()}
+                            className="grid size-11 shrink-0 place-items-center rounded-xl bg-cyan/10 text-cyan-h focus-visible:outline-2 focus-visible:outline-cyan disabled:opacity-50"
+                        >
+                            <IconCurrentLocation
+                                size={19}
+                                stroke={ICON_STROKE}
+                            />
+                        </button>
+                    </div>
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                        <p className="min-w-0 text-sm text-muted-foreground">
+                            {loadingBoards || liveBoards === undefined ? (
+                                'Finding nearby departures…'
+                            ) : boardError ? (
+                                'Departures could not load for this starting point.'
+                            ) : board ? (
+                                <>
+                                    {board.scope === 'nearby'
+                                        ? 'Departures at nearby stops'
+                                        : 'Current departures'}
+                                    {walk != null &&
+                                        board.scope !== 'nearby' && (
+                                            <span className="block text-xs">
+                                                {walk} min walk from your
+                                                starting point
+                                            </span>
+                                        )}
+                                </>
+                            ) : locationRequired ? (
+                                'Choose a starting point to find a nearby stop.'
+                            ) : (
+                                'No departures are available from your nearest stop.'
+                            )}
+                        </p>
+                    </div>
+                    {tabs.length > 1 && (
+                        <div
+                            className="mb-3 flex flex-wrap gap-1.5"
+                            role="group"
+                            aria-label="Transport types"
+                        >
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.key}
+                                    type="button"
                                     onClick={() => setMode(tab.key)}
-                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
-                                        mode === tab.key
-                                            ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
-                                            : 'border-border bg-card text-muted-foreground hover:border-primary'
-                                    }`}
+                                    aria-pressed={mode === tab.key}
+                                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-cyan ${mode === tab.key ? 'bg-cyan/15 text-cyan-h' : 'bg-card text-muted-foreground'}`}
                                 >
                                     {tab.Icon && (
                                         <tab.Icon
-                                            size={16}
+                                            size={17}
                                             stroke={ICON_STROKE}
-                                            className="shrink-0"
                                         />
                                     )}
                                     {tab.label}
                                 </button>
                             ))}
                         </div>
-
-                        {liveBoards === undefined ? (
-                            <BoardSkeleton />
-                        ) : (
-                            <>
-                                {board && board.departures.length > 0 ? (
-                                    <DepartureBoard board={board} />
-                                ) : (
-                                    <EmptyBoard
-                                        mode={mode}
-                                        locationRequired={locationRequired}
-                                        onUseCurrentLocation={
-                                            requestDeviceLocation
-                                        }
-                                    />
-                                )}
-                                {alt && <AltCard alt={alt} />}
-                                <PlannedDisruptions
-                                    disruptions={activeDisruptions}
-                                />
-                            </>
-                        )}
-                    </>
-                )}
+                    )}
+                    {boardError && (
+                        <div
+                            role="status"
+                            className="mb-3 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger"
+                        >
+                            Couldn’t refresh departures. Check again in a
+                            moment.{' '}
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    router.reload({
+                                        only: ['boards', 'locationRequired'],
+                                        onStart: () => setLoadingBoards(true),
+                                        onSuccess: () => setBoardError(false),
+                                        onFinish: () => setLoadingBoards(false),
+                                    })
+                                }
+                                className="min-h-11 font-semibold underline"
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    )}
+                    {loadingBoards || liveBoards === undefined ? (
+                        <BoardSkeleton />
+                    ) : board && board.departures.length > 0 ? (
+                        <TimetableBoard
+                            key={board.stop_name}
+                            board={board}
+                            mode={mode}
+                            stale={boardError}
+                        />
+                    ) : (
+                        <EmptyBoard
+                            mode={mode}
+                            locationRequired={locationRequired}
+                            onUseCurrentLocation={requestDeviceLocation}
+                        />
+                    )}
+                    <PlannedDisruptions disruptions={activeDisruptions} />
+                </div>
             </div>
-
             <FeedbackToast message={toast} />
         </AppLayout>
     );

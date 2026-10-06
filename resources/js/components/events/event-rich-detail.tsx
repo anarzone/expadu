@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import {
     IconCalendarRepeat,
     IconCircleCheck,
@@ -7,15 +8,24 @@ import {
     IconRoute,
     IconTicket,
 } from '@tabler/icons-react';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import {
     ItemDetailLayout,
     ItemDetailShell,
 } from '@/components/details/item-detail-shell';
-import { eventIllustrationKey } from '@/components/events/types';
+import {
+    canPlanEvent,
+    eventDate,
+    eventDateLabel,
+    eventSchedule,
+    eventSelectionQuery,
+    eventTime,
+} from '@/components/events/event-presentation';
 import type { EventOccurrence } from '@/components/events/types';
-import { CategoryIllustration } from '@/components/places/category-illustration';
 import { MiniMap } from '@/components/places/mini-map';
 import { ICON_STROKE } from '@/constants/icons';
+import { composer } from '@/routes';
 
 function sourceDomain(url: string): string {
     try {
@@ -26,18 +36,14 @@ function sourceDomain(url: string): string {
 }
 
 function timeLabel(date: Date): string {
-    return date.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+    return eventTime(date.toISOString());
 }
 
 function dateLabel(date: Date): string {
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-    const key = (value: Date) =>
-        `${value.getFullYear()}-${value.getMonth()}-${value.getDate()}`;
+    const key = (value: Date) => eventDate(value.toISOString());
 
     if (key(date) === key(today)) {
         return 'Today';
@@ -47,11 +53,7 @@ function dateLabel(date: Date): string {
         return 'Tomorrow';
     }
 
-    return date.toLocaleDateString('en-GB', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-    });
+    return eventDateLabel(date.toISOString());
 }
 
 function durationLabel(start: Date, end: Date | null): string | null {
@@ -97,6 +99,11 @@ export function EventRichDetail({
     onClose,
     onNavigate,
     onOpenPlace,
+    onPlan,
+    selected = false,
+    onUndoSelection,
+    reminderAction,
+    error,
 }: {
     occurrence: EventOccurrence;
     isMobile: boolean;
@@ -104,13 +111,19 @@ export function EventRichDetail({
     onClose: () => void;
     onNavigate: () => void;
     onOpenPlace?: (placeId: number) => void;
+    onPlan?: () => void;
+    selected?: boolean;
+    onUndoSelection?: () => void;
+    reminderAction?: ReactNode;
+    error?: string;
 }) {
+    const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
     const venue = occurrence.venue;
     const start = new Date(occurrence.occurrence_start);
     const end = occurrence.occurrence_end
         ? new Date(occurrence.occurrence_end)
         : null;
-    const when = `${dateLabel(start)} · ${timeLabel(start)}${end ? `–${timeLabel(end)}` : ''}`;
+    const when = `${dateLabel(start)} · ${eventSchedule(occurrence)}`;
     const duration = durationLabel(start, end);
     const price =
         occurrence.price_text?.toLowerCase() === 'free'
@@ -121,31 +134,56 @@ export function EventRichDetail({
             ? `${occurrence.travel_min} min from your start`
             : occurrence.distance_km != null
               ? `${occurrence.distance_km.toFixed(1)} km from your start`
-              : 'Live route calculated when you continue';
+              : 'Check the route from your starting point';
     const hasCoordinates = venue.lat != null && venue.lng != null;
+    const reviewControls = selected ? (
+        <div
+            className="rounded-2xl border border-cyan-bd bg-cyan-soft p-4"
+            role="status"
+        >
+            <strong className="block text-[15px]">Selected for review</strong>
+            <p className="mt-1 text-[13px] leading-relaxed text-text-2">
+                Review this event in Composer before adding it to your day. Your
+                saved plan is unchanged.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                    href={composer({ query: eventSelectionQuery(occurrence) })}
+                    className="flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white"
+                >
+                    Review plan
+                </Link>
+                <button
+                    type="button"
+                    onClick={onUndoSelection}
+                    className="min-h-11 rounded-xl px-3 text-sm font-semibold text-cyan-h"
+                >
+                    Undo selection
+                </button>
+            </div>
+            <p className="mt-2 text-xs text-text-2">
+                This does not book a ticket or reserve a place.
+            </p>
+        </div>
+    ) : null;
 
     const main = (
         <div>
-            <div className="relative h-[170px] overflow-hidden rounded-[16px] sm:h-[210px]">
-                {occurrence.photo_url ? (
+            {occurrence.photo_url && failedPhoto !== occurrence.photo_url && (
+                <div className="relative h-[150px] overflow-hidden rounded-[16px] sm:h-[200px]">
                     <img
                         src={occurrence.photo_url}
-                        alt={occurrence.title}
+                        alt=""
                         className="h-full w-full object-cover"
+                        onError={() => setFailedPhoto(occurrence.photo_url)}
                     />
-                ) : (
-                    <CategoryIllustration
-                        coarse={eventIllustrationKey(occurrence.category)}
-                        className="h-full w-full"
-                        iconSize={48}
-                    />
-                )}
-                {occurrence.photo_attribution && (
-                    <span className="absolute right-2 bottom-2 max-w-[85%] truncate rounded-full bg-black/60 px-2.5 py-1 text-[9px] text-white/90">
-                        {occurrence.photo_attribution}
-                    </span>
-                )}
-            </div>
+                    {occurrence.photo_attribution && (
+                        <span className="absolute right-2 bottom-2 max-w-[85%] truncate rounded-full bg-black/60 px-2.5 py-1 text-[9px] text-white/90">
+                            {occurrence.photo_attribution}
+                        </span>
+                    )}
+                </div>
+            )}
 
             <div className="mt-5 font-mono text-[10.5px] font-semibold tracking-[0.1em] text-primary uppercase">
                 {occurrence.emoji} {occurrence.category_label}
@@ -159,6 +197,13 @@ export function EventRichDetail({
                 {venue.name ? ` · ${venue.name}` : ''}
                 {venue.veedel ? ` · ${venue.veedel}` : ''}
             </p>
+            {selected && <div className="mt-4 lg:hidden">{reviewControls}</div>}
+            {error && (
+                <p className="mt-3 text-sm text-danger" role="alert">
+                    {error}
+                </p>
+            )}
+            {reminderAction && <div className="mt-2">{reminderAction}</div>}
 
             <div className="mt-4 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[12px] font-semibold text-text-2">
@@ -265,9 +310,13 @@ export function EventRichDetail({
                     Plan this into your day
                 </h2>
                 <p className="mt-2 text-[13px] leading-relaxed text-text-2">
-                    Expadu uses the event start, your chosen origin and live
-                    transport to calculate when you should leave.
+                    {selected
+                        ? 'The listed event time stays fixed. Review it alongside the rest of your day.'
+                        : 'Keep the listed time, check your journey, and review the event in Composer.'}
                 </p>
+                {selected && (
+                    <div className="mt-4 hidden lg:block">{reviewControls}</div>
+                )}
             </div>
 
             {hasCoordinates && (
@@ -304,9 +353,10 @@ export function EventRichDetail({
             </div>
 
             <div className="mx-5 mt-4 shrink-0 rounded-[12px] bg-cyan-soft px-4 py-3 text-[12.5px] leading-relaxed text-cyan-h sm:mx-6">
-                <b className="block text-foreground">Why this helps</b>
-                Your leave-by time and route update together, so the event
-                details and directions cannot drift apart.
+                <b className="block text-foreground">Before you go</b>
+                {occurrence.occurrence_end
+                    ? 'The listed schedule stays fixed. Check entry requirements with the organiser.'
+                    : 'The start is listed, but the finish still needs checking with the organiser.'}
             </div>
 
             {occurrence.recurrence_text && (
@@ -321,11 +371,23 @@ export function EventRichDetail({
             )}
 
             <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-secondary/95 p-5 backdrop-blur sm:p-6">
+                {onPlan && !selected && (
+                    <button
+                        type="button"
+                        onClick={onPlan}
+                        disabled={!canPlanEvent(occurrence)}
+                        className="mb-2 flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+                    >
+                        {canPlanEvent(occurrence)
+                            ? 'Plan to go'
+                            : 'This event has already started'}
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={onNavigate}
                     disabled={!hasCoordinates}
-                    className="flex min-h-12 w-full cursor-pointer items-center justify-between rounded-[11px] bg-primary px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                    className={`flex min-h-11 w-full cursor-pointer items-center justify-between rounded-[11px] px-4 py-3 text-[14px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${onPlan ? 'border border-border bg-card text-cyan-h hover:border-cyan' : 'bg-primary text-white hover:bg-primary-hover'}`}
                 >
                     <span>
                         {hasCoordinates

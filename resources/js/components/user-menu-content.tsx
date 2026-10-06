@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { clearPrivateBrowserData } from '@/lib/private-browser-data';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
@@ -63,6 +64,10 @@ export function UserMenuContent({ user }: Props) {
                     href={logout()}
                     as="button"
                     onClick={handleLogout}
+                    onSuccess={() => {
+                        router.clearHistory();
+                        void clearPrivateBrowserData();
+                    }}
                     data-test="logout-button"
                 >
                     <IconLogout className="mr-2" />

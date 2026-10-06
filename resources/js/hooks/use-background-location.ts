@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useGeolocation } from './use-geolocation';
+import {
+    observeGeolocationPermission,
+    useGeolocation,
+    useLocationSharingEnabled,
+} from './use-geolocation';
 
 /**
  * Activates continuous background GPS so the server can keep the user's Veedel
@@ -12,29 +16,16 @@ import { useGeolocation } from './use-geolocation';
  * (or revokes) access, the `change` listener flips the watch on or off live.
  */
 export function useBackgroundLocation() {
+    const sharingEnabled = useLocationSharingEnabled();
     const [granted, setGranted] = useState(false);
 
     useEffect(() => {
-        if (!navigator.permissions?.query) {
+        if (!sharingEnabled) {
             return;
         }
 
-        let status: PermissionStatus | null = null;
-        const sync = () => setGranted(status?.state === 'granted');
+        return observeGeolocationPermission(setGranted);
+    }, [sharingEnabled]);
 
-        navigator.permissions
-            .query({ name: 'geolocation' as PermissionName })
-            .then((result) => {
-                status = result;
-                sync();
-                result.addEventListener('change', sync);
-            })
-            .catch(() => {
-                // Permissions API unavailable (older browsers) — stay passive.
-            });
-
-        return () => status?.removeEventListener('change', sync);
-    }, []);
-
-    useGeolocation({ enabled: granted });
+    useGeolocation({ enabled: granted && sharingEnabled });
 }

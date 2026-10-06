@@ -1,0 +1,115 @@
+import { expect, test } from '@playwright/test';
+
+test.use({ serviceWorkers: 'block' });
+
+test('service preferences fit a narrow phone without clipping fields or actions', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await page.goto('/services');
+
+    for (const control of [
+        page.getByRole('region', { name: 'What are you looking for?' }),
+        page.getByLabel('Area', { exact: true }),
+        page.getByLabel('Language', { exact: true }),
+        page.getByRole('link', { name: 'Prepare in Composer' }),
+    ]) {
+        await expect(control).toBeVisible();
+        const box = await control.boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.x).toBeGreaterThanOrEqual(0);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+    }
+});
+
+test('Services keeps optional preferences by category and opens an unsent request', async ({
+    page,
+}) => {
+    const commands: string[] = [];
+    page.on('request', (request) => {
+        if (
+            request.method() === 'POST' &&
+            request.url().includes('/composer/')
+        ) {
+            commands.push(request.url());
+        }
+    });
+    await page.goto('/services');
+    await expect(
+        page.getByRole('heading', { level: 1, name: 'Services' }),
+    ).toBeVisible();
+    await expect(
+        page.getByText('Provider search is not connected yet.', {
+            exact: false,
+        }),
+    ).toBeVisible();
+    await page.getByLabel('Area', { exact: true }).fill('Deutz');
+    await page.getByLabel('Language', { exact: true }).fill('English');
+    await page.getByRole('button', { name: 'Dentist', exact: true }).click();
+    await expect(page.getByLabel('Area', { exact: true })).toHaveValue('');
+    await page.getByRole('button', { name: 'Doctor', exact: true }).click();
+    await expect(page.getByLabel('Area', { exact: true })).toHaveValue('Deutz');
+    const href = await page
+        .getByRole('link', { name: 'Prepare in Composer' })
+        .getAttribute('href');
+    const url = new URL(href!, 'https://expadu.test');
+    expect(url.pathname).toBe('/composer');
+    expect(url.searchParams.get('prompt')).toContain('Area: Deutz.');
+    expect(url.searchParams.get('prompt')).toContain('Language: English.');
+    expect(url.searchParams.has('plan')).toBe(false);
+    expect(commands).toEqual([]);
+});
+
+test('Paperwork has one page heading and optional Composer orientation', async ({
+    page,
+}) => {
+    await page.goto('/bureaucracy');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+    await expect(
+        page.getByRole('heading', { name: 'Paperwork', exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('button', { name: 'Checklist', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Documents', exact: true }).click();
+    await expect(
+        page.getByText('Documents in your tasks', { exact: true }),
+    ).toBeVisible();
+    const href = await page
+        .getByRole('link', { name: 'Help me get oriented' })
+        .getAttribute('href');
+    const query = new URL(href!, 'https://expadu.test').searchParams;
+    expect(query.has('prompt')).toBe(true);
+    expect(query.has('plan')).toBe(false);
+    await page
+        .getByRole('button', { name: 'Dismiss orientation help', exact: true })
+        .click();
+    await expect(
+        page.getByRole('link', { name: 'Help me get oriented' }),
+    ).toHaveCount(0);
+});
+
+test('Services provides a reviewable message and an optional closable helper', async ({
+    page,
+}) => {
+    await page.goto('/services');
+    await page.getByLabel('Area', { exact: true }).fill('Deutz');
+    await expect(page.getByLabel('Your request', { exact: true })).toHaveValue(
+        /Hello,.*doctor in Deutz/,
+    );
+    await expect(
+        page.getByLabel('Your request', { exact: true }),
+    ).not.toHaveValue(/Help me prepare/);
+    await page
+        .getByRole('button', { name: 'Copy request', exact: true })
+        .click();
+    await expect(page.getByRole('status')).toContainText(
+        /Request copied|Copy is unavailable/,
+    );
+    await page
+        .getByRole('button', { name: 'Dismiss appointment tip', exact: true })
+        .click();
+    await expect(
+        page.getByRole('heading', { name: 'Already have an appointment?' }),
+    ).toHaveCount(0);
+});

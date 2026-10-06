@@ -18,9 +18,43 @@ import { update as updateAiConsent } from '@/routes/bureaucracy/case/ai-consent'
 import { store as storeCaseMessage } from '@/routes/bureaucracy/case/messages';
 import { answer as answerCaseQuestion } from '@/routes/bureaucracy/case-question';
 import { AiConsentSheet } from './ai-consent-sheet';
+import type { CaseAssistantState } from './case-plan-state';
 import type { CasePlanAi, CasePlanQuestion } from './case-plan-types';
 
 type AnswerValue = string | number | boolean;
+
+const STATUS_COPY = {
+    empty: {
+        label: 'Optional',
+        title: 'No matched steps yet',
+        description:
+            'You can review your situation whenever you’re ready. Guidance stays limited where reviewed coverage is missing.',
+    },
+    partial: {
+        label: 'Partial coverage',
+        title: 'Some parts of your plan are not covered yet',
+        description:
+            'You can review your details at any time. Available steps and missing coverage stay visible below.',
+    },
+    needs_information: {
+        label: 'Details to review',
+        title: 'Some details are still missing',
+        description:
+            'You can review your situation when you’re ready. Steps that need more information stay separate.',
+    },
+    conflict: {
+        label: 'Needs review',
+        title: 'Some information needs review',
+        description:
+            'Uncertain steps stay separate. You can review your situation when you’re ready.',
+    },
+    ready: {
+        label: 'Current matches',
+        title: 'No more details to review right now',
+        description:
+            'Your current steps are shown below. You can review your answers whenever your situation changes.',
+    },
+};
 
 type Interpretation =
     | {
@@ -75,10 +109,12 @@ async function jsonRequest<T>(
 export function CaseAssistantCard({
     question,
     ai,
+    state,
     blockedByConflict = false,
 }: {
     question: CasePlanQuestion | null;
     ai: CasePlanAi;
+    state: CaseAssistantState;
     blockedByConflict?: boolean;
 }) {
     const { errors } = usePage<{
@@ -227,6 +263,8 @@ export function CaseAssistantCard({
 
     const validationError = errors?.value;
     const canUseText = ai.available && remainingQuota > 0;
+    const status =
+        STATUS_COPY[state === 'question' ? 'needs_information' : state];
 
     return (
         <>
@@ -237,7 +275,9 @@ export function CaseAssistantCard({
                         Case assistant
                     </span>
                     <span className="ml-auto rounded-full border border-[#D8D1C1] bg-white px-2 py-0.5 text-[9.5px] font-bold tracking-[0.04em] text-[#77736B] uppercase dark:border-[#4A4638] dark:bg-[#242218] dark:text-[#AAA89F]">
-                        Verified rules
+                        {state === 'question'
+                            ? 'Optional detail'
+                            : status.label}
                     </span>
                 </div>
 
@@ -262,23 +302,30 @@ export function CaseAssistantCard({
                         </div>
                     ) : !question ? (
                         <div className="flex items-start gap-3">
-                            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20 dark:text-[#67C39D]">
-                                <IconCheck size={18} stroke={ICON_STROKE} />
+                            <span
+                                className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full ${state === 'ready' ? 'bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20 dark:text-[#67C39D]' : 'bg-muted text-muted-foreground'}`}
+                            >
+                                {state === 'ready' ? (
+                                    <IconCheck size={18} stroke={ICON_STROKE} />
+                                ) : (
+                                    <IconInfoCircle
+                                        size={18}
+                                        stroke={ICON_STROKE}
+                                    />
+                                )}
                             </span>
                             <div className="min-w-0 flex-1">
                                 <h2 className="font-display text-[21px] leading-tight font-medium text-[#18170F] dark:text-[#F6F5F1]">
-                                    Your plan has enough confirmed information
+                                    {status.title}
                                 </h2>
                                 <p className="mt-1.5 text-[12.5px] leading-5 text-[#6B6860] dark:text-[#AAA89F]">
-                                    If your visa, permit, household, or goal
-                                    changes, update your answers and Expadu will
-                                    rebuild the verified plan.
+                                    {status.description}
                                 </p>
                                 <Link
                                     href={onboarding.url()}
                                     className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-[9px] border border-[#DCD7CC] bg-white px-3 py-2 text-xs font-bold text-[#514E46] transition hover:border-primary hover:text-primary dark:border-[#454339] dark:bg-[#25241C] dark:text-[#E7E4DA]"
                                 >
-                                    Update my answers
+                                    Review my details
                                     <IconArrowRight
                                         size={14}
                                         stroke={ICON_STROKE}

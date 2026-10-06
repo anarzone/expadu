@@ -1,5 +1,9 @@
 import { router, usePage } from '@inertiajs/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import {
+    persistTrip,
+    TripRequestError,
+} from '@/components/departures/trip-request';
 import type { Journey } from '@/components/journey/take-me-there-sheet';
 
 /** A place the trip runs from/to — the coordinates power live map-matching. */
@@ -34,30 +38,47 @@ const CSRF = () =>
 export function useActiveTrip() {
     const { activeTrip } = usePage<{ activeTrip: ActiveTrip | null }>().props;
     const [busy, setBusy] = useState(false);
+    const busyRef = useRef(false);
+    const [error, setError] = useState<string | null>(null);
 
     const post = useCallback(
         async (url: string, body?: Record<string, unknown>) => {
+            if (busyRef.current) {
+                return false;
+            }
+
+            busyRef.current = true;
             setBusy(true);
+            setError(null);
 
             try {
-                await fetch(url, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': CSRF(),
-                    },
-                    body: body ? JSON.stringify(body) : undefined,
-                });
-                // Refresh only the shared trip prop (reload preserves scroll +
-                // component state), so the banner appears/clears immediately.
-                await new Promise<void>((resolve) =>
-                    router.reload({
-                        only: ['activeTrip'],
-                        onFinish: () => resolve(),
-                    }),
+                await persistTrip(
+                    url,
+                    body,
+                    CSRF(),
+                    () =>
+                        new Promise<boolean>((resolve) => {
+                            router.reload({
+                                only: ['activeTrip'],
+                                onSuccess: () => resolve(true),
+                                onError: () => resolve(false),
+                                onCancel: () => resolve(false),
+                                onFinish: () => resolve(false),
+                            });
+                        }),
                 );
+
+                return true;
+            } catch (err) {
+                setError(
+                    err instanceof TripRequestError
+                        ? err.message
+                        : 'The connection was lost. Your trip status is unconfirmed. Try again.',
+                );
+
+                return false;
             } finally {
+                busyRef.current = false;
                 setBusy(false);
             }
         },
@@ -72,5 +93,5 @@ export function useActiveTrip() {
 
     const end = useCallback(() => post('/api/trip/end'), [post]);
 
-    return { activeTrip: activeTrip ?? null, start, end, busy };
+    return { activeTrip: activeTrip ?? null, start, end, busy, error };
 }

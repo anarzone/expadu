@@ -2,7 +2,7 @@ import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import { showToast } from '@/components/flash-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import '../css/app.css';
@@ -73,23 +73,31 @@ createInertiaApp({
             import.meta.glob('./pages/**/*.tsx'),
         ),
     setup({ el, App, props }) {
-        // Guard against double createRoot on the same element (SW replays /
-        // duplicate module evaluation log a React warning otherwise).
+        // Reuse server markup so a slow startup does not replace an already
+        // visible form or discard input. SSR can be unavailable, so keep the
+        // empty-root fallback and the duplicate-module guard.
         type RootEl = HTMLElement & {
             __inertiaRoot?: ReturnType<typeof createRoot>;
         };
         const rootEl = el as RootEl;
-        const root = (rootEl.__inertiaRoot ??= createRoot(el));
-
-        root.render(
+        const app = (
             <StrictMode>
                 <ErrorBoundary>
                     <TooltipProvider delayDuration={0}>
                         <App {...props} />
                     </TooltipProvider>
                 </ErrorBoundary>
-            </StrictMode>,
+            </StrictMode>
         );
+
+        if (rootEl.__inertiaRoot) {
+            rootEl.__inertiaRoot.render(app);
+        } else if (el.hasChildNodes()) {
+            rootEl.__inertiaRoot = hydrateRoot(el, app);
+        } else {
+            rootEl.__inertiaRoot = createRoot(el);
+            rootEl.__inertiaRoot.render(app);
+        }
 
         // Load Sentry async — out of the critical render path. Guarded so a
         // blocked chunk (ad blockers block "sentry-*.js") is a silent no-op,

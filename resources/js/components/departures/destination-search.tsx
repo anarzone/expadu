@@ -1,10 +1,16 @@
+import { usePage } from '@inertiajs/react';
 import {
     IconBusStop,
     IconCurrentLocation,
     IconHistory,
     IconMapPin,
 } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import {
+    suggestionSearchParams,
+    validSearchPoint,
+} from '@/components/departures/search-request';
+import type { SearchPoint } from '@/components/departures/search-request';
 import { ICON_STROKE } from '@/constants/icons';
 
 /** One row from /api/journey/suggest — a station, address/street, POI, saved place or recent. */
@@ -66,7 +72,10 @@ export function DestinationSearch({
     autoFocus = false,
     role = 'destination',
     withCurrentLocation = false,
+    requireSelection = false,
+    bias,
     onSelect,
+    onUnresolvedChange,
     onSubmitFree,
     trailing,
 }: {
@@ -77,84 +86,110 @@ export function DestinationSearch({
     role?: 'origin' | 'destination';
     /** Prepend a "Current location" row to the defaults (origin fields). */
     withCurrentLocation?: boolean;
+    /** A contextual typed place must be resolved by an explicit suggestion choice. */
+    requireSelection?: boolean;
+    /** The explicitly selected starting point; only used to rank search results. */
+    bias?: SearchPoint | null;
     onSelect: (suggestion: Suggestion) => void;
+    /** A typed label is not a confirmed location until a suggestion is picked. */
+    onUnresolvedChange?: (unresolved: boolean) => void;
     /** Raw-text fallback when Enter is hit with no suggestions loaded. */
     onSubmitFree?: (query: string) => void;
     /** Optional trailing element inside the input row (e.g. the Plan trip pill). */
     trailing?: (submit: () => void) => React.ReactNode;
 }) {
+    const listId = useId();
+    const { auth, userLocation } = usePage<{
+        userLocation?: SearchPoint | null;
+    }>().props;
+    const searchPoint = validSearchPoint(bias)
+        ? bias
+        : validSearchPoint(userLocation)
+          ? userLocation
+          : null;
+    const biasLat = searchPoint?.lat;
+    const biasLng = searchPoint?.lng;
+    const area = typeof auth.user.veedel === 'string' ? auth.user.veedel : null;
     const [text, setText] = useState(initial);
+    const [searchError, setSearchError] = useState(false);
+    const [searching, setSearching] = useState(false);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [open, setOpen] = useState(false);
     const [highlight, setHighlight] = useState(-1);
-    const [dirty, setDirty] = useState(false);
-    const abortRef = useRef<AbortController | null>(null);
-
-    async function fetchSuggestions(query: string): Promise<Suggestion[]> {
-        abortRef.current?.abort();
-        const controller = new AbortController();
-        abortRef.current = controller;
-
-        const params = new URLSearchParams({ role });
-
-        if (query) {
-            params.set('q', query);
-        }
-
-        const res = await fetch(`/api/journey/suggest?${params}`, {
-            credentials: 'same-origin',
-            signal: controller.signal,
-        });
-
-        return (await res.json()) as Suggestion[];
-    }
 
     useEffect(() => {
-        const query = text.trim();
-
-        // Only search once the user actually edits — not for the seeded value.
-        // (Too-short queries are handled by the focus/change handlers.)
-        if (!dirty || query.length < 2) {
+        if (!open) {
             return;
         }
 
-        const timer = window.setTimeout(async () => {
-            try {
-                const results = await fetchSuggestions(query);
+        const query = text.trim().length >= 2 ? text.trim() : '';
+        const controller = new AbortController();
+        const point =
+            biasLat != null && biasLng != null
+                ? { lat: biasLat, lng: biasLng }
+                : null;
+        const timer = window.setTimeout(
+            async () => {
+                setSearching(true);
+                setSearchError(false);
 
-                setSuggestions(results);
-                setOpen(results.length > 0);
-                setHighlight(-1);
-            } catch {
-                // Aborted or offline — keep whatever is shown.
-            }
-        }, 200);
+                try {
+                    const params = suggestionSearchParams(query, role, {
+                        point,
+                        area,
+                    });
+                    const res = await fetch(`/api/journey/suggest?${params}`, {
+                        credentials: 'same-origin',
+                        signal: controller.signal,
+                    });
 
-        return () => window.clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [text, dirty]);
+                    if (!res.ok) {
+                        throw new Error('Search unavailable');
+                    }
 
-    async function showDefaults() {
-        try {
-            const results = await fetchSuggestions('');
-            const rows = withCurrentLocation
-                ? [CURRENT_LOCATION, ...results]
-                : results;
+                    const results = (await res.json()) as Suggestion[];
 
-            setSuggestions(rows);
-            setOpen(rows.length > 0);
-            setHighlight(-1);
-        } catch {
-            // Offline — nothing to offer.
-        }
-    }
+                    if (controller.signal.aborted) {
+                        return;
+                    }
+
+                    setSuggestions(
+                        !query && withCurrentLocation
+                            ? [CURRENT_LOCATION, ...results]
+                            : results,
+                    );
+                    setHighlight(-1);
+                    setSearching(false);
+                } catch (error) {
+                    if (
+                        !controller.signal.aborted &&
+                        (error as Error).name !== 'AbortError'
+                    ) {
+                        setSuggestions(
+                            !query && withCurrentLocation
+                                ? [CURRENT_LOCATION]
+                                : [],
+                        );
+                        setSearchError(true);
+                        setSearching(false);
+                    }
+                }
+            },
+            query ? 200 : 0,
+        );
+
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [text, open, role, withCurrentLocation, biasLat, biasLng, area]);
 
     function pick(suggestion: Suggestion) {
         // "Current location" keeps its label visible in the field — an empty
         // input read as "nothing happened".
         setText(suggestion.name);
         setOpen(false);
-        setDirty(false);
+        onUnresolvedChange?.(false);
         onSelect(suggestion);
     }
 
@@ -163,7 +198,12 @@ export function DestinationSearch({
 
         if (open && highlight >= 0 && suggestions[highlight]) {
             pick(suggestions[highlight]);
-        } else if (open && suggestions.length > 0 && dirty) {
+        } else if (
+            !requireSelection &&
+            open &&
+            suggestions.length > 0 &&
+            query.length >= 2
+        ) {
             pick(suggestions[0]);
         } else if (query && onSubmitFree) {
             setOpen(false);
@@ -172,30 +212,61 @@ export function DestinationSearch({
     }
 
     return (
-        <div className="relative min-w-0 flex-1">
+        <div
+            className="relative min-w-0 flex-1"
+            onBlur={(event) => {
+                if (
+                    !event.currentTarget.contains(
+                        event.relatedTarget as Node | null,
+                    )
+                ) {
+                    setOpen(false);
+                }
+            }}
+        >
             <div className="flex items-center gap-3">
                 <input
                     type="text"
+                    role="combobox"
+                    aria-label={
+                        role === 'origin' ? 'Starting point' : 'Destination'
+                    }
+                    aria-autocomplete="list"
+                    aria-controls={listId}
+                    aria-expanded={open}
+                    aria-activedescendant={
+                        open && highlight >= 0
+                            ? `${listId}-${highlight}`
+                            : undefined
+                    }
+                    autoComplete="off"
                     value={text}
                     autoFocus={autoFocus}
                     onFocus={(e) => {
-                        if (text.trim().length < 2) {
-                            void showDefaults();
-                        } else {
-                            // A filled field selects its text so typing
-                            // replaces it — and clearing reveals defaults.
-                            e.target.select();
+                        e.target.select();
+                        setSuggestions([]);
+                        setHighlight(-1);
+                        setSearchError(false);
+                        setSearching(true);
+                        setOpen(true);
+                    }}
+                    onClick={() => {
+                        if (!open) {
+                            setSearchError(false);
+                            setSearching(true);
+                            setOpen(true);
                         }
                     }}
                     onChange={(e) => {
                         const value = e.target.value;
 
                         setText(value);
-                        setDirty(true);
-
-                        if (value.trim().length < 2) {
-                            void showDefaults();
-                        }
+                        onUnresolvedChange?.(value.trim() !== initial.trim());
+                        setSuggestions([]);
+                        setHighlight(-1);
+                        setSearchError(false);
+                        setSearching(true);
+                        setOpen(true);
                     }}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -213,26 +284,58 @@ export function DestinationSearch({
                             setOpen(false);
                         }
                     }}
-                    onBlur={() => window.setTimeout(() => setOpen(false), 150)}
                     placeholder={placeholder}
-                    className="min-w-0 flex-1 border-none bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-text-3"
+                    className="min-h-11 min-w-0 flex-1 rounded-lg border-none bg-transparent px-1 text-sm font-medium text-foreground outline-none placeholder:text-text-3 focus-visible:ring-2 focus-visible:ring-cyan/50"
                 />
                 {trailing?.(submit)}
             </div>
 
             {open && (
-                <div className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-[14px] border border-border bg-card shadow-lg">
+                <div
+                    id={listId}
+                    role="listbox"
+                    aria-label={
+                        role === 'origin' ? 'Starting points' : 'Destinations'
+                    }
+                    className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-[14px] border border-border bg-card shadow-lg"
+                >
+                    {searching && (
+                        <p
+                            className="px-3 py-2 text-sm text-muted-foreground"
+                            role="status"
+                        >
+                            Searching…
+                        </p>
+                    )}
+                    {searchError && (
+                        <p
+                            className="px-3 py-2 text-sm text-muted-foreground"
+                            role="status"
+                        >
+                            Search couldn’t load. Try typing the place again.
+                        </p>
+                    )}
+                    {!searching && !searchError && suggestions.length === 0 && (
+                        <p
+                            className="px-3 py-2 text-sm text-muted-foreground"
+                            role="status"
+                        >
+                            No matching places. Try a street, stop or fuller
+                            name.
+                        </p>
+                    )}
                     {suggestions.map((s, i) => (
                         <button
                             key={`${s.kind}-${s.lat}-${s.lng}-${i}`}
-                            // mousedown beats the input blur that closes the list
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                pick(s);
-                            }}
+                            type="button"
+                            role="option"
+                            id={`${listId}-${i}`}
+                            aria-selected={i === highlight}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => pick(s)}
                             onMouseEnter={() => setHighlight(i)}
-                            className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left ${
-                                i === highlight ? 'bg-secondary' : ''
+                            className={`flex min-h-11 w-full items-center gap-2.5 px-3.5 py-2.5 text-left ${
+                                i === highlight ? 'bg-cyan/10' : ''
                             }`}
                         >
                             <span className="flex size-6 shrink-0 items-center justify-center text-muted-foreground">

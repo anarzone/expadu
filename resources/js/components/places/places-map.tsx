@@ -1,9 +1,10 @@
 import { IconCurrentLocation, IconMapPin, IconX } from '@tabler/icons-react';
 import type { LngLatBoundsLike, Map as MaplibreMap, Marker } from 'maplibre-gl';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 import { COLOGNE_CENTER, loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
+import { placeMapPoint } from './place-evidence';
 import type { Place } from './types';
 
 /**
@@ -59,12 +60,22 @@ export function PlacesMap({
         'loading',
     );
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const mappedPlaces = useMemo(
+        () =>
+            places.flatMap((place) => {
+                const point = placeMapPoint(place);
+
+                return point ? [{ place, ...point }] : [];
+            }),
+        [places],
+    );
 
     // Derived, not synced — a selection that's no longer in the visible
     // results simply resolves to null on the next render.
     const selected =
         selectedId != null
-            ? (places.find((p) => p.id === selectedId) ?? null)
+            ? (mappedPlaces.find((p) => p.place.id === selectedId)?.place ??
+              null)
             : null;
 
     // Boot the map once. MapLibre and the hosted style load lazily; the
@@ -164,7 +175,7 @@ export function PlacesMap({
         }
 
         const pinEls = pinElsRef.current;
-        const markers = places.map((place) => {
+        const markers = mappedPlaces.map(({ place, lat, lng }) => {
             const el = makePin(emojiFor(place), place.name);
             const onPick = () => setSelectedId(place.id);
             el.addEventListener('click', (e) => {
@@ -180,16 +191,16 @@ export function PlacesMap({
             pinEls.set(place.id, el);
 
             return new bm.maplibregl.Marker({ element: el })
-                .setLngLat([place.lng, place.lat])
+                .setLngLat([lng, lat])
                 .addTo(map);
         });
 
-        if (places.length > 0 && focusingRef.current) {
+        if (mappedPlaces.length > 0 && focusingRef.current) {
             // Consume the flag once: keep the just-flown view, skip this fit.
             focusingRef.current = false;
-        } else if (places.length > 0) {
+        } else if (mappedPlaces.length > 0) {
             const bounds = new bm.maplibregl.LngLatBounds();
-            places.forEach((p) => bounds.extend([p.lng, p.lat]));
+            mappedPlaces.forEach((p) => bounds.extend([p.lng, p.lat]));
             map.fitBounds(bounds as LngLatBoundsLike, {
                 padding: 64,
                 maxZoom: 14.5,
@@ -201,7 +212,7 @@ export function PlacesMap({
             markers.forEach((m) => m.remove());
             pinEls.clear();
         };
-    }, [places, status, emojiFor]);
+    }, [mappedPlaces, status, emojiFor]);
 
     // Reflect the selected pin and pan it clear of the card. Runs after the
     // pin-build effect, so it also re-applies selection across a rebuild.
@@ -212,7 +223,7 @@ export function PlacesMap({
 
         const sel =
             selectedId != null
-                ? (places.find((p) => p.id === selectedId) ?? null)
+                ? (mappedPlaces.find((p) => p.place.id === selectedId) ?? null)
                 : null;
 
         if (sel) {
@@ -222,7 +233,7 @@ export function PlacesMap({
                 duration: 420,
             });
         }
-    }, [selectedId, places, status]);
+    }, [selectedId, mappedPlaces, status]);
 
     // The "you are here" dot — its own persistent marker, untouched by the
     // pin rebuild above. Follows the latest fix; removed when there's none.
@@ -324,6 +335,18 @@ export function PlacesMap({
                     )}
                 </div>
             )}
+
+            {!pickMode &&
+                status === 'ready' &&
+                places.length > mappedPlaces.length && (
+                    <p
+                        role="status"
+                        className="absolute top-3 left-3 max-w-[calc(100%-64px)] rounded-xl bg-card px-3 py-2 text-xs text-muted-foreground shadow-sm"
+                    >
+                        Some places have no verified map location. They remain
+                        available in list view.
+                    </p>
+                )}
 
             {selected && (
                 <div className="absolute right-3 bottom-3 left-3 z-10 flex animate-in items-center gap-3 rounded-[14px] border border-border bg-card p-3.5 shadow-lg duration-200 fade-in-0 slide-in-from-bottom-2 sm:left-auto sm:w-[380px]">

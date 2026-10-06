@@ -515,7 +515,7 @@ export function TakeMeThereSheet({
         scheduleDefault(destination.arriveBy),
     );
     const isMobile = useIsMobile();
-    const { start, busy: startingTrip } = useActiveTrip();
+    const { start, busy: startingTrip, error: tripError } = useActiveTrip();
     // The user's default transport mode pre-selects the sheet so it opens in the
     // mode the Places list / composer measured distances in.
     const userPreferred = usePage().props.auth.user
@@ -684,7 +684,7 @@ export function TakeMeThereSheet({
             return;
         }
 
-        await start(
+        const saved = await start(
             journey,
             {
                 name: destination.name,
@@ -694,6 +694,11 @@ export function TakeMeThereSheet({
             },
             data.from,
         );
+
+        if (!saved) {
+            return;
+        }
+
         onClose();
     }
 
@@ -942,6 +947,14 @@ export function TakeMeThereSheet({
                             'Direct route — no public-transport ticket needed.'
                         )}
                     </div>
+                    {tripError && (
+                        <p
+                            role="alert"
+                            className="mb-2 rounded-xl bg-danger-soft p-3 text-sm text-danger"
+                        >
+                            {tripError}
+                        </p>
+                    )}
                     <button
                         type="button"
                         onClick={startSelectedTrip}

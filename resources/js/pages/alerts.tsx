@@ -16,6 +16,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
+import { writeJson } from '@/lib/reliable-write';
 import { edit as editNotifications } from '@/routes/notifications';
 
 type Alert = {
@@ -92,42 +93,25 @@ function timeAgo(iso: string): string {
     });
 }
 
-function csrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
-
-function post(url: string): void {
-    void fetch(url, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'X-CSRF-TOKEN': csrfToken(), Accept: 'application/json' },
-    })
-        .then(() => router.reload({ only: ['unreadAlertCount'] }))
-        .catch(() => {});
-}
-
 function AlertCard({
     alert,
     onRead,
     onAction,
     onDismiss,
+    pending,
 }: {
     alert: Alert;
     onRead: (id: number) => void;
     onAction: (a: Alert) => void;
     onDismiss: (id: number) => void;
+    pending: boolean;
 }) {
     const Icon = CATEGORY_ICON[alert.category];
     const sev = SEVERITY[alert.severity];
 
     return (
         <div
-            onClick={() => !alert.read && onRead(alert.id)}
-            className={`group relative mb-2.5 flex cursor-pointer gap-3.5 rounded-[14px] border border-l-[3px] border-border bg-card p-4 shadow-card transition-opacity ${sev.border} ${alert.read ? 'opacity-[0.62] shadow-none' : ''}`}
+            className={`group relative mb-2.5 flex gap-3.5 rounded-[14px] border border-l-[3px] border-border bg-card p-4 shadow-card transition-opacity ${sev.border} ${alert.read ? 'opacity-[0.62] shadow-none' : ''}`}
         >
             <span
                 className={`flex size-[38px] shrink-0 items-center justify-center rounded-[11px] ${sev.icon}`}
@@ -165,9 +149,20 @@ function AlertCard({
                         </>
                     )}
                 </div>
+                {!alert.read && (
+                    <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => onRead(alert.id)}
+                        className="mt-2 min-h-11 text-sm font-medium text-primary disabled:opacity-50"
+                    >
+                        Mark read
+                    </button>
+                )}
                 {alert.action_label && alert.deep_link && (
                     <div className="mt-3">
                         <button
+                            disabled={pending}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onAction(alert);
@@ -190,8 +185,9 @@ function AlertCard({
                     e.stopPropagation();
                     onDismiss(alert.id);
                 }}
-                aria-label="Dismiss"
-                className="absolute top-2.5 right-2.5 flex size-[25px] items-center justify-center rounded-[7px] text-text-3 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface-2"
+                disabled={pending}
+                aria-label={`Dismiss ${alert.title}`}
+                className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-[7px] text-text-3 transition-colors hover:bg-surface-2 disabled:opacity-50"
             >
                 <IconX size={15} stroke={ICON_STROKE} />
             </button>
@@ -240,7 +236,11 @@ export default function Alerts() {
     const [cat, setCat] = useState<'all' | Alert['category']>('all');
     const [readIds, setReadIds] = useState<Set<number>>(new Set());
     const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
+    const [allMarkedRead, setAllMarkedRead] = useState(false);
     const [showRead, setShowRead] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const pendingRef = useRef(false);
+    const [pending, setPending] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -305,19 +305,55 @@ export default function Alerts() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serverAlerts, dismissedIds, readIds, cat]);
 
+    async function saveAction(
+        url: string,
+        saved: () => void,
+    ): Promise<boolean> {
+        if (pendingRef.current) {
+            return false;
+        }
+
+        pendingRef.current = true;
+        setPending(true);
+        setError(null);
+
+        try {
+            await writeJson(url, 'POST');
+            saved();
+            router.reload({ only: ['unreadAlertCount'] });
+
+            return true;
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+
+            return false;
+        } finally {
+            pendingRef.current = false;
+            setPending(false);
+        }
+    }
+
     function markRead(id: number) {
-        setReadIds((s) => new Set(s).add(id));
-        post(`/alerts/${id}/read`);
+        return saveAction(`/alerts/${id}/read`, () =>
+            setReadIds((s) => new Set(s).add(id)),
+        );
     }
 
     function dismiss(id: number) {
-        setDismissedIds((s) => new Set(s).add(id));
-        flash('Dismissed');
-        post(`/alerts/${id}/dismiss`);
+        void saveAction(`/alerts/${id}/dismiss`, () => {
+            setDismissedIds((s) => new Set(s).add(id));
+            flash('Dismissed');
+        });
     }
 
-    function act(a: Alert) {
-        markRead(a.id);
+    async function act(a: Alert) {
+        if (!a.read && !(await markRead(a.id))) {
+            return;
+        }
 
         if (a.deep_link) {
             router.visit(a.deep_link);
@@ -325,17 +361,27 @@ export default function Alerts() {
     }
 
     function markAll() {
-        setReadIds(new Set(serverAlerts.map((a) => a.id)));
-        flash('All marked read');
-        post('/alerts/read-all');
+        void saveAction('/alerts/read-all', () => {
+            setReadIds(new Set(serverAlerts.map((a) => a.id)));
+            setAllMarkedRead(true);
+            flash('All marked read');
+        });
     }
 
-    const headerUnread = unreadCount || serverUnread;
+    const locallyRead = serverAlerts.filter(
+        (a) => !a.read && (readIds.has(a.id) || dismissedIds.has(a.id)),
+    ).length;
+    const headerUnread = allMarkedRead
+        ? 0
+        : Math.max(unreadCount, serverUnread - locallyRead);
     const allCaught =
         laneAction.length + laneGood.length + lanePosted.length === 0;
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}>
+        <AppLayout
+            rightPanel={null}
+            breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}
+        >
             <Head title="Alerts" />
             <div className="mx-auto w-full max-w-[680px] px-1 pb-16">
                 {/* Header */}
@@ -351,6 +397,7 @@ export default function Alerts() {
                     <div className="flex shrink-0 items-center gap-2">
                         {headerUnread > 0 && (
                             <button
+                                disabled={pending}
                                 onClick={markAll}
                                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-text-2 transition-colors hover:border-primary hover:text-primary"
                             >
@@ -371,6 +418,22 @@ export default function Alerts() {
                     </div>
                 </div>
 
+                {error && (
+                    <p
+                        role="alert"
+                        className="mt-4 rounded-xl border border-destructive/20 p-3 text-sm text-destructive"
+                    >
+                        {error}
+                    </p>
+                )}
+                {pending && (
+                    <p
+                        role="status"
+                        className="mt-2 text-sm text-muted-foreground"
+                    >
+                        Saving…
+                    </p>
+                )}
                 {/* Category filter */}
                 <div className="mt-[18px] flex gap-2 overflow-x-auto pb-1.5">
                     {CATEGORIES.map((c) => {
@@ -427,6 +490,7 @@ export default function Alerts() {
                                         onRead={markRead}
                                         onAction={act}
                                         onDismiss={dismiss}
+                                        pending={pending}
                                     />
                                 ))}
                             </Lane>
@@ -444,6 +508,7 @@ export default function Alerts() {
                                         onRead={markRead}
                                         onAction={act}
                                         onDismiss={dismiss}
+                                        pending={pending}
                                     />
                                 ))}
                             </Lane>
@@ -457,6 +522,7 @@ export default function Alerts() {
                                         onRead={markRead}
                                         onAction={act}
                                         onDismiss={dismiss}
+                                        pending={pending}
                                     />
                                 ))}
                             </Lane>
@@ -492,6 +558,7 @@ export default function Alerts() {
                                     onRead={markRead}
                                     onAction={act}
                                     onDismiss={dismiss}
+                                    pending={pending}
                                 />
                             ))}
                     </>

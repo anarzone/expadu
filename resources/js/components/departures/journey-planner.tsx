@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import {
     IconAlertTriangle,
     IconArrowLeft,
@@ -6,6 +7,9 @@ import {
     IconChevronDown,
     IconChevronRight,
     IconClock,
+    IconBike,
+    IconMap,
+    IconRoute,
     IconPlayerPlayFilled,
     IconRun,
     IconTicket,
@@ -14,9 +18,28 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
+import {
+    readJourneyPreview,
+    writeJourneyPreview,
+} from '@/components/departures/journey-preview';
 import { PlaceGlyph } from '@/components/departures/place-glyph';
+import { SaveJourneyButton } from '@/components/departures/saved-journeys';
+import { TravelChoice } from '@/components/departures/travel-choice';
+import { TravelHelp } from '@/components/departures/travel-help';
+import {
+    composerTravelHref,
+    scheduledTravelDestination,
+    travelRouteSignature,
+} from '@/components/departures/travel-request';
+import type { TravelDestination as Destination } from '@/components/departures/travel-request';
+import { JourneyMap } from '@/components/journey/journey-map';
+import {
+    JourneySchedulePicker,
+    scheduleDefault,
+    toLocalDateTime,
+} from '@/components/journey/journey-schedule-picker';
+import type { JourneyPlanningMode } from '@/components/journey/journey-schedule-picker';
 import type {
-    Destination,
     FareAdvice,
     Journey,
     JourneyLeg,
@@ -63,10 +86,7 @@ function transferText(journey: Journey): string {
 
 /** The transit line sequence, e.g. "12>3" — identifies a distinct route. */
 function routeSignature(journey: Journey): string {
-    return journey.legs
-        .filter((l) => l.mode !== 'walk' && l.mode !== 'bike')
-        .map((l) => l.line ?? '?')
-        .join('>');
+    return travelRouteSignature(journey);
 }
 
 /**
@@ -127,22 +147,6 @@ const FILTERS = [
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]['key'];
-
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-const MINUTES = [
-    '00',
-    '05',
-    '10',
-    '15',
-    '20',
-    '25',
-    '30',
-    '35',
-    '40',
-    '45',
-    '50',
-    '55',
-];
 
 /** Transit modes offered as avoid/allow toggles, in display order. */
 const MODE_ORDER = [
@@ -210,68 +214,62 @@ function RouteCard({
     walkMin: number;
     disrupted: boolean;
     highlight: boolean;
-    /** This route is the one the live trip is currently on. */
     onTrip: boolean;
     onStart: () => void;
 }) {
+    const overnight =
+        journey.arrive_at.slice(0, 10) !== journey.depart_at.slice(0, 10);
+
     return (
         <button
+            type="button"
             onClick={onStart}
-            className={`animate-fade-up w-full rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors md:px-[18px] ${
-                onTrip
-                    ? 'border-success ring-1 ring-success'
-                    : highlight
-                      ? 'border-primary'
-                      : 'border-border hover:border-primary'
-            }`}
+            aria-label={`View ${journey.mode} route leaving ${journey.depart_time}, arriving ${journey.arrive_time}`}
+            className={`w-full rounded-2xl border px-3.5 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-cyan active:bg-cyan/10 motion-reduce:transition-none ${onTrip ? 'border-success bg-success-soft' : highlight ? 'border-cyan/35 bg-cyan/5' : 'border-border bg-card'}`}
         >
-            <div className="mb-3 flex items-center gap-2.5">
-                {onTrip && (
-                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success/12 px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] text-success uppercase">
-                        <span className="size-1.5 animate-pulse rounded-full bg-success" />
-                        On this trip
-                    </span>
-                )}
-                {label && !onTrip && (
-                    <span
-                        className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10.5px] font-semibold tracking-[0.04em] uppercase ${
-                            highlight
-                                ? 'bg-primary-soft text-primary'
-                                : 'bg-secondary text-muted-foreground'
-                        }`}
-                    >
-                        {label}
-                    </span>
-                )}
-                <span className="truncate text-[12.5px] text-text-3">
-                    {transferText(journey)}
-                    {walkMin > 0 && ` · ${walkMin} min walk`}
+            <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 text-base font-semibold tabular-nums">
+                    {journey.depart_time}
+                    <span className="px-1.5 text-muted-foreground">→</span>
+                    {journey.arrive_time}
+                    {overnight && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                            +1 day
+                        </span>
+                    )}
                 </span>
-                {disrupted && (
-                    <span
-                        className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold"
-                        style={{
-                            background: 'rgba(255,194,77,.18)',
-                            color: '#9a6300',
-                        }}
-                    >
-                        <IconAlertTriangle size={11} stroke={ICON_STROKE} />
-                        Delays
-                    </span>
-                )}
-                <span className="ml-auto shrink-0 font-display text-[22px] leading-none font-semibold">
-                    {journey.duration_min}
-                    <span className="font-mono text-[13px] text-text-3">
-                        {' '}
+                <span className="shrink-0 text-sm font-semibold">
+                    {journey.duration_min}{' '}
+                    <span className="font-normal text-muted-foreground">
                         min
                     </span>
                 </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="mt-2 flex items-center justify-between gap-2">
                 <LegChips legs={journey.legs} />
-                <span className="ml-auto shrink-0 font-mono text-[12.5px] text-muted-foreground">
-                    {journey.depart_time} → {journey.arrive_time}
+                <IconChevronRight
+                    size={16}
+                    className="shrink-0 text-muted-foreground"
+                />
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                {(onTrip || label) && (
+                    <span
+                        className={`font-semibold ${onTrip ? 'text-success' : 'text-cyan-h'}`}
+                    >
+                        {onTrip ? 'Your current trip' : label}
+                    </span>
+                )}
+                <span>
+                    {transferText(journey)}
+                    {walkMin > 0 && ` · ${walkMin} min walk`}
                 </span>
+                {disrupted && (
+                    <span className="inline-flex items-center gap-1 text-danger">
+                        <IconAlertTriangle size={12} />
+                        Service notice
+                    </span>
+                )}
             </div>
         </button>
     );
@@ -306,7 +304,7 @@ function TightCard({
                 <span className="min-w-0 truncate text-[12.5px] text-text-3">
                     {walk} min walk to {stop} · tight
                 </span>
-                <span className="ml-auto shrink-0 font-display text-[22px] leading-none font-semibold">
+                <span className="ml-auto shrink-0 font-sans text-[22px] leading-none font-semibold">
                     {journey.duration_min}
                     <span className="font-mono text-[13px] text-text-3">
                         {' '}
@@ -579,7 +577,7 @@ function TimelineStep({
         <div className="flex gap-3.5">
             <div className="flex w-[22px] shrink-0 flex-col items-center">
                 <span
-                    className={`size-[13px] shrink-0 rounded-full border-2 ${current ? 'animate-pulse' : ''}`}
+                    className="size-[13px] shrink-0 rounded-full border-2"
                     style={{
                         borderColor: dotBorder,
                         background: done || current ? accent : 'transparent',
@@ -613,12 +611,6 @@ function TimelineStep({
                     >
                         {step.title}
                     </span>
-                    {current && (
-                        <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold text-success">
-                            <span className="size-1.5 animate-pulse rounded-full bg-success" />
-                            NOW
-                        </span>
-                    )}
                     {time && (
                         <span
                             className={`shrink-0 font-mono text-[11px] tabular-nums ${
@@ -731,11 +723,7 @@ function RidesGroup({
     );
 }
 
-/**
- * The chosen route as a live journey: a dark "Live · next" banner with a
- * progress bar, and a station-by-station timeline whose NOW cursor advances on
- * the schedule clock (no GPS feed yet — scheduled times, ticked live).
- */
+/** Route preview and active guidance share the same stops, map and return context. */
 function RouteDetail({
     journey,
     fromName,
@@ -747,6 +735,8 @@ function RouteDetail({
     onStart,
     onSwitch,
     onEnd,
+    composerHref,
+    onTimetable,
 }: {
     journey: Journey;
     fromName: string;
@@ -760,6 +750,8 @@ function RouteDetail({
     onStart: () => void;
     onSwitch: () => void;
     onEnd: () => void;
+    composerHref: string;
+    onTimetable?: (point: { name: string; lat: number; lng: number }) => void;
 }) {
     const steps = useMemo(
         () => stationSteps(journey, destName),
@@ -767,8 +759,13 @@ function RouteDetail({
     );
     // Live position: GPS-driven for a started trip (foreground), else the
     // schedule clock. Only a real, active trip watches GPS — previews don't.
-    const { currentIdx, live } = useTripProgress(steps, active);
+    const progress = useTripProgress(steps, active);
+    const currentIdx = active ? progress.currentIdx : -1;
+    const live = active && progress.live;
     const items = groupTimeline(steps);
+    const [detailView, setDetailView] = useState<'steps' | 'map'>('steps');
+    const first = journey.legs[0]?.from;
+    const last = journey.legs.at(-1)?.to;
 
     // Buzz once when the exit is the next stop (only under a real GPS fix).
     const getOffNext = steps[currentIdx + 1]?.kind === 'alight';
@@ -785,7 +782,20 @@ function RouteDetail({
         }
     }, [live, getOffNext, currentIdx]);
 
-    const banner = bannerFor(steps, currentIdx, destName);
+    const banner = !active
+        ? {
+              title: `${journey.depart_time} – ${journey.arrive_time}`,
+              sub: `${journey.duration_min} min · ${transferText(journey)}`,
+          }
+        : !live
+          ? {
+                title:
+                    currentIdx < 0
+                        ? `Leave by ${journey.depart_time}`
+                        : 'Follow your itinerary',
+                sub: 'Using timetable times · location unconfirmed',
+            }
+          : bannerFor(steps, currentIdx, destName);
     const cursorColor = getOffNext
         ? '#ffc24d'
         : ((currentIdx >= 0 ? steps[currentIdx]?.color : steps[0]?.color) ??
@@ -802,127 +812,219 @@ function RouteDetail({
                 <button
                     onClick={onBack}
                     aria-label="Back to routes"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
                 >
                     <IconArrowLeft size={17} stroke={ICON_STROKE} />
                 </button>
-                <span className="min-w-0 truncate font-display text-lg font-medium">
-                    {fromName} → {destName}
+                <span className="min-w-0 flex-1 truncate text-base font-semibold">
+                    {destName}
                 </span>
+                <div
+                    className="flex shrink-0 rounded-xl bg-secondary p-1"
+                    role="group"
+                    aria-label="Journey detail view"
+                >
+                    {(['steps', 'map'] as const).map((view) => (
+                        <button
+                            key={view}
+                            type="button"
+                            aria-pressed={detailView === view}
+                            onClick={() => setDetailView(view)}
+                            className={`flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-cyan ${detailView === view ? 'bg-card text-cyan-h shadow-sm' : 'text-muted-foreground'}`}
+                        >
+                            {view === 'map' ? (
+                                <IconMap size={17} />
+                            ) : (
+                                <IconRoute size={17} />
+                            )}
+                            {view === 'map' ? 'Map' : 'Steps'}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Live NEXT banner — a dark "ink" hero. The foreground/background
-                tokens flip per theme, so pin it dark in dark mode too (an
-                elevated surface + light text) instead of inverting to a glaring
-                light block. */}
             <div
-                className="relative mb-2 overflow-hidden rounded-2xl border border-transparent bg-foreground px-5 py-[18px] text-background transition-shadow dark:border-border dark:bg-secondary dark:text-foreground"
-                style={{
-                    boxShadow: getOffNext
-                        ? '0 0 0 2px #ffc24d, 0 10px 30px rgba(20,16,8,.28)'
-                        : '0 10px 30px rgba(20,16,8,.28)',
-                }}
+                className={`grid gap-5 ${detailView === 'map' ? 'lg:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]' : 'max-w-3xl'}`}
             >
-                <div className="flex items-center gap-3">
-                    <span
-                        className="size-2.5 shrink-0 animate-pulse rounded-full"
-                        style={{
-                            background: cursorColor,
-                            boxShadow: '0 0 0 4px rgba(255,255,255,.16)',
-                        }}
-                    />
-                    <div className="min-w-0 flex-1">
-                        <div className="font-mono text-[10px] tracking-[0.14em] uppercase opacity-60">
-                            {beforeStart
-                                ? `Leave by ${journey.depart_time}`
-                                : getOffNext
-                                  ? 'Get off next'
-                                  : live
-                                    ? 'Live GPS · next'
-                                    : 'Live · next'}
-                        </div>
-                        <div className="mt-1 truncate font-display text-[21px] leading-tight font-semibold tracking-tight">
-                            {banner.title}
-                        </div>
-                        {banner.sub && (
-                            <div className="mt-1 truncate text-[13px] opacity-70">
-                                {banner.sub}
+                <div className="min-w-0">
+                    {/* Preview remains a static itinerary until Start journey. */}
+                    <div className="relative mb-2 overflow-hidden rounded-2xl border border-cyan/15 bg-cyan/10 px-4 py-4 text-foreground">
+                        <div className="flex items-center gap-3">
+                            <span
+                                className={`size-2.5 shrink-0 rounded-full ${live ? 'motion-safe:animate-pulse' : ''}`}
+                                style={{
+                                    background: cursorColor,
+                                    boxShadow:
+                                        '0 0 0 4px rgba(255,255,255,.16)',
+                                }}
+                            />
+                            <div className="min-w-0 flex-1">
+                                <div className="font-mono text-[10px] tracking-[0.14em] uppercase opacity-60">
+                                    {!active
+                                        ? 'Route preview'
+                                        : beforeStart
+                                          ? `Leave by ${journey.depart_time}`
+                                          : getOffNext
+                                            ? 'Get off next'
+                                            : live
+                                              ? 'Live GPS · next'
+                                              : active
+                                                ? 'Scheduled · next'
+                                                : 'Route preview'}
+                                </div>
+                                <div className="mt-1 truncate font-sans text-[21px] leading-tight font-semibold tracking-tight">
+                                    {banner.title}
+                                </div>
+                                {banner.sub && (
+                                    <div className="mt-1 truncate text-[13px] opacity-70">
+                                        {banner.sub}
+                                    </div>
+                                )}
                             </div>
+                            <div className="shrink-0 text-right">
+                                <div className="font-mono text-[10px] tracking-[0.08em] uppercase opacity-60">
+                                    Arrive
+                                </div>
+                                <div className="mt-0.5 font-sans text-xl font-semibold">
+                                    {journey.arrive_time}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-3.5 h-1 overflow-hidden rounded bg-cyan/15">
+                            <div
+                                className="h-full rounded transition-[width] duration-500"
+                                style={{
+                                    width: `${pct}%`,
+                                    background: cursorColor,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <p className="mb-3 px-1 text-xs text-muted-foreground">
+                        {live
+                            ? 'Location guidance is active. Check signs and service updates as you travel.'
+                            : 'Scheduled itinerary. Position and service changes are not confirmed here.'}
+                    </p>
+                    {/* Station-by-station timeline */}
+                    <div className="rounded-2xl border border-border bg-card px-[18px] py-2 shadow-sm">
+                        {items.map((item) =>
+                            item.type === 'step' ? (
+                                <div key={item.i}>
+                                    <TimelineStep
+                                        key={item.i}
+                                        step={item.step}
+                                        done={item.i < currentIdx}
+                                        current={item.i === currentIdx}
+                                        last={item.i === steps.length - 1}
+                                        accent={
+                                            item.step.color ??
+                                            'var(--color-primary)'
+                                        }
+                                    />
+                                    {item.step.kind === 'board' &&
+                                        item.step.lat != null &&
+                                        item.step.lng != null &&
+                                        onTimetable && (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    onTimetable({
+                                                        name:
+                                                            journey.legs.find(
+                                                                (leg) =>
+                                                                    isTransitLeg(
+                                                                        leg,
+                                                                    ) &&
+                                                                    Date.parse(
+                                                                        leg.depart_at,
+                                                                    ) ===
+                                                                        item
+                                                                            .step
+                                                                            .at,
+                                                            )?.from.name ??
+                                                            fromName,
+                                                        lat: item.step.lat!,
+                                                        lng: item.step.lng!,
+                                                    })
+                                                }
+                                                className="mb-3 ml-9 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-cyan-h focus-visible:outline-2 focus-visible:outline-cyan"
+                                            >
+                                                <IconClock size={16} />
+                                                Current stop timetable
+                                                <IconChevronRight size={15} />
+                                            </button>
+                                        )}
+                                </div>
+                            ) : (
+                                <RidesGroup
+                                    key={`rides-${item.rides[0].i}`}
+                                    rides={item.rides}
+                                    currentIdx={currentIdx}
+                                    lastIndex={steps.length - 1}
+                                    minutes={item.minutes}
+                                />
+                            ),
                         )}
                     </div>
-                    <div className="shrink-0 text-right">
-                        <div className="font-mono text-[10px] tracking-[0.08em] uppercase opacity-60">
-                            Arrive
-                        </div>
-                        <div className="mt-0.5 font-display text-xl font-semibold">
-                            {journey.arrive_time}
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-3.5 h-1 overflow-hidden rounded bg-white/20">
-                    <div
-                        className="h-full rounded transition-[width] duration-500"
-                        style={{ width: `${pct}%`, background: cursorColor }}
-                    />
-                </div>
-            </div>
 
-            {/* Station-by-station timeline */}
-            <div className="rounded-2xl border border-border bg-card px-[18px] py-2 shadow-sm">
-                {items.map((item) =>
-                    item.type === 'step' ? (
-                        <TimelineStep
-                            key={item.i}
-                            step={item.step}
-                            done={item.i < currentIdx}
-                            current={item.i === currentIdx}
-                            last={item.i === steps.length - 1}
-                            accent={item.step.color ?? 'var(--color-primary)'}
-                        />
+                    {active ? (
+                        <button
+                            onClick={onEnd}
+                            disabled={busy}
+                            className="mt-3.5 w-full rounded-[13px] border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
+                        >
+                            {busy ? 'Ending…' : 'End journey'}
+                        </button>
+                    ) : hasActiveTrip ? (
+                        <div className="mt-3.5">
+                            <button
+                                onClick={onSwitch}
+                                disabled={busy}
+                                className="flex w-full items-center justify-center gap-2 rounded-[13px] border border-foreground bg-card py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:opacity-60"
+                            >
+                                <IconArrowsExchange
+                                    size={17}
+                                    stroke={ICON_STROKE}
+                                />
+                                Switch to this route
+                            </button>
+                            <p className="mt-2 text-center text-xs text-text-3">
+                                Replaces your current trip
+                            </p>
+                        </div>
                     ) : (
-                        <RidesGroup
-                            key={`rides-${item.rides[0].i}`}
-                            rides={item.rides}
-                            currentIdx={currentIdx}
-                            lastIndex={steps.length - 1}
-                            minutes={item.minutes}
+                        <button
+                            onClick={onStart}
+                            disabled={busy}
+                            className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[13px] bg-primary py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+                        >
+                            <IconPlayerPlayFilled size={17} />
+                            {busy ? 'Starting…' : 'Start journey'}
+                        </button>
+                    )}
+                    <TravelHelp href={composerHref} />
+                </div>
+                {detailView === 'map' && last && (
+                    <div className="order-first min-w-0 lg:sticky lg:top-24 lg:order-last lg:self-start">
+                        <JourneyMap
+                            key={`${journey.depart_at}-${journey.arrive_at}`}
+                            legs={journey.legs}
+                            origin={first ?? null}
+                            destination={{ ...last, name: destName }}
+                            position={progress.position}
+                            className="h-[360px] lg:h-[min(620px,70dvh)]"
                         />
-                    ),
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            {active
+                                ? progress.position
+                                    ? 'Your foreground device location is shown. Transit lines show the planned route, not live vehicle positions.'
+                                    : 'Your location is unconfirmed. The planned route and steps remain available.'
+                                : 'Route preview. Start your journey to follow your location while the app is open.'}
+                        </p>
+                    </div>
                 )}
             </div>
-
-            {active ? (
-                <button
-                    onClick={onEnd}
-                    disabled={busy}
-                    className="mt-3.5 w-full rounded-[13px] border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
-                >
-                    {busy ? 'Ending…' : 'End journey'}
-                </button>
-            ) : hasActiveTrip ? (
-                <div className="mt-3.5">
-                    <button
-                        onClick={onSwitch}
-                        disabled={busy}
-                        className="flex w-full items-center justify-center gap-2 rounded-[13px] border border-foreground bg-card py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary disabled:opacity-60"
-                    >
-                        <IconArrowsExchange size={17} stroke={ICON_STROKE} />
-                        Switch to this route
-                    </button>
-                    <p className="mt-2 text-center text-xs text-text-3">
-                        Replaces your current trip
-                    </p>
-                </div>
-            ) : (
-                <button
-                    onClick={onStart}
-                    disabled={busy}
-                    className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[13px] bg-primary py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
-                >
-                    <IconPlayerPlayFilled size={17} />
-                    {busy ? 'Starting…' : 'Start journey'}
-                </button>
-            )}
         </div>
     );
 }
@@ -998,6 +1100,7 @@ function DegradedNotice({
 function SwitchTripDialog({
     open,
     busy,
+    error,
     fromDest,
     toDest,
     onCancel,
@@ -1005,6 +1108,7 @@ function SwitchTripDialog({
 }: {
     open: boolean;
     busy: boolean;
+    error?: string | null;
     fromDest: string;
     toDest: string;
     onCancel: () => void;
@@ -1021,7 +1125,7 @@ function SwitchTripDialog({
         >
             <DialogContent className="gap-3 rounded-2xl border-border bg-card sm:max-w-sm">
                 <DialogHeader>
-                    <DialogTitle className="font-display text-xl">
+                    <DialogTitle className="font-sans text-xl">
                         Switch your trip?
                     </DialogTitle>
                     <DialogDescription className="text-[13.5px] leading-relaxed">
@@ -1048,6 +1152,11 @@ function SwitchTripDialog({
                         )}
                     </DialogDescription>
                 </DialogHeader>
+                {error && (
+                    <p role="alert" className="text-sm text-danger">
+                        {error}
+                    </p>
+                )}
                 <DialogFooter className="mt-1 gap-2">
                     <button
                         type="button"
@@ -1080,38 +1189,62 @@ export function JourneyPlanner({
     destination,
     savedPlaces,
     initialSelected,
+    restoreDetail = false,
     onDetailChange,
+    onRequestChange,
     onPlan,
     onClose,
+    onTimetable,
 }: {
     destination: Destination;
     savedPlaces: SavedPlace[];
     /** The persisted trip's journey, so a live trip reopens straight to detail. */
     initialSelected?: Journey | null;
+    restoreDetail?: boolean;
     /** Report whether the picked-route detail is open, so the page can keep it in the URL. */
     onDetailChange?: (open: boolean) => void;
+    onRequestChange?: (destination: Destination) => void;
     onPlan: (target: Destination | { query: string }) => void;
     onClose: () => void;
+    onTimetable?: (point: { name: string; lat: number; lng: number }) => void;
 }) {
-    const { activeTrip, start, end, busy } = useActiveTrip();
+    const userId = usePage().props.auth.user.id;
+    const { activeTrip, start, end, busy, error: tripError } = useActiveTrip();
     const [data, setData] = useState<JourneyResponse | null>(null);
     const [error, setError] = useState(false);
+    const [needsOrigin, setNeedsOrigin] = useState(false);
     const [selected, setSelected] = useState<Journey | null>(
-        initialSelected ?? null,
+        () =>
+            initialSelected ??
+            (restoreDetail && typeof window !== 'undefined'
+                ? readJourneyPreview(window.sessionStorage, userId, destination)
+                : null),
     );
     const [filter, setFilter] = useState<FilterKey>('best');
     // Open the "switch trip" confirm before replacing a running trip.
     const [switchOpen, setSwitchOpen] = useState(false);
     // Plan for later: 'now' | 'depart' (leave at) | 'arrive' (be there by).
-    const [timeMode, setTimeMode] = useState<'now' | 'depart' | 'arrive'>(
-        'now',
+    const [timeMode, setTimeMode] = useState<JourneyPlanningMode>(
+        destination.arriveBy
+            ? 'arrive'
+            : destination.departAt
+              ? 'later'
+              : 'now',
     );
-    // Day chip (0 = today, 1 = tomorrow) + hour/minute selects, assembled into
-    // the depart_at the server plans against. Selects (not a native time input)
-    // so entry is reliable on every browser.
-    const [dayOffset, setDayOffset] = useState(0);
-    const [hh, setHh] = useState('');
-    const [mm, setMm] = useState('00');
+    const [scheduledAt, setScheduledAt] = useState(() =>
+        scheduleDefault(destination.arriveBy ?? destination.departAt),
+    );
+    const [routeMode, setRouteMode] = useState<
+        'all' | 'transit' | 'bike' | 'walk'
+    >(destination.preferredMode ?? 'all');
+    const [retry, setRetry] = useState(0);
+    const [settledRequest, setSettledRequest] = useState('');
+    const [editing, setEditing] = useState(false);
+    const [unresolvedInputs, setUnresolvedInputs] = useState({
+        origin: false,
+        destination: false,
+    });
+    const unresolved = unresolvedInputs.origin || unresolvedInputs.destination;
     // Client-side mode filter — hide options that ride an excluded mode.
     const [excludedModes, setExcludedModes] = useState<Set<string>>(new Set());
     // "Show more options" — server also routes via interchanges for extra
@@ -1125,21 +1258,67 @@ export function JourneyPlanner({
         onDetailChange?.(selected !== null);
     }, [selected, onDetailChange]);
 
-    // Assemble depart_at from the day + time, and only once a time is actually
-    // picked — selecting "Arrive by" with no time would mean "arrive by now"
-    // and drop every future option.
-    const timeQuery = useMemo(() => {
-        if (timeMode === 'now' || hh === '') {
-            return '';
+    const timeQuery = timeMode === 'now' ? '' : toLocalDateTime(scheduledAt);
+    const arriveBy = timeMode === 'arrive';
+    const requestKey = JSON.stringify([
+        destination.lat,
+        destination.lng,
+        destination.name,
+        destination.fromLat,
+        destination.fromLng,
+        destination.fromName,
+        timeQuery,
+        arriveBy,
+        showMore,
+        retry,
+    ]);
+    const loading = settledRequest !== requestKey;
+    const currentDestination = useMemo(
+        () => ({
+            ...scheduledTravelDestination(
+                destination,
+                timeMode === 'later' ? 'depart' : timeMode,
+                timeQuery,
+            ),
+            preferredMode: routeMode === 'all' ? undefined : routeMode,
+        }),
+        [destination, timeMode, timeQuery, routeMode],
+    );
+    const handoffDestination =
+        !loading &&
+        !error &&
+        data?.from &&
+        Number.isFinite(data.from.lat) &&
+        Number.isFinite(data.from.lng)
+            ? {
+                  ...currentDestination,
+                  fromLat: currentDestination.fromLat ?? data.from.lat,
+                  fromLng: currentDestination.fromLng ?? data.from.lng,
+                  fromName: currentDestination.fromName ?? data.from.name,
+              }
+            : currentDestination;
+    useEffect(() => {
+        writeJourneyPreview(
+            sessionStorage,
+            userId,
+            currentDestination,
+            selected,
+        );
+    }, [userId, currentDestination, selected]);
+    const requestHref = composerTravelHref(handoffDestination, {
+        schedule: timeMode === 'later' ? 'depart' : timeMode,
+        requestedDate: timeQuery.slice(0, 10) || undefined,
+        requestedTime: timeQuery.slice(11, 16) || undefined,
+    });
+
+    useEffect(() => {
+        // Keep schedule in the page URL without remounting the current route list.
+        if (
+            JSON.stringify(currentDestination) !== JSON.stringify(destination)
+        ) {
+            onRequestChange?.(currentDestination);
         }
-
-        const d = new Date();
-        d.setDate(d.getDate() + dayOffset);
-        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-        return `${ymd}T${hh}:${mm}`;
-    }, [timeMode, dayOffset, hh, mm]);
-    const arriveBy = timeMode === 'arrive' && timeQuery !== '';
+    }, [currentDestination, destination, onRequestChange]);
 
     // The planner is re-mounted per destination (keyed in the page), so state
     // starts fresh on each new destination — the effect fetches, and re-fetches
@@ -1182,9 +1361,15 @@ export function JourneyPlanner({
             credentials: 'same-origin',
             signal: controller.signal,
         })
-            .then((res) => {
+            .then(async (res) => {
                 if (!res.ok) {
-                    throw new Error(`Journey request failed (${res.status})`);
+                    const problem = await res.json().catch(() => ({}));
+
+                    throw new Error(
+                        problem.code === 'location_required'
+                            ? 'location_required'
+                            : 'routes_unavailable',
+                    );
                 }
 
                 return res.json();
@@ -1192,6 +1377,7 @@ export function JourneyPlanner({
             .then((json: JourneyResponse) => {
                 if (!cancelled) {
                     setData(json);
+                    setSettledRequest(requestKey);
                     setError(false);
                     setMoreLoading(false);
                 }
@@ -1200,6 +1386,15 @@ export function JourneyPlanner({
                 // An aborted request is expected on re-query — not an error.
                 if (!cancelled && (err as Error)?.name !== 'AbortError') {
                     setError(true);
+                    const missingOrigin =
+                        (err as Error)?.message === 'location_required';
+                    setNeedsOrigin(missingOrigin);
+
+                    if (missingOrigin) {
+                        setEditing(true);
+                    }
+
+                    setSettledRequest(requestKey);
                     setMoreLoading(false);
                 }
             });
@@ -1218,6 +1413,8 @@ export function JourneyPlanner({
         timeQuery,
         arriveBy,
         showMore,
+        retry,
+        requestKey,
     ]);
 
     // The engine hands us a Pareto set (arrival time × transfers × walking).
@@ -1230,7 +1427,9 @@ export function JourneyPlanner({
     const items = useMemo<RouteItem[]>(() => {
         // The "leave now" option is handled on its own (below) — keep it out of
         // the ranked, deduped, filterable pool so it always shows first as-is.
-        const list = (data?.journeys ?? []).filter((j) => !j.tight);
+        const list = (data?.journeys ?? []).filter(
+            (j) => !j.tight && (routeMode === 'all' || j.mode === routeMode),
+        );
         const disruptions = data?.disruptions ?? [];
         // One card per distinct line-combination so the list reads as different
         // routes, not the same one repeated every ten minutes (MOTIS returns
@@ -1299,7 +1498,7 @@ export function JourneyPlanner({
             );
 
         return [best, ...rest, ...direct].map(toItem);
-    }, [data, arriveBy]);
+    }, [data, arriveBy, routeMode]);
 
     // The single "leave now" option (if the backend flagged one), kept out of the
     // ranked list so filters and dedup never touch it — always led with, as-is.
@@ -1371,17 +1570,17 @@ export function JourneyPlanner({
         return pool;
     }, [items, filter, excludedModes]);
 
-    const fromName = data?.from.name ?? 'Your location';
+    const fromName =
+        destination.fromName ?? data?.from.name ?? 'Your starting point';
 
     // Reset the origin to the live current location. Null (not absent) so the
     // page clears any board-level origin instead of re-applying it — shared by
     // the cyan origin dot and the "Current location" suggestion row.
     const resetOriginToLocation = () =>
         onPlan({
-            name: destination.name,
-            emoji: destination.emoji,
-            lat: destination.lat,
-            lng: destination.lng,
+            ...currentDestination,
+            previousId: undefined,
+            previousEnd: undefined,
             fromLat: null,
             fromLng: null,
             fromName: null,
@@ -1423,8 +1622,17 @@ export function JourneyPlanner({
 
         return (
             <>
+                {tripError && !switchOpen && (
+                    <p
+                        role="alert"
+                        className="mb-3 rounded-xl bg-danger-soft p-3 text-sm text-danger"
+                    >
+                        {tripError}
+                    </p>
+                )}
                 <RouteDetail
                     journey={selected}
+                    onTimetable={onTimetable}
                     fromName={fromName}
                     destName={destination.name}
                     active={isActive}
@@ -1433,16 +1641,37 @@ export function JourneyPlanner({
                     onBack={() => setSelected(null)}
                     onStart={startJourney}
                     onSwitch={() => setSwitchOpen(true)}
-                    onEnd={() => end().then(onClose)}
+                    onEnd={() =>
+                        end().then((saved) => {
+                            if (saved) {
+                                onClose();
+                            }
+                        })
+                    }
+                    composerHref={composerTravelHref(
+                        handoffDestination,
+                        {
+                            schedule:
+                                timeMode === 'later' ? 'depart' : timeMode,
+                            requestedDate: timeQuery.slice(0, 10) || undefined,
+                            requestedTime: timeQuery.slice(11, 16) || undefined,
+                        },
+                        selected,
+                    )}
                 />
                 <SwitchTripDialog
                     open={switchOpen}
                     busy={busy}
+                    error={tripError}
                     fromDest={activeTrip?.destination.name ?? ''}
                     toDest={destination.name}
                     onCancel={() => setSwitchOpen(false)}
                     onConfirm={() => {
-                        startJourney().then(() => setSwitchOpen(false));
+                        startJourney().then((saved) => {
+                            if (saved) {
+                                setSwitchOpen(false);
+                            }
+                        });
                     }}
                 />
             </>
@@ -1450,390 +1679,514 @@ export function JourneyPlanner({
     }
 
     return (
-        <div>
-            <div className="mb-[18px] flex items-center gap-3">
-                <button
-                    onClick={onClose}
-                    aria-label="Back to departures"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
-                >
-                    <IconArrowLeft size={17} stroke={ICON_STROKE} />
-                </button>
-                <span className="font-display text-xl font-medium">
-                    Plan your journey
-                </span>
-            </div>
-
-            {/* From → To — both rows searchable (stations, streets, saved places) */}
-            <div className="mb-[18px] rounded-2xl border border-border bg-card p-2 shadow-sm">
-                <div className="flex items-center gap-3 px-3.5 py-3">
+        <div
+            className="grid gap-5 lg:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)] lg:gap-8"
+            data-travel-workspace
+        >
+            <section className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+                <div className="mb-3 flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={resetOriginToLocation}
-                        aria-label="Use my current location"
-                        title="Use my current location"
-                        className="-m-2 shrink-0 rounded-full p-2 transition hover:bg-cyan/10"
+                        onClick={onClose}
+                        aria-label="Choose another trip"
+                        className="grid size-11 shrink-0 place-items-center rounded-xl bg-card text-muted-foreground focus-visible:outline-2 focus-visible:outline-cyan"
                     >
-                        <span className="block size-2.5 rounded-full border-[3px] border-cyan" />
+                        <IconArrowLeft size={18} stroke={ICON_STROKE} />
                     </button>
-                    <DestinationSearch
-                        key={`from-${fromName}`}
-                        initial={fromName}
-                        placeholder="From"
-                        role="origin"
-                        withCurrentLocation
-                        onSelect={(s: Suggestion) => {
-                            if (s.kind === 'current') {
-                                resetOriginToLocation();
-                            } else {
-                                onPlan({
-                                    ...destination,
-                                    fromLat: s.lat,
-                                    fromLng: s.lng,
-                                    fromName: s.name,
-                                });
-                            }
-                        }}
-                    />
-                </div>
-                <div className="mx-3.5 ml-7 h-px bg-border" />
-                <div className="flex items-center gap-3 px-3.5 py-3">
-                    <span className="size-2.5 shrink-0 rotate-45 rounded-[50%_50%_50%_0] bg-primary" />
-                    <DestinationSearch
-                        initial={destination.name}
-                        placeholder="Where to?"
-                        role="destination"
-                        onSelect={(s: Suggestion) =>
-                            onPlan({
-                                name: s.name,
-                                emoji: s.emoji ?? undefined,
-                                lat: s.lat,
-                                lng: s.lng,
-                                // keep the chosen origin when re-targeting
-                                fromLat: destination.fromLat,
-                                fromLng: destination.fromLng,
-                                fromName: destination.fromName,
-                            })
-                        }
-                        onSubmitFree={(query) => onPlan({ query })}
-                    />
-                </div>
-            </div>
-
-            {/* Saved & nearby */}
-            {savedPlaces.length > 0 && (
-                <>
-                    <div className="mb-2.5 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
-                        Saved &amp; nearby
-                    </div>
-                    <div className="mb-5 flex flex-wrap gap-2">
-                        {savedPlaces.map((place) => (
-                            <button
-                                key={place.id}
-                                onClick={() =>
-                                    onPlan({
-                                        name: place.name,
-                                        emoji: place.emoji ?? undefined,
-                                        lat: place.lat,
-                                        lng: place.lng,
-                                    })
-                                }
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-                                    place.name === destination.name
-                                        ? 'border-primary bg-primary-soft text-primary'
-                                        : 'border-border bg-card text-foreground hover:border-primary'
-                                }`}
-                            >
-                                <PlaceGlyph
-                                    emoji={place.emoji}
-                                    category={place.category}
-                                    size={16}
-                                />
-                                {place.name}
-                            </button>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            {/* Routes */}
-            <div className="mb-2.5 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
-                Routes to {destination.name}
-            </div>
-
-            {/* Plan for later — segmented, in the app's own pill language */}
-            <div className="mb-3">
-                <div className="flex items-center gap-2">
-                    <IconClock
-                        size={15}
-                        stroke={ICON_STROKE}
-                        className="shrink-0 text-text-3"
-                    />
-                    <div className="flex gap-1.5">
-                        {(
-                            [
-                                ['now', 'Leave now'],
-                                ['depart', 'Depart at'],
-                                ['arrive', 'Arrive by'],
-                            ] as const
-                        ).map(([m, label]) => (
-                            <button
-                                key={m}
-                                onClick={() => setTimeMode(m)}
-                                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                                    timeMode === m
-                                        ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
-                                        : 'border-border bg-card text-muted-foreground hover:border-primary'
-                                }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {timeMode !== 'now' && (
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[23px]">
-                        {(
-                            [
-                                [0, 'Today'],
-                                [1, 'Tomorrow'],
-                            ] as const
-                        ).map(([off, label]) => (
-                            <button
-                                key={off}
-                                onClick={() => setDayOffset(off)}
-                                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                                    dayOffset === off
-                                        ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
-                                        : 'border-border bg-card text-muted-foreground hover:border-primary'
-                                }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                        <span className="relative">
-                            <select
-                                value={hh}
-                                onChange={(e) => setHh(e.target.value)}
-                                aria-label="Hour"
-                                className="cursor-pointer appearance-none rounded-full border border-border bg-card py-1.5 pr-7 pl-3.5 text-[12.5px] font-semibold text-foreground focus:border-primary focus:outline-none"
-                            >
-                                <option value="">Hour</option>
-                                {HOURS.map((h) => (
-                                    <option key={h} value={h}>
-                                        {h}
-                                    </option>
-                                ))}
-                            </select>
-                            <IconChevronDown
-                                size={13}
-                                stroke={ICON_STROKE}
-                                className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-text-3"
-                            />
+                    <button
+                        type="button"
+                        onClick={() => setEditing(!editing)}
+                        aria-expanded={editing}
+                        className="min-w-0 flex-1 rounded-xl px-2 py-1 text-left focus-visible:outline-2 focus-visible:outline-cyan"
+                    >
+                        <span className="block truncate text-xs text-muted-foreground">
+                            From {fromName}
                         </span>
-                        <span className="text-text-3">:</span>
-                        <span className="relative">
-                            <select
-                                value={mm}
-                                onChange={(e) => setMm(e.target.value)}
-                                aria-label="Minute"
-                                className="cursor-pointer appearance-none rounded-full border border-border bg-card py-1.5 pr-7 pl-3.5 text-[12.5px] font-semibold text-foreground focus:border-primary focus:outline-none"
-                            >
-                                {MINUTES.map((m) => (
-                                    <option key={m} value={m}>
-                                        {m}
-                                    </option>
-                                ))}
-                            </select>
-                            <IconChevronDown
-                                size={13}
-                                stroke={ICON_STROKE}
-                                className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-text-3"
-                            />
+                        <span className="flex items-center gap-2 text-sm font-semibold">
+                            <span className="truncate">
+                                To {destination.name}
+                            </span>
+                            <IconChevronDown size={16} className="shrink-0" />
                         </span>
-                    </div>
+                    </button>
+                </div>
+                {destination.activityId && (
+                    <p className="mb-3 flex items-start gap-2 rounded-xl bg-cyan/10 px-3 py-2 text-sm text-cyan-h">
+                        <IconClock size={16} className="mt-0.5 shrink-0" />
+                        <span>
+                            For {destination.backLabel ?? 'your activity'}
+                            {destination.planDate
+                                ? ` · ${new Date(destination.planDate + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                : ''}
+                        </span>
+                    </p>
                 )}
-            </div>
 
-            {!data && !error && (
-                <div className="flex flex-col gap-2.5">
-                    {[1, 2].map((i) => (
-                        <div
-                            key={i}
-                            className="h-[86px] animate-pulse rounded-2xl bg-secondary"
+                {/* Expand the connected fields only while changing the trip. */}
+                <div
+                    className={`${editing ? '' : 'hidden lg:block'} mb-[18px] rounded-2xl border border-border bg-card p-2 shadow-sm`}
+                >
+                    <div className="flex items-center gap-3 px-3.5 py-3">
+                        <button
+                            type="button"
+                            onClick={resetOriginToLocation}
+                            aria-label="Use my current location"
+                            title="Use my current location"
+                            className="-m-2 shrink-0 rounded-full p-2 transition hover:bg-cyan/10"
+                        >
+                            <span className="block size-2.5 rounded-full border-[3px] border-cyan" />
+                        </button>
+                        <DestinationSearch
+                            key={`from-${fromName}`}
+                            onUnresolvedChange={(origin) =>
+                                setUnresolvedInputs((current) => ({
+                                    ...current,
+                                    origin,
+                                }))
+                            }
+                            initial={fromName}
+                            placeholder="From"
+                            role="origin"
+                            bias={
+                                handoffDestination.fromLat != null &&
+                                handoffDestination.fromLng != null
+                                    ? {
+                                          lat: handoffDestination.fromLat,
+                                          lng: handoffDestination.fromLng,
+                                      }
+                                    : null
+                            }
+                            withCurrentLocation
+                            onSelect={(s: Suggestion) => {
+                                if (s.kind === 'current') {
+                                    resetOriginToLocation();
+                                } else {
+                                    onPlan({
+                                        ...currentDestination,
+                                        previousId: undefined,
+                                        previousEnd: undefined,
+                                        fromLat: s.lat,
+                                        fromLng: s.lng,
+                                        fromName: s.name,
+                                    });
+                                }
+                            }}
                         />
+                    </div>
+                    <div className="mx-3.5 ml-7 h-px bg-border" />
+                    <div className="flex items-center gap-3 px-3.5 py-3">
+                        <span className="size-2.5 shrink-0 rotate-45 rounded-[50%_50%_50%_0] bg-primary" />
+                        <DestinationSearch
+                            initial={destination.name}
+                            onUnresolvedChange={(destination) =>
+                                setUnresolvedInputs((current) => ({
+                                    ...current,
+                                    destination,
+                                }))
+                            }
+                            placeholder="Where to?"
+                            role="destination"
+                            bias={
+                                handoffDestination.fromLat != null &&
+                                handoffDestination.fromLng != null
+                                    ? {
+                                          lat: handoffDestination.fromLat,
+                                          lng: handoffDestination.fromLng,
+                                      }
+                                    : null
+                            }
+                            onSelect={(s: Suggestion) =>
+                                onPlan({
+                                    ...currentDestination,
+                                    activityId: undefined,
+                                    planDate: undefined,
+                                    backLabel: undefined,
+                                    destinationId: undefined,
+                                    name: s.name,
+                                    emoji: s.emoji ?? undefined,
+                                    lat: s.lat,
+                                    lng: s.lng,
+                                    // keep the chosen origin when re-targeting
+                                    fromLat: destination.fromLat,
+                                    fromLng: destination.fromLng,
+                                    fromName: destination.fromName,
+                                })
+                            }
+                            onSubmitFree={(query) => onPlan({ query })}
+                        />
+                    </div>
+                </div>
+
+                {/* Saved & nearby */}
+                {editing && savedPlaces.length > 0 && (
+                    <>
+                        <div className="mb-2.5 font-mono text-[11px] tracking-[0.1em] text-text-3 uppercase">
+                            Saved &amp; nearby
+                        </div>
+                        <div className="mb-5 flex flex-wrap gap-2">
+                            {savedPlaces.map((place) => (
+                                <button
+                                    key={place.id}
+                                    onClick={() =>
+                                        onPlan({
+                                            ...currentDestination,
+                                            activityId: undefined,
+                                            planDate: undefined,
+                                            backLabel: undefined,
+                                            destinationId: `saved:${place.id}`,
+                                            name: place.name,
+                                            emoji: place.emoji ?? undefined,
+                                            lat: place.lat,
+                                            lng: place.lng,
+                                        })
+                                    }
+                                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                                        place.name === destination.name
+                                            ? 'border-primary bg-primary-soft text-primary'
+                                            : 'border-border bg-card text-foreground hover:border-primary'
+                                    }`}
+                                >
+                                    <PlaceGlyph
+                                        emoji={place.emoji}
+                                        category={place.category}
+                                        size={16}
+                                    />
+                                    {place.name}
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                <JourneySchedulePicker
+                    mode={timeMode}
+                    scheduledAt={scheduledAt}
+                    onModeChange={setTimeMode}
+                    onScheduleChange={setScheduledAt}
+                />
+                <div
+                    className="mb-3 grid grid-cols-4 gap-1"
+                    role="group"
+                    aria-label="Travel mode"
+                >
+                    {(
+                        [
+                            ['all', 'All', IconRoute],
+                            ['transit', 'Transit', IconRoute],
+                            ['bike', 'Cycle', IconBike],
+                            ['walk', 'Walk', IconWalk],
+                        ] as const
+                    ).map(([key, label, Icon]) => (
+                        <button
+                            key={key}
+                            type="button"
+                            aria-pressed={routeMode === key}
+                            onClick={() => setRouteMode(key)}
+                            className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-xl px-1 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-cyan ${routeMode === key ? 'bg-cyan/15 text-cyan-h' : 'bg-card text-muted-foreground'}`}
+                        >
+                            <Icon
+                                size={17}
+                                stroke={ICON_STROKE}
+                                className="hidden shrink-0 min-[380px]:block"
+                            />
+                            {label}
+                        </button>
                     ))}
                 </div>
-            )}
-
-            {error && (
-                <div className="rounded-[9px] bg-danger-soft p-4 text-center text-sm text-danger">
-                    Could not load routes. Try again in a moment.
-                </div>
-            )}
-
-            {data?.source === 'degraded' && data.degraded && (
-                <DegradedNotice data={data.degraded} />
-            )}
-
-            {data && data.source !== 'degraded' && items.length === 0 && (
-                <div className="flex items-center justify-center gap-2 rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
-                    <IconWalk
-                        size={16}
-                        stroke={ICON_STROKE}
-                        className="shrink-0"
-                    />
-                    No transit route found — it may be close enough to walk.
-                </div>
-            )}
-
-            {data && data.source !== 'degraded' && items.length > 0 && (
-                <>
-                    {data.ticket && <FareLine fare={data.ticket} />}
-
-                    {tight && (
-                        <div className="mb-2.5 flex items-center gap-2">
-                            <div className="min-w-0 flex-1">
-                                <TightCard
-                                    journey={tight}
-                                    onStart={() => setSelected(tight)}
-                                />
-                            </div>
-                            <IconChevronRight
-                                size={18}
-                                stroke={ICON_STROKE}
-                                className="shrink-0 text-text-3"
-                            />
-                        </div>
-                    )}
-
-                    {availableModes.length > 1 && (
-                        <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
-                            <span className="mr-0.5 font-mono text-[10.5px] tracking-[0.08em] text-text-3 uppercase">
-                                Modes
-                            </span>
-                            {availableModes.map((m) => {
-                                const on = !excludedModes.has(m.key);
-
-                                return (
-                                    <button
-                                        key={m.key}
-                                        onClick={() =>
-                                            setExcludedModes((prev) => {
-                                                const next = new Set(prev);
-
-                                                if (next.has(m.key)) {
-                                                    next.delete(m.key);
-                                                } else {
-                                                    next.add(m.key);
-                                                }
-
-                                                return next;
-                                            })
-                                        }
-                                        className={`cursor-pointer rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors ${
-                                            on
-                                                ? 'border-border bg-card text-foreground'
-                                                : 'border-border bg-secondary text-text-3 line-through'
-                                        }`}
-                                    >
-                                        {m.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-                        {FILTERS.map((f) => (
-                            <button
-                                key={f.key}
-                                onClick={() => setFilter(f.key)}
-                                className={`shrink-0 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                                    filter === f.key
-                                        ? 'border-foreground bg-foreground text-background dark:border-border dark:bg-secondary dark:text-foreground'
-                                        : 'border-border bg-card text-muted-foreground hover:border-primary'
-                                }`}
-                            >
-                                {f.label}
-                            </button>
-                        ))}
+                <TravelHelp href={requestHref} />
+            </section>
+            <section className="min-w-0 lg:border-l lg:border-border lg:pl-8">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <h2 className="truncate text-base font-semibold sm:text-lg">
+                            Routes to {destination.name}
+                        </h2>
+                        <p
+                            className="text-xs text-muted-foreground"
+                            role="status"
+                        >
+                            {loading
+                                ? 'Checking routes…'
+                                : error
+                                  ? 'Unavailable'
+                                  : 'Check before leaving'}
+                        </p>
                     </div>
+                    <SaveJourneyButton
+                        compact
+                        disabled={loading || unresolved}
+                        destination={{
+                            ...handoffDestination,
+                            preferredMode:
+                                routeMode === 'all' ? undefined : routeMode,
+                        }}
+                    />
+                </div>
 
-                    {visible.length === 0 ? (
-                        <div className="rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
-                            No route matches these filters — clear one to see
-                            more.
+                {unresolved && (
+                    <p
+                        role="status"
+                        className="rounded-xl bg-cyan/10 px-4 py-4 text-sm text-cyan-h"
+                    >
+                        Choose a matching{' '}
+                        {unresolvedInputs.origin
+                            ? 'starting point'
+                            : 'destination'}{' '}
+                        from the suggestions to update your routes.
+                    </p>
+                )}
+                <div hidden={unresolved}>
+                    {loading && (
+                        <div className="flex flex-col gap-2.5">
+                            {[1, 2].map((i) => (
+                                <div
+                                    key={i}
+                                    className="h-[98px] rounded-2xl bg-secondary motion-safe:animate-pulse"
+                                />
+                            ))}
                         </div>
-                    ) : (
-                        <div className="flex flex-col gap-3">
-                            {visible.map((it, i) => {
-                                const isTop = i === 0;
-                                const onTrip = isTripRoute(it.journey);
-                                const label =
-                                    it.journey.mode !== 'transit'
-                                        ? it.journey.mode === 'bike'
-                                            ? 'By bike'
-                                            : 'On foot'
-                                        : isTop
-                                          ? (FILTERS.find(
-                                                (f) => f.key === filter,
-                                            )?.label ?? null)
-                                          : null;
+                    )}
 
-                                return (
-                                    <div
-                                        key={`${it.journey.depart_at}-${it.journey.arrive_at}-${i}`}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <div className="min-w-0 flex-1">
-                                            <RouteCard
-                                                journey={it.journey}
-                                                label={label}
-                                                walkMin={it.walkMin}
-                                                disrupted={it.disrupted}
-                                                highlight={isTop}
-                                                onTrip={onTrip}
-                                                onStart={() =>
-                                                    // Reopen the real live trip
-                                                    // (boarded times), not the
-                                                    // list's next departure.
-                                                    setSelected(
-                                                        onTrip && activeTrip
-                                                            ? activeTrip.journey
-                                                            : it.journey,
-                                                    )
-                                                }
+                    {error && !loading && (
+                        <div className="rounded-[9px] bg-danger-soft p-4 text-center text-sm text-danger">
+                            <p>
+                                {needsOrigin
+                                    ? 'Choose a starting point above to find this route. Your destination and arrival time are kept.'
+                                    : 'Routes couldn’t load. Your destination and time are still here.'}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => setRetry((value) => value + 1)}
+                                className="mt-2 min-h-11 rounded-xl bg-card px-4 font-semibold text-foreground"
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    )}
+
+                    {!loading &&
+                        !error &&
+                        data?.source === 'degraded' &&
+                        data.degraded && (
+                            <DegradedNotice data={data.degraded} />
+                        )}
+
+                    {!loading &&
+                        !error &&
+                        data &&
+                        data.source !== 'degraded' &&
+                        items.length === 0 && (
+                            <div className="flex items-center justify-center gap-2 rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
+                                <IconWalk
+                                    size={16}
+                                    stroke={ICON_STROKE}
+                                    className="shrink-0"
+                                />
+                                No route was returned for these choices. Try
+                                another time or mode.
+                            </div>
+                        )}
+
+                    {!loading &&
+                        !error &&
+                        data &&
+                        data.source !== 'degraded' &&
+                        items.length > 0 && (
+                            <>
+                                {data.ticket && <FareLine fare={data.ticket} />}
+
+                                {tight &&
+                                    (routeMode === 'all' ||
+                                        routeMode === 'transit') && (
+                                        <div className="mb-2.5 flex items-center gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <TightCard
+                                                    journey={tight}
+                                                    onStart={() =>
+                                                        setSelected(tight)
+                                                    }
+                                                />
+                                            </div>
+                                            <IconChevronRight
+                                                size={18}
+                                                stroke={ICON_STROKE}
+                                                className="shrink-0 text-text-3"
                                             />
                                         </div>
-                                        <IconChevronRight
-                                            size={18}
-                                            stroke={ICON_STROKE}
-                                            className="shrink-0 text-text-3"
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                    )}
 
-                    <button
-                        onClick={() => {
-                            setMoreLoading(true);
-                            setShowMore((v) => !v);
-                        }}
-                        disabled={moreLoading}
-                        className="mt-3 w-full cursor-pointer rounded-[13px] border border-border bg-card py-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
-                    >
-                        {moreLoading
-                            ? 'Finding more…'
-                            : showMore
-                              ? 'Show fewer options'
-                              : 'Show more options'}
-                    </button>
-                </>
-            )}
+                                <div className="mb-3 flex items-start gap-2">
+                                    <TravelChoice
+                                        label="Sort routes"
+                                        value={filter}
+                                        options={FILTERS.map((item) => ({
+                                            value: item.key,
+                                            label: item.label,
+                                        }))}
+                                        onChange={(value) =>
+                                            setFilter(value as FilterKey)
+                                        }
+                                    />
+                                    {(routeMode === 'all' ||
+                                        routeMode === 'transit') &&
+                                        availableModes.length > 1 && (
+                                            <details className="min-w-0 flex-1 rounded-xl bg-card">
+                                                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-1.5 px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-cyan [&::-webkit-details-marker]:hidden">
+                                                    Transport
+                                                    {excludedModes.size > 0 && (
+                                                        <span className="text-cyan-h">
+                                                            ·{' '}
+                                                            {excludedModes.size}{' '}
+                                                            off
+                                                        </span>
+                                                    )}
+                                                    <IconChevronDown
+                                                        size={14}
+                                                    />
+                                                </summary>
+                                                <div className="flex flex-wrap gap-1 p-2">
+                                                    {availableModes.map(
+                                                        (mode) => {
+                                                            const enabled =
+                                                                !excludedModes.has(
+                                                                    mode.key,
+                                                                );
+
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    key={
+                                                                        mode.key
+                                                                    }
+                                                                    aria-pressed={
+                                                                        enabled
+                                                                    }
+                                                                    onClick={() =>
+                                                                        setExcludedModes(
+                                                                            (
+                                                                                previous,
+                                                                            ) => {
+                                                                                const next =
+                                                                                    new Set(
+                                                                                        previous,
+                                                                                    );
+
+                                                                                if (
+                                                                                    next.has(
+                                                                                        mode.key,
+                                                                                    )
+                                                                                ) {
+                                                                                    next.delete(
+                                                                                        mode.key,
+                                                                                    );
+                                                                                } else {
+                                                                                    next.add(
+                                                                                        mode.key,
+                                                                                    );
+                                                                                }
+
+                                                                                return next;
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                    className={`min-h-11 rounded-lg px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan ${enabled ? 'bg-cyan/10 text-cyan-h' : 'text-muted-foreground line-through'}`}
+                                                                >
+                                                                    {mode.label}
+                                                                </button>
+                                                            );
+                                                        },
+                                                    )}
+                                                </div>
+                                            </details>
+                                        )}
+                                </div>
+
+                                {visible.length === 0 ? (
+                                    <div className="rounded-2xl bg-secondary px-4 py-4 text-center text-sm text-muted-foreground">
+                                        <p>No route matches these choices.</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setFilter('best');
+                                                setExcludedModes(new Set());
+                                            }}
+                                            className="mt-1 min-h-11 font-semibold text-cyan-h"
+                                        >
+                                            Reset route preferences
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        {visible.map((it, i) => {
+                                            const isTop = i === 0;
+                                            const onTrip = isTripRoute(
+                                                it.journey,
+                                            );
+                                            const label =
+                                                it.journey.mode !== 'transit'
+                                                    ? it.journey.mode === 'bike'
+                                                        ? 'By bike'
+                                                        : 'On foot'
+                                                    : isTop
+                                                      ? (FILTERS.find(
+                                                            (f) =>
+                                                                f.key ===
+                                                                filter,
+                                                        )?.label ?? null)
+                                                      : null;
+
+                                            return (
+                                                <div
+                                                    key={`${it.journey.depart_at}-${it.journey.arrive_at}-${i}`}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <div className="min-w-0 flex-1">
+                                                        <RouteCard
+                                                            journey={it.journey}
+                                                            label={label}
+                                                            walkMin={it.walkMin}
+                                                            disrupted={
+                                                                it.disrupted
+                                                            }
+                                                            highlight={isTop}
+                                                            onTrip={onTrip}
+                                                            onStart={() =>
+                                                                // Reopen the real live trip
+                                                                // (boarded times), not the
+                                                                // list's next departure.
+                                                                setSelected(
+                                                                    onTrip &&
+                                                                        activeTrip
+                                                                        ? activeTrip.journey
+                                                                        : it.journey,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => {
+                                        setMoreLoading(true);
+                                        setShowMore((v) => !v);
+                                    }}
+                                    disabled={moreLoading}
+                                    className="mt-3 w-full cursor-pointer rounded-[13px] border border-border bg-card py-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+                                >
+                                    {moreLoading
+                                        ? 'Finding more…'
+                                        : showMore
+                                          ? 'Show fewer options'
+                                          : 'Show more options'}
+                                </button>
+                            </>
+                        )}
+                </div>
+            </section>
         </div>
     );
 }

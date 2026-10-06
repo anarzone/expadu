@@ -17,6 +17,7 @@ import type { ComponentType } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 import { CaseAssistantCard } from './case-assistant-card';
 import { CaseConflictCard } from './case-conflict-card';
+import { caseAssistantState } from './case-plan-state';
 import { CasePlanTaskCard } from './case-plan-task-card';
 import type {
     CasePlan,
@@ -116,9 +117,9 @@ const COVERAGE_COPY: Record<
         style: 'bg-[#D4F0E6] text-[#0A7C52] dark:bg-[#0A7C52]/20 dark:text-[#67C39D]',
     },
     needs_information: {
-        label: 'One detail needed',
+        label: 'Details to review',
         description:
-            'Confirmed steps are ready. One bounded answer can improve the remaining plan.',
+            'Some parts of your plan still need information. You can review the next detail when you’re ready.',
         style: 'bg-[#FDF0D4] text-[#9B650D] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
     },
     conflict: {
@@ -222,6 +223,7 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
         errors?: Record<string, string>;
     }>().props;
     const coverage = COVERAGE_COPY[plan.coverage_state];
+    const assistantState = caseAssistantState(plan);
     const segments = progressSegments(plan);
 
     return (
@@ -242,19 +244,23 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
                         )}
                         {coverage.label}
                     </span>
-                    <h1 className="mt-3 font-display text-[30px] leading-[1.08] font-medium tracking-[-0.025em] text-[#18170F] sm:text-[34px] dark:text-[#F6F5F1]">
-                        Your verified plan
-                    </h1>
+                    <h2 className="mt-3 text-[24px] leading-[1.15] font-semibold tracking-[-0.6px] text-foreground sm:text-[28px]">
+                        {plan.coverage_state === 'matched'
+                            ? 'Your verified plan'
+                            : 'Your paperwork overview'}
+                    </h2>
                     <p className="mt-2 max-w-[540px] text-[13px] leading-5 text-[#6B6860] sm:text-[14px] dark:text-[#AAA89F]">
                         {coverage.description}
                     </p>
 
-                    <div className="mt-5">
-                        <ProgressBreakdown
-                            segments={segments}
-                            label="Your confirmed actions"
-                        />
-                    </div>
+                    {segments.some((segment) => segment.count > 0) && (
+                        <div className="mt-4">
+                            <ProgressBreakdown
+                                segments={segments}
+                                label="Your confirmed actions"
+                            />
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -272,6 +278,7 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
                     key={plan.next_question?.id ?? 'case-ready'}
                     question={plan.active_conflict ? null : plan.next_question}
                     ai={plan.ai}
+                    state={assistantState}
                     blockedByConflict={plan.active_conflict !== null}
                 />
             </div>
@@ -319,7 +326,7 @@ export function CasePlanView({ plan }: { plan: CasePlan }) {
                                         id={`case-${section.key}`}
                                         className="text-[16px] font-bold text-[#18170F] dark:text-[#F6F5F1]"
                                     >
-                                        {section.title}
+                                        {section.title}{' '}
                                         <span className="ml-2 text-[11px] font-semibold text-[#AAA89F]">
                                             {items.length}
                                         </span>

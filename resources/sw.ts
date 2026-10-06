@@ -2,11 +2,7 @@
 
 import { ExpirationPlugin } from 'workbox-expiration';
 import { registerRoute } from 'workbox-routing';
-import {
-    CacheFirst,
-    NetworkFirst,
-    StaleWhileRevalidate,
-} from 'workbox-strategies';
+import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -19,7 +15,9 @@ self.addEventListener('install', () => {
 
 // Build assets (hashed filenames) — cache forever
 registerRoute(
-    ({ url }) => url.pathname.startsWith('/build/assets/'),
+    ({ url }) =>
+        url.origin === self.location.origin &&
+        url.pathname.startsWith('/build/assets/'),
     new CacheFirst({
         cacheName: 'build-assets',
         plugins: [
@@ -33,7 +31,9 @@ registerRoute(
 
 // Self-hosted fonts — cache forever
 registerRoute(
-    ({ url }) => url.pathname.startsWith('/fonts/'),
+    ({ url }) =>
+        url.origin === self.location.origin &&
+        url.pathname.startsWith('/fonts/'),
     new CacheFirst({
         cacheName: 'fonts',
         plugins: [
@@ -48,7 +48,9 @@ registerRoute(
 // Map tiles — show cached instantly, update in background
 registerRoute(
     ({ url }) =>
-        url.hostname.includes('tile') || url.pathname.includes('/tiles/'),
+        url.origin !== self.location.origin &&
+        /\.(?:pbf|mvt|png|webp)$/.test(url.pathname) &&
+        (url.hostname.includes('tile') || url.pathname.includes('/tiles/')),
     new StaleWhileRevalidate({
         cacheName: 'map-tiles',
         plugins: [
@@ -60,33 +62,8 @@ registerRoute(
     }),
 );
 
-// Inertia page requests — network first with offline fallback
-// Exclude partial/deferred requests (live transit data, weather, etc.)
-registerRoute(
-    ({ request }) =>
-        request.headers.get('X-Inertia') === 'true' &&
-        !request.headers.get('X-Inertia-Partial-Component'),
-    new NetworkFirst({
-        cacheName: 'inertia-pages',
-        plugins: [
-            new ExpirationPlugin({
-                maxEntries: 30,
-                maxAgeSeconds: 24 * 60 * 60,
-            }),
-        ],
-    }),
-);
-
-// API requests — network first
-registerRoute(
-    ({ url }) => url.pathname.startsWith('/api/'),
-    new NetworkFirst({
-        cacheName: 'api',
-        plugins: [
-            new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 }),
-        ],
-    }),
-);
+// Private pages and APIs always go to the network. Cached account data and
+// stale departures must never be replayed as current information after logout.
 
 // ── Push Notification Handler ──
 self.addEventListener('push', (event) => {
@@ -98,16 +75,15 @@ self.addEventListener('push', (event) => {
         // Malformed push payload — show generic notification
     }
 
-    const title = data.title ?? 'Expadu';
+    const title = typeof data.title === 'string' ? data.title : 'Expadu';
     const options: NotificationOptions = {
-        body: data.body ?? '',
-        icon: data.icon ?? '/favicon.svg',
+        body: typeof data.body === 'string' ? data.body : '',
+        icon: '/favicon.svg',
         badge: '/favicon.svg',
-        tag: data.tag ?? 'expadu-notification',
+        tag: typeof data.tag === 'string' ? data.tag : 'expadu-notification',
         data: {
-            url: data.data?.url ?? data.url ?? '/dashboard',
+            url: notificationUrl(data),
         },
-        actions: data.actions ?? [],
     };
 
     event.waitUntil(self.registration.showNotification(title, options));
@@ -117,7 +93,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    const url = event.notification.data?.url ?? '/dashboard';
+    const url = notificationUrl(event.notification.data ?? {});
 
     event.waitUntil(
         self.clients
@@ -125,7 +101,7 @@ self.addEventListener('notificationclick', (event) => {
             .then((clientList) => {
                 for (const client of clientList) {
                     if (
-                        client.url.includes(self.location.origin) &&
+                        new URL(client.url).origin === self.location.origin &&
                         'focus' in client
                     ) {
                         client.focus();
@@ -140,27 +116,44 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-// ── Activate: claim clients + clear stale caches ──
+function notificationUrl(data: Record<string, unknown>): string {
+    const nested =
+        data.data && typeof data.data === 'object'
+            ? (data.data as Record<string, unknown>).url
+            : undefined;
+    const candidate = typeof nested === 'string' ? nested : data.url;
+
+    try {
+        const url = new URL(
+            typeof candidate === 'string' ? candidate : '/dashboard',
+            self.location.origin,
+        );
+
+        return url.origin === self.location.origin
+            ? url.href
+            : new URL('/dashboard', self.location.origin).href;
+    } catch {
+        return new URL('/dashboard', self.location.origin).href;
+    }
+}
+
+// Purge private caches written by older workers before taking control.
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        self.clients
-            .claim()
-            .then(() =>
-                caches
-                    .keys()
-                    .then((keys) =>
-                        Promise.all(
-                            keys
-                                .filter(
-                                    (key) =>
-                                        key.startsWith('workbox-precache') ||
-                                        key.includes('precache') ||
-                                        key === 'inertia-pages' ||
-                                        key === 'api',
-                                )
-                                .map((key) => caches.delete(key)),
-                        ),
-                    ),
-            ),
+        caches
+            .keys()
+            .then((keys) =>
+                Promise.all(
+                    keys
+                        .filter(
+                            (key) =>
+                                key.includes('precache') ||
+                                key === 'inertia-pages' ||
+                                key === 'api',
+                        )
+                        .map((key) => caches.delete(key)),
+                ),
+            )
+            .then(() => self.clients.claim()),
     );
 });

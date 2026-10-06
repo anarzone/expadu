@@ -12,9 +12,9 @@ import {
 import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import type { ComponentType } from 'react';
-import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
+import { writeJson } from '@/lib/reliable-write';
 import type { Auth } from '@/types';
 
 // ============================================================
@@ -216,6 +216,8 @@ export default function Profile() {
     // Inline edit state
     const [editingField, setEditingField] = useState<string | null>(null);
     const [editValue, setEditValue] = useState('');
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profileError, setProfileError] = useState<string | null>(null);
 
     // Interests — seeded from backend, persisted to /settings/profile
     const [interests, setInterests] = useState<string[]>(serverInterests ?? []);
@@ -235,6 +237,8 @@ export default function Profile() {
     }));
 
     const [showPlaceForm, setShowPlaceForm] = useState(false);
+    const [placeSaving, setPlaceSaving] = useState(false);
+    const [placeError, setPlaceError] = useState<string | null>(null);
     const [placeName, setPlaceName] = useState('');
     const [placeAddr, setPlaceAddr] = useState('');
     const [placeLat, setPlaceLat] = useState<number | null>(null);
@@ -288,75 +292,84 @@ export default function Profile() {
 
     // Inline edit handlers
     function startEdit(field: string, currentValue: string) {
+        if (profileSaving) {
+            return;
+        }
+
+        setProfileError(null);
         setEditingField(field);
         setEditValue(currentValue);
     }
 
-    function saveEdit(field: string) {
+    async function saveEdit(field: string) {
         const val = editValue.trim();
 
-        if (!val) {
+        if (!val || profileSaving) {
             return;
         }
 
-        // Update local state immediately
-        switch (field) {
-            case 'name':
-                setProfileName(val);
-                break;
-            case 'email':
-                setProfileEmail(val);
-                break;
-            case 'city':
-                setProfileCity(val);
-                break;
-            case 'situation':
-                setProfileSituation(val);
-                break;
-            case 'german':
-                setProfileGerman(val);
-                break;
+        setProfileSaving(true);
+        setProfileError(null);
+
+        try {
+            await writeJson(
+                '/settings/profile',
+                'PATCH',
+                buildProfilePayload(field, val),
+            );
+
+            switch (field) {
+                case 'name':
+                    setProfileName(val);
+                    break;
+                case 'email':
+                    setProfileEmail(val);
+                    break;
+                case 'city':
+                    setProfileCity(val);
+                    break;
+                case 'situation':
+                    setProfileSituation(val);
+                    break;
+                case 'german':
+                    setProfileGerman(val);
+                    break;
+            }
+
+            setEditingField(null);
+            showToast(
+                '✓ ' +
+                    field.charAt(0).toUpperCase() +
+                    field.slice(1) +
+                    ' updated',
+            );
+            router.reload({ only: ['auth'] });
+        } catch (error) {
+            setProfileError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+        } finally {
+            setProfileSaving(false);
         }
-
-        setEditingField(null);
-
-        router.patch('/settings/profile', buildProfilePayload(field, val), {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () =>
-                showToast(
-                    '✓ ' +
-                        field.charAt(0).toUpperCase() +
-                        field.slice(1) +
-                        ' updated',
-                ),
-            onError: (errors) => {
-                const firstError = Object.values(errors)[0];
-                showToast(
-                    'Error: ' +
-                        (typeof firstError === 'string'
-                            ? firstError
-                            : 'Could not save'),
-                );
-
-                switch (field) {
-                    case 'name':
-                        setProfileName(user?.name ?? '');
-                        break;
-                    case 'email':
-                        setProfileEmail(user?.email ?? '');
-                        break;
-                }
-            },
-        });
     }
 
     function cancelEdit() {
+        if (profileSaving) {
+            return;
+        }
+
         setEditingField(null);
+        setProfileError(null);
     }
 
     // Interests — toggle a chip and persist alongside required profile fields.
-    function toggleInterest(value: string) {
+    async function toggleInterest(value: string) {
+        if (profileSaving) {
+            return;
+        }
+
         const isOn = interests.includes(value);
 
         // Don't let the user drop below the minimum; backend also enforces this.
@@ -376,25 +389,33 @@ export default function Profile() {
             ? interests.filter((i) => i !== value)
             : [...interests, value];
 
-        setInterests(next);
+        setProfileSaving(true);
+        setProfileError(null);
 
-        router.patch(
-            '/settings/profile',
-            buildProfilePayload('interests', '', next),
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => showToast('✓ Interests updated'),
-                onError: () => {
-                    showToast('Error: Could not save interests');
-                    setInterests(interests);
-                },
-            },
-        );
+        try {
+            await writeJson(
+                '/settings/profile',
+                'PATCH',
+                buildProfilePayload('interests', '', next),
+            );
+            setInterests(next);
+            showToast('✓ Interests updated');
+            router.reload({ only: ['auth'] });
+        } catch (error) {
+            setProfileError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save your interests. Please try again.',
+            );
+        } finally {
+            setProfileSaving(false);
+        }
     }
 
     // Places
     function openPlaceForm(place?: Place) {
+        setPlaceError(null);
+
         if (place) {
             setPlaceName(place.name);
             setPlaceAddr(place.addr);
@@ -424,11 +445,18 @@ export default function Profile() {
     }
 
     function savePlace() {
+        if (placeSaving) {
+            return;
+        }
+
         if (!placeName.trim()) {
-            showToast('Please enter a place name');
+            setPlaceError('Please enter a place name.');
 
             return;
         }
+
+        setPlaceSaving(true);
+        setPlaceError(null);
 
         if (editingPlaceId) {
             // Update via backend
@@ -448,15 +476,17 @@ export default function Profile() {
                 {
                     preserveScroll: true,
                     preserveState: true,
-                    onSuccess: () =>
-                        showToast('✓ ' + placeName.trim() + ' updated'),
+                    onSuccess: () => {
+                        setShowPlaceForm(false);
+                        showToast('✓ ' + placeName.trim() + ' updated');
+                    },
+                    onFinish: () => setPlaceSaving(false),
                     onError: (errors) => {
                         const firstError = Object.values(errors)[0];
-                        showToast(
-                            'Error: ' +
-                                (typeof firstError === 'string'
-                                    ? firstError
-                                    : 'Could not update'),
+                        setPlaceError(
+                            typeof firstError === 'string'
+                                ? firstError
+                                : 'Could not update',
                         );
                     },
                 },
@@ -479,24 +509,24 @@ export default function Profile() {
                 {
                     preserveScroll: true,
                     preserveState: true,
-                    onSuccess: () =>
+                    onSuccess: () => {
+                        setShowPlaceForm(false);
                         showToast(
                             '✓ ' + placeName.trim() + ' added to your places',
-                        ),
+                        );
+                    },
+                    onFinish: () => setPlaceSaving(false),
                     onError: (errors) => {
                         const firstError = Object.values(errors)[0];
-                        showToast(
-                            'Error: ' +
-                                (typeof firstError === 'string'
-                                    ? firstError
-                                    : 'Could not save'),
+                        setPlaceError(
+                            typeof firstError === 'string'
+                                ? firstError
+                                : 'Could not save',
                         );
                     },
                 },
             );
         }
-
-        setShowPlaceForm(false);
     }
 
     // Use browser geolocation → reverse geocode with Photon
@@ -649,7 +679,7 @@ export default function Profile() {
     return (
         <AppLayout
             breadcrumbs={[{ title: 'Profile', href: '/profile' }]}
-            rightPanel={<ProfileRightPanel />}
+            rightPanel={null}
         >
             <Head title="Profile" />
             <div className="mx-auto w-full max-w-[680px]">
@@ -659,9 +689,9 @@ export default function Profile() {
                         {(profileName.charAt(0) || '?').toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                        <div className="font-display text-[21px] leading-tight font-semibold">
+                        <h1 className="font-display text-[21px] leading-tight font-semibold">
                             {profileName || 'Your profile'}
-                        </div>
+                        </h1>
                         <div className="mt-1 text-[13px] text-muted-foreground">
                             {profileSubtitle}
                         </div>
@@ -670,6 +700,22 @@ export default function Profile() {
 
                 {/* ── Profile drill-in menu ── */}
                 <div className="py-2">
+                    {profileError && (
+                        <p
+                            role="alert"
+                            className="px-5 py-3 text-sm text-destructive"
+                        >
+                            {profileError}
+                        </p>
+                    )}
+                    {profileSaving && (
+                        <p
+                            role="status"
+                            className="px-5 py-2 text-sm text-muted-foreground"
+                        >
+                            Saving…
+                        </p>
+                    )}
                     {/* PERSONAL DETAILS — drill-in */}
                     <SettingsSection
                         id="details"
@@ -690,6 +736,7 @@ export default function Profile() {
                             onEditValue={setEditValue}
                             onSave={saveEdit}
                             onCancel={cancelEdit}
+                            saving={profileSaving}
                             selectOptions={[
                                 'Non-EU employee',
                                 'EU employee',
@@ -711,6 +758,7 @@ export default function Profile() {
                             onEditValue={setEditValue}
                             onSave={saveEdit}
                             onCancel={cancelEdit}
+                            saving={profileSaving}
                             selectOptions={[
                                 'None yet',
                                 'A1 — Beginner',
@@ -1286,20 +1334,32 @@ export default function Profile() {
                                         )}
                                     </div>
                                 )}
+                                {placeError && (
+                                    <p
+                                        role="alert"
+                                        className="mb-3 text-sm text-destructive"
+                                    >
+                                        {placeError}
+                                    </p>
+                                )}
                                 <div className="flex gap-2">
                                     <button
                                         onClick={savePlace}
+                                        disabled={placeSaving}
                                         className="flex-1 cursor-pointer rounded-[9px] border-none bg-[#1A4CD4] py-[9px] text-[13px] font-semibold text-white"
                                         style={{
                                             fontFamily: "'Geist', sans-serif",
                                         }}
                                     >
-                                        {editingPlaceId
-                                            ? 'Update place'
-                                            : 'Save place'}
+                                        {placeSaving
+                                            ? 'Saving…'
+                                            : editingPlaceId
+                                              ? 'Update place'
+                                              : 'Save place'}
                                     </button>
                                     <button
                                         onClick={() => setShowPlaceForm(false)}
+                                        disabled={placeSaving}
                                         className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-[9px] text-[13px] text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
                                         style={{
                                             fontFamily: "'Geist', sans-serif",
@@ -1402,6 +1462,7 @@ export default function Profile() {
             {/* Toast */}
             {toastMsg && (
                 <div
+                    role="status"
                     className="pointer-events-none fixed bottom-20 left-1/2 z-[9000] -translate-x-1/2 rounded-[14px] bg-[#18170F] px-[18px] py-[11px] text-[13px] font-medium whitespace-nowrap text-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] dark:bg-[#F5F4F0] dark:text-[#18170F]"
                     style={{ maxWidth: '90vw', textAlign: 'center' }}
                 >
@@ -1607,6 +1668,7 @@ function InlineEditRow({
     onEditValue,
     onSave,
     onCancel,
+    saving,
     inputType,
     selectOptions,
     subText,
@@ -1621,6 +1683,7 @@ function InlineEditRow({
     onEditValue: (val: string) => void;
     onSave: (field: string) => void;
     onCancel: () => void;
+    saving: boolean;
     inputType?: string;
     selectOptions?: string[];
     subText?: string;
@@ -1647,6 +1710,8 @@ function InlineEditRow({
                 </div>
                 {selectOptions ? (
                     <select
+                        aria-label={label}
+                        disabled={saving}
                         value={editValue}
                         onChange={(e) => onEditValue(e.target.value)}
                         className="w-full rounded-lg border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-[11px] text-[15px] text-[#18170F] outline-none focus:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F5F4F0]"
@@ -1664,6 +1729,8 @@ function InlineEditRow({
                     </select>
                 ) : (
                     <input
+                        aria-label={label}
+                        disabled={saving}
                         type={inputType || 'text'}
                         value={editValue}
                         onChange={(e) => onEditValue(e.target.value)}
@@ -1695,13 +1762,15 @@ function InlineEditRow({
                 )}
                 <div className="mt-2.5 flex gap-2">
                     <button
+                        disabled={saving}
                         onClick={() => onSave(field)}
                         className="cursor-pointer rounded-lg border-none bg-[#1A4CD4] px-5 py-[9px] text-[13px] font-semibold text-white transition-all hover:bg-[#1541B8]"
                         style={{ fontFamily: "'Geist', sans-serif" }}
                     >
-                        Save
+                        {saving ? 'Saving…' : 'Save'}
                     </button>
                     <button
+                        disabled={saving}
                         onClick={onCancel}
                         className="cursor-pointer rounded-lg border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-[9px] text-[13px] text-[#6B6860] transition-all hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F] dark:hover:bg-[#3A3930]"
                         style={{ fontFamily: "'Geist', sans-serif" }}
@@ -1714,13 +1783,16 @@ function InlineEditRow({
     }
 
     return (
-        <div
-            className={`flex cursor-pointer items-center justify-between py-3.5 ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
+        <button
+            type="button"
+            aria-label={`Edit ${label}`}
+            disabled={saving}
+            className={`flex w-full cursor-pointer items-center justify-between py-3.5 text-left ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
             onClick={() => onStartEdit(field, value)}
         >
-            <div className="min-w-0 flex-1">
-                <div
-                    className="text-[#AAA89F]"
+            <span className="min-w-0 flex-1">
+                <span
+                    className="block text-[#AAA89F]"
                     style={{
                         fontSize: 11,
                         fontWeight: 700,
@@ -1730,20 +1802,20 @@ function InlineEditRow({
                     }}
                 >
                     {label}
-                </div>
-                <div
-                    className="text-[#18170F] dark:text-[#F5F4F0]"
+                </span>
+                <span
+                    className="block text-[#18170F] dark:text-[#F5F4F0]"
                     style={{ fontSize: 15, fontWeight: 500 }}
                 >
                     {value || '—'}
-                </div>
-            </div>
+                </span>
+            </span>
             <span
                 className="ml-3 shrink-0 text-[#AAA89F] transition-colors hover:text-[#1A4CD4]"
                 style={{ fontSize: 13, fontWeight: 600 }}
             >
                 Edit
             </span>
-        </div>
+        </button>
     );
 }

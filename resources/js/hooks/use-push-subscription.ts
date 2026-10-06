@@ -30,6 +30,8 @@ export type UsePushSubscriptionReturn = {
     isReady: boolean;
     isSupported: boolean;
     isSubscribed: boolean;
+    statusError: string | null;
+    retryStatus: () => void;
     subscribe: () => Promise<boolean>;
     unsubscribe: () => Promise<boolean>;
 };
@@ -39,6 +41,8 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
         .props;
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isReady, setIsReady] = useState(false);
+    const [statusError, setStatusError] = useState<string | null>(null);
+    const [statusAttempt, setStatusAttempt] = useState(0);
 
     const [isSupported, setIsSupported] = useState(false);
 
@@ -53,19 +57,86 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
     useEffect(() => {
         if (!isSupported) {
             // Nothing to check — mark ready immediately so consumers can render.
-            setIsReady(true);
+            // Support is detected on mount; avoid briefly calling a capable
+            // device unsupported before that first effect settles.
+            setIsReady(
+                !(
+                    'serviceWorker' in navigator &&
+                    'PushManager' in window &&
+                    'Notification' in window
+                ),
+            );
 
             return;
         }
 
-        navigator.serviceWorker.ready
-            .then((registration) => registration.pushManager.getSubscription())
-            .then((subscription) => {
-                setIsSubscribed(subscription !== null);
+        let active = true;
+        setIsReady(false);
+        setStatusError(null);
+        const timeout = window.setTimeout(() => {
+            if (active) {
+                setStatusError(
+                    'We couldn’t check notifications on this device. Please try again.',
+                );
                 setIsReady(true);
+            }
+        }, 15000);
+        navigator.serviceWorker.ready
+            .then(async (registration) => {
+                const subscription =
+                    await registration.pushManager.getSubscription();
+
+                if (!subscription) {
+                    return false;
+                }
+
+                const response = await fetch('/push/status', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    redirect: 'error',
+                    signal: AbortSignal.timeout(15000),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') ?? '',
+                    },
+                    body: JSON.stringify({ endpoint: subscription.endpoint }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Could not check notifications.');
+                }
+
+                const result = await response.json();
+
+                return result.subscribed === true;
             })
-            .catch(() => setIsReady(true));
-    }, [isSupported]);
+            .then((subscribed) => {
+                if (active) {
+                    setIsSubscribed(subscribed);
+                    setStatusError(null);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setStatusError(
+                        'We couldn’t check notifications on this device. Please try again.',
+                    );
+                }
+            })
+            .finally(() => {
+                window.clearTimeout(timeout);
+
+                if (active) {
+                    setIsReady(true);
+                }
+            });
+
+        return () => {
+            active = false;
+            window.clearTimeout(timeout);
+        };
+    }, [isSupported, statusAttempt]);
 
     const subscribe = useCallback(async (): Promise<boolean> => {
         if (!isSupported || !vapidPublicKey) {
@@ -82,6 +153,8 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
             const response = await fetch('/push/subscribe', {
                 method: 'POST',
                 credentials: 'same-origin',
+                redirect: 'error',
+                signal: AbortSignal.timeout(15000),
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
@@ -92,6 +165,10 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
 
             if (!response.ok) {
                 throw new Error(`Subscribe failed: ${response.status}`);
+            }
+
+            if (response.redirected) {
+                throw new Error('Your session expired.');
             }
 
             setIsSubscribed(true);
@@ -120,9 +197,11 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
                 return true;
             }
 
-            await fetch('/push/unsubscribe', {
+            const response = await fetch('/push/unsubscribe', {
                 method: 'POST',
                 credentials: 'same-origin',
+                redirect: 'error',
+                signal: AbortSignal.timeout(15000),
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
@@ -131,7 +210,13 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
                 body: JSON.stringify({ endpoint: subscription.endpoint }),
             });
 
-            await subscription.unsubscribe();
+            if (!response.ok || response.redirected) {
+                throw new Error(`Unsubscribe failed: ${response.status}`);
+            }
+
+            // Delivery is already disabled on the server. A retained browser
+            // token can be reused on a later opt-in and is checked per account.
+            await subscription.unsubscribe().catch(() => false);
             setIsSubscribed(false);
 
             return true;
@@ -142,5 +227,13 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
         }
     }, [isSupported]);
 
-    return { isReady, isSupported, isSubscribed, subscribe, unsubscribe };
+    return {
+        isReady,
+        isSupported,
+        isSubscribed,
+        statusError,
+        retryStatus: () => setStatusAttempt((attempt) => attempt + 1),
+        subscribe,
+        unsubscribe,
+    };
 }

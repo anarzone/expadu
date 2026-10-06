@@ -4,7 +4,7 @@ export default function AppLogo() {
     return (
         <>
             <AppLogoIcon />
-            <span className="truncate font-display text-[22px] font-medium tracking-tight">
+            <span className="truncate font-sans text-[22px] font-bold tracking-tight">
                 Expadu
             </span>
         </>

@@ -7,11 +7,12 @@ export default ({
     children,
     breadcrumbs,
     showBack,
+    hideQaSwitcher,
     ...props
 }: AppLayoutProps) => (
     <AppLayoutTemplate breadcrumbs={breadcrumbs} showBack={showBack} {...props}>
         <FlashToast />
-        <PersonaSwitcher />
+        {!hideQaSwitcher && <PersonaSwitcher />}
         {children}
     </AppLayoutTemplate>
 );

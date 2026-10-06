@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type GeoPosition = {
     lat: number;
@@ -39,37 +40,31 @@ function distanceMeters(
     );
 }
 
-/** Check if location sharing is enabled via user settings */
-let locationSharingEnabled = true;
+export function useLocationSharingEnabled(): boolean {
+    const { userSettings } = usePage<{
+        userSettings?: { share_location?: boolean };
+    }>().props;
 
-try {
-    const el = document.getElementById('app');
-
-    if (el) {
-        const pageData = JSON.parse(el.dataset.page || '{}');
-        locationSharingEnabled =
-            pageData?.props?.userSettings?.share_location !== false;
-    }
-} catch {
-    // Fallback to enabled
+    return userSettings?.share_location !== false;
 }
 
 /** Send a location ping to the server (fire-and-forget) */
 async function sendPing(
+    signal: AbortSignal,
     lat: number,
     lng: number,
     accuracy: number,
     quality?: string,
     rejected?: string,
 ): Promise<boolean> {
-    if (!locationSharingEnabled) {
+    if (signal.aborted) {
         return false;
     }
 
     try {
         const response = await fetch('/api/track', {
             method: 'POST',
-            keepalive: true,
+            signal,
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
@@ -81,7 +76,7 @@ async function sendPing(
             }),
         });
 
-        return response.ok;
+        return !signal.aborted && response.ok;
     } catch {
         return false;
     }
@@ -105,27 +100,28 @@ async function sendPing(
  * - "high": accuracy < 30m
  * - "medium": accuracy 30-100m
  * - "low": accuracy 100-200m (borderline, used with warning)
- * - "stale": no update for > 30s, using last good position
+ * - "stale": no update for > 2 min, using last good position
  * - "estimated": GPS lost, using cached/estimated position
  */
-export function useGeolocation({
-    enabled = true,
+export function createGeolocationSession({
     pingIntervalMs = 300_000,
-}: { enabled?: boolean; pingIntervalMs?: number } = {}) {
-    const [position, setPosition] = useState<GeoPosition | null>(null);
-    const [quality, setQuality] = useState<GeoQuality>('high');
-    const [error, setError] = useState<string | null>(null);
-
-    // Refs for filtering logic (not reactive — no re-renders)
-    const lastGoodRef = useRef<GeoPosition | null>(null);
-    const lastPingRef = useRef<{ lat: number; lng: number; time: number }>({
-        lat: 0,
-        lng: 0,
-        time: 0,
-    });
-    const lastUpdateRef = useRef<number>(Date.now());
-    const watchIdRef = useRef<number | null>(null);
-    const staleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    onPosition: setPosition,
+    onQuality: setQuality,
+    onError: setError,
+}: {
+    pingIntervalMs?: number;
+    onPosition: (position: GeoPosition | null) => void;
+    onQuality: (quality: GeoQuality) => void;
+    onError: (error: string | null) => void;
+}) {
+    const controller = new AbortController();
+    const { signal } = controller;
+    let lastGood: GeoPosition | null = null;
+    let lastPing = { lat: 0, lng: 0, time: 0 };
+    let lastUpdate = Date.now();
+    let watchId: number | null = null;
+    let pingTimer: ReturnType<typeof setInterval> | null = null;
+    let staleTimer: ReturnType<typeof setInterval> | null = null;
 
     function classifyQuality(accuracy: number): GeoQuality {
         if (accuracy <= ACCURACY_HIGH) {
@@ -140,6 +136,10 @@ export function useGeolocation({
     }
 
     function handlePosition(pos: GeolocationPosition) {
+        if (signal.aborted) {
+            return;
+        }
+
         const raw: GeoPosition = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
@@ -150,6 +150,7 @@ export function useGeolocation({
         // ── Filter 1: Reject readings with accuracy > 200m ──
         if (raw.accuracy > MAX_LOCATION_ACCURACY_M) {
             void sendPing(
+                signal,
                 raw.lat,
                 raw.lng,
                 raw.accuracy,
@@ -157,8 +158,8 @@ export function useGeolocation({
                 `accuracy_${Math.round(raw.accuracy)}m`,
             );
 
-            if (lastGoodRef.current) {
-                setPosition(lastGoodRef.current);
+            if (lastGood) {
+                setPosition(lastGood);
                 setQuality('low');
             }
 
@@ -166,8 +167,6 @@ export function useGeolocation({
         }
 
         // ── Filter 2: Speed-based rejection ──
-        const lastGood = lastGoodRef.current;
-
         if (lastGood) {
             const dist = distanceMeters(
                 lastGood.lat,
@@ -184,6 +183,7 @@ export function useGeolocation({
             // If implied speed is impossibly fast, reject this reading
             if (speedKmh > MAX_SPEED_KMH && dist > 500) {
                 void sendPing(
+                    signal,
                     raw.lat,
                     raw.lng,
                     raw.accuracy,
@@ -197,14 +197,14 @@ export function useGeolocation({
         }
 
         // ── Reading passed filters — accept it ──
-        lastGoodRef.current = raw;
-        lastUpdateRef.current = Date.now();
+        lastGood = raw;
+        lastUpdate = Date.now();
         setPosition(raw);
         setQuality(classifyQuality(raw.accuracy));
         setError(null);
 
         // ── Server ping (throttled) ──
-        const last = lastPingRef.current;
+        const last = lastPing;
         const elapsed = Date.now() - last.time;
 
         if (elapsed < PING_COOLDOWN_MS) {
@@ -215,12 +215,13 @@ export function useGeolocation({
 
         if (dist > PING_DISTANCE_M || elapsed > pingIntervalMs) {
             void sendPing(
+                signal,
                 raw.lat,
                 raw.lng,
                 raw.accuracy,
                 classifyQuality(raw.accuracy),
             ).then((stored) => {
-                if (stored) {
+                if (stored && !signal.aborted) {
                     window.dispatchEvent(
                         new CustomEvent('expadu:location-stored', {
                             detail: raw,
@@ -228,7 +229,7 @@ export function useGeolocation({
                     );
                 }
             });
-            lastPingRef.current = {
+            lastPing = {
                 lat: raw.lat,
                 lng: raw.lng,
                 time: Date.now(),
@@ -237,16 +238,20 @@ export function useGeolocation({
     }
 
     function handleError(err: GeolocationPositionError) {
+        if (signal.aborted) {
+            return;
+        }
+
         setError(err.message);
 
         // GPS error — mark as stale if we have a cached position
-        if (lastGoodRef.current) {
+        if (lastGood) {
             setQuality('stale');
         }
     }
 
     function fetchOnce() {
-        if (!navigator.geolocation) {
+        if (signal.aborted || !navigator.geolocation) {
             return;
         }
 
@@ -257,20 +262,12 @@ export function useGeolocation({
         });
     }
 
-    useEffect(() => {
-        if (!enabled) {
-            return;
-        }
-
-        if (!navigator.geolocation) {
-            setError('Geolocation not supported');
-
-            return;
-        }
-
+    if (!navigator.geolocation) {
+        setError('Geolocation not supported');
+    } else {
         // Try watchPosition first — continuous updates
         try {
-            watchIdRef.current = navigator.geolocation.watchPosition(
+            watchId = navigator.geolocation.watchPosition(
                 handlePosition,
                 (err) => {
                     handleError(err);
@@ -287,35 +284,45 @@ export function useGeolocation({
         }
 
         // Periodic ping as backup
-        const pingTimer = setInterval(fetchOnce, pingIntervalMs);
+        pingTimer = setInterval(fetchOnce, pingIntervalMs);
 
         // ── Phase 2: Staleness detection ──
         // Check every 5s if position is going stale
-        staleTimerRef.current = setInterval(() => {
-            const age = Date.now() - lastUpdateRef.current;
+        staleTimer = setInterval(() => {
+            const age = Date.now() - lastUpdate;
 
-            if (age > STALE_THRESHOLD_MS && lastGoodRef.current) {
-                setQuality((prev) =>
-                    prev === 'high' || prev === 'medium' ? 'stale' : prev,
-                );
+            if (!signal.aborted && age > STALE_THRESHOLD_MS && lastGood) {
+                setQuality('stale');
             }
         }, 5_000);
 
         // Re-fetch with high accuracy when user returns to app
-        function onVisibilityChange() {
-            if (document.visibilityState === 'visible') {
-                fetchOnce();
-            }
-        }
         document.addEventListener('visibilitychange', onVisibilityChange);
         window.addEventListener('pageshow', fetchOnce);
         window.addEventListener('focus', fetchOnce);
+    }
 
-        return () => {
-            clearInterval(pingTimer);
+    function onVisibilityChange() {
+        if (document.visibilityState === 'visible') {
+            fetchOnce();
+        }
+    }
 
-            if (staleTimerRef.current) {
-                clearInterval(staleTimerRef.current);
+    return {
+        refresh: fetchOnce,
+        stop() {
+            if (signal.aborted) {
+                return;
+            }
+
+            controller.abort();
+
+            if (pingTimer !== null) {
+                clearInterval(pingTimer);
+            }
+
+            if (staleTimer !== null) {
+                clearInterval(staleTimer);
             }
 
             document.removeEventListener(
@@ -325,12 +332,92 @@ export function useGeolocation({
             window.removeEventListener('pageshow', fetchOnce);
             window.removeEventListener('focus', fetchOnce);
 
-            if (watchIdRef.current !== null) {
-                navigator.geolocation.clearWatch(watchIdRef.current);
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
             }
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enabled, pingIntervalMs]);
 
-    return { position, quality, error, refresh: fetchOnce };
+            lastGood = null;
+            setPosition(null);
+            setQuality('estimated');
+            setError(null);
+        },
+    };
+}
+
+export function observeGeolocationPermission(
+    onChange: (granted: boolean) => void,
+): () => void {
+    let disposed = false;
+    let status: PermissionStatus | null = null;
+    const sync = () => {
+        if (!disposed) {
+            onChange(status?.state === 'granted');
+        }
+    };
+
+    onChange(false);
+    navigator.permissions
+        ?.query?.({ name: 'geolocation' })
+        .then((result) => {
+            if (disposed) {
+                return;
+            }
+
+            status = result;
+            sync();
+            status.addEventListener('change', sync);
+        })
+        .catch(() => {});
+
+    return () => {
+        disposed = true;
+        status?.removeEventListener('change', sync);
+        onChange(false);
+    };
+}
+
+export function useGeolocation({
+    enabled = true,
+    pingIntervalMs = 300_000,
+}: { enabled?: boolean; pingIntervalMs?: number } = {}) {
+    const sharingEnabled = useLocationSharingEnabled();
+    const tracking = enabled && sharingEnabled;
+    const [position, setPosition] = useState<GeoPosition | null>(null);
+    const [quality, setQuality] = useState<GeoQuality>('high');
+    const [error, setError] = useState<string | null>(null);
+    const session = useRef<ReturnType<typeof createGeolocationSession> | null>(
+        null,
+    );
+
+    useEffect(() => {
+        if (!tracking) {
+            return;
+        }
+
+        const current = createGeolocationSession({
+            pingIntervalMs,
+            onPosition: setPosition,
+            onQuality: setQuality,
+            onError: setError,
+        });
+        session.current = current;
+
+        return () => {
+            current.stop();
+            session.current = null;
+        };
+    }, [tracking, pingIntervalMs]);
+
+    const refresh = useCallback(() => {
+        if (tracking) {
+            session.current?.refresh();
+        }
+    }, [tracking]);
+
+    return {
+        position: tracking ? position : null,
+        quality: tracking ? quality : ('estimated' as GeoQuality),
+        error: tracking ? error : null,
+        refresh,
+    };
 }

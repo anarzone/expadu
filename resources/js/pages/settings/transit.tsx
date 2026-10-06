@@ -1,17 +1,10 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { useCallback, useState } from 'react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import { ToggleCard, ToggleRow } from '@/components/settings/toggle-row';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-
-function csrf(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
+import { writeJson } from '@/lib/reliable-write';
 
 export default function TransitSettings() {
     const { auth, userSettings } = usePage<{
@@ -26,36 +19,45 @@ export default function TransitSettings() {
         (userSettings?.share_location as boolean) ?? true,
     );
 
-    function toggleDticket() {
-        const next = !hasDticket;
-        setHasDticket(next);
-        router.patch(
-            '/settings/profile',
-            { has_deutschlandticket: next },
-            { preserveScroll: true, preserveState: true },
-        );
-    }
+    const savingRef = useRef(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const persistShareLocation = useCallback((value: boolean) => {
-        fetch('/user-settings', {
-            method: 'PUT',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrf(),
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({ settings: { share_location: value } }),
-        }).catch(() => {});
-    }, []);
+    async function saveSetting(kind: 'ticket' | 'location') {
+        if (savingRef.current) {
+            return;
+        }
 
-    function toggleShareLocation() {
-        setShareLocation((prev) => {
-            const next = !prev;
-            persistShareLocation(next);
+        savingRef.current = true;
+        setSaving(true);
+        setError(null);
 
-            return next;
-        });
+        try {
+            if (kind === 'ticket') {
+                const next = !hasDticket;
+                await writeJson('/settings/profile', 'PATCH', {
+                    has_deutschlandticket: next,
+                });
+                setHasDticket(next);
+            } else {
+                const next = !shareLocation;
+                await writeJson('/user-settings', 'PUT', {
+                    settings: { share_location: next },
+                });
+                setShareLocation(next);
+            }
+
+            router.reload({ only: ['userSettings', 'auth'] });
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+        } finally {
+            savingRef.current = false;
+            setSaving(false);
+        }
     }
 
     return (
@@ -76,15 +78,30 @@ export default function TransitSettings() {
                             label="I have a Deutschlandticket"
                             sub="Shows trips as covered instead of a single fare"
                             on={hasDticket}
-                            onToggle={toggleDticket}
+                            onToggle={() => void saveSetting('ticket')}
+                            disabled={saving}
                         />
                         <ToggleRow
                             label="Share location for transit"
                             sub="Improves departure-time accuracy near you"
                             on={shareLocation}
-                            onToggle={toggleShareLocation}
+                            onToggle={() => void saveSetting('location')}
+                            disabled={saving}
                         />
                     </ToggleCard>
+                    {error && (
+                        <p role="alert" className="text-sm text-destructive">
+                            {error}
+                        </p>
+                    )}
+                    {saving && (
+                        <p
+                            role="status"
+                            className="text-sm text-muted-foreground"
+                        >
+                            Saving…
+                        </p>
+                    )}
                 </div>
             </SettingsLayout>
         </AppLayout>

@@ -244,8 +244,10 @@ export function ChecklistFramingB({
                 </div>
                 <h2 className="mt-1.5 font-display text-2xl leading-tight font-normal text-foreground">
                     {allDone
-                        ? "🎉 You're all settled."
-                        : `${progress.done} of ${progress.total} tasks complete — you're making good progress.`}
+                        ? 'Your current checklist is complete.'
+                        : progress.total === 0
+                          ? 'No checklist steps yet'
+                          : `${progress.done} of ${progress.total} tasks complete`}
                 </h2>
                 {!allDone && nextDeadline && (
                     <p className="mt-1 text-[13px] text-muted-foreground">
@@ -256,9 +258,11 @@ export function ChecklistFramingB({
                         : {nextDeadline.title}
                     </p>
                 )}
-                <div className="mt-4">
-                    <ProgressBreakdown segments={segments} />
-                </div>
+                {progress.total > 0 && (
+                    <div className="mt-4">
+                        <ProgressBreakdown segments={segments} />
+                    </div>
+                )}
             </div>
 
             {/* Detect-and-suggest: long-settled residents clear the basics in one tap */}
