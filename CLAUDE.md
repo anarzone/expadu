@@ -1,68 +1,112 @@
 # Expadu — project rules
 
-A situation-aware companion for expats in Cologne. Laravel 13 + Inertia/React 19 + Filament 5,
-PostgreSQL/PostGIS, Redis. Deployed to a single Hetzner box (prod + staging side by side).
+Keep the root `AGENTS.md` and `CLAUDE.md` synchronized.
 
-Generic Laravel guidance lives in `.claude/skills/` and loads on demand — this file is only the
-things that are specific to this codebase and expensive to rediscover.
+## Product direction
 
-## Trust rules (non-negotiable)
+Expadu is a daily companion for expats across cities, starting with Cologne.
+Composer connects a person's request to places, events, journeys, reviewed
+bureaucracy information and services. Keep city-specific assumptions in data and
+configuration rather than hardcoding them into the design.
 
-**Bureaucracy is legal guidance. Being wrong costs someone their residence status.**
+Laravel 13, Inertia v2, React 19, Filament 5, PostgreSQL/PostGIS and Redis.
+Check `composer.json`, `package.json` and the CI workflows for current requirements.
+Use relevant instructions in `.agents/skills/` or `.claude/skills/` when needed.
 
-- Never invent a fee, deadline, or `§`. Every figure comes from an official source
-  (stadt-koeln.de, BAMF, make-it-in-germany.com, gesetze-im-internet.de) with a `verified_at` date.
-- A rule only reaches users when `review_status = approved` **and** it passes `RuleSourcePolicy`:
-  jurisdiction, reviewer, verified date, an unexpired `review_due_at`, and ≥1 legal source on an
-  allow-listed HTTPS host. `Task::authoritative()` is the gate — never bypass it.
-- The catalogue is authored in `database/seeders/data/bureaucracy/*.yaml` and compiled by
-  `php artisan bureaucracy:import-tasks`. Volatile figures live in `config/bureaucracy_figures.php`.
-- **AI never authors user-facing bureaucracy content.** It may extract facts against a tool schema
-  (user confirms) or draft gap notes for a human. `docs/bureaucracy-gaps/` drafts are never imported
-  as-is.
-- Showing nothing beats guessing. Partial coverage is a designed state, not a bug.
+## Trust rules
 
-**Media is rights-gated the same way.** `PublishedMediaSelector` serves only
-`rights_status = approved` + `health_status = active`. stadt-koeln images are captured as `pending`
-deliberately — their terms forbid commercial reuse without written permission. Only open licences
-(`config/media.php`) auto-approve. Never flip a provider to approved without a grant on file.
+**Bureaucracy requires verified sources.**
 
-## Toolchain (fresh shells resolve the wrong binaries)
+- Never invent fees, deadlines or legal references. Figures need an official source
+  and a `verified_at` date.
+- Preserve `Task::authoritative()` and `RuleSourcePolicy`. Approved content must
+  satisfy their publication, jurisdiction, version, reviewer, source-verification,
+  source-host and validity-window checks. Never bypass these gates.
+- Authoritative catalogue data lives in `database/seeders/data/bureaucracy/*.yaml`
+  and is compiled by `php artisan bureaucracy:import-tasks`. Volatile figures live
+  in `config/bureaucracy_figures.php`.
+- AI must not author user-facing bureaucracy content. It may extract facts against
+  a tool schema for user confirmation or draft gap notes for human review.
+  `docs/bureaucracy-gaps/` drafts are not imported as-is.
+- Missing or partial coverage must remain explicit. Showing nothing beats guessing.
 
-A new shell finds brew PHP 8.5 (no phpredis) and node 14 — both fail confusingly. Prefix every
-test/build/commit command:
+**Media requires approved rights.**
 
-```bash
-export PATH="/Users/anar/Library/Application Support/Herd/bin:$HOME/.nvm/versions/node/v22.14.0/bin:$PATH"
-```
+- `PublishedMediaSelector` serves assets only when `rights_status = approved` and
+  `health_status = active`.
+- Stadt Köln images remain pending without documented permission. Only licences
+  allowed by `config/media.php` can auto-approve. Do not approve a provider without
+  a documented rights basis.
 
-## Gates
+## Development and verification
 
-- `.husky/pre-commit` runs Pint (`--dirty`) and the fast Pest suite. **Never `--no-verify`.**
-- Prettier does not run automatically on `sw.ts` — run it by hand when touching that file.
-- Run `npm run build` before pushing TSX import/export changes; the hook misses those.
-- Every change needs a test. `php artisan test --compact` with a filter, not the whole suite.
+- Verify the active PHP and Node versions before running project commands. Current
+  CI uses PHP 8.4 and Node 22. Local PHP is provided by Herd; do not assume a fresh
+  shell selects the correct runtime or extensions.
+- `.husky/pre-commit` runs a staged secret scan when gitleaks is available, then
+  `lint-staged` formatting. Staged PHP changes also trigger the fast Pest suite.
+  Do not bypass hooks with `--no-verify`.
+- `.lintstagedrc.json` defines formatting coverage: Pint for PHP, ESLint/Prettier for
+  `resources/js` TS/TSX, and Prettier for `resources/css`. Check files outside those
+  patterns explicitly, including `resources/sw.ts`.
+- Add focused regression tests for behavior changes. Use filtered
+  `php artisan test --compact` runs for PHP work and relevant frontend checks for
+  frontend work. Validate visual changes in the browser; documentation-only changes
+  need accuracy and consistency checks rather than unrelated application tests.
+- Run `npm run build` before pushing TSX import/export changes. Commit hooks do not
+  replace a frontend build.
+- Preserve unrelated working-tree changes. Stage only files belonging to the task.
 
-## Deploying
+## UI work
 
-`staging` → staging box, `main` → production, both via GitHub Actions on green CI. Deploy is
-**gated on tests** — a red `main` silently ships nothing, which looks like "the deploy is stuck".
-Check `gh run list` before assuming an infra problem. Verify prod with real data or a screenshot
-after pushing; "pushed" is not "live".
+- Start with `prototype/dev/design/connected/design-decisions.md` for the current
+  cross-page decisions, approved references and shared components.
+- Read the approved prototype and relevant product reports before implementing UI.
+  Later user decisions take precedence over older proposals.
+- Build alternative design concepts separately; preserve the accepted baseline
+  unless the user asks to change it.
+- Keep one page header. Utility pages do not carry a widgets rail.
+- Prefer clean, friendly edits within the page for simple choices such as filters
+  and starting points. Do not default to large blocking modals, blurred backdrops
+  or oversized confirmation buttons. Keep controls compact and touch-friendly,
+  preserve browsing context, and use restrained motion.
+- Design mobile-first, including motion. Touch actions need immediate, subtle
+  feedback; sheets, tabs, disclosures and confirmations should transition smoothly
+  with short, interruptible motion. Preserve context and focus, avoid layout jumps
+  and repeated decorative effects, and respect reduced-motion preferences. Do not
+  depend on hover for feedback.
+- Mobile screens prioritize useful content over chrome. Keep headers, navigation
+  and discovery controls compact; reveal optional preferences on demand. Avoid
+  repeated headings, labels and large gaps. Check the initial viewport with real
+  content: the first useful item and its action should be visible without
+  scrolling on a typical phone, while keeping readable text and touch targets.
+- Keep search area, starting point/travel mode and sorting as separate compact
+  contextual controls, not a single expanding filter form. Share starting point
+  and mode with Directions. Only offer distance or availability choices backed
+  by data. Prefer aligned choices over irregular groups of large buttons.
+- Use the approved app’s shared colour tokens for redesigns: its pale canvas,
+  white surfaces, black/dark primary text, cyan selections and orange actions.
+  Main controls must not become uniformly grey. Keep accents purposeful; do not
+  introduce an independent cream/sage palette. Use existing controls as interaction
+  references, but improve layout and hierarchy rather than copying bulky chrome.
+- Keep uncertain data visible as uncertain. Mockups must identify sample content
+  and must not imply that scripted interactions are connected to live services.
 
-## Gotchas worth remembering
+## Deployment
 
-- **Never cache PHP objects via the redis store.** phpredis unserializes without the autoloader, so
-  it 500s only on a *warm* hit. Cache scalars, hydrate after.
-- **Dark mode must toggle `html.dark`** — `--color-*` indirection resolves at `:root`, so a nested
-  `.dark` wrapper won't flip tokens.
-- **QA persona switching is a clean slate** (`ResetPersonaState`) — a persona means exactly that
-  persona, never a layer over the previous one.
-- Local and prod hold different data (prod runs the cron, local doesn't). Reproduce data bugs
-  against prod counts, not local ones.
+`staging` deploys to staging and `main` to production through GitHub Actions on the
+Hetzner host. Both deployment jobs depend on the image build, application tests and
+browser tests; see `.github/workflows/ci.yml`.
 
-## Working style
+When investigating a deployment, check workflow status before assuming an
+infrastructure problem. After an authorized deployment, verify the running app
+with relevant data or a screenshot. A successful push alone does not prove it is live.
 
-- Read the prototype HTML/CSS in `prototype/` and match it before implementing UI.
-- One header per page; utility pages carry no widgets rail.
-- Don't commit the user's unrelated working-tree changes — stage only the files you touched.
+## Project-specific pitfalls
+
+- Cache scalars in Redis and hydrate PHP objects afterward. Cached objects have
+  caused failures on warm reads when deserialization precedes autoloading.
+- Dark mode toggles `html.dark`; a nested wrapper does not switch root color tokens.
+- QA persona switching uses `ResetPersonaState` and starts from a clean slate.
+- Local and production datasets differ. Check the affected environment's data when
+  investigating a data issue; local counts do not establish production behavior.

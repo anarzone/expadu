@@ -121,10 +121,31 @@ export default [
         },
     },
     {
+        files: ['tests/**/*.{js,mjs,cjs,ts,tsx}'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+    {
+        files: ['tests/**/*.cjs'],
+        languageOptions: {
+            sourceType: 'commonjs',
+        },
+        rules: {
+            '@typescript-eslint/no-require-imports': 'off',
+        },
+    },
+    {
         ignores: [
             'vendor',
             'node_modules',
             'public',
+            // Nonshipping prototypes and local browser-review captures.
+            'prototype/**',
+            'docs/reviews/**',
+            '.playwright/**',
             // Agent worktrees hold full copies of the project; linting them
             // makes `eslint .` walk the tree N+1 times and hang locally.
             '.claude/worktrees',

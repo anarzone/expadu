@@ -46,6 +46,9 @@ jobs:
       - name: ESLint
         run: npm run lint:check
 
+      - name: Frontend behavior tests
+        run: node --experimental-strip-types --test tests/Frontend/*.test.mjs tests/Unit/Frontend/*.test.cjs
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -143,10 +146,10 @@ jobs:
     name: Browser Tests
     runs-on: ubuntu-latest
     # Gates deploys: deploy-staging / deploy-production list this in `needs`, so
-    # a red Playwright suite blocks the ship. Runs the auth + chromium projects
+    # a red Playwright suite blocks the ship. Runs the auth + desktop + mobile projects
     # against a freshly built app + seeded DB (+ the E2E user), serves on :8080,
     # and uploads the report so any regression is visible.
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     services:
       redis:
@@ -205,7 +208,14 @@ jobs:
           npm ci --legacy-peer-deps
 
       - name: Build frontend
-        run: npm run build
+        run: |
+          npm run build
+          npx vite build --ssr
+
+      - name: TypeScript (after generated routes)
+        run: |
+          npm run types:check
+          npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --lib WebWorker resources/sw.ts
 
       - name: Build Postgres image (postgis + pgvector)
         run: docker build -t expadu-pgsql ./docker/pgsql
@@ -245,6 +255,14 @@ jobs:
 
       - name: Start app server
         run: |
+          node bootstrap/ssr/ssr.js > /tmp/ssr.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:13714/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf http://localhost:13714/health >/dev/null
           php artisan serve --port=8080 --no-interaction > /tmp/serve.log 2>&1 &
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/login >/dev/null; then
@@ -255,7 +273,10 @@ jobs:
           done
 
       - name: Run browser tests
-        run: npx playwright test --project=auth --project=chromium
+        run: npx playwright test --project=auth --project=chromium --project=mobile
+
+      - name: Onboarding browser tests
+        run: npx playwright test --config=playwright.onboarding.config.ts
 
       - name: Upload Playwright report
         if: always()
