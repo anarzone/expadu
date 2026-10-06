@@ -1,0 +1,36 @@
+{
+  "before": {
+    "background": "rgb(241, 235, 223)",
+    "color": "rgb(33, 29, 21)",
+    "hovered": true,
+    "outline": "rgb(33, 29, 21) none 3px",
+    "rect": {
+      "bottom": 358.84375,
+      "height": 44,
+      "left": 566.4921875,
+      "right": 610.4921875,
+      "top": 314.84375,
+      "width": 44,
+      "x": 566.4921875,
+      "y": 314.84375
+    }
+  },
+  "after": {
+    "background": "rgba(0, 0, 0, 0)",
+    "buttonTop": 526.84375,
+    "color": "rgb(0, 118, 139)",
+    "focused": "from",
+    "groupBackground": "rgb(255, 253, 248)",
+    "hovered": true,
+    "rect": {
+      "bottom": 358.84375,
+      "height": 44,
+      "left": 566.4921875,
+      "right": 610.4921875,
+      "top": 314.84375,
+      "width": 44,
+      "x": 566.4921875,
+      "y": 314.84375
+    }
+  }
+}

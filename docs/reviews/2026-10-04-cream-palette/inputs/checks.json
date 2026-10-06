@@ -1,0 +1,22 @@
+{
+  "desktop": {
+    "buttonY": 526.84375,
+    "field": {
+      "background": "rgba(0, 0, 0, 0)",
+      "outline": "rgb(0, 118, 139) solid 2px"
+    },
+    "focused": "from",
+    "group": {
+      "background": "rgb(255, 253, 248)",
+      "border": "rgb(230, 221, 203) 0px 0px 0px 1px inset"
+    }
+  },
+  "mobile": {
+    "contentWidth": 390,
+    "field": "rgba(0, 0, 0, 0)",
+    "formHeight": 132,
+    "group": "rgb(255, 253, 248)",
+    "outline": "rgb(0, 118, 139) solid 2px",
+    "width": 390
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "desktop": {
+    "action": {
+      "background": "rgb(217, 52, 10)",
+      "border": "rgb(255, 255, 255)",
+      "color": "rgb(255, 255, 255)"
+    },
+    "canvas": {
+      "background": "rgb(255, 255, 255)",
+      "border": "rgb(39, 36, 31)",
+      "color": "rgb(39, 36, 31)"
+    },
+    "fields": {
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "rgb(39, 36, 31)",
+      "color": "rgb(39, 36, 31)"
+    },
+    "header": {
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "rgb(39, 36, 31)",
+      "color": "rgb(39, 36, 31)"
+    },
+    "overflow": false,
+    "planner": {
+      "background": "rgb(255, 245, 239)",
+      "border": "rgb(39, 36, 31)",
+      "color": "rgb(39, 36, 31)"
+    },
+    "route": {
+      "background": "rgb(223, 243, 248)",
+      "border": "rgb(39, 36, 31)",
+      "color": "rgb(39, 36, 31)"
+    },
+    "selected": {
+      "background": "rgb(223, 243, 248)",
+      "border": "rgb(0, 117, 140)",
+      "color": "rgb(0, 117, 140)"
+    },
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "mobile": {
+    "actionInView": true,
+    "overflow": false,
+    "planner": "rgb(255, 245, 239)",
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  "timetable": {
+    "background": "rgb(255, 245, 239)",
+    "overflow": false
+  },
+  "departure": {
+    "footer": "linear-gradient(rgba(255, 245, 239, 0), rgba(255, 245, 239, 0.92) 22px, rgb(255, 245, 239) 70%)",
+    "surface": "rgb(255, 245, 239)"
+  }
+}
