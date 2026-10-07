@@ -162,19 +162,128 @@ A proposal can be read without saving it. An explicit start uses
 Do not manufacture a legacy task ID from an occurrence key.
 
 `POST /processes/{process}/events` takes `event`, `payload`, `expected_version`,
-UUID `request_id` and the current `review_token` (except cancellation operations).
-Examples of event names are `preparation_started`, `step_completed`,
-`step_reopened`, `submission_recorded`, `waiting_reported`, `completion_reported`
-and `appointment_recorded`. Step events need the exact `step_id`. A submission
-needs its actual `occurred_on` date. These are user reports, not verified issuance.
-Use `POST /processes/{process}/review` for changed-step/occurrence review and the
-event correction endpoint for mistaken reports; do not replay an outdated token.
+UUID `request_id` and the current `review_token`. The token may be omitted for
+the withdrawal operations `appointment_cancelled`, `cancellation_reported`,
+`submission_retracted` and `process_untracked`; they never depend on current
+guidance. Every event is the person's own report (`provenance: user_report`),
+not verified issuance, an authority decision or document confirmation. Payloads
+reject extra keys. Use `POST /processes/{process}/review` for changed-step/occurrence
+review and the event correction endpoint for mistaken report details; do not
+replay an outdated token. A refused transition returns 422 with a plain-language
+message in `errors.event[0]` that the UI can show as is.
+
+### Process events and payloads
+
+`occurred_on` is an exact `YYYY-MM-DD` on or before today. `note` is optional
+free text, 1–500 characters after trimming, stored only in the encrypted event
+payload and encrypted process state. Omit a value the person does not know; the
+backend never defaults it.
+
+| Event | Payload | Allowed from workflow | Result |
+|---|---|---|---|
+| `preparation_started` | `{note?}` | `not_started`, `preparing`, `blocked`, `action_required` | `preparing` |
+| `blocked_reported` | `{occurred_on?, note?}` | `not_started`, `preparing`, `blocked` | `blocked` |
+| `step_completed` / `step_reopened` | `{step_id, occurred_on?}` | any open state | step `completed`/`todo`; workflow becomes `preparing` unless it is `blocked`, `submitted`, `waiting_authority` or `action_required`. A `blocked` step (unfinished prerequisite) cannot be completed. `step_reopened` also works from `completed`/`cancelled` and returns to `preparing`. |
+| `submission_recorded` | `{occurred_on, channel?, reference?}` | `not_started`, `preparing`, `blocked`, `submitted`, `waiting_authority`, `action_required` | `submitted`. The step stays `todo`. |
+| `submission_retracted` | `{event_id, note?}` | `submitted`, `waiting_authority`, `action_required` | The workflow the person reported without that submission (see below). |
+| `waiting_reported` | `{note?}` | `submitted`, `waiting_authority` | `waiting_authority` |
+| `action_required_reported` | `{occurred_on?, reference?, note?}` | `preparing`, `submitted`, `waiting_authority` | `action_required` |
+| `completion_reported` | `{occurred_on?, reference?, note?}` | `preparing`, `submitted`, `waiting_authority`, `action_required`, and only when every step is `completed` | `completed`, `completion_basis: user_report` |
+| `cancellation_reported` | `{occurred_on?, reference?, note?}` | every open state except `untracked` | `cancelled` |
+| `process_reopened` | `{note?}` | `completed`, `cancelled` | `preparing` |
+| `process_untracked` | `{}` | `not_started`, with no completed step and no event other than `process_started`/`process_untracked`, requirement confirmation or evidence share | `untracked` |
+| `appointment_recorded` | see below | any state except `untracked` | workflow unchanged |
+| `appointment_cancelled` | `{appointment_id}` | any state except `untracked`; the appointment must currently be recorded | workflow unchanged |
+
+`completed` and `cancelled` refuse further reports until `process_reopened` or
+`step_reopened`. Recording a submission never completes a step. Completing a step
+never confirms a document.
+
+Paperwork UI states map as follows. `not_started` and `preparing` are the same.
+“Blocked” is `blocked_reported` before a submission and `action_required_reported`
+after one (the authority needs something). “Waiting” is `waiting_reported` and
+needs a recorded submission. “Completed” is `completion_reported` once every step
+is done. “Cancelled” is `cancellation_reported`, with the close date in
+`occurred_on`. Offer only these transitions.
+
+`state.report` holds the person's own details for the current status:
+`{event, occurred_on, note}` with `null` for anything not reported. It is set
+by each event in the table except step and appointment events. A step event that
+moves the workflow into `preparing` clears it; for a closed process it is the
+reported close date and note. Older records may lack the key. It is never an
+authority decision.
+
+**Withdrawing a submission.** `submission_retracted.event_id` is the
+`timeline[].event_id` of a `submission_recorded` row that has not been withdrawn.
+The submission event stays stored and leaves the timeline. The workflow is
+recomputed from the person's remaining reports in order, skipping the withdrawn
+submission(s). A report that was only valid after a withdrawn submission, such as
+“waiting”, drops out with it. If another submission remains, the process stays
+submitted. Step states do not change.
+
+**Undoing “Track task”.** `process_untracked` reverses a start before any
+progress. The process and its `process_started`/`process_untracked` events stay
+stored, but the plan shows the occurrence again as a proposal (`id: null`), and
+`GET /processes/{id}` returns 404. Further commands on it return 409. Starting it
+again with `POST /people/{person}/processes` reuses the same `process_id`, resets
+the workflow to `not_started` and increments `version`. Once progress exists, use
+`cancellation_reported` instead.
+
+**Appointments.** `appointment_recorded` takes
+`{appointment_id, starts_at, timezone, duration_minutes, location?}`. The client
+creates the UUID `appointment_id`. Recording the same `appointment_id` again
+reschedules the appointment; the latest event for an id wins. `appointment_cancelled`
+removes it, and recording the id again restores it. Fixing details of one report
+uses the correction endpoint with the row's `revision_event_id`.
+
+- `starts_at` includes seconds and an offset that is valid for the IANA `timezone`.
+- `duration_minutes` is required as a key: an integer from 1 to 1440, or `null`
+  when the person does not know the length. It is never defaulted.
+- `location` is optional (unknown location) or one of `{lat, lng, label?}` or
+  `{label}`. A label-only place is stored as text and is `routable: false`.
+
+An appointment never moves or replaces a legal deadline and never changes the
+workflow (`legal_effect: not_assessed`).
+
+**Timeline identities.** `appointment` and `submission_recorded` rows carry
+`event_id`, the report's stable identity (use it for `submission_retracted`), and
+`revision_event_id`, the latest correction (use it in
+`POST /processes/{process}/events/{revision_event_id}/corrections`). Appointment
+rows also carry `appointment_id`, `duration_minutes` (`null` = unknown) and
+`routable`. Do not parse identifiers out of `timeline[].id`.
+
+**Step completion event.** Each `guidance[]` entry has `completion_event`.
+`submission_recorded` (catalogue step kind `action`) means offer “I've submitted
+it”. `step_completed` (every other kind) means offer “I've finished this step”.
+This is derived from the reviewed catalogue, not decided by the UI.
+
+**Composer and Today.** An appointment without any `location` in the planning
+window still makes planning return 422 on `appointments` ("add its location").
+Uncertain appointments otherwise stay in the plan, without guessed values:
+
+- Label-only place (`routable: false`): the slot has `routable: false` and
+  `lat`/`lng` `null`. No journey to or from it is computed or offered. The slot
+  and the stop after it have `travel_known: false`, `travel_min_from_previous: null`
+  and `leave_by: null`. The plan adds a notice with
+  `code: appointment_location_unroutable` and `appointment_id` (the slot id).
+  Offer "Add address", which re-records or corrects the appointment with `lat`/`lng`.
+- Unknown length (`duration_minutes: null`): no block length is drawn or assumed.
+  The slot has `duration_known: false`, `end_time: null` and `duration_label: null`.
+  Show "End time not known". `end_at` equals `start_at` and is not an end time.
+  `leave_by` uses the start only. The next stop has `may_overlap_previous: true`.
+  The plan adds a notice with `code: appointment_end_unknown`. This is not a hard
+  conflict: `schedule_feasible` is unaffected. If an unknown-length appointment
+  started up to 24 hours before the window, it may still be running, so planning
+  that window returns 422.
+
+Every slot has `travel_known` and `may_overlap_previous`. Today returns the same
+notice codes next to `appointment_conflict`.
 
 Keep date meanings separate:
 
 - `legal_due`: source-backed legal date, not a meeting.
 - `preparation_target`: preparation timing, not a claimed statutory deadline.
-- `appointment`: recorded instant, offset, IANA timezone and actual duration.
+- `appointment`: recorded instant, offset, IANA timezone and the reported duration (`null` = unknown).
 - `submission_recorded`: reported submission, no automatic legal continuation.
 - `authority_follow_up`: follow-up under its reviewed policy.
 - `document_expiry`: physical document timing, not proof that permanent status ends.
@@ -182,7 +291,7 @@ Keep date meanings separate:
 Calendar dates are exact `YYYY-MM-DD` strings, not UTC instants. Appointment
 `starts_at` includes seconds and an explicit offset such as `+02:00`, consistent
 with `timezone`; there is no invented default duration. `location` is optional:
-unknown location stays unknown and cannot be routed by Composer. A later appointment
+unknown or label-only location stays unroutable and Composer does not route to it. A later appointment
 never moves a legal deadline. Show `date_unknown`, `needed_fact`, `conditional` and
 overdue state rather than replacing them with guessed dates.
 

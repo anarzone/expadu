@@ -256,9 +256,9 @@ appointment, submission and expiry separate.
 | G1 | Per-requirement availability cannot be shown: no catalogue document has `evidence_kind`, so `suggested_evidence_ids` is always empty and readiness never becomes `reported_available`. "I have this" has no visible effect. | Populate `evidence_kind` in the catalogue, **or** let `PUT evidence` carry `requirement_refs[]`/a `kind` derived from the requirement, so the paperwork projection can attach it. |
 | G2 | No process display title | `processes[].title`, `history[].title` (reviewed label), plus a topic label. Questions/actions/requirements resolve titles through it. |
 | G3 | No full step list with status. `actions` is todo-only. | `plan.steps[]`: `{id, process_id, occurrence_key, step_id, title, status, position, dates[]}`. Add a reviewed `position` to `current_steps`. |
-| G4 | Appointment `duration_minutes` is required, but users often do not know it | Allow `duration_minutes: null` (unknown, never defaulted), or keep it required and accept the extra UI field. Owner decision. |
-| G5 | Appointment location needs lat/lng | Accept `{label}` only, marked unroutable (contract: "unknown location stays unknown"). |
-| G6 | Submission cannot be retracted. Timeline ids hide event ids. | `submission_retracted` (or `appointment_cancelled`-style withdrawal). Expose `event_id` / `appointment_id` on timeline rows. |
+| G4 | Appointment `duration_minutes` is required, but users often do not know it | **Done (feat/bureaucracy-v2-events):** `duration_minutes: null` = unknown, never defaulted. Composer flags `appointment_end_unknown`. See bureaucracy-v2.md. |
+| G5 | Appointment location needs lat/lng | **Done:** `{label}` only is accepted with `routable: false`. Composer flags `appointment_location_unroutable`. |
+| G6 | Submission cannot be retracted. Timeline ids hide event ids. | **Done:** `submission_retracted {event_id}`. Timeline rows carry `event_id`, `revision_event_id` and `appointment_id`. |
 | G7 | Attention/urgency is not in the plan. Visa expiry has no dated row. | `plan.attention[]` (reuse `PlanAttention::for`). Add a `document_expiry` row for `visa_expires_at` (and `residence_title_expires_at`) with `legal_effect: not_assessed`, if the product wants it shown. |
 | G8 | No read-only catalogue/topic browsing for non-proposed topics | `GET /catalogue/topics?J` → reviewed titles + official actions, with no applicability claim. |
 | G9 | Completion/cancellation date and process note are not projected | `processes[].state.closed_on` (from `occurred_on`) and `reports[]` (type, occurred_on, reference, event_id). |
@@ -266,7 +266,7 @@ appointment, submission and expiry separate.
 | G11 | Life-change report, "still correct" reconfirm, "nothing changed" check-in | `POST /people/{p}/life-changes`, `POST …/facts/{key}/reconfirm`, `POST …/check-ins`, plus `last_checked_at`. |
 | G12 | Deferred questions and relevant missing facts are not listable | `questions.deferred[]` (fact keys), `questions.candidates[]` (fact keys and kinds only). |
 | G13 | Dependent authority pending state is unreadable | `GET /people/{p}/authorities`, or `pending_authority` on `/people` entries. |
-| G14 | No explicit submission-step marker | `guidance[].completion_event ∈ {step_completed, submission_recorded}`. |
+| G14 | No explicit submission-step marker | **Done:** `guidance[].completion_event ∈ {step_completed, submission_recorded}`. |
 | G15 | Completed/cancelled processes with current guidance stay in `processes[]` | Add `is_closed`, or move them into `history` for listing. |
 
 ## 5. Frontend-only (no backend needed)
