@@ -5,7 +5,9 @@ namespace App\Bureaucracy\Processes;
 use App\Bureaucracy\Assessment\PrepareAssessmentInput;
 use App\Bureaucracy\People\AccessScope;
 use App\Bureaucracy\People\PersonCommandScope;
+use App\Models\BureaucracyOutboxEvent;
 use App\Models\BureaucracyPerson;
+use App\Models\BureaucracyProcess;
 use App\Models\BureaucracyProcessEvent;
 use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
@@ -16,7 +18,7 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 final class StartProcess
 {
     public function __construct(private PersonCommandScope $scope, private PrepareAssessmentInput $inputs,
-        private DiscoverProcesses $discover, private ReconcileProcesses $processes) {}
+        private DiscoverProcesses $discover, private ReconcileProcesses $processes, private ProcessStateMachine $machine) {}
 
     public function execute(User $actor, BureaucracyPerson $person, string $jurisdiction, string $occurrence, string $reviewToken, string $requestId): array
     {
@@ -45,6 +47,9 @@ final class StartProcess
             if ($process === null || $process->occurrence_key !== $occurrence) {
                 throw new ConflictHttpException('Existing preparation may belong to this process. Review continuity before creating another one.');
             }
+            if (($process->state['workflow'] ?? null) === 'untracked') {
+                $process = $this->retrack($person, $process);
+            }
             // Opening a saved process does not report preparation, submission or completion.
             $event = $process->events()->create(['actor_id' => $actor->id, 'request_id' => $requestId, 'request_fingerprint' => $fingerprint,
                 'type' => 'process_started', 'payload' => ['provenance' => 'explicit_user_command'],
@@ -52,6 +57,20 @@ final class StartProcess
 
             return $this->receipt($event);
         });
+    }
+
+    /** Tracking again after an undo starts from a clean, not-started workflow; the earlier history stays. */
+    private function retrack(BureaucracyPerson $person, BureaucracyProcess $process): BureaucracyProcess
+    {
+        $process = BureaucracyProcess::query()->whereKey($process->id)->lockForUpdate()->firstOrFail();
+        $version = $process->version + 1;
+        $process->update(['state' => $this->machine->initial($process->step_definitions), 'version' => $version]);
+        $person->increment('record_version');
+        BureaucracyOutboxEvent::query()->create(['event_type' => 'process.changed', 'aggregate_type' => 'process',
+            'aggregate_id' => $process->id, 'aggregate_version' => $version, 'dedupe_key' => 'process.changed:'.$process->id.':'.$version,
+            'payload' => ['person_id' => $person->id], 'available_at' => now()->utc()]);
+
+        return $process->fresh();
     }
 
     private function receipt(BureaucracyProcessEvent $event): array

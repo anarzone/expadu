@@ -10,6 +10,6 @@ class RecordProcessEventRequest extends ProcessCommandRequest
     public function rules(): array
     {
         return [...parent::rules(), 'event' => ['required', Rule::in(ProcessStateMachine::Events)],
-            'payload' => ['present', 'array', 'max:10'], 'review_token' => ['required_unless:event,appointment_cancelled,cancellation_reported', 'nullable', 'string', 'regex:/^[a-f0-9]{64}$/D']];
+            'payload' => ['present', 'array', 'max:10'], 'review_token' => ['required_unless:event,appointment_cancelled,cancellation_reported,submission_retracted,process_untracked', 'nullable', 'string', 'regex:/^[a-f0-9]{64}$/D']];
     }
 }

@@ -40,6 +40,9 @@ final class ProcessMutation
 
                 return $replay;
             }
+            if (($current->state['workflow'] ?? null) === 'untracked') {
+                throw new ConflictHttpException('This process is no longer tracked. Start tracking it again before changing it.');
+            }
             if ($current->version !== $expectedVersion) {
                 throw new ConflictHttpException('This process changed. Reload before reporting progress.');
             }

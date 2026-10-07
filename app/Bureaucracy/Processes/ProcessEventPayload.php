@@ -10,15 +10,21 @@ use Illuminate\Validation\ValidationException;
 
 final class ProcessEventPayload
 {
+    /** A private free-text note; stored only inside the encrypted event payload and process state. */
+    public const NoteLength = 500;
+
     public function validate(string $type, array $payload): array
     {
         $allowed = match ($type) {
             'step_completed', 'step_reopened' => ['step_id', 'occurred_on'],
             'submission_recorded' => ['occurred_on', 'channel', 'reference'],
-            'action_required_reported', 'completion_reported', 'cancellation_reported' => ['occurred_on', 'reference'],
+            'submission_retracted' => ['event_id', 'note'],
+            'action_required_reported', 'completion_reported', 'cancellation_reported' => ['occurred_on', 'reference', 'note'],
+            'blocked_reported' => ['occurred_on', 'note'],
             'appointment_recorded' => ['appointment_id', 'starts_at', 'timezone', 'duration_minutes', 'location'],
             'appointment_cancelled' => ['appointment_id'],
-            'preparation_started', 'waiting_reported', 'process_reopened' => [],
+            'preparation_started', 'waiting_reported', 'process_reopened' => ['note'],
+            'process_untracked' => [],
             default => null,
         };
         if ($allowed === null || array_diff(array_keys($payload), $allowed) !== []) {
@@ -28,6 +34,15 @@ final class ProcessEventPayload
             if (isset($payload[$key]) && (! is_string($payload[$key]) || trim($payload[$key]) === '' || mb_strlen($payload[$key]) > $length)) {
                 throw ValidationException::withMessages(['payload.'.$key => 'Use a short non-empty reference.']);
             }
+        }
+        if (array_key_exists('note', $payload) && (! is_string($payload['note']) || trim($payload['note']) === '' || mb_strlen($payload['note']) > self::NoteLength)) {
+            throw ValidationException::withMessages(['payload.note' => 'Keep the note to '.self::NoteLength.' characters, or leave it out.']);
+        }
+        if (isset($payload['note'])) {
+            $payload['note'] = trim($payload['note']);
+        }
+        if ($type === 'submission_retracted' && (! is_int($payload['event_id'] ?? null) || $payload['event_id'] < 1)) {
+            throw ValidationException::withMessages(['payload.event_id' => 'Choose the submission report to withdraw.']);
         }
         if (in_array($type, ['step_completed', 'step_reopened'], true) && ! isset($payload['step_id'])) {
             throw ValidationException::withMessages(['payload.step_id' => 'Choose the step being updated.']);
