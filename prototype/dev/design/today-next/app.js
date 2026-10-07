@@ -322,7 +322,7 @@
             ? `<div class="route-unknown">${I('train')}<span><strong>Check this journey</strong><small>Recheck for your current plan</small></span></div>`
             : `<div class="route-times">${I('train')}<span class="route-time"><small>Departs</small>${delayed ? `<del>${j.depart}</del>` : ''}<b>${E(travel.departure || '—')}</b></span><span class="route-connector" aria-hidden="true"><i></i></span><span class="route-time"><small>At stop</small>${delayed ? `<del>${j.arrive}</del>` : ''}<b>${E(travel.stationArrival || '—')}</b></span></div>`;
         return `<button class="route-summary" data-today-route="${id}" aria-label="Journey to ${E(item.title)}: ${travel.stale ? 'status unavailable' : `departs ${travel.departure}, arrives at stop ${travel.stationArrival}`}" aria-haspopup="dialog">
-            ${leave.caption}<span class="route-caption">${delayed ? swatch(`${j.delay} min delay`, 'warning') + swatch('Simulated', 'sample') : ''}<strong>${travel.stale ? `Journey to ${E(item.location)}` : `Line ${E(j.line)} · ${E(j.from)} → ${E(j.to)}`}</strong></span>
+            ${leave.caption}<span class="route-caption">${delayed ? swatch(`${j.delay} min delay`, 'warning') + swatch('Simulated', 'sample') : ''}<strong>${travel.stale ? `Journey to ${E(item.location)}` : `Line ${E(j.line)} · ${E(j.from)} → ${E(j.alightStop || j.to)}`}</strong></span>
             ${times}<span class="route-foot">${travel.destinationArrival ? `${j.walkMinutes} min walk · <strong>${delayed ? 'Est. ' : ''}at appointment ${travel.destinationArrival}</strong>${leave.spare}` : 'Arrival at appointment needs checking'}</span>
             ${!delayed && !travel.stale ? '<span class="route-foot">Scheduled · no live status</span>' : ''}
         </button>${leave.advice}${
@@ -865,7 +865,7 @@
                     : 'Scheduled · no live status',
                 `${delayed ? `<del>${E(j.depart)}</del> ` : ''}${E(t.departure)}`,
             ),
-            step('pin', `Get off at ${E(j.to)}`, '', E(t.stationArrival)),
+            step('pin', `Get off at ${E(j.alightStop || j.to)}`, '', E(t.stationArrival)),
             j.walkMinutes !== null && j.walkMinutes !== undefined
                 ? step(
                       'walk',
@@ -910,7 +910,7 @@
         U.open(
             'Your journey',
             sheet(
-                `<p class="detail-intro">Line ${E(j.line)} · ${E(j.from)} → ${E(j.to)} · ${E(shortDate(day.date))}</p>${lead}${t.stale ? '' : journeySteps(item, plan)}${fallback}<p class="detail-note">Sample times. Live service and the walking route have not been checked.</p><div class="detail-actions"><button class="outline-action" data-today-travel="${id}">${I('route')}Open in Travel</button><button class="text-action" data-today-context="${id}">${I('spark')}Ask Composer</button></div>`,
+                `<p class="detail-intro">Line ${E(j.line)} · ${E(j.from)} → ${E(j.alightStop || j.to)} · ${E(shortDate(day.date))}</p>${lead}${t.stale ? '' : journeySteps(item, plan)}${fallback}<p class="detail-note">Sample times. Live service and the walking route have not been checked.</p><div class="detail-actions"><button class="outline-action" data-today-travel="${id}">${I('route')}Open in Travel</button><button class="text-action" data-today-context="${id}">${I('spark')}Ask Composer</button></div>`,
             ),
         );
     }

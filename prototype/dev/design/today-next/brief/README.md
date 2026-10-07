@@ -5,6 +5,12 @@ restores the composition in the owner's screenshot, also saved at
 [`../review/continuity-desktop.png`](../review/continuity-desktop.png).
 The daily brief and its timeline-only correction were rejected.
 
+**7 October, one trip story:** the journey card, its "Get off at" step and the
+journey sheet name the tram stops ("Line 4 · Neumarkt → Wiener Platz"), as
+Travel does; the appointment itself is still in Mülheim. Which tram leads
+(the planned 13:24 here, the 13:14 in Travel) is waiting for the owner's
+decision. `departures-next/tests/trip-story-browser.cjs` checks both pages.
+
 **7 October:** the Check departures board shows Köln Neumarkt at the sample
 day's clock (line 4 at 13:14 and 13:24, "Sample day · 13:10"), matching the
 journey card and Travel's timetable; stops without a sample day keep their
