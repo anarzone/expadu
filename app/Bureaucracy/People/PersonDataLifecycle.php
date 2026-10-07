@@ -8,6 +8,7 @@ use App\Models\Alert;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyEvidenceItem;
 use App\Models\BureaucracyGuardianAuthority;
+use App\Models\BureaucracyInvitation;
 use App\Models\BureaucracyOnboardingDraft;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\BureaucracyPerson;
@@ -154,12 +155,11 @@ final class PersonDataLifecycle
             BureaucracyProcess::query()->where('case_id', $case->id)->delete();
             $case->update(['status' => 'erased', 'fact_version' => $case->fact_version + 1]);
         }
-        $current->grants()->update(['revoked_at' => now()->utc()]);
         BureaucracyOnboardingDraft::query()->where('person_id', $current->id)->delete();
         BureaucracyEvidenceItem::query()->where('person_id', $current->id)->delete();
-        BureaucracyRelationship::query()->where('person_id', $current->id)->orWhere('related_person_id', $current->id)->delete();
-        if ($current->account_user_id !== null) {
-            $subject = User::query()->findOrFail($current->account_user_id);
+        $subject = $current->account_user_id === null ? null : User::query()->findOrFail($current->account_user_id);
+        $this->removeLinks($current, $subject?->id, $subject?->email);
+        if ($subject !== null) {
             $keys = $this->registry->all()->keys()->all();
             $subject->update(['profile_attributes' => array_diff_key($subject->profile_attributes ?? [], array_flip($keys))]);
             $subject->attributeChanges()->whereIn('attribute', $keys)->delete();
@@ -184,21 +184,41 @@ final class PersonDataLifecycle
         }
     }
 
-    public function accountWasDeleted(int $personId, int $userId): void
+    public function accountWasDeleted(int $personId, int $userId, ?string $email = null): void
     {
-        DB::transaction(function () use ($personId, $userId): void {
+        DB::transaction(function () use ($personId, $userId, $email): void {
             $person = BureaucracyPerson::query()->whereKey($personId)->whereNull('account_user_id')->where('kind', 'adult')->lockForUpdate()->first();
             if ($person === null) {
                 return;
             }
             $this->refresh->beforeErasure($person);
-            $person->grants()->update(['revoked_at' => now()->utc()]);
             BureaucracyOnboardingDraft::query()->where('person_id', $person->id)->delete();
             BureaucracyEvidenceItem::query()->where('person_id', $person->id)->delete();
-            BureaucracyRelationship::query()->where('person_id', $person->id)->orWhere('related_person_id', $person->id)->delete();
+            $this->removeLinks($person, $userId, $email);
             $person->update(['display_label' => null, 'record_status' => 'erased', 'erased_at' => now()->utc(), 'record_version' => $person->record_version + 1]);
             $this->recordErasure($person, $userId);
         });
+    }
+
+    /**
+     * Remove what links other people to an erased record. Rows the erased person owns go;
+     * relationships another person recorded about them are ended, not silently deleted, so
+     * that person's history and the reassessment queued by beforeErasure() stay coherent.
+     */
+    private function removeLinks(BureaucracyPerson $person, ?int $userId, ?string $email): void
+    {
+        $person->grants()->delete();
+        $person->workspaces()->detach();
+        BureaucracyInvitation::query()->where('accepted_person_id', $person->id)->delete();
+        if ($userId !== null) {
+            BureaucracyInvitation::query()->where('inviter_user_id', $userId)->whereNull('accepted_at')->delete();
+        }
+        if ($email !== null && $email !== '') {
+            BureaucracyInvitation::query()->where('recipient_hash', ManageDelegation::recipientHash($email))->whereNull('accepted_at')->delete();
+        }
+        BureaucracyRelationship::query()->where('person_id', $person->id)->delete();
+        BureaucracyRelationship::query()->where('related_person_id', $person->id)->whereNull('revoked_at')
+            ->update(['revoked_at' => now()->utc(), 'updated_at' => now()->utc()]);
     }
 
     private function recordErasure(BureaucracyPerson $person, ?int $userId): void

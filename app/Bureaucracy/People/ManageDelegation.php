@@ -165,7 +165,7 @@ final class ManageDelegation
         return $user;
     }
 
-    private static function recipientHash(string $email): string
+    public static function recipientHash(string $email): string
     {
         return hash_hmac('sha256', 'bureaucracy-invitation:'.Str::lower(trim($email)), (string) config('app.key'));
     }

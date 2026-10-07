@@ -20,7 +20,7 @@ final class BureaucracyAccountObserver
     {
         $person = $user->getRelation('bureaucracyPersonBeingDeleted');
         if ($person !== null) {
-            $this->lifecycle->accountWasDeleted($person->id, $user->id);
+            $this->lifecycle->accountWasDeleted($person->id, $user->id, $user->email);
         }
         $user->unsetRelation('bureaucracyPersonBeingDeleted');
         // The guardian's authority rows cascaded with the account; a dependent nobody else
