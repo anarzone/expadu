@@ -147,10 +147,9 @@ tasks:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
+    reviewed_by: automated_source_check
     content_version: 2026-09-08.1
-    source_verification: dual_source
-    verified_at: '2026-09-08'
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
@@ -183,10 +182,9 @@ tasks:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
+    reviewed_by: automated_source_check
     content_version: 2026-09-08.1
-    source_verification: dual_source
-    verified_at: '2026-09-08'
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
       - {kind: primary, label: '§81 AufenthG — Applying for a residence title', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
@@ -225,10 +223,9 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
+    reviewed_by: automated_source_check
     content_version: 2026-10-07.1
-    source_verification: dual_source
-    verified_at: '2026-09-08'
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
@@ -274,10 +271,9 @@ tasks:
       - https://www.stadt-koeln.de/service/adressen/auslaenderamt
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
+    reviewed_by: automated_source_check
     content_version: 2026-10-07.1
-    source_verification: dual_source
-    verified_at: '2026-09-08'
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§4 AufenthG — Erfordernis eines Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4.html'}
       - {kind: implementation, label: 'Stadt Köln · Ausländeramt contact', url: 'https://www.stadt-koeln.de/service/adressen/auslaenderamt'}

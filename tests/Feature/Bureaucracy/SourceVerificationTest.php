@@ -1,14 +1,26 @@
 <?php
 
+use App\Bureaucracy\Assessment\AssessmentInput;
+use App\Bureaucracy\Catalogue\CatalogueCompiler;
+use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
+use App\Bureaucracy\GuidancePublication;
+use App\Bureaucracy\People\EnsureAccountHolder;
+use App\Bureaucracy\ReadModel\CoverageUnits;
+use App\Bureaucracy\ReadModel\ReassessPerson;
+use App\Bureaucracy\RuleSourcePolicy;
 use App\Bureaucracy\Verification\ClaimCheck;
 use App\Bureaucracy\Verification\EscalationRaised;
 use App\Bureaucracy\Verification\Escalations;
 use App\Bureaucracy\Verification\Figures;
+use App\Bureaucracy\Verification\SourceCheckRecorder;
 use App\Bureaucracy\Verification\SourcePageFetcher;
 use App\Bureaucracy\Verification\SourceText;
+use App\Bureaucracy\Verification\UnansweredPlan;
 use App\Models\BureaucracyEscalation;
 use App\Models\BureaucracySourceCheck;
 use App\Models\Task;
+use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Exceptions;
@@ -16,6 +28,8 @@ use Illuminate\Support\Facades\Http;
 
 const BMG17 = 'https://www.gesetze-im-internet.de/bmg/__17.html';
 const KOELN = 'https://www.stadt-koeln.de/service/produkte/00415/index.html';
+
+beforeEach(fn () => app()->bind(SourceCheckRecorder::class, fn ($app) => new SourceCheckRecorder($app->make(GuidancePublication::class))));
 
 function bmgPage(string $text = 'innerhalb von zwei Wochen nach dem Einzug'): string
 {
@@ -167,8 +181,8 @@ it('records each check and escalates a failed residence or deadline card to the 
     expect(BureaucracySourceCheck::query()->sole()->outcome)->toBe('passed');
 
     $law = bmgPage('innerhalb von drei Wochen nach dem Einzug');
-    $this->artisan('bureaucracy:verify-sources')->assertFailed();
-    $this->artisan('bureaucracy:verify-sources')->assertFailed();
+    $this->artisan('bureaucracy:verify-sources --strict')->assertFailed();
+    $this->artisan('bureaucracy:verify-sources')->assertSuccessful();
 
     $escalation = BureaucracyEscalation::query()->sole();
     expect(BureaucracySourceCheck::query()->sole()->outcome)->toBe('failed')
@@ -214,4 +228,110 @@ it('schedules the daily source re-check', function () {
     app(Kernel::class)->bootstrap();
 
     expect(collect(app(Schedule::class)->events())->contains(fn ($event) => str_contains($event->command ?? '', 'bureaucracy:verify-sources')))->toBeTrue();
+});
+
+/** Serves every cited page with the quotes its cards rely on, minus any quote in $drop. */
+function fakeOfficialPages(array $drop = []): void
+{
+    $pages = [];
+    foreach (Task::query()->whereNotNull('claims')->get() as $task) {
+        $urls = collect($task->legal_sources)->pluck('url', 'label');
+        foreach ($task->claims as $claim) {
+            $pages[$urls[$claim['source']]][] = in_array($claim['quote'], $drop, true) ? '' : $claim['quote'];
+        }
+    }
+    // Http::fake stubs accumulate, so later calls only swap the served pages.
+    $first = ! app()->bound('test.official_pages');
+    app()->instance('test.official_pages', $pages);
+    if (! $first) {
+        return;
+    }
+    Http::fake(function ($request) {
+        $section = preg_match('#/__(\w+)\.html#', $request->url(), $m) ? '§ '.$m[1] : 'Stadt Köln';
+        $quotes = app('test.official_pages')[$request->url()] ?? [];
+
+        return Http::response("<h1>{$section} Einzelnorm</h1><p>".implode(' </p><p>', $quotes).'</p><p>'.str_repeat('Weitere amtliche Hinweise zum Verfahren. ', 15).'</p>');
+    });
+}
+
+it('publishes an automatically checked card only after its source check passes, and pulls it on failure', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    $this->artisan('bureaucracy:compile-catalogue --deploy')->assertSuccessful();
+    $published = fn () => Task::query()->authoritative()->where('key', 'core.anmeldung')->exists();
+    expect(Task::query()->where('key', 'core.anmeldung')->value('reviewed_by'))->toBe('automated_source_check')
+        ->and($published())->toBeFalse();
+
+    fakeOfficialPages();
+    $this->artisan('bureaucracy:verify-sources --deploy')->assertSuccessful();
+    $release = app(CatalogueReleaseStore::class)->current();
+    expect($published())->toBeTrue()
+        ->and(collect($release['definitions'])->flatMap(fn ($d) => $d['variants'])->pluck('task_key'))->toContain('core.anmeldung');
+
+    // A re-import at deploy keeps the pass: the window comes from the stored check.
+    $this->artisan('bureaucracy:import-tasks --retire-missing')->assertSuccessful();
+    expect($published())->toBeTrue();
+
+    fakeOfficialPages(drop: ['hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden']);
+    $this->artisan('bureaucracy:verify-sources')->assertSuccessful();
+    $release = app(CatalogueReleaseStore::class)->current();
+    $unit = collect(app(CoverageUnits::class)->for(new AssessmentInput([], [], [], $release, 'de-nrw-cologne', CarbonImmutable::now())))
+        ->firstWhere('unit_id', 'core.anmeldung');
+    expect($published())->toBeFalse()
+        ->and($release['withdrawn'])->toContain('core.anmeldung')
+        ->and($unit['state'])->toBe('unconfirmed')
+        ->and($unit['source_urls']['legal'])->toContain(BMG17)
+        ->and(BureaucracyEscalation::query()->where('subject', 'core.anmeldung')->value('severity'))->toBe('high');
+});
+
+it('withholds an unconfirmed card from a release without blocking the rest', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+
+    $artifact = app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->orderBy('key')->get()->all());
+
+    expect(collect($artifact['inventory'])->firstWhere('key', 'core.anmeldung')['status'])->toBe('source_unconfirmed')
+        ->and(collect($artifact['definitions'])->flatMap(fn ($d) => $d['variants'])->pluck('task_key'))
+        ->not->toContain('core.anmeldung')->toContain('case.family.first_permit.prepare');
+});
+
+it('keeps the automated stamp and the automated check together', function (array $card, string $error) {
+    $base = ['review_status' => 'approved', 'jurisdiction' => 'de-nrw-cologne', 'content_version' => '2026-10-07.1', ...checkedCard()];
+
+    expect(app(RuleSourcePolicy::class)->importErrors([...$base, ...$card]))->toContain($error);
+})->with([
+    'a person cannot sign off as the check' => [['reviewed_by' => 'automated_source_check', 'source_verification' => 'dual_source', 'verified_at' => '2026-10-07'],
+        '`quote_checked` and reviewed_by `automated_source_check` must be used together'],
+    'the check cannot carry a human stamp' => [['reviewed_by' => 'expadu_content_owner', 'source_verification' => 'quote_checked'],
+        '`quote_checked` and reviewed_by `automated_source_check` must be used together'],
+    'no authored verification date' => [['reviewed_by' => 'automated_source_check', 'source_verification' => 'quote_checked', 'verified_at' => '2026-10-07'],
+        'verified_at is set by the source check, not authored, on `quote_checked` cards'],
+    'claims are required' => [['reviewed_by' => 'automated_source_check', 'source_verification' => 'quote_checked', 'claims' => null],
+        '`quote_checked` cards need source claims'],
+]);
+
+it('names the processes a plan cannot answer and spots an empty plan', function () {
+    $plan = ['coverage' => ['state' => 'partial', 'processes' => [
+        ['definition_id' => 'address.registration', 'relevance' => 'unknown', 'coverage' => ['status' => 'review_required']],
+        ['definition_id' => 'tax.identification', 'relevance' => 'relevant', 'coverage' => ['status' => 'partial']],
+        ['definition_id' => 'residence.family.first', 'relevance' => 'not_relevant', 'coverage' => ['status' => 'review_required']],
+    ]], 'actions' => []];
+
+    expect(UnansweredPlan::processes($plan))->toBe(['address.registration'])
+        ->and(UnansweredPlan::isEmpty($plan))->toBeFalse()
+        ->and(UnansweredPlan::isEmpty(['coverage' => ['state' => 'partial', 'processes' => []], 'actions' => []]))->toBeTrue()
+        ->and(UnansweredPlan::isEmpty(['coverage' => ['state' => 'not_activated', 'processes' => []], 'actions' => []]))->toBeFalse();
+});
+
+it('escalates once when the active catalogue has nothing for someone who finished onboarding', function () {
+    Exceptions::fake();
+    $this->artisan('bureaucracy:compile-catalogue --deploy')->assertSuccessful();
+    $actor = User::factory()->onboarded()->create();
+    $case = app(EnsureAccountHolder::class)->dossier($actor);
+
+    app(ReassessPerson::class)->execute($case->person_id);
+    app(ReassessPerson::class)->execute($case->person_id);
+
+    expect(BureaucracyEscalation::query()->sole()->only(['kind', 'subject', 'occurrences']))
+        ->toBe(['kind' => 'empty_plan', 'subject' => 'de-nrw-cologne', 'occurrences' => 2])
+        ->and(json_encode(BureaucracyEscalation::query()->sole()->getAttributes()))->not->toContain($actor->email);
+    Exceptions::assertReportedCount(1);
 });

@@ -15,13 +15,15 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Re-checks every card that carries source claims against the live official pages.
  *
- * Report-only: results are recorded and failures escalated, but nothing here
- * publishes or withdraws a card. Network access is required, so this runs on a
- * schedule and never in the test suite.
+ * Results are recorded and failures escalated. For `quote_checked` cards the result is
+ * also the publication decision: a pass opens (or renews) the review window, a failure
+ * withdraws the card at once. With --deploy, a changed window is compiled and activated
+ * as a new catalogue release. Network access is required, so this runs on a schedule
+ * and at deploy, never in the test suite.
  */
 class VerifySourcesCommand extends Command
 {
-    protected $signature = 'bureaucracy:verify-sources {--key=* : Only these card keys} {--offline : Skip fetching; check claim structure, coverage and figures only}';
+    protected $signature = 'bureaucracy:verify-sources {--key=* : Only these card keys} {--offline : Skip fetching; check claim structure, coverage and figures only} {--deploy : Compile and activate the catalogue when a card\'s publication changed} {--strict : Exit non-zero when any card fails}';
 
     protected $description = 'Check each card\'s source quotes against the official pages and escalate failures';
 
@@ -38,6 +40,7 @@ class VerifySourcesCommand extends Command
             return self::SUCCESS;
         }
         $topics = $this->topics();
+        $changed = false;
         $pages = [];
         $rows = [];
         foreach ($tasks as $task) {
@@ -56,6 +59,7 @@ class VerifySourcesCommand extends Command
             }
             $result = $checks->check($card, $pages);
             $reviews->record($task, $result);
+            $changed = $reviews->apply($task) || $changed;
             if ($result['outcome'] === 'failed') {
                 $escalations->raise('source_check_failed', $task->key, $this->severity($task, $topics[$task->key] ?? null),
                     "\"{$task->title}\" no longer matches its official source.", ['failures' => $result['failures']]);
@@ -65,8 +69,12 @@ class VerifySourcesCommand extends Command
             $rows[] = [$task->key, $result['outcome'], implode("\n", [...$result['failures'], ...array_map(fn ($url) => "unreachable: {$url}", $result['unreachable'])])];
         }
         $this->table(['Card', 'Result', 'Details'], $rows);
+        if ($changed && $this->option('deploy')) {
+            $this->call('bureaucracy:compile-catalogue', ['--deploy' => true]);
+        }
 
-        return collect($rows)->contains(fn ($row) => $row[1] === 'failed') ? self::FAILURE : self::SUCCESS;
+        // A failed card is withdrawn and escalated; it must not fail a deploy or the scheduler.
+        return $this->option('strict') && collect($rows)->contains(fn ($row) => $row[1] === 'failed') ? self::FAILURE : self::SUCCESS;
     }
 
     /** High severity reaches the owner: residence matters, dated deadlines, urgent cards and money. */

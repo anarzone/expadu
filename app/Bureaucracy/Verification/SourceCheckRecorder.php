@@ -3,16 +3,19 @@
 namespace App\Bureaucracy\Verification;
 
 use App\Bureaucracy\GuidancePublication;
+use App\Bureaucracy\RuleSourcePolicy;
 use App\Models\BureaucracySourceCheck;
 use App\Models\Task;
 use Carbon\CarbonImmutable;
 
 /**
- * Records source-check results per card.
+ * Records source-check results and turns them into the review window of a
+ * `quote_checked` card — the only way such a card becomes publishable.
  *
- * A pass counts for PassDays and is renewed only when fewer than RenewDays remain, so a
- * review window derived from it would change every few weeks rather than daily. An
- * unreachable source changes nothing; the last pass simply runs out if the page stays down.
+ * A pass counts for PassDays and is renewed only when fewer than RenewDays remain, so
+ * the published review dates (and the catalogue release) change every few weeks, not
+ * daily. A failed check withdraws the card at once. An unreachable source changes
+ * nothing; the last pass simply runs out if the page stays unreachable.
  */
 class SourceCheckRecorder
 {
@@ -26,6 +29,36 @@ class SourceCheckRecorder
     public function hash(Task $task): string
     {
         return hash('sha256', $this->publication->contentHash($task).'|'.json_encode($this->canonical($task->claims ?? []), JSON_THROW_ON_ERROR));
+    }
+
+    /** @return array{verified_at: string|null, review_due_at: string|null} */
+    public function window(Task $task, ?CarbonImmutable $today = null): array
+    {
+        $today ??= CarbonImmutable::today(config('app.timezone'));
+        $check = BureaucracySourceCheck::query()->where('task_key', $task->key)->first();
+        $hash = $this->hash($task);
+        $valid = $check !== null && $check->passed_hash === $hash && $check->valid_until !== null
+            && $check->valid_until->toDateString() >= $today->toDateString()
+            && ! ($check->outcome === 'failed' && $check->check_hash === $hash);
+
+        return $valid
+            ? ['verified_at' => $check->first_passed_on?->toDateString(), 'review_due_at' => $check->valid_until->toDateString()]
+            : ['verified_at' => null, 'review_due_at' => null];
+    }
+
+    /** Applies the current window to a stored `quote_checked` card. Returns whether its review dates changed. */
+    public function apply(Task $task, ?CarbonImmutable $today = null): bool
+    {
+        if ($task->source_verification !== RuleSourcePolicy::QuoteChecked) {
+            return false;
+        }
+        $window = $this->window($task, $today);
+        if ([$task->verified_at?->toDateString(), $task->review_due_at?->toDateString()] === [$window['verified_at'], $window['review_due_at']]) {
+            return false;
+        }
+        $task->forceFill($window)->saveQuietly();
+
+        return true;
     }
 
     /** @param array{outcome: string, failures: list<string>, unreachable: list<string>} $result */

@@ -12,10 +12,9 @@ tasks:
       registration_status: not_registered
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
+    reviewed_by: automated_source_check
     content_version: 2026-09-08.1
-    source_verification: dual_source
-    verified_at: '2026-09-08'
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§17 BMG — Anmeldung, Abmeldung', url: 'https://www.gesetze-im-internet.de/bmg/__17.html'}
       - {kind: primary, label: '§19 BMG — Wohnungsgeber confirmation', url: 'https://www.gesetze-im-internet.de/bmg/__19.html'}
@@ -77,19 +76,31 @@ tasks:
     applies_if:
       arrival_planned: false
       tax_id_available: false
-    # single_source_approved: §139b AO is unambiguous, but no allow-listed
-    # implementation host covers the tax ID. The BZSt is authoritative and is
-    # linked under `links`, yet bzst.de is not on the implementation allowlist,
-    # and the only Cologne page mentioning the ID is really about ELStAM.
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
-    content_version: 2026-09-08.1
-    source_verification: single_source_approved
-    single_source_approved: true
-    verified_at: '2026-09-08'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-07.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§139b AO — Identifikationsnummer', url: 'https://www.gesetze-im-internet.de/ao_1977/__139b.html'}
+      - {kind: implementation, label: 'BZSt · Erneute Mitteilung der IdNr', url: 'https://online.portal.bzst.de/SharedDocs/Leistungsbeschreibung/DE/erneute_mitteilung_der_ID-Nr.html'}
+    claims:
+      - id: one-number
+        states: Your tax identification number stays the same for life
+        source: '§139b AO — Identifikationsnummer'
+        quote: Eine natürliche Person darf nicht mehr als eine Identifikationsnummer erhalten.
+      - id: no-change-on-move
+        states: including after a move or marriage
+        source: 'BZSt · Erneute Mitteilung der IdNr'
+        quote: nicht bei Umzug oder Heirat
+      - id: three-months
+        states: if no letter has arrived within three months
+        source: 'BZSt · Erneute Mitteilung der IdNr'
+        quote: wenn Sie innerhalb von 3 Monaten nach Ihrer erstmaligen Anmeldung in Deutschland
+      - id: not-by-phone
+        states: It is not disclosed by phone or email
+        source: 'BZSt · Erneute Mitteilung der IdNr'
+        quote: Eine telefonische Mitteilung oder eine Mitteilung per E-Mail ist aus datenschutzrechtlichen Gründen nicht möglich.
     description: |
       Your tax identification number stays the same for life, including after a
       move or marriage. Check an existing income tax assessment or wage tax
@@ -116,10 +127,9 @@ tasks:
       health_coverage_confirmed: false
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
+    reviewed_by: automated_source_check
     content_version: 2026-09-08.1
-    source_verification: dual_source
-    verified_at: '2026-09-08'
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§5 SGB V — Versicherungspflicht', url: 'https://www.gesetze-im-internet.de/sgb_5/__5.html'}
       - {kind: primary, label: '§6 SGB V — Versicherungsfreiheit', url: 'https://www.gesetze-im-internet.de/sgb_5/__6.html'}
@@ -157,10 +167,9 @@ tasks:
       bank_account_help_needed: true
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: owner_authorised_source_review
+    reviewed_by: automated_source_check
     content_version: 2026-09-08.1
-    source_verification: dual_source
-    verified_at: '2026-09-08'
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§31 ZKG — Anspruch auf Abschluss eines Basiskontovertrags', url: 'https://www.gesetze-im-internet.de/zkg/__31.html'}
       - {kind: implementation, label: 'Make it in Germany · Bank account', url: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/bank-account'}

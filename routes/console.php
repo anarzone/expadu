@@ -89,8 +89,9 @@ Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping();
 
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
 Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:00')->withoutOverlapping();
-// Re-check every card's source quotes against the official pages; failures go to the escalation log.
-Schedule::command('bureaucracy:verify-sources')->timezone('Europe/Berlin')->dailyAt('05:15')->withoutOverlapping()->onOneServer();
+// Re-check every card's source quotes against the official pages. A pass keeps a checked card
+// published, a failure withdraws and escalates it; changes ship as a new catalogue release.
+Schedule::command('bureaucracy:verify-sources --deploy')->timezone('Europe/Berlin')->dailyAt('05:15')->withoutOverlapping()->onOneServer();
 Schedule::command('model:prune')->dailyAt('03:45')->withoutOverlapping();
 
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();

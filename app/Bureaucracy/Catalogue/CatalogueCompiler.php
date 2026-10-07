@@ -33,10 +33,14 @@ final class CatalogueCompiler
         foreach ($byKey as $key => $task) {
             $record = $this->snapshot($task);
             $map = $mapping[$key] ?? null;
+            // A card whose automated source check has not passed is withheld, never published and
+            // never fatal to the release: the rest of the catalogue still ships.
+            $withheld = $task->is_published && $task->review_status === 'approved'
+                && $task->source_verification === RuleSourcePolicy::QuoteChecked && $this->policy->persistedErrors($task) !== [];
             $inventory[] = ['key' => $key, 'review_status' => $task->review_status, 'process_id' => $map['process_id'] ?? null,
-                'status' => ! $task->is_published ? 'retired' : ($task->review_status === 'approved' ? 'mapped_reviewed' : 'review_required'),
+                'status' => ! $task->is_published ? 'retired' : ($withheld ? 'source_unconfirmed' : ($task->review_status === 'approved' ? 'mapped_reviewed' : 'review_required')),
                 'source_hash' => $this->publication->contentHash($task), 'authored_record' => $record];
-            if (! $task->is_published || $task->review_status !== 'approved') {
+            if (! $task->is_published || $task->review_status !== 'approved' || $withheld) {
                 continue;
             }
             if ($this->policy->persistedErrors($task) !== [] || ! array_key_exists($task->jurisdiction, config('bureaucracy_catalogue.jurisdictions', []))) {

@@ -6,6 +6,7 @@ use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\GuidancePublication;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Bureaucracy\Verification\ClaimCheck;
+use App\Bureaucracy\Verification\SourceCheckRecorder;
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
 use App\Models\Task;
@@ -23,8 +24,12 @@ use Symfony\Component\Yaml\Yaml;
  * content edit — non-destructive (existing user_tasks are preserved).
  *
  * Trust rules:
- * - `verified_at` is read from YAML and is ONLY ever set there by a human
- *   after checking the official source. The importer never invents it.
+ * - Human-reviewed cards: `verified_at` is read from YAML and is ONLY ever set
+ *   there by a human after checking the official source.
+ * - `quote_checked` cards (reviewed_by: automated_source_check) carry `claims`
+ *   quoting the official source for every figure. Their `verified_at` and
+ *   `review_due_at` come only from a passing bureaucracy:verify-sources check.
+ *   The importer never invents either date.
  * - tasks without `is_published: true`... default to published; set
  *   `is_published: false` to hide a task whose facts can't be verified yet.
  *
@@ -544,7 +549,7 @@ class ImportTasksCommand extends Command
             'links' => $data['links'] ?? [],
             'how_to_steps' => $data['how_to_steps'] ?? [],
             'booking_service_key' => $data['booking_service_key'] ?? null,
-            // Human-verified only: the importer copies the YAML value verbatim.
+            // Human-verified cards copy the YAML value verbatim; `quote_checked` cards take it from their source check.
             'verified_at' => $data['verified_at'] ?? null,
             'jurisdiction' => $data['jurisdiction'] ?? null,
             'legal_sources' => $data['legal_sources'] ?? null,
@@ -568,6 +573,11 @@ class ImportTasksCommand extends Command
             $payload[$field] = $this->substituteFigures($payload[$field] ?? null);
         }
         $title = $payload['title'];
+        // An automatically checked card is publishable only while a check of exactly this
+        // content and these claims has passed; the dates come from that check.
+        if ($payload['source_verification'] === RuleSourcePolicy::QuoteChecked) {
+            $payload = [...$payload, ...app(SourceCheckRecorder::class)->window(new Task([...$payload, 'key' => $key]))];
+        }
 
         if ($this->option('dry-run')) {
             $this->line("  [dry] would upsert: {$key}");

@@ -1,5 +1,6 @@
 <?php
 
+use App\Bureaucracy\Verification\SourceCheckRecorder;
 use App\Composer\ActivePlanStore;
 use App\Composer\AppointmentRepository;
 use App\Composer\Constraints;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\HtmlString;
+use Tests\Support\OfflineSourceChecks;
 use Tests\TestCase;
 
 /*
@@ -52,6 +54,9 @@ pest()->extend(TestCase::class)
                 Redis::del(...$stale);
             }
         }
+
+        // No network here: automatically checked cards count as passing when their claims pass offline.
+        app()->bind(SourceCheckRecorder::class, OfflineSourceChecks::class);
 
         // Mock Vite so tests don't need npm run build
         app()->instance(Vite::class, new class extends Vite

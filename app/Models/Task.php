@@ -86,6 +86,7 @@ class Task extends Model
     /**
      * Restrict deterministic matching to reviewed rules whose approval window
      * is still current. The importer and coverage gate enforce source details.
+     * A `quote_checked` card has a window only while its source check passes.
      */
     public function scopeAuthoritative(Builder $query): Builder
     {
@@ -103,7 +104,7 @@ class Task extends Model
             ->whereNotNull('verified_at')
             ->whereNotNull('legal_sources')
             ->whereJsonLength('legal_sources', '>', 0)
-            ->whereIn('source_verification', ['dual_source', 'single_source_approved'])
+            ->whereIn('source_verification', ['dual_source', 'single_source_approved', 'quote_checked'])
             ->whereDate('review_due_at', '>=', $today)
             ->where(function (Builder $builder) use ($today): void {
                 $builder->whereNull('effective_from')->orWhereDate('effective_from', '<=', $today);
