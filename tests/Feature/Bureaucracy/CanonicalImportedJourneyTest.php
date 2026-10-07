@@ -105,7 +105,7 @@ test('official verification context is available without choosing a Blue Card ro
     $store->activate($store->stage(app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->get()->all()))->id, null);
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee', 'veedel' => 'Nippes', 'arrival_planned' => false,
+        'situation' => 'non_eu_employee', 'veedel' => 'Nippes', 'arrival_planned' => false, 'arrival_date' => '2026-07-24',
         'current_residence_title' => 'other', 'case_goal' => 'blue_card',
     ])->assertSessionHasNoErrors();
     $plan = $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');

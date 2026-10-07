@@ -145,7 +145,7 @@ test('skipped onboarding dates become a visible question without hiding known pr
 test('a supplied move-in date drives the new plan independently of registration proof', function () {
     $user = User::factory()->create(['onboarded_at' => null]);
     $this->actingAs($user)->post('/onboarding/complete', [
-        'veedel' => 'Ehrenfeld', 'arrival_planned' => false, 'arrival_date' => '2026-09-01',
+        'situation' => 'other', 'veedel' => 'Ehrenfeld', 'arrival_planned' => false, 'arrival_date' => '2026-09-01',
         'moved_in_at' => '2026-09-05', 'address_registration_status' => 'not_registrable',
     ])->assertSessionHasNoErrors();
     ReviewedHomePlan::activate($user, ['fixture.occupancy' => ['deadline_type' => 'days_since_move_in']], []);
